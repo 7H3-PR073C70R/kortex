@@ -1,0 +1,30 @@
+name: kortex
+description: Kortex is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortex transforms unstructured academic materials (syllabi, lecture slides, textbooks, and past papers) into an active-recall mastery system in a single document drop.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.0
+
+dependencies:
+  bloc: ^9.2.1
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+dev_dependencies:
+  bloc_lint: ^0.4.1
+  bloc_test: ^10.0.0
+  bloc_tools: ^0.1.0-dev.24
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^10.2.0
+
+flutter:
+  generate: true
+  uses-material-design: true
