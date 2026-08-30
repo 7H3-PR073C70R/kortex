@@ -15,9 +15,11 @@ class FilePickerService {
 
   Future<String?> pickFiles(List<String> extensions) async {
     try {
-      final paths = await FilePicker.platform
-          .pickFiles(allowedExtensions: extensions, type: FileType.custom);
-      return paths?.files.first.path;
+      final file = await FilePicker.pickFile(
+        allowedExtensions: extensions,
+        type: FileType.custom,
+      );
+      return file?.path;
     } on PlatformException catch (e) {
       log.e('Unsupported operation $e');
       return null;
