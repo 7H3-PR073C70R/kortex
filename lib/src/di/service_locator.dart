@@ -7,5 +7,8 @@ void _initServices() {
     )
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
+    )
+    ..registerLazySingleton<ThemeCubit>(
+      () => ThemeCubit(storageService: locator()),
     );
 }

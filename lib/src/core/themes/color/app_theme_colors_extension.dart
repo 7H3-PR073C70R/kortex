@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/themes/color/app_material_colors.dart';
+import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 
 @immutable
 class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   const AppThemeColorsExtension({
     required this.primary,
     required this.syllabotAccent,
+    required this.syllabotGlow,
     required this.latexHighlight,
+    required this.latexBackground,
+    required this.recallEasy,
+    required this.recallGood,
+    required this.recallHard,
+    required this.recallAgain,
     required this.flashcardMastered,
     required this.flashcardReview,
     required this.flashcardLearning,
@@ -18,8 +25,11 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     required this.surfacePrimary,
     required this.surfaceSecondary,
     required this.surfaceTertiary,
+    required this.surfaceElevated,
+    required this.cardBackground,
     required this.surfaceBorder,
     required this.surfaceBorderHighlight,
+    required this.borderOutline,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
@@ -33,30 +43,40 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   });
 
   /// Light theme color configuration
-  factory AppThemeColorsExtension.light() {
+  factory AppThemeColorsExtension.light({Color? primaryAccent}) {
+    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
     return AppThemeColorsExtension(
-      primary: AppMaterialColors.primaryBase,
+      primary: accent,
       syllabotAccent: AppMaterialColors.syllabotBase,
+      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(50),
       latexHighlight: AppMaterialColors.latexBase,
-      flashcardMastered: AppMaterialColors.masteredBase,
-      flashcardReview: AppMaterialColors.reviewBase,
-      flashcardLearning: AppMaterialColors.learningBase,
-      confidenceHigh: AppMaterialColors.masteredBase,
-      confidenceMed: AppMaterialColors.reviewBase,
-      confidenceLow: AppMaterialColors.learningBase,
+      latexBackground: AppMaterialColors.latexBase.withAlpha(25),
+      recallEasy: AppMaterialColors.recallEasy,
+      recallGood: AppMaterialColors.recallGood,
+      recallHard: AppMaterialColors.recallHard,
+      recallAgain: AppMaterialColors.recallAgain,
+      flashcardMastered: AppMaterialColors.recallEasy,
+      flashcardReview: AppMaterialColors.recallHard,
+      flashcardLearning: AppMaterialColors.recallAgain,
+      confidenceHigh: AppMaterialColors.recallEasy,
+      confidenceMed: AppMaterialColors.recallHard,
+      confidenceLow: AppMaterialColors.recallAgain,
       backgroundPrimary: AppMaterialColors.lightCanvas,
       backgroundSecondary: AppMaterialColors.lightSurfaceElevated2,
       surfacePrimary: AppMaterialColors.lightSurfaceElevated1,
       surfaceSecondary: AppMaterialColors.lightSurfaceElevated2,
       surfaceTertiary: AppMaterialColors.lightSurfaceElevated3,
+      surfaceElevated: AppMaterialColors.lightSurfaceElevated1,
+      cardBackground: AppMaterialColors.lightCard,
       surfaceBorder: AppMaterialColors.lightBorder,
       surfaceBorderHighlight: AppMaterialColors.lightBorderHighlight,
+      borderOutline: AppMaterialColors.lightBorder,
       textPrimary: AppMaterialColors.textLightPrimary,
       textSecondary: AppMaterialColors.textLightSecondary,
       textMuted: AppMaterialColors.textLightMuted,
-      success: AppMaterialColors.masteredBase,
-      warning: AppMaterialColors.reviewBase,
-      error: AppMaterialColors.learningBase,
+      success: AppMaterialColors.recallEasy,
+      warning: AppMaterialColors.recallHard,
+      error: AppMaterialColors.recallAgain,
       info: AppMaterialColors.latexBase,
       gray: AppMaterialColors.gray,
       white: const Color(0xFFFFFFFF),
@@ -64,31 +84,41 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     );
   }
 
-  /// OLED dark theme color configuration
-  factory AppThemeColorsExtension.dark() {
+  /// Slate dark theme color configuration
+  factory AppThemeColorsExtension.dark({Color? primaryAccent}) {
+    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
     return AppThemeColorsExtension(
-      primary: AppMaterialColors.primaryBase,
+      primary: accent,
       syllabotAccent: AppMaterialColors.syllabotBase,
+      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(50),
       latexHighlight: AppMaterialColors.latexBase,
-      flashcardMastered: AppMaterialColors.masteredBase,
-      flashcardReview: AppMaterialColors.reviewBase,
-      flashcardLearning: AppMaterialColors.learningBase,
-      confidenceHigh: AppMaterialColors.masteredBase,
-      confidenceMed: AppMaterialColors.reviewBase,
-      confidenceLow: AppMaterialColors.learningBase,
+      latexBackground: AppMaterialColors.latexBase.withAlpha(35),
+      recallEasy: AppMaterialColors.recallEasy,
+      recallGood: AppMaterialColors.recallGood,
+      recallHard: AppMaterialColors.recallHard,
+      recallAgain: AppMaterialColors.recallAgain,
+      flashcardMastered: AppMaterialColors.recallEasy,
+      flashcardReview: AppMaterialColors.recallHard,
+      flashcardLearning: AppMaterialColors.recallAgain,
+      confidenceHigh: AppMaterialColors.recallEasy,
+      confidenceMed: AppMaterialColors.recallHard,
+      confidenceLow: AppMaterialColors.recallAgain,
       backgroundPrimary: AppMaterialColors.darkCanvas,
       backgroundSecondary: AppMaterialColors.darkSurfaceElevated1,
       surfacePrimary: AppMaterialColors.darkSurfaceElevated1,
       surfaceSecondary: AppMaterialColors.darkSurfaceElevated2,
       surfaceTertiary: AppMaterialColors.darkSurfaceElevated3,
+      surfaceElevated: AppMaterialColors.darkSurfaceElevated2,
+      cardBackground: AppMaterialColors.darkCard,
       surfaceBorder: AppMaterialColors.darkBorder,
       surfaceBorderHighlight: AppMaterialColors.darkBorderHighlight,
+      borderOutline: AppMaterialColors.darkBorder,
       textPrimary: AppMaterialColors.textDarkPrimary,
       textSecondary: AppMaterialColors.textDarkSecondary,
       textMuted: AppMaterialColors.textDarkMuted,
-      success: AppMaterialColors.masteredBase,
-      warning: AppMaterialColors.reviewBase,
-      error: AppMaterialColors.learningBase,
+      success: AppMaterialColors.recallEasy,
+      warning: AppMaterialColors.recallHard,
+      error: AppMaterialColors.recallAgain,
       info: AppMaterialColors.latexBase,
       gray: AppMaterialColors.gray,
       white: const Color(0xFFFFFFFF),
@@ -96,10 +126,84 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     );
   }
 
-  // STEM and Syllabot Engine tokens
+  /// Midnight OLED pure #000000 black theme color configuration
+  factory AppThemeColorsExtension.oled({Color? primaryAccent}) {
+    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
+    return AppThemeColorsExtension(
+      primary: accent,
+      syllabotAccent: AppMaterialColors.syllabotBase,
+      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(60),
+      latexHighlight: AppMaterialColors.latexBase,
+      latexBackground: AppMaterialColors.latexBase.withAlpha(40),
+      recallEasy: AppMaterialColors.recallEasy,
+      recallGood: AppMaterialColors.recallGood,
+      recallHard: AppMaterialColors.recallHard,
+      recallAgain: AppMaterialColors.recallAgain,
+      flashcardMastered: AppMaterialColors.recallEasy,
+      flashcardReview: AppMaterialColors.recallHard,
+      flashcardLearning: AppMaterialColors.recallAgain,
+      confidenceHigh: AppMaterialColors.recallEasy,
+      confidenceMed: AppMaterialColors.recallHard,
+      confidenceLow: AppMaterialColors.recallAgain,
+      backgroundPrimary: AppMaterialColors.oledCanvas,
+      backgroundSecondary: AppMaterialColors.oledSurfaceElevated1,
+      surfacePrimary: AppMaterialColors.oledSurfaceElevated1,
+      surfaceSecondary: AppMaterialColors.oledSurfaceElevated2,
+      surfaceTertiary: AppMaterialColors.oledSurfaceElevated3,
+      surfaceElevated: AppMaterialColors.oledSurfaceElevated2,
+      cardBackground: AppMaterialColors.oledCard,
+      surfaceBorder: AppMaterialColors.oledBorder,
+      surfaceBorderHighlight: AppMaterialColors.oledBorderHighlight,
+      borderOutline: AppMaterialColors.oledBorder,
+      textPrimary: AppMaterialColors.textOledPrimary,
+      textSecondary: AppMaterialColors.textOledSecondary,
+      textMuted: AppMaterialColors.textOledMuted,
+      success: AppMaterialColors.recallEasy,
+      warning: AppMaterialColors.recallHard,
+      error: AppMaterialColors.recallAgain,
+      info: AppMaterialColors.latexBase,
+      gray: AppMaterialColors.gray,
+      white: const Color(0xFFFFFFFF),
+      black: const Color(0xFF000000),
+    );
+  }
+
+  /// Build theme colors based on a selected [ThemePreset].
+  factory AppThemeColorsExtension.fromPreset(
+    ThemePreset preset, {
+    Color? customAccent,
+  }) {
+    final accent = customAccent ?? preset.defaultAccent;
+    switch (preset) {
+      case ThemePreset.cleanLight:
+        return AppThemeColorsExtension.light(primaryAccent: accent);
+      case ThemePreset.slateDark:
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
+      case ThemePreset.midnightOled:
+        return AppThemeColorsExtension.oled(primaryAccent: accent);
+      case ThemePreset.emeraldStem:
+        return AppThemeColorsExtension.dark(
+          primaryAccent: customAccent ?? AppMaterialColors.emeraldStem,
+        );
+      case ThemePreset.royalAmethyst:
+        return AppThemeColorsExtension.dark(
+          primaryAccent: customAccent ?? AppMaterialColors.royalAmethyst,
+        );
+    }
+  }
+
+  // Brand & STEM Tokens
   final Color primary;
   final Color syllabotAccent;
+  final Color syllabotGlow;
   final Color latexHighlight;
+  final Color latexBackground;
+
+  // Active Recall Tokens
+  final Color recallEasy;
+  final Color recallGood;
+  final Color recallHard;
+  final Color recallAgain;
   final Color flashcardMastered;
   final Color flashcardReview;
   final Color flashcardLearning;
@@ -107,14 +211,17 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   final Color confidenceMed;
   final Color confidenceLow;
 
-  // Surfaces & Borders
+  // Surfaces & Structural Borders
   final Color backgroundPrimary;
   final Color backgroundSecondary;
   final Color surfacePrimary;
   final Color surfaceSecondary;
   final Color surfaceTertiary;
+  final Color surfaceElevated;
+  final Color cardBackground;
   final Color surfaceBorder;
   final Color surfaceBorderHighlight;
+  final Color borderOutline;
 
   // Typography
   final Color textPrimary;
@@ -127,7 +234,7 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   final Color error;
   final Color info;
 
-  // Convenience & Shared
+  // Convenience
   final MaterialColor gray;
   final Color white;
   final Color black;
@@ -136,7 +243,13 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   AppThemeColorsExtension copyWith({
     Color? primary,
     Color? syllabotAccent,
+    Color? syllabotGlow,
     Color? latexHighlight,
+    Color? latexBackground,
+    Color? recallEasy,
+    Color? recallGood,
+    Color? recallHard,
+    Color? recallAgain,
     Color? flashcardMastered,
     Color? flashcardReview,
     Color? flashcardLearning,
@@ -148,8 +261,11 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     Color? surfacePrimary,
     Color? surfaceSecondary,
     Color? surfaceTertiary,
+    Color? surfaceElevated,
+    Color? cardBackground,
     Color? surfaceBorder,
     Color? surfaceBorderHighlight,
+    Color? borderOutline,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
@@ -164,7 +280,13 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     return AppThemeColorsExtension(
       primary: primary ?? this.primary,
       syllabotAccent: syllabotAccent ?? this.syllabotAccent,
+      syllabotGlow: syllabotGlow ?? this.syllabotGlow,
       latexHighlight: latexHighlight ?? this.latexHighlight,
+      latexBackground: latexBackground ?? this.latexBackground,
+      recallEasy: recallEasy ?? this.recallEasy,
+      recallGood: recallGood ?? this.recallGood,
+      recallHard: recallHard ?? this.recallHard,
+      recallAgain: recallAgain ?? this.recallAgain,
       flashcardMastered: flashcardMastered ?? this.flashcardMastered,
       flashcardReview: flashcardReview ?? this.flashcardReview,
       flashcardLearning: flashcardLearning ?? this.flashcardLearning,
@@ -176,9 +298,12 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       surfacePrimary: surfacePrimary ?? this.surfacePrimary,
       surfaceSecondary: surfaceSecondary ?? this.surfaceSecondary,
       surfaceTertiary: surfaceTertiary ?? this.surfaceTertiary,
+      surfaceElevated: surfaceElevated ?? this.surfaceElevated,
+      cardBackground: cardBackground ?? this.cardBackground,
       surfaceBorder: surfaceBorder ?? this.surfaceBorder,
       surfaceBorderHighlight:
           surfaceBorderHighlight ?? this.surfaceBorderHighlight,
+      borderOutline: borderOutline ?? this.borderOutline,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
@@ -202,8 +327,17 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       primary: Color.lerp(primary, other.primary, t) ?? primary,
       syllabotAccent:
           Color.lerp(syllabotAccent, other.syllabotAccent, t) ?? syllabotAccent,
+      syllabotGlow:
+          Color.lerp(syllabotGlow, other.syllabotGlow, t) ?? syllabotGlow,
       latexHighlight:
           Color.lerp(latexHighlight, other.latexHighlight, t) ?? latexHighlight,
+      latexBackground:
+          Color.lerp(latexBackground, other.latexBackground, t) ??
+              latexBackground,
+      recallEasy: Color.lerp(recallEasy, other.recallEasy, t) ?? recallEasy,
+      recallGood: Color.lerp(recallGood, other.recallGood, t) ?? recallGood,
+      recallHard: Color.lerp(recallHard, other.recallHard, t) ?? recallHard,
+      recallAgain: Color.lerp(recallAgain, other.recallAgain, t) ?? recallAgain,
       flashcardMastered:
           Color.lerp(flashcardMastered, other.flashcardMastered, t) ??
               flashcardMastered,
@@ -233,11 +367,18 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       surfaceTertiary:
           Color.lerp(surfaceTertiary, other.surfaceTertiary, t) ??
               surfaceTertiary,
+      surfaceElevated:
+          Color.lerp(surfaceElevated, other.surfaceElevated, t) ??
+              surfaceElevated,
+      cardBackground:
+          Color.lerp(cardBackground, other.cardBackground, t) ?? cardBackground,
       surfaceBorder:
           Color.lerp(surfaceBorder, other.surfaceBorder, t) ?? surfaceBorder,
       surfaceBorderHighlight:
           Color.lerp(surfaceBorderHighlight, other.surfaceBorderHighlight, t) ??
               surfaceBorderHighlight,
+      borderOutline:
+          Color.lerp(borderOutline, other.borderOutline, t) ?? borderOutline,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t) ?? textPrimary,
       textSecondary:
           Color.lerp(textSecondary, other.textSecondary, t) ?? textSecondary,
