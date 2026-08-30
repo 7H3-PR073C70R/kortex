@@ -1,6 +1,8 @@
+export 'app_typography.dart';
 export 'body.dart';
 export 'callout.dart';
 export 'caption.dart';
+export 'code.dart';
 export 'footnote.dart';
 export 'headline.dart';
 export 'large_title.dart';

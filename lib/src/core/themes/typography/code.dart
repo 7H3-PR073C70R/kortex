@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kortex/src/core/themes/typography/app_typography.dart';
 
-class Headline extends AppTypography {
-  Headline({
+/// Monospaced typography for STEM equations, raw LaTeX, and code snippets.
+class Code extends AppTypography {
+  Code({
     TextStyle? regular,
     TextStyle? medium,
     TextStyle? semiBold,
@@ -15,20 +16,20 @@ class Headline extends AppTypography {
           bold: bold ?? _base.copyWith(fontWeight: FontWeight.w700),
         );
 
-  static final TextStyle _base = GoogleFonts.plusJakartaSans(
-    fontSize: 17,
-    height: 1.4,
+  static final TextStyle _base = GoogleFonts.jetBrainsMono(
+    fontSize: 14,
+    height: 1.45,
     letterSpacing: -0.1,
   );
 
   @override
-  Headline copyWith({
+  Code copyWith({
     TextStyle? regular,
     TextStyle? medium,
     TextStyle? semiBold,
     TextStyle? bold,
   }) {
-    return Headline(
+    return Code(
       regular: regular ?? this.regular,
       medium: medium ?? this.medium,
       semiBold: semiBold ?? this.semiBold,
@@ -37,10 +38,10 @@ class Headline extends AppTypography {
   }
 
   @override
-  Headline lerp(covariant AppTypography other, double t) {
-    if (other is! Headline) return this;
+  Code lerp(covariant AppTypography other, double t) {
+    if (other is! Code) return this;
 
-    return Headline(
+    return Code(
       regular: TextStyle.lerp(regular, other.regular, t),
       medium: TextStyle.lerp(medium, other.medium, t),
       semiBold: TextStyle.lerp(semiBold, other.semiBold, t),

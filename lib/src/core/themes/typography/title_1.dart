@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kortex/src/core/themes/typography/app_typography.dart';
 
 class Title1 extends AppTypography {
@@ -14,7 +15,11 @@ class Title1 extends AppTypography {
           bold: bold ?? _base.copyWith(fontWeight: FontWeight.w700),
         );
 
-  static const TextStyle _base = TextStyle(fontSize: 28);
+  static final TextStyle _base = GoogleFonts.plusJakartaSans(
+    fontSize: 28,
+    height: 1.25,
+    letterSpacing: -0.3,
+  );
 
   @override
   Title1 copyWith({

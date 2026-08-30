@@ -19,7 +19,7 @@ extension BuildContextExtension on BuildContext {
             textStyle: TextStyle(
               fontSize: 12.fontSize,
               fontWeight: FontWeight.w500,
-              color: colors.gray.shade100,
+              color: colors.white,
             ),
             borderRadius: BorderRadius.circular(8.radius),
           ),
@@ -29,7 +29,7 @@ extension BuildContextExtension on BuildContext {
             textStyle: TextStyle(
               fontSize: 12.fontSize,
               fontWeight: FontWeight.w500,
-              color: colors.gray.shade100,
+              color: colors.white,
             ),
             borderRadius: BorderRadius.circular(8.radius),
           ),
@@ -41,7 +41,7 @@ extension BuildContextExtension on BuildContext {
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8.radius),
-                color: colors.gray.shade900,
+                color: colors.surfaceTertiary,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -51,15 +51,10 @@ extension BuildContextExtension on BuildContext {
                     style: textTheme.body.bold.copyWith(
                       fontSize: 12.fontSize,
                       fontWeight: FontWeight.w500,
-                      color: colors.gray.shade100,
+                      color: colors.textPrimary,
                     ),
                   ),
                   AppSpacing.horizontalSpaceMedium,
-                  // SvgImageAsset(
-                  //   AppAssetPath.check,
-                  //   height: 20.radius,
-                  //   width: 20.radius,
-                  // ),
                 ],
               ),
             ),
