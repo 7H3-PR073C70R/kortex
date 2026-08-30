@@ -8,48 +8,56 @@ class OnboardingIllustrations {
   /// Slide 1: Document ingestion illustration.
   static Widget documentIngestion({
     BuildContext? context,
-    double width = 240,
-    double height = 180,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
   }) {
     return AppAssets.svgs.onboardingIngestion.svg(
       width: width,
       height: height,
+      fit: fit,
     );
   }
 
   /// Slide 2: Multimodal STEM OCR illustration.
   static Widget stemOcr({
     BuildContext? context,
-    double width = 240,
-    double height = 180,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
   }) {
     return AppAssets.svgs.onboardingOcr.svg(
       width: width,
       height: height,
+      fit: fit,
     );
   }
 
   /// Slide 3: Spaced repetition (SM-2) retention curve.
   static Widget spacedRepetition({
     BuildContext? context,
-    double width = 240,
-    double height = 180,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
   }) {
     return AppAssets.svgs.onboardingRetention.svg(
       width: width,
       height: height,
+      fit: fit,
     );
   }
 
   /// Slide 4: Socratic AI & Exam simulation gauge.
   static Widget socraticAi({
     BuildContext? context,
-    double width = 240,
-    double height = 180,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
   }) {
     return AppAssets.svgs.onboardingSocratic.svg(
       width: width,
       height: height,
+      fit: fit,
     );
   }
 }

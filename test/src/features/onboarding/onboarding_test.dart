@@ -60,7 +60,8 @@ void main() {
 
       expect(find.byType(AnimatedPageIndicator), findsOneWidget);
       await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(selectedIndex, equals(0));
     });
 
@@ -86,8 +87,9 @@ void main() {
       expect(find.byType(OnboardingIllustrations), findsNothing);
     });
 
-    testWidgets('OnboardingPage renders and slides advance with Continue CTA',
-        (tester) async {
+    testWidgets(
+      'OnboardingPage renders and slides advance with forward button',
+      (tester) async {
       when(
         () => mockStorage.savePreference(
           key: PrefKeys.hasCompletedOnboarding,
@@ -96,14 +98,16 @@ void main() {
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(_wrapWithTheme(const OnboardingPage()));
+      await tester.pump();
 
       expect(find.text('KORTEX'), findsOneWidget);
       expect(find.text('Drop. Parse. Master.'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
-      expect(find.text('Continue'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
 
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Flawless Math & Science OCR'), findsOneWidget);
     });
@@ -117,6 +121,8 @@ void main() {
       ).thenReturn('false');
 
       await tester.pumpWidget(_wrapWithTheme(const SplashPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('KORTEX'), findsOneWidget);
       expect(find.text('ENGINE: SYLLABOT AI'), findsOneWidget);

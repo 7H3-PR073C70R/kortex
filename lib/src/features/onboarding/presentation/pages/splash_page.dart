@@ -18,45 +18,69 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _glowAnimation;
-  late final Animation<double> _fadeAnimation;
+    with TickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final AnimationController _pulseController;
+  late final Animation<double> _logoScaleAnimation;
+  late final Animation<double> _logoOpacityAnimation;
+  late final Animation<double> _glowExpansionAnimation;
+  late final Animation<double> _textFadeAnimation;
   Timer? _navigationTimer;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+
+    // Stage 1: Fast tactile entrance (0ms - 800ms)
+    _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1200),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.82, end: 1).animate(
+    // Stage 2: Continuous ambient breathing pulse
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+
+    _logoScaleAnimation = Tween<double>(begin: 0.72, end: 1).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.7, curve: Curves.easeOutCubic),
+        parent: _entranceController,
+        curve: const Interval(0, 0.65, curve: Curves.easeOutBack),
       ),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+    _logoOpacityAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.5, curve: Curves.easeIn),
+        parent: _entranceController,
+        curve: const Interval(0, 0.45, curve: Curves.easeIn),
       ),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.2, end: 0.8).animate(
+    _glowExpansionAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 1, curve: Curves.easeInOut),
+        parent: _entranceController,
+        curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
       ),
     );
 
-    unawaited(_controller.forward());
+    _textFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.45, 0.85, curve: Curves.easeOut),
+      ),
+    );
+
+    unawaited(
+      _entranceController.forward().then((_) {
+        if (mounted) {
+          unawaited(_pulseController.repeat(reverse: true));
+        }
+      }),
+    );
+
     _navigationTimer = Timer(
-      const Duration(milliseconds: 1800),
+      const Duration(milliseconds: 2000),
       _navigateNext,
     );
   }
@@ -64,7 +88,8 @@ class _SplashPageState extends State<SplashPage>
   @override
   void dispose() {
     _navigationTimer?.cancel();
-    _controller.dispose();
+    _entranceController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -102,11 +127,24 @@ class _SplashPageState extends State<SplashPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedBuilder(
-              animation: _controller,
+              animation: Listenable.merge([
+                _entranceController,
+                _pulseController,
+              ]),
               builder: (context, child) {
-                final scale = disableAnimations ? 1.0 : _scaleAnimation.value;
-                final opacity = disableAnimations ? 1.0 : _fadeAnimation.value;
-                final glow = disableAnimations ? 0.5 : _glowAnimation.value;
+                final scale =
+                    disableAnimations ? 1.0 : _logoScaleAnimation.value;
+                final opacity =
+                    disableAnimations ? 1.0 : _logoOpacityAnimation.value;
+                final glowExpand = disableAnimations
+                    ? 1.0
+                    : _glowExpansionAnimation.value.clamp(0.0, 1.0);
+                final pulse = disableAnimations ? 0.5 : _pulseController.value;
+
+                final glowAlpha =
+                    ((isDark ? 90 : 50) * glowExpand * (0.6 + 0.4 * pulse))
+                        .round()
+                        .clamp(0, 255);
 
                 return Opacity(
                   opacity: opacity,
@@ -115,27 +153,32 @@ class _SplashPageState extends State<SplashPage>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Ambient Pulsing Glow
+                        // Dynamic Multi-layered Ambient Glow Aura
                         Container(
-                          width: 160,
-                          height: 160,
+                          width: 140,
+                          height: 140,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(
-                                  ((isDark ? 120 : 60) * glow).round(),
-                                ),
+                                color: colors.primary.withAlpha(glowAlpha),
                                 blurRadius: 48,
-                                spreadRadius: 16,
+                                spreadRadius: 12,
+                              ),
+                              BoxShadow(
+                                color: colors.syllabotAccent.withAlpha(
+                                  glowAlpha ~/ 2,
+                                ),
+                                blurRadius: 32,
+                                spreadRadius: 6,
                               ),
                             ],
                           ),
                         ),
-                        // Neural Logo from assets/svgs
+                        // Sharp Vector Logo
                         AppAssets.svgs.kortexLogo.svg(
-                          width: 88,
-                          height: 88,
+                          width: 92,
+                          height: 92,
                         ),
                       ],
                     ),
@@ -143,16 +186,24 @@ class _SplashPageState extends State<SplashPage>
                 );
               },
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
 
-            // Typography & Engine Subtitle
+            // Staggered Title and Engine Subtitle
             AnimatedBuilder(
-              animation: _controller,
+              animation: _entranceController,
               builder: (context, child) {
-                final opacity = disableAnimations ? 1.0 : _fadeAnimation.value;
+                final opacity =
+                    disableAnimations ? 1.0 : _textFadeAnimation.value;
+                final translateY = disableAnimations
+                    ? 0.0
+                    : (1.0 - _textFadeAnimation.value) * 16.0;
+
                 return Opacity(
                   opacity: opacity,
-                  child: child,
+                  child: Transform.translate(
+                    offset: Offset(0, translateY),
+                    child: child,
+                  ),
                 );
               },
               child: Column(
@@ -160,32 +211,46 @@ class _SplashPageState extends State<SplashPage>
                   Text(
                     l10n.appName,
                     style: typography.largeTitle.bold.copyWith(
-                      letterSpacing: 4,
+                      letterSpacing: 4.5,
                       color: colors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: colors.syllabotAccent,
-                          shape: BoxShape.circle,
-                        ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.syllabotAccent.withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.syllabotAccent.withAlpha(50),
+                        width: 0.8,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        l10n.engineSubtitle,
-                        style: typography.caption.medium.copyWith(
-                          fontSize: 11,
-                          letterSpacing: 1.5,
-                          color: colors.textSecondary,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: colors.syllabotAccent,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.engineSubtitle,
+                          style: typography.caption.medium.copyWith(
+                            fontSize: 10.5,
+                            letterSpacing: 1.2,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

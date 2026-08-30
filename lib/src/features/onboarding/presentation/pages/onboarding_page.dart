@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -9,7 +10,7 @@ import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class OnboardingPage extends StatefulWidget {
@@ -62,10 +63,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onNext(int totalSlides) {
+    unawaited(HapticFeedback.lightImpact());
     if (_currentIndex < totalSlides - 1) {
       unawaited(
         _pageController.nextPage(
-          duration: const Duration(milliseconds: 350),
+          duration: const Duration(milliseconds: 380),
           curve: Curves.easeOutCubic,
         ),
       );
@@ -74,13 +76,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
+  void _onIndicatorTap(int index) {
+    unawaited(HapticFeedback.lightImpact());
+    unawaited(
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
     final slides = _dataSource.getOnboardingSlides(context);
     final isLastPage = _currentIndex == slides.length - 1;
+
+    final forwardActionLabel = isLastPage
+        ? l10n.onboardingGetStarted
+        : l10n.onboardingNext;
+    final forwardActionSemantics = isLastPage
+        ? l10n.onboardingGetStartedSemantics
+        : l10n.onboardingNextSemantics;
 
     return Semantics(
       scopesRoute: true,
@@ -91,11 +112,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
         body: SafeArea(
           child: Column(
             children: [
-              // Top Action Bar with Skip button
+              
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+                  horizontal: 24,
+                  vertical: 4,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -121,7 +142,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ),
                       ],
                     ),
-                    // Skip button
+                    // Skip CTA Button
                     if (!isLastPage)
                       Semantics(
                         button: true,
@@ -149,7 +170,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
               ),
 
-              // Carousel Page View
+              // ==========================================
+              // 2. DECOUPLED GESTURE CANVAS (PageView)
+              // ==========================================
               Expanded(
                 child: OnboardingPageView(
                   controller: _pageController,
@@ -158,47 +181,65 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
               ),
 
-              // Bottom Navigation Controller Area
+              // ==========================================
+              // 3. FIXED BOTTOM DOCK (Indicator + Forward Circle)
+              // ==========================================
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Animated Page Indicator
+                    // Dynamic Morphing Page Indicator
                     AnimatedPageIndicator(
                       count: slides.length,
                       currentIndex: _currentIndex,
                       activeColor: colors.primary,
-                      onTap: (index) {
-                        unawaited(
-                          _pageController.animateToPage(
-                            index,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOutCubic,
-                          ),
-                        );
-                      },
+                      onTap: _onIndicatorTap,
                     ),
-                    const SizedBox(height: 24),
 
-                    // Primary Action Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.primary(
-                        text: isLastPage
-                            ? l10n.onboardingGetStarted
-                            : l10n.onboardingNext,
-                        size: AppButtonSize.large,
-                        suffixIcon: Icon(
-                          isLastPage
-                              ? Icons.rocket_launch_outlined
-                              : Icons.arrow_forward_rounded,
-                          size: 18,
+                    // Tactile Circular Forward Action Trigger
+                    Semantics(
+                      button: true,
+                      label: forwardActionSemantics,
+                      child: Tooltip(
+                        message: forwardActionLabel,
+                        child: ShrinkableButton(
+                          onTap: () => _onNext(slides.length),
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 90 : 60,
+                                  ),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 260),
+                              transitionBuilder: (child, animation) =>
+                                  ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              ),
+                              child: Icon(
+                                isLastPage
+                                    ? Icons.rocket_launch_outlined
+                                    : Icons.arrow_forward_rounded,
+                                key: ValueKey<bool>(isLastPage),
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
                         ),
-                        semanticLabel: isLastPage
-                            ? l10n.onboardingGetStartedSemantics
-                            : l10n.onboardingNextSemantics,
-                        onPressed: () => _onNext(slides.length),
                       ),
                     ),
                   ],
