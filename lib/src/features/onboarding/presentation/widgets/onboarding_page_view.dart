@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
@@ -26,8 +27,8 @@ class OnboardingSlideData {
 }
 
 /// Decoupled gesture canvas handling PageView swiping with
-/// physics-based staggered entry trajectories and 55% screen height
-/// image canvas.
+/// physics-based staggered entry trajectories, 3D glass cards,
+/// and ambient gradient mesh glow.
 class OnboardingPageView extends StatefulWidget {
   const OnboardingPageView({
     required this.controller,
@@ -109,11 +110,11 @@ class _OnboardingSlideItem extends StatelessWidget {
   final Animation<double> pulseAnimation;
 
   static const List<_TrajectoryVector> _vectors = [
-    // Slide 0: Enters from Top-Left
+    // Slide 0: Enters from Top-Left with elastic bounce
     _TrajectoryVector(dxMultiplier: -1.2, dyMultiplier: -1),
-    // Slide 1: Enters from Direct Top
+    // Slide 1: Enters from Direct Top with spring bounce
     _TrajectoryVector(dxMultiplier: 0, dyMultiplier: -1.2),
-    // Slide 2: Enters from Top-Right
+    // Slide 2: Enters from Top-Right with spring bounce
     _TrajectoryVector(dxMultiplier: 1.2, dyMultiplier: -1),
     // Slide 3: Enters from Top-Center with scale bounce
     _TrajectoryVector(
@@ -127,11 +128,12 @@ class _OnboardingSlideItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final vector = _vectors[index % _vectors.length];
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final topViewportHeight = screenHeight * 0.55;
+    final topViewportHeight = screenHeight * 0.50;
 
     return AnimatedBuilder(
       animation: Listenable.merge([pageController, pulseAnimation]),
@@ -152,10 +154,10 @@ class _OnboardingSlideItem extends StatelessWidget {
         // Top Illustration Physics Trajectory
         final graphicTranslateX = disableAnimations
             ? 0.0
-            : clampedOffset * vector.dxMultiplier * 70.0;
+            : clampedOffset * vector.dxMultiplier * 75.0;
         final graphicTranslateY = disableAnimations
             ? 0.0
-            : clampedOffset.abs() * vector.dyMultiplier * 60.0;
+            : clampedOffset.abs() * vector.dyMultiplier * 65.0;
         final graphicScale = disableAnimations
             ? 1.0
             : (1.0 - (clampedOffset.abs() * vector.scaleMultiplier)).clamp(
@@ -186,35 +188,104 @@ class _OnboardingSlideItem extends StatelessWidget {
           child: Column(
             children: [
               // ==========================================
-              // 1. TOP VIEWPORT: 55% of the entire screen height
+              // 1. TOP VIEWPORT: Hero Glass Canvas (50%)
               // ==========================================
               SizedBox(
                 height: topViewportHeight,
                 width: double.infinity,
                 child: RepaintBoundary(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Physics-Driven Dynamic Vector Illustration
-                      Transform.translate(
-                        offset: Offset(
-                          graphicTranslateX,
-                          graphicTranslateY + floatOffset,
-                        ),
-                        child: Transform.scale(
-                          scale: graphicScale,
-                          child: SizedBox.expand(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              child: data.illustrationBuilder(context),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Ambient Radial Glow Backplate
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            gradient: RadialGradient(
+                              radius: 0.85,
+                              colors: [
+                                colors.primary.withAlpha(
+                                  (pulseAnimation.value * (isDark ? 45 : 22))
+                                      .round()
+                                      .clamp(0, 255),
+                                ),
+                                colors.syllabotAccent.withAlpha(
+                                  (pulseAnimation.value * (isDark ? 28 : 14))
+                                      .round()
+                                      .clamp(0, 255),
+                                ),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.6, 1.0],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+
+                        // Glowing Glassmorphism Card Wrapper
+                        Transform.translate(
+                          offset: Offset(
+                            graphicTranslateX,
+                            graphicTranslateY + floatOffset,
+                          ),
+                          child: Transform.scale(
+                            scale: graphicScale,
+                            child: Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isDark
+                                      ? [
+                                          colors.surfaceSecondary
+                                              .withAlpha(120),
+                                          colors.surfacePrimary.withAlpha(70),
+                                        ]
+                                      : [
+                                          colors.surfacePrimary.withAlpha(190),
+                                          colors.surfaceSecondary
+                                              .withAlpha(120),
+                                        ],
+                                ),
+                                border: Border.all(
+                                  color: isDark
+                                      ? colors.surfaceBorderHighlight
+                                          .withAlpha(80)
+                                      : Colors.white.withAlpha(200),
+                                  width: 1.2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 40 : 20,
+                                    ),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(22),
+                                child: FittedBox(
+                                  child: SizedBox(
+                                    width: 360,
+                                    height: 280,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: data.illustrationBuilder(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -229,7 +300,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Badge & Title Entrance
+                        // Polished Glass Badge & Headline
                         Transform.translate(
                           offset: Offset(0, titleTranslateY),
                           child: Opacity(
@@ -237,11 +308,20 @@ class _OnboardingSlideItem extends StatelessWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                AppBadge(
-                                  label: data.badge,
-                                  variant: data.badgeVariant,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 8,
+                                      sigmaY: 8,
+                                    ),
+                                    child: AppBadge(
+                                      label: data.badge,
+                                      variant: data.badgeVariant,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 12),
                                 Text(
                                   data.tagline,
                                   style: typography.title1.bold.copyWith(
@@ -258,7 +338,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
                         // Body Text Delayed Entrance
                         Transform.translate(
@@ -273,8 +353,8 @@ class _OnboardingSlideItem extends StatelessWidget {
                                 data.description,
                                 style: typography.callout.regular.copyWith(
                                   color: colors.textSecondary,
-                                  height: 1.4,
-                                  fontSize: 14.5,
+                                  height: 1.45,
+                                  fontSize: 15,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 3,

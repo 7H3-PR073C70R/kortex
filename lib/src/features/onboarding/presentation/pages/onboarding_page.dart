@@ -9,6 +9,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -90,7 +91,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
     final slides = _dataSource.getOnboardingSlides(context);
@@ -112,62 +112,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
         body: SafeArea(
           child: Column(
             children: [
-              
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 4,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Brand Identity Pill
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.appName,
-                          style: typography.caption.bold.copyWith(
-                            letterSpacing: 1.5,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Skip CTA Button
-                    if (!isLastPage)
-                      Semantics(
-                        button: true,
-                        label: l10n.onboardingSkipSemantics,
-                        child: TextButton(
-                          onPressed: () => unawaited(_completeOnboarding()),
-                          style: TextButton.styleFrom(
-                            foregroundColor: colors.textMuted,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
-                          child: Text(
-                            l10n.onboardingSkip,
-                            style: typography.subhead.semiBold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      const SizedBox(height: 36),
-                  ],
-                ),
+              // ==========================================
+              // 1. FIXED TOP BAR (Kortex Logo + Skip CTA)
+              // ==========================================
+              OnboardingTopBar(
+                isLastPage: isLastPage,
+                onSkip: () => unawaited(_completeOnboarding()),
               ),
 
               // ==========================================
@@ -210,14 +160,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             height: 56,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: colors.primary,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  colors.primary,
+                                  colors.primary.withAlpha(220),
+                                ],
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(
-                                    isDark ? 90 : 60,
+                                    isDark ? 110 : 75,
                                   ),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
