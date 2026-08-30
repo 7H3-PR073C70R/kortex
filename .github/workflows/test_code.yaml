@@ -1,0 +1,107 @@
+name: Test Code and Lints
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  check-semantic-pr:
+    name: Check for Semantic Commits Structure
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@f4ce8ee62da0c6dbd36c94fcf8fb635ecdcc97fb
+
+  check-spelling:
+    name: Check for Spelling Errors
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@f4ce8ee62da0c6dbd36c94fcf8fb635ecdcc97fb
+    with:
+      includes: |
+        **/*.md
+      modified_files_only: false
+
+  check-lint:
+    name: Check Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.0"
+          channel: "stable"
+      
+      - name: Create and populate ENVs
+        run: |
+          touch .env.development .env.staging .env.production
+      
+      - name: Get Flutter dependencies
+        run: flutter pub get
+      
+      - name: Run build_runner
+        run: dart run build_runner build -d
+      
+      - name: Format Dart code
+        run: dart format .
+      
+      - name: Analyze Dart code
+        run: flutter analyze
+
+  unit-test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.0"
+          channel: "stable"
+      
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
+      
+      - name: Create and populate ENVs
+        run: |
+          echo "API_BASE_URL=https://example.com" > .env.development
+          echo "API_BASE_URL=https://example.com" > .env.production
+          echo "API_BASE_URL=https://example.com" > .env.staging
+      
+      - name: Upgrade Dart packages
+        run: dart pub upgrade
+      
+      - name: Get Flutter dependencies
+        run: flutter pub get
+      
+      - name: Run build_runner
+        run: dart run build_runner build -d
+      
+      - name: Run Flutter tests with coverage
+        run: |
+          flutter test --coverage
+          genhtml coverage/lcov.info --output-directory=coverage_report
+      
+      - name: Filter Test Coverage (Exclude Generated Files)
+        run: |
+          lcov --remove coverage/lcov.info -o coverage/lcov.filtered.info
+      
+      - name: Check Test Coverage (data_source, repository, services, bloc)
+        run: |
+          genhtml coverage/lcov.filtered.info --output-directory=coverage_report
+          COVERAGE=$(lcov --summary coverage/lcov.filtered.info | grep 'lines' | awk '{print $2}' | sed 's/%//')
+          echo "Current Test Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 75.0" | bc -l) )); then
+            echo "Test coverage is below 75%, as it is currently $COVERAGE% i.e. failing the job."
+            exit 1
+          fi

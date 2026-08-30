@@ -1,0 +1,33 @@
+name: Trigger Production Build & Deploy
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build_and_deploy_ios:
+    uses: ./.github/workflows/ios_fastlane.yaml
+    with:
+      lane: production
+    secrets:
+      MATCH_KEYCHAIN_NAME: ${{ secrets.MATCH_KEYCHAIN_NAME }}
+      MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+      APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+      GIT_AUTHORIZATION: ${{ secrets.GIT_AUTHORIZATION }}
+      MATCH_REPO: ${{ secrets.MATCH_REPO }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      DOTENV_DEV: ${{ secrets.DOTENV_DEV }}
+      DOTENV_STAGING: ${{ secrets.DOTENV_STAGING }}
+      DOTENV_PROD: ${{ secrets.DOTENV_PROD }}
+
+  build_and_deploy_android:
+    uses: ./.github/workflows/android_fastlane.yaml
+    with:
+      lane: production
+    secrets:
+      DOTENV_DEV: ${{ secrets.DOTENV_DEV }}
+      DOTENV_STAGING: ${{ secrets.DOTENV_STAGING }}
+      DOTENV_PROD: ${{ secrets.DOTENV_PROD }}

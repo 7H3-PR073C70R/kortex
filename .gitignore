@@ -113,3 +113,11 @@ app.*.map.json
 
 # Generated l10n files
 lib/l10n/gen/
+*.gr.dart
+*.g.dart
+*freezed.dart
+
+## env files
+.env.development
+.env.production
+.env.staging

@@ -1,9 +1,16 @@
-include:
-  - package:very_good_analysis/analysis_options.yaml
-  - package:bloc_lint/recommended.yaml
+include: package:very_good_analysis/analysis_options.yaml
+
 analyzer:
   exclude:
-    - lib/l10n/gen/*
+    - '**/*_generated.dart'
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+    - '**/*_model.dart'
+    - '**/*.gr.dart'
+    - 'lib/src/gen/*'
+    - 'lib/src/l10n/arb/app_localizations*.dart'
+
 linter:
   rules:
     public_member_api_docs: false
+    sort_pub_dependencies: false

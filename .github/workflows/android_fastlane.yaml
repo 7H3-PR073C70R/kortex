@@ -1,0 +1,66 @@
+name: Android Fastlane Build & Deploy
+
+on:
+  workflow_call:
+    inputs:
+      lane:
+        description: "Fastlane lane to execute (e.g. production, staging, development)"
+        required: true
+        type: string
+    secrets:
+      DOTENV_DEV:
+        required: true
+      DOTENV_STAGING:
+        required: true
+      DOTENV_PROD:
+        required: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # pin@v2
+
+      - name: Extract version from tag
+        uses: olegtarasov/get-tag@v2.1
+        id: tag
+        with:
+          tagRegex: 'v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)\+(?<build>\d+)'
+
+      - name: Decode Keystore
+        run: |
+          cd grower
+          echo "${{ secrets.android_keystore_base64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cd ..
+      
+      - name: Generate .env from lane
+        id: dotenv
+        run: |
+          cd grower
+          echo "${{ secrets.DOTENV_DEV }}" > .env.development
+          echo "${{ secrets.DOTENV_PROD }}" > .env.production
+          echo "${{ secrets.DOTENV_STAGING }}" > .env.staging
+          cd ..
+
+      - name: Install Ruby and Bundler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby-full
+          sudo gem install bundler
+          cd grower
+          cd android && bundle install
+          cd ..
+
+      - name: Run Fastlane
+        run: |
+          bundle exec fastlane ${{ inputs.lane }}
+        working-directory: grower/android
+        env:
+          BUILD_NAME: '${{ steps.tag.outputs.major }}.${{ steps.tag.outputs.minor }}.${{ steps.tag.outputs.patch }}'
+          BUILD_NUMBER: '${{ steps.tag.outputs.build }}'
+          FL_ENV: ${{ inputs.lane }}

@@ -21,4 +21,3 @@
 - [ ] ✅ Build configuration change
 - [ ] 📝 Documentation
 - [ ] 🗑️ Chore
-- [ ] 🧪 Test

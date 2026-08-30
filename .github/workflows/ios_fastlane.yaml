@@ -1,0 +1,115 @@
+name: iOS Fastlane Build & Deploy
+
+on:
+  workflow_call:
+    inputs:
+      lane:
+        description: "Fastlane lane to execute (e.g., production, staging, development)"
+        required: true
+        type: string
+      tagRegex:
+        description: "Regex pattern to extract version from tag"
+        default: 'v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)\+(?<build>\d+)'
+        required: false
+        type: string
+    secrets:
+      MATCH_KEYCHAIN_NAME:
+        required: true
+      MATCH_KEYCHAIN_PASSWORD:
+        required: true
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID:
+        required: true
+      APP_STORE_CONNECT_API_KEY_KEY_ID:
+        required: true
+      APP_STORE_CONNECT_API_KEY_CONTENT:
+        required: true
+      GIT_AUTHORIZATION:
+        required: true
+      MATCH_REPO:
+        required: true
+      MATCH_PASSWORD:
+        required: true
+      DOTENV_DEV:
+        required: true
+      DOTENV_STAGING:
+        required: true
+      DOTENV_PROD:
+        required: true
+
+jobs:
+  build_and_deploy_ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4
+        uses: actions/setup-xcode@v3
+        with:
+          xcode-version: '16.4'
+
+      - name: Install Ruby and Bundler (macOS)
+        run: |
+          brew install ruby
+          echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> ~/.bash_profile
+          source ~/.bash_profile
+          gem install bundler
+        working-directory: grower/ios
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # pin@v2
+
+      - name: Extract Version From Tag
+        uses: olegtarasov/get-tag@v2.1
+        id: tag
+        with:
+          tagRegex: ${{ inputs.tagRegex }}
+      
+      - name: Generate .env from lane
+        id: dotenv
+        run: |
+          echo "${{ secrets.DOTENV_DEV }}" | base64 --decode > .env.development
+          echo "${{ secrets.DOTENV_PROD }}" | base64 --decode > .env.production
+          echo "${{ secrets.DOTENV_STAGING }}" | base64 --decode > .env.staging
+        working-directory: grower
+      
+      - name: Clean Project
+        run: |
+          flutter clean
+        working-directory: grower
+      
+      - name: Get Packages
+        run: |
+          flutter pub get
+        working-directory: grower
+
+      - name: Build iOS with Flutter (No Code Sign)
+        run: |
+          flutter build ios --release \
+            --flavor ${{ inputs.lane }} \
+            --build-name=${{ steps.tag.outputs.major }}.${{ steps.tag.outputs.minor }}.${{ steps.tag.outputs.patch }} \
+            --build-number=${{ steps.tag.outputs.build }} \
+            -t lib/main_${{ inputs.lane }}.dart \
+            --no-codesign
+        working-directory: grower
+
+      - name: Deploy using Fastlane
+        run: |
+          bundle exec fastlane ${{ inputs.lane }}
+        working-directory: grower/ios
+        env:
+          MATCH_KEYCHAIN_NAME: '${{ secrets.MATCH_KEYCHAIN_NAME }}'
+          MATCH_KEYCHAIN_PASSWORD: '${{ secrets.MATCH_KEYCHAIN_PASSWORD }}'
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: '${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}'
+          APP_STORE_CONNECT_API_KEY_KEY_ID: '${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}'
+          APP_STORE_CONNECT_API_KEY_CONTENT: '${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}'
+          MATCH_REPO: '${{ secrets.MATCH_REPO }}'
+          MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
+          BUILD_NAME: '${{ steps.tag.outputs.major }}.${{ steps.tag.outputs.minor }}.${{ steps.tag.outputs.patch }}'
+          BUILD_NUMBER: '${{ steps.tag.outputs.build }}'
+          GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
+          FL_ENV: '${{ inputs.lane }}'
