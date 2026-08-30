@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 /// Animated skeleton loading placeholder signaling loading to screen readers.
 class ShimmerPlaceholder extends StatefulWidget {
@@ -12,7 +13,7 @@ class ShimmerPlaceholder extends StatefulWidget {
     this.shape = BoxShape.rectangle,
     this.baseColor,
     this.highlightColor,
-    this.semanticLabel = 'Loading content',
+    this.semanticLabel,
   });
 
   /// Rectangular skeleton placeholder.
@@ -23,7 +24,7 @@ class ShimmerPlaceholder extends StatefulWidget {
     double borderRadius = 8.0,
     Color? baseColor,
     Color? highlightColor,
-    String semanticLabel = 'Loading content',
+    String? semanticLabel,
   }) : this(
           key: key,
           width: width,
@@ -41,7 +42,7 @@ class ShimmerPlaceholder extends StatefulWidget {
     Key? key,
     Color? baseColor,
     Color? highlightColor,
-    String semanticLabel = 'Loading profile avatar',
+    String? semanticLabel,
   }) : this(
           key: key,
           width: radius * 2,
@@ -58,7 +59,7 @@ class ShimmerPlaceholder extends StatefulWidget {
   final BoxShape shape;
   final Color? baseColor;
   final Color? highlightColor;
-  final String semanticLabel;
+  final String? semanticLabel;
 
   @override
   State<ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
@@ -87,14 +88,18 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final l10n = context.l10n;
 
     final effectiveBase = widget.baseColor ?? colors.surfaceSecondary;
     final effectiveHighlight =
         widget.highlightColor ?? colors.surfaceTertiary;
+    final defaultLabel = widget.shape == BoxShape.circle
+        ? l10n.loadingProfileAvatar
+        : l10n.loadingContent;
 
     return Semantics(
       container: true,
-      label: widget.semanticLabel,
+      label: widget.semanticLabel ?? defaultLabel,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {

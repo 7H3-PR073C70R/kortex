@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 /// Production-ready accessible text input field matching WCAG 2.1 AA.
 class AppTextField extends StatefulWidget {
@@ -119,10 +120,12 @@ class _AppTextFieldState extends State<AppTextField> {
     setState(() {
       _obscureText = !_obscureText;
     });
+    final l10n = context.l10n;
+    final message = _obscureText ? l10n.passwordHidden : l10n.passwordVisible;
     unawaited(
       // ignore: deprecated_member_use, backward-compatible a11y announcement
       SemanticsService.announce(
-        _obscureText ? 'Password hidden' : 'Password visible',
+        message,
         TextDirection.ltr,
       ),
     );
@@ -132,6 +135,7 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final effectiveRadius = widget.borderRadius ?? 12.0;
 
     final inputBorder = OutlineInputBorder(
@@ -164,7 +168,8 @@ class _AppTextFieldState extends State<AppTextField> {
 
     Widget? effectiveSuffix;
     if (widget.isPassword) {
-      final buttonLabel = _obscureText ? 'Show password' : 'Hide password';
+      final buttonLabel =
+          _obscureText ? l10n.showPassword : l10n.hidePassword;
       effectiveSuffix = Semantics(
         button: true,
         label: buttonLabel,

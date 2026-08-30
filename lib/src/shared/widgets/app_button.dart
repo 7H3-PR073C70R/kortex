@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Visual style variants for [AppButton].
@@ -228,7 +229,7 @@ class _AppButtonState extends State<AppButton> {
     _internalFocusNode = FocusNode();
     _effectiveFocusNode.addListener(_handleFocusChange);
     if (widget.isLoading) {
-      unawaited(_announceLoading());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _announceLoading());
     }
   }
 
@@ -236,7 +237,7 @@ class _AppButtonState extends State<AppButton> {
   void didUpdateWidget(covariant AppButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLoading && !oldWidget.isLoading) {
-      unawaited(_announceLoading());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _announceLoading());
     }
   }
 
@@ -258,9 +259,11 @@ class _AppButtonState extends State<AppButton> {
   }
 
   Future<void> _announceLoading() async {
+    if (!mounted) return;
+    final message = context.l10n.loadingAnnouncement;
     // ignore: deprecated_member_use, backward-compatible a11y announcement
     await SemanticsService.announce(
-      'Loading, please wait',
+      message,
       TextDirection.ltr,
     );
   }

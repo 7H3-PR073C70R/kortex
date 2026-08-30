@@ -1,0 +1,36 @@
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="scanGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#06B6D4" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#06B6D4" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Glow -->
+  <circle cx="120" cy="90" r="70" fill="#06B6D4" fill-opacity="0.08"/>
+
+  <!-- Optical Scan Bracket Frame -->
+  <rect x="36" y="24" width="168" height="132" rx="12" fill="#0F172A" stroke="#1E293B" stroke-width="1.5"/>
+  
+  <!-- Precision Reticle Corners -->
+  <path d="M 44 38 L 44 32 L 50 32" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 196 38 L 196 32 L 190 32" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 44 142 L 44 148 L 50 148" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 196 142 L 196 148 L 190 148" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Scan Laser Beam -->
+  <rect x="40" y="66" width="160" height="24" fill="url(#scanGrad)"/>
+  <line x1="40" y1="90" x2="200" y2="90" stroke="#06B6D4" stroke-width="2"/>
+
+  <!-- LaTeX Formula Nodes Extracted -->
+  <text x="64" y="60" fill="#E2E8F0" font-size="14" font-family="serif" font-style="italic">∫₀^∞ e^(-x²) dx = √π / 2</text>
+
+  <!-- OCR Matrix Recognition Bounds -->
+  <rect x="56" y="104" width="60" height="38" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2"/>
+  <text x="66" y="122" fill="#38BDF8" font-size="10" font-family="monospace">|λI - A| = 0</text>
+  <text x="66" y="134" fill="#64748B" font-size="8" font-family="sans-serif">EIGENSPACE</text>
+
+  <rect x="124" y="104" width="60" height="38" rx="6" fill="#1E293B" stroke="#10B981" stroke-width="1"/>
+  <text x="134" y="122" fill="#34D399" font-size="10" font-family="monospace">∇ × E = -∂B/∂t</text>
+  <text x="134" y="134" fill="#64748B" font-size="8" font-family="sans-serif">MAXWELL.OK</text>
+</svg>

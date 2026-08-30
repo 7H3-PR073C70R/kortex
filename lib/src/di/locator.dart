@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
+import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/services/local_storage_service.dart';
 import 'package:kortex/src/services/user_storage_service.dart';
 import 'package:logger/logger.dart';

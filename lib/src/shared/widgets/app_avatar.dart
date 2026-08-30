@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 /// Sizing presets for [AppAvatar].
 enum AppAvatarSize {
@@ -71,6 +72,7 @@ class AppAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
     final effectiveBg = backgroundColor ?? colors.surfaceTertiary;
     final effectiveFg = foregroundColor ?? colors.primary;
@@ -162,14 +164,19 @@ class AppAvatar extends StatelessWidget {
       );
     }
 
-    final userDesc = name != null && name!.isNotEmpty ? name! : 'User';
-    final statusDesc = showBadge ? ', active status' : '';
-    final defaultLabel = 'Profile picture of $userDesc$statusDesc';
+    final userDesc =
+        name != null && name!.isNotEmpty ? name! : l10n.defaultUser;
+    final defaultImageLabel = showBadge
+        ? l10n.profilePictureOfWithStatus(userDesc)
+        : l10n.profilePictureOf(userDesc);
+    final defaultButtonLabel = showBadge
+        ? l10n.viewProfileOfWithStatus(userDesc)
+        : l10n.viewProfileOf(userDesc);
 
     if (onTap != null) {
       return Semantics(
         button: true,
-        label: semanticLabel ?? 'View profile of $userDesc$statusDesc',
+        label: semanticLabel ?? defaultButtonLabel,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: 48,
@@ -186,7 +193,7 @@ class AppAvatar extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: semanticLabel ?? defaultLabel,
+      label: semanticLabel ?? defaultImageLabel,
       child: avatarWidget,
     );
   }

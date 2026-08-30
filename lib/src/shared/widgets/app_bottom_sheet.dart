@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 /// Modal bottom sheet container featuring an accessible drag handle and header.
 class AppBottomSheet extends StatelessWidget {
@@ -65,11 +66,12 @@ class AppBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
     return Semantics(
       scopesRoute: true,
       explicitChildNodes: true,
-      label: semanticLabel ?? title ?? 'Bottom Sheet',
+      label: semanticLabel ?? title ?? l10n.defaultBottomSheetTitle,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -83,7 +85,7 @@ class AppBottomSheet extends StatelessWidget {
                 Center(
                   child: Semantics(
                     button: true,
-                    label: 'Dismiss sheet',
+                    label: l10n.dismissSheet,
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
@@ -135,7 +137,7 @@ class AppBottomSheet extends StatelessWidget {
                       if (showCloseButton)
                         Semantics(
                           button: true,
-                          label: 'Close sheet',
+                          label: l10n.closeSheet,
                           child: SizedBox(
                             width: 48,
                             height: 48,
@@ -146,7 +148,7 @@ class AppBottomSheet extends StatelessWidget {
                                 size: 20,
                               ),
                               splashRadius: 20,
-                              tooltip: 'Close',
+                              tooltip: l10n.closeSheet,
                               onPressed: () => Navigator.of(context).pop(),
                             ),
                           ),

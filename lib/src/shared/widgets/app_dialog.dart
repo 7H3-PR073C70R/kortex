@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Modal dialog component trapping screen-reader focus within its route.
@@ -48,10 +49,12 @@ class AppDialog extends StatelessWidget {
     bool isDestructive = false,
     bool barrierDismissible = true,
   }) {
+    final l10n = context.l10n;
+
     return showGeneralDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      barrierLabel: 'Dismiss Dialog',
+      barrierLabel: l10n.dismissDialog,
       barrierColor: Colors.black.withAlpha(160),
       pageBuilder: (context, anim1, anim2) {
         return AppDialog(
@@ -84,11 +87,12 @@ class AppDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
     return Semantics(
       scopesRoute: true,
       explicitChildNodes: true,
-      label: semanticLabel ?? title ?? 'Dialog',
+      label: semanticLabel ?? title ?? l10n.defaultDialogTitle,
       child: Dialog(
         backgroundColor: colors.surfacePrimary,
         surfaceTintColor: Colors.transparent,

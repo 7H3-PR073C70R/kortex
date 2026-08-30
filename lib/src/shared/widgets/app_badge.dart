@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 /// Visual style variants for [AppBadge].
 enum AppBadgeVariant {
@@ -75,15 +76,16 @@ class AppBadge extends StatelessWidget {
   final Color? textColor;
   final String? semanticLabel;
 
-  String _deriveSemanticLabel() {
+  String _deriveSemanticLabel(BuildContext context) {
     if (semanticLabel != null) return semanticLabel!;
-    if (dotOnly) return '${variant.name} status indicator';
+    final l10n = context.l10n;
+    if (dotOnly) return l10n.statusIndicator(variant.name);
     if (count != null) {
-      final formattedCount =
-          count! > maxCount ? 'more than $maxCount' : '$count';
-      return '$formattedCount unread items';
+      return count! > maxCount
+          ? l10n.unreadItemsMoreThan(maxCount)
+          : l10n.unreadItemsCount(count!);
     }
-    return '${label ?? ''} badge';
+    return label != null ? l10n.badgeSuffix(label!) : '';
   }
 
   @override
@@ -98,7 +100,7 @@ class AppBadge extends StatelessWidget {
     if (dotOnly) {
       return Semantics(
         container: true,
-        label: _deriveSemanticLabel(),
+        label: _deriveSemanticLabel(context),
         child: Container(
           width: dotSize,
           height: dotSize,
@@ -159,7 +161,7 @@ class AppBadge extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: _deriveSemanticLabel(),
+      label: _deriveSemanticLabel(context),
       child: badgeContent,
     );
   }

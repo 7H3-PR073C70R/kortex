@@ -1,0 +1,40 @@
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#10B981" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#10B981" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Glow -->
+  <circle cx="120" cy="90" r="70" fill="#10B981" fill-opacity="0.08"/>
+
+  <!-- Graph Grid Background -->
+  <rect x="28" y="24" width="184" height="132" rx="10" fill="#0F172A" stroke="#1E293B" stroke-width="1.5"/>
+  <line x1="48" y1="44" x2="196" y2="44" stroke="#1E293B" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="48" y1="84" x2="196" y2="84" stroke="#1E293B" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="48" y1="124" x2="196" y2="124" stroke="#1E293B" stroke-width="1"/>
+
+  <!-- Ebbinghaus Natural Decay Curve (Dashed) -->
+  <path d="M 48 44 Q 90 110, 196 124" stroke="#64748B" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+
+  <!-- Optimized SM-2 Spaced Retention Fill & Curve -->
+  <path d="M 48 44 C 70 54, 80 68, 92 48 C 114 54, 126 64, 140 46 C 165 50, 175 56, 196 48 L 196 124 L 48 124 Z" fill="url(#areaGrad)"/>
+  <path d="M 48 44 C 70 54, 80 68, 92 48 C 114 54, 126 64, 140 46 C 165 50, 175 56, 196 48" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Review Intervention Nodes -->
+  <circle cx="48" cy="44" r="5" fill="#10B981" stroke="#0F172A" stroke-width="2"/>
+  <circle cx="92" cy="48" r="5" fill="#10B981" stroke="#0F172A" stroke-width="2"/>
+  <circle cx="140" cy="46" r="5" fill="#10B981" stroke="#0F172A" stroke-width="2"/>
+  <circle cx="196" cy="48" r="5" fill="#10B981" stroke="#0F172A" stroke-width="2"/>
+
+  <!-- Labels -->
+  <text x="44" y="140" fill="#64748B" font-size="9" font-family="sans-serif">Day 1</text>
+  <text x="88" y="140" fill="#64748B" font-size="9" font-family="sans-serif">Day 3</text>
+  <text x="136" y="140" fill="#64748B" font-size="9" font-family="sans-serif">Day 7</text>
+  <text x="188" y="140" fill="#64748B" font-size="9" font-family="sans-serif">Day 14</text>
+
+  <!-- Metric Callout Badge -->
+  <rect x="130" y="70" width="70" height="24" rx="6" fill="#1E293B" stroke="#10B981" stroke-width="1"/>
+  <text x="138" y="86" fill="#34D399" font-size="10" font-family="sans-serif" font-weight="bold">98.4% Recall</text>
+</svg>
