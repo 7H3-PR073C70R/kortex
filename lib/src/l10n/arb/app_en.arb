@@ -2086,5 +2086,45 @@
     "cancelAction": "Cancel",
     "@cancelAction": {
         "description": "Cancel action"
+    },
+    "switchToFormView": "Switch to Form View",
+    "@switchToFormView": {
+        "description": "Button to switch onboarding mode to traditional form"
+    },
+    "switchToChatView": "Switch to AI Chat",
+    "@switchToChatView": {
+        "description": "Button to switch onboarding mode to conversational AI chat"
+    },
+    "onboardingChatWelcome": "Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let's calibrate your curriculum and study goals.",
+    "@onboardingChatWelcome": {
+        "description": "Welcome message for AI conversational onboarding"
+    },
+    "onboardingStepTrackTitle": "Target Academic Track",
+    "@onboardingStepTrackTitle": {
+        "description": "Title for the track selection step"
+    },
+    "onboardingStepGoalTitle": "Daily Review Target",
+    "@onboardingStepGoalTitle": {
+        "description": "Title for the daily goal calibration step"
+    },
+    "completeAndGoToDashboard": "Launch Kortex Workspace",
+    "@completeAndGoToDashboard": {
+        "description": "Button label to finalize onboarding and go to dashboard"
+    },
+    "onboardingAiChatTitle": "AI Guide",
+    "@onboardingAiChatTitle": {
+        "description": "Label for AI chat onboarding mode"
+    },
+    "onboardingFormTitle": "Form View",
+    "@onboardingFormTitle": {
+        "description": "Label for traditional form onboarding mode"
+    },
+    "askAiAboutCurriculum": "Type a message or question about your syllabus...",
+    "@askAiAboutCurriculum": {
+        "description": "Hint text for AI onboarding chat input"
+    },
+    "aiThinking": "Syllabot is preparing your personalized plan...",
+    "@aiThinking": {
+        "description": "Status text while Syllabot AI is formulating a response"
     }
 }
