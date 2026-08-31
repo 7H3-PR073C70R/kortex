@@ -1,6 +1,7 @@
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/data/models/leaderboard_entry_model.dart';
 import 'package:kortex/src/features/community/data/models/shared_deck_model.dart';
+import 'package:kortex/src/features/community/data/models/study_community_model.dart';
 import 'package:kortex/src/features/community/data/models/study_room_model.dart';
 
 abstract class CommunityRemoteDataSource {
@@ -46,4 +47,12 @@ abstract class CommunityRemoteDataSource {
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track});
 
   Future<List<LeaderboardEntryModel>> fetchLeaderboards({String? track});
+
+  Future<StudyCommunityModel> autoProvisionCommunity({
+    required String courseCode,
+    required String title,
+    String? department,
+  });
+
+  Future<StudyCommunityModel> fetchCourseCommunityStats(String courseCode);
 }

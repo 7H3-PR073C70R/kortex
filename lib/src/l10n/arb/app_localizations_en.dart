@@ -1506,4 +1506,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiThinking => 'Syllabot is preparing your personalized plan...';
+
+  @override
+  String autoCommunityCreatedTitle(String courseCode) {
+    return 'We auto-created the $courseCode Community Hub!';
+  }
+
+  @override
+  String autoCommunityJoinedSubtitle(int count) {
+    return '$count peers are currently studying this material.';
+  }
+
+  @override
+  String get foundingMemberBadge => 'Founding Member 🌟';
+
+  @override
+  String get viewPeerDiscussion => 'View Peer Discussion';
+
+  @override
+  String get openCommunityHub => 'Open Hub';
+
+  @override
+  String get quickJoinStudyRoom => 'Quick Join Focus Room';
+
+  @override
+  String activeRoomPeers(int count) {
+    return '$count peers studying now';
+  }
+
+  @override
+  String peerHubTitle(String courseCode) {
+    return '$courseCode Peer Hub';
+  }
+
+  @override
+  String connectedPeersCount(int count) {
+    return '$count Active Peers';
+  }
+
+  @override
+  String get indexingDocumentProgress =>
+      'Indexing course material into neural vector memory...';
+
+  @override
+  String ragContextFoundNotice(int count) {
+    return 'Found $count relevant textbook sections.';
+  }
+
+  @override
+  String retrievedContextBadge(int score) {
+    return 'Verified Course Context ($score% Match)';
+  }
 }

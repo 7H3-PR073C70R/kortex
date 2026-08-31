@@ -53,5 +53,11 @@ void _initDataSource() {
         locator<SupabaseCommunityClient>(),
         locator<UserStorageService>(),
       ),
+    )
+    ..registerLazySingleton<RagRemoteDataSource>(
+      () => RagRemoteDataSourceImpl(
+        locator<VectorSearchClient>(),
+        locator<UserStorageService>(),
+      ),
     );
 }

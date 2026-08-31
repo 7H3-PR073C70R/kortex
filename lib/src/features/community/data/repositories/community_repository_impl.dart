@@ -4,6 +4,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
@@ -178,6 +179,38 @@ class CommunityRepositoryImpl implements CommunityRepository {
     try {
       final models = await _remoteDataSource.fetchLeaderboards(track: track);
       return Right(models.map((m) => m.toEntity()).toList());
+    } on Object catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({
+    required String courseCode,
+    required String title,
+    String? department,
+  }) async {
+    try {
+      final model = await _remoteDataSource.autoProvisionCommunity(
+        courseCode: courseCode,
+        title: title,
+        department: department,
+      );
+      return Right(model);
+    } on Object catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
+    String courseCode,
+  ) async {
+    try {
+      final model = await _remoteDataSource.fetchCourseCommunityStats(
+        courseCode,
+      );
+      return Right(model);
     } on Object catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

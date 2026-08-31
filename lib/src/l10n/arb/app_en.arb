@@ -2126,5 +2126,95 @@
     "aiThinking": "Syllabot is preparing your personalized plan...",
     "@aiThinking": {
         "description": "Status text while Syllabot AI is formulating a response"
+    },
+    "autoCommunityCreatedTitle": "We auto-created the {courseCode} Community Hub!",
+    "@autoCommunityCreatedTitle": {
+        "description": "Notification title when a peer community is auto-created",
+        "placeholders": {
+            "courseCode": {
+                "type": "String",
+                "example": "WAEC-CHEM"
+            }
+        }
+    },
+    "autoCommunityJoinedSubtitle": "{count} peers are currently studying this material.",
+    "@autoCommunityJoinedSubtitle": {
+        "description": "Subtitle showing active peer count in the newly joined community",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "24"
+            }
+        }
+    },
+    "foundingMemberBadge": "Founding Member 🌟",
+    "@foundingMemberBadge": {
+        "description": "Badge shown for users who are first to study a topic or track"
+    },
+    "viewPeerDiscussion": "View Peer Discussion",
+    "@viewPeerDiscussion": {
+        "description": "Action button to view peer discussion forum"
+    },
+    "openCommunityHub": "Open Hub",
+    "@openCommunityHub": {
+        "description": "Action button to navigate to community hub"
+    },
+    "quickJoinStudyRoom": "Quick Join Focus Room",
+    "@quickJoinStudyRoom": {
+        "description": "Label for quick join study room chip"
+    },
+    "activeRoomPeers": "{count} peers studying now",
+    "@activeRoomPeers": {
+        "description": "Active participants indicator in focus room chip",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "6"
+            }
+        }
+    },
+    "peerHubTitle": "{courseCode} Peer Hub",
+    "@peerHubTitle": {
+        "description": "Peer hub title with course code",
+        "placeholders": {
+            "courseCode": {
+                "type": "String",
+                "example": "CHE-301"
+            }
+        }
+    },
+    "connectedPeersCount": "{count} Active Peers",
+    "@connectedPeersCount": {
+        "description": "Count of peers connected in study hub",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "142"
+            }
+        }
+    },
+    "indexingDocumentProgress": "Indexing course material into neural vector memory...",
+    "@indexingDocumentProgress": {
+        "description": "Status text while generating vector embeddings for document chunks"
+    },
+    "ragContextFoundNotice": "Found {count} relevant textbook sections.",
+    "@ragContextFoundNotice": {
+        "description": "Notice showing count of matched document chunks for Syllabot",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "retrievedContextBadge": "Verified Course Context ({score}% Match)",
+    "@retrievedContextBadge": {
+        "description": "Badge showing semantic similarity match score for retrieved chunk",
+        "placeholders": {
+            "score": {
+                "type": "int",
+                "example": "94"
+            }
+        }
     }
 }

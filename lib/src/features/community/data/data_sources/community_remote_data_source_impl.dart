@@ -4,6 +4,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/data/models/leaderboard_entry_model.dart';
 import 'package:kortex/src/features/community/data/models/shared_deck_model.dart';
+import 'package:kortex/src/features/community/data/models/study_community_model.dart';
 import 'package:kortex/src/features/community/data/models/study_room_model.dart';
 import 'package:kortex/src/services/user_storage_service.dart';
 
@@ -245,5 +246,33 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       ];
     }
     return list.map(LeaderboardEntryModel.fromJson).toList();
+  }
+
+  @override
+  Future<StudyCommunityModel> autoProvisionCommunity({
+    required String courseCode,
+    required String title,
+    String? department,
+  }) async {
+    final token = _userStorage.getToken() ?? '';
+    final res = await _client.autoProvisionCommunity(
+      courseCode: courseCode,
+      title: title,
+      department: department,
+      authToken: token,
+    );
+    return StudyCommunityModel.fromJson(res);
+  }
+
+  @override
+  Future<StudyCommunityModel> fetchCourseCommunityStats(
+    String courseCode,
+  ) async {
+    final token = _userStorage.getToken() ?? '';
+    final res = await _client.fetchCourseCommunityStats(
+      courseCode: courseCode,
+      authToken: token,
+    );
+    return StudyCommunityModel.fromJson(res);
   }
 }

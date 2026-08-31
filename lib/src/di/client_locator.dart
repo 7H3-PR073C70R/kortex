@@ -23,6 +23,9 @@ void _initClients() {
     ..registerLazySingleton<SupabaseCommunityClient>(
       () => SupabaseCommunityClient(locator<Dio>()),
     )
+    ..registerLazySingleton<VectorSearchClient>(
+      () => VectorSearchClient(locator<Dio>()),
+    )
     ..registerLazySingleton<LocalLlmEngineClient>(
       LocalLlmEngineClient.new,
     );

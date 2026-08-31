@@ -40,6 +40,9 @@ class AppApiEndpoint {
   static const String syllabotStream = '/functions/v1/syllabot-stream';
   static const String syllabotSessions = '/rest/v1/chat_sessions';
   static const String syllabotMessages = '/rest/v1/chat_messages';
+  static const String matchDocumentChunksRpc =
+      '/rest/v1/rpc/match_document_chunks';
+  static const String generateEmbeddings = '/functions/v1/generate-embeddings';
 
   // Document Ingestion & STEM OCR Endpoints (Supabase Storage & Edge Functions)
   static const String storageBucket = '/storage/v1/object/study-documents';

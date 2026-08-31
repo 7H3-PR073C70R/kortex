@@ -97,11 +97,15 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<PurgeExpiredAiCacheUseCase>(
       () => PurgeExpiredAiCacheUseCase(locator<SyllabotRepository>()),
     )
+    ..registerLazySingleton<QueryDocumentContextUseCase>(
+      () => QueryDocumentContextUseCase(locator<RagRepository>()),
+    )
     ..registerFactory<SyllabotChatBloc>(
       () => SyllabotChatBloc(
         streamResponseUseCase: locator<StreamSyllabotResponseUseCase>(),
         getChatHistoryUseCase: locator<GetChatHistoryUseCase>(),
         generateDeckUseCase: locator<GenerateDeckFromChatUseCase>(),
+        queryDocumentContextUseCase: locator<QueryDocumentContextUseCase>(),
       ),
     )
     ..registerLazySingleton<UploadStudyDocumentUseCase>(
@@ -136,9 +140,22 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<StreamLeaderboardRankingsUseCase>(
       () => StreamLeaderboardRankingsUseCase(locator<CommunityRepository>()),
     )
+    ..registerLazySingleton<AutoProvisionCommunityUseCase>(
+      () => AutoProvisionCommunityUseCase(locator<CommunityRepository>()),
+    )
+    ..registerLazySingleton<FetchCourseCommunityStatsUseCase>(
+      () => FetchCourseCommunityStatsUseCase(locator<CommunityRepository>()),
+    )
     ..registerFactory<CommunityHubBloc>(
       () => CommunityHubBloc(
         repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerFactory<AutoCommunityCubit>(
+      () => AutoCommunityCubit(
+        autoProvisionCommunityUseCase: locator<AutoProvisionCommunityUseCase>(),
+        fetchCourseCommunityStatsUseCase:
+            locator<FetchCourseCommunityStatsUseCase>(),
       ),
     );
 }

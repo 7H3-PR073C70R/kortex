@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/get_chat_history_use_case.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/query_document_context_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_event.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
@@ -12,9 +13,11 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     required StreamSyllabotResponseUseCase streamResponseUseCase,
     required GetChatHistoryUseCase getChatHistoryUseCase,
     required GenerateDeckFromChatUseCase generateDeckUseCase,
+    QueryDocumentContextUseCase? queryDocumentContextUseCase,
   })  : _streamResponse = streamResponseUseCase,
         _getChatHistory = getChatHistoryUseCase,
         _generateDeck = generateDeckUseCase,
+        _queryDocumentContext = queryDocumentContextUseCase,
         super(const SyllabotChatState()) {
     on<SubmitPromptEvent>(_onSubmitPrompt);
     on<StreamTokenReceivedEvent>(_onStreamTokenReceived);
@@ -32,6 +35,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   final StreamSyllabotResponseUseCase _streamResponse;
   final GetChatHistoryUseCase _getChatHistory;
   final GenerateDeckUseCase _generateDeck;
+  final QueryDocumentContextUseCase? _queryDocumentContext;
 
   StreamSubscription<String>? _streamSubscription;
 
@@ -65,12 +69,37 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       ),
     );
 
+    var contextWithRag = updatedMessages;
+    if (_queryDocumentContext != null) {
+      final ragRes = await _queryDocumentContext(
+        query: event.prompt,
+      );
+      ragRes.fold(
+        (_) {},
+        (chunks) {
+          if (chunks.isNotEmpty) {
+            final snippets = chunks.map((c) => c.content).join('\n---\n');
+            final ragContextMsg = ChatMessageEntity(
+              id: 'rag_${DateTime.now().millisecondsSinceEpoch}',
+              sessionId: event.sessionId,
+              sender: MessageSender.syllabot,
+              text: 'Use the following retrieved course material to answer '
+                  "the student's question accurately:\n$snippets",
+              timestamp: DateTime.now(),
+              engineType: event.engineType,
+            );
+            contextWithRag = [ragContextMsg, ...updatedMessages];
+          }
+        },
+      );
+    }
+
     final stream = _streamResponse(
       prompt: event.prompt,
       sessionId: event.sessionId,
       socraticMode: event.socraticMode,
       preferredEngine: event.engineType,
-      contextHistory: updatedMessages,
+      contextHistory: contextWithRag,
     );
 
     _streamSubscription = stream.listen(

@@ -2713,6 +2713,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Syllabot is preparing your personalized plan...'**
   String get aiThinking;
+
+  /// Notification title when a peer community is auto-created
+  ///
+  /// In en, this message translates to:
+  /// **'We auto-created the {courseCode} Community Hub!'**
+  String autoCommunityCreatedTitle(String courseCode);
+
+  /// Subtitle showing active peer count in the newly joined community
+  ///
+  /// In en, this message translates to:
+  /// **'{count} peers are currently studying this material.'**
+  String autoCommunityJoinedSubtitle(int count);
+
+  /// Badge shown for users who are first to study a topic or track
+  ///
+  /// In en, this message translates to:
+  /// **'Founding Member 🌟'**
+  String get foundingMemberBadge;
+
+  /// Action button to view peer discussion forum
+  ///
+  /// In en, this message translates to:
+  /// **'View Peer Discussion'**
+  String get viewPeerDiscussion;
+
+  /// Action button to navigate to community hub
+  ///
+  /// In en, this message translates to:
+  /// **'Open Hub'**
+  String get openCommunityHub;
+
+  /// Label for quick join study room chip
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Join Focus Room'**
+  String get quickJoinStudyRoom;
+
+  /// Active participants indicator in focus room chip
+  ///
+  /// In en, this message translates to:
+  /// **'{count} peers studying now'**
+  String activeRoomPeers(int count);
+
+  /// Peer hub title with course code
+  ///
+  /// In en, this message translates to:
+  /// **'{courseCode} Peer Hub'**
+  String peerHubTitle(String courseCode);
+
+  /// Count of peers connected in study hub
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Active Peers'**
+  String connectedPeersCount(int count);
+
+  /// Status text while generating vector embeddings for document chunks
+  ///
+  /// In en, this message translates to:
+  /// **'Indexing course material into neural vector memory...'**
+  String get indexingDocumentProgress;
+
+  /// Notice showing count of matched document chunks for Syllabot
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} relevant textbook sections.'**
+  String ragContextFoundNotice(int count);
+
+  /// Badge showing semantic similarity match score for retrieved chunk
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Course Context ({score}% Match)'**
+  String retrievedContextBadge(int score);
 }
 
 class _AppLocalizationsDelegate

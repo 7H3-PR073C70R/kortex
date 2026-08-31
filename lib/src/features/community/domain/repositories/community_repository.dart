@@ -3,6 +3,7 @@ import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
@@ -68,4 +69,16 @@ abstract class CommunityRepository {
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,
   });
+
+  /// Auto-provisions or joins a course/track study community hub.
+  Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({
+    required String courseCode,
+    required String title,
+    String? department,
+  });
+
+  /// Fetches statistics and active status for a specific course community.
+  Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
+    String courseCode,
+  );
 }
