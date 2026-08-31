@@ -3121,6 +3121,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mastered 50 complex mathematical or science cards.'**
   String get badgeStemAlchemistDesc;
+
+  /// Notice when offline on a low-memory device unable to run local GGUF models
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud connection required for deep AI reasoning on this device.'**
+  String get offlineLowMemoryNotice;
+
+  /// Label for Cloud Edge execution mode
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Edge Accelerated'**
+  String get hardwareCloudEdgeMode;
+
+  /// Label for Local GGUF execution mode
+  ///
+  /// In en, this message translates to:
+  /// **'On-Device Neural Engine'**
+  String get hardwareLocalGgufMode;
+
+  /// Label for MLKit only execution mode
+  ///
+  /// In en, this message translates to:
+  /// **'Lightweight OCR Only'**
+  String get hardwareMlKitOnlyMode;
+
+  /// Notice when thermal throttling is active
+  ///
+  /// In en, this message translates to:
+  /// **'Thermal throttling active. Heavy local AI tasks disabled to protect device.'**
+  String get hardwareThermalThrottled;
+
+  /// Notice when low battery triggers cloud fallback
+  ///
+  /// In en, this message translates to:
+  /// **'Battery saving active. Routing AI queries to Cloud Edge.'**
+  String get hardwareBatterySavingActive;
 }
 
 class _AppLocalizationsDelegate

@@ -1769,4 +1769,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get badgeStemAlchemistDesc =>
       'Mastered 50 complex mathematical or science cards.';
+
+  @override
+  String get offlineLowMemoryNotice =>
+      'Cloud connection required for deep AI reasoning on this device.';
+
+  @override
+  String get hardwareCloudEdgeMode => 'Cloud Edge Accelerated';
+
+  @override
+  String get hardwareLocalGgufMode => 'On-Device Neural Engine';
+
+  @override
+  String get hardwareMlKitOnlyMode => 'Lightweight OCR Only';
+
+  @override
+  String get hardwareThermalThrottled =>
+      'Thermal throttling active. Heavy local AI tasks disabled to protect device.';
+
+  @override
+  String get hardwareBatterySavingActive =>
+      'Battery saving active. Routing AI queries to Cloud Edge.';
 }

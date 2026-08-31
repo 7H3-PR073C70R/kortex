@@ -59,6 +59,12 @@ void _initRepositoryLocator() {
         remoteDataSource: locator<IngestionRemoteDataSource>(),
       ),
     )
+    ..registerLazySingleton<EphemeralRoomRepository>(
+      () => EphemeralRoomRepositoryImpl(
+        presenceClient: locator<EphemeralPresenceClient>(),
+        communityClient: locator<SupabaseCommunityClient>(),
+      ),
+    )
     ..registerLazySingleton<PlannerRepository>(
       PlannerRepositoryImpl.new,
     )

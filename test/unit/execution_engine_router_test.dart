@@ -1,157 +1,86 @@
-import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_local_data_source.dart';
-import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_data_source.dart';
-import 'package:kortex/src/features/syllabot/data/repositories/syllabot_repository_impl.dart';
-import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
-import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockSyllabotRemoteDataSource extends Mock
-    implements SyllabotRemoteDataSource {}
-
-class MockSyllabotLocalDataSource extends Mock
-    implements SyllabotLocalDataSource {}
+import 'package:kortex/src/features/syllabot/domain/logic/execution_engine_router.dart';
+import 'package:kortex/src/shared/hardware/services/device_performance_benchmark.dart';
+import 'package:kortex/src/shared/hardware/services/hardware_guard_factory.dart';
 
 void main() {
-  group('Execution Engine Router & Fallback Unit Test Suite', () {
-    late MockSyllabotRemoteDataSource mockRemoteDataSource;
-    late MockSyllabotLocalDataSource mockLocalDataSource;
-    late SyllabotRepositoryImpl repository;
-
-    setUpAll(() {
-      registerFallbackValue(SocraticMode.stepByStep);
-      registerFallbackValue(ExecutionEngineType.cloudSupabase);
-    });
+  group('ExecutionEngineRouter Routing & Stream Suite', () {
+    late DevicePerformanceBenchmarkImpl benchmark;
+    late HardwareGuardFactory guardFactory;
+    late ExecutionEngineRouter router;
 
     setUp(() {
-      mockRemoteDataSource = MockSyllabotRemoteDataSource();
-      mockLocalDataSource = MockSyllabotLocalDataSource();
-      repository = SyllabotRepositoryImpl(
-        remoteDataSource: mockRemoteDataSource,
-        localDataSource: mockLocalDataSource,
+      benchmark = DevicePerformanceBenchmarkImpl(
+        initialProfile: HardwareProfile.baseline(),
+      );
+      guardFactory = const HardwareGuardFactory();
+      router = ExecutionEngineRouter(
+        benchmark: benchmark,
+        guardFactory: guardFactory,
       );
     });
 
-    test(
-      'routes directly to Local LLM when preferredEngine is localOnDevice',
-      () async {
-        when(
-          () => mockLocalDataSource.generateOfflineResponse(
-            prompt: any(named: 'prompt'),
-            socraticMode: any(named: 'socraticMode'),
+    tearDown(() async {
+      await benchmark.dispose();
+    });
+
+    test('routes baseline hardware to cloudEdge by default', () async {
+      final decision = await router.routeExecution(
+        userPrefersOfflineAi: false,
+        isNetworkConnected: true,
+      );
+
+      expect(decision.executionMode, equals(AiExecutionMode.cloudEdge));
+      expect(decision.canRunGguf, isTrue);
+      expect(decision.canRunMlKit, isTrue);
+    });
+
+    test('streams updates when hardware shifts to thermal throttle', () async {
+      final emissionList = <HardwareDecision>[];
+
+      final subscription = router
+          .watchExecutionRoute(
+            userPrefersOfflineAi: true,
+            isNetworkConnected: true,
+          )
+          .listen(emissionList.add);
+
+      // Trigger high-end state and thermal throttling state
+      benchmark
+        ..updateMockProfile(
+          const HardwareProfile(
+            totalRamGb: 12,
+            availableRamGb: 8,
+            cpuCores: 8,
+            batteryLevel: 0.85,
+            isCharging: true,
+            thermalState: ThermalStatus.nominal,
+            networkQuality: NetworkQuality.high,
           ),
-        ).thenAnswer(
-          (_) => Stream.fromIterable(['Local ', 'token ', 'stream']),
-        );
-
-        final stream = repository.streamResponse(
-          prompt: 'Explain Newton Second Law',
-          sessionId: 'session_1',
-          socraticMode: SocraticMode.stepByStep,
-          preferredEngine: ExecutionEngineType.localOnDevice,
-        );
-
-        final tokens = await stream.toList();
-        expect(tokens.join(), equals('Local token stream'));
-
-        verify(
-          () => mockLocalDataSource.generateOfflineResponse(
-            prompt: 'Explain Newton Second Law',
-            socraticMode: SocraticMode.stepByStep,
-          ),
-        ).called(1);
-
-        verifyZeroInteractions(mockRemoteDataSource);
-      },
-    );
-
-    test(
-      'routes to Cloud Supabase engine when preferredEngine is cloudSupabase',
-      () async {
-        when(
-          () => mockRemoteDataSource.streamResponse(
-            prompt: any(named: 'prompt'),
-            sessionId: any(named: 'sessionId'),
-            socraticMode: any(named: 'socraticMode'),
-            engine: any(named: 'engine'),
-            contextHistory: any(named: 'contextHistory'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.fromIterable(['Cloud ', 'Gemini ', 'response']),
-        );
-
-        final stream = repository.streamResponse(
-          prompt: 'Derive quadratic equation',
-          sessionId: 'session_2',
-          socraticMode: SocraticMode.deepResearch,
-          preferredEngine: ExecutionEngineType.cloudSupabase,
-        );
-
-        final tokens = await stream.toList();
-        expect(tokens.join(), equals('Cloud Gemini response'));
-
-        verify(
-          () => mockRemoteDataSource.streamResponse(
-            prompt: 'Derive quadratic equation',
-            sessionId: 'session_2',
-            socraticMode: SocraticMode.deepResearch,
-            engine: ExecutionEngineType.cloudSupabase,
-            contextHistory: any(named: 'contextHistory'),
-          ),
-        ).called(1);
-
-        verifyZeroInteractions(mockLocalDataSource);
-      },
-    );
-
-    test(
-      'gracefully falls back to Local LLM when Cloud engine errors out',
-      () async {
-        final errorStreamController = StreamController<String>();
-
-        when(
-          () => mockRemoteDataSource.streamResponse(
-            prompt: any(named: 'prompt'),
-            sessionId: any(named: 'sessionId'),
-            socraticMode: any(named: 'socraticMode'),
-            engine: any(named: 'engine'),
-            contextHistory: any(named: 'contextHistory'),
-          ),
-        ).thenAnswer((_) => errorStreamController.stream);
-
-        when(
-          () => mockLocalDataSource.generateOfflineResponse(
-            prompt: any(named: 'prompt'),
-            socraticMode: any(named: 'socraticMode'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.fromIterable(
-            ['Fallback ', 'offline ', 'explanation'],
+        )
+        ..updateMockProfile(
+          const HardwareProfile(
+            totalRamGb: 12,
+            availableRamGb: 8,
+            cpuCores: 8,
+            batteryLevel: 0.85,
+            isCharging: true,
+            thermalState: ThermalStatus.critical,
+            networkQuality: NetworkQuality.high,
           ),
         );
 
-        final stream = repository.streamResponse(
-          prompt: 'Explain thermodynamics',
-          sessionId: 'session_3',
-          socraticMode: SocraticMode.examSim,
-          preferredEngine: ExecutionEngineType.cloudSupabase,
-        );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        errorStreamController.addError(
-          Exception('Network timeout: Supabase Edge Unreachable'),
-        );
+      expect(emissionList.length, equals(2));
+      expect(emissionList[0].executionMode, equals(AiExecutionMode.localGguf));
+      expect(emissionList[1].executionMode, equals(AiExecutionMode.cloudEdge));
+      expect(
+        emissionList[1].reason,
+        equals(HardwareThrottleReason.thermalThrottled),
+      );
 
-        final tokens = await stream.toList();
-        expect(tokens.join(), equals('Fallback offline explanation'));
-
-        verify(
-          () => mockLocalDataSource.generateOfflineResponse(
-            prompt: 'Explain thermodynamics',
-            socraticMode: SocraticMode.examSim,
-          ),
-        ).called(1);
-      },
-    );
+      await subscription.cancel();
+    });
   });
 }

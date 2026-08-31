@@ -22,11 +22,14 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart'
 import 'package:kortex/src/features/auth/presentation/bloc/chat_onboarding_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/onboarding_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/guards/auth_route_guard.dart';
+import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/data/client/supabase_community_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
+import 'package:kortex/src/features/community/data/repositories/ephemeral_room_repository_impl.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/community/domain/use_cases/auto_provision_community_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/fetch_course_community_stats_use_case.dart';
@@ -113,6 +116,7 @@ import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_d
 import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_data_source_impl.dart';
 import 'package:kortex/src/features/syllabot/data/repositories/rag_repository_impl.dart';
 import 'package:kortex/src/features/syllabot/data/repositories/syllabot_repository_impl.dart';
+import 'package:kortex/src/features/syllabot/domain/logic/execution_engine_router.dart';
 import 'package:kortex/src/features/syllabot/domain/repositories/rag_repository.dart';
 import 'package:kortex/src/features/syllabot/domain/repositories/syllabot_repository.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
@@ -130,6 +134,8 @@ import 'package:kortex/src/shared/audio/client/text_to_speech_client.dart';
 import 'package:kortex/src/shared/export/services/anki_export_service.dart';
 import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
 import 'package:kortex/src/shared/export/services/pdf_printable_generator.dart';
+import 'package:kortex/src/shared/hardware/services/device_performance_benchmark.dart';
+import 'package:kortex/src/shared/hardware/services/hardware_guard_factory.dart';
 import 'package:logger/logger.dart';
 
 part 'client_locator.dart';

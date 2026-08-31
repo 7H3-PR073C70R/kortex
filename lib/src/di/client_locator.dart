@@ -37,5 +37,8 @@ void _initClients() {
     )
     ..registerLazySingleton<TextToSpeechClient>(
       TextToSpeechClient.new,
+    )
+    ..registerLazySingleton<EphemeralPresenceClient>(
+      EphemeralPresenceClientImpl.new,
     );
 }

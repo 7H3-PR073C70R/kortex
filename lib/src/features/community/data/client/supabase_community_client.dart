@@ -305,4 +305,27 @@ class SupabaseCommunityClient {
       'is_founding_member': false,
     };
   }
+
+  /// Records completed Pomodoro study session in study_sessions table.
+  Future<void> recordStudySession({
+    required String authToken,
+    required String roomId,
+    required int durationMinutes,
+    required String subject,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '${AppApiEndpoint.baseUri}/study_sessions',
+        data: {
+          'room_id': roomId,
+          'duration_minutes': durationMinutes,
+          'subject': subject,
+          'completed_at': DateTime.now().toIso8601String(),
+        },
+        options: Options(headers: _headers(authToken)),
+      );
+    } on Object catch (_) {
+      // Graceful fallback for offline / mock modes
+    }
+  }
 }

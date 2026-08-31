@@ -194,5 +194,17 @@ void _initUseCaseLocator() {
     )
     ..registerLazySingleton<NotionCsvFormatter>(
       NotionCsvFormatter.new,
+    )
+    ..registerLazySingleton<DevicePerformanceBenchmark>(
+      DevicePerformanceBenchmarkImpl.new,
+    )
+    ..registerLazySingleton<HardwareGuardFactory>(
+      HardwareGuardFactory.new,
+    )
+    ..registerLazySingleton<ExecutionEngineRouter>(
+      () => ExecutionEngineRouter(
+        benchmark: locator<DevicePerformanceBenchmark>(),
+        guardFactory: locator<HardwareGuardFactory>(),
+      ),
     );
 }

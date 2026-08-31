@@ -2500,5 +2500,29 @@
     "badgeStemAlchemistDesc": "Mastered 50 complex mathematical or science cards.",
     "@badgeStemAlchemistDesc": {
         "description": "Badge description for STEM Alchemist"
+    },
+    "offlineLowMemoryNotice": "Cloud connection required for deep AI reasoning on this device.",
+    "@offlineLowMemoryNotice": {
+        "description": "Notice when offline on a low-memory device unable to run local GGUF models"
+    },
+    "hardwareCloudEdgeMode": "Cloud Edge Accelerated",
+    "@hardwareCloudEdgeMode": {
+        "description": "Label for Cloud Edge execution mode"
+    },
+    "hardwareLocalGgufMode": "On-Device Neural Engine",
+    "@hardwareLocalGgufMode": {
+        "description": "Label for Local GGUF execution mode"
+    },
+    "hardwareMlKitOnlyMode": "Lightweight OCR Only",
+    "@hardwareMlKitOnlyMode": {
+        "description": "Label for MLKit only execution mode"
+    },
+    "hardwareThermalThrottled": "Thermal throttling active. Heavy local AI tasks disabled to protect device.",
+    "@hardwareThermalThrottled": {
+        "description": "Notice when thermal throttling is active"
+    },
+    "hardwareBatterySavingActive": "Battery saving active. Routing AI queries to Cloud Edge.",
+    "@hardwareBatterySavingActive": {
+        "description": "Notice when low battery triggers cloud fallback"
     }
 }
