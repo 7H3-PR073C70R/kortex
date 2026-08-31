@@ -52,5 +52,23 @@ void _initServices() {
     )
     ..registerFactory<ChatOnboardingBloc>(
       ChatOnboardingBloc.new,
+    )
+    ..registerLazySingleton<FsrsAlgorithmEngine>(
+      FsrsAlgorithmEngine.new,
+    )
+    ..registerLazySingleton<SchedulerFactory>(
+      () => SchedulerFactory(
+        sm2Engine: const Sm2AlgorithmEngine(),
+        fsrsEngine: locator<FsrsAlgorithmEngine>(),
+      ),
+    )
+    ..registerLazySingleton<EbbinghausDecayCalculator>(
+      EbbinghausDecayCalculator.new,
+    )
+    ..registerLazySingleton<AudioWorkspaceCubit>(
+      () => AudioWorkspaceCubit(
+        sttClient: locator<SpeechToTextClient>(),
+        ttsClient: locator<TextToSpeechClient>(),
+      ),
     );
 }

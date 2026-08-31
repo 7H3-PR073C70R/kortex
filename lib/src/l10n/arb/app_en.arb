@@ -2238,5 +2238,55 @@
     "syncCompletedNotice": "Cloud sync and LaTeX enhancement complete",
     "@syncCompletedNotice": {
         "description": "Toast when offline sync queue completes"
+    },
+    "predictedRetentionLabel": "Predicted Retention (FSRS-4.5)",
+    "@predictedRetentionLabel": {
+        "description": "Label for predicted memory retention curve in dashboard chart"
+    },
+    "actualRetentionLabel": "Actual Recall Rate",
+    "@actualRetentionLabel": {
+        "description": "Label for actual measured retention curve in dashboard chart"
+    },
+    "fsrsModeDescription": "Adaptive Stability & Difficulty decay modeling for optimal study load",
+    "@fsrsModeDescription": {
+        "description": "Description of FSRS-4.5 scheduler"
+    },
+    "sm2ModeDescription": "Classical SuperMemo-2 interval and ease factor spacing",
+    "@sm2ModeDescription": {
+        "description": "Description of classical SM-2 scheduler"
+    },
+    "schedulerAlgorithmTitle": "Spaced Repetition Scheduler",
+    "@schedulerAlgorithmTitle": {
+        "description": "Title of spaced repetition algorithm settings section"
+    },
+    "projectedWorkloadTitle": "7-Day Projected Review Workload",
+    "@projectedWorkloadTitle": {
+        "description": "Title for 7-day review workload card"
+    },
+    "listeningVoiceInput": "Listening... Speak your academic question clearly",
+    "@listeningVoiceInput": {
+        "description": "Status banner text while voice microphone is recording"
+    },
+    "stopAudioPlayback": "Stop audio narration",
+    "@stopAudioPlayback": {
+        "description": "Button tooltip to stop TTS audio output"
+    },
+    "speechSpeedLabel": "{speed}x Speed",
+    "@speechSpeedLabel": {
+        "description": "Button label for TTS audio speed",
+        "placeholders": {
+            "speed": {
+                "type": "String",
+                "example": "1.25"
+            }
+        }
+    },
+    "tapToSpeakHint": "Tap microphone to speak",
+    "@tapToSpeakHint": {
+        "description": "Hint text when microphone is ready"
+    },
+    "readAloudLabel": "Read Aloud",
+    "@readAloudLabel": {
+        "description": "Button label to trigger text to speech audio"
     }
 }

@@ -1579,4 +1579,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncCompletedNotice => 'Cloud sync and LaTeX enhancement complete';
+
+  @override
+  String get predictedRetentionLabel => 'Predicted Retention (FSRS-4.5)';
+
+  @override
+  String get actualRetentionLabel => 'Actual Recall Rate';
+
+  @override
+  String get fsrsModeDescription =>
+      'Adaptive Stability & Difficulty decay modeling for optimal study load';
+
+  @override
+  String get sm2ModeDescription =>
+      'Classical SuperMemo-2 interval and ease factor spacing';
+
+  @override
+  String get schedulerAlgorithmTitle => 'Spaced Repetition Scheduler';
+
+  @override
+  String get projectedWorkloadTitle => '7-Day Projected Review Workload';
+
+  @override
+  String get listeningVoiceInput =>
+      'Listening... Speak your academic question clearly';
+
+  @override
+  String get stopAudioPlayback => 'Stop audio narration';
+
+  @override
+  String speechSpeedLabel(String speed) {
+    return '${speed}x Speed';
+  }
+
+  @override
+  String get tapToSpeakHint => 'Tap microphone to speak';
+
+  @override
+  String get readAloudLabel => 'Read Aloud';
 }

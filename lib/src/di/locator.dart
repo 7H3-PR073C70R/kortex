@@ -39,6 +39,7 @@ import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.d
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
 import 'package:kortex/src/features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_feed_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';
@@ -48,6 +49,9 @@ import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
 import 'package:kortex/src/features/decks/data/repositories/decks_repository_impl.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
+import 'package:kortex/src/features/decks/domain/logic/scheduler_factory.dart';
+import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
@@ -110,6 +114,9 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_blo
 import 'package:kortex/src/services/file_picker_service.dart';
 import 'package:kortex/src/services/local_storage_service.dart';
 import 'package:kortex/src/services/user_storage_service.dart';
+import 'package:kortex/src/shared/audio/bloc/audio_workspace_cubit.dart';
+import 'package:kortex/src/shared/audio/client/speech_to_text_client.dart';
+import 'package:kortex/src/shared/audio/client/text_to_speech_client.dart';
 import 'package:logger/logger.dart';
 
 part 'client_locator.dart';

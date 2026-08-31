@@ -2809,6 +2809,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cloud sync and LaTeX enhancement complete'**
   String get syncCompletedNotice;
+
+  /// Label for predicted memory retention curve in dashboard chart
+  ///
+  /// In en, this message translates to:
+  /// **'Predicted Retention (FSRS-4.5)'**
+  String get predictedRetentionLabel;
+
+  /// Label for actual measured retention curve in dashboard chart
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Recall Rate'**
+  String get actualRetentionLabel;
+
+  /// Description of FSRS-4.5 scheduler
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive Stability & Difficulty decay modeling for optimal study load'**
+  String get fsrsModeDescription;
+
+  /// Description of classical SM-2 scheduler
+  ///
+  /// In en, this message translates to:
+  /// **'Classical SuperMemo-2 interval and ease factor spacing'**
+  String get sm2ModeDescription;
+
+  /// Title of spaced repetition algorithm settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Spaced Repetition Scheduler'**
+  String get schedulerAlgorithmTitle;
+
+  /// Title for 7-day review workload card
+  ///
+  /// In en, this message translates to:
+  /// **'7-Day Projected Review Workload'**
+  String get projectedWorkloadTitle;
+
+  /// Status banner text while voice microphone is recording
+  ///
+  /// In en, this message translates to:
+  /// **'Listening... Speak your academic question clearly'**
+  String get listeningVoiceInput;
+
+  /// Button tooltip to stop TTS audio output
+  ///
+  /// In en, this message translates to:
+  /// **'Stop audio narration'**
+  String get stopAudioPlayback;
+
+  /// Button label for TTS audio speed
+  ///
+  /// In en, this message translates to:
+  /// **'{speed}x Speed'**
+  String speechSpeedLabel(String speed);
+
+  /// Hint text when microphone is ready
+  ///
+  /// In en, this message translates to:
+  /// **'Tap microphone to speak'**
+  String get tapToSpeakHint;
+
+  /// Button label to trigger text to speech audio
+  ///
+  /// In en, this message translates to:
+  /// **'Read Aloud'**
+  String get readAloudLabel;
 }
 
 class _AppLocalizationsDelegate
