@@ -34,4 +34,12 @@ class AppApiEndpoint {
   static const String syllabotStream = '/functions/v1/syllabot-stream';
   static const String syllabotSessions = '/rest/v1/chat_sessions';
   static const String syllabotMessages = '/rest/v1/chat_messages';
+
+  // Document Ingestion & STEM OCR Endpoints (Supabase Storage & Edge Functions)
+  static const String storageBucket = '/storage/v1/object/study-documents';
+  static const String documents = '/rest/v1/documents';
+  static const String extractedSnippets = '/rest/v1/extracted_snippets';
+  static const String parseStemOcr = '/functions/v1/parse-stem-ocr';
+  static const String findOrCreateDocumentReference =
+      '/rest/v1/rpc/find_or_create_document_reference';
 }

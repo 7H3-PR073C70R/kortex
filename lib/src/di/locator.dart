@@ -35,6 +35,16 @@ import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_u
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
+import 'package:kortex/src/features/ingestion/data/client/supabase_ingestion_client.dart';
+import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
+import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source_impl.dart';
+import 'package:kortex/src/features/ingestion/data/repositories/ingestion_repository_impl.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
+import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/repositories/calibration_repository_impl.dart';
@@ -65,6 +75,7 @@ import 'package:kortex/src/features/syllabot/domain/use_cases/get_chat_history_u
 import 'package:kortex/src/features/syllabot/domain/use_cases/purge_expired_ai_cache_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_bloc.dart';
+import 'package:kortex/src/services/file_picker_service.dart';
 import 'package:kortex/src/services/local_storage_service.dart';
 import 'package:kortex/src/services/user_storage_service.dart';
 import 'package:logger/logger.dart';

@@ -8,6 +8,9 @@ void _initServices() {
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
     )
+    ..registerLazySingleton<FilePickerService>(
+      FilePickerService.new,
+    )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
     )

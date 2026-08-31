@@ -37,5 +37,10 @@ void _initRepositoryLocator() {
         remoteDataSource: locator<SyllabotRemoteDataSource>(),
         localDataSource: locator<SyllabotLocalDataSource>(),
       ),
+    )
+    ..registerLazySingleton<IngestionRepository>(
+      () => IngestionRepositoryImpl(
+        locator<IngestionRemoteDataSource>(),
+      ),
     );
 }

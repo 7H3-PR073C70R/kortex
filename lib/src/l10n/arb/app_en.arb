@@ -1762,5 +1762,83 @@
     "cancelAction": "Cancel",
     "@cancelAction": {
         "description": "Cancel button label"
+    },
+    "ingestionTitle": "Document Ingestion & OCR",
+    "@ingestionTitle": {
+        "description": "Title of the ingestion and OCR feature hub"
+    },
+    "dragAndDropHint": "Drag & drop PDF, PPTX, or image files here",
+    "@dragAndDropHint": {
+        "description": "Instruction for drop zone widget"
+    },
+    "browseFilesButton": "Browse Files",
+    "@browseFilesButton": {
+        "description": "Button to open device file picker"
+    },
+    "cameraCaptureButton": "Scan with Camera",
+    "@cameraCaptureButton": {
+        "description": "Button to open camera scanner overlay"
+    },
+    "uploadingStatus": "Uploading document...",
+    "@uploadingStatus": {
+        "description": "Progress message during file upload"
+    },
+    "processingOcrStatus": "Extracting STEM formulas & LaTeX...",
+    "@processingOcrStatus": {
+        "description": "Progress message during OCR processing"
+    },
+    "generatingCardsStatus": "Generating active recall cards...",
+    "@generatingCardsStatus": {
+        "description": "Progress message during flashcard generation"
+    },
+    "ocrPreviewTitle": "STEM OCR Live Editor",
+    "@ocrPreviewTitle": {
+        "description": "Title for the OCR preview and editor page"
+    },
+    "saveToDecksButton": "Convert to Flashcards",
+    "@saveToDecksButton": {
+        "description": "Button to convert OCR snippets into cards"
+    },
+    "invalidFileFormatError": "Unsupported file format. Please choose a PDF, PPTX, or Image file.",
+    "@invalidFileFormatError": {
+        "description": "Error message when selected file format is not supported"
+    },
+    "supportedFormatsNotice": "Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)",
+    "@supportedFormatsNotice": {
+        "description": "Footnote describing supported document types"
+    },
+    "extractedSnippetsCount": "{count} formulas & concepts extracted",
+    "@extractedSnippetsCount": {
+        "description": "Count banner in OCR preview",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    },
+    "generateCardsAction": "Generate SM-2 Cards",
+    "@generateCardsAction": {
+        "description": "Action button in OCR preview"
+    },
+    "reviewCardsTitle": "Review Generated Flashcards",
+    "@reviewCardsTitle": {
+        "description": "Title for generated flashcards review page"
+    },
+    "confirmAndStudyAction": "Save & Start Study Session",
+    "@confirmAndStudyAction": {
+        "description": "Action button to save deck and start study"
+    },
+    "cameraScanTitle": "Scan Study Material",
+    "@cameraScanTitle": {
+        "description": "Title for camera scanner viewfinder"
+    },
+    "cameraCaptureHint": "Align lecture slide or textbook page inside the frame",
+    "@cameraCaptureHint": {
+        "description": "Instruction in camera viewfinder"
+    },
+    "contentAlreadyUploadedNotice": "File already indexed. Loaded existing STEM extractions instantly.",
+    "@contentAlreadyUploadedNotice": {
+        "description": "Snackbar notice when file hash matches an existing document"
     }
 }

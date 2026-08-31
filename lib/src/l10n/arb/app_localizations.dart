@@ -2239,6 +2239,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancelAction;
+
+  /// Title of the ingestion and OCR feature hub
+  ///
+  /// In en, this message translates to:
+  /// **'Document Ingestion & OCR'**
+  String get ingestionTitle;
+
+  /// Instruction for drop zone widget
+  ///
+  /// In en, this message translates to:
+  /// **'Drag & drop PDF, PPTX, or image files here'**
+  String get dragAndDropHint;
+
+  /// Button to open device file picker
+  ///
+  /// In en, this message translates to:
+  /// **'Browse Files'**
+  String get browseFilesButton;
+
+  /// Button to open camera scanner overlay
+  ///
+  /// In en, this message translates to:
+  /// **'Scan with Camera'**
+  String get cameraCaptureButton;
+
+  /// Progress message during file upload
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading document...'**
+  String get uploadingStatus;
+
+  /// Progress message during OCR processing
+  ///
+  /// In en, this message translates to:
+  /// **'Extracting STEM formulas & LaTeX...'**
+  String get processingOcrStatus;
+
+  /// Progress message during flashcard generation
+  ///
+  /// In en, this message translates to:
+  /// **'Generating active recall cards...'**
+  String get generatingCardsStatus;
+
+  /// Title for the OCR preview and editor page
+  ///
+  /// In en, this message translates to:
+  /// **'STEM OCR Live Editor'**
+  String get ocrPreviewTitle;
+
+  /// Button to convert OCR snippets into cards
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Flashcards'**
+  String get saveToDecksButton;
+
+  /// Error message when selected file format is not supported
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported file format. Please choose a PDF, PPTX, or Image file.'**
+  String get invalidFileFormatError;
+
+  /// Footnote describing supported document types
+  ///
+  /// In en, this message translates to:
+  /// **'Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)'**
+  String get supportedFormatsNotice;
+
+  /// Count banner in OCR preview
+  ///
+  /// In en, this message translates to:
+  /// **'{count} formulas & concepts extracted'**
+  String extractedSnippetsCount(int count);
+
+  /// Action button in OCR preview
+  ///
+  /// In en, this message translates to:
+  /// **'Generate SM-2 Cards'**
+  String get generateCardsAction;
+
+  /// Title for generated flashcards review page
+  ///
+  /// In en, this message translates to:
+  /// **'Review Generated Flashcards'**
+  String get reviewCardsTitle;
+
+  /// Action button to save deck and start study
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Start Study Session'**
+  String get confirmAndStudyAction;
+
+  /// Title for camera scanner viewfinder
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Study Material'**
+  String get cameraScanTitle;
+
+  /// Instruction in camera viewfinder
+  ///
+  /// In en, this message translates to:
+  /// **'Align lecture slide or textbook page inside the frame'**
+  String get cameraCaptureHint;
+
+  /// Snackbar notice when file hash matches an existing document
+  ///
+  /// In en, this message translates to:
+  /// **'File already indexed. Loaded existing STEM extractions instantly.'**
+  String get contentAlreadyUploadedNotice;
 }
 
 class _AppLocalizationsDelegate

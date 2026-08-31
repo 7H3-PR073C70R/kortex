@@ -94,5 +94,25 @@ void _initUseCaseLocator() {
         getChatHistoryUseCase: locator<GetChatHistoryUseCase>(),
         generateDeckUseCase: locator<GenerateDeckFromChatUseCase>(),
       ),
+    )
+    ..registerLazySingleton<UploadStudyDocumentUseCase>(
+      () => UploadStudyDocumentUseCase(locator<IngestionRepository>()),
+    )
+    ..registerLazySingleton<ProcessStemOcrUseCase>(
+      () => ProcessStemOcrUseCase(locator<IngestionRepository>()),
+    )
+    ..registerLazySingleton<GenerateFlashcardsFromDocUseCase>(
+      () => GenerateFlashcardsFromDocUseCase(locator<IngestionRepository>()),
+    )
+    ..registerLazySingleton<FetchUserDocumentsUseCase>(
+      () => FetchUserDocumentsUseCase(locator<IngestionRepository>()),
+    )
+    ..registerFactory<IngestionBloc>(
+      () => IngestionBloc(
+        uploadUseCase: locator<UploadStudyDocumentUseCase>(),
+        processOcrUseCase: locator<ProcessStemOcrUseCase>(),
+        generateDeckUseCase: locator<GenerateFlashcardsFromDocUseCase>(),
+        fetchUserDocsUseCase: locator<FetchUserDocumentsUseCase>(),
+      ),
     );
 }

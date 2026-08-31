@@ -170,10 +170,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                               Navigator.of(context).pop();
                               unawaited(
                                 context.router.push(
-                                  SyllabotChatRoute(
-                                    initialPrompt:
-                                        'I want to parse a PDF lecture slide.',
-                                  ),
+                                  const DocumentIngestionRoute(),
                                 ),
                               );
                             },
@@ -189,10 +186,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                               Navigator.of(context).pop();
                               unawaited(
                                 context.router.push(
-                                  SyllabotChatRoute(
-                                    initialPrompt:
-                                        'I want to scan handwritten notes.',
-                                  ),
+                                  const DocumentIngestionRoute(),
                                 ),
                               );
                             },

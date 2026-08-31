@@ -14,6 +14,9 @@ void _initClients() {
     ..registerLazySingleton<SupabaseSyllabotClient>(
       () => SupabaseSyllabotClient(locator<Dio>()),
     )
+    ..registerLazySingleton<SupabaseIngestionClient>(
+      () => SupabaseIngestionClient(locator<Dio>()),
+    )
     ..registerLazySingleton<LocalLlmEngineClient>(
       LocalLlmEngineClient.new,
     );

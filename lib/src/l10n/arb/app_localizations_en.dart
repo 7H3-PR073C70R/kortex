@@ -1242,4 +1242,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelAction => 'Cancel';
+
+  @override
+  String get ingestionTitle => 'Document Ingestion & OCR';
+
+  @override
+  String get dragAndDropHint => 'Drag & drop PDF, PPTX, or image files here';
+
+  @override
+  String get browseFilesButton => 'Browse Files';
+
+  @override
+  String get cameraCaptureButton => 'Scan with Camera';
+
+  @override
+  String get uploadingStatus => 'Uploading document...';
+
+  @override
+  String get processingOcrStatus => 'Extracting STEM formulas & LaTeX...';
+
+  @override
+  String get generatingCardsStatus => 'Generating active recall cards...';
+
+  @override
+  String get ocrPreviewTitle => 'STEM OCR Live Editor';
+
+  @override
+  String get saveToDecksButton => 'Convert to Flashcards';
+
+  @override
+  String get invalidFileFormatError =>
+      'Unsupported file format. Please choose a PDF, PPTX, or Image file.';
+
+  @override
+  String get supportedFormatsNotice =>
+      'Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)';
+
+  @override
+  String extractedSnippetsCount(int count) {
+    return '$count formulas & concepts extracted';
+  }
+
+  @override
+  String get generateCardsAction => 'Generate SM-2 Cards';
+
+  @override
+  String get reviewCardsTitle => 'Review Generated Flashcards';
+
+  @override
+  String get confirmAndStudyAction => 'Save & Start Study Session';
+
+  @override
+  String get cameraScanTitle => 'Scan Study Material';
+
+  @override
+  String get cameraCaptureHint =>
+      'Align lecture slide or textbook page inside the frame';
+
+  @override
+  String get contentAlreadyUploadedNotice =>
+      'File already indexed. Loaded existing STEM extractions instantly.';
 }
