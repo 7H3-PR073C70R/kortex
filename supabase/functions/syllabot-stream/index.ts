@@ -171,8 +171,8 @@ serve(async (req: Request) => {
         apiKey: secondaryApiKey,
         model: secondaryModel,
         headers: {
-          "HTTP-Referer": "https://kortex.app",
-          "X-Title": "Kortex AI Reliability Gateway",
+          "HTTP-Referer": "https://kortexify.app",
+          "X-Title": "Kortexify AI Reliability Gateway",
         },
       },
     ].filter((p) => Boolean(p.apiKey && p.baseUrl));

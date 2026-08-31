@@ -61,7 +61,7 @@ class _AuthPageContent extends HookWidget {
         if (state.status == AuthStatus.needsOnboarding && state.user != null) {
           if (!isChatMode) {
             context.showSnackBar(
-              message: 'Account created! Welcome to Kortex.',
+              message: 'Account created! Welcome to Kortexify.',
             );
             unawaited(
               context.router.replace(const OnboardingCalibrationRoute()),

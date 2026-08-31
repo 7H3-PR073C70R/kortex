@@ -127,13 +127,13 @@ abstract class AppLocalizations {
   /// Get Started button label
   ///
   /// In en, this message translates to:
-  /// **'Get Started with Kortex'**
+  /// **'Get Started with Kortexify'**
   String get onboardingGetStarted;
 
   /// Accessibility label for the onboarding carousel
   ///
   /// In en, this message translates to:
-  /// **'Kortex Onboarding Carousel'**
+  /// **'Kortexify Onboarding Carousel'**
   String get onboardingCarouselSemantics;
 
   /// Accessibility label for skip button
@@ -151,7 +151,7 @@ abstract class AppLocalizations {
   /// Accessibility label for get started button
   ///
   /// In en, this message translates to:
-  /// **'Get Started with Kortex and finish onboarding'**
+  /// **'Get Started with Kortexify and finish onboarding'**
   String get onboardingGetStartedSemantics;
 
   /// Badge for slide 1
@@ -391,7 +391,7 @@ abstract class AppLocalizations {
   /// Warm initial greeting with motivational quote from Syllabot in auth chat
   ///
   /// In en, this message translates to:
-  /// **'Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?'**
+  /// **'Hi Stranger! 👋 Welcome to Kortexify.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?'**
   String get authChatWelcome;
 
   /// Syllabot asking for user email
@@ -541,7 +541,7 @@ abstract class AppLocalizations {
   /// Success message upon authentication
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Kortex!'**
+  /// **'Welcome to Kortexify!'**
   String get authSuccessMessage;
 
   /// Accessibility label for mode toggle button
@@ -658,11 +658,41 @@ abstract class AppLocalizations {
   /// **'Excellent. What is your specific field of study or main subjects?'**
   String get calibrationChatFieldPrompt;
 
-  /// Prompt asking for goals in chat mode
+  /// Question prompt for user's primary goal in conversational calibration
   ///
   /// In en, this message translates to:
-  /// **'Perfect. How can Kortex best support you right now?'**
+  /// **'Perfect. How can Kortexify best support you right now?'**
   String get calibrationChatGoalPrompt;
+
+  /// Calibration goal option for exams
+  ///
+  /// In en, this message translates to:
+  /// **'Ace Upcoming Exams'**
+  String get calibrationOptionExams;
+
+  /// Calibration goal option for daily habit
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Habit & Spaced Retention'**
+  String get calibrationOptionDailyReview;
+
+  /// Calibration goal option for catching up
+  ///
+  /// In en, this message translates to:
+  /// **'Catch Up on Coursework'**
+  String get calibrationOptionCatchUp;
+
+  /// Calibration goal option for deep mastery
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Conceptual Mastery'**
+  String get calibrationOptionDeepMastery;
+
+  /// Completion message in conversational calibration
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set! I\'ve personalized your study engine with adaptive FSRS scheduling and tailored your daily quotas. Let\'s conquer this semester.'**
+  String get calibrationChatReady;
 
   /// University option in chat mode
   ///
@@ -697,7 +727,7 @@ abstract class AppLocalizations {
   /// Finish button in calibration wizard
   ///
   /// In en, this message translates to:
-  /// **'Calibrate & Launch Kortex'**
+  /// **'Calibrate & Launch Kortexify'**
   String get calibrationFinish;
 
   /// Question 1 in calibration
@@ -829,7 +859,7 @@ abstract class AppLocalizations {
   /// Question A4 in calibration
   ///
   /// In en, this message translates to:
-  /// **'How can Kortex best support you right now?'**
+  /// **'How can Kortexify best support you right now?'**
   String get calibrationQuestionA4;
 
   /// Subtitle for question A4
@@ -1277,7 +1307,7 @@ abstract class AppLocalizations {
   /// Screen reader announcement when OTP is verified
   ///
   /// In en, this message translates to:
-  /// **'Email verified successfully. Welcome to Kortex!'**
+  /// **'Email verified successfully. Welcome to Kortexify!'**
   String get otpVerifiedAnnouncement;
 
   /// Semantics label for OTP PIN input
@@ -1301,13 +1331,13 @@ abstract class AppLocalizations {
   /// Title on permissions interstitial page
   ///
   /// In en, this message translates to:
-  /// **'Enable Key Features'**
+  /// **'Supercharge Your Focus'**
   String get permissionsTitle;
 
   /// Subtitle on permissions page
   ///
   /// In en, this message translates to:
-  /// **'Allow Kortex to send you study reminders and scan your documents for instant AI indexing.'**
+  /// **'Allow Kortexify to send you study reminders and scan your documents for instant AI indexing.'**
   String get permissionsSubtitle;
 
   /// Notification permission card title
@@ -2477,7 +2507,7 @@ abstract class AppLocalizations {
   /// Title on login / welcome screen
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Kortex'**
+  /// **'Welcome to Kortexify'**
   String get welcomeTitle;
 
   /// Subtitle on welcome screen
@@ -2666,10 +2696,10 @@ abstract class AppLocalizations {
   /// **'Switch to AI Chat'**
   String get switchToChatView;
 
-  /// Welcome message for AI conversational onboarding
+  /// Welcome message from Syllabot in conversational onboarding
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.'**
+  /// **'Welcome to Kortexify! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.'**
   String get onboardingChatWelcome;
 
   /// Title for the track selection step
@@ -2687,7 +2717,7 @@ abstract class AppLocalizations {
   /// Button label to finalize onboarding and go to dashboard
   ///
   /// In en, this message translates to:
-  /// **'Launch Kortex Workspace'**
+  /// **'Launch Kortexify Workspace'**
   String get completeAndGoToDashboard;
 
   /// Label for AI chat onboarding mode

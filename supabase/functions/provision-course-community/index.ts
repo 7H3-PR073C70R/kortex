@@ -103,7 +103,7 @@ serve(async (req) => {
           content: `Official discussion space for ${courseCode}. Share questions, past papers, and study strategies.`,
           track: department,
           author_id: userId,
-          author_name: "Kortex Syllabot",
+          author_name: "Kortexify Syllabot",
           upvotes: 5,
         },
         {
@@ -111,7 +111,7 @@ serve(async (req) => {
           content: `Thread for resolving difficult problems and verifying step-by-step solutions.`,
           track: department,
           author_id: userId,
-          author_name: "Kortex Peer Hub",
+          author_name: "Kortexify Peer Hub",
           upvotes: 3,
         },
         {
@@ -119,7 +119,7 @@ serve(async (req) => {
           content: `Curated LaTeX notes, formulas, and flashcard decks generated for this course.`,
           track: department,
           author_id: userId,
-          author_name: "Kortex AI",
+          author_name: "Kortexify AI",
           latex_content: "\\sum_{i=1}^{n} x_i",
           upvotes: 8,
         },

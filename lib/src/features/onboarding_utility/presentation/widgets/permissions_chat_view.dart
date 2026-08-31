@@ -157,7 +157,7 @@ class PermissionsChatView extends HookWidget {
           sender: _PermChatSender.syllabot,
           text:
               'Workspace calibrated and ready! '
-              'Launching your Kortex dashboard...',
+              'Launching your Kortexify dashboard...',
         );
         messages.value = [...messages.value, botMsg];
         latestBotMsgId.value = msgId;

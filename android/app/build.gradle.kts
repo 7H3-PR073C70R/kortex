@@ -14,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.verygoodcore.kortex"
+    namespace = "com.kortexify.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,10 +28,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.verygoodcore.kortex"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.kortexify.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -60,17 +57,17 @@ android {
         create("production") {
             dimension = "default"
             applicationIdSuffix = ""
-            manifestPlaceholders["appName"] = "Kortex"
+            manifestPlaceholders["appName"] = "Kortexify"
         }
         create("staging") {
             dimension = "default"
             applicationIdSuffix = ".stg"
-            manifestPlaceholders["appName"] = "[STG] Kortex"
+            manifestPlaceholders["appName"] = "[STG] Kortexify"
         }
         create("development") {
             dimension = "default"
             applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "[DEV] Kortex"
+            manifestPlaceholders["appName"] = "[DEV] Kortexify"
         }
     }
 

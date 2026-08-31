@@ -1,5 +1,5 @@
 name: kortex
-description: Kortex is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortex transforms unstructured academic materials (syllabi, lecture slides, textbooks, and past papers) into an active-recall mastery system in a single document drop.
+description: Kortexify is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortexify transforms unstructured academic materials (syllabi, lecture slides, textbooks, and past papers) into an active-recall mastery system in a single document drop.
 version: 1.0.0+1
 publish_to: none
 

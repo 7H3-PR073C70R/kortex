@@ -96,7 +96,7 @@ export async function enforceDailyQuota(
       limit,
       tier,
       resetSeconds,
-      upgradeUrl: "https://kortex.app/upgrade",
+      upgradeUrl: "https://kortexify.app/upgrade",
     };
 
     const errorResponse = new Response(JSON.stringify(errorBody), {

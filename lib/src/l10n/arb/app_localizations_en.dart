@@ -24,10 +24,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingNext => 'Continue';
 
   @override
-  String get onboardingGetStarted => 'Get Started with Kortex';
+  String get onboardingGetStarted => 'Get Started with Kortexify';
 
   @override
-  String get onboardingCarouselSemantics => 'Kortex Onboarding Carousel';
+  String get onboardingCarouselSemantics => 'Kortexify Onboarding Carousel';
 
   @override
   String get onboardingSkipSemantics => 'Skip onboarding and enter app';
@@ -37,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingGetStartedSemantics =>
-      'Get Started with Kortex and finish onboarding';
+      'Get Started with Kortexify and finish onboarding';
 
   @override
   String get onboardingSlide1Badge => 'ZERO-LATENCY INGESTION';
@@ -182,7 +182,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authChatWelcome =>
-      'Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?';
+      'Hi Stranger! 👋 Welcome to Kortexify.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?';
 
   @override
   String get authChatAskEmail =>
@@ -260,7 +260,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authGenericError => 'Authentication failed. Please try again.';
 
   @override
-  String get authSuccessMessage => 'Welcome to Kortex!';
+  String get authSuccessMessage => 'Welcome to Kortexify!';
 
   @override
   String authModeToggleSemantics(String mode) {
@@ -332,7 +332,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calibrationChatGoalPrompt =>
-      'Perfect. How can Kortex best support you right now?';
+      'Perfect. How can Kortexify best support you right now?';
+
+  @override
+  String get calibrationOptionExams => 'Ace Upcoming Exams';
+
+  @override
+  String get calibrationOptionDailyReview => 'Daily Habit & Spaced Retention';
+
+  @override
+  String get calibrationOptionCatchUp => 'Catch Up on Coursework';
+
+  @override
+  String get calibrationOptionDeepMastery => 'Deep Conceptual Mastery';
+
+  @override
+  String get calibrationChatReady =>
+      'You\'re all set! I\'ve personalized your study engine with adaptive FSRS scheduling and tailored your daily quotas. Let\'s conquer this semester.';
 
   @override
   String get calibrationFocusHigherEd => 'University / Polytechnic';
@@ -352,7 +368,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calibrationContinue => 'Continue';
 
   @override
-  String get calibrationFinish => 'Calibrate & Launch Kortex';
+  String get calibrationFinish => 'Calibrate & Launch Kortexify';
 
   @override
   String get calibrationQuestion1 => 'What is your current academic focus?';
@@ -421,7 +437,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calibrationQuestionA4 =>
-      'How can Kortex best support you right now?';
+      'How can Kortexify best support you right now?';
 
   @override
   String get calibrationQuestionA4Subtitle =>
@@ -673,7 +689,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otpVerifiedAnnouncement =>
-      'Email verified successfully. Welcome to Kortex!';
+      'Email verified successfully. Welcome to Kortexify!';
 
   @override
   String get otpInputSemantics => 'Six digit verification code input';
@@ -685,11 +701,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpResendSemantics => 'Resend verification code';
 
   @override
-  String get permissionsTitle => 'Enable Key Features';
+  String get permissionsTitle => 'Supercharge Your Focus';
 
   @override
   String get permissionsSubtitle =>
-      'Allow Kortex to send you study reminders and scan your documents for instant AI indexing.';
+      'Allow Kortexify to send you study reminders and scan your documents for instant AI indexing.';
 
   @override
   String get permissionsNotifTitle => 'Push Notifications';
@@ -1373,7 +1389,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upvoteAction => 'Upvote';
 
   @override
-  String get welcomeTitle => 'Welcome to Kortex';
+  String get welcomeTitle => 'Welcome to Kortexify';
 
   @override
   String get welcomeSubtitle => 'Your AI-powered adaptive STEM study companion';
@@ -1483,7 +1499,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingChatWelcome =>
-      'Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.';
+      'Welcome to Kortexify! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.';
 
   @override
   String get onboardingStepTrackTitle => 'Target Academic Track';
@@ -1492,7 +1508,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingStepGoalTitle => 'Daily Review Target';
 
   @override
-  String get completeAndGoToDashboard => 'Launch Kortex Workspace';
+  String get completeAndGoToDashboard => 'Launch Kortexify Workspace';
 
   @override
   String get onboardingAiChatTitle => 'AI Guide';

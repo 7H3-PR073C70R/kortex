@@ -15,7 +15,7 @@ export const FREE_TIER_LIMITS = {
   syllabot_query: 30, // 30 Queries per 24 hours
 } as const;
 
-export const UPGRADE_URL = "https://kortex.app/pay";
+export const UPGRADE_URL = "https://kortexify.app/pay";
 
 /**
  * Hard Quota & Paywall Enforcement Middleware.

@@ -110,7 +110,7 @@ class UserProfilePage extends HookWidget {
                               Text(
                                 profile?.displayName ??
                                     profile?.email ??
-                                    'Kortex Scholar',
+                                    'Kortexify Scholar',
                                 style: typography.title3.bold.copyWith(
                                   color: colors.textPrimary,
                                 ),

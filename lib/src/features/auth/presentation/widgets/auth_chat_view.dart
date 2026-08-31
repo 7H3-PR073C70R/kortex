@@ -137,7 +137,7 @@ class AuthChatView extends HookWidget {
     final initialGreeting = useMemoized(() {
       final randomIndex = math.Random().nextInt(_motivationalQuotes.length);
       final item = _motivationalQuotes[randomIndex];
-      return 'Hi Stranger! 👋 Welcome to Kortex.\n\n'
+      return 'Hi Stranger! 👋 Welcome to Kortexify.\n\n'
           '✨ "${item.quote}" — ${item.author}\n\n'
           "I'm Syllabot, your AI study partner. "
           'How would you like to get started today?';
@@ -318,7 +318,7 @@ class AuthChatView extends HookWidget {
           currentFlow.value = _ChatFlowStep.submitting;
 
           isThinking.value = true;
-          thinkingLabel.value = 'Creating your Kortex neural profile...';
+          thinkingLabel.value = 'Creating your Kortexify neural profile...';
           scrollToBottom(animate: true);
 
           final regEmail = draftState.email;
@@ -329,7 +329,7 @@ class AuthChatView extends HookWidget {
           lastRetryAction.value = () {
             currentFlow.value = _ChatFlowStep.submitting;
             isThinking.value = true;
-            thinkingLabel.value = 'Creating your Kortex neural profile...';
+            thinkingLabel.value = 'Creating your Kortexify neural profile...';
             scrollToBottom(animate: true);
             context.read<AuthBloc>().add(
               AuthRegisterRequested(
@@ -516,7 +516,7 @@ class AuthChatView extends HookWidget {
           currentFlow.value = _ChatFlowStep.initial;
           final name = state.user?.displayName ?? 'Scholar';
           addBotMessage(
-            '🎉 Welcome to Kortex, $name! Your account has been created.\n\n'
+            '🎉 Welcome to Kortexify, $name! Your account has been created.\n\n'
             "Let's configure your academic track and study profile...",
           );
           Timer(const Duration(milliseconds: 900), () {
@@ -579,7 +579,7 @@ class AuthChatView extends HookWidget {
                         if (index == messages.value.length) {
                           return _ThinkingBubble(
                             statusText: authState.isLoading
-                                ? 'Connecting to Kortex neural engine...'
+                                ? 'Connecting to Kortexify neural engine...'
                                 : thinkingLabel.value,
                           );
                         }

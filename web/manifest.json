@@ -1,11 +1,11 @@
 {
-    "name": "Kortex",
-    "short_name": "Kortex",
+    "name": "Kortexify",
+    "short_name": "Kortexify",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Kortex is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortex transforms unstructured academic materials (syllabi, lecture slides, textbooks, and past papers) into an active-recall mastery system in a single document drop.",
+    "background_color": "#090D16",
+    "theme_color": "#4361EE",
+    "description": "Kortexify is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortexify transforms unstructured academic materials into an active-recall mastery system in a single document drop.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

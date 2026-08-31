@@ -69,7 +69,7 @@ class _OnboardingWrapperView extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: const Text('Kortex Onboarding'),
+            title: const Text('Kortexify Onboarding'),
             centerTitle: true,
           ),
           body: LayoutBuilder(

@@ -13,7 +13,7 @@ class PdfPrintableGenerator {
   Future<Uint8List> generatePrintableDeckPdf(DeckEntity deck) async {
     final pdf = pw.Document(
       title: '${deck.title} - Printable Flashcards',
-      author: 'Kortex Academic Workspace',
+      author: 'Kortexify Academic Workspace',
     );
 
     const cardsPerPage = 8;
@@ -144,7 +144,7 @@ class PdfPrintableGenerator {
               pw.Align(
                 alignment: pw.Alignment.bottomRight,
                 child: pw.Text(
-                  'Kortex Academic',
+                  'Kortexify Academic',
                   style: const pw.TextStyle(
                     fontSize: 6,
                     color: PdfColors.grey500,

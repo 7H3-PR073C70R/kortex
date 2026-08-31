@@ -1,33 +1,33 @@
 /* ==========================================================================
-   KORTEX ANIMATIONS & DYNAMIC MICRO-INTERACTIONS
+   KORTEX ANIMATIONS & DYNAMIC MICRO-INTERACTIONS (MOBILE OPTIMIZED)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Ambient Aura Mesh & Cosmic Glow
+   1. Ambient Aura Mesh & Cosmic Glow Container (Zero Horizontal Overflow)
    -------------------------------------------------------------------------- */
-@keyframes nebulaDrift {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translate(40px, -30px) scale(1.12);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.45;
-  }
+.aura-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes nebulaPulse {
-  0%, 100% {
-    opacity: 0.35;
-    filter: blur(80px);
+@keyframes nebulaDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
   }
   50% {
+    transform: translate3d(30px, -20px, 0) scale(1.1);
     opacity: 0.65;
-    filter: blur(100px);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
   }
 }
 
@@ -35,37 +35,44 @@
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 0;
-  animation: nebulaDrift 18s ease-in-out infinite alternate;
+  animation: nebulaDrift 20s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 .aura-blob-primary {
-  width: 500px;
-  height: 500px;
+  width: min(500px, 80vw);
+  height: min(500px, 80vw);
   background: radial-gradient(circle, var(--color-academic-blue-glow) 0%, rgba(67, 97, 238, 0) 70%);
-  top: -150px;
-  left: -100px;
+  top: -100px;
+  left: -50px;
   animation-duration: 22s;
 }
 
 .aura-blob-syllabot {
-  width: 600px;
-  height: 600px;
+  width: min(550px, 90vw);
+  height: min(550px, 90vw);
   background: radial-gradient(circle, var(--color-syllabot-glow) 0%, rgba(139, 92, 246, 0) 70%);
-  top: 10%;
-  right: -150px;
+  top: 15%;
+  right: -80px;
   animation-duration: 26s;
   animation-delay: -5s;
 }
 
 .aura-blob-cyan {
-  width: 450px;
-  height: 450px;
+  width: min(400px, 70vw);
+  height: min(400px, 70vw);
   background: radial-gradient(circle, var(--color-cyan-glow) 0%, rgba(6, 182, 212, 0) 70%);
   bottom: 5%;
-  left: 20%;
+  left: 10%;
   animation-duration: 20s;
   animation-delay: -8s;
+}
+
+@media (max-width: 768px) {
+  .aura-blob {
+    animation-duration: 30s; /* Slower, lighter CPU load on mobile */
+    opacity: 0.35;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -113,8 +120,8 @@
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
   70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
   }
   100% {
     transform: scale(0.95);
@@ -132,49 +139,39 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. Scroll-Triggered Entry Animations
+   4. Mobile-Optimized Scroll-Triggered Entry Animations
    -------------------------------------------------------------------------- */
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 16px, 0);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .reveal-on-scroll.is-revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
-.delay-1 { transition-delay: 0.1s; }
-.delay-2 { transition-delay: 0.2s; }
-.delay-3 { transition-delay: 0.3s; }
-.delay-4 { transition-delay: 0.4s; }
+.delay-1 { transition-delay: 0.08s; }
+.delay-2 { transition-delay: 0.16s; }
+.delay-3 { transition-delay: 0.24s; }
+.delay-4 { transition-delay: 0.32s; }
 
 /* --------------------------------------------------------------------------
    5. Interactive Float & Hover Effects
    -------------------------------------------------------------------------- */
 @keyframes subtleFloat {
   0%, 100% {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translate3d(0, -6px, 0);
   }
 }
 
 .float-slow {
   animation: subtleFloat 6s ease-in-out infinite;
-}
-
-.float-delay-1 {
-  animation: subtleFloat 7s ease-in-out infinite;
-  animation-delay: -2s;
-}
-
-.float-delay-2 {
-  animation: subtleFloat 8s ease-in-out infinite;
-  animation-delay: -4s;
 }
 
 /* --------------------------------------------------------------------------
@@ -194,4 +191,20 @@
   animation: spin 0.8s linear infinite;
   display: inline-block;
   vertical-align: middle;
+}
+
+/* --------------------------------------------------------------------------
+   7. Accessibility: Reduced Motion Support
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

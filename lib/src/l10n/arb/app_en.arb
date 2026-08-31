@@ -20,11 +20,11 @@
     "@onboardingNext": {
         "description": "Continue button label"
     },
-    "onboardingGetStarted": "Get Started with Kortex",
+    "onboardingGetStarted": "Get Started with Kortexify",
     "@onboardingGetStarted": {
         "description": "Get Started button label"
     },
-    "onboardingCarouselSemantics": "Kortex Onboarding Carousel",
+    "onboardingCarouselSemantics": "Kortexify Onboarding Carousel",
     "@onboardingCarouselSemantics": {
         "description": "Accessibility label for the onboarding carousel"
     },
@@ -36,7 +36,7 @@
     "@onboardingNextSemantics": {
         "description": "Accessibility label for next slide button"
     },
-    "onboardingGetStartedSemantics": "Get Started with Kortex and finish onboarding",
+    "onboardingGetStartedSemantics": "Get Started with Kortexify and finish onboarding",
     "@onboardingGetStartedSemantics": {
         "description": "Accessibility label for get started button"
     },
@@ -268,7 +268,7 @@
     "@authSocialApple": {
         "description": "Social sign in with Apple button label"
     },
-    "authChatWelcome": "Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI'm Syllabot, your AI study partner. How would you like to get started today?",
+    "authChatWelcome": "Hi Stranger! 👋 Welcome to Kortexify.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI'm Syllabot, your AI study partner. How would you like to get started today?",
     "@authChatWelcome": {
         "description": "Warm initial greeting with motivational quote from Syllabot in auth chat"
     },
@@ -368,7 +368,7 @@
     "@authGenericError": {
         "description": "Generic authentication error message"
     },
-    "authSuccessMessage": "Welcome to Kortex!",
+    "authSuccessMessage": "Welcome to Kortexify!",
     "@authSuccessMessage": {
         "description": "Success message upon authentication"
     },
@@ -460,9 +460,29 @@
     "@calibrationChatFieldPrompt": {
         "description": "Prompt asking for field in chat mode"
     },
-    "calibrationChatGoalPrompt": "Perfect. How can Kortex best support you right now?",
+    "calibrationChatGoalPrompt": "Perfect. How can Kortexify best support you right now?",
     "@calibrationChatGoalPrompt": {
-        "description": "Prompt asking for goals in chat mode"
+        "description": "Question prompt for user's primary goal in conversational calibration"
+    },
+    "calibrationOptionExams": "Ace Upcoming Exams",
+    "@calibrationOptionExams": {
+        "description": "Calibration goal option for exams"
+    },
+    "calibrationOptionDailyReview": "Daily Habit & Spaced Retention",
+    "@calibrationOptionDailyReview": {
+        "description": "Calibration goal option for daily habit"
+    },
+    "calibrationOptionCatchUp": "Catch Up on Coursework",
+    "@calibrationOptionCatchUp": {
+        "description": "Calibration goal option for catching up"
+    },
+    "calibrationOptionDeepMastery": "Deep Conceptual Mastery",
+    "@calibrationOptionDeepMastery": {
+        "description": "Calibration goal option for deep mastery"
+    },
+    "calibrationChatReady": "You're all set! I've personalized your study engine with adaptive FSRS scheduling and tailored your daily quotas. Let's conquer this semester.",
+    "@calibrationChatReady": {
+        "description": "Completion message in conversational calibration"
     },
     "calibrationFocusHigherEd": "University / Polytechnic",
     "@calibrationFocusHigherEd": {
@@ -498,7 +518,7 @@
     "@calibrationContinue": {
         "description": "Continue button in calibration wizard"
     },
-    "calibrationFinish": "Calibrate & Launch Kortex",
+    "calibrationFinish": "Calibrate & Launch Kortexify",
     "@calibrationFinish": {
         "description": "Finish button in calibration wizard"
     },
@@ -586,7 +606,7 @@
     "@calibrationFieldSocialSciences": {
         "description": "Social Sciences & Economics field"
     },
-    "calibrationQuestionA4": "How can Kortex best support you right now?",
+    "calibrationQuestionA4": "How can Kortexify best support you right now?",
     "@calibrationQuestionA4": {
         "description": "Question A4 in calibration"
     },
@@ -953,7 +973,7 @@
     "@otpVerifyingAnnouncement": {
         "description": "Screen reader announcement when verifying OTP"
     },
-    "otpVerifiedAnnouncement": "Email verified successfully. Welcome to Kortex!",
+    "otpVerifiedAnnouncement": "Email verified successfully. Welcome to Kortexify!",
     "@otpVerifiedAnnouncement": {
         "description": "Screen reader announcement when OTP is verified"
     },
@@ -970,11 +990,11 @@
         "description": "Semantics label for resend button"
     },
 
-    "permissionsTitle": "Enable Key Features",
+    "permissionsTitle": "Supercharge Your Focus",
     "@permissionsTitle": {
         "description": "Title on permissions interstitial page"
     },
-    "permissionsSubtitle": "Allow Kortex to send you study reminders and scan your documents for instant AI indexing.",
+    "permissionsSubtitle": "Allow Kortexify to send you study reminders and scan your documents for instant AI indexing.",
     "@permissionsSubtitle": {
         "description": "Subtitle on permissions page"
     },
@@ -1941,7 +1961,7 @@
     "@upvoteAction": {
         "description": "Button label to upvote a thread"
     },
-    "welcomeTitle": "Welcome to Kortex",
+    "welcomeTitle": "Welcome to Kortexify",
     "@welcomeTitle": {
         "description": "Title on login / welcome screen"
     },
@@ -2095,9 +2115,9 @@
     "@switchToChatView": {
         "description": "Button to switch onboarding mode to conversational AI chat"
     },
-    "onboardingChatWelcome": "Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let's calibrate your curriculum and study goals.",
+    "onboardingChatWelcome": "Welcome to Kortexify! I am Syllabot, your AI Academic Guide. Let's calibrate your curriculum and study goals.",
     "@onboardingChatWelcome": {
-        "description": "Welcome message for AI conversational onboarding"
+        "description": "Welcome message from Syllabot in conversational onboarding"
     },
     "onboardingStepTrackTitle": "Target Academic Track",
     "@onboardingStepTrackTitle": {
@@ -2107,7 +2127,7 @@
     "@onboardingStepGoalTitle": {
         "description": "Title for the daily goal calibration step"
     },
-    "completeAndGoToDashboard": "Launch Kortex Workspace",
+    "completeAndGoToDashboard": "Launch Kortexify Workspace",
     "@completeAndGoToDashboard": {
         "description": "Button label to finalize onboarding and go to dashboard"
     },

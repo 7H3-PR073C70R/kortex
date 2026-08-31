@@ -17,8 +17,8 @@ class PaywallScreen extends StatefulWidget {
 
   final VoidCallback? onPurchaseSuccess;
 
-  static const String privacyPolicyUrl = 'https://kortex.app/privacy';
-  static const String termsOfServiceUrl = 'https://kortex.app/terms';
+  static const String privacyPolicyUrl = 'https://kortexify.app/privacy';
+  static const String termsOfServiceUrl = 'https://kortexify.app/terms';
 
   @override
   State<PaywallScreen> createState() => _PaywallScreenState();
@@ -99,7 +99,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Kortex Pro subscription successfully restored!'),
+              content: Text(
+                'Kortexify Pro subscription successfully restored!',
+              ),
               backgroundColor: Color(0xFF10B981),
             ),
           );
@@ -244,7 +246,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               const Icon(Icons.bolt, color: Color(0xFF818CF8), size: 16),
               SizedBox(width: 6.w),
               const Text(
-                'KORTEX PRO UNLIMITED',
+                'KORTEXIFY PRO UNLIMITED',
                 style: TextStyle(
                   color: Color(0xFF818CF8),
                   fontWeight: FontWeight.bold,
@@ -505,7 +507,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               : Text(
                   kIsWeb
                       ? 'Continue to Checkout'
-                      : 'Unlock Kortex Pro',
+                      : 'Unlock Kortexify Pro',
                   style: TextStyle(
                     fontSize: 15.sp,
                     fontWeight: FontWeight.bold,

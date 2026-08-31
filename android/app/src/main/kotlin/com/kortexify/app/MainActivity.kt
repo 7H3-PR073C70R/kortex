@@ -1,4 +1,4 @@
-package com.example.verygoodcore.kortex
+package com.kortexify.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

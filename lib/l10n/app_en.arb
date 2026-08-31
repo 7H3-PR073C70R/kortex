@@ -20,11 +20,11 @@
     "@onboardingNext": {
         "description": "Continue button label"
     },
-    "onboardingGetStarted": "Get Started with Kortex",
+    "onboardingGetStarted": "Get Started with Kortexify",
     "@onboardingGetStarted": {
         "description": "Get Started button label"
     },
-    "onboardingCarouselSemantics": "Kortex Onboarding Carousel",
+    "onboardingCarouselSemantics": "Kortexify Onboarding Carousel",
     "@onboardingCarouselSemantics": {
         "description": "Accessibility label for the onboarding carousel"
     },
@@ -36,7 +36,7 @@
     "@onboardingNextSemantics": {
         "description": "Accessibility label for next slide button"
     },
-    "onboardingGetStartedSemantics": "Get Started with Kortex and finish onboarding",
+    "onboardingGetStartedSemantics": "Get Started with Kortexify and finish onboarding",
     "@onboardingGetStartedSemantics": {
         "description": "Accessibility label for get started button"
     },

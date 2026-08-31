@@ -1,5 +1,5 @@
 /**
- * KORTEX LANDING PAGE CORE LOGIC
+ * KORTEXIFY LANDING PAGE CORE LOGIC
  * Waitlist submission, validation, live counter, and interactive demo.
  */
 
@@ -15,14 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Retrieve saved count or initialize
-  let currentCount = parseInt(localStorage.getItem('kortex_waitlist_count') || baseCount, 10);
+  let currentCount = parseInt(localStorage.getItem('kortexify_waitlist_count') || localStorage.getItem('kortex_waitlist_count') || baseCount, 10);
   updateCounts(currentCount);
 
   // Periodic organic increment simulation
   setInterval(() => {
     if (Math.random() > 0.6) {
       currentCount += 1;
-      localStorage.setItem('kortex_waitlist_count', currentCount);
+      localStorage.setItem('kortexify_waitlist_count', currentCount);
       updateCounts(currentCount);
     }
   }, 12000);
@@ -63,10 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         // Save to LocalStorage
-        const existingLeads = JSON.parse(localStorage.getItem('kortex_leads') || '[]');
+        const existingLeads = JSON.parse(localStorage.getItem('kortexify_leads') || localStorage.getItem('kortex_leads') || '[]');
         if (!existingLeads.includes(email)) {
           existingLeads.push(email);
-          localStorage.setItem('kortex_leads', JSON.stringify(existingLeads));
+          localStorage.setItem('kortexify_leads', JSON.stringify(existingLeads));
           currentCount += 1;
           updateCounts(currentCount);
         }
