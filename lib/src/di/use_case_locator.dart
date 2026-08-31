@@ -73,6 +73,9 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<SaveSessionResultsUseCase>(
       () => SaveSessionResultsUseCase(locator<DecksRepository>()),
     )
+    ..registerLazySingleton<CrdtDeckMerger>(
+      CrdtDeckMerger.new,
+    )
     ..registerFactory<DecksBloc>(
       () => DecksBloc(
         getUserDecksUseCase: locator<GetUserDecksUseCase>(),

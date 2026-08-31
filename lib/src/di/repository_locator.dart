@@ -70,5 +70,10 @@ void _initRepositoryLocator() {
     )
     ..registerLazySingleton<QuizRepository>(
       QuizRepositoryImpl.new,
+    )
+    ..registerLazySingleton<LmsRepository>(
+      () => LmsRepositoryImpl(
+        dataSource: locator<LmsImportDataSource>(),
+      ),
     );
 }

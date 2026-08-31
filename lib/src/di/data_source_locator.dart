@@ -65,5 +65,10 @@ void _initDataSource() {
         client: locator<LocalMlkitOcrClient>(),
         storageService: locator<LocalStorageService>(),
       ),
+    )
+    ..registerLazySingleton<LmsImportDataSource>(
+      () => LmsImportDataSourceImpl(
+        dio: locator<Dio>(),
+      ),
     );
 }
