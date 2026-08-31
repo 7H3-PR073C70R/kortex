@@ -173,5 +173,17 @@ void _initUseCaseLocator() {
         calculateTargetUseCase: locator<CalculateDailyCramTargetUseCase>(),
         createExamUseCase: locator<CreateExamCountdownUseCase>(),
       ),
+    )
+    ..registerLazySingleton<GenerateQuizFromDeckUseCase>(
+      () => GenerateQuizFromDeckUseCase(locator<QuizRepository>()),
+    )
+    ..registerLazySingleton<SubmitQuizAnswersUseCase>(
+      () => SubmitQuizAnswersUseCase(locator<QuizRepository>()),
+    )
+    ..registerFactory<QuizSessionCubit>(
+      () => QuizSessionCubit(
+        generateQuizUseCase: locator<GenerateQuizFromDeckUseCase>(),
+        submitQuizUseCase: locator<SubmitQuizAnswersUseCase>(),
+      ),
     );
 }

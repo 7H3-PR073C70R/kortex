@@ -97,6 +97,11 @@ import 'package:kortex/src/features/planner/domain/repositories/planner_reposito
 import 'package:kortex/src/features/planner/domain/use_cases/calculate_daily_cram_target_use_case.dart';
 import 'package:kortex/src/features/planner/domain/use_cases/create_exam_countdown_use_case.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/features/quiz/data/repositories/quiz_repository_impl.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
+import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
+import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/supabase_syllabot_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/vector_search_client.dart';

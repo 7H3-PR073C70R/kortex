@@ -1642,4 +1642,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveExamCountdown => 'Save Exam Countdown';
+
+  @override
+  String get quizTitle => 'Practice Quiz & Mock Exam';
+
+  @override
+  String quizQuestionProgress(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String quizScoreLabel(int score) {
+    return 'Your Score: $score%';
+  }
+
+  @override
+  String get practiceWeakCards => 'Practice Weak Flashcards';
+
+  @override
+  String get quizExplanationTitle => 'Explanation & Solution';
+
+  @override
+  String get submitQuizButton => 'Submit Quiz';
+
+  @override
+  String get nextQuestionButton => 'Next Question';
+
+  @override
+  String get quizTopicWeakness => 'Weak Areas by Sub-Topic';
+
+  @override
+  String quizTimeRemaining(String time) {
+    return 'Time: $time';
+  }
 }

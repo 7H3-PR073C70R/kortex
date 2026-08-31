@@ -2332,5 +2332,63 @@
     "saveExamCountdown": "Save Exam Countdown",
     "@saveExamCountdown": {
         "description": "Submit button for saving exam countdown"
+    },
+    "quizTitle": "Practice Quiz & Mock Exam",
+    "@quizTitle": {
+        "description": "Title of the quiz workspace view"
+    },
+    "quizQuestionProgress": "Question {current} of {total}",
+    "@quizQuestionProgress": {
+        "description": "Progress of current question in quiz",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "quizScoreLabel": "Your Score: {score}%",
+    "@quizScoreLabel": {
+        "description": "Score percentage label on results screen",
+        "placeholders": {
+            "score": {
+                "type": "int",
+                "example": "85"
+            }
+        }
+    },
+    "practiceWeakCards": "Practice Weak Flashcards",
+    "@practiceWeakCards": {
+        "description": "Button to review flashcards for weak sub-topics"
+    },
+    "quizExplanationTitle": "Explanation & Solution",
+    "@quizExplanationTitle": {
+        "description": "Accordion header for question solution"
+    },
+    "submitQuizButton": "Submit Quiz",
+    "@submitQuizButton": {
+        "description": "Button label to submit and finalize quiz"
+    },
+    "nextQuestionButton": "Next Question",
+    "@nextQuestionButton": {
+        "description": "Button label to advance to next question"
+    },
+    "quizTopicWeakness": "Weak Areas by Sub-Topic",
+    "@quizTopicWeakness": {
+        "description": "Header title for topic weakness analysis"
+    },
+    "quizTimeRemaining": "Time: {time}",
+    "@quizTimeRemaining": {
+        "description": "Time counter for quiz",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "04:32"
+            }
+        }
     }
 }

@@ -61,5 +61,8 @@ void _initRepositoryLocator() {
     )
     ..registerLazySingleton<PlannerRepository>(
       PlannerRepositoryImpl.new,
+    )
+    ..registerLazySingleton<QuizRepository>(
+      QuizRepositoryImpl.new,
     );
 }

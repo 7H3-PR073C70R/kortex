@@ -2917,6 +2917,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save Exam Countdown'**
   String get saveExamCountdown;
+
+  /// Title of the quiz workspace view
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Quiz & Mock Exam'**
+  String get quizTitle;
+
+  /// Progress of current question in quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current} of {total}'**
+  String quizQuestionProgress(int current, int total);
+
+  /// Score percentage label on results screen
+  ///
+  /// In en, this message translates to:
+  /// **'Your Score: {score}%'**
+  String quizScoreLabel(int score);
+
+  /// Button to review flashcards for weak sub-topics
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Weak Flashcards'**
+  String get practiceWeakCards;
+
+  /// Accordion header for question solution
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation & Solution'**
+  String get quizExplanationTitle;
+
+  /// Button label to submit and finalize quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Quiz'**
+  String get submitQuizButton;
+
+  /// Button label to advance to next question
+  ///
+  /// In en, this message translates to:
+  /// **'Next Question'**
+  String get nextQuestionButton;
+
+  /// Header title for topic weakness analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Weak Areas by Sub-Topic'**
+  String get quizTopicWeakness;
+
+  /// Time counter for quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Time: {time}'**
+  String quizTimeRemaining(String time);
 }
 
 class _AppLocalizationsDelegate
