@@ -17,3 +17,10 @@ class ServerFailure extends Failure {
     int? statusCode,
   }) : super(message, statusCode);
 }
+
+class CacheFailure extends Failure {
+  const CacheFailure({
+    String? message,
+    int? statusCode,
+  }) : super(message, statusCode);
+}

@@ -52,5 +52,11 @@ void _initRepositoryLocator() {
       () => RagRepositoryImpl(
         locator<RagRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<LocalOcrRepository>(
+      () => LocalOcrRepositoryImpl(
+        localDataSource: locator<OcrLocalDataSource>(),
+        remoteDataSource: locator<IngestionRemoteDataSource>(),
+      ),
     );
 }

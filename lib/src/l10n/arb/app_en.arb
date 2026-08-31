@@ -2216,5 +2216,27 @@
                 "example": "94"
             }
         }
+    },
+    "alignCameraTextHint": "Align textbook or lecture note text within frame",
+    "@alignCameraTextHint": {
+        "description": "Hint shown over live camera OCR frame"
+    },
+    "offlineOcrProcessedNotice": "Processed locally. Will sync with LaTeX AI when online.",
+    "@offlineOcrProcessedNotice": {
+        "description": "Notice when OCR is executed on-device offline"
+    },
+    "syncPendingCount": "{count, plural, =1{1 item pending sync} other{{count} items pending sync}}",
+    "@syncPendingCount": {
+        "description": "Badge showing number of queued OCR items waiting for cloud sync",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "syncCompletedNotice": "Cloud sync and LaTeX enhancement complete",
+    "@syncCompletedNotice": {
+        "description": "Toast when offline sync queue completes"
     }
 }

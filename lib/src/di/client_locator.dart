@@ -28,5 +28,8 @@ void _initClients() {
     )
     ..registerLazySingleton<LocalLlmEngineClient>(
       LocalLlmEngineClient.new,
+    )
+    ..registerLazySingleton<LocalMlkitOcrClient>(
+      LocalMlkitOcrClient.new,
     );
 }

@@ -1557,4 +1557,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String retrievedContextBadge(int score) {
     return 'Verified Course Context ($score% Match)';
   }
+
+  @override
+  String get alignCameraTextHint =>
+      'Align textbook or lecture note text within frame';
+
+  @override
+  String get offlineOcrProcessedNotice =>
+      'Processed locally. Will sync with LaTeX AI when online.';
+
+  @override
+  String syncPendingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items pending sync',
+      one: '1 item pending sync',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncCompletedNotice => 'Cloud sync and LaTeX enhancement complete';
 }

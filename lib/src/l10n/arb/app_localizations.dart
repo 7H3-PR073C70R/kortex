@@ -2785,6 +2785,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verified Course Context ({score}% Match)'**
   String retrievedContextBadge(int score);
+
+  /// Hint shown over live camera OCR frame
+  ///
+  /// In en, this message translates to:
+  /// **'Align textbook or lecture note text within frame'**
+  String get alignCameraTextHint;
+
+  /// Notice when OCR is executed on-device offline
+  ///
+  /// In en, this message translates to:
+  /// **'Processed locally. Will sync with LaTeX AI when online.'**
+  String get offlineOcrProcessedNotice;
+
+  /// Badge showing number of queued OCR items waiting for cloud sync
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item pending sync} other{{count} items pending sync}}'**
+  String syncPendingCount(int count);
+
+  /// Toast when offline sync queue completes
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync and LaTeX enhancement complete'**
+  String get syncCompletedNotice;
 }
 
 class _AppLocalizationsDelegate

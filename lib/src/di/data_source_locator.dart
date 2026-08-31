@@ -59,5 +59,11 @@ void _initDataSource() {
         locator<VectorSearchClient>(),
         locator<UserStorageService>(),
       ),
+    )
+    ..registerLazySingleton<OcrLocalDataSource>(
+      () => OcrLocalDataSourceImpl(
+        client: locator<LocalMlkitOcrClient>(),
+        storageService: locator<LocalStorageService>(),
+      ),
     );
 }

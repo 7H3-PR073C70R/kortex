@@ -120,6 +120,9 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<FetchUserDocumentsUseCase>(
       () => FetchUserDocumentsUseCase(locator<IngestionRepository>()),
     )
+    ..registerLazySingleton<ProcessLocalCameraOcrUseCase>(
+      () => ProcessLocalCameraOcrUseCase(locator<LocalOcrRepository>()),
+    )
     ..registerFactory<IngestionBloc>(
       () => IngestionBloc(
         uploadUseCase: locator<UploadStudyDocumentUseCase>(),
