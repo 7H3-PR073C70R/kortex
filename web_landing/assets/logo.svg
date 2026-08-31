@@ -1,28 +1,101 @@
-<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="logoGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4F46E5"/>
-      <stop offset="0.5" stop-color="#06B6D4"/>
-      <stop offset="1" stop-color="#8B5CF6"/>
+    <!-- Master Brand Linear Gradient: Electric Cyan (#00C2FF) to Deep Neural Violet (#7000FF) -->
+    <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00C2FF"/>
+      <stop offset="30%" stop-color="#38BDF8"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="85%" stop-color="#7000FF"/>
+      <stop offset="100%" stop-color="#9333EA"/>
+    </linearGradient>
+
+    <!-- Clean 2D Central Core Radial Gradient -->
+    <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00C2FF"/>
+      <stop offset="55%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#7000FF"/>
+    </radialGradient>
+
+    <!-- Subtle Ambient Core Drop Glow -->
+    <radialGradient id="ambientCoreGlow" cx="256" cy="256" r="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#7000FF" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#7000FF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- 1px Isometric Guideline Gradient -->
+    <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#7000FF" stop-opacity="0.15"/>
     </linearGradient>
   </defs>
-  <!-- Neural Cortex Outer Hexagon -->
-  <polygon points="50,10 88,32 88,68 50,90 12,68 12,32" stroke="url(#logoGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  
-  <!-- Neural Synapse Connections -->
-  <circle cx="50" cy="50" r="12" fill="url(#logoGrad)"/>
-  <circle cx="50" cy="24" r="5" fill="#4F46E5"/>
-  <circle cx="74" cy="38" r="5" fill="#06B6D4"/>
-  <circle cx="74" cy="62" r="5" fill="#8B5CF6"/>
-  <circle cx="50" cy="76" r="5" fill="#8B5CF6"/>
-  <circle cx="26" cy="62" r="5" fill="#4F46E5"/>
-  <circle cx="26" cy="38" r="5" fill="#06B6D4"/>
 
-  <!-- Connecting Strands -->
-  <line x1="50" y1="50" x2="50" y2="24" stroke="#4F46E5" stroke-width="2"/>
-  <line x1="50" y1="50" x2="74" y2="38" stroke="#06B6D4" stroke-width="2"/>
-  <line x1="50" y1="50" x2="74" y2="62" stroke="#8B5CF6" stroke-width="2"/>
-  <line x1="50" y1="50" x2="50" y2="76" stroke="#8B5CF6" stroke-width="2"/>
-  <line x1="50" y1="50" x2="26" y2="62" stroke="#4F46E5" stroke-width="2"/>
-  <line x1="50" y1="50" x2="26" y2="38" stroke="#06B6D4" stroke-width="2"/>
+  <!-- Ambient Glow Behind Core -->
+  <circle cx="256" cy="256" r="90" fill="url(#ambientCoreGlow)"/>
+
+  <!-- 1. Crisp 1px Isometric Wireframe Guidelines (Fixed 15% Opacity) -->
+  <g stroke="url(#gridGrad)" stroke-width="1" stroke-linecap="round">
+    <!-- Radial Axes (Center to 6 Outer Vertices) -->
+    <line x1="256" y1="256" x2="256" y2="56"/>
+    <line x1="256" y1="256" x2="429.2" y2="156"/>
+    <line x1="256" y1="256" x2="429.2" y2="356"/>
+    <line x1="256" y1="256" x2="256" y2="456"/>
+    <line x1="256" y1="256" x2="82.8" y2="356"/>
+    <line x1="256" y1="256" x2="82.8" y2="156"/>
+
+    <!-- Concentric Inner Hexagon Mesh (Radius = 100) -->
+    <polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/>
+
+    <!-- Cross-Isometric Guideline Chords -->
+    <line x1="82.8" y1="156" x2="429.2" y2="156"/>
+    <line x1="82.8" y1="356" x2="429.2" y2="356"/>
+    <line x1="169.4" y1="206" x2="169.4" y2="306"/>
+    <line x1="342.6" y1="206" x2="342.6" y2="306"/>
+  </g>
+
+  <!-- 2. Symmetrical Outer Hexagon Shield Frame -->
+  <polygon 
+    points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" 
+    stroke="url(#kortexGrad)" 
+    stroke-width="14" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    fill="none"
+  />
+
+  <!-- 3. Stylized Neural "K" Network Mark -->
+  <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- "K" Vertical Left Stem -->
+    <line x1="156" y1="140" x2="156" y2="372"/>
+
+    <!-- "K" Horizontal Connector to Nucleus -->
+    <line x1="156" y1="256" x2="256" y2="256"/>
+
+    <!-- "K" Upper Diagonal Arm -->
+    <line x1="256" y1="256" x2="356" y2="140"/>
+
+    <!-- "K" Lower Diagonal Arm -->
+    <line x1="256" y1="256" x2="356" y2="372"/>
+  </g>
+
+  <!-- 4. Standardized Uniform Outer Hexagon Nodes (Solid Vectors) -->
+  <circle cx="256" cy="56" r="10" fill="#00C2FF"/>
+  <circle cx="429.2" cy="156" r="10" fill="#38BDF8"/>
+  <circle cx="429.2" cy="356" r="10" fill="#7000FF"/>
+  <circle cx="256" cy="456" r="10" fill="#9333EA"/>
+  <circle cx="82.8" cy="356" r="10" fill="#7000FF"/>
+  <circle cx="82.8" cy="156" r="10" fill="#00C2FF"/>
+
+  <!-- 5. Standardized Uniform "K" Terminal Nodes (Solid Vectors) -->
+  <circle cx="156" cy="140" r="14" fill="#00C2FF"/>
+  <circle cx="156" cy="372" r="14" fill="#7000FF"/>
+  <circle cx="356" cy="140" r="14" fill="#38BDF8"/>
+  <circle cx="356" cy="372" r="14" fill="#9333EA"/>
+
+  <!-- 6. Refined 2D Vector Central Core (Radial Gradient with Subtle Ring) -->
+  <!-- Outer Concentric Orbit Ring -->
+  <circle cx="256" cy="256" r="44" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+  
+  <!-- Solid 2D Radial Core Node -->
+  <circle cx="256" cy="256" r="32" fill="url(#coreRadialGrad)"/>
 </svg>
