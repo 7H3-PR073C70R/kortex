@@ -1,72 +1,82 @@
 /* ==========================================================================
-   KORTEX DESIGN SYSTEM: CSS TOKENS & VARIABLES
-   Extracted directly from Kortex Flutter ThemeData & AppMaterialColors
+   KORTEXIFY DESIGN SYSTEM: CSS TOKENS & VARIABLES
+   Elite Obsidian, Electric Cyan (#00C2FF), and Neural Purple (#7000FF)
    ========================================================================== */
 
 :root {
   /* ------------------------------------------------------------------------
-     1. Core Brand & Engine Palettes
+     1. Official Brand Color Palette
      ------------------------------------------------------------------------ */
-  --color-academic-blue: #4361ee;
-  --color-academic-blue-light: #818cf8;
-  --color-academic-blue-dark: #3730a3;
-  --color-academic-blue-glow: rgba(67, 97, 238, 0.35);
+  /* Electric Cyan */
+  --color-cyan-electric: #00C2FF;
+  --color-cyan-light: #38D4FF;
+  --color-cyan-dark: #0099CC;
+  --color-cyan-glow: rgba(0, 194, 255, 0.35);
+  --color-cyan-subtle: rgba(0, 194, 255, 0.12);
 
-  --color-syllabot-violet: #8b5cf6;
-  --color-syllabot-violet-light: #a78bfa;
-  --color-syllabot-violet-dark: #6d28d9;
-  --color-syllabot-glow: rgba(139, 92, 246, 0.35);
+  /* Neural Purple */
+  --color-neural-purple: #7000FF;
+  --color-neural-purple-light: #9D4EDD;
+  --color-neural-purple-dark: #5200CC;
+  --color-neural-glow: rgba(112, 0, 255, 0.35);
+  --color-neural-subtle: rgba(112, 0, 255, 0.12);
 
-  --color-cyan-ice: #06b6d4;
-  --color-cyan-ice-light: #22d3ee;
-  --color-cyan-glow: rgba(6, 182, 212, 0.35);
+  /* Academic Blue & Engine Accents */
+  --color-academic-blue: #3B82F6;
+  --color-academic-blue-light: #60A5FA;
+  --color-academic-blue-glow: rgba(59, 130, 246, 0.35);
 
-  --color-emerald-stem: #10b981;
-  --color-emerald-light: #34d399;
-  --color-emerald-glow: rgba(16, 185, 129, 0.3);
-
-  --color-amber-gold: #f59e0b;
-  --color-rose-coral: #f43f5e;
+  /* Semantic Accents */
+  --color-emerald-stem: #10B981;
+  --color-emerald-light: #34D399;
+  --color-emerald-glow: rgba(16, 185, 129, 0.35);
+  --color-amber-gold: #F59E0B;
+  --color-rose-coral: #F43F5E;
 
   /* ------------------------------------------------------------------------
-     2. Surfaces & Canvas (Dark Mode Low Eye-Strain & Midnight OLED)
+     2. Surfaces & Deep Obsidian Canvas (#0A0C14)
      ------------------------------------------------------------------------ */
-  --bg-canvas: #090d16;
-  --bg-canvas-subtle: #0d1322;
-  --bg-card: #111827;
-  --bg-card-glass: rgba(17, 24, 39, 0.75);
-  --bg-card-glass-hover: rgba(26, 36, 56, 0.85);
-  --bg-surface-elevated1: #162032;
-  --bg-surface-elevated2: #1e293b;
-  --bg-surface-elevated3: #334155;
+  --bg-canvas: #0A0C14;
+  --bg-canvas-deep: #06070B;
+  --bg-canvas-subtle: #0E121E;
+  
+  --bg-card: #121626;
+  --bg-card-glass: rgba(18, 22, 38, 0.75);
+  --bg-card-glass-hover: rgba(24, 30, 52, 0.88);
+  
+  --bg-surface-elevated1: #161C30;
+  --bg-surface-elevated2: #1C243D;
+  --bg-surface-elevated3: #263050;
 
   /* ------------------------------------------------------------------------
-     3. Borders & Dividers
+     3. Glassmorphic Borders & Radial Glows
      ------------------------------------------------------------------------ */
-  --border-subtle: #263248;
-  --border-highlight: #3b4861;
-  --border-glass: rgba(255, 255, 255, 0.1);
-  --border-glass-glow: rgba(67, 97, 238, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(0, 194, 255, 0.2);
+  --border-highlight-hover: rgba(0, 194, 255, 0.45);
+  --border-neural: rgba(112, 0, 255, 0.25);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-glass-glow: rgba(0, 194, 255, 0.35);
 
   /* ------------------------------------------------------------------------
-     4. Typography & High-Contrast Text Colors
+     4. Typography & High-Contrast Colors
      ------------------------------------------------------------------------ */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-primary: #FFFFFF;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #0A0C14;
 
   /* Font Families */
   --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 
-  /* Fluid Typography Scale (Mobile-First Safe) */
-  --text-display: clamp(1.85rem, 5vw + 0.75rem, 4.25rem);
-  --text-h1: clamp(1.6rem, 3.5vw + 0.5rem, 3rem);
-  --text-h2: clamp(1.35rem, 2.5vw + 0.35rem, 2.25rem);
-  --text-h3: clamp(1.1rem, 1.8vw + 0.25rem, 1.5rem);
-  --text-body-lg: clamp(0.95rem, 1vw + 0.4rem, 1.15rem);
+  /* Fluid Typography Scale */
+  --text-display: clamp(2rem, 5.5vw + 0.5rem, 4.25rem);
+  --text-h1: clamp(1.65rem, 3.8vw + 0.5rem, 3rem);
+  --text-h2: clamp(1.4rem, 2.6vw + 0.35rem, 2.25rem);
+  --text-h3: clamp(1.15rem, 1.8vw + 0.25rem, 1.5rem);
+  --text-body-lg: clamp(0.98rem, 1vw + 0.4rem, 1.18rem);
   --text-body: 0.95rem;
   --text-body-sm: 0.85rem;
   --text-caption: 0.75rem;
@@ -74,12 +84,12 @@
   /* ------------------------------------------------------------------------
      5. Shadows, Glows & Elevations
      ------------------------------------------------------------------------ */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
-  --shadow-glow-blue: 0 0 40px rgba(67, 97, 238, 0.25);
-  --shadow-glow-purple: 0 0 40px rgba(139, 92, 246, 0.25);
-  --shadow-glow-cyan: 0 0 35px rgba(6, 182, 212, 0.25);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --shadow-glow-cyan: 0 0 35px rgba(0, 194, 255, 0.25);
+  --shadow-glow-purple: 0 0 35px rgba(112, 0, 255, 0.25);
+  --shadow-glow-card: 0 0 30px rgba(0, 194, 255, 0.15);
 
   /* ------------------------------------------------------------------------
      6. Layout & Radii
@@ -92,5 +102,5 @@
 
   --container-max-width: 1240px;
   --container-padding: clamp(1rem, 4vw, 2.5rem);
-  --section-spacing: clamp(4rem, 8vw, 8rem);
+  --section-spacing: clamp(4.5rem, 8vw, 8.5rem);
 }

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Contact Kortexify — Reach our product support, engineering team, or apply for the campus ambassador program.">
-  <title>Contact Us — Kortexify</title>
+  <meta name="description" content="Contact Kortexify. Reach our product support, engineering team, or apply for the campus ambassador program.">
+  <title>Contact Us | Kortexify</title>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg">
   <link rel="alternate icon" href="assets/favicon.ico">
 
   <!-- Google Fonts -->
@@ -16,9 +16,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=2.1">
-  <link rel="stylesheet" href="css/animations.css?v=2.1">
-  <link rel="stylesheet" href="css/styles.css?v=2.1">
+  <link rel="stylesheet" href="css/variables.css?v=3.2">
+  <link rel="stylesheet" href="css/animations.css?v=3.2">
+  <link rel="stylesheet" href="css/styles.css?v=3.2">
 
   <style>
     .contact-container {
@@ -48,46 +48,53 @@
     .contact-item {
       display: flex;
       align-items: flex-start;
-      gap: 16px;
+      gap: 1.25rem;
       margin-bottom: 2rem;
+    }
+    .contact-item:last-child {
+      margin-bottom: 0;
     }
     .contact-icon {
       width: 44px;
       height: 44px;
       border-radius: var(--radius-md);
-      background: rgba(67, 97, 238, 0.12);
-      border: 1px solid rgba(67, 97, 238, 0.3);
+      background: rgba(0, 194, 255, 0.12);
+      border: 1px solid rgba(0, 194, 255, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--color-academic-blue-light);
-      font-size: 1.25rem;
+      font-size: 20px;
       flex-shrink: 0;
+      color: var(--color-cyan-light);
     }
     .contact-item-title {
+      font-family: var(--font-heading);
       font-weight: 700;
-      font-size: 1.05rem;
+      font-size: var(--text-body);
       color: var(--text-primary);
-      margin-bottom: 4px;
+      margin-bottom: 0.25rem;
     }
     .contact-item-desc {
       font-size: var(--text-body-sm);
       color: var(--text-secondary);
-      line-height: 1.5;
+      margin-bottom: 0.35rem;
     }
     .contact-item-link {
-      color: var(--color-academic-blue-light);
+      font-size: var(--text-body-sm);
+      color: var(--color-cyan-electric);
       font-weight: 600;
     }
     .contact-item-link:hover {
       text-decoration: underline;
     }
     .contact-form-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-highlight);
+      background: var(--bg-card-glass);
+      border: 1px solid rgba(0, 194, 255, 0.2);
       border-radius: var(--radius-xl);
       padding: 2.5rem;
-      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 0 35px rgba(0, 194, 255, 0.1);
     }
     .form-group {
       margin-bottom: 1.5rem;
@@ -97,7 +104,7 @@
       font-size: var(--text-body-sm);
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 8px;
+      margin-bottom: 0.5rem;
     }
     .form-control {
       width: 100%;
@@ -106,50 +113,52 @@
       border-radius: var(--radius-md);
       padding: 12px 16px;
       color: var(--text-primary);
-      font-size: var(--text-body);
-      transition: border-color 0.2s ease;
+      font-size: var(--text-body-sm);
+      transition: all 0.2s ease;
     }
     .form-control:focus {
-      border-color: var(--color-academic-blue-light);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+      border-color: var(--color-cyan-electric);
+      box-shadow: 0 0 16px rgba(0, 194, 255, 0.3);
+      outline: none;
     }
     textarea.form-control {
-      resize: vertical;
       min-height: 120px;
+      resize: vertical;
     }
     .btn-submit {
       width: 100%;
       padding: 14px;
       border-radius: var(--radius-full);
-      background: linear-gradient(135deg, var(--color-academic-blue), var(--color-syllabot-violet));
+      background: linear-gradient(135deg, var(--color-cyan-electric) 0%, var(--color-neural-purple) 100%);
       color: #ffffff;
       font-weight: 700;
       font-size: var(--text-body);
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 16px rgba(67, 97, 238, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 194, 255, 0.35);
     }
     .btn-submit:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+      box-shadow: 0 6px 24px rgba(112, 0, 255, 0.55);
     }
     .back-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: var(--color-academic-blue-light);
+      color: var(--text-secondary);
       font-size: var(--text-body-sm);
       font-weight: 600;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      transition: color 0.2s ease;
     }
     .back-link:hover {
-      text-decoration: underline;
+      color: var(--color-cyan-light);
     }
   </style>
 </head>
 <body>
 
-  <!-- Ambient Cosmic Aura Mesh (Bounded to prevent mobile horizontal drag) -->
+  <!-- Ambient Cosmic Aura Mesh -->
   <div class="aura-container" aria-hidden="true">
     <div class="aura-blob aura-blob-primary"></div>
     <div class="aura-blob aura-blob-syllabot"></div>
@@ -159,7 +168,7 @@
   <header class="site-header">
     <div class="container nav-content">
       <a href="/" class="brand-logo" aria-label="Kortexify Home">
-        <img src="assets/logo.svg" alt="Kortexify Logo" width="36" height="36">
+        <img src="assets/kortexify_logo.svg" alt="Kortexify Logo" width="34" height="34">
         <div>
           <span class="brand-name">KORTEXIFY</span>
         </div>
@@ -183,7 +192,7 @@
     <div class="section-header" style="text-align: left; margin-bottom: 1rem;">
       <span class="section-badge">Get in Touch</span>
       <h1 class="section-title">We’d Love to Hear From You</h1>
-      <p class="section-subtitle">Have questions about the private beta, campus partnerships, or STEM OCR capabilities? Our team responds within 24 hours.</p>
+      <p class="section-subtitle">Have questions about the private beta, study tools, or campus cohorts? Our team responds within 24 hours.</p>
     </div>
 
     <div class="contact-grid">
@@ -193,7 +202,7 @@
           <div class="contact-icon">✉️</div>
           <div>
             <div class="contact-item-title">Product Support</div>
-            <div class="contact-item-desc">For app help, account inquiries, or bug reports:</div>
+            <div class="contact-item-desc">For app help, study deck inquiries, or bug reports:</div>
             <a href="mailto:support@kortexify.app" class="contact-item-link">support@kortexify.app</a>
           </div>
         </div>
@@ -201,8 +210,8 @@
         <div class="contact-item">
           <div class="contact-icon">🎓</div>
           <div>
-            <div class="contact-item-title">Campus Ambassador Program</div>
-            <div class="contact-item-desc">Lead Kortexify study cohorts at your university and get free Lifetime Pro access:</div>
+            <div class="contact-item-title">Campus & Student Ambassador Program</div>
+            <div class="contact-item-desc">Lead Kortexify study cohorts at your school or university and get free Lifetime Pro access:</div>
             <a href="mailto:ambassadors@kortexify.app" class="contact-item-link">ambassadors@kortexify.app</a>
           </div>
         </div>
@@ -211,7 +220,7 @@
           <div class="contact-icon">🛡️</div>
           <div>
             <div class="contact-item-title">Security & Privacy</div>
-            <div class="contact-item-desc">Responsible vulnerability disclosures or FERPA/GDPR requests:</div>
+            <div class="contact-item-desc">Responsible vulnerability disclosures or data requests:</div>
             <a href="mailto:security@kortexify.app" class="contact-item-link">security@kortexify.app</a>
           </div>
         </div>
@@ -226,16 +235,16 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="contactEmail">University or Personal Email</label>
-            <input type="email" id="contactEmail" class="form-control" placeholder="alex@harvard.edu" required>
+            <label class="form-label" for="contactEmail">Student or Personal Email</label>
+            <input type="email" id="contactEmail" class="form-control" placeholder="alex@example.com" required>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="contactTopic">Topic</label>
             <select id="contactTopic" class="form-control">
               <option value="beta">Private Beta Early Access</option>
-              <option value="feedback">Feature Feedback / STEM OCR</option>
-              <option value="campus">Campus Partnership</option>
+              <option value="feedback">Feature Feedback & Suggestions</option>
+              <option value="campus">Campus & School Partnership</option>
               <option value="other">General Inquiry</option>
             </select>
           </div>
@@ -255,7 +264,7 @@
   <footer class="site-footer">
     <div class="container footer-content">
       <div class="brand-logo">
-        <img src="assets/logo.svg" alt="Kortexify Logo" width="28" height="28">
+        <img src="assets/kortexify_logo.svg" alt="Kortexify Logo" width="28" height="28">
         <span class="brand-name" style="font-size: 1rem;">KORTEXIFY</span>
       </div>
 
