@@ -4,6 +4,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 /// Animated typewriter text widget that simulates natural
 /// character-by-character typing for conversational AI messages.
+///
+/// Uses [Characters] to safely handle multi-byte Unicode code points,
+/// surrogate pairs, and emojis without producing malformed UTF-16 substrings.
 class TypewriterText extends HookWidget {
   const TypewriterText({
     required this.text,
@@ -24,18 +27,20 @@ class TypewriterText extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayedCount = useState<int>(isStreaming ? 0 : text.length);
+    final characters = text.characters;
+    final totalCount = characters.length;
+    final displayedCount = useState<int>(isStreaming ? 0 : totalCount);
 
     useEffect(() {
       if (!isStreaming) {
-        displayedCount.value = text.length;
+        displayedCount.value = totalCount;
         return null;
       }
 
       displayedCount.value = 0;
       Timer? timer;
       timer = Timer.periodic(charDuration, (t) {
-        if (displayedCount.value < text.length) {
+        if (displayedCount.value < totalCount) {
           displayedCount.value += 1;
           onTick?.call();
         } else {
@@ -47,12 +52,12 @@ class TypewriterText extends HookWidget {
       return () => timer?.cancel();
     }, [text, isStreaming]);
 
-    final visibleSubstring = isStreaming
-        ? text.substring(0, displayedCount.value.clamp(0, text.length))
+    final visibleText = isStreaming
+        ? characters.take(displayedCount.value).toString()
         : text;
 
     return Text(
-      visibleSubstring,
+      visibleText,
       style: style,
     );
   }

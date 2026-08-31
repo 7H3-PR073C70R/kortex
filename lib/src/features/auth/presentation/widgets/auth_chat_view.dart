@@ -495,11 +495,14 @@ class AuthChatView extends HookWidget {
           isTyping.value = false;
           currentFlow.value = _ChatFlowStep.initial;
           final retryCallback = lastRetryAction.value;
-          final err =
-              state.errorMessage ??
-              'Network connection error. Please try again.';
+          final err = state.errorMessage ??
+              'Unable to connect to the study servers. '
+                  'Please check your internet connection and try again.';
+          final actionDesc = lastRetryDescription.value.isNotEmpty
+              ? lastRetryDescription.value
+              : 'request';
           addBotMessage(
-            'Authentication Error: $err\n\n'
+            'Unable to complete $actionDesc:\n$err\n\n'
             'Tap "Retry Request" below to try again without re-typing.',
             isError: true,
             onRetry: retryCallback != null

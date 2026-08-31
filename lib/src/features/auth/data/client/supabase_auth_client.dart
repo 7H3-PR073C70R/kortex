@@ -31,9 +31,19 @@ class SupabaseAuthClient {
 
   /// Register with email & password.
   Future<UserModel> register(RegisterRequestModel body) async {
+    final payload = <String, dynamic>{
+      'email': body.email.trim(),
+      'password': body.password,
+      if (body.displayName != null && body.displayName!.trim().isNotEmpty)
+        'data': {
+          'display_name': body.displayName!.trim(),
+          'full_name': body.displayName!.trim(),
+          'name': body.displayName!.trim(),
+        },
+    };
     final response = await _dio.post<Map<String, dynamic>>(
       '${AppApiEndpoint.baseUri}${AppApiEndpoint.register}',
-      data: body.toJson(),
+      data: payload,
       options: Options(headers: _headers()),
     );
     final data = response.data;

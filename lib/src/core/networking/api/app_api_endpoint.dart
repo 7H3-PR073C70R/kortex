@@ -5,11 +5,22 @@ class AppApiEndpoint {
   const AppApiEndpoint._();
 
   static const scheme = 'https';
-  static String host = AppEnv.apiBaseURL;
+  static String get host {
+    var raw = AppEnv.apiBaseURL.trim();
+    if (raw.startsWith('https://')) {
+      raw = raw.substring(8);
+    } else if (raw.startsWith('http://')) {
+      raw = raw.substring(7);
+    }
+    while (raw.endsWith('/')) {
+      raw = raw.substring(0, raw.length - 1);
+    }
+    return raw;
+  }
   static const int receiveTimeout = 50000;
   static const int sendTimeout = 50000;
 
-  static String baseUri = '$scheme://$host';
+  static String get baseUri => host.isNotEmpty ? '$scheme://$host' : '';
 
   // Auth Endpoints (Supabase GoTrue & REST)
   static const String login = '/auth/v1/token?grant_type=password';

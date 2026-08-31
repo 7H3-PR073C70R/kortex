@@ -63,9 +63,14 @@ class AppAvatar extends StatelessWidget {
     if (text == null || text.trim().isEmpty) return '';
     final parts = text.trim().split(RegExp(r'\s+'));
     if (parts.length == 1) {
-      return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+      return parts[0].characters.take(2).toString().toUpperCase();
     }
-    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+    final firstChar =
+        parts[0].characters.isNotEmpty ? parts[0].characters.first : '';
+    final lastChar = parts[parts.length - 1].characters.isNotEmpty
+        ? parts[parts.length - 1].characters.first
+        : '';
+    return '$firstChar$lastChar'.toUpperCase();
   }
 
   @override
