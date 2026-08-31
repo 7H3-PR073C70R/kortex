@@ -92,6 +92,11 @@ import 'package:kortex/src/features/onboarding_utility/domain/repositories/otp_r
 import 'package:kortex/src/features/onboarding_utility/domain/use_cases/resend_otp_use_case.dart';
 import 'package:kortex/src/features/onboarding_utility/domain/use_cases/verify_otp_use_case.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
+import 'package:kortex/src/features/planner/data/repositories/planner_repository_impl.dart';
+import 'package:kortex/src/features/planner/domain/repositories/planner_repository.dart';
+import 'package:kortex/src/features/planner/domain/use_cases/calculate_daily_cram_target_use_case.dart';
+import 'package:kortex/src/features/planner/domain/use_cases/create_exam_countdown_use_case.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/supabase_syllabot_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/vector_search_client.dart';

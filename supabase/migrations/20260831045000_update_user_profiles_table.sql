@@ -38,6 +38,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Enable RLS on course_tracks
 ALTER TABLE public.course_tracks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read course tracks" ON public.course_tracks;
 CREATE POLICY "Public read course tracks"
     ON public.course_tracks FOR SELECT
     USING (true);

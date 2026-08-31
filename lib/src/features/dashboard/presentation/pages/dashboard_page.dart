@@ -16,6 +16,8 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -26,8 +28,20 @@ class DashboardPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<DashboardBloc>(
-      create: (_) => locator<DashboardBloc>()..add(const DashboardStarted()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<DashboardBloc>(
+          create: (_) => locator<DashboardBloc>()
+            ..add(const DashboardStarted()),
+        ),
+        BlocProvider<CramPlannerCubit>(
+          create: (_) {
+            final cubit = locator<CramPlannerCubit>();
+            unawaited(cubit.loadExams());
+            return cubit;
+          },
+        ),
+      ],
       child: const _DashboardView(),
     );
   }
@@ -165,6 +179,10 @@ class _CompactDashboardLayout extends StatelessWidget {
         ),
         const SizedBox(height: 18),
 
+        // Exam Countdown & Dynamic Cram Planner Banner
+        const ExamCountdownBanner(),
+        const SizedBox(height: 18),
+
         // 2. Syllabot Floating Prompt Bar
         SyllabotQuickPromptBar(
           insightText: feed.syllabotDailyInsight,
@@ -252,6 +270,8 @@ class _MediumDashboardLayout extends StatelessWidget {
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
         ),
+        const SizedBox(height: 18),
+        const ExamCountdownBanner(),
         const SizedBox(height: 20),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

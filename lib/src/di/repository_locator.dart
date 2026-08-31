@@ -58,5 +58,8 @@ void _initRepositoryLocator() {
         localDataSource: locator<OcrLocalDataSource>(),
         remoteDataSource: locator<IngestionRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<PlannerRepository>(
+      PlannerRepositoryImpl.new,
     );
 }

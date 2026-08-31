@@ -160,5 +160,18 @@ void _initUseCaseLocator() {
         fetchCourseCommunityStatsUseCase:
             locator<FetchCourseCommunityStatsUseCase>(),
       ),
+    )
+    ..registerLazySingleton<CalculateDailyCramTargetUseCase>(
+      () => const CalculateDailyCramTargetUseCase(),
+    )
+    ..registerLazySingleton<CreateExamCountdownUseCase>(
+      () => CreateExamCountdownUseCase(locator<PlannerRepository>()),
+    )
+    ..registerFactory<CramPlannerCubit>(
+      () => CramPlannerCubit(
+        plannerRepository: locator<PlannerRepository>(),
+        calculateTargetUseCase: locator<CalculateDailyCramTargetUseCase>(),
+        createExamUseCase: locator<CreateExamCountdownUseCase>(),
+      ),
     );
 }

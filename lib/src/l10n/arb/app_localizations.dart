@@ -2875,6 +2875,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read Aloud'**
   String get readAloudLabel;
+
+  /// Exam countdown banner days remaining
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days until {examName}'**
+  String daysUntilExam(int count, String examName);
+
+  /// Daily cram target calculation label
+  ///
+  /// In en, this message translates to:
+  /// **'Target pace: {count} cards/day'**
+  String recommendedDailyPace(int count);
+
+  /// Header title for adding an exam countdown
+  ///
+  /// In en, this message translates to:
+  /// **'Add Exam Countdown'**
+  String get addExamTitle;
+
+  /// Input field label for exam title
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Name'**
+  String get examNameLabel;
+
+  /// Input field label for exam date
+  ///
+  /// In en, this message translates to:
+  /// **'Target Exam Date'**
+  String get targetDateLabel;
+
+  /// Input field label for exam subject or track
+  ///
+  /// In en, this message translates to:
+  /// **'Subject / Track'**
+  String get examSubjectLabel;
+
+  /// Submit button for saving exam countdown
+  ///
+  /// In en, this message translates to:
+  /// **'Save Exam Countdown'**
+  String get saveExamCountdown;
 }
 
 class _AppLocalizationsDelegate

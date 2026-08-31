@@ -40,6 +40,10 @@ ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION supabase_realtime ADD TABLE study_communities, community_members;
 
 -- RLS Policies for study_communities
+DROP POLICY IF EXISTS "Anyone can view study communities" ON study_communities;
+DROP POLICY IF EXISTS "Users can create study communities" ON study_communities;
+DROP POLICY IF EXISTS "Service role or functions can update study communities" ON study_communities;
+
 CREATE POLICY "Anyone can view study communities"
     ON study_communities FOR SELECT
     TO authenticated
@@ -57,6 +61,10 @@ CREATE POLICY "Service role or functions can update study communities"
     WITH CHECK (true);
 
 -- RLS Policies for community_members
+DROP POLICY IF EXISTS "Anyone can view community memberships" ON community_members;
+DROP POLICY IF EXISTS "Users can join communities" ON community_members;
+DROP POLICY IF EXISTS "Users can leave communities" ON community_members;
+
 CREATE POLICY "Anyone can view community memberships"
     ON community_members FOR SELECT
     TO authenticated
@@ -234,9 +242,9 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS tr_user_profile_track_provision ON user_profiles;
+DROP TRIGGER IF EXISTS tr_user_profile_track_provision ON public.profiles;
 CREATE TRIGGER tr_user_profile_track_provision
-    AFTER INSERT OR UPDATE OF target_track ON user_profiles
+    AFTER INSERT OR UPDATE OF target_track ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION trigger_onboarding_track_provision();
 

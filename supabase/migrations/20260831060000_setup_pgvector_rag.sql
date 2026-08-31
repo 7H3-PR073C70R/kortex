@@ -29,6 +29,10 @@ CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding_hnsw
 ALTER TABLE document_chunks ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies
+DROP POLICY IF EXISTS "Users can query their own document chunks" ON document_chunks;
+DROP POLICY IF EXISTS "Users can insert their own document chunks" ON document_chunks;
+DROP POLICY IF EXISTS "Users can delete their own document chunks" ON document_chunks;
+
 CREATE POLICY "Users can query their own document chunks"
     ON document_chunks FOR SELECT
     TO authenticated

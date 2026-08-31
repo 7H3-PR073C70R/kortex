@@ -1617,4 +1617,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readAloudLabel => 'Read Aloud';
+
+  @override
+  String daysUntilExam(int count, String examName) {
+    return '$count days until $examName';
+  }
+
+  @override
+  String recommendedDailyPace(int count) {
+    return 'Target pace: $count cards/day';
+  }
+
+  @override
+  String get addExamTitle => 'Add Exam Countdown';
+
+  @override
+  String get examNameLabel => 'Exam Name';
+
+  @override
+  String get targetDateLabel => 'Target Exam Date';
+
+  @override
+  String get examSubjectLabel => 'Subject / Track';
+
+  @override
+  String get saveExamCountdown => 'Save Exam Countdown';
 }
