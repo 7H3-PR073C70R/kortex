@@ -29,5 +29,16 @@ void _initDataSource() {
       () => DecksRemoteDataSourceImpl(
         locator<DecksApiClient>(),
       ),
+    )
+    ..registerLazySingleton<SyllabotRemoteDataSource>(
+      () => SyllabotRemoteDataSourceImpl(
+        locator<SupabaseSyllabotClient>(),
+        locator<UserStorageService>(),
+      ),
+    )
+    ..registerLazySingleton<SyllabotLocalDataSource>(
+      () => SyllabotLocalDataSourceImpl(
+        locator<LocalLlmEngineClient>(),
+      ),
     );
 }

@@ -75,5 +75,24 @@ void _initUseCaseLocator() {
         processCardReviewUseCase: locator<ProcessCardReviewUseCase>(),
         saveSessionResultsUseCase: locator<SaveSessionResultsUseCase>(),
       ),
+    )
+    ..registerLazySingleton<StreamSyllabotResponseUseCase>(
+      () => StreamSyllabotResponseUseCase(locator<SyllabotRepository>()),
+    )
+    ..registerLazySingleton<GetChatHistoryUseCase>(
+      () => GetChatHistoryUseCase(locator<SyllabotRepository>()),
+    )
+    ..registerLazySingleton<GenerateDeckFromChatUseCase>(
+      () => GenerateDeckFromChatUseCase(locator<SyllabotRepository>()),
+    )
+    ..registerLazySingleton<PurgeExpiredAiCacheUseCase>(
+      () => PurgeExpiredAiCacheUseCase(locator<SyllabotRepository>()),
+    )
+    ..registerFactory<SyllabotChatBloc>(
+      () => SyllabotChatBloc(
+        streamResponseUseCase: locator<StreamSyllabotResponseUseCase>(),
+        getChatHistoryUseCase: locator<GetChatHistoryUseCase>(),
+        generateDeckUseCase: locator<GenerateDeckFromChatUseCase>(),
+      ),
     );
 }

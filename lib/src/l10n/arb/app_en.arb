@@ -1652,5 +1652,115 @@
     "sessionSummaryReviewAgain": "Review More Decks",
     "@sessionSummaryReviewAgain": {
         "description": "Button to review another deck"
+    },
+    "syllabotTitle": "Syllabot AI",
+    "@syllabotTitle": {
+        "description": "Title of the Syllabot AI feature"
+    },
+    "socraticStepByStep": "Step-by-Step",
+    "@socraticStepByStep": {
+        "description": "Socratic mode label for guided step-by-step reasoning"
+    },
+    "socraticDirectAnswer": "Direct Answer",
+    "@socraticDirectAnswer": {
+        "description": "Socratic mode label for concise direct answers"
+    },
+    "socraticExamSim": "Exam Sim",
+    "@socraticExamSim": {
+        "description": "Socratic mode label for mock exam simulation"
+    },
+    "socraticDeepResearch": "Deep Research",
+    "@socraticDeepResearch": {
+        "description": "Socratic mode label for theoretical research breakdown"
+    },
+    "engineCloudSupabase": "Cloud Neural Engine",
+    "@engineCloudSupabase": {
+        "description": "Engine status label for remote Supabase LLM"
+    },
+    "engineLocalOnDevice": "Offline On-Device LLM",
+    "@engineLocalOnDevice": {
+        "description": "Engine status label for local on-device LLM"
+    },
+    "convertToDeckSuccess": "Converted to Flashcard Deck successfully!",
+    "@convertToDeckSuccess": {
+        "description": "Snackbar text on converting chat to flashcards"
+    },
+    "inputFieldPlaceholder": "Ask Syllabot anything (e.g. Derive Euler-Lagrange equations)...",
+    "@inputFieldPlaceholder": {
+        "description": "Input field placeholder text in Syllabot chat"
+    },
+    "voiceInputListening": "Listening to your question...",
+    "@voiceInputListening": {
+        "description": "Status text while voice input is listening"
+    },
+    "offlineFallbackNotice": "Offline mode: Running on-device neural model.",
+    "@offlineFallbackNotice": {
+        "description": "Notice when falling back to on-device LLM"
+    },
+    "newChatSession": "New Chat",
+    "@newChatSession": {
+        "description": "Button label to start a new chat session"
+    },
+    "chatSessionsHistory": "Chat History",
+    "@chatSessionsHistory": {
+        "description": "Header title for historical chat sessions drawer"
+    },
+    "noChatSessionsFound": "No chat sessions yet. Ask your first question!",
+    "@noChatSessionsFound": {
+        "description": "Empty state label for chat sessions history"
+    },
+    "convertToDeckTitle": "Convert Chat to Flashcard Deck",
+    "@convertToDeckTitle": {
+        "description": "Title for bottom sheet converting chat to deck"
+    },
+    "convertToDeckDescription": "Syllabot AI will extract key STEM formulas, terms, and concepts into an active-recall deck.",
+    "@convertToDeckDescription": {
+        "description": "Description in convert to deck modal"
+    },
+    "deckNameLabel": "Deck Title",
+    "@deckNameLabel": {
+        "description": "Input label for generated deck title"
+    },
+    "createDeckAction": "Generate Spaced Repetition Deck",
+    "@createDeckAction": {
+        "description": "Button label to generate deck"
+    },
+    "generatingDeckProgress": "Synthesizing flashcards with AI...",
+    "@generatingDeckProgress": {
+        "description": "Loading label while synthesizing flashcard deck"
+    },
+    "retryFailedMessage": "Retry Response",
+    "@retryFailedMessage": {
+        "description": "Button label to retry a failed message"
+    },
+    "streamingComplete": "Syllabot response completed.",
+    "@streamingComplete": {
+        "description": "A11y announcement for completed streaming"
+    },
+    "engineSwitched": "Switched engine to {engine}",
+    "@engineSwitched": {
+        "description": "A11y announcement when engine changes",
+        "placeholders": {
+            "engine": {
+                "type": "String",
+                "example": "Cloud Neural Engine"
+            }
+        }
+    },
+    "audioInputDisabled": "Audio recording permission required",
+    "@audioInputDisabled": {
+        "description": "Error label when audio permission is not granted"
+    },
+    "clearHistoryConfirmation": "Are you sure you want to clear chat history?",
+    "@clearHistoryConfirmation": {
+        "description": "Confirmation prompt before clearing chat history"
+    },
+    "clearAction": "Clear",
+    "@clearAction": {
+        "description": "Confirmation button to clear"
+    },
+    "cancelAction": "Cancel",
+    "@cancelAction": {
+        "description": "Cancel button label"
     }
 }

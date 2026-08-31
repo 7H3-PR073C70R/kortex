@@ -2083,6 +2083,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review More Decks'**
   String get sessionSummaryReviewAgain;
+
+  /// Title of the Syllabot AI feature
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI'**
+  String get syllabotTitle;
+
+  /// Socratic mode label for guided step-by-step reasoning
+  ///
+  /// In en, this message translates to:
+  /// **'Step-by-Step'**
+  String get socraticStepByStep;
+
+  /// Socratic mode label for concise direct answers
+  ///
+  /// In en, this message translates to:
+  /// **'Direct Answer'**
+  String get socraticDirectAnswer;
+
+  /// Socratic mode label for mock exam simulation
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Sim'**
+  String get socraticExamSim;
+
+  /// Socratic mode label for theoretical research breakdown
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Research'**
+  String get socraticDeepResearch;
+
+  /// Engine status label for remote Supabase LLM
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Neural Engine'**
+  String get engineCloudSupabase;
+
+  /// Engine status label for local on-device LLM
+  ///
+  /// In en, this message translates to:
+  /// **'Offline On-Device LLM'**
+  String get engineLocalOnDevice;
+
+  /// Snackbar text on converting chat to flashcards
+  ///
+  /// In en, this message translates to:
+  /// **'Converted to Flashcard Deck successfully!'**
+  String get convertToDeckSuccess;
+
+  /// Input field placeholder text in Syllabot chat
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Syllabot anything (e.g. Derive Euler-Lagrange equations)...'**
+  String get inputFieldPlaceholder;
+
+  /// Status text while voice input is listening
+  ///
+  /// In en, this message translates to:
+  /// **'Listening to your question...'**
+  String get voiceInputListening;
+
+  /// Notice when falling back to on-device LLM
+  ///
+  /// In en, this message translates to:
+  /// **'Offline mode: Running on-device neural model.'**
+  String get offlineFallbackNotice;
+
+  /// Button label to start a new chat session
+  ///
+  /// In en, this message translates to:
+  /// **'New Chat'**
+  String get newChatSession;
+
+  /// Header title for historical chat sessions drawer
+  ///
+  /// In en, this message translates to:
+  /// **'Chat History'**
+  String get chatSessionsHistory;
+
+  /// Empty state label for chat sessions history
+  ///
+  /// In en, this message translates to:
+  /// **'No chat sessions yet. Ask your first question!'**
+  String get noChatSessionsFound;
+
+  /// Title for bottom sheet converting chat to deck
+  ///
+  /// In en, this message translates to:
+  /// **'Convert Chat to Flashcard Deck'**
+  String get convertToDeckTitle;
+
+  /// Description in convert to deck modal
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI will extract key STEM formulas, terms, and concepts into an active-recall deck.'**
+  String get convertToDeckDescription;
+
+  /// Input label for generated deck title
+  ///
+  /// In en, this message translates to:
+  /// **'Deck Title'**
+  String get deckNameLabel;
+
+  /// Button label to generate deck
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Spaced Repetition Deck'**
+  String get createDeckAction;
+
+  /// Loading label while synthesizing flashcard deck
+  ///
+  /// In en, this message translates to:
+  /// **'Synthesizing flashcards with AI...'**
+  String get generatingDeckProgress;
+
+  /// Button label to retry a failed message
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Response'**
+  String get retryFailedMessage;
+
+  /// A11y announcement for completed streaming
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot response completed.'**
+  String get streamingComplete;
+
+  /// A11y announcement when engine changes
+  ///
+  /// In en, this message translates to:
+  /// **'Switched engine to {engine}'**
+  String engineSwitched(String engine);
+
+  /// Error label when audio permission is not granted
+  ///
+  /// In en, this message translates to:
+  /// **'Audio recording permission required'**
+  String get audioInputDisabled;
+
+  /// Confirmation prompt before clearing chat history
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear chat history?'**
+  String get clearHistoryConfirmation;
+
+  /// Confirmation button to clear
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearAction;
+
+  /// Cancel button label
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
 }
 
 class _AppLocalizationsDelegate

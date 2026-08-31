@@ -20,8 +20,25 @@ class $AssetsIconsGen {
   /// File path: assets/icons/.gitkeep
   String get aGitkeep => 'assets/icons/.gitkeep';
 
+  /// File path: assets/icons/app_icon_development.png
+  AssetGenImage get appIconDevelopment =>
+      const AssetGenImage('assets/icons/app_icon_development.png');
+
+  /// File path: assets/icons/app_icon_production.png
+  AssetGenImage get appIconProduction =>
+      const AssetGenImage('assets/icons/app_icon_production.png');
+
+  /// File path: assets/icons/app_icon_staging.png
+  AssetGenImage get appIconStaging =>
+      const AssetGenImage('assets/icons/app_icon_staging.png');
+
   /// List of all assets
-  List<String> get values => [aGitkeep];
+  List<dynamic> get values => [
+    aGitkeep,
+    appIconDevelopment,
+    appIconProduction,
+    appIconStaging,
+  ];
 }
 
 class $AssetsImagesGen {

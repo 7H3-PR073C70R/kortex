@@ -10,5 +10,11 @@ void _initClients() {
     )
     ..registerLazySingleton<DecksApiClient>(
       () => DecksApiClient(locator<Dio>()),
+    )
+    ..registerLazySingleton<SupabaseSyllabotClient>(
+      () => SupabaseSyllabotClient(locator<Dio>()),
+    )
+    ..registerLazySingleton<LocalLlmEngineClient>(
+      LocalLlmEngineClient.new,
     );
 }

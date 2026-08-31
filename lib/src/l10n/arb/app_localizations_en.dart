@@ -1156,4 +1156,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionSummaryReviewAgain => 'Review More Decks';
+
+  @override
+  String get syllabotTitle => 'Syllabot AI';
+
+  @override
+  String get socraticStepByStep => 'Step-by-Step';
+
+  @override
+  String get socraticDirectAnswer => 'Direct Answer';
+
+  @override
+  String get socraticExamSim => 'Exam Sim';
+
+  @override
+  String get socraticDeepResearch => 'Deep Research';
+
+  @override
+  String get engineCloudSupabase => 'Cloud Neural Engine';
+
+  @override
+  String get engineLocalOnDevice => 'Offline On-Device LLM';
+
+  @override
+  String get convertToDeckSuccess =>
+      'Converted to Flashcard Deck successfully!';
+
+  @override
+  String get inputFieldPlaceholder =>
+      'Ask Syllabot anything (e.g. Derive Euler-Lagrange equations)...';
+
+  @override
+  String get voiceInputListening => 'Listening to your question...';
+
+  @override
+  String get offlineFallbackNotice =>
+      'Offline mode: Running on-device neural model.';
+
+  @override
+  String get newChatSession => 'New Chat';
+
+  @override
+  String get chatSessionsHistory => 'Chat History';
+
+  @override
+  String get noChatSessionsFound =>
+      'No chat sessions yet. Ask your first question!';
+
+  @override
+  String get convertToDeckTitle => 'Convert Chat to Flashcard Deck';
+
+  @override
+  String get convertToDeckDescription =>
+      'Syllabot AI will extract key STEM formulas, terms, and concepts into an active-recall deck.';
+
+  @override
+  String get deckNameLabel => 'Deck Title';
+
+  @override
+  String get createDeckAction => 'Generate Spaced Repetition Deck';
+
+  @override
+  String get generatingDeckProgress => 'Synthesizing flashcards with AI...';
+
+  @override
+  String get retryFailedMessage => 'Retry Response';
+
+  @override
+  String get streamingComplete => 'Syllabot response completed.';
+
+  @override
+  String engineSwitched(String engine) {
+    return 'Switched engine to $engine';
+  }
+
+  @override
+  String get audioInputDisabled => 'Audio recording permission required';
+
+  @override
+  String get clearHistoryConfirmation =>
+      'Are you sure you want to clear chat history?';
+
+  @override
+  String get clearAction => 'Clear';
+
+  @override
+  String get cancelAction => 'Cancel';
 }
