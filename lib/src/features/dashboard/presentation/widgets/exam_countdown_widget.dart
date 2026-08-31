@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class ExamCountdownWidget extends StatelessWidget {
@@ -20,16 +21,16 @@ class ExamCountdownWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final syllabusPercent = (countdown.syllabusProgress * 100).toInt();
 
     return Semantics(
       container: true,
-      label:
-          'Exam Countdown for ${countdown.examName}. '
-          '${countdown.daysRemaining} days remaining. '
-          'Syllabus coverage: $syllabusPercent percent.',
+      label: '${countdown.examName}. '
+          '${l10n.dashboardDaysLeft(countdown.daysRemaining)}. '
+          '${l10n.dashboardSyllabusMastery}: $syllabusPercent%.',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
@@ -101,9 +102,9 @@ class ExamCountdownWidget extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFF97316,
-                        ).withAlpha(isDark ? 50 : 25),
+                        color: const Color(0xFFF97316).withAlpha(
+                          isDark ? 50 : 25,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: const Color(0xFFF97316).withAlpha(120),
@@ -120,7 +121,7 @@ class ExamCountdownWidget extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            '${countdown.daysRemaining} DAYS LEFT',
+                            l10n.dashboardDaysLeft(countdown.daysRemaining),
                             style: typography.caption.bold.copyWith(
                               color: isDark
                                   ? const Color(0xFFFDBA74)
@@ -166,14 +167,14 @@ class ExamCountdownWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Syllabus Mastery',
+                      l10n.dashboardSyllabusMastery,
                       style: typography.footnote.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
                     Text(
-                      '$syllabusPercent% complete',
+                      l10n.dashboardSyllabusPercentComplete(syllabusPercent),
                       style: typography.footnote.bold.copyWith(
                         color: colors.primary,
                         fontSize: 12,
@@ -194,10 +195,8 @@ class ExamCountdownWidget extends StatelessWidget {
                     child: Stack(
                       children: [
                         FractionallySizedBox(
-                          widthFactor: countdown.syllabusProgress.clamp(
-                            0.05,
-                            1.0,
-                          ),
+                          widthFactor:
+                              countdown.syllabusProgress.clamp(0.05, 1.0),
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -218,7 +217,9 @@ class ExamCountdownWidget extends StatelessWidget {
                 // 4. Primary CTA: Launch Mock Simulator
                 Semantics(
                   button: true,
-                  label: 'Launch ${countdown.examName} Mock Simulator',
+                  label: l10n.dashboardLaunchMockSimulatorSemantics(
+                    countdown.examName,
+                  ),
                   child: ShrinkableButton(
                     onTap: () {
                       unawaited(HapticFeedback.lightImpact());
@@ -260,7 +261,10 @@ class ExamCountdownWidget extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Launch Mock Simulator (${countdown.completedMocksCount}/${countdown.totalMockPapersAvailable})',
+                            l10n.dashboardLaunchMockSimulator(
+                              countdown.completedMocksCount,
+                              countdown.totalMockPapersAvailable,
+                            ),
                             style: typography.caption.bold.copyWith(
                               color: Colors.white,
                               fontSize: 13,

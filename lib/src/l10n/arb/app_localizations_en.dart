@@ -764,4 +764,262 @@ class AppLocalizationsEn extends AppLocalizations {
   String navTabSemantics(String tab, int current, int total) {
     return '$tab, tab $current of $total';
   }
+
+  @override
+  String dashboardHeyUser(String name) {
+    return 'Hey, $name 👋';
+  }
+
+  @override
+  String get dashboardScholarFallback => 'Scholar';
+
+  @override
+  String dashboardStreakTooltip(int count) {
+    return '$count day study streak';
+  }
+
+  @override
+  String get dashboardViewAnalyticsSemantics =>
+      'View detailed study analytics and streaks';
+
+  @override
+  String get dashboardUncalibratedTitle => 'Calibrate Your Neural Workspace';
+
+  @override
+  String get dashboardUncalibratedSubtitle =>
+      'Tailor past papers, flashcards & exam simulator to your exact course.';
+
+  @override
+  String get dashboardCalibrateButton => 'Calibrate';
+
+  @override
+  String get dashboardUncalibratedSemantics =>
+      'Profile is not calibrated. Tap to configure your academic track.';
+
+  @override
+  String get dashboardUnableToLoad => 'Unable to Load Dashboard';
+
+  @override
+  String get dashboardConnectionError =>
+      'Please check your network connection and try again.';
+
+  @override
+  String get dashboardRetry => 'Retry';
+
+  @override
+  String get dashboardSpacedRepetitionQueue => 'Spaced Repetition Queue';
+
+  @override
+  String dashboardDecksCount(int count) {
+    return '$count DECKS';
+  }
+
+  @override
+  String dashboardActiveCoursesCount(int count) {
+    return '$count ACTIVE';
+  }
+
+  @override
+  String get dashboardCuratedCourses => 'Curated Course Repositories';
+
+  @override
+  String dashboardResourcesCount(int count) {
+    return '$count resources';
+  }
+
+  @override
+  String dashboardDueCount(int count) {
+    return '$count DUE';
+  }
+
+  @override
+  String get dashboardMemoryRetention => 'Memory Retention';
+
+  @override
+  String get dashboardReviewDeck => 'Review Deck';
+
+  @override
+  String dashboardEstimatedMinutes(int minutes) {
+    return '~$minutes mins';
+  }
+
+  @override
+  String get dashboardAskSyllabotHint =>
+      'Ask Syllabot anything (e.g. Solve PDE #3)...';
+
+  @override
+  String get dashboardSendPromptSemantics => 'Send prompt to Syllabot AI';
+
+  @override
+  String get dashboardAskSyllabotSemantics =>
+      'Ask Syllabot AI instant study question';
+
+  @override
+  String get dashboardRetentionMatrix => 'Retention & Study Matrix';
+
+  @override
+  String get dashboardFullStats => 'Full Stats';
+
+  @override
+  String get dashboardRetentionChip => 'Retention';
+
+  @override
+  String get dashboardMasteredChip => 'Mastered';
+
+  @override
+  String get dashboardStudyTimeChip => 'Study Time';
+
+  @override
+  String dashboardStudyTimeMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dashboardQuickActionsSemantics =>
+      'Quick action bar: Upload PDF, create active recall deck, or start AI study chat';
+
+  @override
+  String get dashboardUploadNotes => 'Upload Notes';
+
+  @override
+  String get dashboardNewDeck => 'New Deck';
+
+  @override
+  String get dashboardAiPartner => 'AI Partner';
+
+  @override
+  String get dashboardIngestTitle => 'Ingest Study Material';
+
+  @override
+  String get dashboardIngestSubtitle =>
+      'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse STEM OCR & generate flashcards.';
+
+  @override
+  String get dashboardUploadPdf => 'Upload PDF';
+
+  @override
+  String get dashboardLectureSlides => 'Lecture Slides';
+
+  @override
+  String get dashboardScanNotes => 'Scan Notes';
+
+  @override
+  String get dashboardStemOcr => 'STEM OCR';
+
+  @override
+  String dashboardDaysLeft(int count) {
+    return '$count DAYS LEFT';
+  }
+
+  @override
+  String get dashboardSyllabusMastery => 'Syllabus Mastery';
+
+  @override
+  String dashboardSyllabusPercentComplete(int percent) {
+    return '$percent% complete';
+  }
+
+  @override
+  String dashboardLaunchMockSimulator(int completed, int total) {
+    return 'Launch Mock Simulator ($completed/$total)';
+  }
+
+  @override
+  String dashboardLaunchMockSimulatorSemantics(String examName) {
+    return 'Launch $examName Mock Simulator';
+  }
+
+  @override
+  String get deckDetailTitle => 'Active Recall Session';
+
+  @override
+  String deckDetailCardProgress(int current, int total) {
+    return 'Card $current of $total';
+  }
+
+  @override
+  String get deckDetailSm2QueueBadge => 'SM-2 SPATIAL QUEUE';
+
+  @override
+  String get deckDetailAnswerFormula => 'ANSWER / FORMULA';
+
+  @override
+  String get deckDetailQuestion => 'QUESTION';
+
+  @override
+  String get deckDetailTapToFlip => 'Tap card to flip';
+
+  @override
+  String get deckDetailHard => 'Hard';
+
+  @override
+  String get deckDetailGood => 'Good';
+
+  @override
+  String get deckDetailEasy => 'Easy';
+
+  @override
+  String get deckDetailBackSemantics => 'Back to Dashboard';
+
+  @override
+  String get mockExamLobbyTitle => 'Exam Simulator Lobby';
+
+  @override
+  String get mockExamLobbyDescription =>
+      'Simulate computer-based testing with dynamic negative marking, question timers, and Syllabot AI error diagnostics.';
+
+  @override
+  String get mockExamSelectMode => 'Select Simulation Mode';
+
+  @override
+  String get mockExamModeStandardTitle => 'Standard Timed (CBT)';
+
+  @override
+  String get mockExamModeStandardSubtitle =>
+      '50 Questions · 60 Mins · Live Timer & Negative Marking';
+
+  @override
+  String get mockExamModeSocraticTitle => 'Socratic Practice Mode';
+
+  @override
+  String get mockExamModeSocraticSubtitle =>
+      'Untimed · Instant Step-by-Step AI Solutions per question';
+
+  @override
+  String get mockExamModeDrillTitle => 'Weak Areas Targeted Drill';
+
+  @override
+  String get mockExamModeDrillSubtitle =>
+      'Focused on concepts where your retention score is < 80%';
+
+  @override
+  String get mockExamBeginButton => 'Begin Simulation Session';
+
+  @override
+  String get analyticsDetailTitle => 'Neural Analytics & Retention';
+
+  @override
+  String analyticsStreakDays(int count) {
+    return '$count Day Study Streak 🔥';
+  }
+
+  @override
+  String get analyticsStreakRecord =>
+      'Your record is 28 days. Keep studying to reach Neural Master rank!';
+
+  @override
+  String get analyticsRetentionCurveTitle =>
+      'Memory Retention Curve (Ebbinghaus SM-2)';
+
+  @override
+  String analyticsMasteredCountSubtitle(int count) {
+    return '$count concept cards mastered in active recall';
+  }
+
+  @override
+  String get courseModulePastPapersTitle => 'Past Papers & Problem Sets';
+
+  @override
+  String get courseModuleVerifiedSubtitle =>
+      'Verified OCR · Step-by-Step AI Solutions';
 }

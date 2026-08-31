@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class RetentionHeatMapWidget extends StatelessWidget {
@@ -21,13 +22,16 @@ class RetentionHeatMapWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final overallRetention = (analytics.overallRetentionRate * 100).toInt();
 
     return Semantics(
       container: true,
-      label: 'Study Retention Analytics. $overallRetention percent retention.',
+      label: '${l10n.dashboardRetentionMatrix}. '
+          '${l10n.dashboardRetentionChip}: $overallRetention%. '
+          '${l10n.dashboardMasteredChip}: ${analytics.totalCardsMastered}.',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
         child: BackdropFilter(
@@ -69,7 +73,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Retention & Study Matrix',
+                          l10n.dashboardRetentionMatrix,
                           style: typography.title3.bold.copyWith(
                             color: colors.textPrimary,
                             fontSize: 15,
@@ -87,7 +91,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                       child: Row(
                         children: [
                           Text(
-                            'Full Stats',
+                            l10n.dashboardFullStats,
                             style: typography.caption.bold.copyWith(
                               color: colors.primary,
                               fontSize: 12,
@@ -151,7 +155,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetricChip(
-                        label: 'Retention',
+                        label: l10n.dashboardRetentionChip,
                         value: '$overallRetention%',
                         icon: Icons.psychology_rounded,
                         color: const Color(0xFF10B981),
@@ -162,7 +166,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _MetricChip(
-                        label: 'Mastered',
+                        label: l10n.dashboardMasteredChip,
                         value: '${analytics.totalCardsMastered}',
                         icon: Icons.check_circle_outline_rounded,
                         color: colors.primary,
@@ -173,8 +177,10 @@ class RetentionHeatMapWidget extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _MetricChip(
-                        label: 'Study Time',
-                        value: '${analytics.weeklyMinutesStudied}m',
+                        label: l10n.dashboardStudyTimeChip,
+                        value: l10n.dashboardStudyTimeMinutes(
+                          analytics.weeklyMinutesStudied,
+                        ),
                         icon: Icons.schedule_rounded,
                         color: const Color(0xFF8B5CF6),
                         colors: colors,

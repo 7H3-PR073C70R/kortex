@@ -1082,5 +1082,387 @@
                 "example": "5"
             }
         }
+    },
+    "dashboardHeyUser": "Hey, {name} 👋",
+    "@dashboardHeyUser": {
+        "description": "User greeting in dashboard header",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Scholar"
+            }
+        }
+    },
+    "dashboardScholarFallback": "Scholar",
+    "@dashboardScholarFallback": {
+        "description": "Fallback name when username is not set"
+    },
+    "dashboardStreakTooltip": "{count} day study streak",
+    "@dashboardStreakTooltip": {
+        "description": "Accessibility label for streak counter",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "14"
+            }
+        }
+    },
+    "dashboardViewAnalyticsSemantics": "View detailed study analytics and streaks",
+    "@dashboardViewAnalyticsSemantics": {
+        "description": "Semantics for viewing analytics detail"
+    },
+    "dashboardUncalibratedTitle": "Calibrate Your Neural Workspace",
+    "@dashboardUncalibratedTitle": {
+        "description": "Title for uncalibrated profile banner"
+    },
+    "dashboardUncalibratedSubtitle": "Tailor past papers, flashcards & exam simulator to your exact course.",
+    "@dashboardUncalibratedSubtitle": {
+        "description": "Subtitle for uncalibrated profile banner"
+    },
+    "dashboardCalibrateButton": "Calibrate",
+    "@dashboardCalibrateButton": {
+        "description": "Button label for calibration banner"
+    },
+    "dashboardUncalibratedSemantics": "Profile is not calibrated. Tap to configure your academic track.",
+    "@dashboardUncalibratedSemantics": {
+        "description": "Semantics label for uncalibrated profile banner"
+    },
+    "dashboardUnableToLoad": "Unable to Load Dashboard",
+    "@dashboardUnableToLoad": {
+        "description": "Error title on dashboard"
+    },
+    "dashboardConnectionError": "Please check your network connection and try again.",
+    "@dashboardConnectionError": {
+        "description": "Error description on dashboard"
+    },
+    "dashboardRetry": "Retry",
+    "@dashboardRetry": {
+        "description": "Retry button on dashboard"
+    },
+    "dashboardSpacedRepetitionQueue": "Spaced Repetition Queue",
+    "@dashboardSpacedRepetitionQueue": {
+        "description": "Title for spaced repetition review queue"
+    },
+    "dashboardDecksCount": "{count} DECKS",
+    "@dashboardDecksCount": {
+        "description": "Total decks badge count",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "dashboardActiveCoursesCount": "{count} ACTIVE",
+    "@dashboardActiveCoursesCount": {
+        "description": "Active curated courses count",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    },
+    "dashboardCuratedCourses": "Curated Course Repositories",
+    "@dashboardCuratedCourses": {
+        "description": "Title for curated courses section"
+    },
+    "dashboardResourcesCount": "{count} resources",
+    "@dashboardResourcesCount": {
+        "description": "Count of resources in course",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "dashboardDueCount": "{count} DUE",
+    "@dashboardDueCount": {
+        "description": "Count of flashcards due today",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "dashboardMemoryRetention": "Memory Retention",
+    "@dashboardMemoryRetention": {
+        "description": "Memory retention label"
+    },
+    "dashboardReviewDeck": "Review Deck",
+    "@dashboardReviewDeck": {
+        "description": "Review deck action button"
+    },
+    "dashboardEstimatedMinutes": "~{minutes} mins",
+    "@dashboardEstimatedMinutes": {
+        "description": "Estimated review duration",
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "dashboardAskSyllabotHint": "Ask Syllabot anything (e.g. Solve PDE #3)...",
+    "@dashboardAskSyllabotHint": {
+        "description": "Hint in quick AI prompt bar"
+    },
+    "dashboardSendPromptSemantics": "Send prompt to Syllabot AI",
+    "@dashboardSendPromptSemantics": {
+        "description": "Semantics for send prompt button"
+    },
+    "dashboardAskSyllabotSemantics": "Ask Syllabot AI instant study question",
+    "@dashboardAskSyllabotSemantics": {
+        "description": "Semantics for AI prompt input bar"
+    },
+    "dashboardRetentionMatrix": "Retention & Study Matrix",
+    "@dashboardRetentionMatrix": {
+        "description": "Title for retention heat map widget"
+    },
+    "dashboardFullStats": "Full Stats",
+    "@dashboardFullStats": {
+        "description": "Link to full analytics stats"
+    },
+    "dashboardRetentionChip": "Retention",
+    "@dashboardRetentionChip": {
+        "description": "Retention chip label"
+    },
+    "dashboardMasteredChip": "Mastered",
+    "@dashboardMasteredChip": {
+        "description": "Mastered cards chip label"
+    },
+    "dashboardStudyTimeChip": "Study Time",
+    "@dashboardStudyTimeChip": {
+        "description": "Study time chip label"
+    },
+    "dashboardStudyTimeMinutes": "{minutes}m",
+    "@dashboardStudyTimeMinutes": {
+        "description": "Study time formatted in minutes",
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "120"
+            }
+        }
+    },
+    "dashboardQuickActionsSemantics": "Quick action bar: Upload PDF, create active recall deck, or start AI study chat",
+    "@dashboardQuickActionsSemantics": {
+        "description": "Semantics for floating speed dial action bar"
+    },
+    "dashboardUploadNotes": "Upload Notes",
+    "@dashboardUploadNotes": {
+        "description": "Upload notes action button"
+    },
+    "dashboardNewDeck": "New Deck",
+    "@dashboardNewDeck": {
+        "description": "New deck action button"
+    },
+    "dashboardAiPartner": "AI Partner",
+    "@dashboardAiPartner": {
+        "description": "AI Partner action button"
+    },
+    "dashboardIngestTitle": "Ingest Study Material",
+    "@dashboardIngestTitle": {
+        "description": "Title for study material upload sheet"
+    },
+    "dashboardIngestSubtitle": "Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse STEM OCR & generate flashcards.",
+    "@dashboardIngestSubtitle": {
+        "description": "Subtitle for study material upload sheet"
+    },
+    "dashboardUploadPdf": "Upload PDF",
+    "@dashboardUploadPdf": {
+        "description": "Upload PDF option"
+    },
+    "dashboardLectureSlides": "Lecture Slides",
+    "@dashboardLectureSlides": {
+        "description": "Lecture slides subtitle"
+    },
+    "dashboardScanNotes": "Scan Notes",
+    "@dashboardScanNotes": {
+        "description": "Scan handwritten notes option"
+    },
+    "dashboardStemOcr": "STEM OCR",
+    "@dashboardStemOcr": {
+        "description": "STEM OCR subtitle"
+    },
+    "dashboardDaysLeft": "{count} DAYS LEFT",
+    "@dashboardDaysLeft": {
+        "description": "Exam countdown days remaining badge",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "45"
+            }
+        }
+    },
+    "dashboardSyllabusMastery": "Syllabus Mastery",
+    "@dashboardSyllabusMastery": {
+        "description": "Syllabus mastery label"
+    },
+    "dashboardSyllabusPercentComplete": "{percent}% complete",
+    "@dashboardSyllabusPercentComplete": {
+        "description": "Syllabus mastery percentage complete",
+        "placeholders": {
+            "percent": {
+                "type": "int",
+                "example": "75"
+            }
+        }
+    },
+    "dashboardLaunchMockSimulator": "Launch Mock Simulator ({completed}/{total})",
+    "@dashboardLaunchMockSimulator": {
+        "description": "Launch mock exam simulator button",
+        "placeholders": {
+            "completed": {
+                "type": "int",
+                "example": "5"
+            },
+            "total": {
+                "type": "int",
+                "example": "20"
+            }
+        }
+    },
+    "dashboardLaunchMockSimulatorSemantics": "Launch {examName} Mock Simulator",
+    "@dashboardLaunchMockSimulatorSemantics": {
+        "description": "Semantics for launch mock simulator button",
+        "placeholders": {
+            "examName": {
+                "type": "String",
+                "example": "JAMB / UTME Examination"
+            }
+        }
+    },
+    "deckDetailTitle": "Active Recall Session",
+    "@deckDetailTitle": {
+        "description": "Title for active recall flashcard session"
+    },
+    "deckDetailCardProgress": "Card {current} of {total}",
+    "@deckDetailCardProgress": {
+        "description": "Current flashcard review progress",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "20"
+            }
+        }
+    },
+    "deckDetailSm2QueueBadge": "SM-2 SPATIAL QUEUE",
+    "@deckDetailSm2QueueBadge": {
+        "description": "SM-2 queue badge label"
+    },
+    "deckDetailAnswerFormula": "ANSWER / FORMULA",
+    "@deckDetailAnswerFormula": {
+        "description": "Back of flashcard badge"
+    },
+    "deckDetailQuestion": "QUESTION",
+    "@deckDetailQuestion": {
+        "description": "Front of flashcard badge"
+    },
+    "deckDetailTapToFlip": "Tap card to flip",
+    "@deckDetailTapToFlip": {
+        "description": "Hint to tap and flip flashcard"
+    },
+    "deckDetailHard": "Hard",
+    "@deckDetailHard": {
+        "description": "Hard rating button for SM-2"
+    },
+    "deckDetailGood": "Good",
+    "@deckDetailGood": {
+        "description": "Good rating button for SM-2"
+    },
+    "deckDetailEasy": "Easy",
+    "@deckDetailEasy": {
+        "description": "Easy rating button for SM-2"
+    },
+    "deckDetailBackSemantics": "Back to Dashboard",
+    "@deckDetailBackSemantics": {
+        "description": "Back button semantics on deck detail page"
+    },
+    "mockExamLobbyTitle": "Exam Simulator Lobby",
+    "@mockExamLobbyTitle": {
+        "description": "Title for mock exam simulator lobby"
+    },
+    "mockExamLobbyDescription": "Simulate computer-based testing with dynamic negative marking, question timers, and Syllabot AI error diagnostics.",
+    "@mockExamLobbyDescription": {
+        "description": "Description of mock exam simulator"
+    },
+    "mockExamSelectMode": "Select Simulation Mode",
+    "@mockExamSelectMode": {
+        "description": "Header for selecting simulation mode"
+    },
+    "mockExamModeStandardTitle": "Standard Timed (CBT)",
+    "@mockExamModeStandardTitle": {
+        "description": "Standard timed mode title"
+    },
+    "mockExamModeStandardSubtitle": "50 Questions · 60 Mins · Live Timer & Negative Marking",
+    "@mockExamModeStandardSubtitle": {
+        "description": "Standard timed mode subtitle"
+    },
+    "mockExamModeSocraticTitle": "Socratic Practice Mode",
+    "@mockExamModeSocraticTitle": {
+        "description": "Socratic practice mode title"
+    },
+    "mockExamModeSocraticSubtitle": "Untimed · Instant Step-by-Step AI Solutions per question",
+    "@mockExamModeSocraticSubtitle": {
+        "description": "Socratic practice mode subtitle"
+    },
+    "mockExamModeDrillTitle": "Weak Areas Targeted Drill",
+    "@mockExamModeDrillTitle": {
+        "description": "Weak areas targeted drill mode title"
+    },
+    "mockExamModeDrillSubtitle": "Focused on concepts where your retention score is < 80%",
+    "@mockExamModeDrillSubtitle": {
+        "description": "Weak areas targeted drill mode subtitle"
+    },
+    "mockExamBeginButton": "Begin Simulation Session",
+    "@mockExamBeginButton": {
+        "description": "Begin exam simulation session button"
+    },
+    "analyticsDetailTitle": "Neural Analytics & Retention",
+    "@analyticsDetailTitle": {
+        "description": "Title for analytics detail page"
+    },
+    "analyticsStreakDays": "{count} Day Study Streak 🔥",
+    "@analyticsStreakDays": {
+        "description": "Streak days headline in analytics",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "14"
+            }
+        }
+    },
+    "analyticsStreakRecord": "Your record is 28 days. Keep studying to reach Neural Master rank!",
+    "@analyticsStreakRecord": {
+        "description": "Streak record encouragement subtitle"
+    },
+    "analyticsRetentionCurveTitle": "Memory Retention Curve (Ebbinghaus SM-2)",
+    "@analyticsRetentionCurveTitle": {
+        "description": "Title for Ebbinghaus retention breakdown"
+    },
+    "analyticsMasteredCountSubtitle": "{count} concept cards mastered in active recall",
+    "@analyticsMasteredCountSubtitle": {
+        "description": "Count of mastered concept cards",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "120"
+            }
+        }
+    },
+    "courseModulePastPapersTitle": "Past Papers & Problem Sets",
+    "@courseModulePastPapersTitle": {
+        "description": "Section header for past papers"
+    },
+    "courseModuleVerifiedSubtitle": "Verified OCR · Step-by-Step AI Solutions",
+    "@courseModuleVerifiedSubtitle": {
+        "description": "Verified OCR description subtitle"
     }
 }

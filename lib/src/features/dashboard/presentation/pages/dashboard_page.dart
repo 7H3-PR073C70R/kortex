@@ -16,6 +16,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -39,6 +40,7 @@ class _DashboardView extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -62,15 +64,14 @@ class _DashboardView extends HookWidget {
                       const SyllabotAvatar(size: 48, isError: true),
                       const SizedBox(height: 16),
                       Text(
-                        'Unable to Load Dashboard',
+                        l10n.dashboardUnableToLoad,
                         style: typography.title3.bold.copyWith(
                           color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        state.errorMessage ??
-                            'Please check your connection and try again.',
+                        state.errorMessage ?? l10n.dashboardConnectionError,
                         textAlign: TextAlign.center,
                         style: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
@@ -79,9 +80,9 @@ class _DashboardView extends HookWidget {
                       const SizedBox(height: 20),
                       ShrinkableButton(
                         onTap: () {
-                          context.read<DashboardBloc>().add(
-                            const DashboardStarted(),
-                          );
+                          context
+                              .read<DashboardBloc>()
+                              .add(const DashboardStarted());
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -93,7 +94,7 @@ class _DashboardView extends HookWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            'Retry',
+                            l10n.dashboardRetry,
                             style: typography.caption.bold.copyWith(
                               color: Colors.white,
                             ),
@@ -148,6 +149,7 @@ class _CompactDashboardLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isHighSchool = feed.isHighSchoolCandidate;
 
     return ListView(
@@ -197,14 +199,14 @@ class _CompactDashboardLayout extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Spaced Repetition Queue',
+                  l10n.dashboardSpacedRepetitionQueue,
                   style: typography.title3.bold.copyWith(
                     color: colors.textPrimary,
                     fontSize: 16.5,
                   ),
                 ),
                 Text(
-                  '${feed.dueStudyDecks.length} DECKS',
+                  l10n.dashboardDecksCount(feed.dueStudyDecks.length),
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
                     fontSize: 11,

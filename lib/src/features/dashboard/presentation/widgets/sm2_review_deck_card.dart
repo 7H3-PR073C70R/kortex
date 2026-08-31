@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class Sm2ReviewDeckCard extends StatelessWidget {
@@ -22,15 +23,15 @@ class Sm2ReviewDeckCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final retentionPercent = (deck.retentionRate * 100).toInt();
 
     return Semantics(
       button: true,
-      label:
-          'Deck: ${deck.title}. ${deck.dueCards} cards due today. '
-          'Retention rate: $retentionPercent percent.',
+      label: '${deck.title}. ${l10n.dashboardDueCount(deck.dueCards)}. '
+          '${l10n.dashboardMemoryRetention}: $retentionPercent%.',
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
@@ -46,17 +47,17 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 color: isHero
                     ? (isDark
-                          ? colors.surfaceSecondary.withAlpha(190)
-                          : colors.surfacePrimary.withAlpha(230))
+                        ? colors.surfaceSecondary.withAlpha(190)
+                        : colors.surfacePrimary.withAlpha(230))
                     : (isDark
-                          ? colors.surfaceSecondary.withAlpha(150)
-                          : colors.surfacePrimary.withAlpha(200)),
+                        ? colors.surfaceSecondary.withAlpha(150)
+                        : colors.surfacePrimary.withAlpha(200)),
                 border: Border.all(
                   color: isHero
                       ? colors.primary.withAlpha(isDark ? 130 : 90)
                       : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(70)
-                            : colors.surfaceBorder.withAlpha(140)),
+                          ? colors.surfaceBorderHighlight.withAlpha(70)
+                          : colors.surfaceBorder.withAlpha(140)),
                   width: isHero ? 1.5 : 1.0,
                 ),
                 boxShadow: [
@@ -119,7 +120,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 3),
                               Text(
-                                '${deck.dueCards} DUE',
+                                l10n.dashboardDueCount(deck.dueCards),
                                 style: typography.caption.bold.copyWith(
                                   color: isDark
                                       ? const Color(0xFFFCA5A5)
@@ -153,7 +154,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Memory Retention',
+                        l10n.dashboardMemoryRetention,
                         style: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
                           fontSize: 12,
@@ -214,7 +215,9 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '~${deck.estimatedMinutes} mins',
+                            l10n.dashboardEstimatedMinutes(
+                              deck.estimatedMinutes,
+                            ),
                             style: typography.caption.regular.copyWith(
                               color: colors.textMuted,
                               fontSize: 12,
@@ -225,7 +228,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            'Review Deck',
+                            l10n.dashboardReviewDeck,
                             style: typography.caption.bold.copyWith(
                               color: colors.primary,
                               fontSize: 12.5,

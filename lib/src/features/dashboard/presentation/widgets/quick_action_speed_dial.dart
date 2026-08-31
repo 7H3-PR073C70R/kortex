@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class QuickActionSpeedDial extends StatelessWidget {
@@ -13,13 +14,12 @@ class QuickActionSpeedDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     return Semantics(
       container: true,
-      label:
-          'Quick action bar: Upload PDF, create active recall deck, '
-          'or start AI study chat',
+      label: l10n.dashboardQuickActionsSemantics,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
         child: BackdropFilter(
@@ -50,7 +50,7 @@ class QuickActionSpeedDial extends StatelessWidget {
               children: [
                 _ActionItem(
                   icon: Icons.upload_file_rounded,
-                  label: 'Upload Notes',
+                  label: l10n.dashboardUploadNotes,
                   color: colors.primary,
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());
@@ -66,7 +66,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                 ),
                 _ActionItem(
                   icon: Icons.add_to_photos_rounded,
-                  label: 'New Deck',
+                  label: l10n.dashboardNewDeck,
                   color: const Color(0xFF8B5CF6),
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());
@@ -82,7 +82,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                 ),
                 _ActionItem(
                   icon: Icons.auto_awesome_rounded,
-                  label: 'AI Partner',
+                  label: l10n.dashboardAiPartner,
                   color: colors.syllabotAccent,
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());
@@ -100,6 +100,7 @@ class QuickActionSpeedDial extends StatelessWidget {
   void _showUploadBottomSheet(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     unawaited(
@@ -118,9 +119,8 @@ class QuickActionSpeedDial extends StatelessWidget {
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(240)
                       : colors.surfacePrimary.withAlpha(245),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(28)),
                   border: Border.all(
                     color: isDark
                         ? colors.surfaceBorderHighlight.withAlpha(80)
@@ -142,15 +142,14 @@ class QuickActionSpeedDial extends StatelessWidget {
                     const SizedBox(height: 18),
 
                     Text(
-                      'Ingest Study Material',
+                      l10n.dashboardIngestTitle,
                       style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Drop lecture slides, PDFs or handwritten past papers. '
-                      'Syllabot will parse STEM OCR & generate flashcards.',
+                      l10n.dashboardIngestSubtitle,
                       textAlign: TextAlign.center,
                       style: typography.footnote.regular.copyWith(
                         color: colors.textSecondary,
@@ -165,8 +164,8 @@ class QuickActionSpeedDial extends StatelessWidget {
                         Expanded(
                           child: _UploadOptionCard(
                             icon: Icons.picture_as_pdf_rounded,
-                            title: 'Upload PDF',
-                            subtitle: 'Lecture Slides',
+                            title: l10n.dashboardUploadPdf,
+                            subtitle: l10n.dashboardLectureSlides,
                             onTap: () {
                               Navigator.of(context).pop();
                               unawaited(
@@ -184,8 +183,8 @@ class QuickActionSpeedDial extends StatelessWidget {
                         Expanded(
                           child: _UploadOptionCard(
                             icon: Icons.camera_alt_rounded,
-                            title: 'Scan Notes',
-                            subtitle: 'STEM OCR',
+                            title: l10n.dashboardScanNotes,
+                            subtitle: l10n.dashboardStemOcr,
                             onTap: () {
                               Navigator.of(context).pop();
                               unawaited(

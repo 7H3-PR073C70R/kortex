@@ -11,10 +11,14 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/retention_hea
 import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
 
+import 'package:kortex/src/l10n/arb/app_localizations.dart';
+
 Widget createTestApp(Widget child) {
   return MaterialApp(
     theme: AppTheme.lightTheme,
     darkTheme: AppTheme.darkTheme,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       body: SingleChildScrollView(child: child),
     ),

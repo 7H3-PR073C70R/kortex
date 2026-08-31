@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -26,11 +27,12 @@ class HeaderProfileBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final displayName = (userName != null && userName!.trim().isNotEmpty)
         ? userName!.trim().split(' ').first
-        : 'Scholar';
+        : l10n.dashboardScholarFallback;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -45,7 +47,7 @@ class HeaderProfileBar extends StatelessWidget {
               child: Row(
                 children: [
                   Semantics(
-                    label: 'User profile avatar for $displayName',
+                    label: l10n.dashboardHeyUser(displayName),
                     image: true,
                     child: Container(
                       width: 46,
@@ -78,7 +80,7 @@ class HeaderProfileBar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hey, $displayName 👋',
+                          l10n.dashboardHeyUser(displayName),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: typography.title3.bold.copyWith(
@@ -119,12 +121,14 @@ class HeaderProfileBar extends StatelessWidget {
               ),
             ),
 
-            // Right: Streak Counter & XP Badge
+            // Right: Streak Counter & Analytics Shortcut
             Row(
               children: [
                 // Study Streak Pill
                 Semantics(
-                  label: '${analytics.currentStreakDays} day study streak',
+                  label: l10n.dashboardStreakTooltip(
+                    analytics.currentStreakDays,
+                  ),
                   container: true,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -171,10 +175,10 @@ class HeaderProfileBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
 
-                // Notifications or Profile Shortcut
+                // Analytics Shortcut
                 Semantics(
                   button: true,
-                  label: 'View detailed study analytics and streaks',
+                  label: l10n.dashboardViewAnalyticsSemantics,
                   child: ShrinkableButton(
                     onTap: () {
                       unawaited(HapticFeedback.lightImpact());
@@ -214,9 +218,7 @@ class HeaderProfileBar extends StatelessWidget {
           const SizedBox(height: 14),
           Semantics(
             container: true,
-            label:
-                'Profile is not calibrated. '
-                'Tap to configure your academic track.',
+            label: l10n.dashboardUncalibratedSemantics,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: BackdropFilter(
@@ -245,7 +247,7 @@ class HeaderProfileBar extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Calibrate Your Neural Workspace',
+                              l10n.dashboardUncalibratedTitle,
                               style: typography.caption.bold.copyWith(
                                 color: colors.textPrimary,
                                 fontSize: 13,
@@ -253,8 +255,7 @@ class HeaderProfileBar extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Tailor past papers, flashcards & exam '
-                              'simulator to your exact course.',
+                              l10n.dashboardUncalibratedSubtitle,
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11.5,
@@ -291,7 +292,7 @@ class HeaderProfileBar extends StatelessWidget {
                             ],
                           ),
                           child: Text(
-                            'Calibrate',
+                            l10n.dashboardCalibrateButton,
                             style: typography.caption.bold.copyWith(
                               color: Colors.white,
                               fontSize: 12,

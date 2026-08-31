@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -21,6 +22,7 @@ class SyllabotQuickPromptBar extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final controller = useTextEditingController();
@@ -90,7 +92,7 @@ class SyllabotQuickPromptBar extends HookWidget {
         // Floating Glassmorphic Input Bar
         Semantics(
           container: true,
-          label: 'Ask Syllabot AI instant study question',
+          label: l10n.dashboardAskSyllabotSemantics,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: BackdropFilter(
@@ -130,8 +132,7 @@ class SyllabotQuickPromptBar extends HookWidget {
                           fontSize: 13.5,
                         ),
                         decoration: InputDecoration(
-                          hintText:
-                              'Ask Syllabot anything (e.g. Solve PDE #3)...',
+                          hintText: l10n.dashboardAskSyllabotHint,
                           hintStyle: typography.footnote.regular.copyWith(
                             color: colors.textMuted,
                             fontSize: 12.5,
@@ -140,16 +141,15 @@ class SyllabotQuickPromptBar extends HookWidget {
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           enabledBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Semantics(
                       button: true,
-                      label: 'Send prompt to Syllabot AI',
+                      label: l10n.dashboardSendPromptSemantics,
                       child: ShrinkableButton(
                         onTap: handleSubmit,
                         child: AnimatedContainer(
@@ -161,12 +161,10 @@ class SyllabotQuickPromptBar extends HookWidget {
                             color: hasText.value
                                 ? colors.primary
                                 : (isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          60,
-                                        )
-                                      : colors.surfaceBorderHighlight.withAlpha(
-                                          90,
-                                        )),
+                                    ? colors.surfaceBorderHighlight
+                                        .withAlpha(60)
+                                    : colors.surfaceBorderHighlight
+                                        .withAlpha(90)),
                           ),
                           alignment: Alignment.center,
                           child: Icon(

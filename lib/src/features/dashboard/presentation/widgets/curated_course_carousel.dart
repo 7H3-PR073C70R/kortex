@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CuratedCourseCarousel extends StatelessWidget {
@@ -21,6 +22,7 @@ class CuratedCourseCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     if (courses.isEmpty) return const SizedBox.shrink();
@@ -35,7 +37,7 @@ class CuratedCourseCarousel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Curated Course Repositories',
+                l10n.dashboardCuratedCourses,
                 style: typography.title3.bold.copyWith(
                   color: colors.textPrimary,
                   fontSize: 16.5,
@@ -43,7 +45,7 @@ class CuratedCourseCarousel extends StatelessWidget {
                 ),
               ),
               Text(
-                '${courses.length} ACTIVE',
+                l10n.dashboardActiveCoursesCount(courses.length),
                 style: typography.caption.bold.copyWith(
                   color: colors.primary,
                   fontSize: 11,
@@ -93,13 +95,13 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
+    final l10n = context.l10n;
     final coveragePercent = (course.syllabusCoverage * 100).toInt();
 
     return Semantics(
       button: true,
-      label:
-          'Course: ${course.courseCode} ${course.title}. '
-          '${course.totalMaterials} study materials available.',
+      label: '${course.courseCode} ${course.title}. '
+          '${l10n.dashboardResourcesCount(course.totalMaterials)}.',
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
@@ -193,7 +195,7 @@ class _CourseCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${course.totalMaterials} resources',
+                            l10n.dashboardResourcesCount(course.totalMaterials),
                             style: typography.footnote.regular.copyWith(
                               color: colors.textMuted,
                               fontSize: 11,
@@ -217,10 +219,8 @@ class _CourseCard extends StatelessWidget {
                               ? colors.surfaceBorderHighlight.withAlpha(50)
                               : colors.surfaceBorder.withAlpha(100),
                           child: FractionallySizedBox(
-                            widthFactor: course.syllabusCoverage.clamp(
-                              0.1,
-                              1.0,
-                            ),
+                            widthFactor:
+                                course.syllabusCoverage.clamp(0.1, 1.0),
                             child: Container(
                               color: colors.primary,
                             ),

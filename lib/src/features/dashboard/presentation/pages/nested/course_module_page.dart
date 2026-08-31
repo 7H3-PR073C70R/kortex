@@ -1,7 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class CourseModulePage extends StatelessWidget {
@@ -20,29 +25,24 @@ class CourseModulePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final pastPapers = [
-      '2024 Past Examination (With Step-by-Step Solutions)',
-      '2023 Midterm Assessment & Marking Guide',
-      '2022 Comprehensive Theory & Objective Paper',
-      '2021 High-Yield Diagnostic Problem Set',
+      '2024 Final Examination (Paper 1)',
+      '2023 Mid-Semester Diagnostic Test',
+      '2022 Supplementary Problem Set',
     ];
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF090D16)
-          : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Semantics(
-          button: true,
-          label: 'Back to Dashboard',
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-            onPressed: () => context.router.pop(),
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
+          onPressed: () => context.router.pop(),
         ),
         title: Text(
           courseCode,
@@ -51,134 +51,132 @@ class CourseModulePage extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: ListView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            // Course Banner
-            ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(190)
-                        : colors.surfacePrimary.withAlpha(230),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 90 : 60),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Course Header
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: isDark
+                          ? colors.surfaceSecondary.withAlpha(160)
+                          : colors.surfacePrimary.withAlpha(210),
+                      border: Border.all(
+                        color: isDark
+                            ? colors.surfaceBorderHighlight.withAlpha(70)
+                            : colors.surfaceBorder.withAlpha(140),
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          courseTitle,
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 60 : 30),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
+                        const SizedBox(height: 6),
+                        Text(
                           courseCode,
-                          style: typography.caption.bold.copyWith(
+                          style: typography.footnote.regular.copyWith(
                             color: colors.primary,
-                            fontSize: 11,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        courseTitle,
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 17,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            Text(
-              'Past Papers & Problem Sets',
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            ...pastPapers.map((paper) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(140)
-                      : colors.surfacePrimary.withAlpha(200),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(60)
-                        : colors.surfaceBorder.withAlpha(120),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.description_rounded,
-                        color: colors.primary,
-                        size: 20,
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              Text(
+                l10n.courseModulePastPapersTitle,
+                style: typography.callout.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              ...pastPapers.map((paper) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        context.router.push(
+                          SyllabotChatRoute(
+                            initialPrompt: 'Explain step-by-step solutions for '
+                                '$paper in $courseCode.',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary.withAlpha(140)
+                            : colors.surfacePrimary.withAlpha(200),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(60)
+                              : colors.surfaceBorder.withAlpha(120),
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            paper,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 13.5,
+                          Icon(
+                            Icons.description_outlined,
+                            size: 22,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  paper,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.courseModuleVerifiedSubtitle,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Verified OCR · Step-by-Step AI Solutions',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textMuted,
-                              fontSize: 11,
-                            ),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: colors.textMuted,
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: colors.textMuted,
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
+                  ),
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

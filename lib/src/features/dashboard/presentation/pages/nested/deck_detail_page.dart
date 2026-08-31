@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -20,6 +21,7 @@ class DeckDetailPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final currentCardIndex = useState<int>(0);
@@ -44,22 +46,21 @@ class DeckDetailPage extends HookWidget {
     final isFlipped = useState<bool>(false);
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF090D16)
-          : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Semantics(
           button: true,
-          label: 'Back to Dashboard',
+          label: l10n.deckDetailBackSemantics,
           child: IconButton(
             icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
             onPressed: () => context.router.pop(),
           ),
         ),
         title: Text(
-          'Active Recall Session',
+          l10n.deckDetailTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -74,7 +75,10 @@ class DeckDetailPage extends HookWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Card ${currentCardIndex.value + 1} of ${mockCards.length}',
+                    l10n.deckDetailCardProgress(
+                      currentCardIndex.value + 1,
+                      mockCards.length,
+                    ),
                     style: typography.footnote.bold.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -89,7 +93,7 @@ class DeckDetailPage extends HookWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'SM-2 SPATIAL QUEUE',
+                      l10n.deckDetailSm2QueueBadge,
                       style: typography.caption.bold.copyWith(
                         color: colors.primary,
                         fontSize: 10.5,
@@ -124,11 +128,11 @@ class DeckDetailPage extends HookWidget {
                     button: true,
                     label: isFlipped.value
                         ? 'Flashcard back: '
-                              '${mockCards[currentCardIndex.value].back}. '
-                              'Tap to flip.'
+                            '${mockCards[currentCardIndex.value].back}. '
+                            'Tap to flip.'
                         : 'Flashcard front: '
-                              '${mockCards[currentCardIndex.value].front}. '
-                              'Tap to reveal answer.',
+                            '${mockCards[currentCardIndex.value].front}. '
+                            'Tap to reveal answer.',
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: BackdropFilter(
@@ -145,9 +149,9 @@ class DeckDetailPage extends HookWidget {
                               color: isFlipped.value
                                   ? colors.syllabotAccent.withAlpha(140)
                                   : (isDark
-                                        ? colors.surfaceBorderHighlight
-                                              .withAlpha(80)
-                                        : colors.surfaceBorder.withAlpha(140)),
+                                      ? colors.surfaceBorderHighlight
+                                          .withAlpha(80)
+                                      : colors.surfaceBorder.withAlpha(140)),
                               width: 1.5,
                             ),
                             boxShadow: [
@@ -168,18 +172,16 @@ class DeckDetailPage extends HookWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isFlipped.value
-                                      ? const Color(
-                                          0xFF10B981,
-                                        ).withAlpha(isDark ? 50 : 25)
-                                      : colors.primary.withAlpha(
-                                          isDark ? 50 : 25,
-                                        ),
+                                      ? const Color(0xFF10B981)
+                                          .withAlpha(isDark ? 50 : 25)
+                                      : colors.primary
+                                          .withAlpha(isDark ? 50 : 25),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   isFlipped.value
-                                      ? 'ANSWER / FORMULA'
-                                      : 'QUESTION',
+                                      ? l10n.deckDetailAnswerFormula
+                                      : l10n.deckDetailQuestion,
                                   style: typography.caption.bold.copyWith(
                                     color: isFlipped.value
                                         ? const Color(0xFF10B981)
@@ -203,7 +205,7 @@ class DeckDetailPage extends HookWidget {
                               ),
                               const SizedBox(height: 24),
                               Text(
-                                'Tap card to flip',
+                                l10n.deckDetailTapToFlip,
                                 style: typography.footnote.regular.copyWith(
                                   color: colors.textMuted,
                                   fontSize: 12,
@@ -225,7 +227,7 @@ class DeckDetailPage extends HookWidget {
                   children: [
                     Expanded(
                       child: _Sm2RatingButton(
-                        label: 'Hard',
+                        label: l10n.deckDetailHard,
                         interval: '1d',
                         color: const Color(0xFFEF4444),
                         onTap: () {
@@ -233,7 +235,7 @@ class DeckDetailPage extends HookWidget {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {
-                            context.router.pop();
+                            unawaited(context.router.maybePop());
                           }
                         },
                       ),
@@ -241,7 +243,7 @@ class DeckDetailPage extends HookWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _Sm2RatingButton(
-                        label: 'Good',
+                        label: l10n.deckDetailGood,
                         interval: '3d',
                         color: colors.primary,
                         onTap: () {
@@ -249,7 +251,7 @@ class DeckDetailPage extends HookWidget {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {
-                            context.router.pop();
+                            unawaited(context.router.maybePop());
                           }
                         },
                       ),
@@ -257,7 +259,7 @@ class DeckDetailPage extends HookWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _Sm2RatingButton(
-                        label: 'Easy',
+                        label: l10n.deckDetailEasy,
                         interval: '7d',
                         color: const Color(0xFF10B981),
                         onTap: () {
@@ -265,7 +267,7 @@ class DeckDetailPage extends HookWidget {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {
-                            context.router.pop();
+                            unawaited(context.router.maybePop());
                           }
                         },
                       ),
@@ -300,7 +302,7 @@ class _Sm2RatingButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Rate card as $label, review interval $interval',
+      label: '$label, $interval',
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());

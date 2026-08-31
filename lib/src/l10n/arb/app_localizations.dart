@@ -1435,6 +1435,432 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{tab}, tab {current} of {total}'**
   String navTabSemantics(String tab, int current, int total);
+
+  /// User greeting in dashboard header
+  ///
+  /// In en, this message translates to:
+  /// **'Hey, {name} 👋'**
+  String dashboardHeyUser(String name);
+
+  /// Fallback name when username is not set
+  ///
+  /// In en, this message translates to:
+  /// **'Scholar'**
+  String get dashboardScholarFallback;
+
+  /// Accessibility label for streak counter
+  ///
+  /// In en, this message translates to:
+  /// **'{count} day study streak'**
+  String dashboardStreakTooltip(int count);
+
+  /// Semantics for viewing analytics detail
+  ///
+  /// In en, this message translates to:
+  /// **'View detailed study analytics and streaks'**
+  String get dashboardViewAnalyticsSemantics;
+
+  /// Title for uncalibrated profile banner
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate Your Neural Workspace'**
+  String get dashboardUncalibratedTitle;
+
+  /// Subtitle for uncalibrated profile banner
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor past papers, flashcards & exam simulator to your exact course.'**
+  String get dashboardUncalibratedSubtitle;
+
+  /// Button label for calibration banner
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate'**
+  String get dashboardCalibrateButton;
+
+  /// Semantics label for uncalibrated profile banner
+  ///
+  /// In en, this message translates to:
+  /// **'Profile is not calibrated. Tap to configure your academic track.'**
+  String get dashboardUncalibratedSemantics;
+
+  /// Error title on dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to Load Dashboard'**
+  String get dashboardUnableToLoad;
+
+  /// Error description on dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your network connection and try again.'**
+  String get dashboardConnectionError;
+
+  /// Retry button on dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dashboardRetry;
+
+  /// Title for spaced repetition review queue
+  ///
+  /// In en, this message translates to:
+  /// **'Spaced Repetition Queue'**
+  String get dashboardSpacedRepetitionQueue;
+
+  /// Total decks badge count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} DECKS'**
+  String dashboardDecksCount(int count);
+
+  /// Active curated courses count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ACTIVE'**
+  String dashboardActiveCoursesCount(int count);
+
+  /// Title for curated courses section
+  ///
+  /// In en, this message translates to:
+  /// **'Curated Course Repositories'**
+  String get dashboardCuratedCourses;
+
+  /// Count of resources in course
+  ///
+  /// In en, this message translates to:
+  /// **'{count} resources'**
+  String dashboardResourcesCount(int count);
+
+  /// Count of flashcards due today
+  ///
+  /// In en, this message translates to:
+  /// **'{count} DUE'**
+  String dashboardDueCount(int count);
+
+  /// Memory retention label
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Retention'**
+  String get dashboardMemoryRetention;
+
+  /// Review deck action button
+  ///
+  /// In en, this message translates to:
+  /// **'Review Deck'**
+  String get dashboardReviewDeck;
+
+  /// Estimated review duration
+  ///
+  /// In en, this message translates to:
+  /// **'~{minutes} mins'**
+  String dashboardEstimatedMinutes(int minutes);
+
+  /// Hint in quick AI prompt bar
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Syllabot anything (e.g. Solve PDE #3)...'**
+  String get dashboardAskSyllabotHint;
+
+  /// Semantics for send prompt button
+  ///
+  /// In en, this message translates to:
+  /// **'Send prompt to Syllabot AI'**
+  String get dashboardSendPromptSemantics;
+
+  /// Semantics for AI prompt input bar
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Syllabot AI instant study question'**
+  String get dashboardAskSyllabotSemantics;
+
+  /// Title for retention heat map widget
+  ///
+  /// In en, this message translates to:
+  /// **'Retention & Study Matrix'**
+  String get dashboardRetentionMatrix;
+
+  /// Link to full analytics stats
+  ///
+  /// In en, this message translates to:
+  /// **'Full Stats'**
+  String get dashboardFullStats;
+
+  /// Retention chip label
+  ///
+  /// In en, this message translates to:
+  /// **'Retention'**
+  String get dashboardRetentionChip;
+
+  /// Mastered cards chip label
+  ///
+  /// In en, this message translates to:
+  /// **'Mastered'**
+  String get dashboardMasteredChip;
+
+  /// Study time chip label
+  ///
+  /// In en, this message translates to:
+  /// **'Study Time'**
+  String get dashboardStudyTimeChip;
+
+  /// Study time formatted in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String dashboardStudyTimeMinutes(int minutes);
+
+  /// Semantics for floating speed dial action bar
+  ///
+  /// In en, this message translates to:
+  /// **'Quick action bar: Upload PDF, create active recall deck, or start AI study chat'**
+  String get dashboardQuickActionsSemantics;
+
+  /// Upload notes action button
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Notes'**
+  String get dashboardUploadNotes;
+
+  /// New deck action button
+  ///
+  /// In en, this message translates to:
+  /// **'New Deck'**
+  String get dashboardNewDeck;
+
+  /// AI Partner action button
+  ///
+  /// In en, this message translates to:
+  /// **'AI Partner'**
+  String get dashboardAiPartner;
+
+  /// Title for study material upload sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Ingest Study Material'**
+  String get dashboardIngestTitle;
+
+  /// Subtitle for study material upload sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse STEM OCR & generate flashcards.'**
+  String get dashboardIngestSubtitle;
+
+  /// Upload PDF option
+  ///
+  /// In en, this message translates to:
+  /// **'Upload PDF'**
+  String get dashboardUploadPdf;
+
+  /// Lecture slides subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Lecture Slides'**
+  String get dashboardLectureSlides;
+
+  /// Scan handwritten notes option
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Notes'**
+  String get dashboardScanNotes;
+
+  /// STEM OCR subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'STEM OCR'**
+  String get dashboardStemOcr;
+
+  /// Exam countdown days remaining badge
+  ///
+  /// In en, this message translates to:
+  /// **'{count} DAYS LEFT'**
+  String dashboardDaysLeft(int count);
+
+  /// Syllabus mastery label
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabus Mastery'**
+  String get dashboardSyllabusMastery;
+
+  /// Syllabus mastery percentage complete
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% complete'**
+  String dashboardSyllabusPercentComplete(int percent);
+
+  /// Launch mock exam simulator button
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Mock Simulator ({completed}/{total})'**
+  String dashboardLaunchMockSimulator(int completed, int total);
+
+  /// Semantics for launch mock simulator button
+  ///
+  /// In en, this message translates to:
+  /// **'Launch {examName} Mock Simulator'**
+  String dashboardLaunchMockSimulatorSemantics(String examName);
+
+  /// Title for active recall flashcard session
+  ///
+  /// In en, this message translates to:
+  /// **'Active Recall Session'**
+  String get deckDetailTitle;
+
+  /// Current flashcard review progress
+  ///
+  /// In en, this message translates to:
+  /// **'Card {current} of {total}'**
+  String deckDetailCardProgress(int current, int total);
+
+  /// SM-2 queue badge label
+  ///
+  /// In en, this message translates to:
+  /// **'SM-2 SPATIAL QUEUE'**
+  String get deckDetailSm2QueueBadge;
+
+  /// Back of flashcard badge
+  ///
+  /// In en, this message translates to:
+  /// **'ANSWER / FORMULA'**
+  String get deckDetailAnswerFormula;
+
+  /// Front of flashcard badge
+  ///
+  /// In en, this message translates to:
+  /// **'QUESTION'**
+  String get deckDetailQuestion;
+
+  /// Hint to tap and flip flashcard
+  ///
+  /// In en, this message translates to:
+  /// **'Tap card to flip'**
+  String get deckDetailTapToFlip;
+
+  /// Hard rating button for SM-2
+  ///
+  /// In en, this message translates to:
+  /// **'Hard'**
+  String get deckDetailHard;
+
+  /// Good rating button for SM-2
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get deckDetailGood;
+
+  /// Easy rating button for SM-2
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get deckDetailEasy;
+
+  /// Back button semantics on deck detail page
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Dashboard'**
+  String get deckDetailBackSemantics;
+
+  /// Title for mock exam simulator lobby
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Simulator Lobby'**
+  String get mockExamLobbyTitle;
+
+  /// Description of mock exam simulator
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate computer-based testing with dynamic negative marking, question timers, and Syllabot AI error diagnostics.'**
+  String get mockExamLobbyDescription;
+
+  /// Header for selecting simulation mode
+  ///
+  /// In en, this message translates to:
+  /// **'Select Simulation Mode'**
+  String get mockExamSelectMode;
+
+  /// Standard timed mode title
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Timed (CBT)'**
+  String get mockExamModeStandardTitle;
+
+  /// Standard timed mode subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'50 Questions · 60 Mins · Live Timer & Negative Marking'**
+  String get mockExamModeStandardSubtitle;
+
+  /// Socratic practice mode title
+  ///
+  /// In en, this message translates to:
+  /// **'Socratic Practice Mode'**
+  String get mockExamModeSocraticTitle;
+
+  /// Socratic practice mode subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Untimed · Instant Step-by-Step AI Solutions per question'**
+  String get mockExamModeSocraticSubtitle;
+
+  /// Weak areas targeted drill mode title
+  ///
+  /// In en, this message translates to:
+  /// **'Weak Areas Targeted Drill'**
+  String get mockExamModeDrillTitle;
+
+  /// Weak areas targeted drill mode subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Focused on concepts where your retention score is < 80%'**
+  String get mockExamModeDrillSubtitle;
+
+  /// Begin exam simulation session button
+  ///
+  /// In en, this message translates to:
+  /// **'Begin Simulation Session'**
+  String get mockExamBeginButton;
+
+  /// Title for analytics detail page
+  ///
+  /// In en, this message translates to:
+  /// **'Neural Analytics & Retention'**
+  String get analyticsDetailTitle;
+
+  /// Streak days headline in analytics
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Day Study Streak 🔥'**
+  String analyticsStreakDays(int count);
+
+  /// Streak record encouragement subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Your record is 28 days. Keep studying to reach Neural Master rank!'**
+  String get analyticsStreakRecord;
+
+  /// Title for Ebbinghaus retention breakdown
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Retention Curve (Ebbinghaus SM-2)'**
+  String get analyticsRetentionCurveTitle;
+
+  /// Count of mastered concept cards
+  ///
+  /// In en, this message translates to:
+  /// **'{count} concept cards mastered in active recall'**
+  String analyticsMasteredCountSubtitle(int count);
+
+  /// Section header for past papers
+  ///
+  /// In en, this message translates to:
+  /// **'Past Papers & Problem Sets'**
+  String get courseModulePastPapersTitle;
+
+  /// Verified OCR description subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Verified OCR · Step-by-Step AI Solutions'**
+  String get courseModuleVerifiedSubtitle;
 }
 
 class _AppLocalizationsDelegate

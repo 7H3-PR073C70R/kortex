@@ -4,9 +4,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
 class MockExamLobbyPage extends HookWidget {
@@ -23,28 +24,41 @@ class MockExamLobbyPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final selectedMode = useState<String>('Standard Timed (CBT)');
-    final isStarting = useState<bool>(false);
+    final selectedModeIndex = useState<int>(0);
+
+    final simulationModes = [
+      (
+        title: l10n.mockExamModeStandardTitle,
+        subtitle: l10n.mockExamModeStandardSubtitle,
+        icon: Icons.timer_rounded,
+      ),
+      (
+        title: l10n.mockExamModeSocraticTitle,
+        subtitle: l10n.mockExamModeSocraticSubtitle,
+        icon: Icons.psychology_rounded,
+      ),
+      (
+        title: l10n.mockExamModeDrillTitle,
+        subtitle: l10n.mockExamModeDrillSubtitle,
+        icon: Icons.track_changes_rounded,
+      ),
+    ];
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF090D16)
-          : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Semantics(
-          button: true,
-          label: 'Back to Dashboard',
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-            onPressed: () => context.router.pop(),
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
+          onPressed: () => context.router.pop(),
         ),
         title: Text(
-          'Exam Simulator Lobby',
+          l10n.mockExamLobbyTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
         ),
         centerTitle: true,
@@ -53,52 +67,42 @@ class MockExamLobbyPage extends HookWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Exam Header Card
+              // Hero Exam Banner
               ClipRRect(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(190)
-                          : colors.surfacePrimary.withAlpha(230),
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.primary.withAlpha(isDark ? 60 : 35),
+                          colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                        ],
+                      ),
                       border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 100 : 70),
+                        color: colors.primary.withAlpha(isDark ? 120 : 80),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            const SyllabotAvatar(size: 36),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                examName,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.title3.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 17,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
                         Text(
-                          'Simulate computer-based testing with dynamic '
-                          'negative marking, question timers, and Syllabot AI '
-                          'error diagnostics.',
+                          examName,
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.mockExamLobbyDescription,
                           style: typography.footnote.regular.copyWith(
                             color: colors.textSecondary,
-                            height: 1.35,
+                            height: 1.3,
                           ),
                         ),
                       ],
@@ -109,178 +113,134 @@ class MockExamLobbyPage extends HookWidget {
               const SizedBox(height: 24),
 
               Text(
-                'Select Simulation Mode',
-                style: typography.title3.bold.copyWith(
+                l10n.mockExamSelectMode,
+                style: typography.callout.bold.copyWith(
                   color: colors.textPrimary,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
               ),
               const SizedBox(height: 12),
 
-              _ModeOptionTile(
-                title: 'Standard Timed (CBT)',
-                subtitle:
-                    '50 Questions · 60 Mins · Live Timer & Negative Marking',
-                isSelected: selectedMode.value == 'Standard Timed (CBT)',
-                onTap: () => selectedMode.value = 'Standard Timed (CBT)',
-              ),
-              const SizedBox(height: 10),
+              // Simulation Modes Selection
+              ...List.generate(simulationModes.length, (index) {
+                final mode = simulationModes[index];
+                final isSelected = selectedModeIndex.value == index;
 
-              _ModeOptionTile(
-                title: 'Socratic Practice Mode',
-                subtitle:
-                    'Untimed · Instant Step-by-Step AI Solutions per question',
-                isSelected: selectedMode.value == 'Socratic Practice Mode',
-                onTap: () => selectedMode.value = 'Socratic Practice Mode',
-              ),
-              const SizedBox(height: 10),
-
-              _ModeOptionTile(
-                title: 'Weak Areas Targeted Drill',
-                subtitle:
-                    'Focused on concepts where your retention score is < 80%',
-                isSelected: selectedMode.value == 'Weak Areas Targeted Drill',
-                onTap: () => selectedMode.value = 'Weak Areas Targeted Drill',
-              ),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      selectedModeIndex.value = index;
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: isSelected
+                              ? colors.primary.withAlpha(isDark ? 50 : 25)
+                              : (isDark
+                                  ? colors.surfaceSecondary.withAlpha(140)
+                                  : colors.surfacePrimary.withAlpha(200)),
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : (isDark
+                                    ? colors.surfaceBorderHighlight
+                                        .withAlpha(60)
+                                    : colors.surfaceBorder.withAlpha(120)),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              mode.icon,
+                              size: 22,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.textMuted,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    mode.title,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    mode.subtitle,
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 20,
+                                color: colors.primary,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
 
               const Spacer(),
 
-              // Start Button
-              Semantics(
-                button: true,
-                label: 'Begin Exam Simulation',
-                child: ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    isStarting.value = true;
-                    Timer(const Duration(milliseconds: 700), () {
-                      if (context.mounted) {
-                        isStarting.value = false;
-                        context.router.pop();
-                      }
-                    });
-                  },
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [colors.primary, colors.primary.withAlpha(200)],
+              // Start Simulation Button
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  final selectedMode =
+                      simulationModes[selectedModeIndex.value].title;
+                  unawaited(
+                    context.router.push(
+                      SyllabotChatRoute(
+                        initialPrompt: 'Launch mock exam simulator for '
+                            '$examName in $selectedMode mode.',
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withAlpha(90),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
-                    alignment: Alignment.center,
-                    child: isStarting.value
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'Begin Simulation Session',
-                            style: typography.caption.bold.copyWith(
-                              color: Colors.white,
-                              fontSize: 14.5,
-                            ),
-                          ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(90),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    l10n.mockExamBeginButton,
+                    style: typography.callout.bold.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ModeOptionTile extends StatelessWidget {
-  const _ModeOptionTile({
-    required this.title,
-    required this.subtitle,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: '$title. $subtitle',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          onTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.primary.withAlpha(isDark ? 50 : 25)
-                : (isDark
-                      ? colors.surfaceSecondary.withAlpha(140)
-                      : colors.surfacePrimary.withAlpha(200)),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary
-                  : (isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(60)
-                        : colors.surfaceBorder.withAlpha(120)),
-              width: isSelected ? 1.6 : 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                color: isSelected ? colors.primary : colors.textMuted,
-                size: 20,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
