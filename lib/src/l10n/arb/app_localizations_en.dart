@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sample => 'sample';
 
   @override
-  String get appName => 'KORTEX';
+  String get appName => 'KORTEXIFY';
 
   @override
   String get engineSubtitle => 'ENGINE: SYLLABOT AI';

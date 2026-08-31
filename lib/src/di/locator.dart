@@ -9,6 +9,7 @@ import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_sour
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source_impl.dart';
 import 'package:kortex/src/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/complete_onboarding_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';

@@ -43,6 +43,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<UserModel> verifyOtp({
+    required String email,
+    required String token,
+    String type = 'signup',
+  }) {
+    return _authClient.verifyOtp(
+      email: email,
+      token: token,
+      type: type,
+    );
+  }
+
+  @override
   Future<UserProfileModel> fetchUserProfile() async {
     final token = _userStorage.getToken() ?? '';
     final map = await _authClient.fetchUserProfile(authToken: token);

@@ -22,6 +22,7 @@ void _initServices() {
         resetPasswordUseCase: locator<ResetPasswordUseCase>(),
         observeAuthStateUseCase: locator<ObserveAuthStateUseCase>(),
         updateCourseTrackUseCase: locator<UpdateCourseTrackUseCase>(),
+        verifyOtpUseCase: locator<AuthVerifyOtpUseCase>(),
         authRepository: locator<AuthRepository>(),
       ),
     )

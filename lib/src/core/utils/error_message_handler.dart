@@ -137,7 +137,7 @@ extension ErrorHandler on Exception {
     }
     if (lower.contains('password should be at least') ||
         lower.contains('password is too short')) {
-      return 'Your password must be at least 6 characters long';
+      return 'Your password must be at least 8 characters long';
     }
     if (lower.contains('email not confirmed')) {
       return 'Please check your email inbox to confirm your account '

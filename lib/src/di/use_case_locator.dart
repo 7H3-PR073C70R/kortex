@@ -8,6 +8,9 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<RegisterWithEmailUseCase>(
       () => RegisterWithEmailUseCase(locator<AuthRepository>()),
     )
+    ..registerLazySingleton<AuthVerifyOtpUseCase>(
+      () => AuthVerifyOtpUseCase(locator<AuthRepository>()),
+    )
     ..registerLazySingleton<LoginWithSocialUseCase>(
       () => LoginWithSocialUseCase(locator<AuthRepository>()),
     )

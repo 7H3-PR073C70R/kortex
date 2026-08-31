@@ -56,6 +56,13 @@ abstract class AuthRepository {
     required String email,
   });
 
+  /// Verifies a 6-digit OTP token for account confirmation or login.
+  Future<Either<Failure, UserEntity>> verifyOtp({
+    required String email,
+    required String token,
+    String type = 'signup',
+  });
+
   /// Clears session and logs user out.
   Future<Either<Failure, void>> signOut();
 }

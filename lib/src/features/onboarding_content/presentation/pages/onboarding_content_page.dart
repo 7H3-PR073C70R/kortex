@@ -266,7 +266,7 @@ class _DesktopContentSplitLayout extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'KORTEX',
+                      'KORTEXIFY',
                       style: typography.headline.bold.copyWith(
                         color: colors.textPrimary,
                         letterSpacing: 1.5,

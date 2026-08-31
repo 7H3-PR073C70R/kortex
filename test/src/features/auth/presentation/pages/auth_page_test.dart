@@ -7,6 +7,7 @@ import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
@@ -24,17 +25,18 @@ import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.da
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoginWithEmailUseCase extends Mock
-    implements LoginWithEmailUseCase {}
+class MockLoginWithEmailUseCase extends Mock implements LoginWithEmailUseCase {}
 
 class MockRegisterWithEmailUseCase extends Mock
     implements RegisterWithEmailUseCase {}
 
+class MockAuthVerifyOtpUseCase extends Mock
+    implements AuthVerifyOtpUseCase {}
+
 class MockLoginWithSocialUseCase extends Mock
     implements LoginWithSocialUseCase {}
 
-class MockResetPasswordUseCase extends Mock
-    implements ResetPasswordUseCase {}
+class MockResetPasswordUseCase extends Mock implements ResetPasswordUseCase {}
 
 class MockObserveAuthStateUseCase extends Mock
     implements ObserveAuthStateUseCase {}
@@ -60,6 +62,7 @@ void main() {
 
   late MockLoginWithEmailUseCase mockLoginUseCase;
   late MockRegisterWithEmailUseCase mockRegisterUseCase;
+  late MockAuthVerifyOtpUseCase mockVerifyOtpUseCase;
   late MockLoginWithSocialUseCase mockSocialUseCase;
   late MockResetPasswordUseCase mockResetUseCase;
   late MockObserveAuthStateUseCase mockObserveUseCase;
@@ -69,21 +72,27 @@ void main() {
   setUp(() {
     mockLoginUseCase = MockLoginWithEmailUseCase();
     mockRegisterUseCase = MockRegisterWithEmailUseCase();
+    mockVerifyOtpUseCase = MockAuthVerifyOtpUseCase();
     mockSocialUseCase = MockLoginWithSocialUseCase();
     mockResetUseCase = MockResetPasswordUseCase();
     mockObserveUseCase = MockObserveAuthStateUseCase();
     mockUpdateTrackUseCase = MockUpdateCourseTrackUseCase();
     mockAuthRepository = MockAuthRepository();
 
-    when(() => mockObserveUseCase())
-        .thenAnswer((_) => Stream.value(AuthSessionStatus.unauthenticated));
-    when(() => mockAuthRepository.getUserProfile())
-        .thenAnswer((_) async => const Left(ServerFailure(message: 'None')));
+    when(
+      () => mockObserveUseCase(),
+    ).thenAnswer((_) => Stream.value(AuthSessionStatus.unauthenticated));
+    when(
+      () => mockAuthRepository.getUserProfile(),
+    ).thenAnswer((_) async => const Left(ServerFailure(message: 'None')));
 
     locator
       ..registerLazySingleton<LoginWithEmailUseCase>(() => mockLoginUseCase)
       ..registerLazySingleton<RegisterWithEmailUseCase>(
         () => mockRegisterUseCase,
+      )
+      ..registerLazySingleton<AuthVerifyOtpUseCase>(
+        () => mockVerifyOtpUseCase,
       )
       ..registerLazySingleton<LoginWithSocialUseCase>(
         () => mockSocialUseCase,
@@ -102,6 +111,7 @@ void main() {
           resetPasswordUseCase: mockResetUseCase,
           observeAuthStateUseCase: mockObserveUseCase,
           updateCourseTrackUseCase: mockUpdateTrackUseCase,
+          verifyOtpUseCase: mockVerifyOtpUseCase,
           authRepository: mockAuthRepository,
         ),
       )
@@ -114,20 +124,23 @@ void main() {
   });
 
   group('AuthPage UI & Dual-Mode Test Suite', () {
-    testWidgets('renders AuthPage in AI Chat mode initially and shows branding',
-        (tester) async {
-      await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
-      await tester.pump();
+    testWidgets(
+      'renders AuthPage in AI Chat mode initially and shows branding',
+      (tester) async {
+        await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
+        await tester.pump();
 
-      expect(find.text('KORTEX'), findsOneWidget);
-      expect(find.byType(ModeSwitchButton), findsOneWidget);
-      expect(find.byType(SocialAuthBar), findsOneWidget);
-      expect(find.byType(AuthChatView), findsOneWidget);
-      expect(find.byType(AuthFormView), findsNothing);
-    });
+        expect(find.text('KORTEXIFY'), findsOneWidget);
+        expect(find.byType(ModeSwitchButton), findsOneWidget);
+        expect(find.byType(SocialAuthBar), findsOneWidget);
+        expect(find.byType(AuthChatView), findsOneWidget);
+        expect(find.byType(AuthFormView), findsNothing);
+      },
+    );
 
-    testWidgets('toggling ModeSwitchButton switches to Quick Form view',
-        (tester) async {
+    testWidgets('toggling ModeSwitchButton switches to Quick Form view', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
       await tester.pump();
 
@@ -141,8 +154,9 @@ void main() {
       expect(find.byType(AuthChatView), findsNothing);
     });
 
-    testWidgets('SocialAuthBar renders Google and Apple triggers',
-        (tester) async {
+    testWidgets('SocialAuthBar renders Google and Apple triggers', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
       await tester.pump();
 

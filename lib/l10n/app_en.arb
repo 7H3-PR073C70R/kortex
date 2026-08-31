@@ -4,7 +4,7 @@
     "@sample": {
         "description": "Sample text"
     },
-    "appName": "KORTEX",
+    "appName": "KORTEXIFY",
     "@appName": {
         "description": "Application name"
     },

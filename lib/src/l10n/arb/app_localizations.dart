@@ -103,7 +103,7 @@ abstract class AppLocalizations {
   /// Application name
   ///
   /// In en, this message translates to:
-  /// **'KORTEX'**
+  /// **'KORTEXIFY'**
   String get appName;
 
   /// Engine subtitle shown on splash screen

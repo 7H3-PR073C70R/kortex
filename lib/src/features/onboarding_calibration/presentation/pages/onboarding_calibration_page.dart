@@ -11,6 +11,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
@@ -51,13 +52,15 @@ class _CalibrationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+
     return BlocListener<CalibrationCubit, CalibrationState>(
       listenWhen: (previous, current) =>
           previous.status != current.status ||
           previous.currentStepIndex != current.currentStepIndex,
       listener: (context, state) {
-        final l10n = context.l10n;
-
         if (state.status == CalibrationStatus.completed) {
           unawaited(
             context.router.replaceAll([const OnboardingContentRoute()]),
@@ -87,29 +90,72 @@ class _CalibrationView extends StatelessWidget {
       child: Scaffold(
         body: AuraMeshNebula(
           child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isChatMode = context.watch<AuthModeCubit>().state.isChat;
+            child: Column(
+              children: [
+                // Top Bar with Logo & Mode Switch Toggle
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          AppAssets.svgs.kortexLogo.svg(
+                            width: 26,
+                            height: 26,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.appName,
+                            style: typography.caption.bold.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4,
+                              fontSize: 14,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ModeSwitchButton(
+                        isChatMode: context.watch<AuthModeCubit>().state.isChat,
+                        onToggle: () {
+                          context.read<AuthModeCubit>().toggleMode();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isChatMode =
+                          context.watch<AuthModeCubit>().state.isChat;
 
-                if (constraints.maxWidth >= 1024) {
-                  return _DesktopCalibrationSplitLayout(
-                    isChatMode: isChatMode,
-                  );
-                } else if (constraints.maxWidth >= 600) {
-                  return Center(
-                    child: SizedBox(
-                      width: 520,
-                      child: isChatMode
-                          ? const CalibrationChatView()
-                          : const _MobileCalibrationLayout(),
-                    ),
-                  );
-                } else {
-                  return isChatMode
-                      ? const CalibrationChatView()
-                      : const _MobileCalibrationLayout();
-                }
-              },
+                      if (constraints.maxWidth >= 1024) {
+                        return _DesktopCalibrationSplitLayout(
+                          isChatMode: isChatMode,
+                        );
+                      } else if (constraints.maxWidth >= 600) {
+                        return Center(
+                          child: SizedBox(
+                            width: 520,
+                            child: isChatMode
+                                ? const CalibrationChatView()
+                                : const _MobileCalibrationLayout(),
+                          ),
+                        );
+                      } else {
+                        return isChatMode
+                            ? const CalibrationChatView()
+                            : const _MobileCalibrationLayout();
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -169,7 +215,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'KORTEX',
+                    'KORTEXIFY',
                     style: typography.callout.bold.copyWith(
                       color: colors.textPrimary,
                       letterSpacing: 1.2,
@@ -345,7 +391,7 @@ class _DesktopCalibrationSplitLayout extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'KORTEX AI',
+                      'KORTEXIFY AI',
                       style: typography.headline.bold.copyWith(
                         color: colors.textPrimary,
                         letterSpacing: 2,

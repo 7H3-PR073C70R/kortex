@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
@@ -20,6 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required ResetPasswordUseCase resetPasswordUseCase,
     required ObserveAuthStateUseCase observeAuthStateUseCase,
     required UpdateCourseTrackUseCase updateCourseTrackUseCase,
+    required AuthVerifyOtpUseCase verifyOtpUseCase,
     required AuthRepository authRepository,
   })  : _loginWithEmailUseCase = loginWithEmailUseCase,
         _registerWithEmailUseCase = registerWithEmailUseCase,
@@ -27,12 +29,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _resetPasswordUseCase = resetPasswordUseCase,
         _observeAuthStateUseCase = observeAuthStateUseCase,
         _updateCourseTrackUseCase = updateCourseTrackUseCase,
+        _verifyOtpUseCase = verifyOtpUseCase,
         _authRepository = authRepository,
         super(const AuthState()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthStatusChanged>(_onAuthStatusChanged);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
+    on<AuthVerifyOtpRequested>(_onVerifyOtpRequested);
     on<AuthSocialLoginRequested>(_onSocialLoginRequested);
     on<AuthMagicLinkRequested>(_onMagicLinkRequested);
     on<AuthResetPasswordRequested>(_onResetPasswordRequested);
@@ -53,6 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ResetPasswordUseCase _resetPasswordUseCase;
   final ObserveAuthStateUseCase _observeAuthStateUseCase;
   final UpdateCourseTrackUseCase _updateCourseTrackUseCase;
+  final AuthVerifyOtpUseCase _verifyOtpUseCase;
   final AuthRepository _authRepository;
 
   StreamSubscription<AuthSessionStatus>? _authSubscription;
@@ -165,11 +170,56 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
         (user) => emit(
           state.copyWith(
-            status: AuthStatus.needsOnboarding,
-            sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
+            status: AuthStatus.needsEmailVerification,
+            sessionStatus: AuthSessionStatus.unauthenticated,
+            needsEmailVerification: true,
             user: user,
           ),
         ),
+      );
+    } on Object catch (_) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage:
+              'Network connection failed. Please check your connection.',
+        ),
+      );
+    }
+  }
+
+  Future<void> _onVerifyOtpRequested(
+    AuthVerifyOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    try {
+      final result = await _verifyOtpUseCase(
+        AuthVerifyOtpParams(
+          email: event.email,
+          token: event.token,
+          type: event.type,
+        ),
+      );
+      result.fold(
+        (failure) => emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: failure.message ??
+                'Invalid or expired verification code. Please try again.',
+          ),
+        ),
+        (user) {
+          emit(
+            state.copyWith(
+              status: AuthStatus.needsOnboarding,
+              sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
+              needsEmailVerification: false,
+              user: user,
+            ),
+          );
+          add(const AuthProfileFetchRequested());
+        },
       );
     } on Object catch (_) {
       emit(

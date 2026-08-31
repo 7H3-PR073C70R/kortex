@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# KORTEX PRODUCTION DEPLOYMENT & ZERO-TRUST HARDENING PIPELINE
+# KORTEXIFY PRODUCTION DEPLOYMENT & ZERO-TRUST HARDENING PIPELINE
 # 1. Quality & Security Gate: Flutter Analysis & Full Test Suite
 # 2. Database: Supabase Production Schema Migrations with RLS Lockdown
 # 3. Edge Compute: Supabase Edge Functions Deployment with SSRF & Timing Guards
@@ -16,7 +16,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}🔒 INITIATING KORTEX ZERO-TRUST PRODUCTION PIPELINE ${NC}"
+echo -e "${BLUE}🔒 INITIATING KORTEXIFY ZERO-TRUST PRODUCTION PIPELINE ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 # Pre-flight check: ensure supabase CLI is installed
@@ -52,5 +52,5 @@ echo -e "iOS IPA:     flutter build ipa --release --obfuscate --split-debug-info
 echo -e "Web:         flutter build web --release --pwa-strategy=none --dart-define=FLUTTER_WEB_CANVASKIT_URL=none"
 
 echo -e "\n${GREEN}====================================================${NC}"
-echo -e "${GREEN}🎉 KORTEX PRODUCTION ZERO-TRUST DEPLOYMENT READY!     ${NC}"
+echo -e "${GREEN}🎉 KORTEXIFY PRODUCTION ZERO-TRUST DEPLOYMENT READY!     ${NC}"
 echo -e "${GREEN}====================================================${NC}"

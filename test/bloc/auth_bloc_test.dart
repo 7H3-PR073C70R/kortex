@@ -7,6 +7,7 @@ import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
@@ -22,6 +23,8 @@ class MockLoginWithEmailUseCase extends Mock implements LoginWithEmailUseCase {}
 
 class MockRegisterWithEmailUseCase extends Mock
     implements RegisterWithEmailUseCase {}
+
+class MockAuthVerifyOtpUseCase extends Mock implements AuthVerifyOtpUseCase {}
 
 class MockLoginWithSocialUseCase extends Mock
     implements LoginWithSocialUseCase {}
@@ -40,6 +43,7 @@ void main() {
   group('AuthBloc & Route Guard State Stream Test Suite', () {
     late MockLoginWithEmailUseCase mockLoginWithEmailUseCase;
     late MockRegisterWithEmailUseCase mockRegisterWithEmailUseCase;
+    late MockAuthVerifyOtpUseCase mockAuthVerifyOtpUseCase;
     late MockLoginWithSocialUseCase mockLoginWithSocialUseCase;
     late MockResetPasswordUseCase mockResetPasswordUseCase;
     late MockObserveAuthStateUseCase mockObserveAuthStateUseCase;
@@ -68,6 +72,7 @@ void main() {
     setUp(() {
       mockLoginWithEmailUseCase = MockLoginWithEmailUseCase();
       mockRegisterWithEmailUseCase = MockRegisterWithEmailUseCase();
+      mockAuthVerifyOtpUseCase = MockAuthVerifyOtpUseCase();
       mockLoginWithSocialUseCase = MockLoginWithSocialUseCase();
       mockResetPasswordUseCase = MockResetPasswordUseCase();
       mockObserveAuthStateUseCase = MockObserveAuthStateUseCase();
@@ -91,6 +96,7 @@ void main() {
         resetPasswordUseCase: mockResetPasswordUseCase,
         observeAuthStateUseCase: mockObserveAuthStateUseCase,
         updateCourseTrackUseCase: mockUpdateCourseTrackUseCase,
+        verifyOtpUseCase: mockAuthVerifyOtpUseCase,
         authRepository: mockAuthRepository,
       );
     }

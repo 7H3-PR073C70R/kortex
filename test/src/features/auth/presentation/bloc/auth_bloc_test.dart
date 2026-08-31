@@ -6,6 +6,7 @@ import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
@@ -22,6 +23,9 @@ class MockLoginWithEmailUseCase extends Mock
 
 class MockRegisterWithEmailUseCase extends Mock
     implements RegisterWithEmailUseCase {}
+
+class MockAuthVerifyOtpUseCase extends Mock
+    implements AuthVerifyOtpUseCase {}
 
 class MockLoginWithSocialUseCase extends Mock
     implements LoginWithSocialUseCase {}
@@ -40,6 +44,7 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 void main() {
   late MockLoginWithEmailUseCase mockLoginUseCase;
   late MockRegisterWithEmailUseCase mockRegisterUseCase;
+  late MockAuthVerifyOtpUseCase mockVerifyOtpUseCase;
   late MockLoginWithSocialUseCase mockSocialUseCase;
   late MockResetPasswordUseCase mockResetUseCase;
   late MockObserveAuthStateUseCase mockObserveUseCase;
@@ -69,6 +74,9 @@ void main() {
       const RegisterParams(email: 'test', password: 'test'),
     );
     registerFallbackValue(
+      const AuthVerifyOtpParams(email: 'test', token: '123456'),
+    );
+    registerFallbackValue(
       const SocialAuthParams(provider: 'google', idToken: 'token'),
     );
     registerFallbackValue(
@@ -79,6 +87,7 @@ void main() {
   setUp(() {
     mockLoginUseCase = MockLoginWithEmailUseCase();
     mockRegisterUseCase = MockRegisterWithEmailUseCase();
+    mockVerifyOtpUseCase = MockAuthVerifyOtpUseCase();
     mockSocialUseCase = MockLoginWithSocialUseCase();
     mockResetUseCase = MockResetPasswordUseCase();
     mockObserveUseCase = MockObserveAuthStateUseCase();
@@ -99,6 +108,7 @@ void main() {
       resetPasswordUseCase: mockResetUseCase,
       observeAuthStateUseCase: mockObserveUseCase,
       updateCourseTrackUseCase: mockUpdateTrackUseCase,
+      verifyOtpUseCase: mockVerifyOtpUseCase,
       authRepository: mockAuthRepository,
     );
   }
@@ -174,7 +184,7 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits needsOnboarding on registration',
+      'emits needsEmailVerification on registration',
       build: () {
         when(() => mockRegisterUseCase(any())).thenAnswer(
           (_) async => const Right<Failure, UserEntity>(tUser),
@@ -193,8 +203,8 @@ void main() {
           status: AuthStatus.loading,
         ),
         const AuthState(
-          status: AuthStatus.needsOnboarding,
-          sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
+          status: AuthStatus.needsEmailVerification,
+          needsEmailVerification: true,
           user: tUser,
         ),
       ],

@@ -88,6 +88,28 @@ class SupabaseAuthClient {
     );
   }
 
+  /// Verifies a 6-digit OTP token for account confirmation.
+  Future<UserModel> verifyOtp({
+    required String email,
+    required String token,
+    String type = 'signup',
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${AppApiEndpoint.baseUri}${AppApiEndpoint.otpVerify}',
+      data: {
+        'email': email.trim(),
+        'token': token.trim(),
+        'type': type,
+      },
+      options: Options(headers: _headers()),
+    );
+    final data = response.data;
+    if (data == null) {
+      throw Exception('Empty response from verify endpoint');
+    }
+    return UserModel.fromJson(data);
+  }
+
   /// Fetches current user profile from `profiles` table.
   Future<Map<String, dynamic>> fetchUserProfile({
     required String authToken,

@@ -40,7 +40,7 @@ class ContentTopBar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'KORTEX',
+                'KORTEXIFY',
                 style: typography.callout.bold.copyWith(
                   color: colors.textPrimary,
                   letterSpacing: 1.2,

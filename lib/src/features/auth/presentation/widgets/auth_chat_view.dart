@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -30,6 +28,7 @@ enum _ChatFlowStep {
   loginEmail,
   loginPassword,
   forgotPasswordEmail,
+  needsEmailConfirmation,
   submitting,
 }
 
@@ -128,6 +127,8 @@ class AuthChatView extends HookWidget {
     final isTyping = useState<bool>(false);
     final latestBotMsgId = useState<String>('');
     final hasInputText = useState<bool>(false);
+    final isPasswordObscured = useState<bool>(true);
+    final rawInputText = useState<String>('');
 
     final lastRetryAction = useState<VoidCallback?>(null);
     final lastRetryDescription = useState<String>('');
@@ -147,6 +148,7 @@ class AuthChatView extends HookWidget {
       () {
         void textListener() {
           hasInputText.value = textController.text.trim().isNotEmpty;
+          rawInputText.value = textController.text;
         }
 
         textController.addListener(textListener);
@@ -223,8 +225,9 @@ class AuthChatView extends HookWidget {
     void simulateBotReply(
       String replyText, {
       String thinkingText = 'Thinking...',
-      Duration delay = const Duration(milliseconds: 950),
+      Duration delay = const Duration(milliseconds: 450),
       bool isError = false,
+      ChatAuthStep step = ChatAuthStep.initial,
       VoidCallback? onRetry,
       VoidCallback? onComplete,
     }) {
@@ -235,7 +238,12 @@ class AuthChatView extends HookWidget {
       Timer(delay, () {
         if (!context.mounted) return;
         isThinking.value = false;
-        addBotMessage(replyText, isError: isError, onRetry: onRetry);
+        addBotMessage(
+          replyText,
+          isError: isError,
+          step: step,
+          onRetry: onRetry,
+        );
         onComplete?.call();
       });
     }
@@ -295,16 +303,17 @@ class AuthChatView extends HookWidget {
 
           simulateBotReply(
             'Almost there! Set a secure password '
-            '(at least 6 characters).',
+            '(at least 8 characters).',
+            step: ChatAuthStep.askPassword,
             thinkingText: 'Configuring credentials...',
           );
 
         case _ChatFlowStep.signUpPassword:
-          if (input.length < 6) {
+          if (input.length < 8) {
             addUserMessage(input, isPassword: true);
             textController.clear();
             simulateBotReply(
-              'Password must be at least 6 characters long for security. '
+              'Password must be at least 8 characters long for security. '
               'Please try again.',
               isError: true,
               thinkingText: 'Checking password security...',
@@ -444,6 +453,52 @@ class AuthChatView extends HookWidget {
             AuthResetPasswordRequested(email: resetEmail),
           );
 
+        case _ChatFlowStep.needsEmailConfirmation:
+          final otp = input.replaceAll(RegExp('[^0-9]'), '');
+          if (otp.length != 6) {
+            addUserMessage(input);
+            textController.clear();
+            simulateBotReply(
+              'Please enter a valid 6-digit verification code.',
+              isError: true,
+              thinkingText: 'Checking verification code...',
+            );
+            return;
+          }
+
+          addUserMessage(otp);
+          textController.clear();
+          currentFlow.value = _ChatFlowStep.submitting;
+
+          isThinking.value = true;
+          thinkingLabel.value = 'Verifying your 6-digit code...';
+          scrollToBottom(animate: true);
+
+          final verifyEmail = draftState.email.isNotEmpty
+              ? draftState.email
+              : (authState.user?.email ?? '');
+
+          lastRetryDescription.value = 'Verify OTP';
+          lastRetryAction.value = () {
+            currentFlow.value = _ChatFlowStep.submitting;
+            isThinking.value = true;
+            thinkingLabel.value = 'Verifying your 6-digit code...';
+            scrollToBottom(animate: true);
+            context.read<AuthBloc>().add(
+              AuthVerifyOtpRequested(
+                email: verifyEmail,
+                token: otp,
+              ),
+            );
+          };
+
+          context.read<AuthBloc>().add(
+            AuthVerifyOtpRequested(
+              email: verifyEmail,
+              token: otp,
+            ),
+          );
+
         case _ChatFlowStep.submitting:
           break;
       }
@@ -465,13 +520,15 @@ class AuthChatView extends HookWidget {
         case _ChatFlowStep.signUpEmail:
           return 'Enter your email address';
         case _ChatFlowStep.signUpPassword:
-          return 'Enter password (min. 6 chars)';
+          return 'Enter secure password (min. 8 chars)';
         case _ChatFlowStep.loginEmail:
           return 'Enter your registered email';
         case _ChatFlowStep.loginPassword:
           return 'Enter your password';
         case _ChatFlowStep.forgotPasswordEmail:
           return 'Enter your registered email';
+        case _ChatFlowStep.needsEmailConfirmation:
+          return 'Enter 6-digit code (e.g. 123456)';
         case _ChatFlowStep.initial:
           return 'Choose an option below...';
         case _ChatFlowStep.submitting:
@@ -512,6 +569,23 @@ class AuthChatView extends HookWidget {
                   }
                 : null,
           );
+        } else if (state.status == AuthStatus.needsEmailVerification) {
+          isThinking.value = false;
+          isTyping.value = false;
+          currentFlow.value = _ChatFlowStep.needsEmailConfirmation;
+          final name = state.user?.displayName ??
+              (draftState.displayName.isNotEmpty
+                  ? draftState.displayName
+                  : 'Scholar');
+          final email = state.user?.email ??
+              (draftState.email.isNotEmpty
+                  ? draftState.email
+                  : 'your email address');
+          addBotMessage(
+            '🎉 Welcome to Kortexify, $name!\n\n'
+            'Enter the 6-digit code sent to **$email** to activate '
+            'your account.',
+          );
         } else if (state.status == AuthStatus.needsOnboarding &&
             state.user != null) {
           isThinking.value = false;
@@ -519,16 +593,9 @@ class AuthChatView extends HookWidget {
           currentFlow.value = _ChatFlowStep.initial;
           final name = state.user?.displayName ?? 'Scholar';
           addBotMessage(
-            '🎉 Welcome to Kortexify, $name! Your account has been created.\n\n'
-            "Let's configure your academic track and study profile...",
+            '🎉 Welcome to Kortexify, $name! Your account is active.\n\n'
+            "Let's configure your academic track and study profile right here.",
           );
-          Timer(const Duration(milliseconds: 900), () {
-            if (context.mounted) {
-              unawaited(
-                context.router.replace(const OnboardingCalibrationRoute()),
-              );
-            }
-          });
         } else if (state.status == AuthStatus.authenticated &&
             state.user != null) {
           isThinking.value = false;
@@ -538,11 +605,6 @@ class AuthChatView extends HookWidget {
           addBotMessage(
             '✨ Welcome back, $name! Signed in successfully.',
           );
-          Timer(const Duration(milliseconds: 700), () {
-            if (context.mounted) {
-              unawaited(context.router.replace(const MainRoute()));
-            }
-          });
         } else if (state.isResetSent) {
           isThinking.value = false;
           isTyping.value = false;
@@ -601,6 +663,10 @@ class AuthChatView extends HookWidget {
                             typography: typography,
                             isDark: isDark,
                             isStreaming: isStreaming,
+                            livePasswordText: currentFlow.value ==
+                                    _ChatFlowStep.signUpPassword
+                                ? rawInputText.value
+                                : null,
                             onStreamingTick: scrollToBottom,
                             onStreamingComplete: () {
                               isTyping.value = false;
@@ -762,6 +828,45 @@ class AuthChatView extends HookWidget {
                               },
                             ),
                             const SizedBox(height: 4),
+                          ] else if (currentFlow.value ==
+                              _ChatFlowStep.needsEmailConfirmation) ...[
+                            // 1. Resend 6-Digit Code
+                            _ActionChipButton(
+                              icon: Icons.mark_email_read_rounded,
+                              label: 'Resend 6-Digit Code',
+                              isFullWidth: true,
+                              onTap: () {
+                                lastRetryAction.value = null;
+                                addUserMessage('Resend 6-Digit Code');
+                                final email = authState.user?.email ??
+                                    (draftState.email.isNotEmpty
+                                        ? draftState.email
+                                        : 'your email address');
+                                simulateBotReply(
+                                  '📬 A fresh 6-digit code has been '
+                                  'dispatched to $email! Enter the code below.',
+                                  thinkingText: 'Dispatching new code...',
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+
+                            // 2. Reset / Start Over
+                            _ActionChipButton(
+                              icon: Icons.arrow_back_rounded,
+                              label: 'Start Over / Use Different Email',
+                              isFullWidth: true,
+                              onTap: () {
+                                lastRetryAction.value = null;
+                                addUserMessage('Start Over');
+                                currentFlow.value = _ChatFlowStep.initial;
+                                simulateBotReply(
+                                  'No problem! How would you like to '
+                                  'get started?',
+                                  thinkingText: 'Resetting...',
+                                );
+                              },
+                            ),
                           ] else ...[
                             _ActionChipButton(
                               icon: Icons.arrow_back_rounded,
@@ -788,143 +893,186 @@ class AuthChatView extends HookWidget {
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     child: isTextFieldVisible
-                        ? Padding(
-                            key: ValueKey(currentFlow.value),
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Semantics(
-                                    textField: true,
-                                    label: l10n.authChatInputSemantics,
-                                    hint: getHintText(),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 16,
-                                          sigmaY: 16,
-                                        ),
-                                        child: TextField(
-                                          controller: textController,
-                                          autofocus: true,
-                                          textCapitalization:
-                                              currentFlow.value ==
-                                                  _ChatFlowStep.signUpName
-                                              ? TextCapitalization.words
-                                              : TextCapitalization.none,
-                                          keyboardType: isPasswordField
-                                              ? TextInputType.visiblePassword
-                                              : (currentFlow.value ==
-                                                      _ChatFlowStep.signUpName
-                                                  ? TextInputType.name
-                                                  : TextInputType.emailAddress),
-                                          obscureText: isPasswordField,
-                                          style: typography.callout.regular
-                                              .copyWith(
-                                                color: colors.textPrimary,
-                                              ),
-                                          decoration: InputDecoration(
-                                            hintText: getHintText(),
-                                            hintStyle: typography
-                                                .footnote
-                                                .regular
-                                                .copyWith(
-                                                  color: colors.textMuted,
-                                                  fontSize: 13,
+                        ? Builder(
+                            builder: (context) {
+                              final isObscured = isPasswordObscured.value;
+                              final borderHighlight = isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(60)
+                                  : colors.surfaceBorderHighlight.withAlpha(90);
+                              final eyeIcon = isObscured
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined;
+                              final eyeTooltip = isObscured
+                                  ? 'Show password'
+                                  : 'Hide password';
+                              final side = BorderSide(
+                                color: inputBorderColor,
+                                width: 1.2,
+                              );
+                              final pillRadius = BorderRadius.circular(24);
+
+                              return Padding(
+                                key: ValueKey(currentFlow.value),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                                child: Row(
+                                  children: [
+                                        Expanded(
+                                          child: Semantics(
+                                            textField: true,
+                                            label: l10n.authChatInputSemantics,
+                                            hint: getHintText(),
+                                            child: ClipRRect(
+                                              borderRadius: pillRadius,
+                                              child: BackdropFilter(
+                                                filter: ImageFilter.blur(
+                                                  sigmaX: 16,
+                                                  sigmaY: 16,
                                                 ),
-                                            filled: true,
-                                            fillColor: isDark
-                                                ? colors.surfaceSecondary
-                                                      .withAlpha(190)
-                                                : colors.surfacePrimary
-                                                      .withAlpha(220),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 18,
-                                                  vertical: 12,
+                                                child: TextField(
+                                                  controller: textController,
+                                                  autofocus: true,
+                                                  textCapitalization:
+                                                      currentFlow.value ==
+                                                              _ChatFlowStep
+                                                                  .signUpName
+                                                          ? TextCapitalization
+                                                              .words
+                                                          : TextCapitalization
+                                                              .none,
+                                                  keyboardType: isPasswordField
+                                                      ? TextInputType
+                                                          .visiblePassword
+                                                      : (currentFlow.value ==
+                                                              _ChatFlowStep
+                                                                  .signUpName
+                                                          ? TextInputType.name
+                                                          : TextInputType
+                                                              .emailAddress),
+                                                  obscureText:
+                                                      isPasswordField &&
+                                                          isObscured,
+                                                  style: typography
+                                                      .callout.regular
+                                                      .copyWith(
+                                                        color:
+                                                            colors.textPrimary,
+                                                      ),
+                                                  decoration: InputDecoration(
+                                                    hintText: getHintText(),
+                                                    hintStyle: typography
+                                                        .footnote.regular
+                                                        .copyWith(
+                                                          color:
+                                                              colors.textMuted,
+                                                          fontSize: 13,
+                                                        ),
+                                                    filled: true,
+                                                    fillColor: isDark
+                                                        ? colors
+                                                            .surfaceSecondary
+                                                            .withAlpha(190)
+                                                        : colors.surfacePrimary
+                                                            .withAlpha(220),
+                                                    contentPadding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 18,
+                                                          vertical: 12,
+                                                        ),
+                                                    suffixIcon: isPasswordField
+                                                        ? IconButton(
+                                                            tooltip: eyeTooltip,
+                                                            icon: Icon(
+                                                              eyeIcon,
+                                                              size: 19,
+                                                              color: colors
+                                                                  .textMuted,
+                                                            ),
+                                                            onPressed: () {
+                                                              isPasswordObscured
+                                                                      .value =
+                                                                  !isObscured;
+                                                            },
+                                                          )
+                                                        : null,
+                                                    border: OutlineInputBorder(
+                                                      borderRadius: pillRadius,
+                                                      borderSide: side,
+                                                    ),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                          borderRadius:
+                                                              pillRadius,
+                                                          borderSide: side,
+                                                        ),
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                          borderRadius:
+                                                              pillRadius,
+                                                          borderSide:
+                                                              BorderSide(
+                                                            color:
+                                                                colors.primary,
+                                                            width: 1.6,
+                                                          ),
+                                                        ),
+                                                  ),
+                                                  onSubmitted: (_) =>
+                                                      handleSend(),
                                                 ),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: BorderSide(
-                                                color: inputBorderColor,
-                                                width: 1.2,
-                                              ),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: BorderSide(
-                                                color: inputBorderColor,
-                                                width: 1.2,
-                                              ),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: BorderSide(
-                                                color: colors.primary,
-                                                width: 1.6,
                                               ),
                                             ),
                                           ),
-                                          onSubmitted: (_) => handleSend(),
                                         ),
-                                      ),
+                                        const SizedBox(width: 10),
+                                        Semantics(
+                                          button: true,
+                                          label: l10n.authChatSendSemantics,
+                                          child: ShrinkableButton(
+                                            onTap: hasInputText.value
+                                                ? handleSend
+                                                : null,
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 200,
+                                              ),
+                                              width: 44,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: hasInputText.value
+                                                    ? colors.primary
+                                                    : borderHighlight,
+                                                boxShadow: hasInputText.value
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: colors.primary
+                                                              .withAlpha(80),
+                                                          blurRadius: 10,
+                                                          offset: const Offset(
+                                                              0, 3),
+                                                        ),
+                                                      ]
+                                                    : null,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                Icons.arrow_upward_rounded,
+                                                color: hasInputText.value
+                                                    ? Colors.white
+                                                    : colors.textMuted
+                                                        .withAlpha(140),
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Semantics(
-                                  button: true,
-                                  label: l10n.authChatSendSemantics,
-                                  child: ShrinkableButton(
-                                    onTap: hasInputText.value
-                                        ? handleSend
-                                        : null,
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: hasInputText.value
-                                            ? colors.primary
-                                            : (isDark
-                                                  ? colors
-                                                        .surfaceBorderHighlight
-                                                        .withAlpha(60)
-                                                  : colors
-                                                        .surfaceBorderHighlight
-                                                        .withAlpha(90)),
-                                        boxShadow: hasInputText.value
-                                            ? [
-                                                BoxShadow(
-                                                  color: colors.primary
-                                                      .withAlpha(80),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 3),
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Icon(
-                                        Icons.arrow_upward_rounded,
-                                        color: hasInputText.value
-                                            ? Colors.white
-                                            : colors.textMuted.withAlpha(140),
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
+                                  );
+                                },
+                              )
                         : const SizedBox.shrink(),
                   ),
                 ],
@@ -944,6 +1092,7 @@ class _BotMessageBubble extends StatelessWidget {
     required this.typography,
     required this.isDark,
     this.isStreaming = false,
+    this.livePasswordText,
     this.onStreamingTick,
     this.onStreamingComplete,
   });
@@ -953,6 +1102,7 @@ class _BotMessageBubble extends StatelessWidget {
   final TypographyThemeExtension typography;
   final bool isDark;
   final bool isStreaming;
+  final String? livePasswordText;
   final VoidCallback? onStreamingTick;
   final VoidCallback? onStreamingComplete;
 
@@ -1078,6 +1228,17 @@ class _BotMessageBubble extends StatelessWidget {
                             height: 1.35,
                           ),
                         ),
+                        if (message.step == ChatAuthStep.askPassword ||
+                            message.text.contains(
+                              'Almost there! Set a secure password',
+                            )) ...[
+                          _VerticalPasswordRequirementsList(
+                            password: livePasswordText ?? '',
+                            colors: colors,
+                            typography: typography,
+                            isDark: isDark,
+                          ),
+                        ],
                         if (isError && message.onRetry != null) ...[
                           const SizedBox(height: 10),
                           Semantics(
@@ -1451,6 +1612,155 @@ class _ActionChipButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Animated vertical checklist card displaying real-time password requirements
+/// inside the chat bubble right below the password prompt message.
+class _VerticalPasswordRequirementsList extends StatelessWidget {
+  const _VerticalPasswordRequirementsList({
+    required this.password,
+    required this.colors,
+    required this.typography,
+    required this.isDark,
+  });
+
+  final String password;
+  final AppThemeColorsExtension colors;
+  final TypographyThemeExtension typography;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMinLength = password.length >= 8;
+    final hasNumber = RegExp('[0-9]').hasMatch(password);
+    final hasUppercase = RegExp('[A-Z]').hasMatch(password);
+    final hasSpecial =
+        RegExp(r'[!@#$%^&*(),.?":{}|<>/_+\-=\[\]\\;`~]').hasMatch(password);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfacePrimary.withAlpha(140)
+            : colors.surfaceSecondary.withAlpha(180),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark
+              ? colors.surfaceBorderHighlight.withAlpha(50)
+              : colors.surfaceBorder.withAlpha(100),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PasswordRequirementItem(
+            isMet: hasMinLength,
+            label: '8+ characters',
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(height: 6),
+          _PasswordRequirementItem(
+            isMet: hasNumber,
+            label: 'Includes number (0-9)',
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(height: 6),
+          _PasswordRequirementItem(
+            isMet: hasUppercase,
+            label: 'Uppercase letter (A-Z)',
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(height: 6),
+          _PasswordRequirementItem(
+            isMet: hasSpecial,
+            label: 'Special character (!@#...)',
+            colors: colors,
+            typography: typography,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual requirement row item with a round check animating from an
+/// empty circle to a filled circle and label transitioning to success color.
+class _PasswordRequirementItem extends StatelessWidget {
+  const _PasswordRequirementItem({
+    required this.isMet,
+    required this.label,
+    required this.colors,
+    required this.typography,
+  });
+
+  final bool isMet;
+  final String label;
+  final AppThemeColorsExtension colors;
+  final TypographyThemeExtension typography;
+
+  @override
+  Widget build(BuildContext context) {
+    const successColor = Color(0xFF10B981);
+    final textColor = isMet ? successColor : colors.textMuted;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isMet ? successColor : Colors.transparent,
+              border: Border.all(
+                color: isMet ? successColor : colors.surfaceBorderHighlight,
+                width: 1.4,
+              ),
+              boxShadow: isMet
+                  ? [
+                      BoxShadow(
+                        color: successColor.withAlpha(80),
+                        blurRadius: 6,
+                        spreadRadius: 0.5,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: isMet
+                ? const Center(
+                    child: Icon(
+                      Icons.check,
+                      size: 10,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 6),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            style: typography.caption.medium.copyWith(
+              color: textColor,
+              fontSize: 12,
+              fontWeight: isMet ? FontWeight.w600 : null,
+            ),
+            child: Text(label),
+          ),
+        ],
       ),
     );
   }

@@ -72,10 +72,12 @@ void main() {
     mockGetContentUseCase = MockGetRecommendedContentUseCase();
     mockGetProfileUseCase = MockGetCalibrationProfileUseCase();
 
-    when(() => mockGetProfileUseCase(const NoParams()))
-        .thenAnswer((_) async => const Right(CalibrationProfile()));
-    when(() => mockGetContentUseCase(any()))
-        .thenAnswer((_) async => const Right(testItems));
+    when(
+      () => mockGetProfileUseCase(const NoParams()),
+    ).thenAnswer((_) async => const Right(CalibrationProfile()));
+    when(
+      () => mockGetContentUseCase(any()),
+    ).thenAnswer((_) async => const Right(testItems));
 
     final locator = GetIt.instance;
     if (locator.isRegistered<ContentRecommendationCubit>()) {
@@ -97,8 +99,7 @@ void main() {
   });
 
   group('OnboardingContentPage Test Suite', () {
-    testWidgets('renders first recommendation item initially',
-        (tester) async {
+    testWidgets('renders first recommendation item initially', (tester) async {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingContentPage()),
       );
@@ -109,11 +110,12 @@ void main() {
 
       expect(find.text('Instant Exam Readiness'), findsOneWidget);
       expect(find.text('DATABASE PRE-POPULATED'), findsOneWidget);
-      expect(find.text('KORTEX'), findsOneWidget);
+      expect(find.text('KORTEXIFY'), findsOneWidget);
     });
 
-    testWidgets('tapping forward button advances to next recommendation',
-        (tester) async {
+    testWidgets('tapping forward button advances to next recommendation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingContentPage()),
       );
@@ -132,8 +134,9 @@ void main() {
       expect(find.text('ACTIVE RECALL DECK'), findsOneWidget);
     });
 
-    testWidgets('renders desktop split layout on width >= 1024',
-        (tester) async {
+    testWidgets('renders desktop split layout on width >= 1024', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

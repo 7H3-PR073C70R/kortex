@@ -7,6 +7,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -40,6 +41,7 @@ class AuthFormView extends HookWidget {
     final nameController = useTextEditingController(
       text: draftState.displayName,
     );
+    final otpController = useTextEditingController();
 
     useEffect(
       () {
@@ -142,6 +144,92 @@ class AuthFormView extends HookWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (context.watch<AuthBloc>().state.status ==
+                                AuthStatus.needsEmailVerification &&
+                            isRegister) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(80),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.pin_outlined,
+                                  size: 38,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Verify Your Account',
+                                  style: typography.headline.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Enter the 6-digit code sent to your email '
+                                  '(${emailController.text}).',
+                                  textAlign: TextAlign.center,
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                AppTextField(
+                                  label: '6-Digit OTP Code',
+                                  hintText: '123456',
+                                  controller: otpController,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 6,
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                AppButton(
+                                  text: 'Verify Code',
+                                  onPressed: () {
+                                    final otp = otpController.text.trim();
+                                    if (otp.length == 6) {
+                                      context.read<AuthBloc>().add(
+                                        AuthVerifyOtpRequested(
+                                          email: emailController.text.trim(),
+                                          token: otp,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () {
+                                    context.read<AuthModeCubit>().setFormType(
+                                      AuthFormType.login,
+                                    );
+                                  },
+                                  child: Text(
+                                    'Switch to Sign In',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
                         // Registration Display Name Field
                         if (isRegister) ...[
                           Semantics(

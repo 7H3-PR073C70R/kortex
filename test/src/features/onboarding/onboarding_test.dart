@@ -45,28 +45,31 @@ void main() {
   });
 
   group('Onboarding & Splash Feature Test Suite', () {
-    testWidgets('AnimatedPageIndicator renders correct items and marks active',
-        (tester) async {
-      var selectedIndex = 0;
-      await tester.pumpWidget(
-        _wrapWithTheme(
-          AnimatedPageIndicator(
-            count: 4,
-            currentIndex: 1,
-            onTap: (index) => selectedIndex = index,
+    testWidgets(
+      'AnimatedPageIndicator renders correct items and marks active',
+      (tester) async {
+        var selectedIndex = 0;
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            AnimatedPageIndicator(
+              count: 4,
+              currentIndex: 1,
+              onTap: (index) => selectedIndex = index,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(AnimatedPageIndicator), findsOneWidget);
-      await tester.tap(find.byType(GestureDetector).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(selectedIndex, equals(0));
-    });
+        expect(find.byType(AnimatedPageIndicator), findsOneWidget);
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(selectedIndex, equals(0));
+      },
+    );
 
-    testWidgets('OnboardingIllustrations render without errors',
-        (tester) async {
+    testWidgets('OnboardingIllustrations render without errors', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(
           Builder(
@@ -90,30 +93,32 @@ void main() {
     testWidgets(
       'OnboardingPage renders and slides advance with forward button',
       (tester) async {
-      when(
-        () => mockStorage.savePreference(
-          key: PrefKeys.hasCompletedOnboarding,
-          data: 'true',
-        ),
-      ).thenAnswer((_) async {});
+        when(
+          () => mockStorage.savePreference(
+            key: PrefKeys.hasCompletedOnboarding,
+            data: 'true',
+          ),
+        ).thenAnswer((_) async {});
 
-      await tester.pumpWidget(_wrapWithTheme(const OnboardingPage()));
-      await tester.pump();
+        await tester.pumpWidget(_wrapWithTheme(const OnboardingPage()));
+        await tester.pump();
 
-      expect(find.text('KORTEX'), findsOneWidget);
-      expect(find.text('Drop. Parse. Master.'), findsOneWidget);
-      expect(find.text('Skip'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+        expect(find.text('KORTEXIFY'), findsOneWidget);
+        expect(find.text('Drop. Parse. Master.'), findsOneWidget);
+        expect(find.text('Skip'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Flawless Math & Science OCR'), findsOneWidget);
-    });
+        expect(find.text('Flawless Math & Science OCR'), findsOneWidget);
+      },
+    );
 
-    testWidgets('SplashPage renders brand identity and Syllabot engine pill',
-        (tester) async {
+    testWidgets('SplashPage renders brand identity and Syllabot engine pill', (
+      tester,
+    ) async {
       when(
         () => mockStorage.getPreference(
           key: PrefKeys.hasCompletedOnboarding,
@@ -124,7 +129,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('KORTEX'), findsOneWidget);
+      expect(find.text('KORTEXIFY'), findsOneWidget);
       expect(find.text('ENGINE: SYLLABOT AI'), findsOneWidget);
     });
   });

@@ -1,11 +1,11 @@
 #!/bin/bash
 # ==============================================================================
-# KORTEX SUPABASE DEPLOYMENT & MIGRATION SCRIPT
+# KORTEXIFY SUPABASE DEPLOYMENT & MIGRATION SCRIPT
 # ==============================================================================
 
 set -e
 
-echo "=== [KORTEX SUPABASE BACKEND DEPLOYMENT] ==="
+echo "=== [KORTEXIFY SUPABASE BACKEND DEPLOYMENT] ==="
 
 # Check if supabase CLI is available
 if ! command -v supabase &> /dev/null; then

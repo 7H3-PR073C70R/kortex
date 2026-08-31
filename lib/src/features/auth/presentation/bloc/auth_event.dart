@@ -54,6 +54,22 @@ class AuthRegisterRequested extends AuthEvent {
   List<Object?> get props => [email, password, displayName];
 }
 
+/// Dispatched when a user submits a 6-digit OTP code to verify signup or login.
+class AuthVerifyOtpRequested extends AuthEvent {
+  const AuthVerifyOtpRequested({
+    required this.email,
+    required this.token,
+    this.type = 'signup',
+  });
+
+  final String email;
+  final String token;
+  final String type;
+
+  @override
+  List<Object?> get props => [email, token, type];
+}
+
 /// Dispatched when a user taps Google or Apple sign-in.
 class AuthSocialLoginRequested extends AuthEvent {
   const AuthSocialLoginRequested({

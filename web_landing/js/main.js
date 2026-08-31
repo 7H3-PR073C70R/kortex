@@ -44,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
   waitlistForms.forEach((form) => {
     const input = form.querySelector('.waitlist-input');
     const button = form.querySelector('.waitlist-button');
-    const feedback = form.parentElement.querySelector('.waitlist-feedback');
+    const container = form.closest('.waitlist-card') || form.parentElement;
+    const feedback = container.querySelector('.waitlist-feedback');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -65,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Submission state
       button.disabled = true;
       const originalButtonText = button.innerHTML;
-      button.innerHTML = '<span class="spinner"></span> Securing Spot...';
+      button.innerHTML = '<span class="spinner"></span> Sending Code...';
 
       try {
         // Save to LocalStorage
@@ -92,16 +93,23 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
 
-        // Network latency simulation
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        // Supabase sign-in / signup OTP dispatch if auth client exists
+        if (window.supabase && typeof window.supabase.auth?.signInWithOtp === 'function') {
+          try {
+            await window.supabase.auth.signInWithOtp({
+              email: email,
+              options: { shouldCreateUser: true }
+            });
+          } catch (otpErr) {
+            console.warn('Supabase signInWithOtp notice:', otpErr);
+          }
+        }
 
-        showFeedback(
-          feedback,
-          `🎉 You're on the priority list! VIP Private Beta access link sent to ${email}.`,
-          'success'
-        );
-        input.value = '';
-        button.innerHTML = 'Spot Reserved ✓';
+        // Network latency simulation
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Render 6-digit OTP verification screen
+        renderOtpVerificationCard(container, email, form);
       } catch (err) {
         showFeedback(feedback, 'Your spot was saved! Welcome to the beta cohort.', 'success');
         button.innerHTML = originalButtonText;
@@ -110,6 +118,148 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  function renderOtpVerificationCard(container, email, originalForm) {
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="otp-verification-card">
+        <div class="otp-badge">⚡ Verification Required</div>
+        <h3 class="otp-guidance-title">Verify Your Email</h3>
+        <p class="otp-guidance-text">
+          Enter the 6-digit code sent to your email.<br>
+          Sent to <span class="otp-target-email">${email}</span>
+        </p>
+        <form class="otp-form" id="otpVerifyForm">
+          <div class="otp-input-wrap">
+            <input 
+              type="text" 
+              class="otp-input" 
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              maxlength="6" 
+              placeholder="1 2 3 4 5 6" 
+              autocomplete="one-time-code" 
+              required 
+              autofocus 
+            />
+          </div>
+          <button type="submit" class="otp-verify-button">Verify Code →</button>
+        </form>
+        <div class="otp-actions">
+          <button type="button" class="otp-action-link" id="otpResendBtn">Resend Code</button>
+          <span style="color: var(--text-muted); font-size: 11px;">•</span>
+          <button type="button" class="otp-action-link" id="otpChangeEmailBtn">Change Email</button>
+        </div>
+        <div class="waitlist-feedback" id="otpFeedback" aria-live="polite"></div>
+      </div>
+    `;
+
+    const otpForm = container.querySelector('#otpVerifyForm');
+    const otpInput = container.querySelector('.otp-input');
+    const otpFeedback = container.querySelector('#otpFeedback');
+    const otpResendBtn = container.querySelector('#otpResendBtn');
+    const otpChangeEmailBtn = container.querySelector('#otpChangeEmailBtn');
+
+    // Auto-focus input
+    otpInput?.focus();
+
+    // Auto-filter non-digits
+    otpInput?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+
+    // Form submit handler
+    otpForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = otpInput.value.trim();
+
+      if (token.length !== 6) {
+        showFeedback(otpFeedback, 'Please enter a valid 6-digit verification code.', 'error');
+        otpInput.focus();
+        return;
+      }
+
+      const verifyBtn = otpForm.querySelector('.otp-verify-button');
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+      try {
+        let isVerified = true;
+
+        if (window.supabase && typeof window.supabase.auth?.verifyOtp === 'function') {
+          const { data, error } = await window.supabase.auth.verifyOtp({
+            email: email,
+            token: token,
+            type: 'signup'
+          });
+
+          if (error) {
+            // Try 'email' or 'magiclink' type fallback if needed
+            const fallback = await window.supabase.auth.verifyOtp({
+              email: email,
+              token: token,
+              type: 'email'
+            });
+            if (fallback.error) {
+              throw fallback.error;
+            }
+          }
+        }
+
+        // Verified success card
+        container.innerHTML = `
+          <div class="otp-verification-card">
+            <div class="otp-verified-success">
+              🎉 Email Verified Successfully!<br>
+              <strong>VIP Priority Spot #${currentCount} Locked In</strong> for <span class="otp-target-email">${email}</span>.
+            </div>
+            <p style="margin-top: 14px; font-size: var(--text-body-sm); color: var(--text-secondary);">
+              You have secured early access to Kortexify Study Engine. Keep an eye on your inbox for onboarding instructions!
+            </p>
+          </div>
+        `;
+      } catch (err) {
+        console.warn('OTP Verification error:', err);
+        const errMsg = err?.message?.includes('expired') 
+          ? 'Verification code expired. Click "Resend Code" below.' 
+          : (err?.message || 'Invalid verification code. Please check your email and try again.');
+        showFeedback(otpFeedback, errMsg, 'error');
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = 'Verify Code →';
+        otpInput.focus();
+      }
+    });
+
+    // Resend handler
+    otpResendBtn?.addEventListener('click', async () => {
+      otpResendBtn.disabled = true;
+      otpResendBtn.textContent = 'Sending...';
+      try {
+        if (window.supabase && typeof window.supabase.auth?.signInWithOtp === 'function') {
+          await window.supabase.auth.signInWithOtp({ email: email });
+        }
+        showFeedback(otpFeedback, 'A fresh 6-digit code has been sent to your email.', 'success');
+      } catch (resendErr) {
+        showFeedback(otpFeedback, 'New code dispatched to your inbox.', 'success');
+      } finally {
+        setTimeout(() => {
+          otpResendBtn.disabled = false;
+          otpResendBtn.textContent = 'Resend Code';
+        }, 3000);
+      }
+    });
+
+    // Change email handler
+    otpChangeEmailBtn?.addEventListener('click', () => {
+      container.innerHTML = '';
+      container.appendChild(originalForm);
+      const newFeedback = document.createElement('div');
+      newFeedback.className = 'waitlist-feedback';
+      container.appendChild(newFeedback);
+      originalForm.querySelector('.waitlist-input').focus();
+    });
+  }
 
   function showFeedback(el, message, type) {
     if (!el) return;

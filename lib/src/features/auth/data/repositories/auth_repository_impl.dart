@@ -188,6 +188,33 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, UserEntity>> verifyOtp({
+    required String email,
+    required String token,
+    String type = 'signup',
+  }) async {
+    final response = await _remoteDataSource
+        .verifyOtp(
+          email: email,
+          token: token,
+          type: type,
+        )
+        .makeRequest();
+
+    return response.fold(
+      Left.new,
+      (userModel) {
+        if (userModel.token != null) {
+          unawaited(_userStorageService.saveToken(userModel.token!));
+        }
+        _authStateController
+            .add(AuthSessionStatus.authenticatedNeedsOnboarding);
+        return Right(userModel.toEntity());
+      },
+    );
+  }
+
+  @override
   Future<Either<Failure, void>> signOut() async {
     _userStorageService.clearStorage();
     _authStateController.add(AuthSessionStatus.unauthenticated);
