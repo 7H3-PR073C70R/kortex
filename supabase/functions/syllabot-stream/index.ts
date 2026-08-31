@@ -8,9 +8,12 @@ interface ChatMessage {
   content: string;
 }
 
+type TaskType = "general_query" | "complex_stem" | "code_proof" | "socratic_dialogue";
+
 interface RequestPayload {
   prompt?: string;
   messages?: ChatMessage[];
+  taskType?: TaskType;
   sessionId?: string;
   socraticMode?: "stepByStep" | "directAnswer" | "examSim" | "deepResearch";
   contextHistory?: Array<{ sender: string; text: string }>;
@@ -28,11 +31,11 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const authHeader = req.headers.get("Authorization");
 
-    // A. Security & JWT Validation
+    // A. Security & Auth Verification
     if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
       return new Response(
         JSON.stringify({
-          error: "Unauthorized: Missing or invalid Supabase Bearer token",
+          error: "Unauthorized: Missing or malformed Supabase Bearer token",
         }),
         {
           status: 401,
@@ -51,7 +54,7 @@ serve(async (req: Request) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({
-          error: "Unauthorized: Expired or invalid user session",
+          error: "Unauthorized: Expired or invalid caller session",
         }),
         {
           status: 401,
@@ -66,8 +69,9 @@ serve(async (req: Request) => {
       supabaseServiceKey || supabaseAnonKey
     );
 
-    // B. Parse Request Body
+    // B. Parse Request Payload
     const body: RequestPayload = await req.json().catch(() => ({}));
+    const taskType: TaskType = body.taskType ?? "general_query";
     const socraticMode = body.socraticMode ?? "stepByStep";
     const courseCode = body.courseCode;
     const sessionId = body.sessionId;
@@ -80,7 +84,7 @@ serve(async (req: Request) => {
       const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
       rawPrompt = lastUserMsg?.content ?? rawPrompt;
     } else {
-      const systemInstruction = getSystemPrompt(socraticMode);
+      const systemInstruction = getSystemPrompt(socraticMode, taskType);
       messages = [
         { role: "system", content: systemInstruction },
         ...(body.contextHistory ?? []).map((c) => ({
@@ -95,7 +99,7 @@ serve(async (req: Request) => {
 
     if (!rawPrompt && messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Missing required prompt or messages payload" }),
+        JSON.stringify({ error: "Missing required prompt or messages" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -103,8 +107,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // 1. Semantic Cache Optimization (sub-15ms response)
-    const cachePrompt = `syllabot:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
+    // 1. Semantic Cache Optimization (sub-15ms latency)
+    const cachePrompt = `syllabot:${taskType}:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       dbClient,
       cachePrompt,
@@ -116,15 +120,20 @@ serve(async (req: Request) => {
       ? (cacheResult.data?.tokens as string[])
       : null;
 
-    // C. DeepSeek / OpenAI-compatible Configuration
+    // C. Dynamic Routing Payload Builder (DeepSeek v4-flash vs v4-pro)
     const llmBaseUrl =
       Deno.env.get("LLM_BASE_URL") ||
       "https://api.deepseek.com/chat/completions";
     const llmApiKey = Deno.env.get("LLM_API_KEY") || "";
     const defaultModel =
-      Deno.env.get("DEFAULT_MODEL") || "deepseek-chat";
+      Deno.env.get("DEFAULT_MODEL") || "deepseek-v4-flash";
 
-    // 2. Stream Server-Sent Events (SSE) back to client
+    const isComplex =
+      taskType === "complex_stem" || taskType === "code_proof";
+    const selectedModel = isComplex ? "deepseek-v4-pro" : defaultModel;
+    const reasoningEffort = isComplex ? "high" : undefined;
+
+    // 2. Server-Sent Events (SSE) Streaming Pipeline
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -137,37 +146,43 @@ serve(async (req: Request) => {
 
         sendEvent("start", {
           status: "generating",
+          model: selectedModel,
+          taskType,
           socraticMode,
           cacheHit: isCacheHit,
-          model: defaultModel,
         });
 
         let fullResponse = "";
         const recordedTokens: string[] = [];
 
         if (isCacheHit && cachedTokens) {
-          // Serve immediately from semantic cache
+          // Serve from Semantic Cache
           for (const token of cachedTokens) {
             fullResponse += token;
             recordedTokens.push(token);
             sendEvent("token", { text: token });
-            await new Promise((r) => setTimeout(r, 12));
+            await new Promise((r) => setTimeout(r, 10));
           }
         } else if (llmApiKey) {
           // Dispatch streaming POST to DeepSeek API
           try {
+            const deepseekPayload: Record<string, unknown> = {
+              model: selectedModel,
+              messages,
+              stream: true,
+              temperature: 0.6,
+            };
+            if (reasoningEffort) {
+              deepseekPayload["reasoning_effort"] = reasoningEffort;
+            }
+
             const deepseekResponse = await fetch(llmBaseUrl, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${llmApiKey}`,
               },
-              body: JSON.stringify({
-                model: defaultModel,
-                messages,
-                stream: true,
-                temperature: 0.6,
-              }),
+              body: JSON.stringify(deepseekPayload),
             });
 
             if (!deepseekResponse.ok || !deepseekResponse.body) {
@@ -211,14 +226,14 @@ serve(async (req: Request) => {
                       sendEvent("token", { text: deltaText });
                     }
                   } catch {
-                    // Ignore non-JSON heartbeat pings
+                    // Skip heartbeat or unparseable lines
                   }
                 }
               }
             }
           } catch (providerError) {
-            console.error("DeepSeek stream error, fallback recovery triggered:", providerError);
-            const fallbackTokens = getFallbackTokens(rawPrompt);
+            console.error("DeepSeek stream error, fallback engaged:", providerError);
+            const fallbackTokens = getFallbackTokens(rawPrompt, isComplex);
             for (const token of fallbackTokens) {
               fullResponse += token;
               recordedTokens.push(token);
@@ -227,8 +242,8 @@ serve(async (req: Request) => {
             }
           }
         } else {
-          // Fallback token synthesis for offline/local development
-          const fallbackTokens = getFallbackTokens(rawPrompt);
+          // Local/offline development fallback
+          const fallbackTokens = getFallbackTokens(rawPrompt, isComplex);
           for (const token of fallbackTokens) {
             fullResponse += token;
             recordedTokens.push(token);
@@ -237,7 +252,7 @@ serve(async (req: Request) => {
           }
         }
 
-        // Asynchronously persist newly generated completion to semantic cache
+        // Asynchronously persist to semantic cache
         if (!isCacheHit && recordedTokens.length > 0) {
           await SemanticCacheProvider.setCachedResponse(
             dbClient,
@@ -246,12 +261,13 @@ serve(async (req: Request) => {
               fullText: fullResponse,
               tokens: recordedTokens,
               socraticMode,
+              model: selectedModel,
             },
             { courseCode }
-          ).catch((err) => console.error("Semantic cache set error:", err));
+          ).catch((err) => console.error("Semantic cache error:", err));
         }
 
-        // Asynchronously store conversation turns in chat_messages table
+        // Asynchronously persist to chat_messages table
         if (userId && sessionId && fullResponse) {
           try {
             await dbClient.from("chat_messages").insert([
@@ -277,9 +293,9 @@ serve(async (req: Request) => {
 
         sendEvent("done", {
           fullText: fullResponse,
+          model: selectedModel,
           socraticMode,
           cacheHit: isCacheHit,
-          model: defaultModel,
         });
 
         controller.close();
@@ -305,7 +321,11 @@ serve(async (req: Request) => {
   }
 });
 
-function getSystemPrompt(mode: string): string {
+function getSystemPrompt(mode: string, taskType: TaskType): string {
+  if (taskType === "complex_stem" || taskType === "code_proof") {
+    return "You are Syllabot Advanced Reasoning Engine (DeepSeek v4-pro). Provide rigorous, mathematically formal derivations with comprehensive proof steps, tensor/calculus formulations in LaTeX ($$...$$ for display and $...$ for inline), and edge-case verifications.";
+  }
+
   switch (mode) {
     case "examSim":
       return "You are Syllabot Exam Simulator. Test the student's mastery using rigorous exam-level multiple-choice or analytical questions. Grade their reasoning and provide structured rubrics.";
@@ -319,8 +339,9 @@ function getSystemPrompt(mode: string): string {
   }
 }
 
-function getFallbackTokens(prompt: string): string[] {
+function getFallbackTokens(prompt: string, isComplex: boolean): string[] {
   if (
+    isComplex ||
     prompt.toLowerCase().includes("euler") ||
     prompt.toLowerCase().includes("lagrange") ||
     prompt.toLowerCase().includes("pde") ||
@@ -328,20 +349,20 @@ function getFallbackTokens(prompt: string): string[] {
   ) {
     return [
       "Let us derive the Euler-Lagrange equation from Hamilton's Principle of Stationary Action.",
-      "\n\n**1. Action Integral:**",
+      "\n\n**1. Action Functional Formulation:**",
       "\nWe define the action functional $$S[q]$$ as:",
       "\n$$S[q] = \\int_{t_1}^{t_2} L(q(t), \\dot{q}(t), t) \\, dt$$",
       "\nwhere $$L = T - V$$ is the Lagrangian of the system.",
-      "\n\n**2. Variation of the Path:**",
-      "\nConsider a small variation $$\\delta q(t)$$ vanishing at endpoints ($$\\delta q(t_1) = \\delta q(t_2) = 0$$):",
-      "\n$$\\delta S = \\int_{t_1}^{t_2} \\left( \\frac{\\partial L}{\\partial q} \\delta q + \\frac{\\partial L}{\\partial \\dot{q}} \\delta \\dot{q} \\right) dt = 0$$",
+      "\n\n**2. First Variation of the Trajectory:**",
+      "\nConsider a virtual displacement $$\\delta q(t)$$ vanishing on the boundary ($$\\delta q(t_1) = \\delta q(t_2) = 0$$):",
+      "\n$$\\delta S = \\int_{t_1}^{t_2} \\left( \\frac{\\partial L}{\\partial q} \\delta q + \\frac{\\partial L}{\\partial \\dot{q}} \\frac{d(\\delta q)}{dt} \\right) dt = 0$$",
       "\n\n**3. Integration by Parts:**",
-      "\nIntegrating the second term by parts yields:",
+      "\nApplying integration by parts on the velocity derivative term:",
       "\n$$\\int_{t_1}^{t_2} \\frac{\\partial L}{\\partial \\dot{q}} \\frac{d(\\delta q)}{dt} dt = \\left[ \\frac{\\partial L}{\\partial \\dot{q}} \\delta q \\right]_{t_1}^{t_2} - \\int_{t_1}^{t_2} \\frac{d}{dt}\\left(\\frac{\\partial L}{\\partial \\dot{q}}\\right) \\delta q \\, dt$$",
-      "\n\n**4. Final Socratic Result:**",
-      "\nSince $$\\delta q(t)$$ is arbitrary within $$(t_1, t_2)$$, the integrand must vanish identically:",
+      "\n\n**4. Fundamental Lemma of Calculus of Variations:**",
+      "\nBecause $$\\delta q(t)$$ is arbitrary within $$(t_1, t_2)$$, the stationary condition holds if and only if:",
       "\n$$\\frac{\\partial L}{\\partial q} - \\frac{d}{dt}\\left( \\frac{\\partial L}{\\partial \\dot{q}} \\right) = 0$$",
-      "\n\nWould you like to apply this equation to a harmonic oscillator or a spherical pendulum next?",
+      "\n\nWould you like to solve the corresponding equations of motion for a coupled pendulum or central force field next?",
     ];
   }
 
