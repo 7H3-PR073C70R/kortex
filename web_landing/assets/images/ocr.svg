@@ -1,0 +1,60 @@
+<svg width="360" height="280" viewBox="0 0 360 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ocrGlass" x1="0" y1="0" x2="300" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B132B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#1E293B" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="ocrBorder" x1="0" y1="0" x2="300" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="scanBeam2" x1="0" y1="0" x2="0" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.0"/>
+    </linearGradient>
+    <filter id="glow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Ambient Backdrop Aura -->
+  <circle cx="180" cy="140" r="100" fill="#06B6D4" fill-opacity="0.08" filter="url(#glow2)"/>
+
+  <!-- Scanning Glass Board Container -->
+  <g transform="translate(30, 35)">
+    <rect x="0" y="0" width="300" height="210" rx="20" fill="url(#ocrGlass)" stroke="url(#ocrBorder)" stroke-width="1.6"/>
+    
+    <!-- Crosshair Accents -->
+    <path d="M14,30 L14,14 L30,14" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M286,30 L286,14 L270,14" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M14,180 L14,196 L30,196" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M286,180 L286,196 L270,196" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Laser Scanning Beam -->
+    <rect x="20" y="55" width="260" height="2.5" fill="#38BDF8" filter="url(#glow2)"/>
+    <rect x="20" y="57.5" width="260" height="45" fill="url(#scanBeam2)"/>
+
+    <!-- LaTeX Equation -->
+    <text x="32" y="46" fill="#38BDF8" font-size="14" font-family="sans-serif" font-weight="bold">∫ e^(-x²) dx = √(π)/2</text>
+    
+    <!-- Matrix Eigenvalue Block -->
+    <g transform="translate(32, 85)">
+      <rect x="0" y="0" width="115" height="52" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1"/>
+      <text x="10" y="22" fill="#E2E8F0" font-size="10" font-family="monospace">det(A - λI) = 0</text>
+      <text x="10" y="38" fill="#10B981" font-size="9" font-family="sans-serif" font-weight="bold">λ₁ = 4.2, λ₂ = 1.8</text>
+    </g>
+
+    <!-- Chemical Structure Block -->
+    <g transform="translate(170, 85)">
+      <polygon points="45,3 70,17 70,45 45,59 20,45 20,17" stroke="#A855F7" stroke-width="2" fill="#1E1B4B" fill-opacity="0.6"/>
+      <circle cx="45" cy="31" r="13" stroke="#C084FC" stroke-width="1.2" stroke-dasharray="3 2" fill="none"/>
+      <text x="80" y="35" fill="#C084FC" font-size="10.5" font-family="sans-serif" font-weight="bold">C₆H₆</text>
+    </g>
+
+    <!-- Accuracy Badge -->
+    <rect x="32" y="160" width="105" height="24" rx="12" fill="#06B6D4" fill-opacity="0.2" stroke="#06B6D4" stroke-width="1"/>
+    <circle cx="45" cy="172" r="4" fill="#10B981"/>
+    <text x="56" y="176" fill="#E0F2FE" font-size="9.5" font-family="sans-serif" font-weight="bold" letter-spacing="0.5">99.4% ACCURACY</text>
+  </g>
+</svg>

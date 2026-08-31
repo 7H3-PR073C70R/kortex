@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Kortex transforms 300-page lecture PDFs into active recall flashcards in under 3 seconds. Built with FSRS v4 memory math—study 60% less and retain 90% more.">
+  <meta name="keywords" content="AI flashcards, active recall, spaced repetition, FSRS scheduler, STEM OCR, university study app, PDF to flashcards">
+  <meta name="author" content="Kortex Technologies">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kortex.app/">
+  <meta property="og:title" content="Kortex — Stop Cramming. Start Retaining.">
+  <meta property="og:description" content="Instant STEM PDF ingestion into FSRS v4 spaced repetition flashcards. Join the private beta.">
+  <meta property="og:image" content="https://kortex.app/assets/images/campus_student_bg.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Kortex — Stop Cramming. Start Retaining.">
+  <meta name="twitter:description" content="Instant STEM PDF ingestion into FSRS v4 spaced repetition flashcards. Join the private beta.">
+  <meta name="twitter:image" content="https://kortex.app/assets/images/campus_student_bg.png">
+
+  <title>Kortex — Stop Cramming. Start Retaining.</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="alternate icon" href="assets/favicon.ico">
+
+  <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Structured Data JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Kortex",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "iOS, Android, Web, macOS, Windows",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "USD"
+    },
+    "description": "AI-augmented academic workspace combining zero-latency offline storage, STEM OCR, and FSRS spaced repetition."
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Ambient Cosmic Aura Mesh -->
+  <div class="aura-blob aura-blob-primary" aria-hidden="true"></div>
+  <div class="aura-blob aura-blob-syllabot" aria-hidden="true"></div>
+  <div class="aura-blob aura-blob-cyan" aria-hidden="true"></div>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-content">
+      <a href="#" class="brand-logo" aria-label="Kortex Home">
+        <img src="assets/logo.svg" alt="Kortex Logo" width="36" height="36">
+        <div>
+          <span class="brand-name">KORTEX</span>
+        </div>
+      </a>
+
+      <nav aria-label="Primary Navigation">
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#comparison" class="nav-link">Why Kortex</a></li>
+          <li><a href="#founder" class="nav-link">Our Vision</a></li>
+          <li><a href="#faq" class="nav-link">FAQ</a></li>
+          <li><a href="#waitlist" class="nav-cta">Get Early Access</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content">
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="waitlist">
+      <div class="container">
+        
+        <!-- Live Beta Badge -->
+        <div class="hero-badge reveal-on-scroll">
+          <span class="pulse-dot"></span>
+          <span>Private Beta Opening Soon</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="hero-title reveal-on-scroll delay-1">
+          Stop Cramming.<br>
+          <span class="gradient-text-accent">Start Retaining.</span>
+        </h1>
+
+        <!-- Sub-headline -->
+        <p class="hero-subtitle reveal-on-scroll delay-2">
+          Kortex transforms 300-page lecture PDFs into active recall flashcards in under 3 seconds. Built with FSRS v4 memory math—so you study 60% less and retain 90% more.
+        </p>
+
+        <!-- Waitlist Form -->
+        <div class="waitlist-card reveal-on-scroll delay-3">
+          <form class="waitlist-form" action="#" method="POST">
+            <input 
+              type="email" 
+              class="waitlist-input" 
+              placeholder="Enter your university or personal email..." 
+              required
+              aria-label="Email address for beta waitlist"
+            >
+            <button type="submit" class="waitlist-button">
+              Join Private Beta →
+            </button>
+          </form>
+          <div class="waitlist-feedback" aria-live="polite"></div>
+        </div>
+
+        <!-- Social Proof Bar -->
+        <div class="social-proof-bar reveal-on-scroll delay-4">
+          <div class="avatar-stack">
+            <span>JD</span>
+            <span>AM</span>
+            <span>EK</span>
+            <span>+</span>
+          </div>
+          <p class="social-proof-text">
+            Join <strong class="social-proof-count">1,428</strong>+ pre-med, law, and engineering students
+          </p>
+        </div>
+
+        <!-- Hero Interactive Product Mockup Card -->
+        <div class="hero-mockup-wrapper reveal-on-scroll delay-4">
+          <div class="product-mockup-card">
+            <div class="mockup-top-bar">
+              <div class="window-dots">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
+              </div>
+              <span class="mockup-title">kortex_neural_engine.fsrs</span>
+              <div class="mockup-sla-badge">
+                <span>⚡ Sub-3s SLA Delivered</span>
+              </div>
+            </div>
+
+            <div class="mockup-body">
+              <div class="mockup-card-header">
+                <span class="card-subject-tag">PHYS 201 • Quantum Mechanics</span>
+                <div class="card-fsrs-stats">
+                  <span class="stat-chip">Interval: 3d</span>
+                  <span class="stat-chip">Stability: 4.8</span>
+                  <span class="stat-chip">Difficulty: 3.2</span>
+                </div>
+              </div>
+
+              <!-- Mathematical LaTeX Formula Extraction -->
+              <div class="mockup-formula-box" title="Click rating below to cycle demo cards">
+                $$\hat{H}\Psi = E\Psi$$
+              </div>
+
+              <p class="mockup-explanation">
+                <strong>Time-Independent Schrödinger Equation:</strong> Relates the Hamiltonian operator acting on the wave function \(\Psi\) to the stationary energy eigenvalues \(E\).
+              </p>
+
+              <!-- FSRS Rating Buttons -->
+              <div class="mockup-rating-bar">
+                <button class="rating-btn rating-again" type="button">
+                  Again <span class="rating-interval">10m</span>
+                </button>
+                <button class="rating-btn rating-hard" type="button">
+                  Hard <span class="rating-interval">1d</span>
+                </button>
+                <button class="rating-btn rating-good" type="button">
+                  Good <span class="rating-interval">3d</span>
+                </button>
+                <button class="rating-btn rating-easy" type="button">
+                  Easy <span class="rating-interval">7d</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Core Features Grid -->
+    <section class="section" id="features">
+      <div class="container">
+        
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">Precision Engineering</span>
+          <h2 class="section-title">Built for Complex STEM & Heavy Reading Loads</h2>
+          <p class="section-subtitle">
+            Most study apps are glorified flashcard digitalizers. Kortex is a full-stack cognitive retention system designed to replace fragmented study tools.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          
+          <!-- Feature 1 -->
+          <div class="feature-card reveal-on-scroll delay-1">
+            <div class="feature-icon-wrapper icon-blue">⚡</div>
+            <h3 class="feature-title">Sub-3-Second AI Streaming</h3>
+            <p class="feature-desc">
+              Drop any 300-page lecture slide deck or syllabus. Our edge-streaming pipeline starts serving your first review-ready flashcard in under 3 seconds.
+            </p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="feature-card reveal-on-scroll delay-2">
+            <div class="feature-icon-wrapper icon-cyan">∑</div>
+            <h3 class="feature-title">Precision STEM & LaTeX OCR</h3>
+            <p class="feature-desc">
+              No broken square roots or garbled Greek symbols. Multimodal OCR extracts complex multi-line calculus, chemical bonds, and proofs with zero syntax loss.
+            </p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="feature-card reveal-on-scroll delay-3">
+            <div class="feature-icon-wrapper icon-purple">🧠</div>
+            <h3 class="feature-title">FSRS v4 Memory Mathematics</h3>
+            <p class="feature-desc">
+              Powered by the cutting-edge Free Spaced Repetition Scheduler with 17-parameter weights. Outperforms legacy SM-2 by optimizing retention at exactly 90%.
+            </p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="feature-card reveal-on-scroll delay-1">
+            <div class="feature-icon-wrapper icon-emerald">💬</div>
+            <h3 class="feature-title">Syllabot Socratic AI Tutor</h3>
+            <p class="feature-desc">
+              Stuck on a concept? Syllabot provides guided, step-by-step Socratic hints rooted strictly in your course materials without spoiling the answer.
+            </p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="feature-card reveal-on-scroll delay-2">
+            <div class="feature-icon-wrapper icon-blue">📶</div>
+            <h3 class="feature-title">Zero-Latency Local-First Sync</h3>
+            <p class="feature-desc">
+              Study anywhere on the subway or in basement study rooms. Local SQLite storage delivers zero-latency card flips with background Supabase auto-sync.
+            </p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="feature-card reveal-on-scroll delay-3">
+            <div class="feature-icon-wrapper icon-purple">📅</div>
+            <h3 class="feature-title">Cram Workload & Exam Countdown</h3>
+            <p class="feature-desc">
+              Input your finals date and let Kortex balance your daily card quotas, automatically prioritizing high-decay memories to guarantee exam readiness.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Comparison Matrix: Legacy vs Kortex -->
+    <section class="section" id="comparison">
+      <div class="container">
+        
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">The Paradigm Shift</span>
+          <h2 class="section-title">Why Legacy Study Tools Fall Short</h2>
+          <p class="section-subtitle">
+            See how Kortex eliminates hours of manual flashcard creation and unstructured AI hallucination.
+          </p>
+        </div>
+
+        <div class="comparison-wrapper reveal-on-scroll delay-1">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Capability</th>
+                <th>Manual Quizlet</th>
+                <th>Raw ChatGPT</th>
+                <th class="col-highlight">Kortex AI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PDF Ingestion Speed</td>
+                <td><span class="cross-red">✗ Hours of typing</span></td>
+                <td><span class="cross-red">✗ Token truncation</span></td>
+                <td class="col-highlight"><span class="check-green">✓ &lt; 3 Seconds</span></td>
+              </tr>
+              <tr>
+                <td>STEM LaTeX Accuracy</td>
+                <td><span class="cross-red">✗ Broken symbols</span></td>
+                <td><span class="cross-red">✗ Inconsistent</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Exact LaTeX Precision</span></td>
+              </tr>
+              <tr>
+                <td>Spaced Repetition Algorithm</td>
+                <td><span class="cross-red">✗ Static reviews</span></td>
+                <td><span class="cross-red">✗ None</span></td>
+                <td class="col-highlight"><span class="check-green">✓ FSRS v4 (17 Weights)</span></td>
+              </tr>
+              <tr>
+                <td>Offline Capability</td>
+                <td><span class="cross-red">✗ Partial</span></td>
+                <td><span class="cross-red">✗ Requires Internet</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Local-First SQLite</span></td>
+              </tr>
+              <tr>
+                <td>Course Material Grounding</td>
+                <td><span class="cross-red">✗ None</span></td>
+                <td><span class="cross-red">✗ Hallucinates</span></td>
+                <td class="col-highlight"><span class="check-green">✓ 100% Vector RAG Grounded</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Founder's Note Section -->
+    <section class="section" id="founder">
+      <div class="container">
+        <div class="founder-card reveal-on-scroll">
+          <div class="founder-quote-icon">“</div>
+          <p class="founder-text">
+            “We built Kortex because every student has experienced the ‘cramming illusion’—spending 40 hours highlighting notes before finals, only to forget 80% of it three days later. 
+            By uniting instant multimodal OCR with the mathematical rigor of FSRS scheduling, we’ve created an active recall engine that respects your cognitive bandwidth and gives you your life back.”
+          </p>
+          <div class="founder-profile">
+            <div class="founder-avatar">KX</div>
+            <div>
+              <div class="founder-name">The Kortex Engineering Team</div>
+              <div class="founder-title">Engineered for Academic Excellence</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frequently Asked Questions -->
+    <section class="section" id="faq">
+      <div class="container">
+        
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">Got Questions?</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-grid reveal-on-scroll delay-1">
+          
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>When will the Kortex Private Beta launch?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Private beta invites are rolling out in weekly cohorts starting this semester. Waitlist members receive first-access invitation codes directly to their email.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>What document formats are supported for instant ingestion?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Kortex natively parses PDF lecture decks, textbook chapters, PowerPoint slides, scanned handwritten notes via mobile camera OCR, and syllabus outlines.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>What makes FSRS better than Anki's SM-2 algorithm?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              FSRS (Free Spaced Repetition Scheduler) uses a 17-parameter non-linear forgetting curve model that adapts to your unique difficulty and retrievability patterns, reducing unnecessary reviews by up to 30% while maintaining a 90% target retention rate.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>Can I export my decks to Anki or Notion?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Yes. Kortex offers one-tap export to Anki (.apkg), Notion CSV format, and printable study summary PDFs.
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Final Call to Action -->
+    <section class="final-cta-section">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <h2 class="section-title">Be Among the First to Master Kortex</h2>
+          <p class="section-subtitle">
+            Secure your VIP private beta spot today and experience the future of cognitive learning.
+          </p>
+        </div>
+
+        <div class="waitlist-card reveal-on-scroll delay-1">
+          <form class="waitlist-form" action="#" method="POST">
+            <input 
+              type="email" 
+              class="waitlist-input" 
+              placeholder="Enter your email to reserve your spot..." 
+              required
+              aria-label="Email address for beta waitlist"
+            >
+            <button type="submit" class="waitlist-button">
+              Reserve My Spot →
+            </button>
+          </form>
+          <div class="waitlist-feedback" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="brand-logo">
+        <img src="assets/logo.svg" alt="Kortex Logo" width="28" height="28">
+        <span class="brand-name" style="font-size: 1rem;">KORTEX</span>
+      </div>
+
+      <div class="footer-copyright">
+        © 2026 Kortex Inc. All rights reserved. Engine: Syllabot AI.
+      </div>
+
+      <div class="footer-legal-links">
+        <a href="https://kortex.app/privacy" target="_blank" rel="noopener">Privacy Policy</a>
+        <a href="https://kortex.app/terms" target="_blank" rel="noopener">Terms of Service</a>
+        <a href="mailto:support@kortex.app">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/animations.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
