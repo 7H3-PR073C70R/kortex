@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,17 +14,40 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { deck_id, document_id, count = 10 } = await req.json();
+    const { deck_id, document_id, count = 10, course_code } = await req.json();
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+        Deno.env.get("SUPABASE_ANON_KEY") ??
+        "",
       {
         global: {
           headers: { Authorization: req.headers.get("Authorization")! },
         },
       }
     );
+
+    const targetId = deck_id ?? document_id ?? "default";
+    const cachePrompt = `quiz:${targetId}:${count}`;
+
+    // 1. Check Semantic Cache
+    const cacheResult = await SemanticCacheProvider.getCachedResponse(
+      supabaseClient,
+      cachePrompt,
+      { courseCode: course_code }
+    );
+
+    if (cacheResult.hit && cacheResult.data) {
+      return new Response(JSON.stringify(cacheResult.data), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Cache": "HIT",
+        },
+        status: 200,
+      });
+    }
 
     let deckTitle = "Practice Quiz";
     let cardsText = "";
@@ -43,7 +67,9 @@ Deno.serve(async (req: Request) => {
         .limit(20);
 
       if (cards && cards.length > 0) {
-        cardsText = cards.map((c) => `Q: ${c.front}\nA: ${c.back}`).join("\n\n");
+        cardsText = cards
+          .map((c) => `Q: ${c.front}\nA: ${c.back}`)
+          .join("\n\n");
       }
     } else if (document_id) {
       const { data: chunks } = await supabaseClient
@@ -57,66 +83,75 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Return structured generated questions
     const mockQuestions = [
       {
         id: "q-ai-1",
-        prompt: "Which parameter directly dictates the thermodynamic spontaneity of a closed reaction system?",
+        prompt:
+          "Which parameter directly dictates the thermodynamic spontaneity of a closed reaction system?",
         type: "multipleChoice",
         options: [
           "\\Delta G (Gibbs Free Energy)",
           "\\Delta H (Enthalpy)",
           "\\Delta S (Entropy)",
-          "E_a (Activation Energy)"
+          "E_a (Activation Energy)",
         ],
         correct_answer: "\\Delta G (Gibbs Free Energy)",
-        explanation: "A process is spontaneous at constant temperature and pressure if and only if \\Delta G < 0.",
+        explanation:
+          "A process is spontaneous at constant temperature and pressure if and only if \\Delta G < 0.",
         sub_topic: "Thermodynamics",
-        latex_formula: "\\Delta G = \\Delta H - T\\Delta S"
+        latex_formula: "\\Delta G = \\Delta H - T\\Delta S",
       },
       {
         id: "q-ai-2",
-        prompt: "What is the electric field inside a uniformly charged conducting sphere in electrostatic equilibrium?",
+        prompt:
+          "What is the electric field inside a uniformly charged conducting sphere in electrostatic equilibrium?",
         type: "multipleChoice",
-        options: [
-          "0",
-          "\\frac{kQ}{r^2}",
-          "\\frac{kQ}{r}",
-          "\\infty"
-        ],
+        options: ["0", "\\frac{kQ}{r^2}", "\\frac{kQ}{r}", "\\infty"],
         correct_answer: "0",
-        explanation: "By Gauss's law, electric charges redistribute exclusively onto the outer surface, leaving E = 0 inside the conductor.",
+        explanation:
+          "By Gauss's law, electric charges redistribute exclusively onto the outer surface, leaving E = 0 inside the conductor.",
         sub_topic: "Electromagnetism",
-        latex_formula: "\\oint \\vec{E} \\cdot d\\vec{A} = \\frac{Q_{enc}}{\\varepsilon_0} = 0"
+        latex_formula:
+          "\\oint \\vec{E} \\cdot d\\vec{A} = \\frac{Q_{enc}}{\\varepsilon_0} = 0",
       },
       {
         id: "q-ai-3",
-        prompt: "True or False: Isothermal expansion of an ideal gas results in zero change in internal energy (\\Delta U = 0).",
+        prompt:
+          "True or False: Isothermal expansion of an ideal gas results in zero change in internal energy (\\Delta U = 0).",
         type: "trueFalse",
         options: ["True", "False"],
         correct_answer: "True",
-        explanation: "Internal energy of an ideal gas depends solely on temperature: U = nC_v T. Since \\Delta T = 0, \\Delta U = 0.",
-        sub_topic: "Thermodynamic Cycles"
-      }
+        explanation:
+          "Internal energy of an ideal gas depends solely on temperature: U = nC_v T. Since \\Delta T = 0, \\Delta U = 0.",
+        sub_topic: "Thermodynamic Cycles",
+      },
     ];
 
-    return new Response(
-      JSON.stringify({
-        quiz_title: deckTitle,
-        questions: mockQuestions.slice(0, count)
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+    const payload = {
+      quiz_title: deckTitle,
+      questions: mockQuestions.slice(0, count),
+    };
+
+    // Cache the newly generated quiz in semantic cache
+    await SemanticCacheProvider.setCachedResponse(
+      supabaseClient,
+      cachePrompt,
+      payload,
+      { courseCode: course_code }
     );
+
+    return new Response(JSON.stringify(payload), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "X-Cache": "MISS",
+      },
+      status: 200,
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
 });

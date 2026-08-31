@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface RequestPayload {
@@ -11,6 +13,7 @@ interface RequestPayload {
   sessionId?: string;
   socraticMode?: "stepByStep" | "directAnswer" | "examSim" | "deepResearch";
   contextHistory?: Array<{ sender: string; text: string }>;
+  courseCode?: string;
 }
 
 serve(async (req) => {
@@ -28,11 +31,19 @@ serve(async (req) => {
     let userId: string | null = null;
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
       userId = user?.id ?? null;
     }
 
-    const { prompt, sessionId, socraticMode = "stepByStep", contextHistory = [] }: RequestPayload = await req.json();
+    const {
+      prompt,
+      sessionId,
+      socraticMode = "stepByStep",
+      contextHistory = [],
+      courseCode,
+    }: RequestPayload = await req.json();
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: "Prompt is required" }), {
@@ -41,39 +52,45 @@ serve(async (req) => {
       });
     }
 
-    // Determine Socratic system prompt
-    let systemInstruction = "You are Syllabot AI, an advanced STEM academic tutor for Kortex.";
-    switch (socraticMode) {
-      case "stepByStep":
-        systemInstruction += " Guide the student methodically step-by-step. Use LaTeX for math expressions like $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$. Ask guided questions to verify understanding.";
-        break;
-      case "directAnswer":
-        systemInstruction += " Provide comprehensive, clear, and high-yield direct answers with formula derivations in LaTeX and concise executive summaries.";
-        break;
-      case "examSim":
-        systemInstruction += " Simulate a high-stakes university/board examination environment. Grade responses with rubric criteria and highlight critical conceptual pitfalls.";
-        break;
-      case "deepResearch":
-        systemInstruction += " Offer deep rigorous theoretical breakdown, proofs, cross-domain connections, and reference academic literature.";
-        break;
-    }
+    // 1. Check Semantic Cache
+    const cachePrompt = `syllabot:${socraticMode}:${prompt.trim().toLowerCase()}`;
+    const cacheResult = await SemanticCacheProvider.getCachedResponse(
+      supabase,
+      cachePrompt,
+      { courseCode }
+    );
 
-    // Synthesize structured streaming tokens
+    const isCacheHit = cacheResult.hit && cacheResult.data?.tokens;
+    const cachedTokens = isCacheHit ? (cacheResult.data.tokens as string[]) : null;
+
+    // 2. Synthesize structured streaming tokens
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
 
         const sendEvent = (event: string, data: any) => {
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+          );
         };
 
-        sendEvent("start", { status: "generating", socraticMode });
+        sendEvent("start", {
+          status: "generating",
+          socraticMode,
+          cacheHit: isCacheHit,
+        });
 
-        // Synthesize response based on prompt context
         let fullResponse = "";
         let tokens: string[] = [];
 
-        if (prompt.toLowerCase().includes("euler") || prompt.toLowerCase().includes("lagrange") || prompt.toLowerCase().includes("pde") || prompt.toLowerCase().includes("derive")) {
+        if (isCacheHit) {
+          tokens = cachedTokens!;
+        } else if (
+          prompt.toLowerCase().includes("euler") ||
+          prompt.toLowerCase().includes("lagrange") ||
+          prompt.toLowerCase().includes("pde") ||
+          prompt.toLowerCase().includes("derive")
+        ) {
           tokens = [
             "Let us derive the Euler-Lagrange equation from Hamilton's Principle of Stationary Action.",
             "\n\n**1. Action Integral:**",
@@ -89,7 +106,7 @@ serve(async (req) => {
             "\n\n**4. Final Socratic Result:**",
             "\nSince $$\\delta q(t)$$ is arbitrary within $$(t_1, t_2)$$, the integrand must vanish identically:",
             "\n$$\\frac{\\partial L}{\\partial q} - \\frac{d}{dt}\\left( \\frac{\\partial L}{\\partial \\dot{q}} \\right) = 0$$",
-            "\n\nWould you like to apply this equation to a harmonic oscillator or a spherical pendulum next?"
+            "\n\nWould you like to apply this equation to a harmonic oscillator or a spherical pendulum next?",
           ];
         } else {
           tokens = [
@@ -102,14 +119,29 @@ serve(async (req) => {
             "\n1. Identify conserved quantities and boundary conditions.",
             "\n2. Apply continuous symmetry transformations via Noether's theorem.",
             "\n3. Verify asymptotic limits to confirm physical dimensional consistency.",
-            "\n\nHow would you like to proceed with the next derivation?"
+            "\n\nHow would you like to proceed with the next derivation?",
           ];
         }
 
+        const tokenDelay = isCacheHit ? 12 : 35; // Super fast stream for cache hits
         for (const token of tokens) {
           fullResponse += token;
           sendEvent("token", { text: token });
-          await new Promise((r) => setTimeout(r, 45));
+          await new Promise((r) => setTimeout(r, tokenDelay));
+        }
+
+        // Cache the newly synthesized response if cache miss
+        if (!isCacheHit) {
+          await SemanticCacheProvider.setCachedResponse(
+            supabase,
+            cachePrompt,
+            {
+              fullText: fullResponse,
+              tokens,
+              socraticMode,
+            },
+            { courseCode }
+          );
         }
 
         // Persist message to database if userId & sessionId exist
@@ -136,7 +168,11 @@ serve(async (req) => {
           }
         }
 
-        sendEvent("done", { fullText: fullResponse, socraticMode });
+        sendEvent("done", {
+          fullText: fullResponse,
+          socraticMode,
+          cacheHit: isCacheHit,
+        });
         controller.close();
       },
     });
@@ -146,13 +182,16 @@ serve(async (req) => {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
       },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message ?? "Server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: err.message ?? "Server error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });

@@ -2426,5 +2426,79 @@
     "exportSuccess": "Deck exported successfully!",
     "@exportSuccess": {
         "description": "Success message when file is ready for share/save"
+    },
+    "studyActivityHeatmapTitle": "Study Activity & Consistency",
+    "@studyActivityHeatmapTitle": {
+        "description": "Title for annual study activity heatmap"
+    },
+    "heatmapCardReviewsCount": "{count, plural, =0{No reviews} =1{1 card reviewed} other{{count} cards reviewed}} on {date}",
+    "@heatmapCardReviewsCount": {
+        "description": "Tooltip showing review count for a specific date in heatmap",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "24"
+            },
+            "date": {
+                "type": "String",
+                "example": "Aug 31, 2026"
+            }
+        }
+    },
+    "streakFreezeAvailable": "Streak Freeze Available",
+    "@streakFreezeAvailable": {
+        "description": "Badge showing streak freeze active status"
+    },
+    "streakFreezeActiveDesc": "Your daily streak is protected against 1 missed day.",
+    "@streakFreezeActiveDesc": {
+        "description": "Description of active streak freeze protection"
+    },
+    "buyStreakFreezeButton": "Equip Streak Shield (200 XP)",
+    "@buyStreakFreezeButton": {
+        "description": "Button to purchase streak freeze using earned XP"
+    },
+    "streakFreezeSuccess": "Streak Shield equipped! 1 missed day is now protected.",
+    "@streakFreezeSuccess": {
+        "description": "Success notification on equipping streak freeze"
+    },
+    "insufficientXpForFreeze": "You need 200 XP to equip a Streak Shield.",
+    "@insufficientXpForFreeze": {
+        "description": "Error when user does not have enough XP for freeze"
+    },
+    "achievementsGridTitle": "Earned Badges & Milestones",
+    "@achievementsGridTitle": {
+        "description": "Title for achievements badge grid"
+    },
+    "badgeNightOwlTitle": "Night Owl",
+    "@badgeNightOwlTitle": {
+        "description": "Badge title for late night study sessions"
+    },
+    "badgeNightOwlDesc": "Completed 5 review sessions between 11 PM and 4 AM.",
+    "@badgeNightOwlDesc": {
+        "description": "Badge description for Night Owl"
+    },
+    "badgeCenturyClubTitle": "Century Club",
+    "@badgeCenturyClubTitle": {
+        "description": "Badge title for 100 card review day"
+    },
+    "badgeCenturyClubDesc": "Reviewed 100+ cards in a single study day.",
+    "@badgeCenturyClubDesc": {
+        "description": "Badge description for Century Club"
+    },
+    "badgeStreakMasterTitle": "Streak Master",
+    "@badgeStreakMasterTitle": {
+        "description": "Badge title for 14 day study streak"
+    },
+    "badgeStreakMasterDesc": "Maintained an unbroken 14-day study streak.",
+    "@badgeStreakMasterDesc": {
+        "description": "Badge description for Streak Master"
+    },
+    "badgeStemAlchemistTitle": "STEM Alchemist",
+    "@badgeStemAlchemistTitle": {
+        "description": "Badge title for solving 50 LaTeX formula cards"
+    },
+    "badgeStemAlchemistDesc": "Mastered 50 complex mathematical or science cards.",
+    "@badgeStemAlchemistDesc": {
+        "description": "Badge description for STEM Alchemist"
     }
 }

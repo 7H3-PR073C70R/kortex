@@ -1705,4 +1705,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportSuccess => 'Deck exported successfully!';
+
+  @override
+  String get studyActivityHeatmapTitle => 'Study Activity & Consistency';
+
+  @override
+  String heatmapCardReviewsCount(int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards reviewed',
+      one: '1 card reviewed',
+      zero: 'No reviews',
+    );
+    return '$_temp0 on $date';
+  }
+
+  @override
+  String get streakFreezeAvailable => 'Streak Freeze Available';
+
+  @override
+  String get streakFreezeActiveDesc =>
+      'Your daily streak is protected against 1 missed day.';
+
+  @override
+  String get buyStreakFreezeButton => 'Equip Streak Shield (200 XP)';
+
+  @override
+  String get streakFreezeSuccess =>
+      'Streak Shield equipped! 1 missed day is now protected.';
+
+  @override
+  String get insufficientXpForFreeze =>
+      'You need 200 XP to equip a Streak Shield.';
+
+  @override
+  String get achievementsGridTitle => 'Earned Badges & Milestones';
+
+  @override
+  String get badgeNightOwlTitle => 'Night Owl';
+
+  @override
+  String get badgeNightOwlDesc =>
+      'Completed 5 review sessions between 11 PM and 4 AM.';
+
+  @override
+  String get badgeCenturyClubTitle => 'Century Club';
+
+  @override
+  String get badgeCenturyClubDesc =>
+      'Reviewed 100+ cards in a single study day.';
+
+  @override
+  String get badgeStreakMasterTitle => 'Streak Master';
+
+  @override
+  String get badgeStreakMasterDesc =>
+      'Maintained an unbroken 14-day study streak.';
+
+  @override
+  String get badgeStemAlchemistTitle => 'STEM Alchemist';
+
+  @override
+  String get badgeStemAlchemistDesc =>
+      'Mastered 50 complex mathematical or science cards.';
 }

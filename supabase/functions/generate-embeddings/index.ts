@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface EmbedRequest {
@@ -11,6 +13,7 @@ interface EmbedRequest {
   rawText: string;
   metadata?: Record<string, unknown>;
   userId?: string;
+  courseCode?: string;
 }
 
 function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
@@ -38,10 +41,10 @@ function generateDeterministicVector(text: string, dim = 1536): number[] {
   for (let i = 0; i < text.length; i++) {
     const charCode = text.charCodeAt(i);
     const index = (charCode * (i + 1)) % dim;
-    vector[index] = (vector[index] + (charCode / 255.0)) / 2.0;
+    vector[index] = (vector[index] + charCode / 255.0) / 2.0;
   }
-  // Normalize
-  const magnitude = Math.sqrt(vector.reduce((acc, val) => acc + val * val, 0)) || 1;
+  const magnitude =
+    Math.sqrt(vector.reduce((acc, val) => acc + val * val, 0)) || 1;
   return vector.map((v) => v / magnitude);
 }
 
@@ -60,18 +63,49 @@ serve(async (req) => {
     let effectiveUserId: string | null = null;
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
       effectiveUserId = user?.id ?? null;
     }
 
     const payload: EmbedRequest = await req.json();
-    const { documentId, rawText, metadata = {} } = payload;
+    const { documentId, rawText, metadata = {}, courseCode } = payload;
     const userId = payload.userId || effectiveUserId;
 
     if (!documentId || !rawText) {
       return new Response(
         JSON.stringify({ error: "documentId and rawText are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 1. Check Semantic Cache for pre-computed document embeddings
+    const cacheResult = await SemanticCacheProvider.getCachedResponse(
+      supabase,
+      `doc_embeddings:${documentId}:${rawText.length}`,
+      { courseCode }
+    );
+
+    if (cacheResult.hit && cacheResult.data?.records) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          document_id: documentId,
+          chunks_created: cacheResult.data.records.length,
+          cache_hit: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-Cache": "HIT",
+          },
+        }
       );
     }
 
@@ -105,21 +139,36 @@ serve(async (req) => {
       }
     }
 
+    // Cache precomputed embedding records
+    await SemanticCacheProvider.setCachedResponse(
+      supabase,
+      `doc_embeddings:${documentId}:${rawText.length}`,
+      { records: recordsToInsert },
+      { courseCode }
+    );
+
     return new Response(
       JSON.stringify({
         success: true,
         document_id: documentId,
         chunks_created: recordsToInsert.length,
+        cache_hit: false,
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "X-Cache": "MISS",
+        },
       }
     );
   } catch (error) {
     console.error("Error in generate-embeddings:", error);
     return new Response(
-      JSON.stringify({ error: (error as Error).message || "Internal Server Error" }),
+      JSON.stringify({
+        error: (error as Error).message || "Internal Server Error",
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

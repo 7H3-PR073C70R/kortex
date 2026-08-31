@@ -3025,6 +3025,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deck exported successfully!'**
   String get exportSuccess;
+
+  /// Title for annual study activity heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'Study Activity & Consistency'**
+  String get studyActivityHeatmapTitle;
+
+  /// Tooltip showing review count for a specific date in heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No reviews} =1{1 card reviewed} other{{count} cards reviewed}} on {date}'**
+  String heatmapCardReviewsCount(int count, String date);
+
+  /// Badge showing streak freeze active status
+  ///
+  /// In en, this message translates to:
+  /// **'Streak Freeze Available'**
+  String get streakFreezeAvailable;
+
+  /// Description of active streak freeze protection
+  ///
+  /// In en, this message translates to:
+  /// **'Your daily streak is protected against 1 missed day.'**
+  String get streakFreezeActiveDesc;
+
+  /// Button to purchase streak freeze using earned XP
+  ///
+  /// In en, this message translates to:
+  /// **'Equip Streak Shield (200 XP)'**
+  String get buyStreakFreezeButton;
+
+  /// Success notification on equipping streak freeze
+  ///
+  /// In en, this message translates to:
+  /// **'Streak Shield equipped! 1 missed day is now protected.'**
+  String get streakFreezeSuccess;
+
+  /// Error when user does not have enough XP for freeze
+  ///
+  /// In en, this message translates to:
+  /// **'You need 200 XP to equip a Streak Shield.'**
+  String get insufficientXpForFreeze;
+
+  /// Title for achievements badge grid
+  ///
+  /// In en, this message translates to:
+  /// **'Earned Badges & Milestones'**
+  String get achievementsGridTitle;
+
+  /// Badge title for late night study sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Night Owl'**
+  String get badgeNightOwlTitle;
+
+  /// Badge description for Night Owl
+  ///
+  /// In en, this message translates to:
+  /// **'Completed 5 review sessions between 11 PM and 4 AM.'**
+  String get badgeNightOwlDesc;
+
+  /// Badge title for 100 card review day
+  ///
+  /// In en, this message translates to:
+  /// **'Century Club'**
+  String get badgeCenturyClubTitle;
+
+  /// Badge description for Century Club
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed 100+ cards in a single study day.'**
+  String get badgeCenturyClubDesc;
+
+  /// Badge title for 14 day study streak
+  ///
+  /// In en, this message translates to:
+  /// **'Streak Master'**
+  String get badgeStreakMasterTitle;
+
+  /// Badge description for Streak Master
+  ///
+  /// In en, this message translates to:
+  /// **'Maintained an unbroken 14-day study streak.'**
+  String get badgeStreakMasterDesc;
+
+  /// Badge title for solving 50 LaTeX formula cards
+  ///
+  /// In en, this message translates to:
+  /// **'STEM Alchemist'**
+  String get badgeStemAlchemistTitle;
+
+  /// Badge description for STEM Alchemist
+  ///
+  /// In en, this message translates to:
+  /// **'Mastered 50 complex mathematical or science cards.'**
+  String get badgeStemAlchemistDesc;
 }
 
 class _AppLocalizationsDelegate
