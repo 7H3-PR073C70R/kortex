@@ -21,4 +21,10 @@ class AppApiEndpoint {
   static const String dashboardFeed = '/api/v1/dashboard/feed';
   static const String dashboardReviewQueue = '/api/v1/dashboard/review-queue';
   static const String dashboardStartExam = '/api/v1/dashboard/start-exam';
+
+  // Decks & Flashcards Endpoints
+  static const String decks = '/api/v1/decks';
+  static const String deckCards = '/api/v1/decks/{id}/cards';
+  static const String reviewCard = '/api/v1/decks/cards/{cardId}/review';
+  static const String sessionResults = '/api/v1/decks/{id}/session-results';
 }

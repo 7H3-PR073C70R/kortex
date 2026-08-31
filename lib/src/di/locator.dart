@@ -24,6 +24,17 @@ import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_fee
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/quick_start_mock_exam_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
+import 'package:kortex/src/features/decks/data/repositories/decks_repository_impl.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/repositories/calibration_repository_impl.dart';

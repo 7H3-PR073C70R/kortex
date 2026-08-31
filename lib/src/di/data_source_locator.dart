@@ -24,5 +24,10 @@ void _initDataSource() {
       () => DashboardRemoteDataSourceImpl(
         locator<DashboardApiClient>(),
       ),
+    )
+    ..registerLazySingleton<DecksRemoteDataSource>(
+      () => DecksRemoteDataSourceImpl(
+        locator<DecksApiClient>(),
+      ),
     );
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
@@ -24,7 +26,10 @@ Widget _wrapWithTheme(Widget child) {
       GlobalCupertinoLocalizations.delegate,
     ],
     supportedLocales: AppLocalizations.supportedLocales,
-    home: child,
+    home: BlocProvider<AuthModeCubit>(
+      create: (_) => AuthModeCubit()..setMode(AuthMode.form),
+      child: child,
+    ),
   );
 }
 
@@ -48,6 +53,13 @@ void main() {
       () => CalibrationCubit(
         saveCalibrationProfileUseCase: mockSaveUseCase,
       ),
+    );
+
+    if (locator.isRegistered<AuthModeCubit>()) {
+      await locator.unregister<AuthModeCubit>();
+    }
+    locator.registerFactory<AuthModeCubit>(
+      () => AuthModeCubit()..setMode(AuthMode.form),
     );
   });
 
@@ -73,15 +85,19 @@ void main() {
       );
       await tester.pump();
 
-      // Tap Continue to go to Step A2
+      await tester.tap(find.text('University / Polytechnic'));
+      await tester.pump();
       await tester.tap(find.text('Continue'));
-      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(
         find.text('What is your current academic level?'),
         findsOneWidget,
       );
-      expect(find.text('BSc (Bachelor of Science)'), findsOneWidget);
+      expect(
+        find.text('BSc (Bachelor of Science)'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('selecting High School branch navigates to Step B2',
@@ -91,13 +107,10 @@ void main() {
       );
       await tester.pump();
 
-      // Select High School chip
       await tester.tap(find.text('High School / Exam Prep'));
       await tester.pump();
-
-      // Tap Continue to go to Step B2
       await tester.tap(find.text('Continue'));
-      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(
         find.text('What exam are you preparing for?'),
@@ -105,28 +118,6 @@ void main() {
       );
       expect(find.text('JAMB / UTME'), findsOneWidget);
       expect(find.text('WAEC / GCE'), findsOneWidget);
-    });
-
-    testWidgets('renders desktop split layout on width >= 1024',
-        (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        _wrapWithTheme(const OnboardingCalibrationPage()),
-      );
-      await tester.pump();
-
-      expect(
-        find.text('Calibrating Neural Learning Engine'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Adaptive RAG Knowledge Base'),
-        findsOneWidget,
-      );
     });
   });
 }

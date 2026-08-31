@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/get_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_content/domain/entities/recommended_content_item.dart';
@@ -85,6 +86,13 @@ void main() {
         getRecommendedContentUseCase: mockGetContentUseCase,
         getCalibrationProfileUseCase: mockGetProfileUseCase,
       ),
+    );
+
+    if (locator.isRegistered<AuthModeCubit>()) {
+      await locator.unregister<AuthModeCubit>();
+    }
+    locator.registerFactory<AuthModeCubit>(
+      () => AuthModeCubit()..setMode(AuthMode.form),
     );
   });
 

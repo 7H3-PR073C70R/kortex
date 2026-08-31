@@ -117,7 +117,7 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [loading, authenticated] when register succeeds',
+      'emits [loading, needsEmailVerification] when register succeeds',
       build: () {
         when(() => mockRegisterUseCase(any()))
             .thenAnswer((_) async => const Right(tUser));
@@ -132,7 +132,11 @@ void main() {
       ),
       expect: () => [
         const AuthState(status: AuthStatus.loading),
-        const AuthState(status: AuthStatus.authenticated, user: tUser),
+        const AuthState(
+          status: AuthStatus.needsEmailVerification,
+          user: tUser,
+          needsEmailVerification: true,
+        ),
       ],
     );
 

@@ -51,5 +51,29 @@ void _initUseCaseLocator() {
         getDashboardFeedUseCase: locator<GetDashboardFeedUseCase>(),
         quickStartMockExamUseCase: locator<QuickStartMockExamUseCase>(),
       ),
+    )
+    ..registerLazySingleton<GetUserDecksUseCase>(
+      () => GetUserDecksUseCase(locator<DecksRepository>()),
+    )
+    ..registerLazySingleton<GetDeckCardsUseCase>(
+      () => GetDeckCardsUseCase(locator<DecksRepository>()),
+    )
+    ..registerLazySingleton<ProcessCardReviewUseCase>(
+      () => ProcessCardReviewUseCase(locator<DecksRepository>()),
+    )
+    ..registerLazySingleton<SaveSessionResultsUseCase>(
+      () => SaveSessionResultsUseCase(locator<DecksRepository>()),
+    )
+    ..registerFactory<DecksBloc>(
+      () => DecksBloc(
+        getUserDecksUseCase: locator<GetUserDecksUseCase>(),
+      ),
+    )
+    ..registerFactory<StudySessionCubit>(
+      () => StudySessionCubit(
+        getDeckCardsUseCase: locator<GetDeckCardsUseCase>(),
+        processCardReviewUseCase: locator<ProcessCardReviewUseCase>(),
+        saveSessionResultsUseCase: locator<SaveSessionResultsUseCase>(),
+      ),
     );
 }

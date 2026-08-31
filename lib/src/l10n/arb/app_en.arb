@@ -1464,5 +1464,193 @@
     "courseModuleVerifiedSubtitle": "Verified OCR · Step-by-Step AI Solutions",
     "@courseModuleVerifiedSubtitle": {
         "description": "Verified OCR description subtitle"
+    },
+    "decksTitle": "Study Decks",
+    "@decksTitle": {
+        "description": "Title for Decks page"
+    },
+    "decksSubtitle": "Active recall queues powered by SuperMemo-2",
+    "@decksSubtitle": {
+        "description": "Subtitle for Decks page"
+    },
+    "decksSearchHint": "Search decks or subjects...",
+    "@decksSearchHint": {
+        "description": "Search input hint for decks"
+    },
+    "decksDueBadge": "{count} Due",
+    "@decksDueBadge": {
+        "description": "Cards due badge",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "decksTotalCards": "{count, plural, =1{1 card} other{{count} cards}}",
+    "@decksTotalCards": {
+        "description": "Pluralized card count in a deck",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "20"
+            }
+        }
+    },
+    "decksEmptyStateTitle": "No Study Decks Yet",
+    "@decksEmptyStateTitle": {
+        "description": "Empty state title for decks"
+    },
+    "decksEmptyStateSubtitle": "Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.",
+    "@decksEmptyStateSubtitle": {
+        "description": "Empty state subtitle for decks"
+    },
+    "decksCreateDeckButton": "Create New Deck",
+    "@decksCreateDeckButton": {
+        "description": "Button to create a new deck"
+    },
+    "decksFilterAll": "All Decks",
+    "@decksFilterAll": {
+        "description": "Filter tab for all decks"
+    },
+    "decksFilterDue": "Due Today",
+    "@decksFilterDue": {
+        "description": "Filter tab for due decks"
+    },
+    "decksFilterMastered": "Mastered",
+    "@decksFilterMastered": {
+        "description": "Filter tab for mastered decks"
+    },
+    "decksStartSession": "Start Study Session",
+    "@decksStartSession": {
+        "description": "Button label to start studying a deck"
+    },
+    "decksMasteryPercent": "{percent}% mastery",
+    "@decksMasteryPercent": {
+        "description": "Deck mastery percentage label",
+        "placeholders": {
+            "percent": {
+                "type": "int",
+                "example": "85"
+            }
+        }
+    },
+    "studySessionTitle": "Active Recall",
+    "@studySessionTitle": {
+        "description": "App bar title during study session"
+    },
+    "studySessionCardIndex": "{current} / {total}",
+    "@studySessionCardIndex": {
+        "description": "Card index display during study session",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "studySessionTapToFlip": "Tap card or press Spacebar to reveal answer",
+    "@studySessionTapToFlip": {
+        "description": "Hint to flip card"
+    },
+    "studySessionSwipeHint": "Swipe left for Hard · Swipe right for Good",
+    "@studySessionSwipeHint": {
+        "description": "Swipe gesture hint"
+    },
+    "studySessionKeyboardShortcuts": "Space: Flip · 1: Again · 2: Hard · 3: Good · 4: Easy",
+    "@studySessionKeyboardShortcuts": {
+        "description": "Keyboard shortcuts guide"
+    },
+    "studySessionFrontBadge": "PROMPT / EQUATION",
+    "@studySessionFrontBadge": {
+        "description": "Front face badge"
+    },
+    "studySessionBackBadge": "EXPLANATION / DERIVATION",
+    "@studySessionBackBadge": {
+        "description": "Back face badge"
+    },
+    "studyRatingAgain": "Again",
+    "@studyRatingAgain": {
+        "description": "SM-2 Again button label"
+    },
+    "studyRatingAgainInterval": "< 10m",
+    "@studyRatingAgainInterval": {
+        "description": "SM-2 Again interval"
+    },
+    "studyRatingHard": "Hard",
+    "@studyRatingHard": {
+        "description": "SM-2 Hard button label"
+    },
+    "studyRatingHardInterval": "1d",
+    "@studyRatingHardInterval": {
+        "description": "SM-2 Hard interval"
+    },
+    "studyRatingGood": "Good",
+    "@studyRatingGood": {
+        "description": "SM-2 Good button label"
+    },
+    "studyRatingGoodInterval": "6d",
+    "@studyRatingGoodInterval": {
+        "description": "SM-2 Good interval"
+    },
+    "studyRatingEasy": "Easy",
+    "@studyRatingEasy": {
+        "description": "SM-2 Easy button label"
+    },
+    "studyRatingEasyInterval": "12d",
+    "@studyRatingEasyInterval": {
+        "description": "SM-2 Easy interval"
+    },
+    "studySessionTimer": "Session Time: {time}",
+    "@studySessionTimer": {
+        "description": "Timer label in study session",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "02:45"
+            }
+        }
+    },
+    "sessionSummaryTitle": "Session Complete! 🎉",
+    "@sessionSummaryTitle": {
+        "description": "Title on session summary page"
+    },
+    "sessionSummarySubtitle": "Your neural pathways have been reinforced. SM-2 intervals updated.",
+    "@sessionSummarySubtitle": {
+        "description": "Subtitle on session summary page"
+    },
+    "sessionSummaryCardsReviewed": "Cards Reviewed",
+    "@sessionSummaryCardsReviewed": {
+        "description": "Stat label for reviewed cards"
+    },
+    "sessionSummaryRetentionRate": "Retention Score",
+    "@sessionSummaryRetentionRate": {
+        "description": "Stat label for retention score"
+    },
+    "sessionSummaryTimeSpent": "Study Duration",
+    "@sessionSummaryTimeSpent": {
+        "description": "Stat label for study duration"
+    },
+    "sessionSummaryStreakBonus": "+{xp} XP Earned · Streak Kept!",
+    "@sessionSummaryStreakBonus": {
+        "description": "Streak bonus announcement",
+        "placeholders": {
+            "xp": {
+                "type": "int",
+                "example": "50"
+            }
+        }
+    },
+    "sessionSummaryReturnDashboard": "Return to Dashboard",
+    "@sessionSummaryReturnDashboard": {
+        "description": "Button to return to dashboard"
+    },
+    "sessionSummaryReviewAgain": "Review More Decks",
+    "@sessionSummaryReviewAgain": {
+        "description": "Button to review another deck"
     }
 }

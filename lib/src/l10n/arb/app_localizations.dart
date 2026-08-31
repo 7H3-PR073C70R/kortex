@@ -1861,6 +1861,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verified OCR · Step-by-Step AI Solutions'**
   String get courseModuleVerifiedSubtitle;
+
+  /// Title for Decks page
+  ///
+  /// In en, this message translates to:
+  /// **'Study Decks'**
+  String get decksTitle;
+
+  /// Subtitle for Decks page
+  ///
+  /// In en, this message translates to:
+  /// **'Active recall queues powered by SuperMemo-2'**
+  String get decksSubtitle;
+
+  /// Search input hint for decks
+  ///
+  /// In en, this message translates to:
+  /// **'Search decks or subjects...'**
+  String get decksSearchHint;
+
+  /// Cards due badge
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Due'**
+  String decksDueBadge(int count);
+
+  /// Pluralized card count in a deck
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 card} other{{count} cards}}'**
+  String decksTotalCards(int count);
+
+  /// Empty state title for decks
+  ///
+  /// In en, this message translates to:
+  /// **'No Study Decks Yet'**
+  String get decksEmptyStateTitle;
+
+  /// Empty state subtitle for decks
+  ///
+  /// In en, this message translates to:
+  /// **'Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.'**
+  String get decksEmptyStateSubtitle;
+
+  /// Button to create a new deck
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Deck'**
+  String get decksCreateDeckButton;
+
+  /// Filter tab for all decks
+  ///
+  /// In en, this message translates to:
+  /// **'All Decks'**
+  String get decksFilterAll;
+
+  /// Filter tab for due decks
+  ///
+  /// In en, this message translates to:
+  /// **'Due Today'**
+  String get decksFilterDue;
+
+  /// Filter tab for mastered decks
+  ///
+  /// In en, this message translates to:
+  /// **'Mastered'**
+  String get decksFilterMastered;
+
+  /// Button label to start studying a deck
+  ///
+  /// In en, this message translates to:
+  /// **'Start Study Session'**
+  String get decksStartSession;
+
+  /// Deck mastery percentage label
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% mastery'**
+  String decksMasteryPercent(int percent);
+
+  /// App bar title during study session
+  ///
+  /// In en, this message translates to:
+  /// **'Active Recall'**
+  String get studySessionTitle;
+
+  /// Card index display during study session
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}'**
+  String studySessionCardIndex(int current, int total);
+
+  /// Hint to flip card
+  ///
+  /// In en, this message translates to:
+  /// **'Tap card or press Spacebar to reveal answer'**
+  String get studySessionTapToFlip;
+
+  /// Swipe gesture hint
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe left for Hard · Swipe right for Good'**
+  String get studySessionSwipeHint;
+
+  /// Keyboard shortcuts guide
+  ///
+  /// In en, this message translates to:
+  /// **'Space: Flip · 1: Again · 2: Hard · 3: Good · 4: Easy'**
+  String get studySessionKeyboardShortcuts;
+
+  /// Front face badge
+  ///
+  /// In en, this message translates to:
+  /// **'PROMPT / EQUATION'**
+  String get studySessionFrontBadge;
+
+  /// Back face badge
+  ///
+  /// In en, this message translates to:
+  /// **'EXPLANATION / DERIVATION'**
+  String get studySessionBackBadge;
+
+  /// SM-2 Again button label
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get studyRatingAgain;
+
+  /// SM-2 Again interval
+  ///
+  /// In en, this message translates to:
+  /// **'< 10m'**
+  String get studyRatingAgainInterval;
+
+  /// SM-2 Hard button label
+  ///
+  /// In en, this message translates to:
+  /// **'Hard'**
+  String get studyRatingHard;
+
+  /// SM-2 Hard interval
+  ///
+  /// In en, this message translates to:
+  /// **'1d'**
+  String get studyRatingHardInterval;
+
+  /// SM-2 Good button label
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get studyRatingGood;
+
+  /// SM-2 Good interval
+  ///
+  /// In en, this message translates to:
+  /// **'6d'**
+  String get studyRatingGoodInterval;
+
+  /// SM-2 Easy button label
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get studyRatingEasy;
+
+  /// SM-2 Easy interval
+  ///
+  /// In en, this message translates to:
+  /// **'12d'**
+  String get studyRatingEasyInterval;
+
+  /// Timer label in study session
+  ///
+  /// In en, this message translates to:
+  /// **'Session Time: {time}'**
+  String studySessionTimer(String time);
+
+  /// Title on session summary page
+  ///
+  /// In en, this message translates to:
+  /// **'Session Complete! 🎉'**
+  String get sessionSummaryTitle;
+
+  /// Subtitle on session summary page
+  ///
+  /// In en, this message translates to:
+  /// **'Your neural pathways have been reinforced. SM-2 intervals updated.'**
+  String get sessionSummarySubtitle;
+
+  /// Stat label for reviewed cards
+  ///
+  /// In en, this message translates to:
+  /// **'Cards Reviewed'**
+  String get sessionSummaryCardsReviewed;
+
+  /// Stat label for retention score
+  ///
+  /// In en, this message translates to:
+  /// **'Retention Score'**
+  String get sessionSummaryRetentionRate;
+
+  /// Stat label for study duration
+  ///
+  /// In en, this message translates to:
+  /// **'Study Duration'**
+  String get sessionSummaryTimeSpent;
+
+  /// Streak bonus announcement
+  ///
+  /// In en, this message translates to:
+  /// **'+{xp} XP Earned · Streak Kept!'**
+  String sessionSummaryStreakBonus(int xp);
+
+  /// Button to return to dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Return to Dashboard'**
+  String get sessionSummaryReturnDashboard;
+
+  /// Button to review another deck
+  ///
+  /// In en, this message translates to:
+  /// **'Review More Decks'**
+  String get sessionSummaryReviewAgain;
 }
 
 class _AppLocalizationsDelegate

@@ -35,7 +35,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
-          unawaited(context.router.push(DeckDetailRoute(deckId: deck.id)));
+          unawaited(context.router.push(StudySessionRoute(deckId: deck.id)));
         },
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),

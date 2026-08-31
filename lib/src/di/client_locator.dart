@@ -7,5 +7,8 @@ void _initClients() {
     )
     ..registerLazySingleton<DashboardApiClient>(
       () => DashboardApiClient(locator<Dio>()),
+    )
+    ..registerLazySingleton<DecksApiClient>(
+      () => DecksApiClient(locator<Dio>()),
     );
 }

@@ -26,5 +26,10 @@ void _initRepositoryLocator() {
         remoteDataSource: locator<DashboardRemoteDataSource>(),
         calibrationRepository: locator<CalibrationRepository>(),
       ),
+    )
+    ..registerLazySingleton<DecksRepository>(
+      () => DecksRepositoryImpl(
+        locator<DecksRemoteDataSource>(),
+      ),
     );
 }

@@ -1022,4 +1022,138 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get courseModuleVerifiedSubtitle =>
       'Verified OCR · Step-by-Step AI Solutions';
+
+  @override
+  String get decksTitle => 'Study Decks';
+
+  @override
+  String get decksSubtitle => 'Active recall queues powered by SuperMemo-2';
+
+  @override
+  String get decksSearchHint => 'Search decks or subjects...';
+
+  @override
+  String decksDueBadge(int count) {
+    return '$count Due';
+  }
+
+  @override
+  String decksTotalCards(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards',
+      one: '1 card',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decksEmptyStateTitle => 'No Study Decks Yet';
+
+  @override
+  String get decksEmptyStateSubtitle =>
+      'Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.';
+
+  @override
+  String get decksCreateDeckButton => 'Create New Deck';
+
+  @override
+  String get decksFilterAll => 'All Decks';
+
+  @override
+  String get decksFilterDue => 'Due Today';
+
+  @override
+  String get decksFilterMastered => 'Mastered';
+
+  @override
+  String get decksStartSession => 'Start Study Session';
+
+  @override
+  String decksMasteryPercent(int percent) {
+    return '$percent% mastery';
+  }
+
+  @override
+  String get studySessionTitle => 'Active Recall';
+
+  @override
+  String studySessionCardIndex(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get studySessionTapToFlip =>
+      'Tap card or press Spacebar to reveal answer';
+
+  @override
+  String get studySessionSwipeHint =>
+      'Swipe left for Hard · Swipe right for Good';
+
+  @override
+  String get studySessionKeyboardShortcuts =>
+      'Space: Flip · 1: Again · 2: Hard · 3: Good · 4: Easy';
+
+  @override
+  String get studySessionFrontBadge => 'PROMPT / EQUATION';
+
+  @override
+  String get studySessionBackBadge => 'EXPLANATION / DERIVATION';
+
+  @override
+  String get studyRatingAgain => 'Again';
+
+  @override
+  String get studyRatingAgainInterval => '< 10m';
+
+  @override
+  String get studyRatingHard => 'Hard';
+
+  @override
+  String get studyRatingHardInterval => '1d';
+
+  @override
+  String get studyRatingGood => 'Good';
+
+  @override
+  String get studyRatingGoodInterval => '6d';
+
+  @override
+  String get studyRatingEasy => 'Easy';
+
+  @override
+  String get studyRatingEasyInterval => '12d';
+
+  @override
+  String studySessionTimer(String time) {
+    return 'Session Time: $time';
+  }
+
+  @override
+  String get sessionSummaryTitle => 'Session Complete! 🎉';
+
+  @override
+  String get sessionSummarySubtitle =>
+      'Your neural pathways have been reinforced. SM-2 intervals updated.';
+
+  @override
+  String get sessionSummaryCardsReviewed => 'Cards Reviewed';
+
+  @override
+  String get sessionSummaryRetentionRate => 'Retention Score';
+
+  @override
+  String get sessionSummaryTimeSpent => 'Study Duration';
+
+  @override
+  String sessionSummaryStreakBonus(int xp) {
+    return '+$xp XP Earned · Streak Kept!';
+  }
+
+  @override
+  String get sessionSummaryReturnDashboard => 'Return to Dashboard';
+
+  @override
+  String get sessionSummaryReviewAgain => 'Review More Decks';
 }
