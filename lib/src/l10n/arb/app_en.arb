@@ -1940,5 +1940,151 @@
     "upvoteAction": "Upvote",
     "@upvoteAction": {
         "description": "Button label to upvote a thread"
+    },
+    "welcomeTitle": "Welcome to Kortex",
+    "@welcomeTitle": {
+        "description": "Title on login / welcome screen"
+    },
+    "welcomeSubtitle": "Your AI-powered adaptive STEM study companion",
+    "@welcomeSubtitle": {
+        "description": "Subtitle on welcome screen"
+    },
+    "selectCourseTrackPrompt": "Select Your Focus Track",
+    "@selectCourseTrackPrompt": {
+        "description": "Prompt on onboarding track selection step"
+    },
+    "selectCourseTrackDesc": "We'll tailor your daily active-recall intervals, exam countdowns, and mock exams to match your syllabus.",
+    "@selectCourseTrackDesc": {
+        "description": "Description on onboarding track selection step"
+    },
+    "dailyTargetCardGoal": "Daily Review Target",
+    "@dailyTargetCardGoal": {
+        "description": "Title for daily target cards goal"
+    },
+    "dailyTargetCardGoalDesc": "Target number of flashcards to master every day to keep your Ebbinghaus retention curve above 85%.",
+    "@dailyTargetCardGoalDesc": {
+        "description": "Description for daily target cards goal"
+    },
+    "waecTrackLabel": "WAEC / WASSCE",
+    "@waecTrackLabel": {
+        "description": "Label for WAEC track"
+    },
+    "waecTrackDesc": "Senior secondary school core curriculum & STEM exams",
+    "@waecTrackDesc": {
+        "description": "Description for WAEC track"
+    },
+    "jambTrackLabel": "JAMB / UTME",
+    "@jambTrackLabel": {
+        "description": "Label for JAMB track"
+    },
+    "jambTrackDesc": "High-speed multiple choice drills & past questions",
+    "@jambTrackDesc": {
+        "description": "Description for JAMB track"
+    },
+    "satTrackLabel": "SAT STEM",
+    "@satTrackLabel": {
+        "description": "Label for SAT track"
+    },
+    "satTrackDesc": "Standardized math, geometry, and problem solving",
+    "@satTrackDesc": {
+        "description": "Description for SAT track"
+    },
+    "universityTrackLabel": "University STEM",
+    "@universityTrackLabel": {
+        "description": "Label for University track"
+    },
+    "universityTrackDesc": "Engineering, physics, calculus, and biochemistry",
+    "@universityTrackDesc": {
+        "description": "Description for University track"
+    },
+    "completeOnboardingButton": "Complete Setup & Launch",
+    "@completeOnboardingButton": {
+        "description": "Button to finalize onboarding stepper"
+    },
+    "continueButton": "Continue",
+    "@continueButton": {
+        "description": "Generic continue button"
+    },
+    "backButton": "Back",
+    "@backButton": {
+        "description": "Generic back button"
+    },
+    "onboardingStepIndicator": "Step {current} of {total}",
+    "@onboardingStepIndicator": {
+        "description": "Step indicator in onboarding stepper",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "signInWithGoogle": "Continue with Google",
+    "@signInWithGoogle": {
+        "description": "Button to sign in with Google"
+    },
+    "signInWithApple": "Continue with Apple",
+    "@signInWithApple": {
+        "description": "Button to sign in with Apple"
+    },
+    "sendMagicLink": "Send Magic Sign-In Link",
+    "@sendMagicLink": {
+        "description": "Button to send magic link"
+    },
+    "magicLinkSentNotice": "A magic sign-in link has been sent to your email.",
+    "@magicLinkSentNotice": {
+        "description": "Notice after sending magic link"
+    },
+    "userProfileTitle": "Profile & Settings",
+    "@userProfileTitle": {
+        "description": "Title of user profile page"
+    },
+    "editTrackAndGoals": "Active Academic Track & Target",
+    "@editTrackAndGoals": {
+        "description": "Section header for track and goal settings"
+    },
+    "cardsPerDay": "{count} cards / day",
+    "@cardsPerDay": {
+        "description": "Cards per day format",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "25"
+            }
+        }
+    },
+    "retentionTarget": "{percent}% Retention",
+    "@retentionTarget": {
+        "description": "Target retention percentage format",
+        "placeholders": {
+            "percent": {
+                "type": "int",
+                "example": "85"
+            }
+        }
+    },
+    "saveChangesButton": "Save Changes",
+    "@saveChangesButton": {
+        "description": "Button to save profile settings"
+    },
+    "profileSavedSuccessNotice": "Profile and track goals updated successfully!",
+    "@profileSavedSuccessNotice": {
+        "description": "Snackbar notice on profile saved"
+    },
+    "signOutButton": "Sign Out",
+    "@signOutButton": {
+        "description": "Button label to sign out"
+    },
+    "signOutConfirmation": "Are you sure you want to sign out?",
+    "@signOutConfirmation": {
+        "description": "Confirmation message when signing out"
+    },
+    "cancelAction": "Cancel",
+    "@cancelAction": {
+        "description": "Cancel action"
     }
 }

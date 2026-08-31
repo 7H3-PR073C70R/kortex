@@ -9,7 +9,8 @@ void _initDataSource() {
     )
     ..registerLazySingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(
-        apiClient: locator<AuthApiClient>(),
+        authClient: locator<SupabaseAuthClient>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<CalibrationLocalDataSource>(

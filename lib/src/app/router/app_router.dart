@@ -8,8 +8,10 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: OnboardingRoute.page),
     AutoRoute(page: AuthRoute.page),
+    AutoRoute(page: LoginRoute.page),
     AutoRoute(page: ForgotPasswordRoute.page),
     AutoRoute(page: OtpVerificationRoute.page),
+    AutoRoute(page: OnboardingStepperRoute.page),
     AutoRoute(page: OnboardingCalibrationRoute.page),
     AutoRoute(page: OnboardingContentRoute.page),
     AutoRoute(page: PermissionsRoute.page),
@@ -25,6 +27,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: LiveStudyRoomRoute.page),
     AutoRoute(page: ForumThreadDetailRoute.page),
     AutoRoute(page: DeckMarketplaceDetailRoute.page),
+    AutoRoute(page: UserProfileRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [

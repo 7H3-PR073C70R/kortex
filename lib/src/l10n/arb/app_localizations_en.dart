@@ -1371,4 +1371,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upvoteAction => 'Upvote';
+
+  @override
+  String get welcomeTitle => 'Welcome to Kortex';
+
+  @override
+  String get welcomeSubtitle => 'Your AI-powered adaptive STEM study companion';
+
+  @override
+  String get selectCourseTrackPrompt => 'Select Your Focus Track';
+
+  @override
+  String get selectCourseTrackDesc =>
+      'We\'ll tailor your daily active-recall intervals, exam countdowns, and mock exams to match your syllabus.';
+
+  @override
+  String get dailyTargetCardGoal => 'Daily Review Target';
+
+  @override
+  String get dailyTargetCardGoalDesc =>
+      'Target number of flashcards to master every day to keep your Ebbinghaus retention curve above 85%.';
+
+  @override
+  String get waecTrackLabel => 'WAEC / WASSCE';
+
+  @override
+  String get waecTrackDesc =>
+      'Senior secondary school core curriculum & STEM exams';
+
+  @override
+  String get jambTrackLabel => 'JAMB / UTME';
+
+  @override
+  String get jambTrackDesc =>
+      'High-speed multiple choice drills & past questions';
+
+  @override
+  String get satTrackLabel => 'SAT STEM';
+
+  @override
+  String get satTrackDesc => 'Standardized math, geometry, and problem solving';
+
+  @override
+  String get universityTrackLabel => 'University STEM';
+
+  @override
+  String get universityTrackDesc =>
+      'Engineering, physics, calculus, and biochemistry';
+
+  @override
+  String get completeOnboardingButton => 'Complete Setup & Launch';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get backButton => 'Back';
+
+  @override
+  String onboardingStepIndicator(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get signInWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInWithApple => 'Continue with Apple';
+
+  @override
+  String get sendMagicLink => 'Send Magic Sign-In Link';
+
+  @override
+  String get magicLinkSentNotice =>
+      'A magic sign-in link has been sent to your email.';
+
+  @override
+  String get userProfileTitle => 'Profile & Settings';
+
+  @override
+  String get editTrackAndGoals => 'Active Academic Track & Target';
+
+  @override
+  String cardsPerDay(int count) {
+    return '$count cards / day';
+  }
+
+  @override
+  String retentionTarget(int percent) {
+    return '$percent% Retention';
+  }
+
+  @override
+  String get saveChangesButton => 'Save Changes';
+
+  @override
+  String get profileSavedSuccessNotice =>
+      'Profile and track goals updated successfully!';
+
+  @override
+  String get signOutButton => 'Sign Out';
+
+  @override
+  String get signOutConfirmation => 'Are you sure you want to sign out?';
 }

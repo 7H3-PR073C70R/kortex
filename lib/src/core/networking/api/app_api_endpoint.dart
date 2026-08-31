@@ -11,11 +11,17 @@ class AppApiEndpoint {
 
   static String baseUri = '$scheme://$host';
 
-  // Auth Endpoints (Supabase GoTrue)
+  // Auth Endpoints (Supabase GoTrue & REST)
   static const String login = '/auth/v1/token?grant_type=password';
   static const String register = '/auth/v1/signup';
   static const String socialAuth = '/auth/v1/token';
   static const String resetPassword = '/auth/v1/recover';
+  static const String magicLink = '/auth/v1/magiclink';
+  static const String otpVerify = '/auth/v1/verify';
+  static const String userProfiles = '/rest/v1/profiles';
+  static const String courseTracks = '/rest/v1/course_tracks';
+  static const String updateProfileRpc =
+      '/rest/v1/rpc/update_user_profile_track_and_goal';
 
   // Dashboard Endpoints (Supabase RPC & REST)
   static const String dashboardFeed = '/rest/v1/rpc/get_dashboard_feed';

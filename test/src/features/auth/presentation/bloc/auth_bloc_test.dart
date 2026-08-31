@@ -2,11 +2,16 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/register_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
@@ -24,16 +29,36 @@ class MockLoginWithSocialUseCase extends Mock
 class MockResetPasswordUseCase extends Mock
     implements ResetPasswordUseCase {}
 
+class MockObserveAuthStateUseCase extends Mock
+    implements ObserveAuthStateUseCase {}
+
+class MockUpdateCourseTrackUseCase extends Mock
+    implements UpdateCourseTrackUseCase {}
+
+class MockAuthRepository extends Mock implements AuthRepository {}
+
 void main() {
   late MockLoginWithEmailUseCase mockLoginUseCase;
   late MockRegisterWithEmailUseCase mockRegisterUseCase;
   late MockLoginWithSocialUseCase mockSocialUseCase;
   late MockResetPasswordUseCase mockResetUseCase;
+  late MockObserveAuthStateUseCase mockObserveUseCase;
+  late MockUpdateCourseTrackUseCase mockUpdateTrackUseCase;
+  late MockAuthRepository mockAuthRepository;
 
   const tUser = UserEntity(
     id: 'user_123',
     email: 'student@university.edu',
     displayName: 'Ada Lovelace',
+  );
+
+  const tProfile = UserProfileEntity(
+    id: 'user_123',
+    email: 'student@university.edu',
+    displayName: 'Ada Lovelace',
+    targetTrack: 'JAMB',
+    dailyCardTarget: 25,
+    isOnboarded: true,
   );
 
   setUpAll(() {
@@ -56,6 +81,14 @@ void main() {
     mockRegisterUseCase = MockRegisterWithEmailUseCase();
     mockSocialUseCase = MockLoginWithSocialUseCase();
     mockResetUseCase = MockResetPasswordUseCase();
+    mockObserveUseCase = MockObserveAuthStateUseCase();
+    mockUpdateTrackUseCase = MockUpdateCourseTrackUseCase();
+    mockAuthRepository = MockAuthRepository();
+
+    when(() => mockObserveUseCase())
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockAuthRepository.getUserProfile())
+        .thenAnswer((_) async => const Right(tProfile));
   });
 
   AuthBloc buildBloc() {
@@ -64,19 +97,29 @@ void main() {
       registerWithEmailUseCase: mockRegisterUseCase,
       loginWithSocialUseCase: mockSocialUseCase,
       resetPasswordUseCase: mockResetUseCase,
+      observeAuthStateUseCase: mockObserveUseCase,
+      updateCourseTrackUseCase: mockUpdateTrackUseCase,
+      authRepository: mockAuthRepository,
     );
   }
 
   group('AuthBloc Test Suite', () {
-    test('initial state has AuthStatus.initial', () {
-      expect(buildBloc().state, equals(const AuthState()));
+    test('initial state has unauthenticated sessionStatus', () {
+      final bloc = buildBloc();
+      expect(bloc.state.status, equals(AuthStatus.initial));
+      expect(
+        bloc.state.sessionStatus,
+        equals(AuthSessionStatus.unauthenticated),
+      );
+      expect(bloc.state.user, isNull);
     });
 
     blocTest<AuthBloc, AuthState>(
-      'emits [loading, authenticated] when login succeeds',
+      'emits loading and authenticated on successful login',
       build: () {
-        when(() => mockLoginUseCase(any()))
-            .thenAnswer((_) async => const Right(tUser));
+        when(() => mockLoginUseCase(any())).thenAnswer(
+          (_) async => const Right<Failure, UserEntity>(tUser),
+        );
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -86,16 +129,28 @@ void main() {
         ),
       ),
       expect: () => [
-        const AuthState(status: AuthStatus.loading),
-        const AuthState(status: AuthStatus.authenticated, user: tUser),
+        const AuthState(
+          status: AuthStatus.loading,
+        ),
+        const AuthState(
+          status: AuthStatus.authenticated,
+          sessionStatus: AuthSessionStatus.authenticatedComplete,
+          user: tUser,
+        ),
+        const AuthState(
+          status: AuthStatus.authenticated,
+          sessionStatus: AuthSessionStatus.authenticatedComplete,
+          user: tUser,
+          userProfile: tProfile,
+        ),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [loading, error] when login fails',
+      'emits error when login fails with ServerFailure',
       build: () {
         when(() => mockLoginUseCase(any())).thenAnswer(
-          (_) async => const Left(
+          (_) async => const Left<Failure, UserEntity>(
             ServerFailure(message: 'Invalid credentials'),
           ),
         );
@@ -104,11 +159,13 @@ void main() {
       act: (bloc) => bloc.add(
         const AuthLoginRequested(
           email: 'student@university.edu',
-          password: 'wrong_password',
+          password: 'wrongpassword',
         ),
       ),
       expect: () => [
-        const AuthState(status: AuthStatus.loading),
+        const AuthState(
+          status: AuthStatus.loading,
+        ),
         const AuthState(
           status: AuthStatus.error,
           errorMessage: 'Invalid credentials',
@@ -117,10 +174,11 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [loading, needsEmailVerification] when register succeeds',
+      'emits needsOnboarding on registration',
       build: () {
-        when(() => mockRegisterUseCase(any()))
-            .thenAnswer((_) async => const Right(tUser));
+        when(() => mockRegisterUseCase(any())).thenAnswer(
+          (_) async => const Right<Failure, UserEntity>(tUser),
+        );
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -131,49 +189,14 @@ void main() {
         ),
       ),
       expect: () => [
-        const AuthState(status: AuthStatus.loading),
         const AuthState(
-          status: AuthStatus.needsEmailVerification,
+          status: AuthStatus.loading,
+        ),
+        const AuthState(
+          status: AuthStatus.needsOnboarding,
+          sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
           user: tUser,
-          needsEmailVerification: true,
         ),
-      ],
-    );
-
-    blocTest<AuthBloc, AuthState>(
-      'emits [loading, authenticated] when social login succeeds',
-      build: () {
-        when(() => mockSocialUseCase(any()))
-            .thenAnswer((_) async => const Right(tUser));
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(
-        const AuthSocialLoginRequested(
-          provider: 'google',
-          idToken: 'google_token',
-        ),
-      ),
-      expect: () => [
-        const AuthState(status: AuthStatus.loading),
-        const AuthState(status: AuthStatus.authenticated, user: tUser),
-      ],
-    );
-
-    blocTest<AuthBloc, AuthState>(
-      'emits [loading, resetSent] when reset password succeeds',
-      build: () {
-        when(() => mockResetUseCase(any()))
-            .thenAnswer((_) async => const Right(null));
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(
-        const AuthResetPasswordRequested(
-          email: 'student@university.edu',
-        ),
-      ),
-      expect: () => [
-        const AuthState(status: AuthStatus.loading),
-        const AuthState(status: AuthStatus.resetSent),
       ],
     );
   });

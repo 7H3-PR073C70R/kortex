@@ -14,6 +14,15 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<ResetPasswordUseCase>(
       () => ResetPasswordUseCase(locator<AuthRepository>()),
     )
+    ..registerLazySingleton<ObserveAuthStateUseCase>(
+      () => ObserveAuthStateUseCase(locator<AuthRepository>()),
+    )
+    ..registerLazySingleton<CompleteOnboardingUseCase>(
+      () => CompleteOnboardingUseCase(locator<AuthRepository>()),
+    )
+    ..registerLazySingleton<UpdateCourseTrackUseCase>(
+      () => UpdateCourseTrackUseCase(locator<AuthRepository>()),
+    )
     ..registerLazySingleton<SaveCalibrationProfileUseCase>(
       () => SaveCalibrationProfileUseCase(locator<CalibrationRepository>()),
     )

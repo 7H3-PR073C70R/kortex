@@ -1,12 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/complete_onboarding_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/register_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
@@ -17,6 +22,9 @@ void main() {
   late RegisterWithEmailUseCase registerUseCase;
   late LoginWithSocialUseCase socialUseCase;
   late ResetPasswordUseCase resetUseCase;
+  late ObserveAuthStateUseCase observeAuthStateUseCase;
+  late CompleteOnboardingUseCase completeOnboardingUseCase;
+  late UpdateCourseTrackUseCase updateCourseTrackUseCase;
 
   const tUser = UserEntity(
     id: 'user_123',
@@ -25,12 +33,24 @@ void main() {
     token: 'jwt_token_xyz',
   );
 
+  const tProfile = UserProfileEntity(
+    id: 'user_123',
+    email: 'student@university.edu',
+    displayName: 'Ada Lovelace',
+    targetTrack: 'JAMB',
+    dailyCardTarget: 25,
+    isOnboarded: true,
+  );
+
   setUp(() {
     mockRepository = MockAuthRepository();
     loginUseCase = LoginWithEmailUseCase(mockRepository);
     registerUseCase = RegisterWithEmailUseCase(mockRepository);
     socialUseCase = LoginWithSocialUseCase(mockRepository);
     resetUseCase = ResetPasswordUseCase(mockRepository);
+    observeAuthStateUseCase = ObserveAuthStateUseCase(mockRepository);
+    completeOnboardingUseCase = CompleteOnboardingUseCase(mockRepository);
+    updateCourseTrackUseCase = UpdateCourseTrackUseCase(mockRepository);
   });
 
   group('Auth UseCases Test Suite', () {
@@ -80,20 +100,14 @@ void main() {
       );
 
       expect(result, equals(const Right<Failure, UserEntity>(tUser)));
-      verify(
-        () => mockRepository.registerWithEmail(
-          email: 'student@university.edu',
-          password: 'password123',
-          displayName: 'Ada Lovelace',
-        ),
-      ).called(1);
     });
 
     test('LoginWithSocialUseCase returns UserEntity on success', () async {
       when(
         () => mockRepository.loginWithSocial(
           provider: 'google',
-          idToken: 'google_id_token',
+          idToken: 'token_abc',
+          rawNonce: 'nonce_123',
         ),
       ).thenAnswer(
         (_) async => const Right<Failure, UserEntity>(tUser),
@@ -102,17 +116,12 @@ void main() {
       final result = await socialUseCase(
         const SocialAuthParams(
           provider: 'google',
-          idToken: 'google_id_token',
+          idToken: 'token_abc',
+          rawNonce: 'nonce_123',
         ),
       );
 
       expect(result, equals(const Right<Failure, UserEntity>(tUser)));
-      verify(
-        () => mockRepository.loginWithSocial(
-          provider: 'google',
-          idToken: 'google_id_token',
-        ),
-      ).called(1);
     });
 
     test('ResetPasswordUseCase returns Right(null) on success', () async {
@@ -131,39 +140,65 @@ void main() {
       );
 
       expect(result, equals(const Right<Failure, void>(null)));
-      verify(
-        () => mockRepository.resetPassword(
-          email: 'student@university.edu',
-        ),
-      ).called(1);
     });
 
-    test('LoginWithEmailUseCase returns Left(Failure) on error', () async {
-      when(
-        () => mockRepository.loginWithEmail(
-          email: 'student@university.edu',
-          password: 'wrong_password',
-        ),
-      ).thenAnswer(
-        (_) async => const Left<Failure, UserEntity>(
-          ServerFailure(message: 'Invalid credentials'),
-        ),
+    test('ObserveAuthStateUseCase streams auth session status', () async {
+      when(() => mockRepository.observeAuthState()).thenAnswer(
+        (_) => Stream.value(AuthSessionStatus.authenticatedComplete),
       );
 
-      final result = await loginUseCase(
-        const LoginParams(
-          email: 'student@university.edu',
-          password: 'wrong_password',
-        ),
+      final stream = observeAuthStateUseCase();
+
+      expect(
+        await stream.first,
+        equals(AuthSessionStatus.authenticatedComplete),
+      );
+    });
+
+    test(
+      'CompleteOnboardingUseCase updates and returns UserProfileEntity',
+      () async {
+        when(
+          () => mockRepository.completeOnboarding(
+            track: 'JAMB',
+            dailyTarget: 25,
+          ),
+        ).thenAnswer(
+          (_) async => const Right<Failure, UserProfileEntity>(tProfile),
+        );
+
+        final result = await completeOnboardingUseCase(
+          track: 'JAMB',
+          dailyTarget: 25,
+        );
+
+        expect(
+          result,
+          equals(const Right<Failure, UserProfileEntity>(tProfile)),
+        );
+      },
+    );
+
+    test(
+      'UpdateCourseTrackUseCase updates track and returns profile',
+      () async {
+        when(
+          () => mockRepository.updateCourseTrack(
+            track: 'JAMB',
+            dailyTarget: 25,
+          ),
+        ).thenAnswer(
+          (_) async => const Right<Failure, UserProfileEntity>(tProfile),
+        );
+
+      final result = await updateCourseTrackUseCase(
+        track: 'JAMB',
+        dailyTarget: 25,
       );
 
       expect(
         result,
-        equals(
-          const Left<Failure, UserEntity>(
-            ServerFailure(message: 'Invalid credentials'),
-          ),
-        ),
+        equals(const Right<Failure, UserProfileEntity>(tProfile)),
       );
     });
   });

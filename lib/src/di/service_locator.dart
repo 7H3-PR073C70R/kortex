@@ -14,13 +14,19 @@ void _initServices() {
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
     )
-    ..registerFactory<AuthBloc>(
+    ..registerLazySingleton<AuthBloc>(
       () => AuthBloc(
         loginWithEmailUseCase: locator<LoginWithEmailUseCase>(),
         registerWithEmailUseCase: locator<RegisterWithEmailUseCase>(),
         loginWithSocialUseCase: locator<LoginWithSocialUseCase>(),
         resetPasswordUseCase: locator<ResetPasswordUseCase>(),
+        observeAuthStateUseCase: locator<ObserveAuthStateUseCase>(),
+        updateCourseTrackUseCase: locator<UpdateCourseTrackUseCase>(),
+        authRepository: locator<AuthRepository>(),
       ),
+    )
+    ..registerLazySingleton<AuthRouteGuard>(
+      () => AuthRouteGuard(locator<AuthBloc>()),
     )
     ..registerLazySingleton<AuthModeCubit>(
       AuthModeCubit.new,

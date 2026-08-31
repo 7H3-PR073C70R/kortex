@@ -2234,7 +2234,7 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get clearAction;
 
-  /// Cancel button label
+  /// Cancel action
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
@@ -2473,6 +2473,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upvote'**
   String get upvoteAction;
+
+  /// Title on login / welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kortex'**
+  String get welcomeTitle;
+
+  /// Subtitle on welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI-powered adaptive STEM study companion'**
+  String get welcomeSubtitle;
+
+  /// Prompt on onboarding track selection step
+  ///
+  /// In en, this message translates to:
+  /// **'Select Your Focus Track'**
+  String get selectCourseTrackPrompt;
+
+  /// Description on onboarding track selection step
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tailor your daily active-recall intervals, exam countdowns, and mock exams to match your syllabus.'**
+  String get selectCourseTrackDesc;
+
+  /// Title for daily target cards goal
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Review Target'**
+  String get dailyTargetCardGoal;
+
+  /// Description for daily target cards goal
+  ///
+  /// In en, this message translates to:
+  /// **'Target number of flashcards to master every day to keep your Ebbinghaus retention curve above 85%.'**
+  String get dailyTargetCardGoalDesc;
+
+  /// Label for WAEC track
+  ///
+  /// In en, this message translates to:
+  /// **'WAEC / WASSCE'**
+  String get waecTrackLabel;
+
+  /// Description for WAEC track
+  ///
+  /// In en, this message translates to:
+  /// **'Senior secondary school core curriculum & STEM exams'**
+  String get waecTrackDesc;
+
+  /// Label for JAMB track
+  ///
+  /// In en, this message translates to:
+  /// **'JAMB / UTME'**
+  String get jambTrackLabel;
+
+  /// Description for JAMB track
+  ///
+  /// In en, this message translates to:
+  /// **'High-speed multiple choice drills & past questions'**
+  String get jambTrackDesc;
+
+  /// Label for SAT track
+  ///
+  /// In en, this message translates to:
+  /// **'SAT STEM'**
+  String get satTrackLabel;
+
+  /// Description for SAT track
+  ///
+  /// In en, this message translates to:
+  /// **'Standardized math, geometry, and problem solving'**
+  String get satTrackDesc;
+
+  /// Label for University track
+  ///
+  /// In en, this message translates to:
+  /// **'University STEM'**
+  String get universityTrackLabel;
+
+  /// Description for University track
+  ///
+  /// In en, this message translates to:
+  /// **'Engineering, physics, calculus, and biochemistry'**
+  String get universityTrackDesc;
+
+  /// Button to finalize onboarding stepper
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Setup & Launch'**
+  String get completeOnboardingButton;
+
+  /// Generic continue button
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// Generic back button
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backButton;
+
+  /// Step indicator in onboarding stepper
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStepIndicator(int current, int total);
+
+  /// Button to sign in with Google
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get signInWithGoogle;
+
+  /// Button to sign in with Apple
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get signInWithApple;
+
+  /// Button to send magic link
+  ///
+  /// In en, this message translates to:
+  /// **'Send Magic Sign-In Link'**
+  String get sendMagicLink;
+
+  /// Notice after sending magic link
+  ///
+  /// In en, this message translates to:
+  /// **'A magic sign-in link has been sent to your email.'**
+  String get magicLinkSentNotice;
+
+  /// Title of user profile page
+  ///
+  /// In en, this message translates to:
+  /// **'Profile & Settings'**
+  String get userProfileTitle;
+
+  /// Section header for track and goal settings
+  ///
+  /// In en, this message translates to:
+  /// **'Active Academic Track & Target'**
+  String get editTrackAndGoals;
+
+  /// Cards per day format
+  ///
+  /// In en, this message translates to:
+  /// **'{count} cards / day'**
+  String cardsPerDay(int count);
+
+  /// Target retention percentage format
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% Retention'**
+  String retentionTarget(int percent);
+
+  /// Button to save profile settings
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChangesButton;
+
+  /// Snackbar notice on profile saved
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and track goals updated successfully!'**
+  String get profileSavedSuccessNotice;
+
+  /// Button label to sign out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get signOutButton;
+
+  /// Confirmation message when signing out
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirmation;
 }
 
 class _AppLocalizationsDelegate

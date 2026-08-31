@@ -5,6 +5,9 @@ void _initClients() {
     ..registerLazySingleton<AuthApiClient>(
       () => AuthApiClient(locator<Dio>()),
     )
+    ..registerLazySingleton<SupabaseAuthClient>(
+      () => SupabaseAuthClient(locator<Dio>()),
+    )
     ..registerLazySingleton<DashboardApiClient>(
       () => DashboardApiClient(locator<Dio>()),
     )

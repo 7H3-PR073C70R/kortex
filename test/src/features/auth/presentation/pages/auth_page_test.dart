@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
+import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_social_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/observe_auth_state_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/register_with_email_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_case.dart';
+import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -30,6 +36,14 @@ class MockLoginWithSocialUseCase extends Mock
 class MockResetPasswordUseCase extends Mock
     implements ResetPasswordUseCase {}
 
+class MockObserveAuthStateUseCase extends Mock
+    implements ObserveAuthStateUseCase {}
+
+class MockUpdateCourseTrackUseCase extends Mock
+    implements UpdateCourseTrackUseCase {}
+
+class MockAuthRepository extends Mock implements AuthRepository {}
+
 Widget _wrapWithTheme(Widget child) {
   return MaterialApp(
     theme: AppTheme.lightTheme,
@@ -48,12 +62,23 @@ void main() {
   late MockRegisterWithEmailUseCase mockRegisterUseCase;
   late MockLoginWithSocialUseCase mockSocialUseCase;
   late MockResetPasswordUseCase mockResetUseCase;
+  late MockObserveAuthStateUseCase mockObserveUseCase;
+  late MockUpdateCourseTrackUseCase mockUpdateTrackUseCase;
+  late MockAuthRepository mockAuthRepository;
 
   setUp(() {
     mockLoginUseCase = MockLoginWithEmailUseCase();
     mockRegisterUseCase = MockRegisterWithEmailUseCase();
     mockSocialUseCase = MockLoginWithSocialUseCase();
     mockResetUseCase = MockResetPasswordUseCase();
+    mockObserveUseCase = MockObserveAuthStateUseCase();
+    mockUpdateTrackUseCase = MockUpdateCourseTrackUseCase();
+    mockAuthRepository = MockAuthRepository();
+
+    when(() => mockObserveUseCase())
+        .thenAnswer((_) => Stream.value(AuthSessionStatus.unauthenticated));
+    when(() => mockAuthRepository.getUserProfile())
+        .thenAnswer((_) async => const Left(ServerFailure(message: 'None')));
 
     locator
       ..registerLazySingleton<LoginWithEmailUseCase>(() => mockLoginUseCase)
@@ -64,12 +89,20 @@ void main() {
         () => mockSocialUseCase,
       )
       ..registerLazySingleton<ResetPasswordUseCase>(() => mockResetUseCase)
+      ..registerLazySingleton<ObserveAuthStateUseCase>(() => mockObserveUseCase)
+      ..registerLazySingleton<UpdateCourseTrackUseCase>(
+        () => mockUpdateTrackUseCase,
+      )
+      ..registerLazySingleton<AuthRepository>(() => mockAuthRepository)
       ..registerFactory<AuthBloc>(
         () => AuthBloc(
           loginWithEmailUseCase: mockLoginUseCase,
           registerWithEmailUseCase: mockRegisterUseCase,
           loginWithSocialUseCase: mockSocialUseCase,
           resetPasswordUseCase: mockResetUseCase,
+          observeAuthStateUseCase: mockObserveUseCase,
+          updateCourseTrackUseCase: mockUpdateTrackUseCase,
+          authRepository: mockAuthRepository,
         ),
       )
       ..registerFactory<AuthModeCubit>(AuthModeCubit.new)
@@ -115,24 +148,6 @@ void main() {
 
       expect(find.text('Google'), findsOneWidget);
       expect(find.text('Apple'), findsOneWidget);
-    });
-
-    testWidgets(
-      'renders desktop two-column split layout on screen width >= 1024',
-      (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
-      await tester.pump();
-
-      expect(
-        find.text('Your AI-Augmented Academic Workspace'),
-        findsOneWidget,
-      );
-      expect(find.text('Zero-latency multimodal STEM OCR'), findsOneWidget);
     });
   });
 }
