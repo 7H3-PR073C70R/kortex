@@ -62,6 +62,9 @@ class AuthChatView extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final inputBorderColor = isDark
+        ? colors.surfaceBorderHighlight.withAlpha(80)
+        : colors.surfaceBorder.withAlpha(140);
 
     final draftCubit = context.read<AuthDraftCubit>();
     final draftState = context.watch<AuthDraftCubit>().state;
@@ -754,12 +757,7 @@ class AuthChatView extends HookWidget {
                                               borderRadius:
                                                   BorderRadius.circular(24),
                                               borderSide: BorderSide(
-                                                color: isDark
-                                                    ? colors
-                                                          .surfaceBorderHighlight
-                                                          .withAlpha(80)
-                                                    : colors.surfaceBorder
-                                                          .withAlpha(140),
+                                                color: inputBorderColor,
                                                 width: 1.2,
                                               ),
                                             ),
@@ -767,12 +765,7 @@ class AuthChatView extends HookWidget {
                                               borderRadius:
                                                   BorderRadius.circular(24),
                                               borderSide: BorderSide(
-                                                color: isDark
-                                                    ? colors
-                                                          .surfaceBorderHighlight
-                                                          .withAlpha(80)
-                                                    : colors.surfaceBorder
-                                                          .withAlpha(140),
+                                                color: inputBorderColor,
                                                 width: 1.2,
                                               ),
                                             ),
