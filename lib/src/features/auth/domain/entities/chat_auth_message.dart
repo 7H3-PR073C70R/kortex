@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 enum ChatAuthSender {
   syllabot,
@@ -18,7 +19,7 @@ enum ChatAuthStep {
 }
 
 /// Domain entity representing a conversational authentication message
-/// or prompt.
+/// or prompt with optional retry action for failed requests.
 class ChatAuthMessage extends Equatable {
   const ChatAuthMessage({
     required this.id,
@@ -29,6 +30,7 @@ class ChatAuthMessage extends Equatable {
     this.isPasswordInput = false,
     this.isError = false,
     this.sensitiveValue,
+    this.onRetry,
   });
 
   final String id;
@@ -39,6 +41,7 @@ class ChatAuthMessage extends Equatable {
   final bool isPasswordInput;
   final bool isError;
   final String? sensitiveValue;
+  final VoidCallback? onRetry;
 
   @override
   List<Object?> get props => [
@@ -50,5 +53,6 @@ class ChatAuthMessage extends Equatable {
         isPasswordInput,
         isError,
         sensitiveValue,
+        onRetry != null,
       ];
 }

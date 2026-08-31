@@ -133,6 +133,9 @@ class AuthChatView extends HookWidget {
     final latestBotMsgId = useState<String>('');
     final hasInputText = useState<bool>(false);
 
+    final lastRetryAction = useState<VoidCallback?>(null);
+    final lastRetryDescription = useState<String>('');
+
     final currentFlow = useState<_ChatFlowStep>(_ChatFlowStep.initial);
     final otpEmail = useState<String>('');
 
@@ -191,6 +194,7 @@ class AuthChatView extends HookWidget {
       bool isError = false,
       ChatAuthStep step = ChatAuthStep.initial,
       bool enableTypewriter = true,
+      VoidCallback? onRetry,
     }) {
       final msgId = 'bot_${DateTime.now().millisecondsSinceEpoch}';
       final msg = ChatAuthMessage(
@@ -200,6 +204,7 @@ class AuthChatView extends HookWidget {
         timestamp: DateTime.now(),
         isError: isError,
         step: step,
+        onRetry: onRetry,
       );
       messages.value = [...messages.value, msg];
       latestBotMsgId.value = msgId;
@@ -225,6 +230,7 @@ class AuthChatView extends HookWidget {
       String thinkingText = 'Thinking...',
       Duration delay = const Duration(milliseconds: 950),
       bool isError = false,
+      VoidCallback? onRetry,
       VoidCallback? onComplete,
     }) {
       isThinking.value = true;
@@ -234,7 +240,7 @@ class AuthChatView extends HookWidget {
       Timer(delay, () {
         if (!context.mounted) return;
         isThinking.value = false;
-        addBotMessage(replyText, isError: isError);
+        addBotMessage(replyText, isError: isError, onRetry: onRetry);
         onComplete?.call();
       });
     }
@@ -256,6 +262,9 @@ class AuthChatView extends HookWidget {
       thinkingLabel.value = 'Verifying security credentials...';
       scrollToBottom(animate: true);
 
+      lastRetryDescription.value = 'Verify OTP';
+      lastRetryAction.value = () => handleOtpSubmit(code);
+
       try {
         final verifyUseCase = locator<VerifyOtpUseCase>();
         final result = await verifyUseCase(
@@ -270,12 +279,14 @@ class AuthChatView extends HookWidget {
           (failure) {
             addBotMessage(
               'Verification Failed: '
-              '${failure.message ?? "Invalid or expired code"}. '
-              'Please check your code or tap Resend Code below.',
+              '${failure.message ?? "Invalid or expired code"}.\n'
+              'Tap "Retry Request" below or check your code.',
               isError: true,
+              onRetry: () => handleOtpSubmit(code),
             );
           },
           (_) {
+            lastRetryAction.value = null;
             addBotMessage(
               'Security verification complete! '
               'Initializing your academic calibration profile...',
@@ -294,8 +305,9 @@ class AuthChatView extends HookWidget {
         isThinking.value = false;
         addBotMessage(
           'Network error during verification. '
-          'Please check your connection and tap Resend Code.',
+          'Please check your connection and tap Retry Request.',
           isError: true,
+          onRetry: () => handleOtpSubmit(code),
         );
       }
     }
@@ -322,6 +334,7 @@ class AuthChatView extends HookWidget {
               '${failure.message ?? "Request timed out"}. '
               'Please wait a moment and try again.',
               isError: true,
+              onRetry: handleResendOtp,
             );
           },
           (_) {
@@ -339,6 +352,7 @@ class AuthChatView extends HookWidget {
           'Network error while sending verification code. '
           'Please try again.',
           isError: true,
+          onRetry: handleResendOtp,
         );
       }
     }
@@ -424,11 +438,30 @@ class AuthChatView extends HookWidget {
           thinkingLabel.value = 'Creating your Kortex neural profile...';
           scrollToBottom(animate: true);
 
+          final regEmail = draftState.email;
+          final regPassword = input;
+          final regName = draftState.displayName;
+
+          lastRetryDescription.value = 'Sign Up';
+          lastRetryAction.value = () {
+            currentFlow.value = _ChatFlowStep.submitting;
+            isThinking.value = true;
+            thinkingLabel.value = 'Creating your Kortex neural profile...';
+            scrollToBottom(animate: true);
+            context.read<AuthBloc>().add(
+              AuthRegisterRequested(
+                email: regEmail,
+                password: regPassword,
+                displayName: regName,
+              ),
+            );
+          };
+
           context.read<AuthBloc>().add(
             AuthRegisterRequested(
-              email: draftState.email,
-              password: input,
-              displayName: draftState.displayName,
+              email: regEmail,
+              password: regPassword,
+              displayName: regName,
             ),
           );
 
@@ -468,10 +501,28 @@ class AuthChatView extends HookWidget {
           thinkingLabel.value = 'Authenticating credentials with AI...';
           scrollToBottom(animate: true);
 
+          final logEmail =
+              draftState.email.isNotEmpty ? draftState.email : input;
+          final logPassword = input;
+
+          lastRetryDescription.value = 'Sign In';
+          lastRetryAction.value = () {
+            currentFlow.value = _ChatFlowStep.submitting;
+            isThinking.value = true;
+            thinkingLabel.value = 'Authenticating credentials with AI...';
+            scrollToBottom(animate: true);
+            context.read<AuthBloc>().add(
+              AuthLoginRequested(
+                email: logEmail,
+                password: logPassword,
+              ),
+            );
+          };
+
           context.read<AuthBloc>().add(
             AuthLoginRequested(
-              email: draftState.email.isNotEmpty ? draftState.email : input,
-              password: input,
+              email: logEmail,
+              password: logPassword,
             ),
           );
 
@@ -497,8 +548,20 @@ class AuthChatView extends HookWidget {
           thinkingLabel.value = 'Dispatching password reset link...';
           scrollToBottom(animate: true);
 
+          final resetEmail = input;
+          lastRetryDescription.value = 'Reset Password';
+          lastRetryAction.value = () {
+            currentFlow.value = _ChatFlowStep.submitting;
+            isThinking.value = true;
+            thinkingLabel.value = 'Dispatching password reset link...';
+            scrollToBottom(animate: true);
+            context.read<AuthBloc>().add(
+              AuthResetPasswordRequested(email: resetEmail),
+            );
+          };
+
           context.read<AuthBloc>().add(
-            AuthResetPasswordRequested(email: input),
+            AuthResetPasswordRequested(email: resetEmail),
           );
 
         case _ChatFlowStep.submitting:
@@ -518,15 +581,19 @@ class AuthChatView extends HookWidget {
     String getHintText() {
       switch (currentFlow.value) {
         case _ChatFlowStep.signUpName:
-          return 'Enter your full name (e.g. Ada Lovelace)';
+          return 'Enter your full name';
         case _ChatFlowStep.signUpEmail:
-        case _ChatFlowStep.loginEmail:
-        case _ChatFlowStep.forgotPasswordEmail:
-        case _ChatFlowStep.initial:
-          return l10n.authEmailHint;
+          return 'Enter your email address';
         case _ChatFlowStep.signUpPassword:
+          return 'Enter password (min. 6 chars)';
+        case _ChatFlowStep.loginEmail:
+          return 'Enter your registered email';
         case _ChatFlowStep.loginPassword:
-          return l10n.authPasswordHint;
+          return 'Enter your password';
+        case _ChatFlowStep.forgotPasswordEmail:
+          return 'Enter your registered email';
+        case _ChatFlowStep.initial:
+          return 'Choose an option below...';
         case _ChatFlowStep.otpVerification:
           return 'Enter 6-digit verification code (e.g. 123456)';
         case _ChatFlowStep.submitting:
@@ -549,13 +616,20 @@ class AuthChatView extends HookWidget {
           isThinking.value = false;
           isTyping.value = false;
           currentFlow.value = _ChatFlowStep.initial;
+          final retryCallback = lastRetryAction.value;
           final err =
               state.errorMessage ??
               'Network connection error. Please try again.';
           addBotMessage(
-            'Authentication Error: $err. '
-            'Would you like to try again or reset your password?',
+            'Authentication Error: $err\n\n'
+            'Tap "Retry Request" below to try again without re-typing.',
             isError: true,
+            onRetry: retryCallback != null
+                ? () {
+                    addUserMessage('🔄 Retry ${lastRetryDescription.value}');
+                    retryCallback();
+                  }
+                : null,
           );
         } else if (state.requiresOtp && state.user != null) {
           isThinking.value = false;
@@ -667,6 +741,7 @@ class AuthChatView extends HookWidget {
                                     icon: Icons.arrow_back_rounded,
                                     label: 'Sign In / Restart',
                                     onTap: () {
+                                      lastRetryAction.value = null;
                                       addUserMessage('Start Over');
                                       currentFlow.value = _ChatFlowStep.initial;
                                       simulateBotReply(
@@ -680,6 +755,51 @@ class AuthChatView extends HookWidget {
                             ),
                           ] else if (currentFlow.value ==
                               _ChatFlowStep.initial) ...[
+                            // If last request failed, show 1-tap Retry Pill
+                            if (lastRetryAction.value != null) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _ActionChipButton(
+                                      icon: Icons.refresh_rounded,
+                                      label:
+                                          'Retry ${lastRetryDescription.value}',
+                                      isPrimary: true,
+                                      onTap: () {
+                                        final retry = lastRetryAction.value;
+                                        if (retry != null) {
+                                          addUserMessage(
+                                            '🔄 Retry '
+                                            '${lastRetryDescription.value}',
+                                          );
+                                          retry();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _ActionChipButton(
+                                      icon: Icons.restart_alt_rounded,
+                                      label: 'Start Over',
+                                      onTap: () {
+                                        lastRetryAction.value = null;
+                                        addUserMessage('Start Over');
+                                        currentFlow.value =
+                                            _ChatFlowStep.initial;
+                                        simulateBotReply(
+                                          'Sure! How would you like to '
+                                          'proceed?',
+                                          thinkingText: 'Resetting flow...',
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+
                             // Row 1: Create Account & Sign In across 50/50 full width
                             Row(
                               children: [
@@ -687,8 +807,9 @@ class AuthChatView extends HookWidget {
                                   child: _ActionChipButton(
                                     icon: Icons.person_add_rounded,
                                     label: 'Create Account',
-                                    isPrimary: true,
+                                    isPrimary: lastRetryAction.value == null,
                                     onTap: () {
+                                      lastRetryAction.value = null;
                                       addUserMessage('Create Account');
                                       draftCubit.updateDisplayName('');
                                       context.read<AuthModeCubit>().setFormType(
@@ -710,6 +831,7 @@ class AuthChatView extends HookWidget {
                                     icon: Icons.login_rounded,
                                     label: 'Sign In',
                                     onTap: () {
+                                      lastRetryAction.value = null;
                                       addUserMessage('Sign In');
                                       context.read<AuthModeCubit>().setFormType(
                                         AuthFormType.login,
@@ -734,6 +856,7 @@ class AuthChatView extends HookWidget {
                               label: l10n.authChipForgotPassword,
                               isFullWidth: true,
                               onTap: () {
+                                lastRetryAction.value = null;
                                 addUserMessage('Forgot Password');
                                 context.read<AuthModeCubit>().setFormType(
                                   AuthFormType.login,
@@ -770,6 +893,7 @@ class AuthChatView extends HookWidget {
                               label: 'Start Over / Choose Other Option',
                               isFullWidth: true,
                               onTap: () {
+                                lastRetryAction.value = null;
                                 addUserMessage('Start Over');
                                 currentFlow.value = _ChatFlowStep.initial;
                                 simulateBotReply(
@@ -1085,6 +1209,57 @@ class _BotMessageBubble extends StatelessWidget {
                             height: 1.35,
                           ),
                         ),
+                        if (isError && message.onRetry != null) ...[
+                          const SizedBox(height: 10),
+                          Semantics(
+                            button: true,
+                            label: 'Retry last request',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: message.onRetry,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444).withAlpha(
+                                      isDark ? 60 : 30,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFFEF4444).withAlpha(
+                                        140,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 15,
+                                        color: Color(0xFFEF4444),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Retry Request',
+                                        style: typography.caption.bold.copyWith(
+                                          color: isDark
+                                              ? const Color(0xFFFCA5A5)
+                                              : const Color(0xFFB91C1C),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
