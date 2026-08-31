@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/core/themes/color/app_material_colors.dart';
-import 'package:kortex/src/features/decks/data/services/offline_model_manager.dart';
+import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 
 @RoutePage()
@@ -23,7 +23,7 @@ class OfflineFlashcardGenerationPage extends StatefulWidget {
 
 class _OfflineFlashcardGenerationPageState
     extends State<OfflineFlashcardGenerationPage> {
-  late final OfflineModelManager _modelManager;
+  late final OfflineModelInstaller _installer;
   late final StudyEngineRouter _engineRouter;
   late final TextEditingController _topicController;
 
@@ -40,42 +40,42 @@ class _OfflineFlashcardGenerationPageState
   @override
   void initState() {
     super.initState();
-    _modelManager = OfflineModelManager();
-    _engineRouter = StudyEngineRouter(modelManager: _modelManager);
+    _installer = OfflineModelInstaller();
+    _engineRouter = StudyEngineRouter(modelInstaller: _installer);
     _topicController = TextEditingController(text: widget.initialTopic);
 
     unawaited(_checkInitialState());
-    _listenToDownloadProgress();
+    _listenToInstallProgress();
   }
 
   Future<void> _checkInitialState() async {
-    final downloaded = await _modelManager.isModelDownloaded();
+    final installed = await _installer.isModelInstalled();
     final mode = await _engineRouter.getExecutionMode();
     if (mounted) {
       setState(() {
-        _isModelReady = downloaded;
+        _isModelReady = installed;
         _currentMode = mode;
       });
     }
   }
 
-  void _listenToDownloadProgress() {
-    _modelManager.progressStream.listen((progress) {
+  void _listenToInstallProgress() {
+    _installer.progressStream.listen((progress) {
       if (!mounted) return;
       setState(() {
-        if (progress.status == ModelDownloadStatus.downloading) {
+        if (progress.step == InstallerStep.downloading) {
           _isDownloading = true;
           _downloadProgress = progress.progress;
           _downloadError = null;
-        } else if (progress.status == ModelDownloadStatus.ready) {
+        } else if (progress.step == InstallerStep.ready) {
           _isDownloading = false;
           _isModelReady = true;
           _downloadProgress = 1;
           _downloadError = null;
-        } else if (progress.status == ModelDownloadStatus.error) {
+        } else if (progress.step == InstallerStep.failed) {
           _isDownloading = false;
           _downloadError = progress.errorMessage;
-        } else if (progress.status == ModelDownloadStatus.notDownloaded) {
+        } else if (progress.step == InstallerStep.idle) {
           _isDownloading = false;
           _isModelReady = false;
         }
@@ -88,7 +88,7 @@ class _OfflineFlashcardGenerationPageState
       _isDownloading = true;
       _downloadError = null;
     });
-    await _modelManager.downloadModel();
+    await _installer.installModel();
     await _checkInitialState();
   }
 
@@ -102,15 +102,25 @@ class _OfflineFlashcardGenerationPageState
     });
 
     try {
-      final stream = _engineRouter.generateFlashcards(
+      final result = await _engineRouter.generateStudyPack(
         topic: topic,
-        count: 5,
       );
 
-      await for (final card in stream) {
-        if (!mounted) return;
+      if (!mounted) return;
+
+      if (result.isOfflineModelMissing) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.userMessage ??
+                  StudyEngineRouter.offlineModelMissingPrompt,
+            ),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+      } else {
         setState(() {
-          _cards.add(card);
+          _cards.addAll(result.cards);
         });
       }
     } on Object catch (e) {
@@ -133,7 +143,7 @@ class _OfflineFlashcardGenerationPageState
 
   @override
   void dispose() {
-    unawaited(_modelManager.dispose());
+    unawaited(_installer.dispose());
     _topicController.dispose();
     super.dispose();
   }
@@ -307,7 +317,8 @@ class _OfflineFlashcardGenerationPageState
           ],
           SizedBox(height: 6.h),
           Text(
-            'Requirements: 3 GB free storage. Metal / Vulkan accelerated.',
+            'Requirements: 4.0 GB free storage. Wi-Fi required. '
+            'Metal / Vulkan accelerated.',
             style: TextStyle(color: Colors.white38, fontSize: 11.sp),
           ),
         ],

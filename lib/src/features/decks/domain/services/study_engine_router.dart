@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:isolate';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:kortex/src/features/decks/data/services/offline_model_manager.dart';
+import 'package:kortex/src/features/decks/data/services/local_inference_isolate_manager.dart';
+import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum StudyEngineExecutionMode {
@@ -24,8 +22,7 @@ class GeneratedFlashcard {
   });
 
   factory GeneratedFlashcard.fromJson(Map<String, dynamic> json) {
-    final defaultId =
-        'card_${DateTime.now().millisecondsSinceEpoch}';
+    final defaultId = 'card_${DateTime.now().millisecondsSinceEpoch}';
     return GeneratedFlashcard(
       id: json['id'] as String? ?? defaultId,
       front: json['front'] as String? ?? '',
@@ -53,22 +50,50 @@ class GeneratedFlashcard {
       };
 }
 
+class StudyPackResult {
+  const StudyPackResult({
+    required this.cards,
+    required this.executionMode,
+    this.isOfflineModelMissing = false,
+    this.userMessage,
+  });
+
+  final List<GeneratedFlashcard> cards;
+  final StudyEngineExecutionMode executionMode;
+  final bool isOfflineModelMissing;
+  final String? userMessage;
+}
+
 /// Network-aware router selecting between Cloud Streaming endpoints
-/// and Local GGUF on-device inference via Fllama.
+/// and Local GGUF on-device inference via Fllama and Isolate execution.
 class StudyEngineRouter {
   StudyEngineRouter({
     Connectivity? connectivity,
-    OfflineModelManager? modelManager,
+    OfflineModelInstaller? modelInstaller,
+    LocalInferenceIsolateManager? isolateManager,
     SupabaseClient? supabaseClient,
   })  : _connectivity = connectivity ?? Connectivity(),
-        _modelManager = modelManager ?? OfflineModelManager(),
-        _supabase = supabaseClient ?? Supabase.instance.client;
+        _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
+        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
+        _supabase = supabaseClient;
 
   final Connectivity _connectivity;
-  final OfflineModelManager _modelManager;
-  final SupabaseClient _supabase;
+  final OfflineModelInstaller _modelInstaller;
+  final LocalInferenceIsolateManager _isolateManager;
+  final SupabaseClient? _supabase;
 
-  static const Duration _hardwareTimeout = Duration(seconds: 45);
+  SupabaseClient? get _supabaseClient {
+    if (_supabase != null) return _supabase;
+    try {
+      return Supabase.instance.client;
+    } on Object {
+      return null;
+    }
+  }
+
+  static const String offlineModelMissingPrompt =
+      'Offline mode requires the offline model pack. '
+      'Download it on Wi-Fi to study offline.';
 
   /// Inspects connectivity and model presence to determine active execution
   /// mode.
@@ -85,12 +110,71 @@ class StudyEngineRouter {
       return StudyEngineExecutionMode.cloudRemote;
     }
 
-    final isModelReady = await _modelManager.isModelDownloaded();
+    final isModelReady = await _modelInstaller.isModelInstalled();
     if (isModelReady) {
       return StudyEngineExecutionMode.offlineOnDevice;
     }
 
     return StudyEngineExecutionMode.unavailable;
+  }
+
+  /// Central strategy method executing network checks, cloud routing,
+  /// local on-device inference, and offline prompt guidance.
+  Future<StudyPackResult> generateStudyPack({
+    required String topic,
+    int count = 5,
+    String? sourceText,
+  }) async {
+    final mode = await getExecutionMode();
+
+    if (mode == StudyEngineExecutionMode.cloudRemote) {
+      // 1. Online Cloud Path
+      debugPrint('[StudyEngineRouter] Online: Routing payload to Cloud API...');
+      final cards = await _fetchFromCloud(
+        topic: topic,
+        count: count,
+        sourceText: sourceText,
+      );
+      return StudyPackResult(
+        cards: cards,
+        executionMode: StudyEngineExecutionMode.cloudRemote,
+      );
+    }
+
+    if (mode == StudyEngineExecutionMode.offlineOnDevice) {
+      // 2. Offline On-Device GGUF Path
+      debugPrint(
+        '[StudyEngineRouter] Offline: Routing payload to Local '
+        'Fllama Isolate...',
+      );
+      final modelPath = await _modelInstaller.getModelPath();
+      final rawCards = await _isolateManager.executeChunkedInference(
+        modelPath: modelPath,
+        topic: topic,
+        sourceText: sourceText,
+      );
+
+      final cards = rawCards
+          .map(GeneratedFlashcard.fromJson)
+          .take(count)
+          .toList();
+
+      return StudyPackResult(
+        cards: cards.isNotEmpty
+            ? cards
+            : _createSyntheticLocalCards(topic, count),
+        executionMode: StudyEngineExecutionMode.offlineOnDevice,
+      );
+    }
+
+    // 3. Offline without local model pack
+    debugPrint('[StudyEngineRouter] Offline without model: Prompting user...');
+    return const StudyPackResult(
+      cards: [],
+      executionMode: StudyEngineExecutionMode.unavailable,
+      isOfflineModelMissing: true,
+      userMessage: offlineModelMissingPrompt,
+    );
   }
 
   /// Streams flashcard generations, routing dynamically to Cloud or Local LLM.
@@ -99,234 +183,88 @@ class StudyEngineRouter {
     required int count,
     String? sourceText,
   }) async* {
-    final mode = await getExecutionMode();
+    final result = await generateStudyPack(
+      topic: topic,
+      count: count,
+      sourceText: sourceText,
+    );
 
-    if (mode == StudyEngineExecutionMode.cloudRemote) {
-      debugPrint('[StudyEngineRouter] Routing via Cloud Supabase SSE...');
-      yield* _streamFromCloud(
-        topic: topic,
-        count: count,
-        sourceText: sourceText,
-      );
-    } else if (mode == StudyEngineExecutionMode.offlineOnDevice) {
-      debugPrint(
-        '[StudyEngineRouter] Routing via Local Fllama On-Device GGUF...',
-      );
-      yield* _streamFromLocalModel(
-        topic: topic,
-        count: count,
-        sourceText: sourceText,
-      );
-    } else {
-      throw const SocketException(
-        'Device is offline and no local GGUF model is downloaded. '
-        'Please connect to the internet or download the offline model.',
-      );
+    if (result.isOfflineModelMissing) {
+      throw StateError(result.userMessage ?? offlineModelMissingPrompt);
+    }
+
+    for (final card in result.cards) {
+      yield card;
     }
   }
 
-  /// Cloud Path: Invokes Supabase Edge Function SSE stream
-  Stream<GeneratedFlashcard> _streamFromCloud({
+  Future<List<GeneratedFlashcard>> _fetchFromCloud({
     required String topic,
     required int count,
     String? sourceText,
-  }) async* {
-    try {
-      final response = await _supabase.functions.invoke(
-        'generate-flashcards-stream',
-        body: {
-          'topic': topic,
-          'sourceText': sourceText,
-          'count': count,
-        },
-      );
+  }) async {
+    final client = _supabaseClient;
+    if (client != null) {
+      try {
+        final response = await client.functions.invoke(
+          'generate-flashcards-stream',
+          body: {
+            'topic': topic,
+            'sourceText': sourceText,
+            'count': count,
+          },
+        );
 
-      final data = response.data;
-      if (data != null && data is Map<String, dynamic>) {
-        final cardsList = data['cards'] as List<dynamic>?;
-        if (cardsList != null) {
-          for (final raw in cardsList) {
-            yield GeneratedFlashcard.fromJson(raw as Map<String, dynamic>);
+        final data = response.data;
+        if (data != null && data is Map<String, dynamic>) {
+          final cardsList = data['cards'] as List<dynamic>?;
+          if (cardsList != null && cardsList.isNotEmpty) {
+            return cardsList
+                .map((c) =>
+                    GeneratedFlashcard.fromJson(c as Map<String, dynamic>))
+                .toList();
           }
-          return;
         }
-      }
-
-      // Fallback synthetic stream
-      yield* _generateFallbackCards(topic: topic, count: count, isLocal: false);
-    } on Object catch (err) {
-      debugPrint(
-        '[StudyEngineRouter] Cloud stream error ($err), checking fallback...',
-      );
-      final isLocalReady = await _modelManager.isModelDownloaded();
-      if (isLocalReady) {
-        yield* _streamFromLocalModel(
-          topic: topic,
-          count: count,
-          sourceText: sourceText,
-        );
-      } else {
-        yield* _generateFallbackCards(
-          topic: topic,
-          count: count,
-          isLocal: false,
-        );
+      } on Object catch (err) {
+        debugPrint('[StudyEngineRouter] Cloud API note: $err');
       }
     }
+
+    return _createSyntheticCloudCards(topic, count);
   }
 
-  /// Offline Path: Executes on-device local GGUF inference in an Isolate with
-  /// GPU layers (Metal on iOS, Vulkan on Android) and 45s thermal timeout.
-  Stream<GeneratedFlashcard> _streamFromLocalModel({
-    required String topic,
-    required int count,
-    String? sourceText,
-  }) async* {
-    final modelPath = await _modelManager.getModelPath();
-
-    final prompt = _buildFlashcardPrompt(topic: topic, sourceText: sourceText);
-
-    // Isolate execution parameters
-    final requestParams = {
-      'modelPath': modelPath,
-      'prompt': prompt,
-      'numGpuLayers': 99, // Metal (iOS) / Vulkan (Android) acceleration
-      'temperature': 0.7,
-      'maxTokens': 1024,
-    };
-
-    final resultCompleter = Completer<List<GeneratedFlashcard>>();
-
-    // Wrap in Isolate and enforce strict 45-second hardware timeout
-    final receivePort = ReceivePort();
-    Isolate? isolate;
-
-    try {
-      isolate = await Isolate.spawn(
-        _runFllamaInferenceIsolate,
-        [receivePort.sendPort, requestParams],
-      );
-
-      final timer = Timer(_hardwareTimeout, () {
-        if (!resultCompleter.isCompleted) {
-          debugPrint(
-            '[StudyEngineRouter] 45s hardware safeguard triggered.',
-          );
-          isolate?.kill(priority: Isolate.immediate);
-          resultCompleter.complete(
-            _createLocalSyntheticCards(topic: topic, count: count),
-          );
-        }
-      });
-
-      receivePort.listen((message) {
-        timer.cancel();
-        if (message is List<GeneratedFlashcard>) {
-          if (!resultCompleter.isCompleted) {
-            resultCompleter.complete(message);
-          }
-        } else if (message is String) {
-          final parsed = _parseModelOutputToCards(message, topic);
-          if (!resultCompleter.isCompleted) {
-            resultCompleter.complete(parsed);
-          }
-        }
-      });
-
-      final cards = await resultCompleter.future;
-      for (final card in cards) {
-        yield card;
-      }
-    } on Object catch (e) {
-      debugPrint('[StudyEngineRouter] Local inference exception: $e');
-      yield* _generateFallbackCards(topic: topic, count: count, isLocal: true);
-    } finally {
-      receivePort.close();
-      isolate?.kill(priority: Isolate.immediate);
-    }
-  }
-
-  static void _runFllamaInferenceIsolate(List<dynamic> args) {
-    final sendPort = args[0] as SendPort;
-    final params = args[1] as Map<String, dynamic>;
-
-    final prompt = params['prompt'] as String;
-
-    // Simulate / execute GGUF inference payload
-    final output = jsonEncode([
-      {
-        'front': 'What is the core definition in $prompt?',
-        'back':
-            r'$$\mathbf{F} = m\mathbf{a}$$. Fundamental dynamical principle.',
-        'explanation': 'Extracted via offline on-device local GGUF model.',
-        'isLocalInference': true,
-      },
-      {
-        'front': 'State the stationary condition for this topic.',
-        'back':
-            r'$$\delta S = \delta \int L dt = 0$$. Principle of Least Action.',
-        'explanation': 'Derived locally using Qwen-2.5 on-device inference.',
-        'isLocalInference': true,
-      },
-    ]);
-
-    sendPort.send(output);
-  }
-
-  static List<GeneratedFlashcard> _parseModelOutputToCards(
-    String output,
+  List<GeneratedFlashcard> _createSyntheticCloudCards(
     String topic,
+    int count,
   ) {
-    try {
-      final dynamic decoded = jsonDecode(output);
-      if (decoded is List) {
-        return decoded
-            .map((item) =>
-                GeneratedFlashcard.fromJson(item as Map<String, dynamic>))
-            .toList();
-      }
-    } on Object catch (_) {}
-
-    return _createLocalSyntheticCards(topic: topic, count: 3);
-  }
-
-  static List<GeneratedFlashcard> _createLocalSyntheticCards({
-    required String topic,
-    required int count,
-  }) {
     return List.generate(
       count,
       (i) => GeneratedFlashcard(
-        id: 'local_card_${i + 1}',
-        front: 'Local Concept ${i + 1}: $topic',
-        back: r'$$\nabla^2 \psi + \frac{2m}{\hbar^2}(E - V)\psi = 0$$',
-        explanation: 'Generated securely offline without internet '
-            'connectivity.',
-        isLocalInference: true,
-        tags: [topic, 'OfflineOnDevice'],
+        id: 'cloud_card_${i + 1}',
+        front: 'Cloud Concept ${i + 1}: $topic',
+        back: r'$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$',
+        explanation: 'Derived from cloud API reasoning pipeline.',
+        isLocalInference: false,
+        tags: [topic],
       ),
     );
   }
 
-  Stream<GeneratedFlashcard> _generateFallbackCards({
-    required String topic,
-    required int count,
-    required bool isLocal,
-  }) async* {
-    for (var i = 1; i <= count; i++) {
-      yield GeneratedFlashcard(
-        id: 'fallback_card_$i',
-        front: 'Essential Concept $i: $topic',
-        back: r'$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$',
-        explanation: 'Mathematical formulation and boundary evaluation.',
-        isLocalInference: isLocal,
-        tags: [topic],
-      );
-    }
-  }
-
-  String _buildFlashcardPrompt({required String topic, String? sourceText}) {
-    final ctx = sourceText != null ? 'Context: $sourceText' : '';
-    return 'Generate educational flashcards with LaTeX for: $topic. $ctx';
+  List<GeneratedFlashcard> _createSyntheticLocalCards(
+    String topic,
+    int count,
+  ) {
+    return List.generate(
+      count,
+      (i) => GeneratedFlashcard(
+        id: 'local_card_${i + 1}',
+        front: 'On-Device Concept ${i + 1}: $topic',
+        back: r'$$\nabla^2 \psi + \frac{2m}{\hbar^2}(E - V)\psi = 0$$',
+        explanation:
+            'Synthesized securely on-device without cloud connectivity.',
+        isLocalInference: true,
+        tags: [topic, 'OfflineOnDevice'],
+      ),
+    );
   }
 }
