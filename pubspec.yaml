@@ -38,6 +38,7 @@ dependencies:
   path_provider: ^2.1.6
   pdf: ^3.12.0
   permission_handler: ^13.0.1
+  purchases_flutter: ^10.10.1
   retrofit: ^4.7.3
   share_plus: ^13.3.0
   supabase_flutter: ^2.17.2
