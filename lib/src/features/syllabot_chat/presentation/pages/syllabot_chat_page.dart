@@ -4,7 +4,9 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 
 @RoutePage()
 class SyllabotChatPage extends StatelessWidget {
-  const SyllabotChatPage({super.key});
+  const SyllabotChatPage({this.initialPrompt, super.key});
+
+  final String? initialPrompt;
 
   @override
   Widget build(BuildContext context) {

@@ -19,5 +19,10 @@ void _initDataSource() {
     )
     ..registerLazySingleton<ContentRecommendationDataSource>(
       ContentRecommendationDataSourceImpl.new,
+    )
+    ..registerLazySingleton<DashboardRemoteDataSource>(
+      () => DashboardRemoteDataSourceImpl(
+        locator<DashboardApiClient>(),
+      ),
     );
 }

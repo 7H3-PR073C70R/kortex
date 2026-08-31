@@ -27,16 +27,13 @@ void _initServices() {
     )
     ..registerFactory<CalibrationCubit>(
       () => CalibrationCubit(
-        saveCalibrationProfileUseCase:
-            locator<SaveCalibrationProfileUseCase>(),
+        saveCalibrationProfileUseCase: locator<SaveCalibrationProfileUseCase>(),
       ),
     )
     ..registerFactory<ContentRecommendationCubit>(
       () => ContentRecommendationCubit(
-        getRecommendedContentUseCase:
-            locator<GetRecommendedContentUseCase>(),
-        getCalibrationProfileUseCase:
-            locator<GetCalibrationProfileUseCase>(),
+        getRecommendedContentUseCase: locator<GetRecommendedContentUseCase>(),
+        getCalibrationProfileUseCase: locator<GetCalibrationProfileUseCase>(),
       ),
     );
 }

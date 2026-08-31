@@ -15,6 +15,15 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
+import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
+import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
+import 'package:kortex/src/features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_feed_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/quick_start_mock_exam_use_case.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/repositories/calibration_repository_impl.dart';

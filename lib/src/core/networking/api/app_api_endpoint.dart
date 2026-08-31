@@ -16,4 +16,9 @@ class AppApiEndpoint {
   static const String register = '/api/v1/auth/register';
   static const String socialAuth = '/api/v1/auth/social';
   static const String resetPassword = '/api/v1/auth/reset-password';
+
+  // Dashboard Endpoints
+  static const String dashboardFeed = '/api/v1/dashboard/feed';
+  static const String dashboardReviewQueue = '/api/v1/dashboard/review-queue';
+  static const String dashboardStartExam = '/api/v1/dashboard/start-exam';
 }

@@ -36,5 +36,20 @@ void _initUseCaseLocator() {
         verifyOtpUseCase: locator<VerifyOtpUseCase>(),
         resendOtpUseCase: locator<ResendOtpUseCase>(),
       ),
+    )
+    ..registerLazySingleton<GetDashboardFeedUseCase>(
+      () => GetDashboardFeedUseCase(locator<DashboardRepository>()),
+    )
+    ..registerLazySingleton<GetSm2ReviewQueueUseCase>(
+      () => GetSm2ReviewQueueUseCase(locator<DashboardRepository>()),
+    )
+    ..registerLazySingleton<QuickStartMockExamUseCase>(
+      () => QuickStartMockExamUseCase(locator<DashboardRepository>()),
+    )
+    ..registerFactory<DashboardBloc>(
+      () => DashboardBloc(
+        getDashboardFeedUseCase: locator<GetDashboardFeedUseCase>(),
+        quickStartMockExamUseCase: locator<QuickStartMockExamUseCase>(),
+      ),
     );
 }

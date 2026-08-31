@@ -31,8 +31,8 @@ class _MainNavItem {
   final String Function(AppLocalizations l10n) labelBuilder;
 }
 
-const List<_MainNavItem> _kNavItems = [
-  _MainNavItem(
+final List<_MainNavItem> _kNavItems = [
+  const _MainNavItem(
     route: DashboardRoute(),
     icon: Icons.dashboard_outlined,
     activeIcon: Icons.dashboard_rounded,
@@ -44,19 +44,19 @@ const List<_MainNavItem> _kNavItems = [
     activeIcon: Icons.auto_awesome_rounded,
     labelBuilder: _getSyllabotLabel,
   ),
-  _MainNavItem(
+  const _MainNavItem(
     route: DecksRoute(),
     icon: Icons.style_outlined,
     activeIcon: Icons.style_rounded,
     labelBuilder: _getDecksLabel,
   ),
-  _MainNavItem(
+  const _MainNavItem(
     route: CommunityRoute(),
     icon: Icons.people_alt_outlined,
     activeIcon: Icons.people_alt_rounded,
     labelBuilder: _getCommunityLabel,
   ),
-  _MainNavItem(
+  const _MainNavItem(
     route: ProfileRoute(),
     icon: Icons.person_outline_rounded,
     activeIcon: Icons.person_rounded,

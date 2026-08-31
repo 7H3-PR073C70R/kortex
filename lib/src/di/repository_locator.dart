@@ -20,5 +20,11 @@ void _initRepositoryLocator() {
     )
     ..registerLazySingleton<OtpRepository>(
       () => const OtpRepositoryImpl(),
+    )
+    ..registerLazySingleton<DashboardRepository>(
+      () => DashboardRepositoryImpl(
+        remoteDataSource: locator<DashboardRemoteDataSource>(),
+        calibrationRepository: locator<CalibrationRepository>(),
+      ),
     );
 }
