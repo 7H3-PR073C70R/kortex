@@ -15,6 +15,7 @@ import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart'
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
 import 'package:kortex/src/features/onboarding_utility/domain/use_cases/resend_otp_use_case.dart';
@@ -36,12 +37,65 @@ enum _ChatFlowStep {
   submitting,
 }
 
-/// Conversational AI Chat authentication view with unique Syllabot AI mascot.
-///
-/// Features a caring motivational greeting, context-driven floating inputs,
-/// responsive disabled state for empty send button,
-/// animated "Thinking..." state, live typewriter streaming,
-/// and in-chat OTP verification.
+const List<({String author, String quote})> _motivationalQuotes = [
+  (
+    quote:
+        'The beautiful thing about learning is that no one can '
+        'take it away from you.',
+    author: 'B.B. King',
+  ),
+  (
+    quote:
+        'Live as if you were to die tomorrow. '
+        'Learn as if you were to live forever.',
+    author: 'Mahatma Gandhi',
+  ),
+  (
+    quote:
+        'Education is the most powerful weapon which you can '
+        'use to change the world.',
+    author: 'Nelson Mandela',
+  ),
+  (
+    quote: 'The mind is not a vessel to be filled, but a fire to be kindled.',
+    author: 'Plutarch',
+  ),
+  (
+    quote: 'An investment in knowledge pays the best interest.',
+    author: 'Benjamin Franklin',
+  ),
+  (
+    quote:
+        'Develop a passion for learning. If you do, you will '
+        'never cease to grow.',
+    author: "Anthony J. D'Angelo",
+  ),
+  (
+    quote:
+        'The capacity to learn is a gift; the ability to learn is a skill; '
+        'the willingness to learn is a choice.',
+    author: 'Brian Herbert',
+  ),
+  (
+    quote:
+        'Wisdom is not a product of schooling but of the lifelong '
+        'attempt to acquire it.',
+    author: 'Albert Einstein',
+  ),
+  (
+    quote:
+        'Tell me and I forget. Teach me and I remember. '
+        'Involve me and I learn.',
+    author: 'Benjamin Franklin',
+  ),
+  (
+    quote: 'There is no substitute for hard work and curious minds.',
+    author: 'Thomas Edison',
+  ),
+];
+
+/// Conversational AI Chat authentication view with randomized quotes,
+/// live auto-scrolling, full-width actions, and synchronized draft state.
 class AuthChatView extends HookWidget {
   const AuthChatView({
     required this.onGooglePressed,
@@ -82,6 +136,15 @@ class AuthChatView extends HookWidget {
     final currentFlow = useState<_ChatFlowStep>(_ChatFlowStep.initial);
     final otpEmail = useState<String>('');
 
+    final initialGreeting = useMemoized(() {
+      final randomIndex = math.Random().nextInt(_motivationalQuotes.length);
+      final item = _motivationalQuotes[randomIndex];
+      return 'Hi Stranger! 👋 Welcome to Kortex.\n\n'
+          '✨ "${item.quote}" — ${item.author}\n\n'
+          "I'm Syllabot, your AI study partner. "
+          'How would you like to get started today?';
+    });
+
     useEffect(
       () {
         void textListener() {
@@ -98,21 +161,27 @@ class AuthChatView extends HookWidget {
       ChatAuthMessage(
         id: 'msg_welcome',
         sender: ChatAuthSender.syllabot,
-        text: l10n.authChatWelcome,
+        text: initialGreeting,
         timestamp: DateTime.now(),
       ),
     ]);
 
-    void scrollToBottom() {
+    void scrollToBottom({bool animate = false}) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (scrollController.hasClients) {
-          unawaited(
-            scrollController.animateTo(
+          if (animate) {
+            unawaited(
+              scrollController.animateTo(
+                scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutQuad,
+              ),
+            );
+          } else {
+            scrollController.jumpTo(
               scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOutQuad,
-            ),
-          );
+            );
+          }
         }
       });
     }
@@ -135,7 +204,7 @@ class AuthChatView extends HookWidget {
       messages.value = [...messages.value, msg];
       latestBotMsgId.value = msgId;
       isTyping.value = enableTypewriter;
-      scrollToBottom();
+      scrollToBottom(animate: true);
     }
 
     void addUserMessage(String text, {bool isPassword = false}) {
@@ -148,7 +217,7 @@ class AuthChatView extends HookWidget {
         sensitiveValue: isPassword ? text : null,
       );
       messages.value = [...messages.value, msg];
-      scrollToBottom();
+      scrollToBottom(animate: true);
     }
 
     void simulateBotReply(
@@ -160,7 +229,7 @@ class AuthChatView extends HookWidget {
     }) {
       isThinking.value = true;
       thinkingLabel.value = thinkingText;
-      scrollToBottom();
+      scrollToBottom(animate: true);
 
       Timer(delay, () {
         if (!context.mounted) return;
@@ -185,7 +254,7 @@ class AuthChatView extends HookWidget {
 
       isThinking.value = true;
       thinkingLabel.value = 'Verifying security credentials...';
-      scrollToBottom();
+      scrollToBottom(animate: true);
 
       try {
         final verifyUseCase = locator<VerifyOtpUseCase>();
@@ -235,7 +304,7 @@ class AuthChatView extends HookWidget {
       addUserMessage('Resend Verification Code');
       isThinking.value = true;
       thinkingLabel.value = 'Dispatching fresh verification code...';
-      scrollToBottom();
+      scrollToBottom(animate: true);
 
       try {
         final resendUseCase = locator<ResendOtpUseCase>();
@@ -299,6 +368,7 @@ class AuthChatView extends HookWidget {
 
           addUserMessage(input);
           draftCubit.updateDisplayName(input);
+          context.read<AuthModeCubit>().setFormType(AuthFormType.register);
           textController.clear();
           currentFlow.value = _ChatFlowStep.signUpEmail;
 
@@ -352,7 +422,7 @@ class AuthChatView extends HookWidget {
 
           isThinking.value = true;
           thinkingLabel.value = 'Creating your Kortex neural profile...';
-          scrollToBottom();
+          scrollToBottom(animate: true);
 
           context.read<AuthBloc>().add(
             AuthRegisterRequested(
@@ -379,6 +449,7 @@ class AuthChatView extends HookWidget {
 
           addUserMessage(input);
           draftCubit.updateEmail(input);
+          context.read<AuthModeCubit>().setFormType(AuthFormType.login);
           textController.clear();
           currentFlow.value = _ChatFlowStep.loginPassword;
 
@@ -395,7 +466,7 @@ class AuthChatView extends HookWidget {
 
           isThinking.value = true;
           thinkingLabel.value = 'Authenticating credentials with AI...';
-          scrollToBottom();
+          scrollToBottom(animate: true);
 
           context.read<AuthBloc>().add(
             AuthLoginRequested(
@@ -418,12 +489,13 @@ class AuthChatView extends HookWidget {
 
           addUserMessage(input);
           draftCubit.updateEmail(input);
+          context.read<AuthModeCubit>().setFormType(AuthFormType.login);
           textController.clear();
           currentFlow.value = _ChatFlowStep.submitting;
 
           isThinking.value = true;
           thinkingLabel.value = 'Dispatching password reset link...';
-          scrollToBottom();
+          scrollToBottom(animate: true);
 
           context.read<AuthBloc>().add(
             AuthResetPasswordRequested(email: input),
@@ -553,7 +625,7 @@ class AuthChatView extends HookWidget {
                             onStreamingTick: scrollToBottom,
                             onStreamingComplete: () {
                               isTyping.value = false;
-                              scrollToBottom();
+                              scrollToBottom(animate: true);
                             },
                           );
                         } else {
@@ -567,7 +639,7 @@ class AuthChatView extends HookWidget {
                     ),
                   ),
 
-                  // 2. Floating Action Controls (Buttons & Social Auth)
+                  // 2. Floating Full-Width Action Controls
                   if (isInputNeeded)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -576,24 +648,26 @@ class AuthChatView extends HookWidget {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
+                          if (currentFlow.value ==
+                              _ChatFlowStep.otpVerification) ...[
+                            Row(
                               children: [
-                                if (currentFlow.value ==
-                                    _ChatFlowStep.otpVerification) ...[
-                                  _QuickChip(
+                                Expanded(
+                                  child: _ActionChipButton(
                                     icon: Icons.refresh_rounded,
                                     label: 'Resend Code',
                                     onTap: handleResendOtp,
                                   ),
-                                  _QuickChip(
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _ActionChipButton(
                                     icon: Icons.arrow_back_rounded,
-                                    label: 'Change Email / Sign In',
+                                    label: 'Sign In / Restart',
                                     onTap: () {
-                                      addUserMessage('Change Email / Sign In');
+                                      addUserMessage('Start Over');
                                       currentFlow.value = _ChatFlowStep.initial;
                                       simulateBotReply(
                                         'Sure! How would you like to proceed?',
@@ -601,14 +675,25 @@ class AuthChatView extends HookWidget {
                                       );
                                     },
                                   ),
-                                ] else if (currentFlow.value ==
-                                    _ChatFlowStep.initial) ...[
-                                  _QuickChip(
+                                ),
+                              ],
+                            ),
+                          ] else if (currentFlow.value ==
+                              _ChatFlowStep.initial) ...[
+                            // Row 1: Create Account & Sign In across 50/50 full width
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _ActionChipButton(
                                     icon: Icons.person_add_rounded,
-                                    label: 'Create Account / Sign Up',
+                                    label: 'Create Account',
                                     isPrimary: true,
                                     onTap: () {
                                       addUserMessage('Create Account');
+                                      draftCubit.updateDisplayName('');
+                                      context.read<AuthModeCubit>().setFormType(
+                                        AuthFormType.register,
+                                      );
                                       currentFlow.value =
                                           _ChatFlowStep.signUpName;
                                       simulateBotReply(
@@ -618,11 +703,17 @@ class AuthChatView extends HookWidget {
                                       );
                                     },
                                   ),
-                                  _QuickChip(
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _ActionChipButton(
                                     icon: Icons.login_rounded,
-                                    label: 'Sign In / Log In',
+                                    label: 'Sign In',
                                     onTap: () {
                                       addUserMessage('Sign In');
+                                      context.read<AuthModeCubit>().setFormType(
+                                        AuthFormType.login,
+                                      );
                                       currentFlow.value =
                                           _ChatFlowStep.loginEmail;
                                       simulateBotReply(
@@ -632,42 +723,34 @@ class AuthChatView extends HookWidget {
                                       );
                                     },
                                   ),
-                                  _QuickChip(
-                                    icon: Icons.lock_reset_rounded,
-                                    label: l10n.authChipForgotPassword,
-                                    onTap: () {
-                                      addUserMessage('Forgot Password');
-                                      currentFlow.value =
-                                          _ChatFlowStep.forgotPasswordEmail;
-                                      simulateBotReply(
-                                        'No worries! Enter your email address '
-                                        'and '
-                                        "I'll send you a password reset link.",
-                                        thinkingText:
-                                            'Preparing password reset...',
-                                      );
-                                    },
-                                  ),
-                                ] else ...[
-                                  _QuickChip(
-                                    icon: Icons.arrow_back_rounded,
-                                    label: 'Start Over / Choose Other Option',
-                                    onTap: () {
-                                      addUserMessage('Start Over');
-                                      currentFlow.value = _ChatFlowStep.initial;
-                                      simulateBotReply(
-                                        'No problem! How would you like to '
-                                        'get started?',
-                                        thinkingText: 'Resetting...',
-                                      );
-                                    },
-                                  ),
-                                ],
+                                ),
                               ],
                             ),
-                          ),
-                          if (currentFlow.value == _ChatFlowStep.initial) ...[
+                            const SizedBox(height: 8),
+
+                            // Row 2: Full-width Forgot Password button
+                            _ActionChipButton(
+                              icon: Icons.lock_reset_rounded,
+                              label: l10n.authChipForgotPassword,
+                              isFullWidth: true,
+                              onTap: () {
+                                addUserMessage('Forgot Password');
+                                context.read<AuthModeCubit>().setFormType(
+                                  AuthFormType.login,
+                                );
+                                currentFlow.value =
+                                    _ChatFlowStep.forgotPasswordEmail;
+                                simulateBotReply(
+                                  'No worries! Enter your email address '
+                                  'and '
+                                  "I'll send you a password reset link.",
+                                  thinkingText: 'Preparing password reset...',
+                                );
+                              },
+                            ),
                             const SizedBox(height: 10),
+
+                            // Row 3: Social Auth Bar
                             SocialAuthBar(
                               isLoading: authState.isLoading,
                               onGooglePressed: onGooglePressed,
@@ -680,7 +763,22 @@ class AuthChatView extends HookWidget {
                                 );
                               },
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
+                          ] else ...[
+                            _ActionChipButton(
+                              icon: Icons.arrow_back_rounded,
+                              label: 'Start Over / Choose Other Option',
+                              isFullWidth: true,
+                              onTap: () {
+                                addUserMessage('Start Over');
+                                currentFlow.value = _ChatFlowStep.initial;
+                                simulateBotReply(
+                                  'No problem! How would you like to '
+                                  'get started?',
+                                  thinkingText: 'Resetting...',
+                                );
+                              },
+                            ),
                           ],
                         ],
                       ),
@@ -902,8 +1000,8 @@ class _BotMessageBubble extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isError
                           ? (isDark
-                                ? colors.error.withAlpha(40)
-                                : colors.error.withAlpha(20))
+                                ? const Color(0xFF450A0A).withAlpha(220)
+                                : const Color(0xFFFFF1F2).withAlpha(245))
                           : (isDark
                                 ? colors.surfaceSecondary.withAlpha(170)
                                 : colors.surfacePrimary.withAlpha(220)),
@@ -915,19 +1013,21 @@ class _BotMessageBubble extends StatelessWidget {
                       ),
                       border: Border.all(
                         color: isError
-                            ? colors.error.withAlpha(isDark ? 140 : 90)
+                            ? const Color(0xFFEF4444)
                             : (isDark
                                   ? colors.surfaceBorderHighlight.withAlpha(70)
                                   : colors.surfaceBorder.withAlpha(140)),
-                        width: isError ? 1.4 : 1.0,
+                        width: isError ? 1.5 : 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: isError
-                              ? colors.error.withAlpha(isDark ? 40 : 15)
+                              ? const Color(
+                                  0xFFEF4444,
+                                ).withAlpha(isDark ? 60 : 30)
                               : Colors.black.withAlpha(isDark ? 40 : 10),
-                          blurRadius: isError ? 12 : 8,
-                          offset: const Offset(0, 2),
+                          blurRadius: isError ? 14 : 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -935,26 +1035,37 @@ class _BotMessageBubble extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (isError) ...[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.error_outline_rounded,
-                                size: 14,
-                                color: colors.error,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Syllabot Alert',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.error,
-                                  fontSize: 11,
-                                  letterSpacing: 0.5,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 13,
+                                  color: Colors.white,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Syllabot Alert',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                         ],
                         TypewriterText(
                           text: message.text,
@@ -963,8 +1074,13 @@ class _BotMessageBubble extends StatelessWidget {
                           onComplete: onStreamingComplete,
                           style: typography.callout.regular.copyWith(
                             color: isError
-                                ? (isDark ? colors.white : colors.error)
+                                ? (isDark
+                                      ? const Color(0xFFFCA5A5)
+                                      : const Color(0xFF991B1B))
                                 : colors.textPrimary,
+                            fontWeight: isError
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             fontSize: 14,
                             height: 1.35,
                           ),
@@ -1203,18 +1319,20 @@ class _ThinkingBubble extends HookWidget {
   }
 }
 
-class _QuickChip extends StatelessWidget {
-  const _QuickChip({
+class _ActionChipButton extends StatelessWidget {
+  const _ActionChipButton({
     required this.label,
     required this.onTap,
     this.icon,
     this.isPrimary = false,
+    this.isFullWidth = false,
   });
 
   final String label;
   final VoidCallback onTap;
   final IconData? icon;
   final bool isPrimary;
+  final bool isFullWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -1222,70 +1340,69 @@ class _QuickChip extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Semantics(
-        button: true,
-        label: 'Quick action: $label',
-        child: ShrinkableButton(
-          onTap: () {
-            unawaited(HapticFeedback.lightImpact());
-            onTap();
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+    return Semantics(
+      button: true,
+      label: 'Action: $label',
+      child: ShrinkableButton(
+        onTap: () {
+          unawaited(HapticFeedback.lightImpact());
+          onTap();
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: isPrimary
+                    ? colors.primary.withAlpha(isDark ? 220 : 240)
+                    : (isDark
+                          ? colors.surfaceSecondary.withAlpha(170)
+                          : colors.surfacePrimary.withAlpha(220)),
+                border: Border.all(
                   color: isPrimary
-                      ? colors.primary.withAlpha(isDark ? 220 : 240)
+                      ? colors.primary
                       : (isDark
-                            ? colors.surfaceSecondary.withAlpha(160)
-                            : colors.surfacePrimary.withAlpha(210)),
-                  border: Border.all(
-                    color: isPrimary
-                        ? colors.primary
-                        : (isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(80)
-                              : colors.surfaceBorder.withAlpha(140)),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isPrimary
-                          ? colors.primary.withAlpha(40)
-                          : Colors.black.withAlpha(isDark ? 50 : 10),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                            ? colors.surfaceBorderHighlight.withAlpha(80)
+                            : colors.surfaceBorder.withAlpha(140)),
+                  width: 1.2,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(
-                        icon,
-                        size: 15,
-                        color: isPrimary ? Colors.white : colors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Text(
+                boxShadow: [
+                  BoxShadow(
+                    color: isPrimary
+                        ? colors.primary.withAlpha(40)
+                        : Colors.black.withAlpha(isDark ? 50 : 10),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isPrimary ? Colors.white : colors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Text(
                       label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: typography.caption.semiBold.copyWith(
                         color: isPrimary ? Colors.white : colors.textPrimary,
-                        fontSize: 12.5,
+                        fontSize: 13.5,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

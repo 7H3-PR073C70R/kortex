@@ -43,6 +43,22 @@ class AuthFormView extends HookWidget {
 
     useEffect(
       () {
+        if (emailController.text != draftState.email) {
+          emailController.text = draftState.email;
+        }
+        if (passwordController.text != draftState.password) {
+          passwordController.text = draftState.password;
+        }
+        if (nameController.text != draftState.displayName) {
+          nameController.text = draftState.displayName;
+        }
+        return null;
+      },
+      [draftState.email, draftState.password, draftState.displayName],
+    );
+
+    useEffect(
+      () {
         void listener() {
           draftCubit
             ..updateEmail(emailController.text)
