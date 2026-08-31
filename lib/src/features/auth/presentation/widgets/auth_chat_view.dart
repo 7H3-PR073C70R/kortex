@@ -10,7 +10,6 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
@@ -18,8 +17,6 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
-import 'package:kortex/src/features/onboarding_utility/domain/use_cases/resend_otp_use_case.dart';
-import 'package:kortex/src/features/onboarding_utility/domain/use_cases/verify_otp_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -30,7 +27,6 @@ enum _ChatFlowStep {
   signUpName,
   signUpEmail,
   signUpPassword,
-  otpVerification,
   loginEmail,
   loginPassword,
   forgotPasswordEmail,
@@ -137,7 +133,6 @@ class AuthChatView extends HookWidget {
     final lastRetryDescription = useState<String>('');
 
     final currentFlow = useState<_ChatFlowStep>(_ChatFlowStep.initial);
-    final otpEmail = useState<String>('');
 
     final initialGreeting = useMemoized(() {
       final randomIndex = math.Random().nextInt(_motivationalQuotes.length);
@@ -243,118 +238,6 @@ class AuthChatView extends HookWidget {
         addBotMessage(replyText, isError: isError, onRetry: onRetry);
         onComplete?.call();
       });
-    }
-
-    Future<void> handleOtpSubmit(String code) async {
-      addUserMessage(code, isPassword: true);
-      textController.clear();
-
-      if (code.length != 6 || int.tryParse(code) == null) {
-        simulateBotReply(
-          'Please enter a valid 6-digit numeric verification code.',
-          isError: true,
-          thinkingText: 'Checking verification code...',
-        );
-        return;
-      }
-
-      isThinking.value = true;
-      thinkingLabel.value = 'Verifying security credentials...';
-      scrollToBottom(animate: true);
-
-      lastRetryDescription.value = 'Verify OTP';
-      lastRetryAction.value = () => handleOtpSubmit(code);
-
-      try {
-        final verifyUseCase = locator<VerifyOtpUseCase>();
-        final result = await verifyUseCase(
-          email: otpEmail.value.isNotEmpty ? otpEmail.value : draftState.email,
-          otp: code,
-        );
-
-        if (!context.mounted) return;
-        isThinking.value = false;
-
-        result.fold(
-          (failure) {
-            addBotMessage(
-              'Verification Failed: '
-              '${failure.message ?? "Invalid or expired code"}.\n'
-              'Tap "Retry Request" below or check your code.',
-              isError: true,
-              onRetry: () => handleOtpSubmit(code),
-            );
-          },
-          (_) {
-            lastRetryAction.value = null;
-            addBotMessage(
-              'Security verification complete! '
-              'Initializing your academic calibration profile...',
-            );
-            Timer(const Duration(milliseconds: 700), () {
-              if (context.mounted) {
-                unawaited(
-                  context.router.replace(const OnboardingCalibrationRoute()),
-                );
-              }
-            });
-          },
-        );
-      } on Object catch (_) {
-        if (!context.mounted) return;
-        isThinking.value = false;
-        addBotMessage(
-          'Network error during verification. '
-          'Please check your connection and tap Retry Request.',
-          isError: true,
-          onRetry: () => handleOtpSubmit(code),
-        );
-      }
-    }
-
-    Future<void> handleResendOtp() async {
-      addUserMessage('Resend Verification Code');
-      isThinking.value = true;
-      thinkingLabel.value = 'Dispatching fresh verification code...';
-      scrollToBottom(animate: true);
-
-      try {
-        final resendUseCase = locator<ResendOtpUseCase>();
-        final result = await resendUseCase(
-          email: otpEmail.value.isNotEmpty ? otpEmail.value : draftState.email,
-        );
-
-        if (!context.mounted) return;
-        isThinking.value = false;
-
-        result.fold(
-          (failure) {
-            addBotMessage(
-              'Could not resend verification code: '
-              '${failure.message ?? "Request timed out"}. '
-              'Please wait a moment and try again.',
-              isError: true,
-              onRetry: handleResendOtp,
-            );
-          },
-          (_) {
-            addBotMessage(
-              'A fresh 6-digit verification code has been dispatched to '
-              '${otpEmail.value}. '
-              'Check your inbox and enter the code below.',
-            );
-          },
-        );
-      } on Object catch (_) {
-        if (!context.mounted) return;
-        isThinking.value = false;
-        addBotMessage(
-          'Network error while sending verification code. '
-          'Please try again.',
-          isError: true,
-          onRetry: handleResendOtp,
-        );
-      }
     }
 
     void handleSend() {
@@ -464,9 +347,6 @@ class AuthChatView extends HookWidget {
               displayName: regName,
             ),
           );
-
-        case _ChatFlowStep.otpVerification:
-          unawaited(handleOtpSubmit(input));
 
         case _ChatFlowStep.loginEmail:
           if (!_emailRegex.hasMatch(input)) {
@@ -594,8 +474,6 @@ class AuthChatView extends HookWidget {
           return 'Enter your registered email';
         case _ChatFlowStep.initial:
           return 'Choose an option below...';
-        case _ChatFlowStep.otpVerification:
-          return 'Enter 6-digit verification code (e.g. 123456)';
         case _ChatFlowStep.submitting:
           return 'Processing...';
       }
@@ -603,14 +481,14 @@ class AuthChatView extends HookWidget {
 
     final isPasswordField =
         currentFlow.value == _ChatFlowStep.signUpPassword ||
-        currentFlow.value == _ChatFlowStep.loginPassword ||
-        currentFlow.value == _ChatFlowStep.otpVerification;
+        currentFlow.value == _ChatFlowStep.loginPassword;
 
     return BlocListener<AuthBloc, AuthState>(
       listenWhen: (previous, current) =>
           previous.status != current.status ||
           (current.status == AuthStatus.error &&
-              current.errorMessage != previous.errorMessage),
+              current.errorMessage != previous.errorMessage) ||
+          (current.isResetSent && !previous.isResetSent),
       listener: (context, state) {
         if (state.status == AuthStatus.error) {
           isThinking.value = false;
@@ -631,21 +509,45 @@ class AuthChatView extends HookWidget {
                   }
                 : null,
           );
-        } else if (state.requiresOtp && state.user != null) {
+        } else if (state.status == AuthStatus.needsOnboarding &&
+            state.user != null) {
           isThinking.value = false;
-          currentFlow.value = _ChatFlowStep.otpVerification;
-          otpEmail.value = state.user!.email;
+          isTyping.value = false;
+          currentFlow.value = _ChatFlowStep.initial;
+          final name = state.user?.displayName ?? 'Scholar';
           addBotMessage(
-            'Account created! We have sent a 6-digit verification code to '
-            '${state.user!.email}. '
-            'Please enter the code below to verify your account.',
+            '🎉 Welcome to Kortex, $name! Your account has been created.\n\n'
+            "Let's configure your academic track and study profile...",
           );
+          Timer(const Duration(milliseconds: 900), () {
+            if (context.mounted) {
+              unawaited(
+                context.router.replace(const OnboardingCalibrationRoute()),
+              );
+            }
+          });
+        } else if (state.status == AuthStatus.authenticated &&
+            state.user != null) {
+          isThinking.value = false;
+          isTyping.value = false;
+          currentFlow.value = _ChatFlowStep.initial;
+          final name = state.user?.displayName ?? 'Scholar';
+          addBotMessage(
+            '✨ Welcome back, $name! Signed in successfully.',
+          );
+          Timer(const Duration(milliseconds: 700), () {
+            if (context.mounted) {
+              unawaited(context.router.replace(const MainRoute()));
+            }
+          });
         } else if (state.isResetSent) {
           isThinking.value = false;
+          isTyping.value = false;
           currentFlow.value = _ChatFlowStep.initial;
           addBotMessage(
-            'A password reset link has been dispatched to your email! '
-            'Follow the link in your inbox to reset your password.',
+            '📧 A password reset link has been dispatched to your email '
+            'address!\n\n'
+            'Please check your inbox to create a new password, then sign in.',
           );
         }
       },
@@ -724,37 +626,7 @@ class AuthChatView extends HookWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (currentFlow.value ==
-                              _ChatFlowStep.otpVerification) ...[
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _ActionChipButton(
-                                    icon: Icons.refresh_rounded,
-                                    label: 'Resend Code',
-                                    onTap: handleResendOtp,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _ActionChipButton(
-                                    icon: Icons.arrow_back_rounded,
-                                    label: 'Sign In / Restart',
-                                    onTap: () {
-                                      lastRetryAction.value = null;
-                                      addUserMessage('Start Over');
-                                      currentFlow.value = _ChatFlowStep.initial;
-                                      simulateBotReply(
-                                        'Sure! How would you like to proceed?',
-                                        thinkingText: 'Resetting flow...',
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ] else if (currentFlow.value ==
-                              _ChatFlowStep.initial) ...[
+                          if (currentFlow.value == _ChatFlowStep.initial) ...[
                             // If last request failed, show 1-tap Retry Pill
                             if (lastRetryAction.value != null) ...[
                               Row(
@@ -939,17 +811,11 @@ class AuthChatView extends HookWidget {
                                               ? TextCapitalization.words
                                               : TextCapitalization.none,
                                           keyboardType: isPasswordField
-                                              ? (currentFlow.value ==
-                                                        _ChatFlowStep
-                                                            .otpVerification
-                                                    ? TextInputType.number
-                                                    : TextInputType
-                                                          .visiblePassword)
+                                              ? TextInputType.visiblePassword
                                               : (currentFlow.value ==
-                                                        _ChatFlowStep.signUpName
-                                                    ? TextInputType.name
-                                                    : TextInputType
-                                                          .emailAddress),
+                                                      _ChatFlowStep.signUpName
+                                                  ? TextInputType.name
+                                                  : TextInputType.emailAddress),
                                           obscureText: isPasswordField,
                                           style: typography.callout.regular
                                               .copyWith(

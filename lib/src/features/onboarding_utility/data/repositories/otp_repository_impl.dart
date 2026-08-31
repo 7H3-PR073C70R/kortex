@@ -2,9 +2,11 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/onboarding_utility/domain/repositories/otp_repository.dart';
 
-/// OTP repository implementation — calls auth API for verify & resend.
-/// Swap the stub futures below with actual Retrofit client calls when
-/// the backend OTP endpoint is ready.
+/// Legacy OTP repository implementation.
+///
+/// Authentication verification and password recovery are handled natively
+/// via Supabase Auth password reset links (`AuthResetPasswordRequested`)
+/// and direct registration (`AuthRegisterRequested`).
 class OtpRepositoryImpl implements OtpRepository {
   const OtpRepositoryImpl();
 
@@ -13,13 +15,13 @@ class OtpRepositoryImpl implements OtpRepository {
     required String email,
     required String otp,
   }) async {
-    // TODO(backend): replace with real API call
+    // Native Supabase auth handles verification through magic links & tokens.
     return const Right<Failure, bool>(true);
   }
 
   @override
   Future<Either<Failure, bool>> resendOtp({required String email}) async {
-    // TODO(backend): replace with real API call
+    // Native Supabase auth sends password reset and magic links directly.
     return const Right<Failure, bool>(true);
   }
 }

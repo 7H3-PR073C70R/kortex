@@ -58,21 +58,28 @@ class _AuthPageContent extends HookWidget {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state.requiresOtp && state.user != null) {
+        if (state.status == AuthStatus.needsOnboarding && state.user != null) {
           if (!isChatMode) {
-            // Email signup in Form mode → OTP verification interstitial
+            context.showSnackBar(
+              message: 'Account created! Welcome to Kortex.',
+            );
             unawaited(
-              context.router.push(
-                OtpVerificationRoute(email: state.user!.email),
-              ),
+              context.router.replace(const OnboardingCalibrationRoute()),
             );
           }
         } else if (state.isAuthenticated) {
-          // Login / Social auth → skip OTP, go straight to calibration
-          context.showSnackBar(message: l10n.authSuccessMessage);
-          unawaited(
-            context.router.replace(const OnboardingCalibrationRoute()),
-          );
+          if (!isChatMode) {
+            context.showSnackBar(message: l10n.authSuccessMessage);
+            unawaited(
+              context.router.replace(const OnboardingCalibrationRoute()),
+            );
+          }
+        } else if (state.isResetSent) {
+          if (!isChatMode) {
+            context.showSnackBar(
+              message: 'Password reset link sent to your email.',
+            );
+          }
         } else if (state.status == AuthStatus.error &&
             state.errorMessage != null) {
           if (!isChatMode) {
