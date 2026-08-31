@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/services/user_storage_service.dart';
 import 'package:logger/logger.dart';
 
@@ -52,8 +53,19 @@ class TokenInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final someToken = storageService.getToken() ?? '';
-    options.headers['Authorization'] = 'Bearer $someToken';
+    final userToken = storageService.getToken();
+    final anonKey = AppEnv.supabaseAnonKey;
+
+    if (anonKey.isNotEmpty) {
+      options.headers['apikey'] = anonKey;
+    }
+
+    if (userToken != null && userToken.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $userToken';
+    } else if (anonKey.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $anonKey';
+    }
+
     super.onRequest(options, handler);
   }
 }
@@ -66,22 +78,12 @@ class DataParserInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    late Response<dynamic> modifiedResponse;
-    try {
-      modifiedResponse = Response<dynamic>(
-        requestOptions: response.requestOptions,
-        data: (response.data as Map<String, dynamic>)['data'],
-        statusCode: response.statusCode,
-        extra: response.extra,
-        headers: response.headers,
-        isRedirect: response.isRedirect,
-        redirects: response.redirects,
-        statusMessage: response.statusMessage,
-      );
-    } on Object {
-      modifiedResponse = response;
+    final dynamic data = response.data;
+    if (data is Map<String, dynamic>) {
+      if (data.containsKey('data')) {
+        response.data = data['data'];
+      }
     }
-
-    super.onResponse(modifiedResponse, handler);
+    super.onResponse(response, handler);
   }
 }

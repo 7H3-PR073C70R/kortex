@@ -11,20 +11,20 @@ class AppApiEndpoint {
 
   static String baseUri = '$scheme://$host';
 
-  // Auth Endpoints
-  static const String login = '/api/v1/auth/login';
-  static const String register = '/api/v1/auth/register';
-  static const String socialAuth = '/api/v1/auth/social';
-  static const String resetPassword = '/api/v1/auth/reset-password';
+  // Auth Endpoints (Supabase GoTrue)
+  static const String login = '/auth/v1/token?grant_type=password';
+  static const String register = '/auth/v1/signup';
+  static const String socialAuth = '/auth/v1/token';
+  static const String resetPassword = '/auth/v1/recover';
 
-  // Dashboard Endpoints
-  static const String dashboardFeed = '/api/v1/dashboard/feed';
-  static const String dashboardReviewQueue = '/api/v1/dashboard/review-queue';
-  static const String dashboardStartExam = '/api/v1/dashboard/start-exam';
+  // Dashboard Endpoints (Supabase RPC & REST)
+  static const String dashboardFeed = '/rest/v1/rpc/get_dashboard_feed';
+  static const String dashboardReviewQueue = '/rest/v1/decks?due_cards=gt.0&order=due_cards.desc&limit=5';
+  static const String dashboardStartExam = '/rest/v1/rpc/record_study_session';
 
-  // Decks & Flashcards Endpoints
-  static const String decks = '/api/v1/decks';
-  static const String deckCards = '/api/v1/decks/{id}/cards';
-  static const String reviewCard = '/api/v1/decks/cards/{cardId}/review';
-  static const String sessionResults = '/api/v1/decks/{id}/session-results';
+  // Decks & Flashcards Endpoints (Supabase REST & RPC)
+  static const String decks = '/rest/v1/decks?select=*';
+  static const String deckCards = '/rest/v1/flashcards?deck_id=eq.{id}&select=*';
+  static const String reviewCard = '/rest/v1/rpc/process_card_sm2_review';
+  static const String sessionResults = '/rest/v1/rpc/record_study_session';
 }

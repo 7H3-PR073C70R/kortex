@@ -22,6 +22,15 @@ abstract class RegisterRequestModel with _$RegisterRequestModel {
     String? displayName,
   }) = _RegisterRequestModel;
 
+  const RegisterRequestModel._();
+
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'password': password,
+        if (displayName != null && displayName!.isNotEmpty)
+          'data': {'display_name': displayName},
+      };
+
   factory RegisterRequestModel.fromJson(Map<String, dynamic> json) =>
       _$RegisterRequestModelFromJson(json);
 }

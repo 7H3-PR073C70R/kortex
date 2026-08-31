@@ -123,3 +123,4 @@ lib/l10n/gen/
 .env.development
 .env.production
 .env.staging
+.note.txt
