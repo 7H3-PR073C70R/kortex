@@ -114,5 +114,22 @@ void _initUseCaseLocator() {
         generateDeckUseCase: locator<GenerateFlashcardsFromDocUseCase>(),
         fetchUserDocsUseCase: locator<FetchUserDocumentsUseCase>(),
       ),
+    )
+    ..registerLazySingleton<JoinLiveStudyRoomUseCase>(
+      () => JoinLiveStudyRoomUseCase(locator<CommunityRepository>()),
+    )
+    ..registerLazySingleton<FetchForumPostsUseCase>(
+      () => FetchForumPostsUseCase(locator<CommunityRepository>()),
+    )
+    ..registerLazySingleton<CloneSharedDeckUseCase>(
+      () => CloneSharedDeckUseCase(locator<CommunityRepository>()),
+    )
+    ..registerLazySingleton<StreamLeaderboardRankingsUseCase>(
+      () => StreamLeaderboardRankingsUseCase(locator<CommunityRepository>()),
+    )
+    ..registerFactory<CommunityHubBloc>(
+      () => CommunityHubBloc(
+        repository: locator<CommunityRepository>(),
+      ),
     );
 }

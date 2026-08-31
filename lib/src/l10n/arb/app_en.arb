@@ -1840,5 +1840,105 @@
     "contentAlreadyUploadedNotice": "File already indexed. Loaded existing STEM extractions instantly.",
     "@contentAlreadyUploadedNotice": {
         "description": "Snackbar notice when file hash matches an existing document"
+    },
+    "communityTitle": "Community & Study Hub",
+    "@communityTitle": {
+        "description": "Title of the Community Hub"
+    },
+    "liveRoomsTab": "Live Rooms",
+    "@liveRoomsTab": {
+        "description": "Label for live study rooms tab"
+    },
+    "forumTab": "Track Forum",
+    "@forumTab": {
+        "description": "Label for track discussion forum tab"
+    },
+    "marketplaceTab": "Deck Market",
+    "@marketplaceTab": {
+        "description": "Label for community deck marketplace tab"
+    },
+    "leaderboardTab": "Leaderboard",
+    "@leaderboardTab": {
+        "description": "Label for streak and XP leaderboard tab"
+    },
+    "joinRoomButton": "Join Focus Room",
+    "@joinRoomButton": {
+        "description": "Button label to join a live study room"
+    },
+    "cloneDeckButton": "Clone to My Decks",
+    "@cloneDeckButton": {
+        "description": "Button label to clone a shared deck"
+    },
+    "createPostButton": "Create Post",
+    "@createPostButton": {
+        "description": "Button to create a forum post"
+    },
+    "activeParticipantsCount": "{count} active peers",
+    "@activeParticipantsCount": {
+        "description": "Subtitle showing active participant count in room",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "dailyStreakRank": "Rank #{rank} • {streak} Day Streak",
+    "@dailyStreakRank": {
+        "description": "Leaderboard item rank and streak badge",
+        "placeholders": {
+            "rank": {
+                "type": "int",
+                "example": "1"
+            },
+            "streak": {
+                "type": "int",
+                "example": "14"
+            }
+        }
+    },
+    "deckClonedSuccessNotice": "Deck cloned successfully! Added to your study space.",
+    "@deckClonedSuccessNotice": {
+        "description": "Notification when a shared deck is cloned"
+    },
+    "focusRoomTitle": "Synchronized Focus Room",
+    "@focusRoomTitle": {
+        "description": "Title of live study room page"
+    },
+    "pomodoroFocus": "Deep Focus",
+    "@pomodoroFocus": {
+        "description": "Pomodoro focusing state"
+    },
+    "pomodoroBreak": "Short Break",
+    "@pomodoroBreak": {
+        "description": "Pomodoro break state"
+    },
+    "leaveRoomButton": "Leave Room",
+    "@leaveRoomButton": {
+        "description": "Button label to leave live room"
+    },
+    "shareDeckTitle": "Share a Flashcard Deck",
+    "@shareDeckTitle": {
+        "description": "Title of share deck bottom sheet"
+    },
+    "postTitleHint": "Thread title (e.g. Solving Maxwell's Equations...)",
+    "@postTitleHint": {
+        "description": "Hint for forum thread title"
+    },
+    "postContentHint": "Describe your academic question or insight...",
+    "@postContentHint": {
+        "description": "Hint for forum thread body"
+    },
+    "selectTrackHint": "Select Academic Track",
+    "@selectTrackHint": {
+        "description": "Dropdown hint for academic track"
+    },
+    "replyAction": "Reply",
+    "@replyAction": {
+        "description": "Button label to reply to forum thread"
+    },
+    "upvoteAction": "Upvote",
+    "@upvoteAction": {
+        "description": "Button label to upvote a thread"
     }
 }

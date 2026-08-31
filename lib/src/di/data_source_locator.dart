@@ -46,5 +46,11 @@ void _initDataSource() {
         locator<SupabaseIngestionClient>(),
         locator<UserStorageService>(),
       ),
+    )
+    ..registerLazySingleton<CommunityRemoteDataSource>(
+      () => CommunityRemoteDataSourceImpl(
+        locator<SupabaseCommunityClient>(),
+        locator<UserStorageService>(),
+      ),
     );
 }

@@ -51,7 +51,7 @@ final List<_MainNavItem> _kNavItems = [
     labelBuilder: _getDecksLabel,
   ),
   const _MainNavItem(
-    route: CommunityRoute(),
+    route: CommunityHubRoute(),
     icon: Icons.people_alt_outlined,
     activeIcon: Icons.people_alt_rounded,
     labelBuilder: _getCommunityLabel,

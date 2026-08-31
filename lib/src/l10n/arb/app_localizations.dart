@@ -2347,6 +2347,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File already indexed. Loaded existing STEM extractions instantly.'**
   String get contentAlreadyUploadedNotice;
+
+  /// Title of the Community Hub
+  ///
+  /// In en, this message translates to:
+  /// **'Community & Study Hub'**
+  String get communityTitle;
+
+  /// Label for live study rooms tab
+  ///
+  /// In en, this message translates to:
+  /// **'Live Rooms'**
+  String get liveRoomsTab;
+
+  /// Label for track discussion forum tab
+  ///
+  /// In en, this message translates to:
+  /// **'Track Forum'**
+  String get forumTab;
+
+  /// Label for community deck marketplace tab
+  ///
+  /// In en, this message translates to:
+  /// **'Deck Market'**
+  String get marketplaceTab;
+
+  /// Label for streak and XP leaderboard tab
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboardTab;
+
+  /// Button label to join a live study room
+  ///
+  /// In en, this message translates to:
+  /// **'Join Focus Room'**
+  String get joinRoomButton;
+
+  /// Button label to clone a shared deck
+  ///
+  /// In en, this message translates to:
+  /// **'Clone to My Decks'**
+  String get cloneDeckButton;
+
+  /// Button to create a forum post
+  ///
+  /// In en, this message translates to:
+  /// **'Create Post'**
+  String get createPostButton;
+
+  /// Subtitle showing active participant count in room
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active peers'**
+  String activeParticipantsCount(int count);
+
+  /// Leaderboard item rank and streak badge
+  ///
+  /// In en, this message translates to:
+  /// **'Rank #{rank} • {streak} Day Streak'**
+  String dailyStreakRank(int rank, int streak);
+
+  /// Notification when a shared deck is cloned
+  ///
+  /// In en, this message translates to:
+  /// **'Deck cloned successfully! Added to your study space.'**
+  String get deckClonedSuccessNotice;
+
+  /// Title of live study room page
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronized Focus Room'**
+  String get focusRoomTitle;
+
+  /// Pomodoro focusing state
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Focus'**
+  String get pomodoroFocus;
+
+  /// Pomodoro break state
+  ///
+  /// In en, this message translates to:
+  /// **'Short Break'**
+  String get pomodoroBreak;
+
+  /// Button label to leave live room
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Room'**
+  String get leaveRoomButton;
+
+  /// Title of share deck bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Share a Flashcard Deck'**
+  String get shareDeckTitle;
+
+  /// Hint for forum thread title
+  ///
+  /// In en, this message translates to:
+  /// **'Thread title (e.g. Solving Maxwell\'s Equations...)'**
+  String get postTitleHint;
+
+  /// Hint for forum thread body
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your academic question or insight...'**
+  String get postContentHint;
+
+  /// Dropdown hint for academic track
+  ///
+  /// In en, this message translates to:
+  /// **'Select Academic Track'**
+  String get selectTrackHint;
+
+  /// Button label to reply to forum thread
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get replyAction;
+
+  /// Button label to upvote a thread
+  ///
+  /// In en, this message translates to:
+  /// **'Upvote'**
+  String get upvoteAction;
 }
 
 class _AppLocalizationsDelegate

@@ -1,0 +1,202 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+class CreatePostBottomSheet extends HookWidget {
+  const CreatePostBottomSheet({
+    required this.onSubmit,
+    super.key,
+  });
+
+  final void Function({
+    required String title,
+    required String content,
+    required String track,
+    String? latexContent,
+  }) onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    final titleController = useTextEditingController();
+    final contentController = useTextEditingController();
+    final latexController = useTextEditingController();
+    final selectedTrack = useState<String>('WAEC');
+
+    final tracks = [
+      'WAEC',
+      'JAMB',
+      'SAT',
+      'Engineering',
+      'Medicine',
+      'General',
+    ];
+
+    return Container(
+      padding: EdgeInsets.only(
+        top: 24,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Grabber handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.textSecondary.withAlpha(80),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // Sheet Title
+            Text(
+              l10n.createPostButton,
+              style: typography.title2.bold.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Track Selection Chips
+            Text(
+              l10n.selectTrackHint,
+              style: typography.footnote.bold.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: tracks.map((track) {
+                final isSelected = selectedTrack.value == track;
+                return ChoiceChip(
+                  label: Text(track),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) selectedTrack.value = track;
+                  },
+                  selectedColor: colors.primary.withAlpha(50),
+                  labelStyle: typography.caption.bold.copyWith(
+                    color: isSelected ? colors.primary : colors.textSecondary,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // Title Field
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                hintText: l10n.postTitleHint,
+                filled: true,
+                fillColor: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfaceSecondary.withAlpha(80),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Content Field
+            TextField(
+              controller: contentController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: l10n.postContentHint,
+                filled: true,
+                fillColor: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfaceSecondary.withAlpha(80),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Optional LaTeX Field
+            TextField(
+              controller: latexController,
+              decoration: InputDecoration(
+                hintText: r'Optional LaTeX formula (e.g. \nabla \times E = 0)',
+                filled: true,
+                fillColor: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfaceSecondary.withAlpha(80),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Submit Button
+            ShrinkableButton(
+              onTap: () {
+                if (titleController.text.trim().isEmpty ||
+                    contentController.text.trim().isEmpty) {
+                  return;
+                }
+                onSubmit(
+                  title: titleController.text.trim(),
+                  content: contentController.text.trim(),
+                  track: selectedTrack.value,
+                  latexContent: latexController.text.trim().isNotEmpty
+                      ? latexController.text.trim()
+                      : null,
+                );
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary,
+                      colors.primary.withAlpha(220),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    l10n.createPostButton,
+                    style: typography.body.bold.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

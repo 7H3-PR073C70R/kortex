@@ -42,5 +42,10 @@ void _initRepositoryLocator() {
       () => IngestionRepositoryImpl(
         locator<IngestionRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<CommunityRepository>(
+      () => CommunityRepositoryImpl(
+        locator<CommunityRemoteDataSource>(),
+      ),
     );
 }

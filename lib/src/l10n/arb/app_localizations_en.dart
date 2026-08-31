@@ -1302,4 +1302,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get contentAlreadyUploadedNotice =>
       'File already indexed. Loaded existing STEM extractions instantly.';
+
+  @override
+  String get communityTitle => 'Community & Study Hub';
+
+  @override
+  String get liveRoomsTab => 'Live Rooms';
+
+  @override
+  String get forumTab => 'Track Forum';
+
+  @override
+  String get marketplaceTab => 'Deck Market';
+
+  @override
+  String get leaderboardTab => 'Leaderboard';
+
+  @override
+  String get joinRoomButton => 'Join Focus Room';
+
+  @override
+  String get cloneDeckButton => 'Clone to My Decks';
+
+  @override
+  String get createPostButton => 'Create Post';
+
+  @override
+  String activeParticipantsCount(int count) {
+    return '$count active peers';
+  }
+
+  @override
+  String dailyStreakRank(int rank, int streak) {
+    return 'Rank #$rank • $streak Day Streak';
+  }
+
+  @override
+  String get deckClonedSuccessNotice =>
+      'Deck cloned successfully! Added to your study space.';
+
+  @override
+  String get focusRoomTitle => 'Synchronized Focus Room';
+
+  @override
+  String get pomodoroFocus => 'Deep Focus';
+
+  @override
+  String get pomodoroBreak => 'Short Break';
+
+  @override
+  String get leaveRoomButton => 'Leave Room';
+
+  @override
+  String get shareDeckTitle => 'Share a Flashcard Deck';
+
+  @override
+  String get postTitleHint =>
+      'Thread title (e.g. Solving Maxwell\'s Equations...)';
+
+  @override
+  String get postContentHint => 'Describe your academic question or insight...';
+
+  @override
+  String get selectTrackHint => 'Select Academic Track';
+
+  @override
+  String get replyAction => 'Reply';
+
+  @override
+  String get upvoteAction => 'Upvote';
 }

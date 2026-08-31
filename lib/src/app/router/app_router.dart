@@ -22,13 +22,16 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: DocumentIngestionRoute.page),
     AutoRoute(page: OcrPreviewRoute.page),
     AutoRoute(page: GeneratedCardsReviewRoute.page),
+    AutoRoute(page: LiveStudyRoomRoute.page),
+    AutoRoute(page: ForumThreadDetailRoute.page),
+    AutoRoute(page: DeckMarketplaceDetailRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [
         AutoRoute(page: DashboardRoute.page),
         AutoRoute(page: SyllabotChatRoute.page),
         AutoRoute(page: DecksRoute.page),
-        AutoRoute(page: CommunityRoute.page),
+        AutoRoute(page: CommunityHubRoute.page),
         AutoRoute(page: ProfileRoute.page),
       ],
     ),

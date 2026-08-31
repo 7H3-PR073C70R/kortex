@@ -42,4 +42,12 @@ class AppApiEndpoint {
   static const String parseStemOcr = '/functions/v1/parse-stem-ocr';
   static const String findOrCreateDocumentReference =
       '/rest/v1/rpc/find_or_create_document_reference';
+
+  // Community & Peer Study Hub Endpoints (Supabase REST & RPC)
+  static const String studyRooms = '/rest/v1/study_rooms';
+  static const String forumPosts = '/rest/v1/forum_posts';
+  static const String forumReplies = '/rest/v1/forum_replies';
+  static const String sharedDecks = '/rest/v1/shared_decks';
+  static const String leaderboards = '/rest/v1/leaderboards';
+  static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
 }

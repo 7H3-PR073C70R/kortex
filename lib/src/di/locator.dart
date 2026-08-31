@@ -15,6 +15,16 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/community/data/client/supabase_community_client.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
+import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
+import 'package:kortex/src/features/community/domain/use_cases/fetch_forum_posts_use_case.dart';
+import 'package:kortex/src/features/community/domain/use_cases/join_live_study_room_use_case.dart';
+import 'package:kortex/src/features/community/domain/use_cases/stream_leaderboard_rankings_use_case.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
