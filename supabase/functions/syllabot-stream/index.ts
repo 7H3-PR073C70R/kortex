@@ -2,23 +2,31 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 import { corsHeaders } from "./_shared/cors.ts";
-
-interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
-type TaskType = "general_query" | "complex_stem" | "code_proof" | "socratic_dialogue";
+import {
+  Message,
+  selectModelAndParams,
+} from "./_shared/router.ts";
 
 interface RequestPayload {
   prompt?: string;
-  messages?: ChatMessage[];
-  taskType?: TaskType;
+  messages?: Message[];
+  forceModel?: string;
+  taskType?: string;
   sessionId?: string;
   socraticMode?: "stepByStep" | "directAnswer" | "examSim" | "deepResearch";
   contextHistory?: Array<{ sender: string; text: string }>;
   courseCode?: string;
 }
+
+interface ProviderTarget {
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  headers?: Record<string, string>;
+}
+
+const UPSTREAM_CONNECT_TIMEOUT_MS = 8000;
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -71,20 +79,19 @@ serve(async (req: Request) => {
 
     // B. Parse Request Payload
     const body: RequestPayload = await req.json().catch(() => ({}));
-    const taskType: TaskType = body.taskType ?? "general_query";
     const socraticMode = body.socraticMode ?? "stepByStep";
     const courseCode = body.courseCode;
     const sessionId = body.sessionId;
 
     let rawPrompt = body.prompt ?? "";
-    let messages: ChatMessage[] = [];
+    let messages: Message[] = [];
 
     if (body.messages && Array.isArray(body.messages) && body.messages.length > 0) {
       messages = body.messages;
       const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
       rawPrompt = lastUserMsg?.content ?? rawPrompt;
     } else {
-      const systemInstruction = getSystemPrompt(socraticMode, taskType);
+      const systemInstruction = getSystemPrompt(socraticMode);
       messages = [
         { role: "system", content: systemInstruction },
         ...(body.contextHistory ?? []).map((c) => ({
@@ -107,8 +114,15 @@ serve(async (req: Request) => {
       );
     }
 
+    // C. Automated Backend Intent Analyzer & Dynamic Model Selection
+    const routing = selectModelAndParams(messages, {
+      forceModel: body.forceModel,
+    });
+    const selectedModel = routing.model;
+    const reasoningEffort = routing.reasoning_effort;
+
     // 1. Semantic Cache Optimization (sub-15ms latency)
-    const cachePrompt = `syllabot:${taskType}:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
+    const cachePrompt = `syllabot:${selectedModel}:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       dbClient,
       cachePrompt,
@@ -120,20 +134,50 @@ serve(async (req: Request) => {
       ? (cacheResult.data?.tokens as string[])
       : null;
 
-    // C. Dynamic Routing Payload Builder (DeepSeek v4-flash vs v4-pro)
-    const llmBaseUrl =
+    // D. Multi-Provider Fallback Target Configuration
+    const primaryBaseUrl =
       Deno.env.get("LLM_BASE_URL") ||
+      Deno.env.get("DEEPSEEK_BASE_URL") ||
       "https://api.deepseek.com/chat/completions";
-    const llmApiKey = Deno.env.get("LLM_API_KEY") || "";
-    const defaultModel =
-      Deno.env.get("DEFAULT_MODEL") || "deepseek-v4-flash";
+    const primaryApiKey =
+      Deno.env.get("LLM_API_KEY") ||
+      Deno.env.get("DEEPSEEK_API_KEY") ||
+      "";
 
-    const isComplex =
-      taskType === "complex_stem" || taskType === "code_proof";
-    const selectedModel = isComplex ? "deepseek-v4-pro" : defaultModel;
-    const reasoningEffort = isComplex ? "high" : undefined;
+    const secondaryBaseUrl =
+      Deno.env.get("FALLBACK_LLM_BASE_URL") ||
+      Deno.env.get("OPENROUTER_BASE_URL") ||
+      "https://openrouter.ai/api/v1/chat/completions";
+    const secondaryApiKey =
+      Deno.env.get("FALLBACK_LLM_API_KEY") ||
+      Deno.env.get("OPENROUTER_API_KEY") ||
+      primaryApiKey;
 
-    // 2. Server-Sent Events (SSE) Streaming Pipeline
+    const secondaryModel =
+      selectedModel === "deepseek-v4-pro"
+        ? "deepseek/deepseek-r1"
+        : "deepseek/deepseek-chat";
+
+    const providers: ProviderTarget[] = [
+      {
+        name: "Primary (DeepSeek)",
+        baseUrl: primaryBaseUrl,
+        apiKey: primaryApiKey,
+        model: selectedModel,
+      },
+      {
+        name: "Secondary (OpenRouter / Fallback Proxy)",
+        baseUrl: secondaryBaseUrl,
+        apiKey: secondaryApiKey,
+        model: secondaryModel,
+        headers: {
+          "HTTP-Referer": "https://kortex.app",
+          "X-Title": "Kortex AI Reliability Gateway",
+        },
+      },
+    ].filter((p) => Boolean(p.apiKey && p.baseUrl));
+
+    // 2. Server-Sent Events (SSE) Streaming Pipeline with Timeout & Failover
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -147,112 +191,159 @@ serve(async (req: Request) => {
         sendEvent("start", {
           status: "generating",
           model: selectedModel,
-          taskType,
+          reasoning_effort: reasoningEffort,
+          reasoningDetected: routing.reasoningDetected,
+          matchedCriteria: routing.matchedCriteria,
           socraticMode,
           cacheHit: isCacheHit,
         });
 
         let fullResponse = "";
         const recordedTokens: string[] = [];
+        let providerSuccess = false;
 
         if (isCacheHit && cachedTokens) {
-          // Serve from Semantic Cache
+          // 1. Instant sub-15ms semantic cache serving
           for (const token of cachedTokens) {
             fullResponse += token;
             recordedTokens.push(token);
             sendEvent("token", { text: token });
             await new Promise((r) => setTimeout(r, 10));
           }
-        } else if (llmApiKey) {
-          // Dispatch streaming POST to DeepSeek API
-          try {
-            const deepseekPayload: Record<string, unknown> = {
-              model: selectedModel,
-              messages,
-              stream: true,
-              temperature: 0.6,
-            };
-            if (reasoningEffort) {
-              deepseekPayload["reasoning_effort"] = reasoningEffort;
-            }
+          providerSuccess = true;
+        } else if (providers.length > 0) {
+          // 2. Upstream provider iteration with 8-second connection timeout & failover
+          for (const provider of providers) {
+            const abortController = new AbortController();
+            let isConnected = false;
 
-            const deepseekResponse = await fetch(llmBaseUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${llmApiKey}`,
-              },
-              body: JSON.stringify(deepseekPayload),
-            });
+            const timeoutId = setTimeout(() => {
+              if (!isConnected) {
+                console.warn(
+                  `[Reliability Gateway] Connection timeout (${UPSTREAM_CONNECT_TIMEOUT_MS}ms) on ${provider.name}. Aborting.`
+                );
+                abortController.abort("CONNECTION_TIMEOUT");
+              }
+            }, UPSTREAM_CONNECT_TIMEOUT_MS);
 
-            if (!deepseekResponse.ok || !deepseekResponse.body) {
-              throw new Error(
-                `DeepSeek API responded with HTTP status ${deepseekResponse.status}`
+            try {
+              console.log(
+                `[Reliability Gateway] Attempting request to ${provider.name} using model ${provider.model}...`
               );
-            }
 
-            const reader = deepseekResponse.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let sseBuffer = "";
+              const payload: Record<string, unknown> = {
+                model: provider.model,
+                messages,
+                stream: true,
+                temperature: 0.6,
+              };
+              if (reasoningEffort && provider.name.includes("DeepSeek")) {
+                payload["reasoning_effort"] = reasoningEffort;
+              }
 
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
+              const response = await fetch(provider.baseUrl, {
+                method: "POST",
+                signal: abortController.signal,
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${provider.apiKey}`,
+                  ...(provider.headers ?? {}),
+                },
+                body: JSON.stringify(payload),
+              });
 
-              sseBuffer += decoder.decode(value, { stream: true });
-              const lines = sseBuffer.split("\n");
-              sseBuffer = lines.pop() ?? "";
+              isConnected = true;
+              clearTimeout(timeoutId);
 
-              for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed.startsWith(":")) continue;
+              if (!response.ok || !response.body) {
+                throw new Error(
+                  `${provider.name} returned HTTP error status ${response.status}`
+                );
+              }
 
-                if (trimmed === "data: [DONE]") {
-                  break;
-                }
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let sseBuffer = "";
 
-                if (trimmed.startsWith("data:")) {
-                  const jsonStr = trimmed.replace(/^data:\s*/, "");
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    const deltaText =
-                      parsed.choices?.[0]?.delta?.content ??
-                      parsed.choices?.[0]?.delta?.text ??
-                      "";
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-                    if (deltaText) {
-                      fullResponse += deltaText;
-                      recordedTokens.push(deltaText);
-                      sendEvent("token", { text: deltaText });
+                sseBuffer += decoder.decode(value, { stream: true });
+                const lines = sseBuffer.split("\n");
+                sseBuffer = lines.pop() ?? "";
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed || trimmed.startsWith(":")) continue;
+
+                  if (trimmed === "data: [DONE]") {
+                    break;
+                  }
+
+                  if (trimmed.startsWith("data:")) {
+                    const jsonStr = trimmed.replace(/^data:\s*/, "");
+                    try {
+                      const parsed = JSON.parse(jsonStr);
+                      const deltaText =
+                        parsed.choices?.[0]?.delta?.content ??
+                        parsed.choices?.[0]?.delta?.text ??
+                        "";
+
+                      if (deltaText) {
+                        fullResponse += deltaText;
+                        recordedTokens.push(deltaText);
+                        sendEvent("token", { text: deltaText });
+                      }
+                    } catch {
+                      // Skip non-JSON ping/keepalive chunks
                     }
-                  } catch {
-                    // Skip heartbeat or unparseable lines
                   }
                 }
               }
-            }
-          } catch (providerError) {
-            console.error("DeepSeek stream error, fallback engaged:", providerError);
-            const fallbackTokens = getFallbackTokens(rawPrompt, isComplex);
-            for (const token of fallbackTokens) {
-              fullResponse += token;
-              recordedTokens.push(token);
-              sendEvent("token", { text: token });
-              await new Promise((r) => setTimeout(r, 20));
+
+              if (fullResponse.trim().length > 0) {
+                providerSuccess = true;
+                console.log(
+                  `[Reliability Gateway] Stream successfully finished from ${provider.name}`
+                );
+                break; // Successfully streamed from this provider
+              }
+            } catch (providerError: any) {
+              clearTimeout(timeoutId);
+              console.warn(
+                `[Reliability Gateway] Provider ${provider.name} failed: ${providerError.message ?? providerError}. Failing over...`
+              );
             }
           }
-        } else {
-          // Local/offline development fallback
-          const fallbackTokens = getFallbackTokens(rawPrompt, isComplex);
+        }
+
+        // 3. Fallback and Edge Error Handling
+        if (!providerSuccess) {
+          if (providers.length > 0) {
+            console.error(
+              "[Reliability Gateway] All upstream providers failed or timed out. Emitting structured SSE error and engaging resilient STEM fallback."
+            );
+            sendEvent("error", {
+              error: "UPSTREAM_TIMEOUT",
+              message: "All upstream providers busy or unreachable. Engaging neural fallback.",
+            });
+          }
+
+          // Resilient Socratic STEM fallback token synthesis
+          const fallbackTokens = getFallbackTokens(
+            rawPrompt,
+            routing.reasoningDetected
+          );
           for (const token of fallbackTokens) {
             fullResponse += token;
             recordedTokens.push(token);
             sendEvent("token", { text: token });
-            await new Promise((r) => setTimeout(r, 20));
+            await new Promise((r) => setTimeout(r, 18));
           }
         }
 
-        // Asynchronously persist to semantic cache
+        // Asynchronously persist completion to semantic cache
         if (!isCacheHit && recordedTokens.length > 0) {
           await SemanticCacheProvider.setCachedResponse(
             dbClient,
@@ -267,7 +358,7 @@ serve(async (req: Request) => {
           ).catch((err) => console.error("Semantic cache error:", err));
         }
 
-        // Asynchronously persist to chat_messages table
+        // Asynchronously record conversation turn in chat_messages table
         if (userId && sessionId && fullResponse) {
           try {
             await dbClient.from("chat_messages").insert([
@@ -287,13 +378,14 @@ serve(async (req: Request) => {
               },
             ]);
           } catch (dbErr) {
-            console.error("Chat message persistence log:", dbErr);
+            console.error("Chat message persistence error:", dbErr);
           }
         }
 
         sendEvent("done", {
           fullText: fullResponse,
           model: selectedModel,
+          reasoning_effort: reasoningEffort,
           socraticMode,
           cacheHit: isCacheHit,
         });
@@ -321,11 +413,7 @@ serve(async (req: Request) => {
   }
 });
 
-function getSystemPrompt(mode: string, taskType: TaskType): string {
-  if (taskType === "complex_stem" || taskType === "code_proof") {
-    return "You are Syllabot Advanced Reasoning Engine (DeepSeek v4-pro). Provide rigorous, mathematically formal derivations with comprehensive proof steps, tensor/calculus formulations in LaTeX ($$...$$ for display and $...$ for inline), and edge-case verifications.";
-  }
-
+function getSystemPrompt(mode: string): string {
   switch (mode) {
     case "examSim":
       return "You are Syllabot Exam Simulator. Test the student's mastery using rigorous exam-level multiple-choice or analytical questions. Grade their reasoning and provide structured rubrics.";
