@@ -19,6 +19,8 @@ import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_us
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/chat_onboarding_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/onboarding_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/guards/auth_route_guard.dart';
 import 'package:kortex/src/features/community/data/client/supabase_community_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';

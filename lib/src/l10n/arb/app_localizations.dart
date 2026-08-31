@@ -2653,6 +2653,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to sign out?'**
   String get signOutConfirmation;
+
+  /// Button to switch onboarding mode to traditional form
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Form View'**
+  String get switchToFormView;
+
+  /// Button to switch onboarding mode to conversational AI chat
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to AI Chat'**
+  String get switchToChatView;
+
+  /// Welcome message for AI conversational onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.'**
+  String get onboardingChatWelcome;
+
+  /// Title for the track selection step
+  ///
+  /// In en, this message translates to:
+  /// **'Target Academic Track'**
+  String get onboardingStepTrackTitle;
+
+  /// Title for the daily goal calibration step
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Review Target'**
+  String get onboardingStepGoalTitle;
+
+  /// Button label to finalize onboarding and go to dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Kortex Workspace'**
+  String get completeAndGoToDashboard;
+
+  /// Label for AI chat onboarding mode
+  ///
+  /// In en, this message translates to:
+  /// **'AI Guide'**
+  String get onboardingAiChatTitle;
+
+  /// Label for traditional form onboarding mode
+  ///
+  /// In en, this message translates to:
+  /// **'Form View'**
+  String get onboardingFormTitle;
+
+  /// Hint text for AI onboarding chat input
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message or question about your syllabus...'**
+  String get askAiAboutCurriculum;
+
+  /// Status text while Syllabot AI is formulating a response
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot is preparing your personalized plan...'**
+  String get aiThinking;
 }
 
 class _AppLocalizationsDelegate

@@ -30,15 +30,17 @@ class AuthRouteGuard extends AutoRouteGuard {
           unawaited(router.replace(const LoginRoute()));
         }
       case AuthSessionStatus.authenticatedNeedsOnboarding:
-        if (currentRouteName == OnboardingStepperRoute.name) {
+        if (currentRouteName == OnboardingWrapperRoute.name ||
+            currentRouteName == OnboardingStepperRoute.name) {
           resolver.next();
         } else {
           resolver.next(false);
-          unawaited(router.replace(const OnboardingStepperRoute()));
+          unawaited(router.replace(const OnboardingWrapperRoute()));
         }
       case AuthSessionStatus.authenticatedComplete:
         if (currentRouteName == LoginRoute.name ||
             currentRouteName == AuthRoute.name ||
+            currentRouteName == OnboardingWrapperRoute.name ||
             currentRouteName == OnboardingStepperRoute.name) {
           resolver.next(false);
           unawaited(router.replace(const MainRoute()));

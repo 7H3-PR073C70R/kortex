@@ -1,75 +1,10 @@
-import 'package:equatable/equatable.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
-import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
+import 'package:bloc/bloc.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/complete_onboarding_use_case.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/onboarding_state.dart';
 
-enum OnboardingStatus { initial, loading, completed, error }
+export 'onboarding_state.dart';
 
-class OnboardingState extends Equatable {
-  const OnboardingState({
-    this.status = OnboardingStatus.initial,
-    this.currentStep = 0,
-    this.selectedTrack = 'WAEC',
-    this.dailyTarget = 20,
-    this.retentionBenchmark = 0.85,
-    this.tracks = CourseTrackEntity.defaultTracks,
-    this.completedProfile,
-    this.errorMessage,
-  });
-
-  final OnboardingStatus status;
-  final int currentStep;
-  final String selectedTrack;
-  final int dailyTarget;
-  final double retentionBenchmark;
-  final List<CourseTrackEntity> tracks;
-  final UserProfileEntity? completedProfile;
-  final String? errorMessage;
-
-  bool get isLoading => status == OnboardingStatus.loading;
-  bool get isCompleted => status == OnboardingStatus.completed;
-
-  CourseTrackEntity get currentTrackEntity => tracks.firstWhere(
-        (t) => t.id == selectedTrack,
-        orElse: () => tracks.first,
-      );
-
-  OnboardingState copyWith({
-    OnboardingStatus? status,
-    int? currentStep,
-    String? selectedTrack,
-    int? dailyTarget,
-    double? retentionBenchmark,
-    List<CourseTrackEntity>? tracks,
-    UserProfileEntity? completedProfile,
-    String? errorMessage,
-  }) {
-    return OnboardingState(
-      status: status ?? this.status,
-      currentStep: currentStep ?? this.currentStep,
-      selectedTrack: selectedTrack ?? this.selectedTrack,
-      dailyTarget: dailyTarget ?? this.dailyTarget,
-      retentionBenchmark: retentionBenchmark ?? this.retentionBenchmark,
-      tracks: tracks ?? this.tracks,
-      completedProfile: completedProfile ?? this.completedProfile,
-      errorMessage: errorMessage,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        status,
-        currentStep,
-        selectedTrack,
-        dailyTarget,
-        retentionBenchmark,
-        tracks,
-        completedProfile,
-        errorMessage,
-      ];
-}
-
+/// Cubit managing synchronized state between AI Chat and Form onboarding modes.
 class OnboardingCubit extends Cubit<OnboardingState> {
   OnboardingCubit({
     required CompleteOnboardingUseCase completeOnboardingUseCase,
@@ -78,25 +13,19 @@ class OnboardingCubit extends Cubit<OnboardingState> {
 
   final CompleteOnboardingUseCase _completeOnboardingUseCase;
 
-  void selectTrack(String trackId) {
-    final track = state.tracks.firstWhere(
-      (t) => t.id == trackId,
-      orElse: () => state.tracks.first,
-    );
-    emit(
-      state.copyWith(
-        selectedTrack: trackId,
-        dailyTarget: track.defaultDailyTarget,
-      ),
-    );
+  void setMode(OnboardingMode mode) {
+    emit(state.copyWith(activeMode: mode));
   }
 
-  void updateDailyTarget(int target) {
-    emit(state.copyWith(dailyTarget: target));
+  void toggleMode() {
+    final nextMode = state.activeMode == OnboardingMode.chat
+        ? OnboardingMode.form
+        : OnboardingMode.chat;
+    emit(state.copyWith(activeMode: nextMode));
   }
 
-  void updateRetentionBenchmark(double benchmark) {
-    emit(state.copyWith(retentionBenchmark: benchmark));
+  void syncStep(int step) {
+    emit(state.copyWith(currentStep: step.clamp(0, 2)));
   }
 
   void nextStep() {
@@ -111,8 +40,39 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     }
   }
 
+  void updateProfileData({String? email, String? displayName}) {
+    emit(
+      state.copyWith(
+        email: email ?? state.email,
+        displayName: displayName ?? state.displayName,
+      ),
+    );
+  }
+
+  void selectTrack(String trackId) {
+    final track = state.tracks.firstWhere(
+      (t) => t.id == trackId,
+      orElse: () => state.tracks.first,
+    );
+    emit(
+      state.copyWith(
+        selectedTrack: track.id,
+        dailyTarget: track.defaultDailyTarget,
+      ),
+    );
+  }
+
+  void updateDailyTarget(int target) {
+    emit(state.copyWith(dailyTarget: target));
+  }
+
+  void updateRetentionBenchmark(double benchmark) {
+    emit(state.copyWith(retentionBenchmark: benchmark));
+  }
+
   Future<void> completeOnboarding() async {
     emit(state.copyWith(status: OnboardingStatus.loading));
+
     final result = await _completeOnboardingUseCase(
       track: state.selectedTrack,
       dailyTarget: state.dailyTarget,
@@ -123,7 +83,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       (failure) => emit(
         state.copyWith(
           status: OnboardingStatus.error,
-          errorMessage: failure.message ?? 'Failed to finalize setup.',
+          errorMessage: failure.message ?? 'Failed to complete onboarding.',
         ),
       ),
       (profile) => emit(

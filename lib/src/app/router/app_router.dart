@@ -12,6 +12,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ForgotPasswordRoute.page),
     AutoRoute(page: OtpVerificationRoute.page),
     AutoRoute(page: OnboardingStepperRoute.page),
+    AutoRoute(page: OnboardingWrapperRoute.page),
     AutoRoute(page: OnboardingCalibrationRoute.page),
     AutoRoute(page: OnboardingContentRoute.page),
     AutoRoute(page: PermissionsRoute.page),

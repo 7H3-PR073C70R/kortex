@@ -110,12 +110,17 @@ class TrackSelectorCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          track.name,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
+                        Expanded(
+                          child: Text(
+                            track.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,

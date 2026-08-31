@@ -1474,4 +1474,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOutConfirmation => 'Are you sure you want to sign out?';
+
+  @override
+  String get switchToFormView => 'Switch to Form View';
+
+  @override
+  String get switchToChatView => 'Switch to AI Chat';
+
+  @override
+  String get onboardingChatWelcome =>
+      'Welcome to Kortex! I am Syllabot, your AI Academic Guide. Let\'s calibrate your curriculum and study goals.';
+
+  @override
+  String get onboardingStepTrackTitle => 'Target Academic Track';
+
+  @override
+  String get onboardingStepGoalTitle => 'Daily Review Target';
+
+  @override
+  String get completeAndGoToDashboard => 'Launch Kortex Workspace';
+
+  @override
+  String get onboardingAiChatTitle => 'AI Guide';
+
+  @override
+  String get onboardingFormTitle => 'Form View';
+
+  @override
+  String get askAiAboutCurriculum =>
+      'Type a message or question about your syllabus...';
+
+  @override
+  String get aiThinking => 'Syllabot is preparing your personalized plan...';
 }

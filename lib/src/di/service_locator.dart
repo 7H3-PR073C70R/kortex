@@ -44,5 +44,13 @@ void _initServices() {
         getRecommendedContentUseCase: locator<GetRecommendedContentUseCase>(),
         getCalibrationProfileUseCase: locator<GetCalibrationProfileUseCase>(),
       ),
+    )
+    ..registerFactory<OnboardingCubit>(
+      () => OnboardingCubit(
+        completeOnboardingUseCase: locator<CompleteOnboardingUseCase>(),
+      ),
+    )
+    ..registerFactory<ChatOnboardingBloc>(
+      ChatOnboardingBloc.new,
     );
 }
