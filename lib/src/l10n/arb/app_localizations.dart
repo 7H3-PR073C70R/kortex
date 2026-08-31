@@ -2971,6 +2971,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time: {time}'**
   String quizTimeRemaining(String time);
+
+  /// Title for the multi-format export sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Export Flashcard Deck'**
+  String get exportDeckTitle;
+
+  /// Option title for Anki export
+  ///
+  /// In en, this message translates to:
+  /// **'Anki Package (.apkg / .csv)'**
+  String get exportAnkiTitle;
+
+  /// Option description for Anki export
+  ///
+  /// In en, this message translates to:
+  /// **'Import into Anki Desktop & Mobile with full LaTeX formatting'**
+  String get exportAnkiSubtitle;
+
+  /// Option title for Printable PDF export
+  ///
+  /// In en, this message translates to:
+  /// **'Printable Double-Sided Sheet (PDF)'**
+  String get exportPdfTitle;
+
+  /// Option description for Printable PDF export
+  ///
+  /// In en, this message translates to:
+  /// **'Print-ready A4 with 8 cards per page for physical study'**
+  String get exportPdfSubtitle;
+
+  /// Option title for Notion CSV export
+  ///
+  /// In en, this message translates to:
+  /// **'Notion Database (CSV)'**
+  String get exportNotionTitle;
+
+  /// Option description for Notion CSV export
+  ///
+  /// In en, this message translates to:
+  /// **'Import directly into your Notion workspace study database'**
+  String get exportNotionSubtitle;
+
+  /// Loading state message when preparing export files
+  ///
+  /// In en, this message translates to:
+  /// **'Generating export file...'**
+  String get exportingFile;
+
+  /// Success message when file is ready for share/save
+  ///
+  /// In en, this message translates to:
+  /// **'Deck exported successfully!'**
+  String get exportSuccess;
 }
 
 class _AppLocalizationsDelegate

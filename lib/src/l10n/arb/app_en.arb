@@ -2390,5 +2390,41 @@
                 "example": "04:32"
             }
         }
+    },
+    "exportDeckTitle": "Export Flashcard Deck",
+    "@exportDeckTitle": {
+        "description": "Title for the multi-format export sheet"
+    },
+    "exportAnkiTitle": "Anki Package (.apkg / .csv)",
+    "@exportAnkiTitle": {
+        "description": "Option title for Anki export"
+    },
+    "exportAnkiSubtitle": "Import into Anki Desktop & Mobile with full LaTeX formatting",
+    "@exportAnkiSubtitle": {
+        "description": "Option description for Anki export"
+    },
+    "exportPdfTitle": "Printable Double-Sided Sheet (PDF)",
+    "@exportPdfTitle": {
+        "description": "Option title for Printable PDF export"
+    },
+    "exportPdfSubtitle": "Print-ready A4 with 8 cards per page for physical study",
+    "@exportPdfSubtitle": {
+        "description": "Option description for Printable PDF export"
+    },
+    "exportNotionTitle": "Notion Database (CSV)",
+    "@exportNotionTitle": {
+        "description": "Option title for Notion CSV export"
+    },
+    "exportNotionSubtitle": "Import directly into your Notion workspace study database",
+    "@exportNotionSubtitle": {
+        "description": "Option description for Notion CSV export"
+    },
+    "exportingFile": "Generating export file...",
+    "@exportingFile": {
+        "description": "Loading state message when preparing export files"
+    },
+    "exportSuccess": "Deck exported successfully!",
+    "@exportSuccess": {
+        "description": "Success message when file is ready for share/save"
     }
 }

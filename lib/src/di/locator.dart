@@ -127,6 +127,9 @@ import 'package:kortex/src/services/user_storage_service.dart';
 import 'package:kortex/src/shared/audio/bloc/audio_workspace_cubit.dart';
 import 'package:kortex/src/shared/audio/client/speech_to_text_client.dart';
 import 'package:kortex/src/shared/audio/client/text_to_speech_client.dart';
+import 'package:kortex/src/shared/export/services/anki_export_service.dart';
+import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
+import 'package:kortex/src/shared/export/services/pdf_printable_generator.dart';
 import 'package:logger/logger.dart';
 
 part 'client_locator.dart';

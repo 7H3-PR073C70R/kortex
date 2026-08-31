@@ -185,5 +185,14 @@ void _initUseCaseLocator() {
         generateQuizUseCase: locator<GenerateQuizFromDeckUseCase>(),
         submitQuizUseCase: locator<SubmitQuizAnswersUseCase>(),
       ),
+    )
+    ..registerLazySingleton<AnkiExportService>(
+      AnkiExportService.new,
+    )
+    ..registerLazySingleton<PdfPrintableGenerator>(
+      PdfPrintableGenerator.new,
+    )
+    ..registerLazySingleton<NotionCsvFormatter>(
+      NotionCsvFormatter.new,
     );
 }

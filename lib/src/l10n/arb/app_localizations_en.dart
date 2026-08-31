@@ -1675,4 +1675,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String quizTimeRemaining(String time) {
     return 'Time: $time';
   }
+
+  @override
+  String get exportDeckTitle => 'Export Flashcard Deck';
+
+  @override
+  String get exportAnkiTitle => 'Anki Package (.apkg / .csv)';
+
+  @override
+  String get exportAnkiSubtitle =>
+      'Import into Anki Desktop & Mobile with full LaTeX formatting';
+
+  @override
+  String get exportPdfTitle => 'Printable Double-Sided Sheet (PDF)';
+
+  @override
+  String get exportPdfSubtitle =>
+      'Print-ready A4 with 8 cards per page for physical study';
+
+  @override
+  String get exportNotionTitle => 'Notion Database (CSV)';
+
+  @override
+  String get exportNotionSubtitle =>
+      'Import directly into your Notion workspace study database';
+
+  @override
+  String get exportingFile => 'Generating export file...';
+
+  @override
+  String get exportSuccess => 'Deck exported successfully!';
 }
