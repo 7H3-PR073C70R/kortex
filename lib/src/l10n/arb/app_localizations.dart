@@ -363,6 +363,1078 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading profile avatar'**
   String get loadingProfileAvatar;
+
+  /// Button label to switch to quick form mode
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Form'**
+  String get authSwitchToForm;
+
+  /// Button label to switch to AI chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get authSwitchToChat;
+
+  /// Social sign in with Google button label
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get authSocialGoogle;
+
+  /// Social sign in with Apple button label
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get authSocialApple;
+
+  /// Warm initial greeting with motivational quote from Syllabot in auth chat
+  ///
+  /// In en, this message translates to:
+  /// **'Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?'**
+  String get authChatWelcome;
+
+  /// Syllabot asking for user email
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your academic or personal email address.'**
+  String get authChatAskEmail;
+
+  /// Syllabot asking for password
+  ///
+  /// In en, this message translates to:
+  /// **'Great! Set a secure password (at least 6 characters).'**
+  String get authChatAskPassword;
+
+  /// Quick action chip to switch to login mode
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get authChipLogin;
+
+  /// Quick action chip to switch to sign up mode
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Up'**
+  String get authChipSignUp;
+
+  /// Quick action chip for forgot password
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get authChipForgotPassword;
+
+  /// Quick action chip to use Google auth
+  ///
+  /// In en, this message translates to:
+  /// **'Use Google'**
+  String get authChipGoogle;
+
+  /// Title for forgot password page
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get authForgotPasswordTitle;
+
+  /// Subtitle for forgot password page
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your registered email address and we will send you instructions to reset your password.'**
+  String get authForgotPasswordSubtitle;
+
+  /// Label for email text field
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get authEmailLabel;
+
+  /// Hint for email text field
+  ///
+  /// In en, this message translates to:
+  /// **'student@university.edu'**
+  String get authEmailHint;
+
+  /// Label for password text field
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPasswordLabel;
+
+  /// Hint for password text field
+  ///
+  /// In en, this message translates to:
+  /// **'••••••••'**
+  String get authPasswordHint;
+
+  /// Label for display name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get authDisplayNameLabel;
+
+  /// Hint for display name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Ada Lovelace'**
+  String get authDisplayNameHint;
+
+  /// Submit button for login
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get authSubmitLogin;
+
+  /// Submit button for registration
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get authSubmitRegister;
+
+  /// Submit button for password reset
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reset Link'**
+  String get authSubmitReset;
+
+  /// Toggle link to switch from register to login
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign In'**
+  String get authAlreadyHaveAccount;
+
+  /// Toggle link to switch from login to register
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Sign Up'**
+  String get authNeedAccount;
+
+  /// Chat message send button
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get authSend;
+
+  /// Hint for chat message input
+  ///
+  /// In en, this message translates to:
+  /// **'Type a response or tap a quick action...'**
+  String get authChatInputHint;
+
+  /// Validation error message for invalid email
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address'**
+  String get authInvalidEmail;
+
+  /// Validation error message for short password
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get authPasswordTooShort;
+
+  /// Generic authentication error message
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please try again.'**
+  String get authGenericError;
+
+  /// Success message upon authentication
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kortex!'**
+  String get authSuccessMessage;
+
+  /// Accessibility label for mode toggle button
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {mode}'**
+  String authModeToggleSemantics(String mode);
+
+  /// Accessibility label for Google sign-in button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your Google account'**
+  String get authSocialGoogleSemantics;
+
+  /// Accessibility label for Apple sign-in button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your Apple ID'**
+  String get authSocialAppleSemantics;
+
+  /// Live screen reader announcement when auth mode changes
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to {mode} view'**
+  String authModeSwitchedAnnouncement(String mode);
+
+  /// Hero title for desktop auth panel
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI-Augmented Academic Workspace'**
+  String get authDesktopHeroTitle;
+
+  /// Hero subtitle for desktop auth panel
+  ///
+  /// In en, this message translates to:
+  /// **'Ingest syllabi, STEM equations, and lecture slides into an active-recall mastery system in seconds.'**
+  String get authDesktopHeroSubtitle;
+
+  /// Hero bullet feature 1
+  ///
+  /// In en, this message translates to:
+  /// **'Zero-latency multimodal STEM OCR'**
+  String get authDesktopFeature1;
+
+  /// Hero bullet feature 2
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive SM-2 spaced repetition schedules'**
+  String get authDesktopFeature2;
+
+  /// Hero bullet feature 3
+  ///
+  /// In en, this message translates to:
+  /// **'Socratic AI dialogue & calibration'**
+  String get authDesktopFeature3;
+
+  /// Accessibility label for chat input field
+  ///
+  /// In en, this message translates to:
+  /// **'Chat response input field'**
+  String get authChatInputSemantics;
+
+  /// Accessibility label for chat send button
+  ///
+  /// In en, this message translates to:
+  /// **'Send chat response'**
+  String get authChatSendSemantics;
+
+  /// Accessibility label for forgot password link
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password screen link'**
+  String get authForgotPasswordLinkSemantics;
+
+  /// Accessibility label for toggle form type button
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle between Sign In and Create Account forms'**
+  String get authToggleFormTypeSemantics;
+
+  /// Top header title for calibration wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Academic Calibration'**
+  String get calibrationTitle;
+
+  /// Subtitle for calibration wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize Syllabot AI for your academic trajectory'**
+  String get calibrationSubtitle;
+
+  /// Welcome message for calibration chat
+  ///
+  /// In en, this message translates to:
+  /// **'Awesome, you\'re in! To customize your workspace, let\'s set up your academic profile.'**
+  String get calibrationChatWelcome;
+
+  /// Prompt asking for academic focus in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'Are you studying at a University/Polytechnic or preparing for High School exams?'**
+  String get calibrationChatFocusPrompt;
+
+  /// Prompt asking for level in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'Got it! Which specific exam or degree track are you focusing on?'**
+  String get calibrationChatLevelPrompt;
+
+  /// Prompt asking for field in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent. What is your specific field of study or main subjects?'**
+  String get calibrationChatFieldPrompt;
+
+  /// Prompt asking for goals in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect. How can Kortex best support you right now?'**
+  String get calibrationChatGoalPrompt;
+
+  /// University option in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'University / Polytechnic'**
+  String get calibrationFocusHigherEd;
+
+  /// High school option in chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'High School / Exam Prep'**
+  String get calibrationFocusHighSchool;
+
+  /// Accessibility announcement for calibration step transition
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration step {current} of {total}: {title}'**
+  String calibrationStepAnnouncement(int current, int total, String title);
+
+  /// Back button in calibration wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get calibrationBack;
+
+  /// Continue button in calibration wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get calibrationContinue;
+
+  /// Finish button in calibration wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate & Launch Kortex'**
+  String get calibrationFinish;
+
+  /// Question 1 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'What is your current academic focus?'**
+  String get calibrationQuestion1;
+
+  /// University option chip
+  ///
+  /// In en, this message translates to:
+  /// **'University / Polytechnic'**
+  String get calibrationOptionUniversity;
+
+  /// High school option chip
+  ///
+  /// In en, this message translates to:
+  /// **'High School / Exam Prep'**
+  String get calibrationOptionHighSchool;
+
+  /// Question A2 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'What is your current academic level?'**
+  String get calibrationQuestionA2;
+
+  /// OND option
+  ///
+  /// In en, this message translates to:
+  /// **'OND (Ordinary National Diploma)'**
+  String get calibrationOptionOND;
+
+  /// HND option
+  ///
+  /// In en, this message translates to:
+  /// **'HND (Higher National Diploma)'**
+  String get calibrationOptionHND;
+
+  /// BSc option
+  ///
+  /// In en, this message translates to:
+  /// **'BSc (Bachelor of Science)'**
+  String get calibrationOptionBSc;
+
+  /// MSc option
+  ///
+  /// In en, this message translates to:
+  /// **'MSc (Master of Science)'**
+  String get calibrationOptionMSc;
+
+  /// PhD option
+  ///
+  /// In en, this message translates to:
+  /// **'PhD (Doctor of Philosophy)'**
+  String get calibrationOptionPhD;
+
+  /// Question A3 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'What is your specific field of study?'**
+  String get calibrationQuestionA3;
+
+  /// Subtitle for question A3
+  ///
+  /// In en, this message translates to:
+  /// **'Select your primary domain to optimize Syllabot\'s knowledge retrieval'**
+  String get calibrationQuestionA3Subtitle;
+
+  /// Math field
+  ///
+  /// In en, this message translates to:
+  /// **'Mathematics & Data Science'**
+  String get calibrationFieldMath;
+
+  /// Physics field
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Physics / Quantum Mechanics'**
+  String get calibrationFieldPhysics;
+
+  /// Chemical Engineering field
+  ///
+  /// In en, this message translates to:
+  /// **'Chemical Engineering'**
+  String get calibrationFieldChemEng;
+
+  /// Medical field
+  ///
+  /// In en, this message translates to:
+  /// **'Medical & Health Sciences'**
+  String get calibrationFieldMedicine;
+
+  /// Robotics field
+  ///
+  /// In en, this message translates to:
+  /// **'Robotics & Mechanical Engineering'**
+  String get calibrationFieldRobotics;
+
+  /// Computer Science field
+  ///
+  /// In en, this message translates to:
+  /// **'Computer Science & Artificial Intelligence'**
+  String get calibrationFieldComputerScience;
+
+  /// Law & Legal Studies field
+  ///
+  /// In en, this message translates to:
+  /// **'Law & Legal Studies'**
+  String get calibrationFieldLaw;
+
+  /// Business, Finance & Accounting field
+  ///
+  /// In en, this message translates to:
+  /// **'Business, Finance & Accounting'**
+  String get calibrationFieldBusiness;
+
+  /// Humanities, History & Literature field
+  ///
+  /// In en, this message translates to:
+  /// **'Humanities, History & Literature'**
+  String get calibrationFieldHumanities;
+
+  /// Social Sciences & Economics field
+  ///
+  /// In en, this message translates to:
+  /// **'Social Sciences & Economics'**
+  String get calibrationFieldSocialSciences;
+
+  /// Question A4 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'How can Kortex best support you right now?'**
+  String get calibrationQuestionA4;
+
+  /// Subtitle for question A4
+  ///
+  /// In en, this message translates to:
+  /// **'Select all features you want Syllabot to prioritize for you'**
+  String get calibrationQuestionA4Subtitle;
+
+  /// Thesis support goal
+  ///
+  /// In en, this message translates to:
+  /// **'Thesis / Dissertation Support'**
+  String get calibrationGoalThesis;
+
+  /// Socratic AI goal
+  ///
+  /// In en, this message translates to:
+  /// **'Deep-Dive STEM Socratic AI'**
+  String get calibrationGoalSocratic;
+
+  /// Spaced repetition goal
+  ///
+  /// In en, this message translates to:
+  /// **'Spaced Repetition (SM-2) Mastery'**
+  String get calibrationGoalSpacedRep;
+
+  /// Mock exams goal
+  ///
+  /// In en, this message translates to:
+  /// **'Comprehensive Mock Exams'**
+  String get calibrationGoalMockExams;
+
+  /// Case law & essay goal
+  ///
+  /// In en, this message translates to:
+  /// **'Case Law & Essay Preparation'**
+  String get calibrationGoalCaseLaw;
+
+  /// Essay prep goal
+  ///
+  /// In en, this message translates to:
+  /// **'Structured Essay & Argument Mapping'**
+  String get calibrationGoalEssayPrep;
+
+  /// Question B2 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'What exam are you preparing for?'**
+  String get calibrationQuestionB2;
+
+  /// WAEC exam
+  ///
+  /// In en, this message translates to:
+  /// **'WAEC / GCE'**
+  String get calibrationExamWAEC;
+
+  /// NECO exam
+  ///
+  /// In en, this message translates to:
+  /// **'NECO / SSCE'**
+  String get calibrationExamNECO;
+
+  /// JAMB exam
+  ///
+  /// In en, this message translates to:
+  /// **'JAMB / UTME'**
+  String get calibrationExamJAMB;
+
+  /// SAT exam
+  ///
+  /// In en, this message translates to:
+  /// **'SAT'**
+  String get calibrationExamSAT;
+
+  /// IELTS exam
+  ///
+  /// In en, this message translates to:
+  /// **'IELTS / TOEFL'**
+  String get calibrationExamIELTS;
+
+  /// IGCSE exam
+  ///
+  /// In en, this message translates to:
+  /// **'IGCSE / A-Levels'**
+  String get calibrationExamIGCSE;
+
+  /// Question B3 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'What subjects do you need to master?'**
+  String get calibrationQuestionB3;
+
+  /// Subtitle for question B3
+  ///
+  /// In en, this message translates to:
+  /// **'Select all subjects for active-recall flashcard generation'**
+  String get calibrationQuestionB3Subtitle;
+
+  /// Core Math subject
+  ///
+  /// In en, this message translates to:
+  /// **'Mathematics (Core)'**
+  String get calibrationSubjectCoreMath;
+
+  /// Further Math subject
+  ///
+  /// In en, this message translates to:
+  /// **'Further Mathematics'**
+  String get calibrationSubjectFurtherMath;
+
+  /// Physics subject
+  ///
+  /// In en, this message translates to:
+  /// **'Physics'**
+  String get calibrationSubjectPhysics;
+
+  /// Chemistry subject
+  ///
+  /// In en, this message translates to:
+  /// **'Chemistry'**
+  String get calibrationSubjectChemistry;
+
+  /// Biology subject
+  ///
+  /// In en, this message translates to:
+  /// **'Biology'**
+  String get calibrationSubjectBiology;
+
+  /// English Language subject
+  ///
+  /// In en, this message translates to:
+  /// **'English Language'**
+  String get calibrationSubjectEnglish;
+
+  /// Financial Accounting subject
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Accounting'**
+  String get calibrationSubjectAccounting;
+
+  /// Economics subject
+  ///
+  /// In en, this message translates to:
+  /// **'Economics'**
+  String get calibrationSubjectEconomics;
+
+  /// Commerce subject
+  ///
+  /// In en, this message translates to:
+  /// **'Commerce'**
+  String get calibrationSubjectCommerce;
+
+  /// Literature in English subject
+  ///
+  /// In en, this message translates to:
+  /// **'Literature in English'**
+  String get calibrationSubjectLiterature;
+
+  /// Government subject
+  ///
+  /// In en, this message translates to:
+  /// **'Government'**
+  String get calibrationSubjectGovernment;
+
+  /// History subject
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get calibrationSubjectHistory;
+
+  /// Christian/Islamic Religious Knowledge subject
+  ///
+  /// In en, this message translates to:
+  /// **'CRK / IRK'**
+  String get calibrationSubjectCRK;
+
+  /// Core subject track label
+  ///
+  /// In en, this message translates to:
+  /// **'Core'**
+  String get calibrationTrackCore;
+
+  /// Science track label
+  ///
+  /// In en, this message translates to:
+  /// **'Science'**
+  String get calibrationTrackScience;
+
+  /// Commercial track label
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial'**
+  String get calibrationTrackCommercial;
+
+  /// Arts & Humanities track label
+  ///
+  /// In en, this message translates to:
+  /// **'Arts / Humanities'**
+  String get calibrationTrackArts;
+
+  /// Question B4 in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'When is your exam?'**
+  String get calibrationQuestionB4;
+
+  /// 1 Month timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Next 1 Month'**
+  String get calibrationTimeline1Month;
+
+  /// 3 Months timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Next 3 Months'**
+  String get calibrationTimeline3Months;
+
+  /// 6 Months timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Next 6 Months'**
+  String get calibrationTimeline6Months;
+
+  /// Next year timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Next Year'**
+  String get calibrationTimelineNextYear;
+
+  /// Desktop hero title in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrating Neural Learning Engine'**
+  String get calibrationDesktopHeroTitle;
+
+  /// Desktop hero subtitle in calibration
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI is adapting its retrieval indices, Socratic dialogue trees, and memory decay formulas specifically for your curriculum.'**
+  String get calibrationDesktopHeroSubtitle;
+
+  /// Desktop metric 1
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive RAG Knowledge Base'**
+  String get calibrationDesktopMetric1;
+
+  /// Desktop metric 2
+  ///
+  /// In en, this message translates to:
+  /// **'Curriculum-Specific STEM Prompts'**
+  String get calibrationDesktopMetric2;
+
+  /// Desktop metric 3
+  ///
+  /// In en, this message translates to:
+  /// **'Personalized Spaced Repetition Intervals'**
+  String get calibrationDesktopMetric3;
+
+  /// Accessibility label for selecting an option
+  ///
+  /// In en, this message translates to:
+  /// **'Select {option}'**
+  String calibrationSelectOptionSemantics(String option);
+
+  /// Accessibility label for a selected option
+  ///
+  /// In en, this message translates to:
+  /// **'{option}, selected'**
+  String calibrationSelectedOptionSemantics(String option);
+
+  /// Title for content recommendation screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-Calibrated Workspace'**
+  String get contentRecommendationTitle;
+
+  /// Subtitle for content recommendation screen
+  ///
+  /// In en, this message translates to:
+  /// **'Curated resources ready in your dashboard'**
+  String get contentRecommendationSubtitle;
+
+  /// Accessibility announcement for recommendation slide change
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendation {current} of {total}: {title}'**
+  String contentRecommendationAnnouncement(
+    int current,
+    int total,
+    String title,
+  );
+
+  /// Tagline for past papers slide
+  ///
+  /// In en, this message translates to:
+  /// **'Instant Exam Readiness'**
+  String get contentPastPapersTagline;
+
+  /// Description for past papers slide
+  ///
+  /// In en, this message translates to:
+  /// **'Based on your target ({examType}), we\'ve selected high-yield past papers from our database for {subjects}.'**
+  String contentPastPapersDesc(String examType, String subjects);
+
+  /// Tagline for flashcards slide
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Mastery of {field}'**
+  String contentFlashcardsTagline(String field);
+
+  /// Description for flashcards slide
+  ///
+  /// In en, this message translates to:
+  /// **'Dive into structured flashcards for core topics in {field}. Master key concepts instantly with SM-2 Spaced Repetition.'**
+  String contentFlashcardsDesc(String field);
+
+  /// Tagline for Socratic AI tutoring slide
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI is Ready'**
+  String get contentSocraticTagline;
+
+  /// Description for Socratic AI tutoring slide
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve created tutoring threads covering mandatory topics for {level} students in {field}. Ask Syllabot anything!'**
+  String contentSocraticDesc(String level, String field);
+
+  /// Next button tooltip and label
+  ///
+  /// In en, this message translates to:
+  /// **'Next Recommendation'**
+  String get contentNextButton;
+
+  /// Get started button tooltip and label
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Dashboard'**
+  String get contentGetStartedButton;
+
+  /// Skip button label
+  ///
+  /// In en, this message translates to:
+  /// **'Skip to Dashboard'**
+  String get contentSkipButton;
+
+  /// Desktop hero title in content recommendation
+  ///
+  /// In en, this message translates to:
+  /// **'Your Pre-Loaded Academic Hub'**
+  String get contentDesktopHeroTitle;
+
+  /// Desktop hero subtitle in content recommendation
+  ///
+  /// In en, this message translates to:
+  /// **'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive STEM decks, and automated Socratic dialogue channels.'**
+  String get contentDesktopHeroSubtitle;
+
+  /// Content recommendation feature 1
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-indexed exam question banks'**
+  String get contentFeature1;
+
+  /// Content recommendation feature 2
+  ///
+  /// In en, this message translates to:
+  /// **'Automated SM-2 spaced repetition decks'**
+  String get contentFeature2;
+
+  /// Content recommendation feature 3
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated 24/7 Syllabot AI course assistants'**
+  String get contentFeature3;
+
+  /// Badge label for pre-populated content
+  ///
+  /// In en, this message translates to:
+  /// **'DATABASE PRE-POPULATED'**
+  String get contentBadgeCurated;
+
+  /// Badge label for active recall deck
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE RECALL DECK'**
+  String get contentBadgeActiveRecall;
+
+  /// Badge label for socratic dialogue
+  ///
+  /// In en, this message translates to:
+  /// **'SOCRATIC DIALOGUE'**
+  String get contentBadgeSocratic;
+
+  /// Title on OTP verification screen
+  ///
+  /// In en, this message translates to:
+  /// **'Check your inbox'**
+  String get otpTitle;
+
+  /// Subtitle on OTP screen with email placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit verification code to {email}. Enter it below to verify your account.'**
+  String otpSubtitle(String email);
+
+  /// Label on OTP verify button
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Email'**
+  String get otpVerifyButton;
+
+  /// Label on resend OTP link
+  ///
+  /// In en, this message translates to:
+  /// **'Resend Code'**
+  String get otpResendCode;
+
+  /// Label while OTP is being resent
+  ///
+  /// In en, this message translates to:
+  /// **'Resending…'**
+  String get otpResending;
+
+  /// Countdown label before resend is allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String otpResendIn(int seconds);
+
+  /// Snackbar confirmation that OTP was resent
+  ///
+  /// In en, this message translates to:
+  /// **'A new code has been sent to your email.'**
+  String get otpResentMessage;
+
+  /// Screen reader announcement when verifying OTP
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying your code, please wait.'**
+  String get otpVerifyingAnnouncement;
+
+  /// Screen reader announcement when OTP is verified
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified successfully. Welcome to Kortex!'**
+  String get otpVerifiedAnnouncement;
+
+  /// Semantics label for OTP PIN input
+  ///
+  /// In en, this message translates to:
+  /// **'Six digit verification code input'**
+  String get otpInputSemantics;
+
+  /// Semantics label for verify button
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email address'**
+  String get otpVerifyButtonSemantics;
+
+  /// Semantics label for resend button
+  ///
+  /// In en, this message translates to:
+  /// **'Resend verification code'**
+  String get otpResendSemantics;
+
+  /// Title on permissions interstitial page
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Key Features'**
+  String get permissionsTitle;
+
+  /// Subtitle on permissions page
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Kortex to send you study reminders and scan your documents for instant AI indexing.'**
+  String get permissionsSubtitle;
+
+  /// Notification permission card title
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get permissionsNotifTitle;
+
+  /// Notification permission card description
+  ///
+  /// In en, this message translates to:
+  /// **'Receive spaced-repetition reminders and active-recall session alerts calibrated to your study streak.'**
+  String get permissionsNotifDescription;
+
+  /// Storage permission card title
+  ///
+  /// In en, this message translates to:
+  /// **'Camera & Storage Access'**
+  String get permissionsStorageTitle;
+
+  /// Storage permission card description
+  ///
+  /// In en, this message translates to:
+  /// **'Snap textbook pages for OCR parsing and drop in PDF or PPTX lecture slides for instant AI indexing.'**
+  String get permissionsStorageDescription;
+
+  /// Button label to allow a permission
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get permissionsAllow;
+
+  /// Continue button on permissions page
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to Dashboard'**
+  String get permissionsContinue;
+
+  /// Skip button on permissions page
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get permissionsSkip;
+
+  /// Screen reader announcement when permissions step is done
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions configured. Opening your dashboard.'**
+  String get permissionsCompleteAnnouncement;
+
+  /// Semantics label for notification permission allow button
+  ///
+  /// In en, this message translates to:
+  /// **'Allow push notifications for study reminders'**
+  String get permissionsNotifSemantics;
+
+  /// Semantics label for storage permission allow button
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera and storage access for document scanning'**
+  String get permissionsStorageSemantics;
+
+  /// Semantics label for skip permissions button
+  ///
+  /// In en, this message translates to:
+  /// **'Skip permissions and proceed to dashboard'**
+  String get permissionsSkipSemantics;
+
+  /// Skip button label on calibration page
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get calibrationSkip;
+
+  /// Semantics label for skip calibration button
+  ///
+  /// In en, this message translates to:
+  /// **'Skip academic profile setup and use default settings'**
+  String get calibrationSkipSemantics;
+
+  /// Accessibility label for main navigation bar
+  ///
+  /// In en, this message translates to:
+  /// **'Main Navigation'**
+  String get navBarSemanticsLabel;
+
+  /// Home tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navTabHome;
+
+  /// Syllabot AI tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI'**
+  String get navTabSyllabot;
+
+  /// Decks tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Study Decks'**
+  String get navTabDecks;
+
+  /// Community tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get navTabCommunity;
+
+  /// Profile tab label
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navTabProfile;
+
+  /// Voiceover announcement when a navigation tab is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to {tab} tab'**
+  String navTabAnnouncement(String tab);
+
+  /// Accessibility label for navigation tab item
+  ///
+  /// In en, this message translates to:
+  /// **'{tab}, tab {current} of {total}'**
+  String navTabSemantics(String tab, int current, int total);
 }
 
 class _AppLocalizationsDelegate

@@ -60,7 +60,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _completeOnboarding() async {
     await _dataSource.markOnboardingCompleted();
     if (!mounted) return;
-    await context.router.replace(const MainRoute());
+    await context.router.replace(const AuthRoute());
   }
 
   void _onNext(int totalSlides) {
@@ -110,99 +110,104 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Scaffold(
         backgroundColor: colors.surfacePrimary,
         body: SafeArea(
-          child: Column(
-            children: [
-              // ==========================================
-              // 1. FIXED TOP BAR (Kortex Logo + Skip CTA)
-              // ==========================================
-              OnboardingTopBar(
-                isLastPage: isLastPage,
-                onSkip: () => unawaited(_completeOnboarding()),
-              ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                children: [
+                  // ==========================================
+                  // 1. FIXED TOP BAR (Kortex Logo + Skip CTA)
+                  // ==========================================
+                  OnboardingTopBar(
+                    isLastPage: isLastPage,
+                    onSkip: () => unawaited(_completeOnboarding()),
+                  ),
 
-              // ==========================================
-              // 2. DECOUPLED GESTURE CANVAS (PageView)
-              // ==========================================
-              Expanded(
-                child: OnboardingPageView(
-                  controller: _pageController,
-                  slides: slides,
-                  onPageChanged: (index) => _onPageChanged(index, slides),
-                ),
-              ),
-
-              // ==========================================
-              // 3. FIXED BOTTOM DOCK (Indicator + Forward Circle)
-              // ==========================================
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Dynamic Morphing Page Indicator
-                    AnimatedPageIndicator(
-                      count: slides.length,
-                      currentIndex: _currentIndex,
-                      activeColor: colors.primary,
-                      onTap: _onIndicatorTap,
+                  // ==========================================
+                  // 2. DECOUPLED GESTURE CANVAS (PageView)
+                  // ==========================================
+                  Expanded(
+                    child: OnboardingPageView(
+                      controller: _pageController,
+                      slides: slides,
+                      onPageChanged: (index) => _onPageChanged(index, slides),
                     ),
+                  ),
 
-                    // Tactile Circular Forward Action Trigger
-                    Semantics(
-                      button: true,
-                      label: forwardActionSemantics,
-                      child: Tooltip(
-                        message: forwardActionLabel,
-                        child: ShrinkableButton(
-                          onTap: () => _onNext(slides.length),
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  colors.primary,
-                                  colors.primary.withAlpha(220),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 110 : 75,
+                  // ==========================================
+                  // 3. FIXED BOTTOM DOCK (Indicator + Forward Circle)
+                  // ==========================================
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Dynamic Morphing Page Indicator
+                        AnimatedPageIndicator(
+                          count: slides.length,
+                          currentIndex: _currentIndex,
+                          activeColor: colors.primary,
+                          onTap: _onIndicatorTap,
+                        ),
+
+                        // Tactile Circular Forward Action Trigger
+                        Semantics(
+                          button: true,
+                          label: forwardActionSemantics,
+                          child: Tooltip(
+                            message: forwardActionLabel,
+                            child: ShrinkableButton(
+                              onTap: () => _onNext(slides.length),
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      colors.primary,
+                                      colors.primary.withAlpha(220),
+                                    ],
                                   ),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 110 : 75,
+                                      ),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 260),
-                              transitionBuilder: (child, animation) =>
-                                  ScaleTransition(
-                                scale: animation,
-                                child: child,
-                              ),
-                              child: Icon(
-                                isLastPage
-                                    ? Icons.rocket_launch_outlined
-                                    : Icons.arrow_forward_rounded,
-                                key: ValueKey<bool>(isLastPage),
-                                color: Colors.white,
-                                size: 22,
+                                alignment: Alignment.center,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 260),
+                                  transitionBuilder: (child, animation) =>
+                                      ScaleTransition(
+                                    scale: animation,
+                                    child: child,
+                                  ),
+                                  child: Icon(
+                                    isLastPage
+                                        ? Icons.rocket_launch_outlined
+                                        : Icons.arrow_forward_rounded,
+                                    key: ValueKey<bool>(isLastPage),
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -14,6 +14,8 @@ mixin UseCase<Type, Params> {
 /// No params if the data object is in local cache
 ///
 class NoParams extends Equatable {
+  const NoParams();
+
   @override
   List<Object> get props => [];
 }

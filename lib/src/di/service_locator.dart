@@ -10,5 +10,33 @@ void _initServices() {
     )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
+    )
+    ..registerFactory<AuthBloc>(
+      () => AuthBloc(
+        loginWithEmailUseCase: locator<LoginWithEmailUseCase>(),
+        registerWithEmailUseCase: locator<RegisterWithEmailUseCase>(),
+        loginWithSocialUseCase: locator<LoginWithSocialUseCase>(),
+        resetPasswordUseCase: locator<ResetPasswordUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<AuthModeCubit>(
+      AuthModeCubit.new,
+    )
+    ..registerLazySingleton<AuthDraftCubit>(
+      AuthDraftCubit.new,
+    )
+    ..registerFactory<CalibrationCubit>(
+      () => CalibrationCubit(
+        saveCalibrationProfileUseCase:
+            locator<SaveCalibrationProfileUseCase>(),
+      ),
+    )
+    ..registerFactory<ContentRecommendationCubit>(
+      () => ContentRecommendationCubit(
+        getRecommendedContentUseCase:
+            locator<GetRecommendedContentUseCase>(),
+        getCalibrationProfileUseCase:
+            locator<GetCalibrationProfileUseCase>(),
+      ),
     );
 }

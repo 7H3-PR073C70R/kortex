@@ -251,5 +251,836 @@
     "loadingProfileAvatar": "Loading profile avatar",
     "@loadingProfileAvatar": {
         "description": "Accessibility label for circular shimmer avatar"
+    },
+    "authSwitchToForm": "Quick Form",
+    "@authSwitchToForm": {
+        "description": "Button label to switch to quick form mode"
+    },
+    "authSwitchToChat": "AI Assistant",
+    "@authSwitchToChat": {
+        "description": "Button label to switch to AI chat mode"
+    },
+    "authSocialGoogle": "Continue with Google",
+    "@authSocialGoogle": {
+        "description": "Social sign in with Google button label"
+    },
+    "authSocialApple": "Continue with Apple",
+    "@authSocialApple": {
+        "description": "Social sign in with Apple button label"
+    },
+    "authChatWelcome": "Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI'm Syllabot, your AI study partner. How would you like to get started today?",
+    "@authChatWelcome": {
+        "description": "Warm initial greeting with motivational quote from Syllabot in auth chat"
+    },
+    "authChatAskEmail": "Please enter your academic or personal email address.",
+    "@authChatAskEmail": {
+        "description": "Syllabot asking for user email"
+    },
+    "authChatAskPassword": "Great! Set a secure password (at least 6 characters).",
+    "@authChatAskPassword": {
+        "description": "Syllabot asking for password"
+    },
+    "authChipLogin": "Log In",
+    "@authChipLogin": {
+        "description": "Quick action chip to switch to login mode"
+    },
+    "authChipSignUp": "Sign Up",
+    "@authChipSignUp": {
+        "description": "Quick action chip to switch to sign up mode"
+    },
+    "authChipForgotPassword": "Forgot Password?",
+    "@authChipForgotPassword": {
+        "description": "Quick action chip for forgot password"
+    },
+    "authChipGoogle": "Use Google",
+    "@authChipGoogle": {
+        "description": "Quick action chip to use Google auth"
+    },
+    "authForgotPasswordTitle": "Reset Password",
+    "@authForgotPasswordTitle": {
+        "description": "Title for forgot password page"
+    },
+    "authForgotPasswordSubtitle": "Enter your registered email address and we will send you instructions to reset your password.",
+    "@authForgotPasswordSubtitle": {
+        "description": "Subtitle for forgot password page"
+    },
+    "authEmailLabel": "Email Address",
+    "@authEmailLabel": {
+        "description": "Label for email text field"
+    },
+    "authEmailHint": "student@university.edu",
+    "@authEmailHint": {
+        "description": "Hint for email text field"
+    },
+    "authPasswordLabel": "Password",
+    "@authPasswordLabel": {
+        "description": "Label for password text field"
+    },
+    "authPasswordHint": "••••••••",
+    "@authPasswordHint": {
+        "description": "Hint for password text field"
+    },
+    "authDisplayNameLabel": "Full Name",
+    "@authDisplayNameLabel": {
+        "description": "Label for display name text field"
+    },
+    "authDisplayNameHint": "Ada Lovelace",
+    "@authDisplayNameHint": {
+        "description": "Hint for display name text field"
+    },
+    "authSubmitLogin": "Sign In",
+    "@authSubmitLogin": {
+        "description": "Submit button for login"
+    },
+    "authSubmitRegister": "Create Account",
+    "@authSubmitRegister": {
+        "description": "Submit button for registration"
+    },
+    "authSubmitReset": "Send Reset Link",
+    "@authSubmitReset": {
+        "description": "Submit button for password reset"
+    },
+    "authAlreadyHaveAccount": "Already have an account? Sign In",
+    "@authAlreadyHaveAccount": {
+        "description": "Toggle link to switch from register to login"
+    },
+    "authNeedAccount": "Don't have an account? Sign Up",
+    "@authNeedAccount": {
+        "description": "Toggle link to switch from login to register"
+    },
+    "authSend": "Send",
+    "@authSend": {
+        "description": "Chat message send button"
+    },
+    "authChatInputHint": "Type a response or tap a quick action...",
+    "@authChatInputHint": {
+        "description": "Hint for chat message input"
+    },
+    "authInvalidEmail": "Please enter a valid email address",
+    "@authInvalidEmail": {
+        "description": "Validation error message for invalid email"
+    },
+    "authPasswordTooShort": "Password must be at least 6 characters",
+    "@authPasswordTooShort": {
+        "description": "Validation error message for short password"
+    },
+    "authGenericError": "Authentication failed. Please try again.",
+    "@authGenericError": {
+        "description": "Generic authentication error message"
+    },
+    "authSuccessMessage": "Welcome to Kortex!",
+    "@authSuccessMessage": {
+        "description": "Success message upon authentication"
+    },
+    "authModeToggleSemantics": "Switch to {mode}",
+    "@authModeToggleSemantics": {
+        "description": "Accessibility label for mode toggle button",
+        "placeholders": {
+            "mode": {
+                "type": "String",
+                "example": "Quick Form"
+            }
+        }
+    },
+    "authSocialGoogleSemantics": "Sign in with your Google account",
+    "@authSocialGoogleSemantics": {
+        "description": "Accessibility label for Google sign-in button"
+    },
+    "authSocialAppleSemantics": "Sign in with your Apple ID",
+    "@authSocialAppleSemantics": {
+        "description": "Accessibility label for Apple sign-in button"
+    },
+    "authModeSwitchedAnnouncement": "Switched to {mode} view",
+    "@authModeSwitchedAnnouncement": {
+        "description": "Live screen reader announcement when auth mode changes",
+        "placeholders": {
+            "mode": {
+                "type": "String",
+                "example": "Quick Form"
+            }
+        }
+    },
+    "authDesktopHeroTitle": "Your AI-Augmented Academic Workspace",
+    "@authDesktopHeroTitle": {
+        "description": "Hero title for desktop auth panel"
+    },
+    "authDesktopHeroSubtitle": "Ingest syllabi, STEM equations, and lecture slides into an active-recall mastery system in seconds.",
+    "@authDesktopHeroSubtitle": {
+        "description": "Hero subtitle for desktop auth panel"
+    },
+    "authDesktopFeature1": "Zero-latency multimodal STEM OCR",
+    "@authDesktopFeature1": {
+        "description": "Hero bullet feature 1"
+    },
+    "authDesktopFeature2": "Adaptive SM-2 spaced repetition schedules",
+    "@authDesktopFeature2": {
+        "description": "Hero bullet feature 2"
+    },
+    "authDesktopFeature3": "Socratic AI dialogue & calibration",
+    "@authDesktopFeature3": {
+        "description": "Hero bullet feature 3"
+    },
+    "authChatInputSemantics": "Chat response input field",
+    "@authChatInputSemantics": {
+        "description": "Accessibility label for chat input field"
+    },
+    "authChatSendSemantics": "Send chat response",
+    "@authChatSendSemantics": {
+        "description": "Accessibility label for chat send button"
+    },
+    "authForgotPasswordLinkSemantics": "Reset password screen link",
+    "@authForgotPasswordLinkSemantics": {
+        "description": "Accessibility label for forgot password link"
+    },
+    "authToggleFormTypeSemantics": "Toggle between Sign In and Create Account forms",
+    "@authToggleFormTypeSemantics": {
+        "description": "Accessibility label for toggle form type button"
+    },
+    "calibrationTitle": "Academic Calibration",
+    "@calibrationTitle": {
+        "description": "Top header title for calibration wizard"
+    },
+    "calibrationSubtitle": "Personalize Syllabot AI for your academic trajectory",
+    "@calibrationSubtitle": {
+        "description": "Subtitle for calibration wizard"
+    },
+    "calibrationChatWelcome": "Awesome, you're in! To customize your workspace, let's set up your academic profile.",
+    "@calibrationChatWelcome": {
+        "description": "Welcome message for calibration chat"
+    },
+    "calibrationChatFocusPrompt": "Are you studying at a University/Polytechnic or preparing for High School exams?",
+    "@calibrationChatFocusPrompt": {
+        "description": "Prompt asking for academic focus in chat mode"
+    },
+    "calibrationChatLevelPrompt": "Got it! Which specific exam or degree track are you focusing on?",
+    "@calibrationChatLevelPrompt": {
+        "description": "Prompt asking for level in chat mode"
+    },
+    "calibrationChatFieldPrompt": "Excellent. What is your specific field of study or main subjects?",
+    "@calibrationChatFieldPrompt": {
+        "description": "Prompt asking for field in chat mode"
+    },
+    "calibrationChatGoalPrompt": "Perfect. How can Kortex best support you right now?",
+    "@calibrationChatGoalPrompt": {
+        "description": "Prompt asking for goals in chat mode"
+    },
+    "calibrationFocusHigherEd": "University / Polytechnic",
+    "@calibrationFocusHigherEd": {
+        "description": "University option in chat mode"
+    },
+    "calibrationFocusHighSchool": "High School / Exam Prep",
+    "@calibrationFocusHighSchool": {
+        "description": "High school option in chat mode"
+    },
+    "calibrationStepAnnouncement": "Calibration step {current} of {total}: {title}",
+    "@calibrationStepAnnouncement": {
+        "description": "Accessibility announcement for calibration step transition",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "4"
+            },
+            "title": {
+                "type": "String",
+                "example": "Academic Focus"
+            }
+        }
+    },
+    "calibrationBack": "Previous",
+    "@calibrationBack": {
+        "description": "Back button in calibration wizard"
+    },
+    "calibrationContinue": "Continue",
+    "@calibrationContinue": {
+        "description": "Continue button in calibration wizard"
+    },
+    "calibrationFinish": "Calibrate & Launch Kortex",
+    "@calibrationFinish": {
+        "description": "Finish button in calibration wizard"
+    },
+    "calibrationQuestion1": "What is your current academic focus?",
+    "@calibrationQuestion1": {
+        "description": "Question 1 in calibration"
+    },
+    "calibrationOptionUniversity": "University / Polytechnic",
+    "@calibrationOptionUniversity": {
+        "description": "University option chip"
+    },
+    "calibrationOptionHighSchool": "High School / Exam Prep",
+    "@calibrationOptionHighSchool": {
+        "description": "High school option chip"
+    },
+    "calibrationQuestionA2": "What is your current academic level?",
+    "@calibrationQuestionA2": {
+        "description": "Question A2 in calibration"
+    },
+    "calibrationOptionOND": "OND (Ordinary National Diploma)",
+    "@calibrationOptionOND": {
+        "description": "OND option"
+    },
+    "calibrationOptionHND": "HND (Higher National Diploma)",
+    "@calibrationOptionHND": {
+        "description": "HND option"
+    },
+    "calibrationOptionBSc": "BSc (Bachelor of Science)",
+    "@calibrationOptionBSc": {
+        "description": "BSc option"
+    },
+    "calibrationOptionMSc": "MSc (Master of Science)",
+    "@calibrationOptionMSc": {
+        "description": "MSc option"
+    },
+    "calibrationOptionPhD": "PhD (Doctor of Philosophy)",
+    "@calibrationOptionPhD": {
+        "description": "PhD option"
+    },
+    "calibrationQuestionA3": "What is your specific field of study?",
+    "@calibrationQuestionA3": {
+        "description": "Question A3 in calibration"
+    },
+    "calibrationQuestionA3Subtitle": "Select your primary domain to optimize Syllabot's knowledge retrieval",
+    "@calibrationQuestionA3Subtitle": {
+        "description": "Subtitle for question A3"
+    },
+    "calibrationFieldMath": "Mathematics & Data Science",
+    "@calibrationFieldMath": {
+        "description": "Math field"
+    },
+    "calibrationFieldPhysics": "Advanced Physics / Quantum Mechanics",
+    "@calibrationFieldPhysics": {
+        "description": "Physics field"
+    },
+    "calibrationFieldChemEng": "Chemical Engineering",
+    "@calibrationFieldChemEng": {
+        "description": "Chemical Engineering field"
+    },
+    "calibrationFieldMedicine": "Medical & Health Sciences",
+    "@calibrationFieldMedicine": {
+        "description": "Medical field"
+    },
+    "calibrationFieldRobotics": "Robotics & Mechanical Engineering",
+    "@calibrationFieldRobotics": {
+        "description": "Robotics field"
+    },
+    "calibrationFieldComputerScience": "Computer Science & Artificial Intelligence",
+    "@calibrationFieldComputerScience": {
+        "description": "Computer Science field"
+    },
+    "calibrationFieldLaw": "Law & Legal Studies",
+    "@calibrationFieldLaw": {
+        "description": "Law & Legal Studies field"
+    },
+    "calibrationFieldBusiness": "Business, Finance & Accounting",
+    "@calibrationFieldBusiness": {
+        "description": "Business, Finance & Accounting field"
+    },
+    "calibrationFieldHumanities": "Humanities, History & Literature",
+    "@calibrationFieldHumanities": {
+        "description": "Humanities, History & Literature field"
+    },
+    "calibrationFieldSocialSciences": "Social Sciences & Economics",
+    "@calibrationFieldSocialSciences": {
+        "description": "Social Sciences & Economics field"
+    },
+    "calibrationQuestionA4": "How can Kortex best support you right now?",
+    "@calibrationQuestionA4": {
+        "description": "Question A4 in calibration"
+    },
+    "calibrationQuestionA4Subtitle": "Select all features you want Syllabot to prioritize for you",
+    "@calibrationQuestionA4Subtitle": {
+        "description": "Subtitle for question A4"
+    },
+    "calibrationGoalThesis": "Thesis / Dissertation Support",
+    "@calibrationGoalThesis": {
+        "description": "Thesis support goal"
+    },
+    "calibrationGoalSocratic": "Deep-Dive STEM Socratic AI",
+    "@calibrationGoalSocratic": {
+        "description": "Socratic AI goal"
+    },
+    "calibrationGoalSpacedRep": "Spaced Repetition (SM-2) Mastery",
+    "@calibrationGoalSpacedRep": {
+        "description": "Spaced repetition goal"
+    },
+    "calibrationGoalMockExams": "Comprehensive Mock Exams",
+    "@calibrationGoalMockExams": {
+        "description": "Mock exams goal"
+    },
+    "calibrationGoalCaseLaw": "Case Law \u0026 Essay Preparation",
+    "@calibrationGoalCaseLaw": {
+        "description": "Case law & essay goal"
+    },
+    "calibrationGoalEssayPrep": "Structured Essay \u0026 Argument Mapping",
+    "@calibrationGoalEssayPrep": {
+        "description": "Essay prep goal"
+    },
+    "calibrationQuestionB2": "What exam are you preparing for?",
+    "@calibrationQuestionB2": {
+        "description": "Question B2 in calibration"
+    },
+    "calibrationExamWAEC": "WAEC / GCE",
+    "@calibrationExamWAEC": {
+        "description": "WAEC exam"
+    },
+    "calibrationExamNECO": "NECO / SSCE",
+    "@calibrationExamNECO": {
+        "description": "NECO exam"
+    },
+    "calibrationExamJAMB": "JAMB / UTME",
+    "@calibrationExamJAMB": {
+        "description": "JAMB exam"
+    },
+    "calibrationExamSAT": "SAT",
+    "@calibrationExamSAT": {
+        "description": "SAT exam"
+    },
+    "calibrationExamIELTS": "IELTS / TOEFL",
+    "@calibrationExamIELTS": {
+        "description": "IELTS exam"
+    },
+    "calibrationExamIGCSE": "IGCSE / A-Levels",
+    "@calibrationExamIGCSE": {
+        "description": "IGCSE exam"
+    },
+    "calibrationQuestionB3": "What subjects do you need to master?",
+    "@calibrationQuestionB3": {
+        "description": "Question B3 in calibration"
+    },
+    "calibrationQuestionB3Subtitle": "Select all subjects for active-recall flashcard generation",
+    "@calibrationQuestionB3Subtitle": {
+        "description": "Subtitle for question B3"
+    },
+    "calibrationSubjectCoreMath": "Mathematics (Core)",
+    "@calibrationSubjectCoreMath": {
+        "description": "Core Math subject"
+    },
+    "calibrationSubjectFurtherMath": "Further Mathematics",
+    "@calibrationSubjectFurtherMath": {
+        "description": "Further Math subject"
+    },
+    "calibrationSubjectPhysics": "Physics",
+    "@calibrationSubjectPhysics": {
+        "description": "Physics subject"
+    },
+    "calibrationSubjectChemistry": "Chemistry",
+    "@calibrationSubjectChemistry": {
+        "description": "Chemistry subject"
+    },
+    "calibrationSubjectBiology": "Biology",
+    "@calibrationSubjectBiology": {
+        "description": "Biology subject"
+    },
+    "calibrationSubjectEnglish": "English Language",
+    "@calibrationSubjectEnglish": {
+        "description": "English Language subject"
+    },
+    "calibrationSubjectAccounting": "Financial Accounting",
+    "@calibrationSubjectAccounting": {
+        "description": "Financial Accounting subject"
+    },
+    "calibrationSubjectEconomics": "Economics",
+    "@calibrationSubjectEconomics": {
+        "description": "Economics subject"
+    },
+    "calibrationSubjectCommerce": "Commerce",
+    "@calibrationSubjectCommerce": {
+        "description": "Commerce subject"
+    },
+    "calibrationSubjectLiterature": "Literature in English",
+    "@calibrationSubjectLiterature": {
+        "description": "Literature in English subject"
+    },
+    "calibrationSubjectGovernment": "Government",
+    "@calibrationSubjectGovernment": {
+        "description": "Government subject"
+    },
+    "calibrationSubjectHistory": "History",
+    "@calibrationSubjectHistory": {
+        "description": "History subject"
+    },
+    "calibrationSubjectCRK": "CRK / IRK",
+    "@calibrationSubjectCRK": {
+        "description": "Christian/Islamic Religious Knowledge subject"
+    },
+    "calibrationTrackCore": "Core",
+    "@calibrationTrackCore": {
+        "description": "Core subject track label"
+    },
+    "calibrationTrackScience": "Science",
+    "@calibrationTrackScience": {
+        "description": "Science track label"
+    },
+    "calibrationTrackCommercial": "Commercial",
+    "@calibrationTrackCommercial": {
+        "description": "Commercial track label"
+    },
+    "calibrationTrackArts": "Arts / Humanities",
+    "@calibrationTrackArts": {
+        "description": "Arts & Humanities track label"
+    },
+    "calibrationQuestionB4": "When is your exam?",
+    "@calibrationQuestionB4": {
+        "description": "Question B4 in calibration"
+    },
+    "calibrationTimeline1Month": "Next 1 Month",
+    "@calibrationTimeline1Month": {
+        "description": "1 Month timeline"
+    },
+    "calibrationTimeline3Months": "Next 3 Months",
+    "@calibrationTimeline3Months": {
+        "description": "3 Months timeline"
+    },
+    "calibrationTimeline6Months": "Next 6 Months",
+    "@calibrationTimeline6Months": {
+        "description": "6 Months timeline"
+    },
+    "calibrationTimelineNextYear": "Next Year",
+    "@calibrationTimelineNextYear": {
+        "description": "Next year timeline"
+    },
+    "calibrationDesktopHeroTitle": "Calibrating Neural Learning Engine",
+    "@calibrationDesktopHeroTitle": {
+        "description": "Desktop hero title in calibration"
+    },
+    "calibrationDesktopHeroSubtitle": "Syllabot AI is adapting its retrieval indices, Socratic dialogue trees, and memory decay formulas specifically for your curriculum.",
+    "@calibrationDesktopHeroSubtitle": {
+        "description": "Desktop hero subtitle in calibration"
+    },
+    "calibrationDesktopMetric1": "Adaptive RAG Knowledge Base",
+    "@calibrationDesktopMetric1": {
+        "description": "Desktop metric 1"
+    },
+    "calibrationDesktopMetric2": "Curriculum-Specific STEM Prompts",
+    "@calibrationDesktopMetric2": {
+        "description": "Desktop metric 2"
+    },
+    "calibrationDesktopMetric3": "Personalized Spaced Repetition Intervals",
+    "@calibrationDesktopMetric3": {
+        "description": "Desktop metric 3"
+    },
+    "calibrationSelectOptionSemantics": "Select {option}",
+    "@calibrationSelectOptionSemantics": {
+        "description": "Accessibility label for selecting an option",
+        "placeholders": {
+            "option": {
+                "type": "String",
+                "example": "University"
+            }
+        }
+    },
+    "calibrationSelectedOptionSemantics": "{option}, selected",
+    "@calibrationSelectedOptionSemantics": {
+        "description": "Accessibility label for a selected option",
+        "placeholders": {
+            "option": {
+                "type": "String",
+                "example": "University"
+            }
+        }
+    },
+    "contentRecommendationTitle": "Pre-Calibrated Workspace",
+    "@contentRecommendationTitle": {
+        "description": "Title for content recommendation screen"
+    },
+    "contentRecommendationSubtitle": "Curated resources ready in your dashboard",
+    "@contentRecommendationSubtitle": {
+        "description": "Subtitle for content recommendation screen"
+    },
+    "contentRecommendationAnnouncement": "Recommendation {current} of {total}: {title}",
+    "@contentRecommendationAnnouncement": {
+        "description": "Accessibility announcement for recommendation slide change",
+        "placeholders": {
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "3"
+            },
+            "title": {
+                "type": "String",
+                "example": "Instant Exam Readiness"
+            }
+        }
+    },
+    "contentPastPapersTagline": "Instant Exam Readiness",
+    "@contentPastPapersTagline": {
+        "description": "Tagline for past papers slide"
+    },
+    "contentPastPapersDesc": "Based on your target ({examType}), we've selected high-yield past papers from our database for {subjects}.",
+    "@contentPastPapersDesc": {
+        "description": "Description for past papers slide",
+        "placeholders": {
+            "examType": {
+                "type": "String",
+                "example": "JAMB / UTME"
+            },
+            "subjects": {
+                "type": "String",
+                "example": "Mathematics, Physics, Chemistry"
+            }
+        }
+    },
+    "contentFlashcardsTagline": "Deep Mastery of {field}",
+    "@contentFlashcardsTagline": {
+        "description": "Tagline for flashcards slide",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Mathematics & Data Science"
+            }
+        }
+    },
+    "contentFlashcardsDesc": "Dive into structured flashcards for core topics in {field}. Master key concepts instantly with SM-2 Spaced Repetition.",
+    "@contentFlashcardsDesc": {
+        "description": "Description for flashcards slide",
+        "placeholders": {
+            "field": {
+                "type": "String",
+                "example": "Mathematics & Data Science"
+            }
+        }
+    },
+    "contentSocraticTagline": "Syllabot AI is Ready",
+    "@contentSocraticTagline": {
+        "description": "Tagline for Socratic AI tutoring slide"
+    },
+    "contentSocraticDesc": "We've created tutoring threads covering mandatory topics for {level} students in {field}. Ask Syllabot anything!",
+    "@contentSocraticDesc": {
+        "description": "Description for Socratic AI tutoring slide",
+        "placeholders": {
+            "level": {
+                "type": "String",
+                "example": "BSc"
+            },
+            "field": {
+                "type": "String",
+                "example": "Computer Science"
+            }
+        }
+    },
+    "contentNextButton": "Next Recommendation",
+    "@contentNextButton": {
+        "description": "Next button tooltip and label"
+    },
+    "contentGetStartedButton": "Launch Dashboard",
+    "@contentGetStartedButton": {
+        "description": "Get started button tooltip and label"
+    },
+    "contentSkipButton": "Skip to Dashboard",
+    "@contentSkipButton": {
+        "description": "Skip button label"
+    },
+    "contentDesktopHeroTitle": "Your Pre-Loaded Academic Hub",
+    "@contentDesktopHeroTitle": {
+        "description": "Desktop hero title in content recommendation"
+    },
+    "contentDesktopHeroSubtitle": "Zero blank pages. We've pre-seeded your library with verified past exams, adaptive STEM decks, and automated Socratic dialogue channels.",
+    "@contentDesktopHeroSubtitle": {
+        "description": "Desktop hero subtitle in content recommendation"
+    },
+    "contentFeature1": "Pre-indexed exam question banks",
+    "@contentFeature1": {
+        "description": "Content recommendation feature 1"
+    },
+    "contentFeature2": "Automated SM-2 spaced repetition decks",
+    "@contentFeature2": {
+        "description": "Content recommendation feature 2"
+    },
+    "contentFeature3": "Dedicated 24/7 Syllabot AI course assistants",
+    "@contentFeature3": {
+        "description": "Content recommendation feature 3"
+    },
+    "contentBadgeCurated": "DATABASE PRE-POPULATED",
+    "@contentBadgeCurated": {
+        "description": "Badge label for pre-populated content"
+    },
+    "contentBadgeActiveRecall": "ACTIVE RECALL DECK",
+    "@contentBadgeActiveRecall": {
+        "description": "Badge label for active recall deck"
+    },
+    "contentBadgeSocratic": "SOCRATIC DIALOGUE",
+    "@contentBadgeSocratic": {
+        "description": "Badge label for socratic dialogue"
+    },
+
+    "otpTitle": "Check your inbox",
+    "@otpTitle": {
+        "description": "Title on OTP verification screen"
+    },
+    "otpSubtitle": "We sent a 6-digit verification code to {email}. Enter it below to verify your account.",
+    "@otpSubtitle": {
+        "description": "Subtitle on OTP screen with email placeholder",
+        "placeholders": {
+            "email": {
+                "type": "String",
+                "example": "user@example.com"
+            }
+        }
+    },
+    "otpVerifyButton": "Verify Email",
+    "@otpVerifyButton": {
+        "description": "Label on OTP verify button"
+    },
+    "otpResendCode": "Resend Code",
+    "@otpResendCode": {
+        "description": "Label on resend OTP link"
+    },
+    "otpResending": "Resending…",
+    "@otpResending": {
+        "description": "Label while OTP is being resent"
+    },
+    "otpResendIn": "Resend in {seconds}s",
+    "@otpResendIn": {
+        "description": "Countdown label before resend is allowed",
+        "placeholders": {
+            "seconds": {
+                "type": "int",
+                "example": "45"
+            }
+        }
+    },
+    "otpResentMessage": "A new code has been sent to your email.",
+    "@otpResentMessage": {
+        "description": "Snackbar confirmation that OTP was resent"
+    },
+    "otpVerifyingAnnouncement": "Verifying your code, please wait.",
+    "@otpVerifyingAnnouncement": {
+        "description": "Screen reader announcement when verifying OTP"
+    },
+    "otpVerifiedAnnouncement": "Email verified successfully. Welcome to Kortex!",
+    "@otpVerifiedAnnouncement": {
+        "description": "Screen reader announcement when OTP is verified"
+    },
+    "otpInputSemantics": "Six digit verification code input",
+    "@otpInputSemantics": {
+        "description": "Semantics label for OTP PIN input"
+    },
+    "otpVerifyButtonSemantics": "Verify your email address",
+    "@otpVerifyButtonSemantics": {
+        "description": "Semantics label for verify button"
+    },
+    "otpResendSemantics": "Resend verification code",
+    "@otpResendSemantics": {
+        "description": "Semantics label for resend button"
+    },
+
+    "permissionsTitle": "Enable Key Features",
+    "@permissionsTitle": {
+        "description": "Title on permissions interstitial page"
+    },
+    "permissionsSubtitle": "Allow Kortex to send you study reminders and scan your documents for instant AI indexing.",
+    "@permissionsSubtitle": {
+        "description": "Subtitle on permissions page"
+    },
+    "permissionsNotifTitle": "Push Notifications",
+    "@permissionsNotifTitle": {
+        "description": "Notification permission card title"
+    },
+    "permissionsNotifDescription": "Receive spaced-repetition reminders and active-recall session alerts calibrated to your study streak.",
+    "@permissionsNotifDescription": {
+        "description": "Notification permission card description"
+    },
+    "permissionsStorageTitle": "Camera & Storage Access",
+    "@permissionsStorageTitle": {
+        "description": "Storage permission card title"
+    },
+    "permissionsStorageDescription": "Snap textbook pages for OCR parsing and drop in PDF or PPTX lecture slides for instant AI indexing.",
+    "@permissionsStorageDescription": {
+        "description": "Storage permission card description"
+    },
+    "permissionsAllow": "Allow",
+    "@permissionsAllow": {
+        "description": "Button label to allow a permission"
+    },
+    "permissionsContinue": "Continue to Dashboard",
+    "@permissionsContinue": {
+        "description": "Continue button on permissions page"
+    },
+    "permissionsSkip": "Skip for now",
+    "@permissionsSkip": {
+        "description": "Skip button on permissions page"
+    },
+    "permissionsCompleteAnnouncement": "Permissions configured. Opening your dashboard.",
+    "@permissionsCompleteAnnouncement": {
+        "description": "Screen reader announcement when permissions step is done"
+    },
+    "permissionsNotifSemantics": "Allow push notifications for study reminders",
+    "@permissionsNotifSemantics": {
+        "description": "Semantics label for notification permission allow button"
+    },
+    "permissionsStorageSemantics": "Allow camera and storage access for document scanning",
+    "@permissionsStorageSemantics": {
+        "description": "Semantics label for storage permission allow button"
+    },
+    "permissionsSkipSemantics": "Skip permissions and proceed to dashboard",
+    "@permissionsSkipSemantics": {
+        "description": "Semantics label for skip permissions button"
+    },
+
+    "calibrationSkip": "Skip",
+    "@calibrationSkip": {
+        "description": "Skip button label on calibration page"
+    },
+    "calibrationSkipSemantics": "Skip academic profile setup and use default settings",
+    "@calibrationSkipSemantics": {
+        "description": "Semantics label for skip calibration button"
+    },
+    "navBarSemanticsLabel": "Main Navigation",
+    "@navBarSemanticsLabel": {
+        "description": "Accessibility label for main navigation bar"
+    },
+    "navTabHome": "Home",
+    "@navTabHome": {
+        "description": "Home tab label"
+    },
+    "navTabSyllabot": "Syllabot AI",
+    "@navTabSyllabot": {
+        "description": "Syllabot AI tab label"
+    },
+    "navTabDecks": "Study Decks",
+    "@navTabDecks": {
+        "description": "Decks tab label"
+    },
+    "navTabCommunity": "Community",
+    "@navTabCommunity": {
+        "description": "Community tab label"
+    },
+    "navTabProfile": "Profile",
+    "@navTabProfile": {
+        "description": "Profile tab label"
+    },
+    "navTabAnnouncement": "Switched to {tab} tab",
+    "@navTabAnnouncement": {
+        "description": "Voiceover announcement when a navigation tab is selected",
+        "placeholders": {
+            "tab": {
+                "type": "String",
+                "example": "Home"
+            }
+        }
+    },
+    "navTabSemantics": "{tab}, tab {current} of {total}",
+    "@navTabSemantics": {
+        "description": "Accessibility label for navigation tab item",
+        "placeholders": {
+            "tab": {
+                "type": "String",
+                "example": "Home"
+            },
+            "current": {
+                "type": "int",
+                "example": "1"
+            },
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     }
 }

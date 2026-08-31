@@ -1,12 +1,6 @@
 import 'package:kortex/src/core/constants/app_env.dart';
 
-/// All the endpoint used in this project are to be declared
-/// in this class.
-///
-/// Example
-///
-/// static Uri authUrl =
-///  Uri(scheme: 'https', host: 'oxygen.com', path: '/api/v1/auth')
+/// All endpoints used in this project are declared in this class.
 class AppApiEndpoint {
   const AppApiEndpoint._();
 
@@ -15,5 +9,11 @@ class AppApiEndpoint {
   static const int receiveTimeout = 50000;
   static const int sendTimeout = 50000;
 
-  static String baseUri = '$scheme://$host//';
+  static String baseUri = '$scheme://$host';
+
+  // Auth Endpoints
+  static const String login = '/api/v1/auth/login';
+  static const String register = '/api/v1/auth/register';
+  static const String socialAuth = '/api/v1/auth/social';
+  static const String resetPassword = '/api/v1/auth/reset-password';
 }

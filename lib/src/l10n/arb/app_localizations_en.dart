@@ -167,4 +167,601 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadingProfileAvatar => 'Loading profile avatar';
+
+  @override
+  String get authSwitchToForm => 'Quick Form';
+
+  @override
+  String get authSwitchToChat => 'AI Assistant';
+
+  @override
+  String get authSocialGoogle => 'Continue with Google';
+
+  @override
+  String get authSocialApple => 'Continue with Apple';
+
+  @override
+  String get authChatWelcome =>
+      'Hi Stranger! 👋 Welcome to Kortex.\n\n✨ \"The beautiful thing about learning is that no one can take it away from you.\" — B.B. King\n\nI\'m Syllabot, your AI study partner. How would you like to get started today?';
+
+  @override
+  String get authChatAskEmail =>
+      'Please enter your academic or personal email address.';
+
+  @override
+  String get authChatAskPassword =>
+      'Great! Set a secure password (at least 6 characters).';
+
+  @override
+  String get authChipLogin => 'Log In';
+
+  @override
+  String get authChipSignUp => 'Sign Up';
+
+  @override
+  String get authChipForgotPassword => 'Forgot Password?';
+
+  @override
+  String get authChipGoogle => 'Use Google';
+
+  @override
+  String get authForgotPasswordTitle => 'Reset Password';
+
+  @override
+  String get authForgotPasswordSubtitle =>
+      'Enter your registered email address and we will send you instructions to reset your password.';
+
+  @override
+  String get authEmailLabel => 'Email Address';
+
+  @override
+  String get authEmailHint => 'student@university.edu';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authPasswordHint => '••••••••';
+
+  @override
+  String get authDisplayNameLabel => 'Full Name';
+
+  @override
+  String get authDisplayNameHint => 'Ada Lovelace';
+
+  @override
+  String get authSubmitLogin => 'Sign In';
+
+  @override
+  String get authSubmitRegister => 'Create Account';
+
+  @override
+  String get authSubmitReset => 'Send Reset Link';
+
+  @override
+  String get authAlreadyHaveAccount => 'Already have an account? Sign In';
+
+  @override
+  String get authNeedAccount => 'Don\'t have an account? Sign Up';
+
+  @override
+  String get authSend => 'Send';
+
+  @override
+  String get authChatInputHint => 'Type a response or tap a quick action...';
+
+  @override
+  String get authInvalidEmail => 'Please enter a valid email address';
+
+  @override
+  String get authPasswordTooShort => 'Password must be at least 6 characters';
+
+  @override
+  String get authGenericError => 'Authentication failed. Please try again.';
+
+  @override
+  String get authSuccessMessage => 'Welcome to Kortex!';
+
+  @override
+  String authModeToggleSemantics(String mode) {
+    return 'Switch to $mode';
+  }
+
+  @override
+  String get authSocialGoogleSemantics => 'Sign in with your Google account';
+
+  @override
+  String get authSocialAppleSemantics => 'Sign in with your Apple ID';
+
+  @override
+  String authModeSwitchedAnnouncement(String mode) {
+    return 'Switched to $mode view';
+  }
+
+  @override
+  String get authDesktopHeroTitle => 'Your AI-Augmented Academic Workspace';
+
+  @override
+  String get authDesktopHeroSubtitle =>
+      'Ingest syllabi, STEM equations, and lecture slides into an active-recall mastery system in seconds.';
+
+  @override
+  String get authDesktopFeature1 => 'Zero-latency multimodal STEM OCR';
+
+  @override
+  String get authDesktopFeature2 => 'Adaptive SM-2 spaced repetition schedules';
+
+  @override
+  String get authDesktopFeature3 => 'Socratic AI dialogue & calibration';
+
+  @override
+  String get authChatInputSemantics => 'Chat response input field';
+
+  @override
+  String get authChatSendSemantics => 'Send chat response';
+
+  @override
+  String get authForgotPasswordLinkSemantics => 'Reset password screen link';
+
+  @override
+  String get authToggleFormTypeSemantics =>
+      'Toggle between Sign In and Create Account forms';
+
+  @override
+  String get calibrationTitle => 'Academic Calibration';
+
+  @override
+  String get calibrationSubtitle =>
+      'Personalize Syllabot AI for your academic trajectory';
+
+  @override
+  String get calibrationChatWelcome =>
+      'Awesome, you\'re in! To customize your workspace, let\'s set up your academic profile.';
+
+  @override
+  String get calibrationChatFocusPrompt =>
+      'Are you studying at a University/Polytechnic or preparing for High School exams?';
+
+  @override
+  String get calibrationChatLevelPrompt =>
+      'Got it! Which specific exam or degree track are you focusing on?';
+
+  @override
+  String get calibrationChatFieldPrompt =>
+      'Excellent. What is your specific field of study or main subjects?';
+
+  @override
+  String get calibrationChatGoalPrompt =>
+      'Perfect. How can Kortex best support you right now?';
+
+  @override
+  String get calibrationFocusHigherEd => 'University / Polytechnic';
+
+  @override
+  String get calibrationFocusHighSchool => 'High School / Exam Prep';
+
+  @override
+  String calibrationStepAnnouncement(int current, int total, String title) {
+    return 'Calibration step $current of $total: $title';
+  }
+
+  @override
+  String get calibrationBack => 'Previous';
+
+  @override
+  String get calibrationContinue => 'Continue';
+
+  @override
+  String get calibrationFinish => 'Calibrate & Launch Kortex';
+
+  @override
+  String get calibrationQuestion1 => 'What is your current academic focus?';
+
+  @override
+  String get calibrationOptionUniversity => 'University / Polytechnic';
+
+  @override
+  String get calibrationOptionHighSchool => 'High School / Exam Prep';
+
+  @override
+  String get calibrationQuestionA2 => 'What is your current academic level?';
+
+  @override
+  String get calibrationOptionOND => 'OND (Ordinary National Diploma)';
+
+  @override
+  String get calibrationOptionHND => 'HND (Higher National Diploma)';
+
+  @override
+  String get calibrationOptionBSc => 'BSc (Bachelor of Science)';
+
+  @override
+  String get calibrationOptionMSc => 'MSc (Master of Science)';
+
+  @override
+  String get calibrationOptionPhD => 'PhD (Doctor of Philosophy)';
+
+  @override
+  String get calibrationQuestionA3 => 'What is your specific field of study?';
+
+  @override
+  String get calibrationQuestionA3Subtitle =>
+      'Select your primary domain to optimize Syllabot\'s knowledge retrieval';
+
+  @override
+  String get calibrationFieldMath => 'Mathematics & Data Science';
+
+  @override
+  String get calibrationFieldPhysics => 'Advanced Physics / Quantum Mechanics';
+
+  @override
+  String get calibrationFieldChemEng => 'Chemical Engineering';
+
+  @override
+  String get calibrationFieldMedicine => 'Medical & Health Sciences';
+
+  @override
+  String get calibrationFieldRobotics => 'Robotics & Mechanical Engineering';
+
+  @override
+  String get calibrationFieldComputerScience =>
+      'Computer Science & Artificial Intelligence';
+
+  @override
+  String get calibrationFieldLaw => 'Law & Legal Studies';
+
+  @override
+  String get calibrationFieldBusiness => 'Business, Finance & Accounting';
+
+  @override
+  String get calibrationFieldHumanities => 'Humanities, History & Literature';
+
+  @override
+  String get calibrationFieldSocialSciences => 'Social Sciences & Economics';
+
+  @override
+  String get calibrationQuestionA4 =>
+      'How can Kortex best support you right now?';
+
+  @override
+  String get calibrationQuestionA4Subtitle =>
+      'Select all features you want Syllabot to prioritize for you';
+
+  @override
+  String get calibrationGoalThesis => 'Thesis / Dissertation Support';
+
+  @override
+  String get calibrationGoalSocratic => 'Deep-Dive STEM Socratic AI';
+
+  @override
+  String get calibrationGoalSpacedRep => 'Spaced Repetition (SM-2) Mastery';
+
+  @override
+  String get calibrationGoalMockExams => 'Comprehensive Mock Exams';
+
+  @override
+  String get calibrationGoalCaseLaw => 'Case Law & Essay Preparation';
+
+  @override
+  String get calibrationGoalEssayPrep => 'Structured Essay & Argument Mapping';
+
+  @override
+  String get calibrationQuestionB2 => 'What exam are you preparing for?';
+
+  @override
+  String get calibrationExamWAEC => 'WAEC / GCE';
+
+  @override
+  String get calibrationExamNECO => 'NECO / SSCE';
+
+  @override
+  String get calibrationExamJAMB => 'JAMB / UTME';
+
+  @override
+  String get calibrationExamSAT => 'SAT';
+
+  @override
+  String get calibrationExamIELTS => 'IELTS / TOEFL';
+
+  @override
+  String get calibrationExamIGCSE => 'IGCSE / A-Levels';
+
+  @override
+  String get calibrationQuestionB3 => 'What subjects do you need to master?';
+
+  @override
+  String get calibrationQuestionB3Subtitle =>
+      'Select all subjects for active-recall flashcard generation';
+
+  @override
+  String get calibrationSubjectCoreMath => 'Mathematics (Core)';
+
+  @override
+  String get calibrationSubjectFurtherMath => 'Further Mathematics';
+
+  @override
+  String get calibrationSubjectPhysics => 'Physics';
+
+  @override
+  String get calibrationSubjectChemistry => 'Chemistry';
+
+  @override
+  String get calibrationSubjectBiology => 'Biology';
+
+  @override
+  String get calibrationSubjectEnglish => 'English Language';
+
+  @override
+  String get calibrationSubjectAccounting => 'Financial Accounting';
+
+  @override
+  String get calibrationSubjectEconomics => 'Economics';
+
+  @override
+  String get calibrationSubjectCommerce => 'Commerce';
+
+  @override
+  String get calibrationSubjectLiterature => 'Literature in English';
+
+  @override
+  String get calibrationSubjectGovernment => 'Government';
+
+  @override
+  String get calibrationSubjectHistory => 'History';
+
+  @override
+  String get calibrationSubjectCRK => 'CRK / IRK';
+
+  @override
+  String get calibrationTrackCore => 'Core';
+
+  @override
+  String get calibrationTrackScience => 'Science';
+
+  @override
+  String get calibrationTrackCommercial => 'Commercial';
+
+  @override
+  String get calibrationTrackArts => 'Arts / Humanities';
+
+  @override
+  String get calibrationQuestionB4 => 'When is your exam?';
+
+  @override
+  String get calibrationTimeline1Month => 'Next 1 Month';
+
+  @override
+  String get calibrationTimeline3Months => 'Next 3 Months';
+
+  @override
+  String get calibrationTimeline6Months => 'Next 6 Months';
+
+  @override
+  String get calibrationTimelineNextYear => 'Next Year';
+
+  @override
+  String get calibrationDesktopHeroTitle =>
+      'Calibrating Neural Learning Engine';
+
+  @override
+  String get calibrationDesktopHeroSubtitle =>
+      'Syllabot AI is adapting its retrieval indices, Socratic dialogue trees, and memory decay formulas specifically for your curriculum.';
+
+  @override
+  String get calibrationDesktopMetric1 => 'Adaptive RAG Knowledge Base';
+
+  @override
+  String get calibrationDesktopMetric2 => 'Curriculum-Specific STEM Prompts';
+
+  @override
+  String get calibrationDesktopMetric3 =>
+      'Personalized Spaced Repetition Intervals';
+
+  @override
+  String calibrationSelectOptionSemantics(String option) {
+    return 'Select $option';
+  }
+
+  @override
+  String calibrationSelectedOptionSemantics(String option) {
+    return '$option, selected';
+  }
+
+  @override
+  String get contentRecommendationTitle => 'Pre-Calibrated Workspace';
+
+  @override
+  String get contentRecommendationSubtitle =>
+      'Curated resources ready in your dashboard';
+
+  @override
+  String contentRecommendationAnnouncement(
+    int current,
+    int total,
+    String title,
+  ) {
+    return 'Recommendation $current of $total: $title';
+  }
+
+  @override
+  String get contentPastPapersTagline => 'Instant Exam Readiness';
+
+  @override
+  String contentPastPapersDesc(String examType, String subjects) {
+    return 'Based on your target ($examType), we\'ve selected high-yield past papers from our database for $subjects.';
+  }
+
+  @override
+  String contentFlashcardsTagline(String field) {
+    return 'Deep Mastery of $field';
+  }
+
+  @override
+  String contentFlashcardsDesc(String field) {
+    return 'Dive into structured flashcards for core topics in $field. Master key concepts instantly with SM-2 Spaced Repetition.';
+  }
+
+  @override
+  String get contentSocraticTagline => 'Syllabot AI is Ready';
+
+  @override
+  String contentSocraticDesc(String level, String field) {
+    return 'We\'ve created tutoring threads covering mandatory topics for $level students in $field. Ask Syllabot anything!';
+  }
+
+  @override
+  String get contentNextButton => 'Next Recommendation';
+
+  @override
+  String get contentGetStartedButton => 'Launch Dashboard';
+
+  @override
+  String get contentSkipButton => 'Skip to Dashboard';
+
+  @override
+  String get contentDesktopHeroTitle => 'Your Pre-Loaded Academic Hub';
+
+  @override
+  String get contentDesktopHeroSubtitle =>
+      'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive STEM decks, and automated Socratic dialogue channels.';
+
+  @override
+  String get contentFeature1 => 'Pre-indexed exam question banks';
+
+  @override
+  String get contentFeature2 => 'Automated SM-2 spaced repetition decks';
+
+  @override
+  String get contentFeature3 => 'Dedicated 24/7 Syllabot AI course assistants';
+
+  @override
+  String get contentBadgeCurated => 'DATABASE PRE-POPULATED';
+
+  @override
+  String get contentBadgeActiveRecall => 'ACTIVE RECALL DECK';
+
+  @override
+  String get contentBadgeSocratic => 'SOCRATIC DIALOGUE';
+
+  @override
+  String get otpTitle => 'Check your inbox';
+
+  @override
+  String otpSubtitle(String email) {
+    return 'We sent a 6-digit verification code to $email. Enter it below to verify your account.';
+  }
+
+  @override
+  String get otpVerifyButton => 'Verify Email';
+
+  @override
+  String get otpResendCode => 'Resend Code';
+
+  @override
+  String get otpResending => 'Resending…';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get otpResentMessage => 'A new code has been sent to your email.';
+
+  @override
+  String get otpVerifyingAnnouncement => 'Verifying your code, please wait.';
+
+  @override
+  String get otpVerifiedAnnouncement =>
+      'Email verified successfully. Welcome to Kortex!';
+
+  @override
+  String get otpInputSemantics => 'Six digit verification code input';
+
+  @override
+  String get otpVerifyButtonSemantics => 'Verify your email address';
+
+  @override
+  String get otpResendSemantics => 'Resend verification code';
+
+  @override
+  String get permissionsTitle => 'Enable Key Features';
+
+  @override
+  String get permissionsSubtitle =>
+      'Allow Kortex to send you study reminders and scan your documents for instant AI indexing.';
+
+  @override
+  String get permissionsNotifTitle => 'Push Notifications';
+
+  @override
+  String get permissionsNotifDescription =>
+      'Receive spaced-repetition reminders and active-recall session alerts calibrated to your study streak.';
+
+  @override
+  String get permissionsStorageTitle => 'Camera & Storage Access';
+
+  @override
+  String get permissionsStorageDescription =>
+      'Snap textbook pages for OCR parsing and drop in PDF or PPTX lecture slides for instant AI indexing.';
+
+  @override
+  String get permissionsAllow => 'Allow';
+
+  @override
+  String get permissionsContinue => 'Continue to Dashboard';
+
+  @override
+  String get permissionsSkip => 'Skip for now';
+
+  @override
+  String get permissionsCompleteAnnouncement =>
+      'Permissions configured. Opening your dashboard.';
+
+  @override
+  String get permissionsNotifSemantics =>
+      'Allow push notifications for study reminders';
+
+  @override
+  String get permissionsStorageSemantics =>
+      'Allow camera and storage access for document scanning';
+
+  @override
+  String get permissionsSkipSemantics =>
+      'Skip permissions and proceed to dashboard';
+
+  @override
+  String get calibrationSkip => 'Skip';
+
+  @override
+  String get calibrationSkipSemantics =>
+      'Skip academic profile setup and use default settings';
+
+  @override
+  String get navBarSemanticsLabel => 'Main Navigation';
+
+  @override
+  String get navTabHome => 'Home';
+
+  @override
+  String get navTabSyllabot => 'Syllabot AI';
+
+  @override
+  String get navTabDecks => 'Study Decks';
+
+  @override
+  String get navTabCommunity => 'Community';
+
+  @override
+  String get navTabProfile => 'Profile';
+
+  @override
+  String navTabAnnouncement(String tab) {
+    return 'Switched to $tab tab';
+  }
+
+  @override
+  String navTabSemantics(String tab, int current, int total) {
+    return '$tab, tab $current of $total';
+  }
 }

@@ -132,73 +132,75 @@ class _OnboardingSlideItem extends StatelessWidget {
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final vector = _vectors[index % _vectors.length];
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final topViewportHeight = screenHeight * 0.50;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final topViewportHeight = (availableHeight * 0.54).clamp(160.0, 380.0);
 
-    return AnimatedBuilder(
-      animation: Listenable.merge([pageController, pulseAnimation]),
-      builder: (context, child) {
-        var pageOffset = 0.0;
-        if (pageController.hasClients &&
-            pageController.position.haveDimensions) {
-          final currentPage =
-              pageController.page ?? pageController.initialPage.toDouble();
-          pageOffset = index - currentPage;
-        }
+        return AnimatedBuilder(
+          animation: Listenable.merge([pageController, pulseAnimation]),
+          builder: (context, child) {
+            var pageOffset = 0.0;
+            if (pageController.hasClients &&
+                pageController.position.haveDimensions) {
+              final currentPage =
+                  pageController.page ?? pageController.initialPage.toDouble();
+              pageOffset = index - currentPage;
+            }
 
-        final clampedOffset = pageOffset.clamp(-1.0, 1.0);
-        final opacity = disableAnimations
-            ? 1.0
-            : (1.0 - (clampedOffset.abs() * 0.65)).clamp(0.0, 1.0);
+            final clampedOffset = pageOffset.clamp(-1.0, 1.0);
+            final opacity = disableAnimations
+                ? 1.0
+                : (1.0 - (clampedOffset.abs() * 0.65)).clamp(0.0, 1.0);
 
-        // Top Illustration Physics Trajectory
-        final graphicTranslateX = disableAnimations
-            ? 0.0
-            : clampedOffset * vector.dxMultiplier * 75.0;
-        final graphicTranslateY = disableAnimations
-            ? 0.0
-            : clampedOffset.abs() * vector.dyMultiplier * 65.0;
-        final graphicScale = disableAnimations
-            ? 1.0
-            : (1.0 - (clampedOffset.abs() * vector.scaleMultiplier)).clamp(
-                0.6,
-                1.0,
-              );
+            // Top Illustration Physics Trajectory
+            final graphicTranslateX = disableAnimations
+                ? 0.0
+                : clampedOffset * vector.dxMultiplier * 75.0;
+            final graphicTranslateY = disableAnimations
+                ? 0.0
+                : clampedOffset.abs() * vector.dyMultiplier * 65.0;
+            final graphicScale = disableAnimations
+                ? 1.0
+                : (1.0 - (clampedOffset.abs() * vector.scaleMultiplier)).clamp(
+                    0.6,
+                    1.0,
+                  );
 
-        // Floating micro-sine oscillation
-        final floatOffset = disableAnimations
-            ? 0.0
-            : math.sin(pulseAnimation.value * math.pi) * 4.0;
+            // Floating micro-sine oscillation
+            final floatOffset = disableAnimations
+                ? 0.0
+                : math.sin(pulseAnimation.value * math.pi) * 4.0;
 
-        // Bottom Content Staggered Slide & Fade
-        final titleTranslateY =
-            disableAnimations ? 0.0 : (clampedOffset.abs() * 26.0);
-        final titleOpacity = disableAnimations
-            ? 1.0
-            : (1.0 - clampedOffset.abs() * 0.85).clamp(0.0, 1.0);
+            // Bottom Content Staggered Slide & Fade
+            final titleTranslateY =
+                disableAnimations ? 0.0 : (clampedOffset.abs() * 26.0);
+            final titleOpacity = disableAnimations
+                ? 1.0
+                : (1.0 - clampedOffset.abs() * 0.85).clamp(0.0, 1.0);
 
-        final bodyTranslateY =
-            disableAnimations ? 0.0 : (clampedOffset.abs() * 38.0);
-        final bodyOpacity = disableAnimations
-            ? 1.0
-            : (1.0 - clampedOffset.abs() * 0.92).clamp(0.0, 1.0);
+            final bodyTranslateY =
+                disableAnimations ? 0.0 : (clampedOffset.abs() * 38.0);
+            final bodyOpacity = disableAnimations
+                ? 1.0
+                : (1.0 - clampedOffset.abs() * 0.92).clamp(0.0, 1.0);
 
-        return Opacity(
-          opacity: opacity,
-          child: Column(
-            children: [
-              // ==========================================
-              // 1. TOP VIEWPORT: Hero Glass Canvas (50%)
-              // ==========================================
-              SizedBox(
-                height: topViewportHeight,
-                width: double.infinity,
-                child: RepaintBoundary(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
+            return Opacity(
+              opacity: opacity,
+              child: Column(
+                children: [
+                  // ==========================================
+                  // 1. TOP VIEWPORT: Hero Glass Canvas
+                  // ==========================================
+                  SizedBox(
+                    height: topViewportHeight,
+                    width: double.infinity,
+                    child: RepaintBoundary(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
                         // Ambient Radial Glow Backplate
                         Container(
                           decoration: BoxDecoration(
@@ -295,75 +297,79 @@ class _OnboardingSlideItem extends StatelessWidget {
               // ==========================================
               Expanded(
                 child: RepaintBoundary(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Polished Glass Badge & Headline
-                        Transform.translate(
-                          offset: Offset(0, titleTranslateY),
-                          child: Opacity(
-                            opacity: titleOpacity,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 8,
-                                      sigmaY: 8,
-                                    ),
-                                    child: AppBadge(
-                                      label: data.badge,
-                                      variant: data.badgeVariant,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Polished Glass Badge & Headline
+                          Transform.translate(
+                            offset: Offset(0, titleTranslateY),
+                            child: Opacity(
+                              opacity: titleOpacity,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 8,
+                                        sigmaY: 8,
+                                      ),
+                                      child: AppBadge(
+                                        label: data.badge,
+                                        variant: data.badgeVariant,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    data.tagline,
+                                    style: typography.title1.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      letterSpacing: -0.6,
+                                      fontSize: 24,
+                                      height: 1.15,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Body Text Delayed Entrance
+                          Transform.translate(
+                            offset: Offset(0, bodyTranslateY),
+                            child: Opacity(
+                              opacity: bodyOpacity,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 340,
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  data.tagline,
-                                  style: typography.title1.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    letterSpacing: -0.6,
-                                    fontSize: 26,
-                                    height: 1.15,
+                                child: Text(
+                                  data.description,
+                                  style: typography.callout.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    height: 1.4,
+                                    fontSize: 14,
                                   ),
                                   textAlign: TextAlign.center,
-                                  maxLines: 2,
+                                  maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Body Text Delayed Entrance
-                        Transform.translate(
-                          offset: Offset(0, bodyTranslateY),
-                          child: Opacity(
-                            opacity: bodyOpacity,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: 340,
-                              ),
-                              child: Text(
-                                data.description,
-                                style: typography.callout.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  height: 1.45,
-                                  fontSize: 15,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -373,5 +379,7 @@ class _OnboardingSlideItem extends StatelessWidget {
         );
       },
     );
-  }
+  },
+);
+}
 }
