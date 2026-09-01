@@ -65,6 +65,24 @@ class QuickActionSpeedDial extends StatelessWidget {
                       : colors.surfaceBorder.withAlpha(120),
                 ),
                 _ActionItem(
+                  icon: Icons.quiz_rounded,
+                  label: 'Q-Bank',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    unawaited(
+                      context.router.push(PastQuestionsBoardRoute()),
+                    );
+                  },
+                ),
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: isDark
+                      ? colors.surfaceBorderHighlight.withAlpha(60)
+                      : colors.surfaceBorder.withAlpha(120),
+                ),
+                _ActionItem(
                   icon: Icons.add_to_photos_rounded,
                   label: l10n.dashboardNewDeck,
                   color: const Color(0xFF8B5CF6),

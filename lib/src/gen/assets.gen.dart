@@ -51,12 +51,24 @@ class $AssetsImagesGen {
   AssetGenImage get campusStudentBg =>
       const AssetGenImage('assets/images/campus_student_bg.png');
 
+  /// File path: assets/images/logo.svg
+  SvgGenImage get logo => const SvgGenImage('assets/images/logo.svg');
+
+  /// File path: assets/images/logo_main.svg
+  SvgGenImage get logoMain => const SvgGenImage('assets/images/logo_main.svg');
+
   /// File path: assets/images/syllabot_avatar.png
   AssetGenImage get syllabotAvatar =>
       const AssetGenImage('assets/images/syllabot_avatar.png');
 
   /// List of all assets
-  List<dynamic> get values => [aGitkeep, campusStudentBg, syllabotAvatar];
+  List<dynamic> get values => [
+    aGitkeep,
+    campusStudentBg,
+    logo,
+    logoMain,
+    syllabotAvatar,
+  ];
 }
 
 class $AssetsSvgsGen {

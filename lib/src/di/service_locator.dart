@@ -71,5 +71,10 @@ void _initServices() {
         sttClient: locator<SpeechToTextClient>(),
         ttsClient: locator<TextToSpeechClient>(),
       ),
+    )
+    ..registerFactory<PastQuestionsBloc>(
+      () => PastQuestionsBloc(
+        repository: locator<PastQuestionsRepository>(),
+      ),
     );
 }
