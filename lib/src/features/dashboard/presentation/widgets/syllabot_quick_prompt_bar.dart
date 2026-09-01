@@ -46,7 +46,13 @@ class SyllabotQuickPromptBar extends HookWidget {
 
       unawaited(HapticFeedback.lightImpact());
       controller.clear();
-      unawaited(context.router.push(SyllabotChatRoute(initialPrompt: text)));
+      unawaited(
+        context.navigateTo(
+          MainRoute(
+            children: [SyllabotChatRoute(initialPrompt: text)],
+          ),
+        ),
+      );
     }
 
     return Column(

@@ -167,10 +167,10 @@ class _CourseCard extends StatelessWidget {
                         ),
                       ),
                       if (course.hasActivePastPapers)
-                        const Icon(
+                        Icon(
                           Icons.verified_rounded,
                           size: 16,
-                          color: Color(0xFF10B981),
+                          color: colors.success,
                         ),
                     ],
                   ),
@@ -196,8 +196,10 @@ class _CourseCard extends StatelessWidget {
                         children: [
                           Text(
                             l10n.dashboardResourcesCount(course.totalMaterials),
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textMuted,
+                            style: typography.footnote.medium.copyWith(
+                              color: isDark
+                                  ? colors.textSecondary
+                                  : colors.textPrimary.withAlpha(180),
                               fontSize: 11,
                             ),
                           ),

@@ -158,7 +158,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                         label: l10n.dashboardRetentionChip,
                         value: '$overallRetention%',
                         icon: Icons.psychology_rounded,
-                        color: const Color(0xFF10B981),
+                        color: colors.success,
                         colors: colors,
                         isDark: isDark,
                       ),
@@ -182,7 +182,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                           analytics.weeklyMinutesStudied,
                         ),
                         icon: Icons.schedule_rounded,
-                        color: const Color(0xFF8B5CF6),
+                        color: colors.syllabotAccent,
                         colors: colors,
                         isDark: isDark,
                       ),
@@ -263,8 +263,10 @@ class _MetricChip extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 label,
-                style: typography.footnote.regular.copyWith(
-                  color: colors.textMuted,
+                style: typography.footnote.medium.copyWith(
+                  color: isDark
+                      ? colors.textSecondary
+                      : colors.textPrimary.withAlpha(180),
                   fontSize: 10.5,
                 ),
               ),

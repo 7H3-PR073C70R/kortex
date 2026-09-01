@@ -44,80 +44,94 @@ class HeaderProfileBar extends StatelessWidget {
           children: [
             // Left: User Greeting & Rank
             Expanded(
-              child: Row(
-                children: [
-                  Semantics(
-                    label: l10n.dashboardHeyUser(displayName),
-                    image: true,
-                    child: Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 160 : 200),
-                          width: 1.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(isDark ? 80 : 30),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Image(
-                          image: AppAssets.images.syllabotAvatar.provider(),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+              child: ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  unawaited(
+                    context.navigateTo(
+                      const MainRoute(children: [ProfileRoute()]),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.dashboardHeyUser(displayName),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 18,
-                            letterSpacing: -0.2,
+                  );
+                },
+                child: Row(
+                  children: [
+                    Semantics(
+                      label: l10n.dashboardHeyUser(displayName),
+                      image: true,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colors.primary
+                                .withAlpha(isDark ? 160 : 200),
+                            width: 1.8,
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colors.syllabotAccent,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                analytics.academicRank,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.footnote.medium.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary
+                                  .withAlpha(isDark ? 80 : 30),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                      ],
+                        child: ClipOval(
+                          child: Image(
+                            image: AppAssets.images.syllabotAvatar.provider(),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.dashboardHeyUser(displayName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 18,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.syllabotAccent,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  analytics.academicRank,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: typography.footnote.medium.copyWith(
+                                    color: isDark
+                                        ? colors.textSecondary
+                                        : colors.textPrimary.withAlpha(190),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -129,45 +143,53 @@ class HeaderProfileBar extends StatelessWidget {
                   label: l10n.dashboardStreakTooltip(
                     analytics.currentStreakDays,
                   ),
-                  container: true,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: isDark
-                              ? colors.surfaceSecondary.withAlpha(160)
-                              : colors.surfacePrimary.withAlpha(210),
-                          border: Border.all(
-                            color: isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(80)
-                                : colors.surfaceBorder.withAlpha(140),
-                            width: 1.2,
+                  button: true,
+                  child: ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        context.router.push(const AnalyticsDetailRoute()),
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_fire_department_rounded,
-                              size: 18,
-                              color: Color(0xFFF97316),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: isDark
+                                ? colors.surfaceSecondary.withAlpha(160)
+                                : colors.surfacePrimary.withAlpha(210),
+                            border: Border.all(
+                              color: isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(80)
+                                  : colors.surfaceBorder.withAlpha(140),
+                              width: 1.2,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${analytics.currentStreakDays}',
-                              style: typography.callout.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13.5,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_fire_department_rounded,
+                                size: 18,
+                                color: Color(0xFFF97316),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                '${analytics.currentStreakDays}',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

@@ -3,8 +3,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -18,7 +20,6 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quic
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -56,6 +57,10 @@ class _DashboardView extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+
+    final authState = context.watch<AuthBloc?>()?.state;
+    final userName =
+        authState?.userProfile?.displayName ?? authState?.user?.displayName;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -136,11 +141,20 @@ class _DashboardView extends HookWidget {
                   final isMedium = constraints.maxWidth >= 600 && !isExpanded;
 
                   if (isExpanded) {
-                    return _ExpandedDashboardLayout(feed: feed);
+                    return _ExpandedDashboardLayout(
+                      feed: feed,
+                      userName: userName,
+                    );
                   } else if (isMedium) {
-                    return _MediumDashboardLayout(feed: feed);
+                    return _MediumDashboardLayout(
+                      feed: feed,
+                      userName: userName,
+                    );
                   } else {
-                    return _CompactDashboardLayout(feed: feed);
+                    return _CompactDashboardLayout(
+                      feed: feed,
+                      userName: userName,
+                    );
                   }
                 },
               ),
@@ -160,24 +174,99 @@ class _DashboardShimmerLoading extends StatelessWidget {
     return ListView(
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: const [
-        Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: AppLogoLoader(
-              size: 58,
-              message: 'Preparing your personalized study feed...',
+      children: [
+        // 1. Header Profile Skeleton
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                ShimmerPlaceholder(
+                  height: 46,
+                  width: 46,
+                  borderRadius: 23,
+                ),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShimmerPlaceholder(
+                      height: 18,
+                      width: 120,
+                      borderRadius: 6,
+                    ),
+                    SizedBox(height: 6),
+                    ShimmerPlaceholder(
+                      height: 12,
+                      width: 80,
+                      borderRadius: 4,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                ShimmerPlaceholder(
+                  height: 32,
+                  width: 56,
+                  borderRadius: 16,
+                ),
+                SizedBox(width: 8),
+                ShimmerPlaceholder(
+                  height: 38,
+                  width: 38,
+                  borderRadius: 19,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // 2. Syllabot Insight Pill Skeleton
+        const ShimmerPlaceholder(height: 38, borderRadius: 12),
+        const SizedBox(height: 10),
+
+        // 3. Prompt Bar Skeleton
+        const ShimmerPlaceholder(height: 52, borderRadius: 24),
+        const SizedBox(height: 18),
+
+        // 4. Hero Card / Exam Countdown Skeleton
+        const ShimmerPlaceholder(height: 130, borderRadius: 22),
+        const SizedBox(height: 20),
+
+        // 5. Quick Actions Speed Dial Skeleton
+        const ShimmerPlaceholder(height: 48, borderRadius: 22),
+        const SizedBox(height: 24),
+
+        // 6. Curated Courses Skeleton
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ShimmerPlaceholder(height: 18, width: 140, borderRadius: 6),
+            ShimmerPlaceholder(height: 14, width: 60, borderRadius: 6),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 155,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 2,
+            separatorBuilder: (_, index) => const SizedBox(width: 14),
+            itemBuilder: (_, index) => const ShimmerPlaceholder(
+              width: 220,
+              height: 155,
+              borderRadius: 18,
             ),
           ),
         ),
-        SizedBox(height: 16),
-        ShimmerPlaceholder(height: 72, borderRadius: 20),
-        SizedBox(height: 16),
-        ShimmerPlaceholder(height: 84, borderRadius: 22),
-        SizedBox(height: 16),
-        ShimmerPlaceholder(height: 160, borderRadius: 24),
-        SizedBox(height: 16),
-        ShimmerPlaceholder(height: 120, borderRadius: 20),
+        const SizedBox(height: 24),
+
+        // 7. Retention Heatmap Skeleton
+        const ShimmerPlaceholder(height: 160, borderRadius: 22),
       ],
     );
   }
@@ -185,9 +274,13 @@ class _DashboardShimmerLoading extends StatelessWidget {
 
 /// Compact Viewport (< 600dp) Single-Column Scroll
 class _CompactDashboardLayout extends StatelessWidget {
-  const _CompactDashboardLayout({required this.feed});
+  const _CompactDashboardLayout({
+    required this.feed,
+    this.userName,
+  });
 
   final DashboardFeedEntity feed;
+  final String? userName;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +298,7 @@ class _CompactDashboardLayout extends StatelessWidget {
         HeaderProfileBar(
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
+          userName: userName,
         ),
         const SizedBox(height: 18),
 
@@ -222,6 +316,9 @@ class _CompactDashboardLayout extends StatelessWidget {
             deck: feed.dueStudyDecks.first,
             isHero: true,
           ),
+        ] else ...[
+          const SizedBox(height: 16),
+          _EmptyStudyDecksCard(l10n: l10n),
         ],
         const SizedBox(height: 20),
 
@@ -230,8 +327,13 @@ class _CompactDashboardLayout extends StatelessWidget {
         const SizedBox(height: 24),
 
         // 5. Curated Course Carousel
-        CuratedCourseCarousel(courses: feed.curatedCourses),
-        const SizedBox(height: 24),
+        if (feed.curatedCourses.isNotEmpty) ...[
+          CuratedCourseCarousel(courses: feed.curatedCourses),
+          const SizedBox(height: 24),
+        ] else ...[
+          _EmptyCoursesCard(l10n: l10n),
+          const SizedBox(height: 24),
+        ],
 
         // 6. Active Recall SM-2 Review Queue (Remaining Decks)
         if (feed.dueStudyDecks.length > 1) ...[
@@ -274,11 +376,160 @@ class _CompactDashboardLayout extends StatelessWidget {
   }
 }
 
+class _EmptyStudyDecksCard extends StatelessWidget {
+  const _EmptyStudyDecksCard({required this.l10n});
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(140)
+              : colors.surfacePrimary.withAlpha(210),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: colors.success.withAlpha(isDark ? 80 : 50),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.success.withAlpha(isDark ? 40 : 20),
+              ),
+              child: Icon(
+                Icons.check_circle_outline_rounded,
+                color: colors.success,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'All caught up!',
+                    style: typography.callout.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'No active-recall cards due for review today. Keep it up!',
+                    style: typography.caption.medium.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyCoursesCard extends StatelessWidget {
+  const _EmptyCoursesCard({required this.l10n});
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ShrinkableButton(
+      onTap: () {
+        unawaited(
+          context.router.push(const OnboardingCalibrationRoute()),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfacePrimary.withAlpha(210),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 80 : 50),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                ),
+                child: Icon(
+                  Icons.school_outlined,
+                  color: colors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Curate Your Courses',
+                      style: typography.callout.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tap to set up your subjects and track '
+                      'your syllabus progress.',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: colors.primary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Medium Viewport (600dp - 1024dp - Tablet) Two-Column Layout
 class _MediumDashboardLayout extends StatelessWidget {
-  const _MediumDashboardLayout({required this.feed});
+  const _MediumDashboardLayout({
+    required this.feed,
+    this.userName,
+  });
 
   final DashboardFeedEntity feed;
+  final String? userName;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +542,7 @@ class _MediumDashboardLayout extends StatelessWidget {
         HeaderProfileBar(
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
+          userName: userName,
         ),
         const SizedBox(height: 18),
         const ExamCountdownBanner(),
@@ -346,9 +598,13 @@ class _MediumDashboardLayout extends StatelessWidget {
 
 /// Expanded Viewport (> 1024dp - Desktop/Web) Center Workspace + Right Utility Panel
 class _ExpandedDashboardLayout extends StatelessWidget {
-  const _ExpandedDashboardLayout({required this.feed});
+  const _ExpandedDashboardLayout({
+    required this.feed,
+    this.userName,
+  });
 
   final DashboardFeedEntity feed;
+  final String? userName;
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +626,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   HeaderProfileBar(
                     analytics: feed.analyticsSummary,
                     isProfileUncalibrated: feed.isProfileUncalibrated,
+                    userName: userName,
                   ),
                   const SizedBox(height: 20),
                   const ExamCountdownBanner(),

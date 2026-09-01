@@ -207,15 +207,19 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                           Icon(
                             Icons.timer_outlined,
                             size: 14,
-                            color: colors.textMuted,
+                            color: isDark
+                                ? colors.textSecondary
+                                : colors.textPrimary.withAlpha(180),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             l10n.dashboardEstimatedMinutes(
                               deck.estimatedMinutes,
                             ),
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textMuted,
+                            style: typography.caption.medium.copyWith(
+                              color: isDark
+                                  ? colors.textSecondary
+                                  : colors.textPrimary.withAlpha(180),
                               fontSize: 12,
                             ),
                           ),

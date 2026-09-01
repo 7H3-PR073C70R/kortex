@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -25,7 +26,7 @@ class QuickActionSpeedDial extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               color: isDark
@@ -45,73 +46,78 @@ class QuickActionSpeedDial extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _ActionItem(
-                  icon: Icons.upload_file_rounded,
-                  label: l10n.dashboardUploadNotes,
-                  color: colors.primary,
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    _showUploadBottomSheet(context);
-                  },
-                ),
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(60)
-                      : colors.surfaceBorder.withAlpha(120),
-                ),
-                _ActionItem(
-                  icon: Icons.quiz_rounded,
-                  label: l10n.dashboardQBankAction,
-                  color: const Color(0xFFF59E0B),
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    unawaited(
-                      context.router.push(PastQuestionsBoardRoute()),
-                    );
-                  },
-                ),
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(60)
-                      : colors.surfaceBorder.withAlpha(120),
-                ),
-                _ActionItem(
-                  icon: Icons.add_to_photos_rounded,
-                  label: l10n.dashboardNewDeck,
-                  color: const Color(0xFF8B5CF6),
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    unawaited(context.router.push(const DecksRoute()));
-                  },
-                ),
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(60)
-                      : colors.surfaceBorder.withAlpha(120),
-                ),
-                _ActionItem(
-                  icon: Icons.auto_awesome_rounded,
-                  label: l10n.dashboardAiPartner,
-                  color: colors.syllabotAccent,
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    unawaited(context.router.push(SyllabotChatRoute()));
-                  },
-                ),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ActionItem(
+                    icon: Icons.upload_file_rounded,
+                    label: l10n.dashboardUploadNotes,
+                    color: colors.primary,
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      _showUploadBottomSheet(context);
+                    },
+                  ),
+                  _buildDivider(colors, isDark),
+                  _ActionItem(
+                    icon: Icons.quiz_rounded,
+                    label: l10n.dashboardQBankAction,
+                    color: const Color(0xFFF59E0B),
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        context.router.push(PastQuestionsBoardRoute()),
+                      );
+                    },
+                  ),
+                  _buildDivider(colors, isDark),
+                  _ActionItem(
+                    icon: Icons.add_to_photos_rounded,
+                    label: l10n.dashboardNewDeck,
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        context.navigateTo(
+                          const MainRoute(children: [DecksRoute()]),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDivider(colors, isDark),
+                  _ActionItem(
+                    icon: Icons.auto_awesome_rounded,
+                    label: l10n.dashboardAiPartner,
+                    color: colors.syllabotAccent,
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        context.navigateTo(
+                          MainRoute(children: [SyllabotChatRoute()]),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDivider(AppThemeColorsExtension colors, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: 1,
+      height: 24,
+      color: isDark
+          ? colors.surfaceBorderHighlight.withAlpha(60)
+          : colors.surfaceBorder.withAlpha(120),
     );
   }
 

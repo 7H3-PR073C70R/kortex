@@ -11,7 +11,6 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -92,7 +91,8 @@ class MainPage extends HookWidget {
       transitionBuilder: (context, child, animation) {
         final tabsRouter = AutoTabsRouter.of(context);
 
-        return AuraMeshNebula(
+        return ColoredBox(
+          color: colors.backgroundPrimary,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth >= desktopBreakpoint;
@@ -461,26 +461,33 @@ class _IOSLiquidGlassDock extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
             child: Container(
               height: 68,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: isDark
-                    ? colors.surfacePrimary.withAlpha(140)
-                    : colors.cardBackground.withAlpha(200),
+                    ? colors.surfaceSecondary.withAlpha(160)
+                    : colors.surfacePrimary.withAlpha(225),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withAlpha(35)
-                      : Colors.white.withAlpha(220),
+                      ? colors.surfaceBorderHighlight.withAlpha(90)
+                      : colors.surfaceBorder.withAlpha(190),
+                  width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 90 : 25),
+                    color: Colors.black.withAlpha(isDark ? 90 : 18),
                     blurRadius: 28,
                     offset: const Offset(0, 8),
                   ),
+                  if (!isDark)
+                    BoxShadow(
+                      color: colors.primary.withAlpha(15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                    ),
                 ],
               ),
               child: Row(

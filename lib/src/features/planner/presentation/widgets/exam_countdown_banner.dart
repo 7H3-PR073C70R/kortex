@@ -13,8 +13,10 @@ class ExamCountdownBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return BlocBuilder<CramPlannerCubit, CramPlannerState>(
       builder: (context, state) {
@@ -33,32 +35,35 @@ class ExamCountdownBanner extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                  color: isDark
+                      ? colors.surfaceSecondary.withAlpha(160)
+                      : colors.surfacePrimary.withAlpha(220),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    width: 1.2,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.alarm_add_rounded,
-                      color: theme.colorScheme.primary,
+                      color: colors.primary,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         l10n.addExamTitle,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 14.5,
                         ),
                       ),
                     ),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: theme.colorScheme.primary,
+                      color: colors.primary,
                       size: 16,
                     ),
                   ],
@@ -73,9 +78,9 @@ class ExamCountdownBanner extends StatelessWidget {
         final urgency = state.urgencyLevel;
 
         final badgeColor = switch (urgency) {
-          ExamUrgencyLevel.normal => Colors.greenAccent,
-          ExamUrgencyLevel.warning => Colors.amberAccent,
-          ExamUrgencyLevel.critical => Colors.redAccent,
+          ExamUrgencyLevel.normal => colors.success,
+          ExamUrgencyLevel.warning => colors.warning,
+          ExamUrgencyLevel.critical => colors.error,
         };
 
         final bannerLabel =
@@ -88,18 +93,21 @@ class ExamCountdownBanner extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  badgeColor.withValues(alpha: 0.15),
-                  theme.colorScheme.surface.withValues(alpha: 0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(170)
+                  : colors.surfacePrimary.withAlpha(225),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: badgeColor.withValues(alpha: 0.4),
+                color: badgeColor.withAlpha(isDark ? 90 : 60),
+                width: 1.2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: badgeColor.withAlpha(isDark ? 30 : 15),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,10 +121,10 @@ class ExamCountdownBanner extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: badgeColor.withAlpha(isDark ? 40 : 25),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: badgeColor.withValues(alpha: 0.5),
+                          color: badgeColor.withAlpha(100),
                         ),
                       ),
                       child: Row(
@@ -130,9 +138,8 @@ class ExamCountdownBanner extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             '${exam.subjectTrack} Track',
-                            style: TextStyle(
+                            style: typography.caption.bold.copyWith(
                               fontSize: 11,
-                              fontWeight: FontWeight.bold,
                               color: badgeColor,
                             ),
                           ),
@@ -140,9 +147,9 @@ class ExamCountdownBanner extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_rounded,
-                        color: Colors.white70,
+                        color: colors.textSecondary,
                         size: 20,
                       ),
                       tooltip: l10n.addExamTitle,
@@ -157,9 +164,9 @@ class ExamCountdownBanner extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   l10n.daysUntilExam(days, exam.examName),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 15.5,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -168,14 +175,13 @@ class ExamCountdownBanner extends StatelessWidget {
                     Icon(
                       Icons.auto_graph_rounded,
                       size: 16,
-                      color: theme.colorScheme.primary,
+                      color: colors.primary,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       l10n.recommendedDailyPace(pace),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
+                      style: typography.footnote.semiBold.copyWith(
+                        color: colors.primary,
                       ),
                     ),
                   ],
