@@ -10,6 +10,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
@@ -17,6 +18,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -554,7 +556,7 @@ class AuthChatView extends HookWidget {
           (current.status == AuthStatus.error &&
               current.errorMessage != previous.errorMessage) ||
           (current.isResetSent && !previous.isResetSent),
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.status == AuthStatus.error) {
           isThinking.value = false;
           isTyping.value = false;
@@ -613,11 +615,32 @@ class AuthChatView extends HookWidget {
           isTyping.value = false;
           lastRetryAction.value = null;
           lastRetryDescription.value = '';
-          currentFlow.value = _ChatFlowStep.accountActive;
           final name = state.user?.displayName ?? 'Scholar';
-          addBotMessage(
-            '✨ Welcome back, **$name**! Signed in successfully.',
+
+          final calibRepo = locator<CalibrationRepository>();
+          final calibResult = await calibRepo.getCalibrationProfile();
+          final isCalibrated = calibResult.fold(
+            (_) => false,
+            (profile) => profile?.isCalibrated ?? false,
           );
+
+          if (isCalibrated) {
+            addBotMessage(
+              '✨ Welcome back, **$name**! Redirecting to your Dashboard...',
+            );
+            Timer(const Duration(milliseconds: 700), () {
+              if (context.mounted) {
+                unawaited(context.router.replaceAll([const MainRoute()]));
+              }
+            });
+          } else {
+            currentFlow.value = _ChatFlowStep.accountActive;
+            addBotMessage(
+              '✨ Welcome back, **$name**! Signed in successfully.\n\n'
+              "Let's calibrate your academic track and study profile to "
+              'personalize your learning engine.',
+            );
+          }
         } else if (state.isResetSent) {
           isThinking.value = false;
           isTyping.value = false;

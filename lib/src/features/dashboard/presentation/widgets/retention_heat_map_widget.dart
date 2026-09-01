@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -10,7 +11,7 @@ import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-class RetentionHeatMapWidget extends StatelessWidget {
+class RetentionHeatMapWidget extends StatefulWidget {
   const RetentionHeatMapWidget({
     required this.analytics,
     super.key,
@@ -19,19 +20,30 @@ class RetentionHeatMapWidget extends StatelessWidget {
   final AnalyticsSummaryEntity analytics;
 
   @override
+  State<RetentionHeatMapWidget> createState() => _RetentionHeatMapWidgetState();
+}
+
+class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
+  HeatMapDayEntity? _selectedDay;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final overallRetention = (analytics.overallRetentionRate * 100).toInt();
+    final overallRetention =
+        (widget.analytics.overallRetentionRate * 100).toInt();
+
+    const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return Semantics(
       container: true,
       label: '${l10n.dashboardRetentionMatrix}. '
           '${l10n.dashboardRetentionChip}: $overallRetention%. '
-          '${l10n.dashboardMasteredChip}: ${analytics.totalCardsMastered}.',
+          '${l10n.dashboardMasteredChip}: '
+          '${widget.analytics.totalCardsMastered}.',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
         child: BackdropFilter(
@@ -66,18 +78,37 @@ class RetentionHeatMapWidget extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.grid_view_rounded,
-                          size: 16,
-                          color: colors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.dashboardRetentionMatrix,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 15,
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 50 : 25),
+                            borderRadius: BorderRadius.circular(8),
                           ),
+                          child: Icon(
+                            Icons.grid_view_rounded,
+                            size: 15,
+                            color: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.dashboardRetentionMatrix,
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                            Text(
+                              'Activity • Past 28 Days',
+                              style: typography.footnote.medium.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -88,67 +119,238 @@ class RetentionHeatMapWidget extends StatelessWidget {
                           context.router.push(const AnalyticsDetailRoute()),
                         );
                       },
-                      child: Row(
-                        children: [
-                          Text(
-                            l10n.dashboardFullStats,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 80 : 40),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.dashboardFullStats,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 11.5,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 2),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: colors.primary,
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 14,
+                              color: colors.primary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Heat Map Matrix (4 rows of 7 days = 28 days)
+                // Weekday Headers
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final cellWidth = ((constraints.maxWidth - (6 * 6)) / 7)
                         .clamp(14.0, 38.0);
 
-                    return Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: analytics.heatMapData.map((day) {
-                        final color = _getIntensityColor(
-                          day.intensityLevel,
-                          colors,
-                          isDark,
-                        );
-
-                        return Semantics(
-                          label:
-                              '${day.date.day}/${day.date.month}: ${day.cardsReviewed} cards',
-                          child: Container(
-                            width: cellWidth,
-                            height: cellWidth,
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: day.intensityLevel > 0
-                                    ? colors.primary.withAlpha(isDark ? 80 : 40)
-                                    : Colors.transparent,
-                                width: 0.8,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Weekday labels
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: weekdayLabels.map((day) {
+                            return SizedBox(
+                              width: cellWidth,
+                              child: Text(
+                                day,
+                                textAlign: TextAlign.center,
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.textSecondary.withAlpha(160),
+                                  fontSize: 10,
+                                ),
                               ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Heat Map Matrix (4 rows of 7 days = 28 days)
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: widget.analytics.heatMapData.map((day) {
+                            final isSelected = _selectedDay == day;
+                            final color = _getIntensityColor(
+                              day.intensityLevel,
+                              colors,
+                              isDark,
+                            );
+
+                            return Semantics(
+                              label:
+                                  '${day.date.day}/${day.date.month}: '
+                                  '${day.cardsReviewed} cards',
+                              child: InkWell(
+                                onTap: () {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  setState(() {
+                                    _selectedDay = isSelected ? null : day;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  width: cellWidth,
+                                  height: cellWidth,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colors.textPrimary
+                                          : (day.intensityLevel > 0
+                                              ? colors.primary.withAlpha(
+                                                  isDark ? 90 : 50,
+                                                )
+                                              : Colors.transparent),
+                                      width: isSelected ? 1.8 : 0.8,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: colors.primary
+                                                  .withAlpha(100),
+                                              blurRadius: 6,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
+
+                // Selected Day Inspector Tooltip / Summary Banner
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _selectedDay != null
+                        ? colors.primary.withAlpha(isDark ? 35 : 15)
+                        : (isDark
+                            ? colors.surfacePrimary.withAlpha(80)
+                            : colors.surfaceSecondary.withAlpha(90)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _selectedDay != null
+                          ? colors.primary.withAlpha(isDark ? 80 : 40)
+                          : colors.surfaceBorder.withAlpha(isDark ? 40 : 80),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (_selectedDay != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              size: 12,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              DateFormat('EEE, MMM d').format(
+                                _selectedDay!.date,
+                              ),
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${_selectedDay!.cardsReviewed} cards • '
+                          '${_selectedDay!.minutesStudied} mins',
+                          style: typography.footnote.medium.copyWith(
+                            color: colors.primary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          'Tap any day to inspect study volume',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                        // Intensity scale indicator
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Less',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(160),
+                                fontSize: 9.5,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ...List.generate(5, (lvl) {
+                              return Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 1.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getIntensityColor(
+                                    lvl,
+                                    colors,
+                                    isDark,
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              );
+                            }),
+                            const SizedBox(width: 4),
+                            Text(
+                              'More',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(160),
+                                fontSize: 9.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
 
                 // 3 Metrics Chips Row
                 Row(
@@ -167,7 +369,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                     Expanded(
                       child: _MetricChip(
                         label: l10n.dashboardMasteredChip,
-                        value: '${analytics.totalCardsMastered}',
+                        value: '${widget.analytics.totalCardsMastered}',
                         icon: Icons.check_circle_outline_rounded,
                         color: colors.primary,
                         colors: colors,
@@ -179,7 +381,7 @@ class RetentionHeatMapWidget extends StatelessWidget {
                       child: _MetricChip(
                         label: l10n.dashboardStudyTimeChip,
                         value: l10n.dashboardStudyTimeMinutes(
-                          analytics.weeklyMinutesStudied,
+                          widget.analytics.weeklyMinutesStudied,
                         ),
                         icon: Icons.schedule_rounded,
                         color: colors.syllabotAccent,
@@ -261,13 +463,17 @@ class _MetricChip extends StatelessWidget {
             children: [
               Icon(icon, size: 13, color: color),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: typography.footnote.medium.copyWith(
-                  color: isDark
-                      ? colors.textSecondary
-                      : colors.textPrimary.withAlpha(180),
-                  fontSize: 10.5,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.footnote.medium.copyWith(
+                    color: isDark
+                        ? colors.textSecondary
+                        : colors.textPrimary.withAlpha(180),
+                    fontSize: 10.5,
+                  ),
                 ),
               ),
             ],

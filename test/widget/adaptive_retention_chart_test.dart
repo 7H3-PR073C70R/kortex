@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
-import 'package:kortex/src/l10n/l10n.dart';
+
+import '../helpers/pump_app.dart';
 
 void main() {
   group('AdaptiveRetentionChart Widget Test Suite', () {
@@ -28,32 +28,16 @@ void main() {
       ),
     ];
 
-    Widget createTestApp(Widget child) {
-      return MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
+    testWidgets('renders chart and responds to day selection', (tester) async {
+      await tester.pumpApp(
+        const Scaffold(
           body: SingleChildScrollView(
             child: SizedBox(
               width: 400,
               height: 500,
-              child: child,
+              child: AdaptiveRetentionChart(points: tPoints),
             ),
           ),
-        ),
-      );
-    }
-
-    testWidgets('renders chart and responds to day selection',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          const AdaptiveRetentionChart(points: tPoints),
         ),
       );
 

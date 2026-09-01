@@ -17,6 +17,7 @@ import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dar
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -34,17 +35,17 @@ class AuthPage extends HookWidget {
         BlocProvider<AuthModeCubit>.value(
           value: locator<AuthModeCubit>(),
         ),
-        BlocProvider<AuthDraftCubit>.value(
-          value: locator<AuthDraftCubit>(),
+        BlocProvider<AuthDraftCubit>(
+          create: (_) => AuthDraftCubit(),
         ),
       ],
-      child: const _AuthPageContent(),
+      child: const _AuthView(),
     );
   }
 }
 
-class _AuthPageContent extends HookWidget {
-  const _AuthPageContent();
+class _AuthView extends HookWidget {
+  const _AuthView();
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +58,7 @@ class _AuthPageContent extends HookWidget {
     final isChatMode = modeState.isChat;
 
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.status == AuthStatus.needsOnboarding && state.user != null) {
           if (!isChatMode) {
             context.showSnackBar(
@@ -70,9 +71,21 @@ class _AuthPageContent extends HookWidget {
         } else if (state.isAuthenticated) {
           if (!isChatMode) {
             context.showSnackBar(message: l10n.authSuccessMessage);
-            unawaited(
-              context.router.replace(const OnboardingCalibrationRoute()),
+            final calibRepo = locator<CalibrationRepository>();
+            final calibResult = await calibRepo.getCalibrationProfile();
+            final isCalibrated = calibResult.fold(
+              (_) => false,
+              (profile) => profile?.isCalibrated ?? false,
             );
+            if (context.mounted) {
+              if (isCalibrated) {
+                unawaited(context.router.replaceAll([const MainRoute()]));
+              } else {
+                unawaited(
+                  context.router.replace(const OnboardingCalibrationRoute()),
+                );
+              }
+            }
           }
         } else if (state.isResetSent) {
           if (!isChatMode) {

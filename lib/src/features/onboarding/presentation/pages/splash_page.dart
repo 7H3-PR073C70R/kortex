@@ -2,9 +2,14 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/services/user_storage_service.dart';
 
 @RoutePage()
 class SplashPage extends StatefulWidget {
@@ -93,15 +98,38 @@ class _SplashPageState extends State<SplashPage>
   Future<void> _navigateNext() async {
     if (!mounted) return;
 
-    // final storage = locator<LocalStorageService>();
-    // final hasCompleted = storage.getPreference(
-    //       key: PrefKeys.hasCompletedOnboarding,
-    //     ) ==
-    //     'true';
+    final token = locator<UserStorageService>().getToken();
+    final calibRepo = locator<CalibrationRepository>();
+    final calibResult = await calibRepo.getCalibrationProfile();
+    final isCalibrated = calibResult.fold(
+      (_) => false,
+      (profile) => profile?.isCalibrated ?? false,
+    );
+
+    if (token != null && token.isNotEmpty) {
+      if (!mounted) return;
+      if (isCalibrated) {
+        await context.router.replaceAll([const MainRoute()]);
+        return;
+      } else {
+        await context.router.replaceAll([const OnboardingCalibrationRoute()]);
+        return;
+      }
+    }
+
+    final storage = locator<LocalStorageService>();
+    final hasCompletedOnboarding = storage.getPreference(
+          key: PrefKeys.hasCompletedOnboarding,
+        ) ==
+        'true';
 
     if (!mounted) return;
 
-    await context.router.replace(const OnboardingRoute());
+    if (hasCompletedOnboarding && isCalibrated) {
+      await context.router.replaceAll([const MainRoute()]);
+    } else {
+      await context.router.replace(const OnboardingRoute());
+    }
   }
 
   @override

@@ -11,6 +11,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -65,11 +66,23 @@ class _OtpView extends HookWidget {
     }
 
     return BlocListener<OtpCubit, OtpState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.isVerified) {
-          unawaited(
-            context.router.replaceAll([const OnboardingCalibrationRoute()]),
+          final calibRepo = locator<CalibrationRepository>();
+          final calibResult = await calibRepo.getCalibrationProfile();
+          final isCalibrated = calibResult.fold(
+            (_) => false,
+            (profile) => profile?.isCalibrated ?? false,
           );
+          if (context.mounted) {
+            if (isCalibrated) {
+              unawaited(context.router.replaceAll([const MainRoute()]));
+            } else {
+              unawaited(
+                context.router.replaceAll([const OnboardingCalibrationRoute()]),
+              );
+            }
+          }
         } else if (state.status == OtpStatus.error &&
             state.errorMessage != null) {
           context.showSnackBar(
