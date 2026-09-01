@@ -64,6 +64,7 @@ class _PermissionsView extends StatelessWidget {
       },
       child: Scaffold(
         body: AuraMeshNebula(
+          showBackgroundImage: true,
           child: SafeArea(
             child: Column(
               children: [

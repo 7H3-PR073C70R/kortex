@@ -9,10 +9,12 @@ import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_b
 class AuraMeshNebula extends StatefulWidget {
   const AuraMeshNebula({
     required this.child,
+    this.showBackgroundImage = false,
     super.key,
   });
 
   final Widget child;
+  final bool showBackgroundImage;
 
   @override
   State<AuraMeshNebula> createState() => _AuraMeshNebulaState();
@@ -48,12 +50,19 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Campus Background Atmosphere with breathing motion
-        const Positioned.fill(
-          child: BreathingCampusBackground(
-            baseOpacity: 0.45,
+        // 1. Solid surface background or Campus Background Atmosphere
+        if (widget.showBackgroundImage)
+          const Positioned.fill(
+            child: BreathingCampusBackground(
+              baseOpacity: 0.45,
+            ),
+          )
+        else
+          Positioned.fill(
+            child: Container(
+              color: colors.surfacePrimary,
+            ),
           ),
-        ),
 
         // 2. Animated Mesh Nebula Painter
         if (!disableAnimations)

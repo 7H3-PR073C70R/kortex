@@ -89,6 +89,7 @@ class _CalibrationView extends StatelessWidget {
       },
       child: Scaffold(
         body: AuraMeshNebula(
+          showBackgroundImage: true,
           child: SafeArea(
             child: Column(
               children: [

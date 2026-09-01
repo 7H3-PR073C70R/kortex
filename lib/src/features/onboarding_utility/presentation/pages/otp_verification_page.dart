@@ -87,6 +87,7 @@ class _OtpView extends HookWidget {
       child: Scaffold(
         backgroundColor: colors.surfacePrimary,
         body: AuraMeshNebula(
+          showBackgroundImage: true,
           child: Stack(
             children: [
               SafeArea(
