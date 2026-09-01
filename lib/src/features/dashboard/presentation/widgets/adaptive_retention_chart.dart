@@ -77,52 +77,39 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.show_chart_rounded,
-                                size: 16,
-                                color: colors.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  l10n.projectedWorkloadTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: typography.title3.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 14.5,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            Icons.show_chart_rounded,
+                            size: 16,
+                            color: colors.primary,
                           ),
-                          const SizedBox(height: 4),
-                          if (selectedPoint != null)
-                            Text(
-                              'Day $pointDay: $pointRetention% '
-                              'Retention • $pointDue Due Cards',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              l10n.projectedWorkloadTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14.5,
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     // Legend
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         _LegendChip(
                           color: colors.primary,
                           label: 'Predicted',
                           colors: colors,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 6),
                         _LegendChip(
                           color: colors.success,
                           label: 'Actual',
@@ -132,81 +119,137 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
 
-                const SizedBox(height: 20),
-
-                // Interactive Curve Canvas
-                SizedBox(
-                  height: 180,
-                  width: double.infinity,
-                  child: GestureDetector(
-                    onPanDown: (details) =>
-                        _updateSelection(details.localPosition),
-                    onPanUpdate: (details) =>
-                        _updateSelection(details.localPosition),
-                    child: CustomPaint(
-                      painter: _RetentionChartPainter(
-                        points: widget.points,
-                        predictedColor: colors.primary,
-                        actualColor: colors.success,
-                        gridColor: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(40)
-                            : colors.surfaceBorder.withAlpha(120),
-                        selectedDay: _selectedDayIndex,
+                // Selected Point Inspection Pill
+                if (selectedPoint != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 35 : 18),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(isDark ? 70 : 35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      'Day $pointDay: $pointRetention% '
+                      'Retention • $pointDue Due Cards',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 11.5,
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // Day Labels Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(
-                    widget.points.length,
-                    (index) => Semantics(
-                      button: true,
-                      label: 'Day ${widget.points[index].day} Retention Point',
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedDayIndex = index;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _selectedDayIndex == index
-                                ? colors.primary.withAlpha(isDark ? 50 : 25)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _selectedDayIndex == index
-                                  ? colors.primary.withAlpha(isDark ? 100 : 60)
-                                  : Colors.transparent,
-                            ),
-                          ),
-                          child: Text(
-                            'D${widget.points[index].day}',
-                            style: typography.caption.medium.copyWith(
-                              color: _selectedDayIndex == index
-                                  ? colors.primary
-                                  : colors.textSecondary,
-                              fontWeight: _selectedDayIndex == index
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
+                // Interactive Curve Canvas
+                if (widget.points.isEmpty)
+                  Container(
+                    height: 140,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'No review data yet. Start studying flashcards to '
+                      'generate your adaptive forgetting curve.',
+                      textAlign: TextAlign.center,
+                      style: typography.footnote.regular.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 180,
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onPanDown: (details) =>
+                          _updateSelection(details.localPosition),
+                      onPanUpdate: (details) =>
+                          _updateSelection(details.localPosition),
+                      child: CustomPaint(
+                        painter: _RetentionChartPainter(
+                          points: widget.points,
+                          predictedColor: colors.primary,
+                          actualColor: colors.success,
+                          gridColor: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(40)
+                              : colors.surfaceBorder.withAlpha(120),
+                          selectedDay: _selectedDayIndex,
                         ),
                       ),
                     ),
                   ),
-                ),
+
+                const SizedBox(height: 14),
+
+                // Dynamic Non-Overflowing Day Labels Row
+                if (widget.points.isNotEmpty)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final count = widget.points.length;
+                      const spacing = 4.0;
+                      final itemWidth =
+                          ((constraints.maxWidth - ((count - 1) * spacing)) /
+                                  count)
+                              .clamp(26.0, 50.0);
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(
+                          count,
+                          (index) => Semantics(
+                            button: true,
+                            label: 'Day ${widget.points[index].day} '
+                                'Retention Point',
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedDayIndex = index;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: itemWidth,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _selectedDayIndex == index
+                                      ? colors.primary
+                                          .withAlpha(isDark ? 60 : 30)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _selectedDayIndex == index
+                                        ? colors.primary
+                                            .withAlpha(isDark ? 120 : 70)
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                                child: Text(
+                                  'D${widget.points[index].day}',
+                                  textAlign: TextAlign.center,
+                                  style: typography.caption.medium.copyWith(
+                                    color: _selectedDayIndex == index
+                                        ? colors.primary
+                                        : colors.textSecondary,
+                                    fontWeight: _selectedDayIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

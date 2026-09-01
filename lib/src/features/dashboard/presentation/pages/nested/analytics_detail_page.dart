@@ -10,12 +10,14 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
+import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
@@ -62,77 +64,41 @@ class _AnalyticsDetailView extends HookWidget {
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
-          final feed = state.feed;
-          final analytics = feed?.analyticsSummary ?? _buildDefaultAnalytics();
+          if (state.isLoading && state.feed == null) {
+            return const _AnalyticsShimmerSkeleton();
+          }
 
-          const decayCalculator = EbbinghausDecayCalculator();
-          final retentionPoints = decayCalculator.calculateSevenDayProjection(
-            cardStabilities: [4.5, 6.2, 3.8, 8.1, 5.0, 7.4],
-            empiricalRecallRates: [1.0, 0.96, 0.91, 0.88, 0.84, 0.81, 0.78],
-          );
+          final feed = state.feed;
+          final analytics = feed?.analyticsSummary ?? _buildEmptyAnalytics();
+          final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
+
+          final hasData = analytics.totalCardsMastered > 0 ||
+              analytics.weeklyMinutesStudied > 0;
+
+          var retentionPoints = const <DailyRetentionPoint>[];
+          if (hasData) {
+            const decayCalculator = EbbinghausDecayCalculator();
+            retentionPoints = decayCalculator.calculateSevenDayProjection(
+              cardStabilities: [4.5, 6.2, 5.0],
+              empiricalRecallRates: [
+                1.0,
+                analytics.overallRetentionRate,
+                analytics.overallRetentionRate * 0.95,
+              ],
+            );
+          }
 
           return ListView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
             children: [
-              // 1. Time Range Filter Tabs
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(140)
-                      : colors.surfaceSecondary.withAlpha(180),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(50)
-                        : colors.surfaceBorder.withAlpha(100),
-                  ),
-                ),
-                child: Row(
-                  children: List.generate(filterOptions.length, (index) {
-                    final isSelected = selectedFilterIndex.value == index;
-                    return Expanded(
-                      child: ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          selectedFilterIndex.value = index;
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? (isDark
-                                    ? colors.primary.withAlpha(200)
-                                    : colors.primary)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: colors.primary.withAlpha(60),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Text(
-                            filterOptions[index],
-                            textAlign: TextAlign.center,
-                            style: typography.caption.bold.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : colors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+              // 1. Reusable Liquid Glass Tab Bar
+              AppLiquidGlassTabBar(
+                tabs: filterOptions,
+                selectedIndex: selectedFilterIndex.value,
+                onTabSelected: (index) {
+                  selectedFilterIndex.value = index;
+                },
               ),
               const SizedBox(height: 18),
 
@@ -144,7 +110,7 @@ class _AnalyticsDetailView extends HookWidget {
               AdaptiveRetentionChart(points: retentionPoints),
               const SizedBox(height: 20),
 
-              // 4. Weekly Study Hours & Velocity Bar Chart
+              // 4. Weekly Study Volume & Velocity Bar Chart
               _WeeklyVelocityChart(
                 analytics: analytics,
                 colors: colors,
@@ -162,6 +128,7 @@ class _AnalyticsDetailView extends HookWidget {
 
               // 6. Subject-by-Subject Syllabus Mastery Breakdown
               _SubjectMasteryCard(
+                courses: courses,
                 colors: colors,
                 isDark: isDark,
               ),
@@ -169,6 +136,8 @@ class _AnalyticsDetailView extends HookWidget {
 
               // 7. Syllabot Cognitive Diagnostics & Smart Recommendations
               _SyllabotCognitiveInsightsCard(
+                insightText: feed?.syllabotDailyInsight,
+                hasData: hasData,
                 colors: colors,
                 isDark: isDark,
               ),
@@ -179,34 +148,74 @@ class _AnalyticsDetailView extends HookWidget {
     );
   }
 
-  static AnalyticsSummaryEntity _buildDefaultAnalytics() {
+  static AnalyticsSummaryEntity _buildEmptyAnalytics() {
     final now = DateTime.now();
     final heatMap = List.generate(28, (i) {
       final day = now.subtract(Duration(days: 27 - i));
-      final intensity = (i % 5 == 0)
-          ? 4
-          : (i % 3 == 0)
-              ? 3
-              : (i.isEven)
-                  ? 2
-                  : 1;
       return HeatMapDayEntity(
         date: day,
-        intensityLevel: intensity,
-        cardsReviewed: 14 + (i * 3),
-        minutesStudied: 22 + (i * 4),
+        intensityLevel: 0,
+        cardsReviewed: 0,
+        minutesStudied: 0,
       );
     });
 
     return AnalyticsSummaryEntity(
-      currentStreakDays: 14,
-      longestStreakDays: 28,
-      weeklyMinutesStudied: 380,
-      overallRetentionRate: 0.91,
-      totalCardsMastered: 486,
+      currentStreakDays: 0,
+      longestStreakDays: 0,
+      weeklyMinutesStudied: 0,
+      overallRetentionRate: 0,
+      totalCardsMastered: 0,
       heatMapData: heatMap,
-      xpPoints: 3450,
-      academicRank: 'Neural Scholar IV',
+      xpPoints: 0,
+      academicRank: 'Neural Scholar I',
+    );
+  }
+}
+
+/// Shimmer Skeleton Loader matching Analytics Page layout
+class _AnalyticsShimmerSkeleton extends StatelessWidget {
+  const _AnalyticsShimmerSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
+      children: const [
+        // Tab bar shimmer
+        ShimmerPlaceholder(height: 42, borderRadius: 21),
+        SizedBox(height: 18),
+
+        // 2x2 KPI Cards Shimmer
+        Row(
+          children: [
+            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
+            SizedBox(width: 12),
+            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
+          ],
+        ),
+        SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
+            SizedBox(width: 12),
+            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
+          ],
+        ),
+        SizedBox(height: 20),
+
+        // Chart Shimmer
+        ShimmerPlaceholder(height: 260, borderRadius: 22),
+        SizedBox(height: 20),
+
+        // Velocity Chart Shimmer
+        ShimmerPlaceholder(height: 180, borderRadius: 22),
+        SizedBox(height: 20),
+
+        // Heatmap Shimmer
+        ShimmerPlaceholder(height: 200, borderRadius: 22),
+      ],
     );
   }
 }
@@ -223,6 +232,12 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final overallRetention = (analytics.overallRetentionRate * 100).toInt();
+    final hasRetention = overallRetention > 0;
+    final hasCards = analytics.totalCardsMastered > 0;
+    final hasStudyTime = analytics.weeklyMinutesStudied > 0;
+    final hasStreak = analytics.currentStreakDays > 0;
+    final weeklyHours =
+        (analytics.weeklyMinutesStudied / 60).toStringAsFixed(1);
 
     return Column(
       children: [
@@ -231,9 +246,11 @@ class _ExecutiveKpiGrid extends StatelessWidget {
             Expanded(
               child: _KpiMetricCard(
                 title: 'Retention Index',
-                value: '$overallRetention%',
-                subtitle: '+4.2% this week',
-                badgeText: 'Optimal',
+                value: hasRetention ? '$overallRetention%' : '0%',
+                subtitle: hasRetention
+                    ? 'Active Recall Rate'
+                    : 'No review data yet',
+                badgeText: hasRetention ? 'Optimal' : 'Baseline',
                 icon: Icons.psychology_rounded,
                 accentColor: colors.success,
                 colors: colors,
@@ -245,8 +262,10 @@ class _ExecutiveKpiGrid extends StatelessWidget {
               child: _KpiMetricCard(
                 title: 'Cards Mastered',
                 value: '${analytics.totalCardsMastered}',
-                subtitle: '340 Long-term SM-2',
-                badgeText: 'Active',
+                subtitle: hasCards
+                    ? '${analytics.totalCardsMastered} Active SM-2'
+                    : '0 Active Cards',
+                badgeText: hasCards ? 'Active' : 'Empty',
                 icon: Icons.style_rounded,
                 accentColor: colors.primary,
                 colors: colors,
@@ -262,8 +281,10 @@ class _ExecutiveKpiGrid extends StatelessWidget {
               child: _KpiMetricCard(
                 title: 'Study Velocity',
                 value: '${analytics.weeklyMinutesStudied}m',
-                subtitle: '6.3 hrs • 54m/day',
-                badgeText: 'On Track',
+                subtitle: hasStudyTime
+                    ? '$weeklyHours hrs this week'
+                    : '0.0 hrs this week',
+                badgeText: hasStudyTime ? 'On Track' : 'Idle',
                 icon: Icons.timer_rounded,
                 accentColor: colors.syllabotAccent,
                 colors: colors,
@@ -275,8 +296,12 @@ class _ExecutiveKpiGrid extends StatelessWidget {
               child: _KpiMetricCard(
                 title: 'Study Streak',
                 value: '${analytics.currentStreakDays} Days 🔥',
-                subtitle: 'Record: ${analytics.longestStreakDays} days',
-                badgeText: 'Rank IV',
+                subtitle: hasStreak
+                    ? 'Record: ${analytics.longestStreakDays} days'
+                    : 'Start a streak today',
+                badgeText: analytics.academicRank.isNotEmpty
+                    ? analytics.academicRank.split(' ').last
+                    : 'Rank I',
                 icon: Icons.local_fire_department_rounded,
                 accentColor: colors.warning,
                 colors: colors,
@@ -396,6 +421,8 @@ class _KpiMetricCard extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: typography.footnote.regular.copyWith(
                   color: colors.textSecondary.withAlpha(180),
                   fontSize: 10.5,
@@ -425,8 +452,21 @@ class _WeeklyVelocityChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = context.typography;
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const minutes = [45, 60, 50, 75, 40, 80, 30]; // sample recent week
     const targetMinutes = 45;
+
+    final recentDays = analytics.heatMapData.length >= 7
+        ? analytics.heatMapData.sublist(analytics.heatMapData.length - 7)
+        : analytics.heatMapData;
+
+    final dayMinutesList = List.generate(7, (i) {
+      if (i < recentDays.length) {
+        return recentDays[i].minutesStudied;
+      }
+      return 0;
+    });
+
+    final totalWeekMins =
+        dayMinutesList.fold<int>(0, (sum, mins) => sum + mins);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -470,7 +510,9 @@ class _WeeklyVelocityChart extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    'Daily Goal: ${targetMinutes}m',
+                    totalWeekMins > 0
+                        ? 'Total: ${totalWeekMins}m'
+                        : 'Goal: ${targetMinutes}m/day',
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -486,9 +528,10 @@ class _WeeklyVelocityChart extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: List.generate(7, (i) {
-                    final dayMins = minutes[i];
+                    final dayMins = dayMinutesList[i];
                     final isGoalMet = dayMins >= targetMinutes;
-                    final heightFactor = (dayMins / 90.0).clamp(0.15, 1.0);
+                    final heightFactor =
+                        (dayMins / 90.0).clamp(0.08, 1.0);
 
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -498,29 +541,37 @@ class _WeeklyVelocityChart extends StatelessWidget {
                           style: typography.footnote.bold.copyWith(
                             color: isGoalMet
                                 ? colors.primary
-                                : colors.textSecondary,
+                                : colors.textSecondary.withAlpha(160),
                             fontSize: 9.5,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Container(
                           width: 26,
-                          height: 75 * heightFactor,
+                          height: dayMins > 0 ? (75 * heightFactor) : 6,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: isGoalMet
-                                  ? [
-                                      colors.primary,
-                                      colors.primary.withAlpha(150),
-                                    ]
-                                  : [
-                                      colors.surfaceBorderHighlight
-                                          .withAlpha(180),
-                                      colors.surfaceBorder.withAlpha(100),
-                                    ],
-                            ),
+                            gradient: dayMins > 0
+                                ? LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: isGoalMet
+                                        ? [
+                                            colors.primary,
+                                            colors.primary.withAlpha(150),
+                                          ]
+                                        : [
+                                            colors.surfaceBorderHighlight
+                                                .withAlpha(180),
+                                            colors.surfaceBorder.withAlpha(100),
+                                          ],
+                                  )
+                                : null,
+                            color: dayMins == 0
+                                ? (isDark
+                                    ? colors.surfaceBorderHighlight
+                                        .withAlpha(30)
+                                    : colors.surfaceBorder.withAlpha(60))
+                                : null,
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
@@ -571,6 +622,9 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     final isDark = widget.isDark;
     const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+    final hasActivity = widget.analytics.heatMapData
+        .any((d) => d.cardsReviewed > 0 || d.minutesStudied > 0);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -613,9 +667,10 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                     ],
                   ),
                   Text(
-                    '96% Habit Rate',
+                    hasActivity ? 'Active Habit' : 'Past 28 Days',
                     style: typography.caption.bold.copyWith(
-                      color: colors.success,
+                      color:
+                          hasActivity ? colors.success : colors.textSecondary,
                     ),
                   ),
                 ],
@@ -746,7 +801,9 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                       ),
                     ] else ...[
                       Text(
-                        'Tap any day to inspect study performance',
+                        hasActivity
+                            ? 'Tap any day to inspect study performance'
+                            : 'No study activity in past 28 days',
                         style: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11,
@@ -827,51 +884,18 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
 /// Subject & Syllabus Mastery Breakdown Card
 class _SubjectMasteryCard extends StatelessWidget {
   const _SubjectMasteryCard({
+    required this.courses,
     required this.colors,
     required this.isDark,
   });
 
+  final List<CuratedCourseEntity> courses;
   final AppThemeColorsExtension colors;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
-
-    final subjects = [
-      _SubjectData(
-        title: 'Differential Calculus & PDEs',
-        code: 'MTH 301',
-        retention: 0.92,
-        cardsMastered: 142,
-        totalCards: 155,
-        color: colors.primary,
-      ),
-      _SubjectData(
-        title: 'Electromagnetism & Wave Mechanics',
-        code: 'PHY 202',
-        retention: 0.84,
-        cardsMastered: 118,
-        totalCards: 140,
-        color: colors.syllabotAccent,
-      ),
-      _SubjectData(
-        title: 'Organic Chemistry & Spectroscopy',
-        code: 'CHM 201',
-        retention: 0.78,
-        cardsMastered: 95,
-        totalCards: 122,
-        color: colors.warning,
-      ),
-      _SubjectData(
-        title: 'Data Structures & Algorithms',
-        code: 'CSC 310',
-        retention: 0.95,
-        cardsMastered: 131,
-        totalCards: 138,
-        color: colors.success,
-      ),
-    ];
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -915,7 +939,7 @@ class _SubjectMasteryCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    '4 Enrolled',
+                    '${courses.length} Enrolled',
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -923,88 +947,128 @@ class _SubjectMasteryCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              ...subjects.map((subj) {
-                final percent = (subj.retention * 100).toInt();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
+              if (courses.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  alignment: Alignment.center,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: subj.color.withAlpha(isDark ? 40 : 20),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  subj.code,
-                                  style: typography.footnote.bold.copyWith(
-                                    color: subj.color,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                subj.title,
-                                style: typography.footnote.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '$percent%',
-                            style: typography.footnote.bold.copyWith(
-                              color: subj.color,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.library_books_rounded,
+                        size: 28,
+                        color: colors.textSecondary.withAlpha(120),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Container(
-                                height: 6,
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight
-                                        .withAlpha(40)
-                                    : colors.surfaceBorder.withAlpha(80),
-                                child: FractionallySizedBox(
-                                  alignment: Alignment.centerLeft,
-                                  widthFactor: subj.retention.clamp(0.05, 1.0),
-                                  child: Container(color: subj.color),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '${subj.cardsMastered}/${subj.totalCards} cards',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'No enrolled courses yet',
+                        style: typography.footnote.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Import a syllabus or course materials to '
+                        'track mastery',
+                        textAlign: TextAlign.center,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
-                );
-              }),
+                )
+              else
+                ...courses.map((course) {
+                  final percent = (course.syllabusCoverage * 100).toInt();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary
+                                          .withAlpha(isDark ? 40 : 20),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      course.courseCode,
+                                      style: typography.footnote.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      course.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.footnote.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$percent%',
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  height: 6,
+                                  color: isDark
+                                      ? colors.surfaceBorderHighlight
+                                          .withAlpha(40)
+                                      : colors.surfaceBorder.withAlpha(80),
+                                  child: FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: course.syllabusCoverage
+                                        .clamp(0.05, 1.0),
+                                    child: Container(color: colors.primary),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '${course.totalMaterials} materials',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
             ],
           ),
         ),
@@ -1013,31 +1077,17 @@ class _SubjectMasteryCard extends StatelessWidget {
   }
 }
 
-class _SubjectData {
-  const _SubjectData({
-    required this.title,
-    required this.code,
-    required this.retention,
-    required this.cardsMastered,
-    required this.totalCards,
-    required this.color,
-  });
-
-  final String title;
-  final String code;
-  final double retention;
-  final int cardsMastered;
-  final int totalCards;
-  final Color color;
-}
-
 /// Syllabot Cognitive Insights & Action Recommendations
 class _SyllabotCognitiveInsightsCard extends StatelessWidget {
   const _SyllabotCognitiveInsightsCard({
+    required this.insightText,
+    required this.hasData,
     required this.colors,
     required this.isDark,
   });
 
+  final String? insightText;
+  final bool hasData;
   final AppThemeColorsExtension colors;
   final bool isDark;
 
@@ -1084,36 +1134,49 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _InsightRow(
-                icon: Icons.lightbulb_outline_rounded,
-                iconColor: colors.warning,
-                title: 'Peak Recall Focus Window',
-                description:
-                    'Your active recall retention reaches 94% between 8:00 AM '
-                    'and 11:00 AM. Schedule your review queue in the morning '
-                    'for optimal memory consolidation.',
-                colors: colors,
-              ),
-              const SizedBox(height: 12),
-              _InsightRow(
-                icon: Icons.trending_up_rounded,
-                iconColor: colors.success,
-                title: 'Highest Retention Subject',
-                description:
-                    'Data Structures & Algorithms is your strongest topic '
-                    'with 95% stability score across 131 mastered flashcards.',
-                colors: colors,
-              ),
-              const SizedBox(height: 12),
-              _InsightRow(
-                icon: Icons.alarm_rounded,
-                iconColor: colors.primary,
-                title: 'Upcoming Forgetting Threshold',
-                description:
-                    '18 concept cards in Thermodynamics are scheduled for '
-                    'review within 48 hours to preserve long-term retention.',
-                colors: colors,
-              ),
+              if (insightText != null && insightText!.isNotEmpty) ...[
+                _InsightRow(
+                  icon: Icons.psychology_rounded,
+                  iconColor: colors.primary,
+                  title: 'Daily AI Synthesis',
+                  description: insightText!,
+                  colors: colors,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (hasData) ...[
+                _InsightRow(
+                  icon: Icons.lightbulb_outline_rounded,
+                  iconColor: colors.warning,
+                  title: 'Peak Recall Focus Window',
+                  description:
+                      'Active recall retention is highest during morning '
+                      'study sessions. Review cards early for maximum '
+                      'consolidation.',
+                  colors: colors,
+                ),
+                const SizedBox(height: 12),
+                _InsightRow(
+                  icon: Icons.alarm_rounded,
+                  iconColor: colors.success,
+                  title: 'Memory Consolidation Tracking',
+                  description:
+                      'Daily spaced reviews prevent Ebbinghaus forgetting '
+                      'decay and promote long-term neural retention.',
+                  colors: colors,
+                ),
+              ] else ...[
+                _InsightRow(
+                  icon: Icons.tips_and_updates_rounded,
+                  iconColor: colors.primary,
+                  title: 'Getting Started with Spaced Repetition',
+                  description:
+                      'Create your first study deck or import lecture '
+                      'materials. Syllabot will generate automated flashcards '
+                      'and track your active recall retention score.',
+                  colors: colors,
+                ),
+              ],
             ],
           ),
         ),
