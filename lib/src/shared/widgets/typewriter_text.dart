@@ -2,11 +2,52 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+class _MarkdownSegment {
+  const _MarkdownSegment({
+    required this.text,
+    this.isBold = false,
+    this.isItalic = false,
+  });
+
+  final String text;
+  final bool isBold;
+  final bool isItalic;
+}
+
+List<_MarkdownSegment> _parseMarkdownSegments(String input) {
+  final segments = <_MarkdownSegment>[];
+  final regex = RegExp(r'(\*\*(.*?)\*\*|\*(.*?)\*)');
+  var lastEnd = 0;
+
+  for (final match in regex.allMatches(input)) {
+    if (match.start > lastEnd) {
+      segments.add(
+        _MarkdownSegment(text: input.substring(lastEnd, match.start)),
+      );
+    }
+
+    final fullMatch = match.group(0)!;
+    if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+      final content = match.group(2) ?? '';
+      segments.add(_MarkdownSegment(text: content, isBold: true));
+    } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
+      final content = match.group(3) ?? '';
+      segments.add(_MarkdownSegment(text: content, isItalic: true));
+    }
+
+    lastEnd = match.end;
+  }
+
+  if (lastEnd < input.length) {
+    segments.add(_MarkdownSegment(text: input.substring(lastEnd)));
+  }
+
+  return segments;
+}
+
 /// Animated typewriter text widget that simulates fast, natural
-/// character-by-character streaming for conversational AI messages.
-///
-/// Uses [Characters] to safely handle multi-byte Unicode code points,
-/// surrogate pairs, and emojis without producing malformed UTF-16 substrings.
+/// character-by-character streaming for conversational AI messages
+/// while cleanly parsing and rendering markdown formatting (such as **bold**).
 class TypewriterText extends HookWidget {
   const TypewriterText({
     required this.text,
@@ -27,24 +68,32 @@ class TypewriterText extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final characters = text.characters;
-    final totalCount = characters.length;
-    final displayedCount = useState<int>(isStreaming ? 0 : totalCount);
+    final segments = useMemoized(() => _parseMarkdownSegments(text), [text]);
+    final cleanTotalCount = useMemoized(
+      () => segments.fold<int>(
+        0,
+        (sum, seg) => sum + seg.text.characters.length,
+      ),
+      [segments],
+    );
+
+    final displayedCount = useState<int>(
+      isStreaming ? 0 : cleanTotalCount,
+    );
 
     useEffect(() {
       if (!isStreaming) {
-        displayedCount.value = totalCount;
+        displayedCount.value = cleanTotalCount;
         return null;
       }
 
       displayedCount.value = 0;
       Timer? timer;
       timer = Timer.periodic(charDuration, (t) {
-        if (displayedCount.value < totalCount) {
-          // Dynamic step: 1 char for short text, 2 chars for long text
-          final step = totalCount > 120 ? 2 : 1;
+        if (displayedCount.value < cleanTotalCount) {
+          final step = cleanTotalCount > 120 ? 2 : 1;
           final nextCount = displayedCount.value + step;
-          displayedCount.value = nextCount.clamp(0, totalCount);
+          displayedCount.value = nextCount.clamp(0, cleanTotalCount);
           onTick?.call();
         } else {
           t.cancel();
@@ -53,14 +102,47 @@ class TypewriterText extends HookWidget {
       });
 
       return () => timer?.cancel();
-    }, [text, isStreaming]);
+    }, [text, isStreaming, cleanTotalCount]);
 
-    final visibleText = isStreaming
-        ? characters.take(displayedCount.value).toString()
-        : text;
+    var remainingToDisplay = isStreaming
+        ? displayedCount.value
+        : cleanTotalCount;
 
-    return Text(
-      visibleText,
+    final spans = <InlineSpan>[];
+    for (final seg in segments) {
+      if (remainingToDisplay <= 0) break;
+
+      final segChars = seg.text.characters;
+      final segLength = segChars.length;
+
+      if (remainingToDisplay >= segLength) {
+        spans.add(
+          TextSpan(
+            text: seg.text,
+            style: style.copyWith(
+              fontWeight: seg.isBold ? FontWeight.w700 : style.fontWeight,
+              fontStyle: seg.isItalic ? FontStyle.italic : style.fontStyle,
+            ),
+          ),
+        );
+        remainingToDisplay -= segLength;
+      } else {
+        final partialText = segChars.take(remainingToDisplay).toString();
+        spans.add(
+          TextSpan(
+            text: partialText,
+            style: style.copyWith(
+              fontWeight: seg.isBold ? FontWeight.w700 : style.fontWeight,
+              fontStyle: seg.isItalic ? FontStyle.italic : style.fontStyle,
+            ),
+          ),
+        );
+        remainingToDisplay = 0;
+      }
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
       style: style,
     );
   }

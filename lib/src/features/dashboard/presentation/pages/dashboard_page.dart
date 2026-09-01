@@ -10,7 +10,6 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/curated_course_carousel.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/exam_countdown_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
@@ -19,6 +18,8 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quic
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -63,9 +64,7 @@ class _DashboardView extends HookWidget {
         child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             if (state.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const _DashboardShimmerLoading();
             }
 
             if (state.isError || state.feed == null) {
@@ -153,6 +152,37 @@ class _DashboardView extends HookWidget {
   }
 }
 
+class _DashboardShimmerLoading extends StatelessWidget {
+  const _DashboardShimmerLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      children: const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: AppLogoLoader(
+              size: 58,
+              message: 'Preparing your personalized study feed...',
+            ),
+          ),
+        ),
+        SizedBox(height: 16),
+        ShimmerPlaceholder(height: 72, borderRadius: 20),
+        SizedBox(height: 16),
+        ShimmerPlaceholder(height: 84, borderRadius: 22),
+        SizedBox(height: 16),
+        ShimmerPlaceholder(height: 160, borderRadius: 24),
+        SizedBox(height: 16),
+        ShimmerPlaceholder(height: 120, borderRadius: 20),
+      ],
+    );
+  }
+}
+
 /// Compact Viewport (< 600dp) Single-Column Scroll
 class _CompactDashboardLayout extends StatelessWidget {
   const _CompactDashboardLayout({required this.feed});
@@ -164,7 +194,6 @@ class _CompactDashboardLayout extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isHighSchool = feed.isHighSchoolCandidate;
 
     return ListView(
       physics: const BouncingScrollPhysics(
@@ -179,27 +208,22 @@ class _CompactDashboardLayout extends StatelessWidget {
         ),
         const SizedBox(height: 18),
 
-        // Exam Countdown & Dynamic Cram Planner Banner
-        const ExamCountdownBanner(),
-        const SizedBox(height: 18),
-
         // 2. Syllabot Floating Prompt Bar
         SyllabotQuickPromptBar(
           insightText: feed.syllabotDailyInsight,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
-        // 3. Adaptive Hero Section
-        if (isHighSchool && feed.targetExamCountdown != null) ...[
-          ExamCountdownWidget(countdown: feed.targetExamCountdown!),
-          const SizedBox(height: 20),
-        ] else if (feed.dueStudyDecks.isNotEmpty) ...[
+        // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
+        const ExamCountdownBanner(),
+        if (feed.dueStudyDecks.isNotEmpty) ...[
+          const SizedBox(height: 16),
           Sm2ReviewDeckCard(
             deck: feed.dueStudyDecks.first,
             isHero: true,
           ),
-          const SizedBox(height: 20),
         ],
+        const SizedBox(height: 20),
 
         // 4. Quick Action Speed Dial Bar
         const QuickActionSpeedDial(),
@@ -234,7 +258,7 @@ class _CompactDashboardLayout extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...feed.dueStudyDecks.skip(isHighSchool ? 0 : 1).map((deck) {
+          ...feed.dueStudyDecks.skip(1).map((deck) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Sm2ReviewDeckCard(deck: deck),
@@ -258,8 +282,6 @@ class _MediumDashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHighSchool = feed.isHighSchoolCandidate;
-
     return ListView(
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -285,9 +307,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                     insightText: feed.syllabotDailyInsight,
                   ),
                   const SizedBox(height: 16),
-                  if (isHighSchool && feed.targetExamCountdown != null)
-                    ExamCountdownWidget(countdown: feed.targetExamCountdown!)
-                  else if (feed.dueStudyDecks.isNotEmpty)
+                  if (feed.dueStudyDecks.isNotEmpty)
                     Sm2ReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,
@@ -332,8 +352,6 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHighSchool = feed.isHighSchoolCandidate;
-
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1200),
@@ -354,13 +372,13 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     isProfileUncalibrated: feed.isProfileUncalibrated,
                   ),
                   const SizedBox(height: 20),
+                  const ExamCountdownBanner(),
+                  const SizedBox(height: 20),
                   SyllabotQuickPromptBar(
                     insightText: feed.syllabotDailyInsight,
                   ),
                   const SizedBox(height: 20),
-                  if (isHighSchool && feed.targetExamCountdown != null)
-                    ExamCountdownWidget(countdown: feed.targetExamCountdown!)
-                  else if (feed.dueStudyDecks.isNotEmpty)
+                  if (feed.dueStudyDecks.isNotEmpty)
                     Sm2ReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,

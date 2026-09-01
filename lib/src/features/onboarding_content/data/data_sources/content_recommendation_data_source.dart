@@ -46,9 +46,9 @@ class ContentRecommendationDataSourceImpl
       description: pastPapersDesc,
       formulaChips: [
         'Q-Bank: $examType',
-        r'\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}',
+        'Verified Past Papers',
         '98.4% Syllabus Match',
-        'Step-by-Step Breakdown',
+        'Step-by-Step Solutions',
       ],
     );
 
@@ -75,9 +75,9 @@ class ContentRecommendationDataSourceImpl
       description: flashcardsDesc,
       formulaChips: const [
         'SM-2 Active Recall',
-        'E = mc^2',
-        r'\nabla \times \mathbf{B} = \mu_0 \mathbf{J}',
-        'Optimized Decay Formula',
+        'Spaced Repetition',
+        'High-Yield Decks',
+        'Mastery Retention Curve',
       ],
     );
 
@@ -99,10 +99,10 @@ class ContentRecommendationDataSourceImpl
       tagline: socraticTagline,
       description: socraticDesc,
       formulaChips: const [
-        'Syllabot AI Engine',
-        'Socratic Dialogue Trees',
-        'Multimodal LaTeX Parsing',
-        '24/7 Academic RAG',
+        'Syllabot AI Tutor',
+        'Deep Step Proofs',
+        'Adaptive Calibration',
+        '24/7 Study Companion',
       ],
     );
 

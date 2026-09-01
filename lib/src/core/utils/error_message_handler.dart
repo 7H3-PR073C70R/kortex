@@ -139,6 +139,12 @@ extension ErrorHandler on Exception {
         lower.contains('password is too short')) {
       return 'Your password must be at least 8 characters long';
     }
+    if (lower.contains('error sending confirmation email') ||
+        lower.contains('error sending email') ||
+        lower.contains('unable to send email')) {
+      return 'Unable to send confirmation email. Please check your Supabase '
+          'SMTP configuration or disable email confirmation in dashboard.';
+    }
     if (lower.contains('email not confirmed')) {
       return 'Please check your email inbox to confirm your account '
           'before signing in';

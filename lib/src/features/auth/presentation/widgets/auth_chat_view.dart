@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -29,6 +31,7 @@ enum _ChatFlowStep {
   loginPassword,
   forgotPasswordEmail,
   needsEmailConfirmation,
+  accountActive,
   submitting,
 }
 
@@ -499,6 +502,7 @@ class AuthChatView extends HookWidget {
             ),
           );
 
+        case _ChatFlowStep.accountActive:
         case _ChatFlowStep.submitting:
           break;
       }
@@ -511,7 +515,9 @@ class AuthChatView extends HookWidget {
         currentFlow.value != _ChatFlowStep.submitting;
 
     final isTextFieldVisible =
-        isInputNeeded && currentFlow.value != _ChatFlowStep.initial;
+        isInputNeeded &&
+        currentFlow.value != _ChatFlowStep.initial &&
+        currentFlow.value != _ChatFlowStep.accountActive;
 
     String getHintText() {
       switch (currentFlow.value) {
@@ -529,6 +535,8 @@ class AuthChatView extends HookWidget {
           return 'Enter your registered email';
         case _ChatFlowStep.needsEmailConfirmation:
           return 'Enter 6-digit code (e.g. 123456)';
+        case _ChatFlowStep.accountActive:
+          return 'Choose an option below...';
         case _ChatFlowStep.initial:
           return 'Choose an option below...';
         case _ChatFlowStep.submitting:
@@ -590,20 +598,25 @@ class AuthChatView extends HookWidget {
             state.user != null) {
           isThinking.value = false;
           isTyping.value = false;
-          currentFlow.value = _ChatFlowStep.initial;
+          lastRetryAction.value = null;
+          lastRetryDescription.value = '';
+          currentFlow.value = _ChatFlowStep.accountActive;
           final name = state.user?.displayName ?? 'Scholar';
           addBotMessage(
-            '🎉 Welcome to Kortexify, $name! Your account is active.\n\n'
-            "Let's configure your academic track and study profile right here.",
+            '🎉 Welcome to Kortexify, **$name**! Your account is active.\n\n'
+            "Let's calibrate your academic track and study profile to "
+            'personalize your learning engine.',
           );
         } else if (state.status == AuthStatus.authenticated &&
             state.user != null) {
           isThinking.value = false;
           isTyping.value = false;
-          currentFlow.value = _ChatFlowStep.initial;
+          lastRetryAction.value = null;
+          lastRetryDescription.value = '';
+          currentFlow.value = _ChatFlowStep.accountActive;
           final name = state.user?.displayName ?? 'Scholar';
           addBotMessage(
-            '✨ Welcome back, $name! Signed in successfully.',
+            '✨ Welcome back, **$name**! Signed in successfully.',
           );
         } else if (state.isResetSent) {
           isThinking.value = false;
@@ -864,6 +877,41 @@ class AuthChatView extends HookWidget {
                                   'No problem! How would you like to '
                                   'get started?',
                                   thinkingText: 'Resetting...',
+                                );
+                              },
+                            ),
+                          ] else if (currentFlow.value ==
+                              _ChatFlowStep.accountActive) ...[
+                            // 1. Calibrate Study Profile
+                            _ActionChipButton(
+                              icon: Icons.rocket_launch_rounded,
+                              label: '🚀 Calibrate Study Profile',
+                              isPrimary: true,
+                              isFullWidth: true,
+                              onTap: () {
+                                addUserMessage(
+                                  "Let's calibrate my study profile",
+                                );
+                                unawaited(
+                                  context.router.replace(
+                                    const OnboardingCalibrationRoute(),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+
+                            // 2. Go to Dashboard
+                            _ActionChipButton(
+                              icon: Icons.dashboard_customize_rounded,
+                              label: '🎯 Go to Dashboard',
+                              isFullWidth: true,
+                              onTap: () {
+                                addUserMessage('Go to Dashboard');
+                                unawaited(
+                                  context.router.replace(
+                                    const DashboardRoute(),
+                                  ),
                                 );
                               },
                             ),

@@ -92,16 +92,17 @@ class _CalibrationView extends StatelessWidget {
           child: SafeArea(
             child: Column(
               children: [
-                // Top Bar with Logo & Mode Switch Toggle
+                // Top Bar with Logo, Step Tracker, Skip & Mode Switch Toggle
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 14,
+                    vertical: 12,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           AppAssets.svgs.kortexLogo.svg(
                             width: 26,
@@ -119,11 +120,59 @@ class _CalibrationView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      ModeSwitchButton(
-                        isChatMode: context.watch<AuthModeCubit>().state.isChat,
-                        onToggle: () {
-                          context.read<AuthModeCubit>().toggleMode();
-                        },
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          BlocBuilder<CalibrationCubit, CalibrationState>(
+                            builder: (ctx, state) {
+                              final isChatMode =
+                                  context.watch<AuthModeCubit>().state.isChat;
+                              if (isChatMode) return const SizedBox.shrink();
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CalibrationStepTracker(
+                                    currentStep: state.currentStepIndex,
+                                    totalSteps: state.totalSteps,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Semantics(
+                                    button: true,
+                                    label: l10n.calibrationSkipSemantics,
+                                    child: TextButton(
+                                      onPressed: () => unawaited(
+                                        ctx
+                                            .read<CalibrationCubit>()
+                                            .skipCalibration(),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 6,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.calibrationSkip,
+                                        style: typography.caption.semiBold
+                                            .copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                              );
+                            },
+                          ),
+                          ModeSwitchButton(
+                            isChatMode:
+                                context.watch<AuthModeCubit>().state.isChat,
+                            onToggle: () {
+                              context.read<AuthModeCubit>().toggleMode();
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -190,100 +239,38 @@ class _MobileCalibrationLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
     final l10n = context.l10n;
 
     final state = context.watch<CalibrationCubit>().state;
     final isLastStep = state.currentStepIndex == state.totalSteps - 1;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Column(
         children: [
-          // Top Navigation Bar (Logo + Step Progress + Skip)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(
-                    AppAssets.svgs.kortexLogo.path,
-                    height: 22,
-                    width: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'KORTEXIFY',
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CalibrationStepTracker(
-                    currentStep: state.currentStepIndex,
-                    totalSteps: state.totalSteps,
-                  ),
-                  const SizedBox(width: 12),
-                  Semantics(
-                    button: true,
-                    label: l10n.calibrationSkipSemantics,
-                    child: BlocBuilder<CalibrationCubit, CalibrationState>(
-                      builder: (ctx, _) {
-                        return TextButton(
-                          onPressed: () => unawaited(
-                            ctx.read<CalibrationCubit>().skipCalibration(),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Text(
-                            l10n.calibrationSkip,
-                            style: typography.caption.semiBold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Diagonal Physics-Based Transition Container
+          // Smooth Physics-Based Transition Container
           Expanded(
             child: SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: CalibrationGlassCard(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 280),
                   transitionBuilder: (child, animation) {
-                    final isTopRight = (state.currentStepIndex % 2) == 0;
-                    final dxMultiplier = isTopRight ? 0.35 : -0.35;
                     final slideTween = Tween<Offset>(
                       begin: Offset(
-                        dxMultiplier * (state.isForwardTrajectory ? 1 : -1),
-                        0.25,
+                        state.isForwardTrajectory ? 0.08 : -0.08,
+                        0,
                       ),
                       end: Offset.zero,
-                    ).chain(CurveTween(curve: Curves.easeOutBack));
+                    ).chain(CurveTween(curve: Curves.easeOutCubic));
 
                     return SlideTransition(
                       position: animation.drive(slideTween),
                       child: FadeTransition(
-                        opacity: animation,
+                        opacity: CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        ),
                         child: child,
                       ),
                     );

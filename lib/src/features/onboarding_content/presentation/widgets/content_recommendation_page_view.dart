@@ -114,25 +114,19 @@ class _RecommendationSlideItem extends StatelessWidget {
             final clampedOffset = pageOffset.clamp(-1.0, 1.0);
             final opacity = disableAnimations
                 ? 1.0
-                : (1.0 - (clampedOffset.abs() * 0.65)).clamp(0.0, 1.0);
+                : (1.0 - (clampedOffset.abs() * 0.5)).clamp(0.0, 1.0);
 
-            // Diagonal bounce & rotation trajectory
-            final graphicTranslateX = disableAnimations
-                ? 0.0
-                : clampedOffset * -60.0;
-            final graphicRotation = disableAnimations
-                ? 0.0
-                : clampedOffset * 0.08;
+            // Subtle, elegant depth scaling without distortion or rotation
             final graphicScale = disableAnimations
                 ? 1.0
-                : (1.0 - (clampedOffset.abs() * 0.15)).clamp(0.85, 1.0);
+                : (1.0 - (clampedOffset.abs() * 0.05)).clamp(0.95, 1.0);
 
             // Staggered text vertical transition
             final textTranslateY =
-                disableAnimations ? 0.0 : (clampedOffset.abs() * 24.0);
+                disableAnimations ? 0.0 : (clampedOffset.abs() * 12.0);
             final textOpacity = disableAnimations
                 ? 1.0
-                : (1.0 - (clampedOffset.abs() * 0.85)).clamp(0.0, 1.0);
+                : (1.0 - (clampedOffset.abs() * 0.6)).clamp(0.0, 1.0);
 
             return Opacity(
               opacity: opacity,
@@ -146,44 +140,37 @@ class _RecommendationSlideItem extends StatelessWidget {
                     width: double.infinity,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
-                      child: Transform.translate(
-                        offset: Offset(graphicTranslateX, 0),
-                        child: Transform.scale(
-                          scale: graphicScale,
-                          child: Transform.rotate(
-                            angle: graphicRotation,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: BackdropFilter(
-                                filter:
-                                    ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    color: isDark
-                                        ? colors.surfaceSecondary.withAlpha(120)
-                                        : colors.surfacePrimary.withAlpha(200),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? colors.surfaceBorderHighlight
-                                              .withAlpha(80)
-                                          : Colors.white.withAlpha(220),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.primary.withAlpha(
-                                          isDark ? 40 : 20,
-                                        ),
-                                        blurRadius: 24,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ContentIllustrationCanvas(
-                                    item: item,
-                                    pulseValue: pulseAnimation.value,
-                                  ),
+                      child: Transform.scale(
+                        scale: graphicScale,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                color: isDark
+                                    ? colors.surfaceSecondary.withAlpha(120)
+                                    : colors.surfacePrimary.withAlpha(200),
+                                border: Border.all(
+                                  color: isDark
+                                      ? colors.surfaceBorderHighlight
+                                          .withAlpha(80)
+                                      : Colors.white.withAlpha(220),
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 40 : 20,
+                                    ),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ContentIllustrationCanvas(
+                                item: item,
+                                pulseValue: pulseAnimation.value,
                               ),
                             ),
                           ),

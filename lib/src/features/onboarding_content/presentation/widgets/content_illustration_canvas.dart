@@ -17,9 +17,8 @@ class ContentIllustrationCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final float1 = math.sin(pulseValue * math.pi * 2) * 5.0;
-    final float2 = math.cos(pulseValue * math.pi * 2) * 6.0;
-    final float3 = math.sin((pulseValue + 0.5) * math.pi * 2) * 4.5;
+    final float1 = math.sin(pulseValue * math.pi * 2) * 2.5;
+    final float2 = math.cos(pulseValue * math.pi * 2) * 2.5;
 
     return Stack(
       alignment: Alignment.center,
@@ -32,8 +31,8 @@ class ContentIllustrationCanvas extends StatelessWidget {
         // Floating Formula Node 1 (Top-Left)
         if (item.formulaChips.isNotEmpty)
           Positioned(
-            top: 14 + float1,
-            left: 12,
+            top: 16 + float1,
+            left: 16,
             child: FloatingFormulaChip(
               label: item.formulaChips[0],
               icon: Icons.auto_awesome_rounded,
@@ -43,8 +42,8 @@ class ContentIllustrationCanvas extends StatelessWidget {
         // Floating Formula Node 2 (Top-Right)
         if (item.formulaChips.length > 1)
           Positioned(
-            top: 24 + float2,
-            right: 12,
+            top: 16 + float2,
+            right: 16,
             child: FloatingFormulaChip(
               label: item.formulaChips[1],
               icon: Icons.functions_rounded,
@@ -54,7 +53,7 @@ class ContentIllustrationCanvas extends StatelessWidget {
         // Floating Formula Node 3 (Bottom-Left)
         if (item.formulaChips.length > 2)
           Positioned(
-            bottom: 20 + float3,
+            bottom: 16 + float2,
             left: 16,
             child: FloatingFormulaChip(
               label: item.formulaChips[2],
@@ -65,8 +64,8 @@ class ContentIllustrationCanvas extends StatelessWidget {
         // Floating Formula Node 4 (Bottom-Right)
         if (item.formulaChips.length > 3)
           Positioned(
-            bottom: 12 + float1,
-            right: 14,
+            bottom: 16 + float1,
+            right: 16,
             child: FloatingFormulaChip(
               label: item.formulaChips[3],
               icon: Icons.verified_rounded,

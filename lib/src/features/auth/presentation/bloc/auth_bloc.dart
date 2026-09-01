@@ -168,14 +168,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 failure.message ?? 'Registration failed. Please check details.',
           ),
         ),
-        (user) => emit(
-          state.copyWith(
-            status: AuthStatus.needsEmailVerification,
-            sessionStatus: AuthSessionStatus.unauthenticated,
-            needsEmailVerification: true,
-            user: user,
-          ),
-        ),
+        (user) {
+          final hasActiveSession =
+              user.token != null && user.token!.trim().isNotEmpty;
+          if (hasActiveSession) {
+            emit(
+              state.copyWith(
+                status: AuthStatus.needsOnboarding,
+                sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
+                needsEmailVerification: false,
+                user: user,
+              ),
+            );
+            add(const AuthProfileFetchRequested());
+          } else {
+            emit(
+              state.copyWith(
+                status: AuthStatus.needsEmailVerification,
+                sessionStatus: AuthSessionStatus.unauthenticated,
+                needsEmailVerification: true,
+                user: user,
+              ),
+            );
+          }
+        },
       );
     } on Object catch (_) {
       emit(

@@ -180,16 +180,18 @@ class _SyllabotChatView extends HookWidget {
               }
             }
 
-            // Auto-scroll on new tokens
-            if (state.isStreaming && scrollController.hasClients) {
-              unawaited(
-                scrollController.animateTo(
-                  scrollController.position.maxScrollExtent + 80,
-                  duration: const Duration(milliseconds: 100),
-                  curve: Curves.easeOut,
-                ),
-              );
-            }
+            // Auto-scroll on new messages or streaming tokens
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (scrollController.hasClients) {
+                unawaited(
+                  scrollController.animateTo(
+                    scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOut,
+                  ),
+                );
+              }
+            });
           },
           builder: (context, state) {
             return Column(
@@ -228,9 +230,12 @@ class _SyllabotChatView extends HookWidget {
                         )
                       : ListView.builder(
                           controller: scrollController,
+                          physics: const ClampingScrollPhysics(),
                           padding: const EdgeInsets.only(
-                            top: 8,
+                            top: 12,
                             bottom: 24,
+                            left: 4,
+                            right: 4,
                           ),
                           itemCount: state.messages.length +
                               (state.isStreaming ? 1 : 0),
@@ -255,7 +260,7 @@ class _SyllabotChatView extends HookWidget {
                                 sender: MessageSender.syllabot,
                                 text: state.streamingText.isNotEmpty
                                     ? state.streamingText
-                                    : '...',
+                                    : 'Thinking and analyzing your question...',
                                 timestamp: DateTime.now(),
                                 engineType: state.engineType,
                                 isStreaming: true,
