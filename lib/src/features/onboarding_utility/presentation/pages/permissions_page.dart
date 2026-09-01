@@ -119,19 +119,26 @@ class _PermissionsView extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(120)
-                                    : colors.surfacePrimary.withAlpha(160),
+                                    ? colors.surfaceSecondary.withAlpha(180)
+                                    : colors.surfacePrimary.withAlpha(240),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: colors.surfaceBorder.withAlpha(
-                                    isDark ? 60 : 40,
-                                  ),
-                                  width: 0.8,
+                                  color: isDark
+                                      ? colors.surfaceBorder.withAlpha(100)
+                                      : colors.surfaceBorder,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withAlpha(isDark ? 30 : 12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Text(
                                 l10n.permissionsSkip,
-                                style: typography.callout.semiBold.copyWith(
+                                style: typography.callout.bold.copyWith(
                                   color: colors.primary,
                                   fontSize: 13,
                                 ),
@@ -238,13 +245,10 @@ class _PermissionsHeader extends StatelessWidget {
         Text(
           l10n.permissionsSubtitle,
           textAlign: TextAlign.center,
-          style: typography.callout.regular.copyWith(
-            color: isDark
-                ? colors.textSecondary
-                : colors.textPrimary.withAlpha(200),
+          style: typography.callout.semiBold.copyWith(
+            color: colors.textPrimary,
             height: 1.45,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontSize: 14.5,
           ),
         ),
       ],
@@ -288,12 +292,12 @@ class _PermissionCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: isDark
-                ? colors.surfaceSecondary.withAlpha(140)
-                : colors.surfacePrimary.withAlpha(210),
+                ? colors.surfaceSecondary.withAlpha(160)
+                : colors.surfacePrimary.withAlpha(230),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isGranted
-                  ? const Color(0xFF10B981)
+                  ? colors.success
                   : (isDark
                       ? colors.surfaceBorderHighlight.withAlpha(70)
                       : colors.surfaceBorder),
@@ -302,7 +306,7 @@ class _PermissionCard extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: isGranted
-                    ? const Color(0xFF10B981).withAlpha(isDark ? 30 : 20)
+                    ? colors.success.withAlpha(isDark ? 30 : 20)
                     : Colors.black.withAlpha(isDark ? 30 : 10),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
@@ -318,13 +322,13 @@ class _PermissionCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isGranted
-                      ? const Color(0xFF10B981).withAlpha(isDark ? 40 : 25)
+                      ? colors.success.withAlpha(isDark ? 40 : 25)
                       : colors.primary.withAlpha(isDark ? 40 : 20),
                 ),
                 child: Icon(
                   isGranted ? Icons.check_circle_rounded : icon,
                   color: isGranted
-                      ? const Color(0xFF10B981)
+                      ? colors.success
                       : colors.primary,
                   size: 24,
                 ),
@@ -336,7 +340,7 @@ class _PermissionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: typography.callout.semiBold.copyWith(
+                      style: typography.callout.bold.copyWith(
                         color: colors.textPrimary,
                         fontSize: 15,
                       ),
@@ -344,8 +348,10 @@ class _PermissionCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       description,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
+                      style: typography.caption.medium.copyWith(
+                        color: isDark
+                            ? colors.textSecondary
+                            : colors.textPrimary.withAlpha(210),
                         height: 1.35,
                         fontSize: 12.5,
                       ),
@@ -457,6 +463,7 @@ class _PermissionsFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     return Column(
       children: [
@@ -465,18 +472,28 @@ class _PermissionsFooter extends StatelessWidget {
           onPressed: () =>
               context.read<PermissionsCubit>().finishPermissions(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Semantics(
           button: true,
           label: l10n.permissionsSkipSemantics,
-          child: TextButton(
-            onPressed: () =>
+          child: ShrinkableButton(
+            onTap: () =>
                 context.read<PermissionsCubit>().skipPermissions(),
-            child: Text(
-              l10n.permissionsSkip,
-              style: typography.callout.semiBold.copyWith(
-                color: colors.textSecondary,
-                fontSize: 14,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              child: Text(
+                l10n.permissionsSkip,
+                style: typography.callout.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 14.5,
+                  decoration: TextDecoration.underline,
+                  decorationColor: isDark
+                      ? colors.textPrimary.withAlpha(160)
+                      : colors.textPrimary.withAlpha(160),
+                ),
               ),
             ),
           ),

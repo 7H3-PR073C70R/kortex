@@ -55,37 +55,39 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
           const Positioned.fill(
             child: BreathingCampusBackground(),
           )
-        else
+        else ...[
           Positioned.fill(
             child: Container(
               color: colors.surfacePrimary,
             ),
           ),
 
-        // 2. Animated Mesh Nebula Painter
-        if (!disableAnimations)
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: _NebulaMeshPainter(
-                  progress: _controller.value,
-                  primary: colors.primary,
-                  accent: colors.syllabotAccent,
-                  isDark: isDark,
-                ),
-              );
-            },
-          )
-        else
-          CustomPaint(
-            painter: _NebulaMeshPainter(
-              progress: 0.5,
-              primary: colors.primary,
-              accent: colors.syllabotAccent,
-              isDark: isDark,
+          // 2. Animated Mesh Nebula Painter (only when
+          // showBackgroundImage is false)
+          if (!disableAnimations)
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: _NebulaMeshPainter(
+                    progress: _controller.value,
+                    primary: colors.primary,
+                    accent: colors.syllabotAccent,
+                    isDark: isDark,
+                  ),
+                );
+              },
+            )
+          else
+            CustomPaint(
+              painter: _NebulaMeshPainter(
+                progress: 0.5,
+                primary: colors.primary,
+                accent: colors.syllabotAccent,
+                isDark: isDark,
+              ),
             ),
-          ),
+        ],
 
         // Foreground Content
         widget.child,
