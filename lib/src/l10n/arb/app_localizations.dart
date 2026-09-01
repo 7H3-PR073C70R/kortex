@@ -3187,6 +3187,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Battery saving active. Routing AI queries to Cloud Edge.'**
   String get hardwareBatterySavingActive;
+
+  /// Title for past examination questions CBT board page
+  ///
+  /// In en, this message translates to:
+  /// **'Past Questions Bank'**
+  String get pastQuestionsBankTitle;
+
+  /// Counter badge for answered questions
+  ///
+  /// In en, this message translates to:
+  /// **'{answered}/{total} Done'**
+  String pastQuestionsProgressDone(int answered, int total);
+
+  /// Placeholder for past questions search input
+  ///
+  /// In en, this message translates to:
+  /// **'Search past questions by topic or keyword...'**
+  String get pastQuestionsSearchHint;
+
+  /// Loading message when fetching questions
+  ///
+  /// In en, this message translates to:
+  /// **'Loading past examination questions...'**
+  String get pastQuestionsLoading;
+
+  /// Title for empty question filter results
+  ///
+  /// In en, this message translates to:
+  /// **'No questions found for this filter'**
+  String get pastQuestionsEmptyTitle;
+
+  /// Guidance message when no questions match the selected filter
+  ///
+  /// In en, this message translates to:
+  /// **'Try selecting another subject or year to continue practicing.'**
+  String get pastQuestionsEmptyDesc;
+
+  /// Header for step-by-step question explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation & Concept'**
+  String get pastQuestionsExplanationTitle;
+
+  /// Button to trigger Socratic AI explanation for a past question
+  ///
+  /// In en, this message translates to:
+  /// **'Explain with Syllabot AI'**
+  String get pastQuestionsAskSyllabot;
+
+  /// Speed dial action tile label for Question Bank
+  ///
+  /// In en, this message translates to:
+  /// **'Q-Bank'**
+  String get dashboardQBankAction;
+
+  /// Toast message when copying text to clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get copiedToClipboard;
+
+  /// Notice when restore purchases finds no active subscription
+  ///
+  /// In en, this message translates to:
+  /// **'No active Pro subscription found to restore.'**
+  String get paywallRestoreNoSub;
+
+  /// Notice when restore purchases successfully restores Pro
+  ///
+  /// In en, this message translates to:
+  /// **'Kortexify Pro subscription successfully restored!'**
+  String get paywallRestoreSuccess;
+
+  /// Snack message for generation note error
+  ///
+  /// In en, this message translates to:
+  /// **'Generation note: {error}'**
+  String offlineGenNote(String error);
+
+  /// Dropdown label for WAEC track
+  ///
+  /// In en, this message translates to:
+  /// **'WAEC STEM'**
+  String get examTrackWaecStem;
+
+  /// Dropdown label for JAMB track
+  ///
+  /// In en, this message translates to:
+  /// **'JAMB UTME'**
+  String get examTrackJambUtme;
+
+  /// Dropdown label for SAT track
+  ///
+  /// In en, this message translates to:
+  /// **'SAT Digital'**
+  String get examTrackSatDigital;
+
+  /// Dropdown label for University track
+  ///
+  /// In en, this message translates to:
+  /// **'University STEM'**
+  String get examTrackUniversityStem;
+
+  /// App bar title for onboarding wrapper
+  ///
+  /// In en, this message translates to:
+  /// **'Kortexify Onboarding'**
+  String get onboardingAppBarTitle;
+
+  /// Retry button for quiz workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get quizRetryButton;
+
+  /// Error fallback message when quiz fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load quiz'**
+  String get quizFailedToLoad;
 }
 
 class _AppLocalizationsDelegate

@@ -13,6 +13,7 @@ import 'package:kortex/src/features/auth/presentation/pages/traditional_form_onb
 import 'package:kortex/src/features/auth/presentation/widgets/onboarding_mode_toggle_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
 class OnboardingWrapperPage extends StatelessWidget {
@@ -69,7 +70,7 @@ class _OnboardingWrapperView extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: const Text('Kortexify Onboarding'),
+            title: Text(context.l10n.onboardingAppBarTitle),
             centerTitle: true,
           ),
           body: LayoutBuilder(

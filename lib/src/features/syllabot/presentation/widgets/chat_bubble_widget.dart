@@ -155,9 +155,11 @@ class ChatBubbleWidget extends StatelessWidget {
                                   ),
                                 );
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Copied to clipboard'),
-                                    duration: Duration(seconds: 1),
+                                  SnackBar(
+                                    content: Text(
+                                      context.l10n.copiedToClipboard,
+                                    ),
+                                    duration: const Duration(seconds: 1),
                                   ),
                                 );
                               },

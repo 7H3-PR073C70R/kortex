@@ -11,6 +11,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -54,6 +55,7 @@ class _PastQuestionsBoardView extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
     final searchController = useTextEditingController();
 
     return Scaffold(
@@ -63,7 +65,7 @@ class _PastQuestionsBoardView extends HookWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Past Questions Bank',
+          l10n.pastQuestionsBankTitle,
           style: typography.title2.bold.copyWith(
             color: colors.textPrimary,
           ),
@@ -87,7 +89,10 @@ class _PastQuestionsBoardView extends HookWidget {
                       ),
                     ),
                     child: Text(
-                      '${state.answeredQuestions}/${state.totalQuestions} Done',
+                      l10n.pastQuestionsProgressDone(
+                        state.answeredQuestions,
+                        state.totalQuestions,
+                      ),
                       style: typography.caption.bold.copyWith(
                         color: colors.primary,
                       ),
@@ -113,7 +118,7 @@ class _PastQuestionsBoardView extends HookWidget {
                   Expanded(
                     child: AppTextField(
                       controller: searchController,
-                      hintText: 'Search past questions by topic or keyword...',
+                      hintText: l10n.pastQuestionsSearchHint,
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         color: colors.textSecondary,
@@ -141,20 +146,19 @@ class _PastQuestionsBoardView extends HookWidget {
                   if (state.status == PastQuestionsStatus.loading) {
                     return ListView(
                       padding: const EdgeInsets.all(16),
-                      children: const [
+                      children: [
                         Center(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
+                            padding: const EdgeInsets.symmetric(vertical: 24),
                             child: AppLogoLoader(
                               size: 56,
-                              message:
-                                  'Crawling and structuring past questions...',
+                              message: l10n.pastQuestionsLoading,
                             ),
                           ),
                         ),
-                        ShimmerPlaceholder(height: 160, borderRadius: 20),
-                        SizedBox(height: 14),
-                        ShimmerPlaceholder(height: 160, borderRadius: 20),
+                        const ShimmerPlaceholder(height: 160, borderRadius: 20),
+                        const SizedBox(height: 14),
+                        const ShimmerPlaceholder(height: 160, borderRadius: 20),
                       ],
                     );
                   }
@@ -173,15 +177,14 @@ class _PastQuestionsBoardView extends HookWidget {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'No questions found for this filter',
+                              l10n.pastQuestionsEmptyTitle,
                               style: typography.title3.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Try selecting another subject or year to '
-                              'continue practicing.',
+                              l10n.pastQuestionsEmptyDesc,
                               textAlign: TextAlign.center,
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary,
@@ -641,7 +644,7 @@ class _PastQuestionCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Explanation & Concept',
+                        context.l10n.pastQuestionsExplanationTitle,
                         style: typography.footnote.bold.copyWith(
                           color: colors.textPrimary,
                         ),
@@ -701,7 +704,7 @@ class _PastQuestionCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Explain with Syllabot AI',
+                        context.l10n.pastQuestionsAskSyllabot,
                         style: typography.caption.bold.copyWith(
                           color: colors.syllabotAccent,
                           fontSize: 11.5,

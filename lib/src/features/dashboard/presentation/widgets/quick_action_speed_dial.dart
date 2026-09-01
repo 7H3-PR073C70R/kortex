@@ -66,7 +66,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                 ),
                 _ActionItem(
                   icon: Icons.quiz_rounded,
-                  label: 'Q-Bank',
+                  label: l10n.dashboardQBankAction,
                   color: const Color(0xFFF59E0B),
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());

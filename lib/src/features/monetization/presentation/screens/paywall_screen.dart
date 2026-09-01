@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -98,19 +99,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
         setState(() => _isProcessing = false);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Kortexify Pro subscription successfully restored!',
+                context.l10n.paywallRestoreSuccess,
               ),
-              backgroundColor: Color(0xFF10B981),
+              backgroundColor: const Color(0xFF10B981),
             ),
           );
           widget.onPurchaseSuccess?.call();
           await Navigator.of(context).maybePop(true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No active Pro subscription found to restore.'),
+            SnackBar(
+              content: Text(context.l10n.paywallRestoreNoSub),
             ),
           );
         }

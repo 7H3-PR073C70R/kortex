@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/core/themes/color/app_material_colors.dart';
 import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
 class OfflineFlashcardGenerationPage extends StatefulWidget {
@@ -127,7 +128,7 @@ class _OfflineFlashcardGenerationPageState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Generation note: $e'),
+            content: Text(context.l10n.offlineGenNote('$e')),
             backgroundColor: Colors.redAccent,
           ),
         );

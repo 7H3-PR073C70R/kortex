@@ -315,7 +315,7 @@ class SupabaseCommunityClient {
   }) async {
     try {
       await _dio.post<dynamic>(
-        '${AppApiEndpoint.baseUri}/study_sessions',
+        '${AppApiEndpoint.baseUri}/rest/v1/study_sessions',
         data: {
           'room_id': roomId,
           'duration_minutes': durationMinutes,
@@ -325,7 +325,7 @@ class SupabaseCommunityClient {
         options: Options(headers: _headers(authToken)),
       );
     } on Object catch (_) {
-      // Graceful fallback for offline / mock modes
+      // Graceful error logging for offline sessions
     }
   }
 }

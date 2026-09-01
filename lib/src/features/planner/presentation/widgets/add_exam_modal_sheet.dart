@@ -151,13 +151,22 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'WAEC', child: Text('WAEC STEM')),
-                  DropdownMenuItem(value: 'JAMB', child: Text('JAMB UTME')),
-                  DropdownMenuItem(value: 'SAT', child: Text('SAT Digital')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'WAEC',
+                    child: Text(l10n.examTrackWaecStem),
+                  ),
+                  DropdownMenuItem(
+                    value: 'JAMB',
+                    child: Text(l10n.examTrackJambUtme),
+                  ),
+                  DropdownMenuItem(
+                    value: 'SAT',
+                    child: Text(l10n.examTrackSatDigital),
+                  ),
                   DropdownMenuItem(
                     value: 'University',
-                    child: Text('University STEM'),
+                    child: Text(l10n.examTrackUniversityStem),
                   ),
                 ],
                 onChanged: (val) {

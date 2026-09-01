@@ -2544,5 +2544,101 @@
     "hardwareBatterySavingActive": "Battery saving active. Routing AI queries to Cloud Edge.",
     "@hardwareBatterySavingActive": {
         "description": "Notice when low battery triggers cloud fallback"
+    },
+    "pastQuestionsBankTitle": "Past Questions Bank",
+    "@pastQuestionsBankTitle": {
+        "description": "Title for past examination questions CBT board page"
+    },
+    "pastQuestionsProgressDone": "{answered}/{total} Done",
+    "@pastQuestionsProgressDone": {
+        "description": "Counter badge for answered questions",
+        "placeholders": {
+            "answered": {
+                "type": "int",
+                "example": "3"
+            },
+            "total": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "pastQuestionsSearchHint": "Search past questions by topic or keyword...",
+    "@pastQuestionsSearchHint": {
+        "description": "Placeholder for past questions search input"
+    },
+    "pastQuestionsLoading": "Loading past examination questions...",
+    "@pastQuestionsLoading": {
+        "description": "Loading message when fetching questions"
+    },
+    "pastQuestionsEmptyTitle": "No questions found for this filter",
+    "@pastQuestionsEmptyTitle": {
+        "description": "Title for empty question filter results"
+    },
+    "pastQuestionsEmptyDesc": "Try selecting another subject or year to continue practicing.",
+    "@pastQuestionsEmptyDesc": {
+        "description": "Guidance message when no questions match the selected filter"
+    },
+    "pastQuestionsExplanationTitle": "Explanation & Concept",
+    "@pastQuestionsExplanationTitle": {
+        "description": "Header for step-by-step question explanation"
+    },
+    "pastQuestionsAskSyllabot": "Explain with Syllabot AI",
+    "@pastQuestionsAskSyllabot": {
+        "description": "Button to trigger Socratic AI explanation for a past question"
+    },
+    "dashboardQBankAction": "Q-Bank",
+    "@dashboardQBankAction": {
+        "description": "Speed dial action tile label for Question Bank"
+    },
+    "copiedToClipboard": "Copied to clipboard",
+    "@copiedToClipboard": {
+        "description": "Toast message when copying text to clipboard"
+    },
+    "paywallRestoreNoSub": "No active Pro subscription found to restore.",
+    "@paywallRestoreNoSub": {
+        "description": "Notice when restore purchases finds no active subscription"
+    },
+    "paywallRestoreSuccess": "Kortexify Pro subscription successfully restored!",
+    "@paywallRestoreSuccess": {
+        "description": "Notice when restore purchases successfully restores Pro"
+    },
+    "offlineGenNote": "Generation note: {error}",
+    "@offlineGenNote": {
+        "description": "Snack message for generation note error",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Network failed"
+            }
+        }
+    },
+    "examTrackWaecStem": "WAEC STEM",
+    "@examTrackWaecStem": {
+        "description": "Dropdown label for WAEC track"
+    },
+    "examTrackJambUtme": "JAMB UTME",
+    "@examTrackJambUtme": {
+        "description": "Dropdown label for JAMB track"
+    },
+    "examTrackSatDigital": "SAT Digital",
+    "@examTrackSatDigital": {
+        "description": "Dropdown label for SAT track"
+    },
+    "examTrackUniversityStem": "University STEM",
+    "@examTrackUniversityStem": {
+        "description": "Dropdown label for University track"
+    },
+    "onboardingAppBarTitle": "Kortexify Onboarding",
+    "@onboardingAppBarTitle": {
+        "description": "App bar title for onboarding wrapper"
+    },
+    "quizRetryButton": "Retry",
+    "@quizRetryButton": {
+        "description": "Retry button for quiz workspace"
+    },
+    "quizFailedToLoad": "Failed to load quiz",
+    "@quizFailedToLoad": {
+        "description": "Error fallback message when quiz fails to load"
     }
 }

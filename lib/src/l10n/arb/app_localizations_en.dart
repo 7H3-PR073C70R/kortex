@@ -1806,4 +1806,72 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hardwareBatterySavingActive =>
       'Battery saving active. Routing AI queries to Cloud Edge.';
+
+  @override
+  String get pastQuestionsBankTitle => 'Past Questions Bank';
+
+  @override
+  String pastQuestionsProgressDone(int answered, int total) {
+    return '$answered/$total Done';
+  }
+
+  @override
+  String get pastQuestionsSearchHint =>
+      'Search past questions by topic or keyword...';
+
+  @override
+  String get pastQuestionsLoading => 'Loading past examination questions...';
+
+  @override
+  String get pastQuestionsEmptyTitle => 'No questions found for this filter';
+
+  @override
+  String get pastQuestionsEmptyDesc =>
+      'Try selecting another subject or year to continue practicing.';
+
+  @override
+  String get pastQuestionsExplanationTitle => 'Explanation & Concept';
+
+  @override
+  String get pastQuestionsAskSyllabot => 'Explain with Syllabot AI';
+
+  @override
+  String get dashboardQBankAction => 'Q-Bank';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get paywallRestoreNoSub =>
+      'No active Pro subscription found to restore.';
+
+  @override
+  String get paywallRestoreSuccess =>
+      'Kortexify Pro subscription successfully restored!';
+
+  @override
+  String offlineGenNote(String error) {
+    return 'Generation note: $error';
+  }
+
+  @override
+  String get examTrackWaecStem => 'WAEC STEM';
+
+  @override
+  String get examTrackJambUtme => 'JAMB UTME';
+
+  @override
+  String get examTrackSatDigital => 'SAT Digital';
+
+  @override
+  String get examTrackUniversityStem => 'University STEM';
+
+  @override
+  String get onboardingAppBarTitle => 'Kortexify Onboarding';
+
+  @override
+  String get quizRetryButton => 'Retry';
+
+  @override
+  String get quizFailedToLoad => 'Failed to load quiz';
 }

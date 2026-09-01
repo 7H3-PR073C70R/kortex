@@ -69,7 +69,7 @@ class QuizWorkspacePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      state.errorMessage ?? 'Failed to load quiz',
+                      state.errorMessage ?? l10n.quizFailedToLoad,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: Colors.white70,
@@ -87,7 +87,7 @@ class QuizWorkspacePage extends StatelessWidget {
                               ),
                         );
                       },
-                      child: const Text('Retry'),
+                      child: Text(l10n.quizRetryButton),
                     ),
                   ],
                 ),
