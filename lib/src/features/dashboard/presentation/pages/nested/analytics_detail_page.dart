@@ -17,7 +17,7 @@ class AnalyticsDetailPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor:
-          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -42,12 +42,12 @@ class AnalyticsDetailPage extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFEA580C), Color(0xFFF97316)],
+                gradient: LinearGradient(
+                  colors: [colors.warning, colors.warning.withAlpha(200)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFEA580C).withAlpha(80),
+                    color: colors.warning.withAlpha(80),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -58,14 +58,15 @@ class AnalyticsDetailPage extends StatelessWidget {
                 children: [
                   Text(
                     l10n.analyticsStreakDays(14),
-                    style: typography.title2.bold.copyWith(
+                    style: typography.headline.bold.copyWith(
                       color: Colors.white,
+                      fontSize: 26,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     l10n.analyticsStreakRecord,
-                    style: typography.footnote.regular.copyWith(
+                    style: typography.subhead.regular.copyWith(
                       color: Colors.white.withAlpha(220),
                     ),
                   ),
@@ -75,22 +76,20 @@ class AnalyticsDetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Retention Curve Breakdown
+          // Subject-by-Subject Breakdown
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(160)
-                      : colors.surfacePrimary.withAlpha(210),
+                      : colors.surfacePrimary.withAlpha(200),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(70)
-                        : colors.surfaceBorder.withAlpha(140),
+                    color: colors.surfaceBorder.withAlpha(isDark ? 80 : 160),
                   ),
                 ),
                 child: Column(
@@ -98,9 +97,8 @@ class AnalyticsDetailPage extends StatelessWidget {
                   children: [
                     Text(
                       l10n.analyticsRetentionCurveTitle,
-                      style: typography.caption.bold.copyWith(
+                      style: typography.body.bold.copyWith(
                         color: colors.textPrimary,
-                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -108,14 +106,11 @@ class AnalyticsDetailPage extends StatelessWidget {
                       l10n.analyticsMasteredCountSubtitle(240),
                       style: typography.footnote.regular.copyWith(
                         color: colors.textSecondary,
-                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Progress indicators by subject
+                    const SizedBox(height: 16),
                     _SubjectRetentionBar(
-                      subject: 'Engineering Mathematics',
+                      subject: 'Differential Calculus & Real Analysis',
                       retention: 0.92,
                       color: colors.primary,
                     ),
@@ -126,10 +121,10 @@ class AnalyticsDetailPage extends StatelessWidget {
                       color: colors.syllabotAccent,
                     ),
                     const SizedBox(height: 12),
-                    const _SubjectRetentionBar(
+                    _SubjectRetentionBar(
                       subject: 'Thermodynamics & Fluid Mechanics',
                       retention: 0.78,
-                      color: Color(0xFFF97316),
+                      color: colors.warning,
                     ),
                   ],
                 ),

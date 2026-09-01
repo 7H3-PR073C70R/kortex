@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -42,17 +43,9 @@ class AudioInputWaveformButton extends HookWidget {
       unawaited(HapticFeedback.mediumImpact());
       if (!isRecording.value) {
         isRecording.value = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.mic, color: colors.error, size: 18),
-                const SizedBox(width: 8),
-                Text(l10n.voiceInputListening),
-              ],
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+        context.showSnackBar(
+          message: l10n.voiceInputListening,
+          type: SnackBarType.info,
         );
 
         // Simulate voice transcription completion after 2.5s

@@ -97,19 +97,16 @@ class DeckListTileCard extends StatelessWidget {
                             vertical: 3.5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444)
-                                .withAlpha(isDark ? 45 : 20),
+                            color: colors.error.withAlpha(isDark ? 45 : 20),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: const Color(0xFFEF4444).withAlpha(100),
+                              color: colors.error.withAlpha(100),
                             ),
                           ),
                           child: Text(
                             l10n.decksDueBadge(deck.dueCards),
                             style: typography.caption.bold.copyWith(
-                              color: isDark
-                                  ? const Color(0xFFFCA5A5)
-                                  : const Color(0xFFDC2626),
+                              color: colors.error,
                               fontSize: 10.5,
                             ),
                           ),

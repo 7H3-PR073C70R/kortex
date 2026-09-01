@@ -47,6 +47,10 @@ class $AssetsImagesGen {
   /// File path: assets/images/.gitkeep
   String get aGitkeep => 'assets/images/.gitkeep';
 
+  /// File path: assets/images/campus_light_bg.jpg
+  AssetGenImage get campusLightBg =>
+      const AssetGenImage('assets/images/campus_light_bg.jpg');
+
   /// File path: assets/images/campus_student_bg.png
   AssetGenImage get campusStudentBg =>
       const AssetGenImage('assets/images/campus_student_bg.png');
@@ -64,6 +68,7 @@ class $AssetsImagesGen {
   /// List of all assets
   List<dynamic> get values => [
     aGitkeep,
+    campusLightBg,
     campusStudentBg,
     logo,
     logoMain,

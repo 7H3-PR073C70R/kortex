@@ -1874,4 +1874,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quizFailedToLoad => 'Failed to load quiz';
+
+  @override
+  String get authOrEmail => 'or email';
+
+  @override
+  String get authUseMagicLinkInstead => 'Use Magic Link instead';
+
+  @override
+  String get authUsePasswordInstead => 'Use password instead';
+
+  @override
+  String get paywallRestore => 'Restore';
+
+  @override
+  String get studyNowAction => 'Study Now';
+
+  @override
+  String get marketplaceAddReview => 'Add Review';
+
+  @override
+  String get marketplaceCloneSuccess => 'Deck cloned successfully!';
+
+  @override
+  String get marketplaceCloneFailed => 'Failed to clone deck';
+
+  @override
+  String get marketplaceRatingRequired =>
+      'Please select a rating and enter a comment';
+
+  @override
+  String get marketplaceReviewSubmitted => 'Review submitted successfully!';
+
+  @override
+  String get offlineGenSuccess => 'Flashcards generated successfully!';
+
+  @override
+  String get offlineGenFailed => 'Failed to generate flashcards';
+
+  @override
+  String get offlineGenPromptHint =>
+      'Enter study topic, lecture notes, or syllabus section...';
+
+  @override
+  String get offlineGenDeckTitleHint =>
+      'e.g. Calculus II - Integration Techniques';
+
+  @override
+  String get examModalExamTitle => 'Exam Title';
+
+  @override
+  String get examModalExamTitleHint => 'e.g., WAEC Further Mathematics';
+
+  @override
+  String get examModalTargetScore => 'Target Score (%)';
+
+  @override
+  String get examModalTargetScoreHint => '85';
+
+  @override
+  String get examModalExamDate => 'Exam Date';
+
+  @override
+  String get examModalAddButton => 'Add Exam Countdown';
+
+  @override
+  String get convertDeckTitleHint => 'Deck Title';
+
+  @override
+  String get convertDeckDescHint => 'Description (optional)';
+
+  @override
+  String restoreErrorPrefix(String error) {
+    return 'Restore error: $error';
+  }
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get termsOfUseEula => 'Terms of Use (EULA)';
 }

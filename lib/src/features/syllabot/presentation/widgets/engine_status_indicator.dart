@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -33,17 +34,13 @@ class EngineStatusIndicator extends StatelessWidget {
             : ExecutionEngineType.cloudSupabase;
         onToggleEngine(nextEngine);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.engineSwitched(
-                nextEngine == ExecutionEngineType.cloudSupabase
-                    ? l10n.engineCloudSupabase
-                    : l10n.engineLocalOnDevice,
-              ),
-            ),
-            duration: const Duration(seconds: 1),
+        context.showSnackBar(
+          message: l10n.engineSwitched(
+            nextEngine == ExecutionEngineType.cloudSupabase
+                ? l10n.engineCloudSupabase
+                : l10n.engineLocalOnDevice,
           ),
+          type: SnackBarType.info,
         );
       },
       child: Container(

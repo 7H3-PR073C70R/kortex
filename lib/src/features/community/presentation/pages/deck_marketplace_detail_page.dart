@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
@@ -35,37 +35,27 @@ class DeckMarketplaceDetailPage extends HookWidget {
         final res = await useCase(deck.id);
         isCloning.value = false;
 
+        if (!context.mounted) return;
         res.fold(
           (failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(failure.message ?? 'Failed to clone deck'),
-                backgroundColor: colors.error,
-              ),
+            context.showSnackBar(
+              message: failure.message ?? l10n.marketplaceCloneFailed,
+              type: SnackBarType.error,
             );
           },
           (clonedDeck) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.deckClonedSuccessNotice),
-                backgroundColor: colors.primary,
-                action: SnackBarAction(
-                  label: 'Study Now',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    unawaited(
-                      context.router.push(
-                        StudySessionRoute(deckId: clonedDeck.id),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            context.showSnackBar(
+              message: l10n.marketplaceCloneSuccess,
             );
           },
         );
-      } on Object {
+      } on Object catch (_) {
         isCloning.value = false;
+        if (!context.mounted) return;
+        context.showSnackBar(
+          message: l10n.marketplaceCloneFailed,
+          type: SnackBarType.error,
+        );
       }
     }
 

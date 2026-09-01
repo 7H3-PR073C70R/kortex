@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class GeneratedCardPreviewTile extends HookWidget {
@@ -131,53 +132,15 @@ class GeneratedCardPreviewTile extends HookWidget {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Front Prompt',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
+                      AppTextField(
                         controller: frontController,
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          filled: true,
-                          fillColor: isDark
-                              ? colors.backgroundSecondary
-                              : colors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                        label: 'Front Prompt',
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        'Back Answer / Explanation',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
+                      AppTextField(
                         controller: backController,
+                        label: 'Back Answer / Explanation',
                         maxLines: 3,
-                        style: typography.body.regular.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          filled: true,
-                          fillColor: isDark
-                              ? colors.backgroundSecondary
-                              : colors.backgroundPrimary,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
                       ),
                     ],
                   )

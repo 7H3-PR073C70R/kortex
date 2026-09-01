@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 class AddExamModalSheet extends StatefulWidget {
   const AddExamModalSheet({super.key});
@@ -69,8 +71,10 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -79,10 +83,10 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            color: colors.primary.withAlpha(isDark ? 60 : 30),
           ),
         ),
         child: Form(
@@ -97,15 +101,14 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 children: [
                   Text(
                     l10n.addExamTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: Colors.white54,
+                      color: colors.textSecondary,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -115,17 +118,13 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
               const SizedBox(height: 16),
 
               // Exam Name Field
-              TextFormField(
+              AppTextField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: l10n.examNameLabel,
-                  prefixIcon: const Icon(Icons.school_rounded),
-                  filled: true,
-                  fillColor: theme.colorScheme.surface.withValues(alpha: 0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                label: l10n.examNameLabel,
+                hintText: l10n.examModalExamTitleHint,
+                prefixIcon: Icon(
+                  Icons.school_rounded,
+                  color: colors.textSecondary,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -140,15 +139,29 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
               // Subject Track Dropdown
               DropdownButtonFormField<String>(
                 initialValue: _selectedTrack,
-                dropdownColor: theme.colorScheme.surface,
-                style: const TextStyle(color: Colors.white),
+                dropdownColor:
+                    isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                style: typography.body.regular.copyWith(
+                  color: colors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   labelText: l10n.examSubjectLabel,
-                  prefixIcon: const Icon(Icons.category_rounded),
+                  labelStyle: typography.subhead.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.category_rounded,
+                    color: colors.textSecondary,
+                  ),
                   filled: true,
-                  fillColor: theme.colorScheme.surface.withValues(alpha: 0.5),
+                  fillColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfacePrimary,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: colors.surfaceBorder,
+                    ),
                   ),
                 ),
                 items: [
@@ -192,10 +205,12 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white24,
+                      color: colors.surfaceBorder,
                     ),
                   ),
                   child: Row(
@@ -206,13 +221,13 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                           Icon(
                             Icons.calendar_today_rounded,
                             size: 20,
-                            color: theme.colorScheme.primary,
+                            color: colors.primary,
                           ),
                           const SizedBox(width: 12),
                           Text(
                             l10n.targetDateLabel,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white70,
+                            style: typography.body.regular.copyWith(
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -221,9 +236,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                         '${_selectedDate.year}-'
                         '${_selectedDate.month.toString().padLeft(2, '0')}-'
                         '${_selectedDate.day.toString().padLeft(2, '0')}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
+                        style: typography.body.bold.copyWith(
+                          color: colors.primary,
                         ),
                       ),
                     ],
@@ -234,20 +248,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
               const SizedBox(height: 24),
 
               // Save Button
-              ElevatedButton(
+              AppButton(
+                text: l10n.saveExamCountdown,
                 onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  l10n.saveExamCountdown,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
               ),
             ],
           ),

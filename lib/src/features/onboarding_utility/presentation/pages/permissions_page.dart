@@ -239,9 +239,12 @@ class _PermissionsHeader extends StatelessWidget {
           l10n.permissionsSubtitle,
           textAlign: TextAlign.center,
           style: typography.callout.regular.copyWith(
-            color: colors.textSecondary,
+            color: isDark
+                ? colors.textSecondary
+                : colors.textPrimary.withAlpha(200),
             height: 1.45,
             fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -471,8 +474,9 @@ class _PermissionsFooter extends StatelessWidget {
                 context.read<PermissionsCubit>().skipPermissions(),
             child: Text(
               l10n.permissionsSkip,
-              style: typography.callout.regular.copyWith(
+              style: typography.callout.semiBold.copyWith(
                 color: colors.textSecondary,
+                fontSize: 14,
               ),
             ),
           ),

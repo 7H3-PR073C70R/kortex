@@ -102,29 +102,25 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFEF4444,
-                            ).withAlpha(isDark ? 50 : 25),
+                            color: colors.error.withAlpha(isDark ? 50 : 25),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFFEF4444).withAlpha(120),
+                              color: colors.error.withAlpha(120),
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.bolt_rounded,
                                 size: 12,
-                                color: Color(0xFFEF4444),
+                                color: colors.error,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 l10n.dashboardDueCount(deck.dueCards),
                                 style: typography.caption.bold.copyWith(
-                                  color: isDark
-                                      ? const Color(0xFFFCA5A5)
-                                      : const Color(0xFFDC2626),
+                                  color: colors.error,
                                   fontSize: 10.5,
                                   letterSpacing: 0.5,
                                 ),
@@ -164,7 +160,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                         '$retentionPercent%',
                         style: typography.footnote.bold.copyWith(
                           color: retentionPercent >= 85
-                              ? const Color(0xFF10B981)
+                              ? colors.success
                               : colors.primary,
                           fontSize: 12,
                         ),

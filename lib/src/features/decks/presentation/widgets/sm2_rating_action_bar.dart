@@ -26,25 +26,25 @@ class Sm2RatingActionBar extends StatelessWidget {
         label: l10n.studyRatingAgain,
         interval: l10n.studyRatingAgainInterval,
         quality: 0,
-        color: const Color(0xFFEF4444),
+        color: colors.recallAgain,
       ),
       (
         label: l10n.studyRatingHard,
         interval: l10n.studyRatingHardInterval,
         quality: 3,
-        color: const Color(0xFFF97316),
+        color: colors.recallHard,
       ),
       (
         label: l10n.studyRatingGood,
         interval: l10n.studyRatingGoodInterval,
         quality: 4,
-        color: colors.primary,
+        color: colors.recallGood,
       ),
       (
         label: l10n.studyRatingEasy,
         interval: l10n.studyRatingEasyInterval,
         quality: 5,
-        color: const Color(0xFF10B981),
+        color: colors.recallEasy,
       ),
     ];
 

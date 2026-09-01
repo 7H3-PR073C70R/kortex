@@ -102,7 +102,7 @@ class FlashcardGestureCanvas extends HookWidget {
                     transform: Matrix4.identity()..rotateY(math.pi),
                     child: _CardFace(
                       badgeText: l10n.studySessionBackBadge,
-                      badgeColor: const Color(0xFF10B981),
+                      badgeColor: colors.success,
                       mainText: card.back,
                       latexFormula: card.backLatex,
                       isBackFace: true,
@@ -187,14 +187,14 @@ class _CardFace extends StatelessWidget {
               ),
               border: Border.all(
                 color: isBackFace
-                    ? const Color(0xFF10B981).withAlpha(isDark ? 120 : 80)
+                    ? colors.success.withAlpha(isDark ? 120 : 80)
                     : colors.primary.withAlpha(isDark ? 120 : 70),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isBackFace
-                      ? const Color(0xFF10B981).withAlpha(isDark ? 40 : 15)
+                      ? colors.success.withAlpha(isDark ? 40 : 15)
                       : colors.primary.withAlpha(isDark ? 50 : 20),
                   blurRadius: 20,
                   offset: const Offset(0, 8),

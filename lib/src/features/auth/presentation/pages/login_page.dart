@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -11,7 +12,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_social_button.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 @RoutePage()
 class LoginPage extends HookWidget {
@@ -35,19 +37,14 @@ class LoginPage extends HookWidget {
         } else if (state.needsOnboarding) {
           unawaited(context.router.replace(const OnboardingStepperRoute()));
         } else if (state.status == AuthStatus.magicLinkSent) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.magicLinkSentNotice),
-              backgroundColor: colors.primary,
-            ),
+          context.showSnackBar(
+            message: l10n.magicLinkSentNotice,
           );
         } else if (state.status == AuthStatus.error &&
             state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: colors.error,
-            ),
+          context.showSnackBar(
+            message: state.errorMessage!,
+            type: SnackBarType.error,
           );
         }
       },
@@ -221,49 +218,32 @@ class LoginPage extends HookWidget {
                                 const SizedBox(height: 20),
 
                                 // Email Input
-                                TextField(
+                                AppTextField(
                                   controller: emailController,
                                   keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    hintText: 'student@university.edu',
-                                    labelText: 'Email Address',
-                                    filled: true,
-                                    fillColor: isDark
-                                        ? colors.surfaceTertiary
-                                        : colors.surfaceSecondary.withAlpha(80),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
+                                  hintText: l10n.authEmailHint,
+                                  label: l10n.authEmailLabel,
                                 ),
 
                                 if (isPasswordMode.value) ...[
                                   const SizedBox(height: 12),
-                                  TextField(
+                                  AppTextField(
                                     controller: passwordController,
-                                    obscureText: true,
-                                    decoration: InputDecoration(
-                                      labelText: 'Password',
-                                      filled: true,
-                                      fillColor: isDark
-                                          ? colors.surfaceTertiary
-                                          : colors.surfaceSecondary
-                                              .withAlpha(80),
-                                      border: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(14),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
+                                    isPassword: true,
+                                    label: l10n.authPasswordLabel,
+                                    hintText: l10n.authPasswordHint,
                                   ),
                                 ],
 
                                 const SizedBox(height: 20),
 
                                 // Primary Action (Magic Link or Password)
-                                ShrinkableButton(
-                                  onTap: state.isLoading
+                                AppButton(
+                                  text: isPasswordMode.value
+                                      ? l10n.authSubmitLogin
+                                      : l10n.sendMagicLink,
+                                  isLoading: state.isLoading,
+                                  onPressed: state.isLoading
                                       ? null
                                       : () {
                                           final email =
@@ -286,42 +266,6 @@ class LoginPage extends HookWidget {
                                                 );
                                           }
                                         },
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          colors.primary,
-                                          colors.primary.withAlpha(220),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Center(
-                                      child: state.isLoading
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child:
-                                                  CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Text(
-                                              isPasswordMode.value
-                                                  ? l10n.authSubmitLogin
-                                                  : l10n.sendMagicLink,
-                                              style: typography.body.bold
-                                                  .copyWith(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(height: 14),
 
@@ -334,8 +278,8 @@ class LoginPage extends HookWidget {
                                     },
                                     child: Text(
                                       isPasswordMode.value
-                                          ? 'Use Magic Link instead'
-                                          : 'Use password instead',
+                                          ? l10n.authUseMagicLinkInstead
+                                          : l10n.authUsePasswordInstead,
                                       style:
                                           typography.footnote.bold.copyWith(
                                         color: colors.primary,

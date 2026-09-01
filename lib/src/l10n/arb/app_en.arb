@@ -2640,5 +2640,115 @@
     "quizFailedToLoad": "Failed to load quiz",
     "@quizFailedToLoad": {
         "description": "Error fallback message when quiz fails to load"
+    },
+    "authOrEmail": "or email",
+    "@authOrEmail": {
+        "description": "Divider text separating social sign in from email"
+    },
+    "authUseMagicLinkInstead": "Use Magic Link instead",
+    "@authUseMagicLinkInstead": {
+        "description": "Toggle to switch to magic link auth"
+    },
+    "authUsePasswordInstead": "Use password instead",
+    "@authUsePasswordInstead": {
+        "description": "Toggle to switch to password auth"
+    },
+    "paywallRestore": "Restore",
+    "@paywallRestore": {
+        "description": "Restore purchases button on paywall"
+    },
+    "studyNowAction": "Study Now",
+    "@studyNowAction": {
+        "description": "Action button to study now"
+    },
+    "marketplaceAddReview": "Add Review",
+    "@marketplaceAddReview": {
+        "description": "Button to add a marketplace review"
+    },
+    "marketplaceCloneSuccess": "Deck cloned successfully!",
+    "@marketplaceCloneSuccess": {
+        "description": "Notification when deck clone succeeds"
+    },
+    "marketplaceCloneFailed": "Failed to clone deck",
+    "@marketplaceCloneFailed": {
+        "description": "Notification when deck clone fails"
+    },
+    "marketplaceRatingRequired": "Please select a rating and enter a comment",
+    "@marketplaceRatingRequired": {
+        "description": "Validation message when rating is missing"
+    },
+    "marketplaceReviewSubmitted": "Review submitted successfully!",
+    "@marketplaceReviewSubmitted": {
+        "description": "Success message when review is submitted"
+    },
+    "offlineGenSuccess": "Flashcards generated successfully!",
+    "@offlineGenSuccess": {
+        "description": "Success message for offline flashcard generation"
+    },
+    "offlineGenFailed": "Failed to generate flashcards",
+    "@offlineGenFailed": {
+        "description": "Error message for offline flashcard generation"
+    },
+    "offlineGenPromptHint": "Enter study topic, lecture notes, or syllabus section...",
+    "@offlineGenPromptHint": {
+        "description": "Hint for offline topic input"
+    },
+    "offlineGenDeckTitleHint": "e.g. Calculus II - Integration Techniques",
+    "@offlineGenDeckTitleHint": {
+        "description": "Hint for offline deck title input"
+    },
+    "examModalExamTitle": "Exam Title",
+    "@examModalExamTitle": {
+        "description": "Label for exam title input in modal"
+    },
+    "examModalExamTitleHint": "e.g., WAEC Further Mathematics",
+    "@examModalExamTitleHint": {
+        "description": "Hint for exam title input in modal"
+    },
+    "examModalTargetScore": "Target Score (%)",
+    "@examModalTargetScore": {
+        "description": "Label for target score input in modal"
+    },
+    "examModalTargetScoreHint": "85",
+    "@examModalTargetScoreHint": {
+        "description": "Hint for target score input in modal"
+    },
+    "examModalExamDate": "Exam Date",
+    "@examModalExamDate": {
+        "description": "Label for exam date picker in modal"
+    },
+    "examModalAddButton": "Add Exam Countdown",
+    "@examModalAddButton": {
+        "description": "Button to add exam countdown"
+    },
+    "convertDeckTitleHint": "Deck Title",
+    "@convertDeckTitleHint": {
+        "description": "Hint for convert to deck title field"
+    },
+    "convertDeckDescHint": "Description (optional)",
+    "@convertDeckDescHint": {
+        "description": "Hint for convert to deck description field"
+    },
+    "restoreErrorPrefix": "Restore error: {error}",
+    "@restoreErrorPrefix": {
+        "description": "Error message when restore purchases fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Network timeout"
+            }
+        }
+    },
+    "privacyPolicy": "Privacy Policy",
+    "@privacyPolicy": {
+        "description": "Link text for Privacy Policy"
+    },
+    "termsOfService": "Terms of Service",
+    "@termsOfService": {
+        "description": "Link text for Terms of Service"
+    },
+    "termsOfUseEula": "Terms of Use (EULA)",
+    "@termsOfUseEula": {
+        "description": "Link text for Terms of Use / EULA"
     }
 }

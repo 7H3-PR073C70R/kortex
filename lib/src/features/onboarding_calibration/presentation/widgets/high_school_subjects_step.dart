@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_option_chip.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -297,7 +298,7 @@ class _TrackHeader extends StatelessWidget {
   const _TrackHeader({required this.label, required this.colors});
 
   final String label;
-  final dynamic colors;
+  final AppThemeColorsExtension colors;
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +311,7 @@ class _TrackHeader extends StatelessWidget {
             width: 3,
             height: 14,
             decoration: BoxDecoration(
-              color: const Color(0xFF7C3AED),
+              color: colors.primary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -318,7 +319,7 @@ class _TrackHeader extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: typography.caption.semiBold.copyWith(
-              color: const Color(0xFF7C3AED),
+              color: colors.primary,
               fontSize: 11,
               letterSpacing: 1.1,
             ),

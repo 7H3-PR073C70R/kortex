@@ -17,6 +17,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.
 import 'package:kortex/src/features/ingestion/presentation/widgets/generated_card_preview_tile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -161,52 +162,14 @@ class _GeneratedCardsReviewView extends HookWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.deckNameLabel,
-                          style: typography.caption.medium.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TextField(
+                        AppTextField(
                           controller: titleController,
-                          style: typography.body.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            filled: true,
-                            fillColor: isDark
-                                ? colors.backgroundSecondary
-                                : colors.backgroundPrimary,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
+                          label: l10n.deckNameLabel,
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Subject / Course',
-                          style: typography.caption.medium.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TextField(
+                        AppTextField(
                           controller: subjectController,
-                          style: typography.body.medium.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            filled: true,
-                            fillColor: isDark
-                                ? colors.backgroundSecondary
-                                : colors.backgroundPrimary,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
+                          label: 'Subject / Course',
                         ),
                       ],
                     ),

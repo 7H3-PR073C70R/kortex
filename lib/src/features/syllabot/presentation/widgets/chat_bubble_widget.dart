@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -154,13 +155,8 @@ class ChatBubbleWidget extends StatelessWidget {
                                     ClipboardData(text: message.text),
                                   ),
                                 );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      context.l10n.copiedToClipboard,
-                                    ),
-                                    duration: const Duration(seconds: 1),
-                                  ),
+                                context.showSnackBar(
+                                  message: context.l10n.copiedToClipboard,
                                 );
                               },
                             ),

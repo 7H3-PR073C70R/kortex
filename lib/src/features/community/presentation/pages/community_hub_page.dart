@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -136,22 +137,8 @@ class _CommunityHubView extends HookWidget {
       body: BlocConsumer<CommunityHubBloc, CommunityState>(
         listener: (context, state) {
           if (state.lastClonedDeckId != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.deckClonedSuccessNotice),
-                backgroundColor: colors.primary,
-                action: SnackBarAction(
-                  label: 'Study Now',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    unawaited(
-                      context.router.push(
-                        StudySessionRoute(deckId: state.lastClonedDeckId!),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            context.showSnackBar(
+              message: l10n.deckClonedSuccessNotice,
             );
           }
         },

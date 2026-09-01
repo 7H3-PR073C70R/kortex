@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
 
 @RoutePage()
 class SessionSummaryPage extends StatelessWidget {
@@ -38,7 +37,7 @@ class SessionSummaryPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor:
-          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -55,13 +54,13 @@ class SessionSummaryPage extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF10B981),
+                      colors.success,
                       colors.syllabotAccent,
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withAlpha(100),
+                      color: colors.success.withAlpha(100),
                       blurRadius: 28,
                       offset: const Offset(0, 8),
                     ),
@@ -103,27 +102,25 @@ class SessionSummaryPage extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF97316).withAlpha(isDark ? 45 : 20),
+                  color: colors.warning.withAlpha(isDark ? 45 : 20),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: const Color(0xFFF97316).withAlpha(120),
+                    color: colors.warning.withAlpha(120),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.local_fire_department_rounded,
-                      color: Color(0xFFF97316),
+                      color: colors.warning,
                       size: 18,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       l10n.sessionSummaryStreakBonus(50),
                       style: typography.caption.bold.copyWith(
-                        color: isDark
-                            ? const Color(0xFFFDBA74)
-                            : const Color(0xFFC2410C),
+                        color: colors.warning,
                         fontSize: 12.5,
                       ),
                     ),
@@ -167,7 +164,7 @@ class SessionSummaryPage extends StatelessWidget {
                         _StatItem(
                           label: l10n.sessionSummaryRetentionRate,
                           value: '$scorePercent%',
-                          color: const Color(0xFF10B981),
+                          color: colors.success,
                           colors: colors,
                         ),
                         Container(
@@ -178,7 +175,7 @@ class SessionSummaryPage extends StatelessWidget {
                         _StatItem(
                           label: l10n.sessionSummaryTimeSpent,
                           value: durationFormatted,
-                          color: const Color(0xFF8B5CF6),
+                          color: colors.syllabotAccent,
                           colors: colors,
                         ),
                       ],
@@ -190,64 +187,21 @@ class SessionSummaryPage extends StatelessWidget {
               const Spacer(),
 
               // Return to Dashboard Action
-              ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
+              AppButton(
+                text: l10n.sessionSummaryReturnDashboard,
+                onPressed: () {
                   unawaited(context.router.replace(const MainRoute()));
                 },
-                child: Container(
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(90),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    l10n.sessionSummaryReturnDashboard,
-                    style: typography.callout.bold.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
 
               // Review More Decks Action
-              ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
+              AppButton(
+                text: l10n.sessionSummaryReviewAgain,
+                variant: AppButtonVariant.outline,
+                onPressed: () {
                   unawaited(context.router.maybePop());
                 },
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(140)
-                        : colors.surfacePrimary.withAlpha(200),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark
-                          ? colors.surfaceBorderHighlight.withAlpha(70)
-                          : colors.surfaceBorder.withAlpha(120),
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    l10n.sessionSummaryReviewAgain,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
               ),
               const SizedBox(height: 16),
             ],

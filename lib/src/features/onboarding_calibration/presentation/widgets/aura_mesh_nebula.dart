@@ -53,9 +53,7 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
         // 1. Solid surface background or Campus Background Atmosphere
         if (widget.showBackgroundImage)
           const Positioned.fill(
-            child: BreathingCampusBackground(
-              baseOpacity: 0.45,
-            ),
+            child: BreathingCampusBackground(),
           )
         else
           Positioned.fill(

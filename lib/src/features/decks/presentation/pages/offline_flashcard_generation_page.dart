@@ -3,10 +3,15 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:kortex/src/core/themes/color/app_material_colors.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 @RoutePage()
 class OfflineFlashcardGenerationPage extends StatefulWidget {
@@ -110,14 +115,10 @@ class _OfflineFlashcardGenerationPageState
       if (!mounted) return;
 
       if (result.isOfflineModelMissing) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.userMessage ??
-                  StudyEngineRouter.offlineModelMissingPrompt,
-            ),
-            backgroundColor: Colors.orangeAccent,
-          ),
+        context.showSnackBar(
+          message: result.userMessage ??
+              StudyEngineRouter.offlineModelMissingPrompt,
+          type: SnackBarType.info,
         );
       } else {
         setState(() {
@@ -126,11 +127,9 @@ class _OfflineFlashcardGenerationPageState
       }
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.offlineGenNote('$e')),
-            backgroundColor: Colors.redAccent,
-          ),
+        context.showSnackBar(
+          message: context.l10n.offlineGenNote('$e'),
+          type: SnackBarType.error,
         );
       }
     } finally {
@@ -151,21 +150,25 @@ class _OfflineFlashcardGenerationPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor:
+          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
           'Offline AI Study Cards',
-          style: TextStyle(
-            color: Colors.white,
+          style: typography.headline.bold.copyWith(
+            color: colors.textPrimary,
             fontSize: 18.sp,
-            fontWeight: FontWeight.w700,
           ),
         ),
         actions: [
-          _buildModeBadge(),
+          _buildModeBadge(colors, typography),
           SizedBox(width: 16.w),
         ],
       ),
@@ -175,18 +178,18 @@ class _OfflineFlashcardGenerationPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildModelStatusCard(),
+              _buildModelStatusCard(colors, typography, isDark),
               SizedBox(height: 20.h),
-              _buildTopicInputCard(),
+              _buildTopicInputCard(colors, typography, isDark),
               SizedBox(height: 24.h),
-              if (_isGenerating) _buildGeneratingIndicator(),
+              if (_isGenerating)
+                _buildGeneratingIndicator(colors, typography, isDark),
               if (_cards.isNotEmpty) ...[
                 Text(
                   'Generated Cards (${_cards.length})',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: typography.headline.semiBold.copyWith(
+                    color: colors.textPrimary,
                     fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 SizedBox(height: 12.h),
@@ -195,8 +198,12 @@ class _OfflineFlashcardGenerationPageState
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _cards.length,
                   separatorBuilder: (_, index) => SizedBox(height: 12.h),
-                  itemBuilder: (context, index) =>
-                      _buildFlashcardItem(_cards[index]),
+                  itemBuilder: (context, index) => _buildFlashcardItem(
+                    _cards[index],
+                    colors,
+                    typography,
+                    isDark,
+                  ),
                 ),
               ],
             ],
@@ -206,18 +213,20 @@ class _OfflineFlashcardGenerationPageState
     );
   }
 
-  Widget _buildModeBadge() {
+  Widget _buildModeBadge(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) {
     final isOffline =
         _currentMode == StudyEngineExecutionMode.offlineOnDevice;
+    final badgeColor = isOffline ? colors.syllabotAccent : colors.success;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: isOffline
-            ? Colors.purpleAccent.withAlpha(51)
-            : Colors.greenAccent.withAlpha(51),
+        color: badgeColor.withAlpha(40),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: isOffline ? Colors.purpleAccent : Colors.greenAccent,
+          color: badgeColor,
           width: 1.2,
         ),
       ),
@@ -227,15 +236,14 @@ class _OfflineFlashcardGenerationPageState
           Icon(
             isOffline ? Icons.offline_bolt : Icons.cloud_done,
             size: 14.sp,
-            color: isOffline ? Colors.purpleAccent : Colors.greenAccent,
+            color: badgeColor,
           ),
           SizedBox(width: 4.w),
           Text(
             isOffline ? 'Local Fllama' : 'Cloud Online',
-            style: TextStyle(
-              color: isOffline ? Colors.purpleAccent : Colors.greenAccent,
+            style: typography.caption.bold.copyWith(
+              color: badgeColor,
               fontSize: 12.sp,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -243,16 +251,22 @@ class _OfflineFlashcardGenerationPageState
     );
   }
 
-  Widget _buildModelStatusCard() {
+  Widget _buildModelStatusCard(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: _isModelReady
-              ? Colors.tealAccent.withAlpha(77)
-              : Colors.white12,
+              ? colors.success.withAlpha(90)
+              : colors.surfaceBorder,
         ),
       ),
       child: Column(
@@ -264,7 +278,7 @@ class _OfflineFlashcardGenerationPageState
                 _isModelReady
                     ? Icons.check_circle_outline
                     : Icons.download_for_offline_outlined,
-                color: _isModelReady ? Colors.tealAccent : Colors.orangeAccent,
+                color: _isModelReady ? colors.success : colors.warning,
                 size: 22.sp,
               ),
               SizedBox(width: 8.w),
@@ -273,10 +287,9 @@ class _OfflineFlashcardGenerationPageState
                   _isModelReady
                       ? 'Local GGUF Model Ready'
                       : 'Offline Model (Qwen-2.5 1.5B)',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: typography.body.bold.copyWith(
+                    color: colors.textPrimary,
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -284,13 +297,16 @@ class _OfflineFlashcardGenerationPageState
                 ElevatedButton(
                   onPressed: _startDownload,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppMaterialColors.primary,
+                    backgroundColor: colors.primary,
                     padding:
                         EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   ),
                   child: Text(
                     'Download',
-                    style: TextStyle(fontSize: 12.sp, color: Colors.white),
+                    style: typography.caption.bold.copyWith(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
             ],
@@ -299,118 +315,118 @@ class _OfflineFlashcardGenerationPageState
             SizedBox(height: 12.h),
             LinearProgressIndicator(
               value: _downloadProgress > 0 ? _downloadProgress : null,
-              backgroundColor: Colors.white10,
-              color: Colors.purpleAccent,
+              backgroundColor: colors.surfaceBorder,
+              color: colors.primary,
             ),
             SizedBox(height: 6.h),
             Text(
               'Downloading weights... '
               '${(_downloadProgress * 100).toStringAsFixed(1)}%',
-              style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+              style: typography.caption.regular.copyWith(
+                color: colors.textSecondary,
+                fontSize: 12.sp,
+              ),
             ),
           ],
           if (_downloadError != null) ...[
             SizedBox(height: 8.h),
             Text(
               _downloadError!,
-              style: TextStyle(color: Colors.redAccent, fontSize: 12.sp),
+              style: typography.caption.medium.copyWith(
+                color: colors.error,
+                fontSize: 12.sp,
+              ),
             ),
           ],
           SizedBox(height: 6.h),
           Text(
             'Requirements: 4.0 GB free storage. Wi-Fi required. '
             'Metal / Vulkan accelerated.',
-            style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+            style: typography.caption.regular.copyWith(
+              color: colors.textMuted,
+              fontSize: 11.sp,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTopicInputCard() {
+  Widget _buildTopicInputCard(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: colors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Study Subject / Concept',
-            style: TextStyle(
-              color: Colors.white70,
+            style: typography.subhead.medium.copyWith(
+              color: colors.textSecondary,
               fontSize: 13.sp,
-              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: 8.h),
-          TextField(
+          AppTextField(
             controller: _topicController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'e.g. Navier-Stokes Equations',
-              hintStyle: const TextStyle(color: Colors.white24),
-              filled: true,
-              fillColor: const Color(0xFF0F172A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-            ),
+            hintText: 'e.g. Navier-Stokes Equations',
           ),
           SizedBox(height: 16.h),
-          ElevatedButton(
+          AppButton(
+            text: _isGenerating
+                ? 'Synthesizing On-Device...'
+                : 'Generate Flashcards',
+            isLoading: _isGenerating,
             onPressed: _isGenerating ? null : _generateCards,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              padding: EdgeInsets.symmetric(vertical: 14.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            child: Text(
-              _isGenerating
-                  ? 'Synthesizing On-Device...'
-                  : 'Generate Flashcards',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGeneratingIndicator() {
+  Widget _buildGeneratingIndicator(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: colors.surfaceBorder),
       ),
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: Colors.purpleAccent,
+              color: colors.primary,
             ),
           ),
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
               'Running local GGUF Metal/Vulkan neural inference...',
-              style: TextStyle(color: Colors.white70, fontSize: 13.sp),
+              style: typography.body.regular.copyWith(
+                color: colors.textSecondary,
+                fontSize: 13.sp,
+              ),
             ),
           ),
         ],
@@ -418,16 +434,23 @@ class _OfflineFlashcardGenerationPageState
     );
   }
 
-  Widget _buildFlashcardItem(GeneratedFlashcard card) {
+  Widget _buildFlashcardItem(
+    GeneratedFlashcard card,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
           color: card.isLocalInference
-              ? Colors.purpleAccent.withAlpha(77)
-              : Colors.blueAccent.withAlpha(77),
+              ? colors.primary.withAlpha(80)
+              : colors.syllabotAccent.withAlpha(80),
         ),
       ),
       child: Column(
@@ -438,10 +461,9 @@ class _OfflineFlashcardGenerationPageState
             children: [
               Text(
                 'QUESTION',
-                style: TextStyle(
-                  color: Colors.white38,
+                style: typography.caption.bold.copyWith(
+                  color: colors.textMuted,
                   fontSize: 11.sp,
-                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -450,13 +472,13 @@ class _OfflineFlashcardGenerationPageState
                   padding:
                       EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withAlpha(77),
+                    color: colors.primary.withAlpha(50),
                     borderRadius: BorderRadius.circular(6.r),
                   ),
                   child: Text(
                     'Local Engine',
-                    style: TextStyle(
-                      color: Colors.purpleAccent,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
                       fontSize: 10.sp,
                     ),
                   ),
@@ -466,30 +488,28 @@ class _OfflineFlashcardGenerationPageState
           SizedBox(height: 6.h),
           Text(
             card.front,
-            style: TextStyle(
-              color: Colors.white,
+            style: typography.body.bold.copyWith(
+              color: colors.textPrimary,
               fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
             ),
           ),
-          Divider(color: Colors.white10, height: 20.h),
+          Divider(color: colors.surfaceBorder, height: 20.h),
           Text(
             'ANSWER & DERIVATION',
-            style: TextStyle(
-              color: Colors.white38,
+            style: typography.caption.bold.copyWith(
+              color: colors.textMuted,
               fontSize: 11.sp,
-              fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
             ),
           ),
           SizedBox(height: 6.h),
-          _renderLatexOrText(card.back),
+          _renderLatexOrText(card.back, colors, typography),
           if (card.explanation.isNotEmpty) ...[
             SizedBox(height: 8.h),
             Text(
               card.explanation,
-              style: TextStyle(
-                color: Colors.white60,
+              style: typography.footnote.regular.copyWith(
+                color: colors.textSecondary,
                 fontSize: 12.sp,
                 fontStyle: FontStyle.italic,
               ),
@@ -500,7 +520,11 @@ class _OfflineFlashcardGenerationPageState
     );
   }
 
-  Widget _renderLatexOrText(String text) {
+  Widget _renderLatexOrText(
+    String text,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) {
     if (text.contains(r'$$')) {
       final parts = text.split(r'$$');
       return Column(
@@ -510,19 +534,28 @@ class _OfflineFlashcardGenerationPageState
           if (part.contains(r'\')) {
             return Math.tex(
               part.trim(),
-              textStyle: TextStyle(fontSize: 14.sp, color: Colors.tealAccent),
+              textStyle: typography.body.regular.copyWith(
+                fontSize: 14.sp,
+                color: colors.latexHighlight,
+              ),
             );
           }
           return Text(
             part.trim(),
-            style: TextStyle(fontSize: 13.sp, color: Colors.white70),
+            style: typography.body.regular.copyWith(
+              fontSize: 13.sp,
+              color: colors.textSecondary,
+            ),
           );
         }).toList(),
       );
     }
     return Text(
       text,
-      style: TextStyle(fontSize: 13.sp, color: Colors.white70),
+      style: typography.body.regular.copyWith(
+        fontSize: 13.sp,
+        color: colors.textSecondary,
+      ),
     );
   }
 }

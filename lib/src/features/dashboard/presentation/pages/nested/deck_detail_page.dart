@@ -96,69 +96,51 @@ class DeckDetailPage extends HookWidget {
                       l10n.deckDetailSm2QueueBadge,
                       style: typography.caption.bold.copyWith(
                         color: colors.primary,
-                        fontSize: 10.5,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: (currentCardIndex.value + 1) / mockCards.length,
-                  backgroundColor: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(50)
-                      : colors.surfaceBorder.withAlpha(100),
-                  valueColor: AlwaysStoppedAnimation(colors.primary),
-                  minHeight: 6,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Interactive Flashcard Flip
+              // Flashcard Surface
               Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    isFlipped.value = !isFlipped.value;
-                  },
-                  child: Semantics(
-                    button: true,
-                    label: isFlipped.value
-                        ? 'Flashcard back: '
-                            '${mockCards[currentCardIndex.value].back}. '
-                            'Tap to flip.'
-                        : 'Flashcard front: '
-                            '${mockCards[currentCardIndex.value].front}. '
-                            'Tap to reveal answer.',
+                child: Semantics(
+                  button: true,
+                  label: isFlipped.value
+                      ? mockCards[currentCardIndex.value].back
+                      : mockCards[currentCardIndex.value].front,
+                  child: InkWell(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      isFlipped.value = !isFlipped.value;
+                    },
+                    borderRadius: BorderRadius.circular(24),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.all(24),
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
                             color: isDark
                                 ? colors.surfaceSecondary.withAlpha(200)
-                                : colors.surfacePrimary.withAlpha(240),
+                                : colors.surfacePrimary.withAlpha(220),
+                            borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: isFlipped.value
-                                  ? colors.syllabotAccent.withAlpha(140)
-                                  : (isDark
-                                      ? colors.surfaceBorderHighlight
-                                          .withAlpha(80)
-                                      : colors.surfaceBorder.withAlpha(140)),
+                                  ? colors.success.withAlpha(isDark ? 90 : 50)
+                                  : colors.primary.withAlpha(isDark ? 80 : 40),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withAlpha(isDark ? 60 : 15),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                                color: isFlipped.value
+                                    ? colors.success.withAlpha(25)
+                                    : colors.primary.withAlpha(25),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
@@ -172,7 +154,7 @@ class DeckDetailPage extends HookWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isFlipped.value
-                                      ? const Color(0xFF10B981)
+                                      ? colors.success
                                           .withAlpha(isDark ? 50 : 25)
                                       : colors.primary
                                           .withAlpha(isDark ? 50 : 25),
@@ -184,7 +166,7 @@ class DeckDetailPage extends HookWidget {
                                       : l10n.deckDetailQuestion,
                                   style: typography.caption.bold.copyWith(
                                     color: isFlipped.value
-                                        ? const Color(0xFF10B981)
+                                        ? colors.success
                                         : colors.primary,
                                     fontSize: 11,
                                     letterSpacing: 0.8,
@@ -229,7 +211,7 @@ class DeckDetailPage extends HookWidget {
                       child: _Sm2RatingButton(
                         label: l10n.deckDetailHard,
                         interval: '1d',
-                        color: const Color(0xFFEF4444),
+                        color: colors.error,
                         onTap: () {
                           if (currentCardIndex.value < mockCards.length - 1) {
                             currentCardIndex.value++;
@@ -261,7 +243,7 @@ class DeckDetailPage extends HookWidget {
                       child: _Sm2RatingButton(
                         label: l10n.deckDetailEasy,
                         interval: '7d',
-                        color: const Color(0xFF10B981),
+                        color: colors.success,
                         onTap: () {
                           if (currentCardIndex.value < mockCards.length - 1) {
                             currentCardIndex.value++;

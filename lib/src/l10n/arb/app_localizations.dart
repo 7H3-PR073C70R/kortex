@@ -3307,6 +3307,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load quiz'**
   String get quizFailedToLoad;
+
+  /// Divider text separating social sign in from email
+  ///
+  /// In en, this message translates to:
+  /// **'or email'**
+  String get authOrEmail;
+
+  /// Toggle to switch to magic link auth
+  ///
+  /// In en, this message translates to:
+  /// **'Use Magic Link instead'**
+  String get authUseMagicLinkInstead;
+
+  /// Toggle to switch to password auth
+  ///
+  /// In en, this message translates to:
+  /// **'Use password instead'**
+  String get authUsePasswordInstead;
+
+  /// Restore purchases button on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get paywallRestore;
+
+  /// Action button to study now
+  ///
+  /// In en, this message translates to:
+  /// **'Study Now'**
+  String get studyNowAction;
+
+  /// Button to add a marketplace review
+  ///
+  /// In en, this message translates to:
+  /// **'Add Review'**
+  String get marketplaceAddReview;
+
+  /// Notification when deck clone succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Deck cloned successfully!'**
+  String get marketplaceCloneSuccess;
+
+  /// Notification when deck clone fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to clone deck'**
+  String get marketplaceCloneFailed;
+
+  /// Validation message when rating is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a rating and enter a comment'**
+  String get marketplaceRatingRequired;
+
+  /// Success message when review is submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Review submitted successfully!'**
+  String get marketplaceReviewSubmitted;
+
+  /// Success message for offline flashcard generation
+  ///
+  /// In en, this message translates to:
+  /// **'Flashcards generated successfully!'**
+  String get offlineGenSuccess;
+
+  /// Error message for offline flashcard generation
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate flashcards'**
+  String get offlineGenFailed;
+
+  /// Hint for offline topic input
+  ///
+  /// In en, this message translates to:
+  /// **'Enter study topic, lecture notes, or syllabus section...'**
+  String get offlineGenPromptHint;
+
+  /// Hint for offline deck title input
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Calculus II - Integration Techniques'**
+  String get offlineGenDeckTitleHint;
+
+  /// Label for exam title input in modal
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Title'**
+  String get examModalExamTitle;
+
+  /// Hint for exam title input in modal
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., WAEC Further Mathematics'**
+  String get examModalExamTitleHint;
+
+  /// Label for target score input in modal
+  ///
+  /// In en, this message translates to:
+  /// **'Target Score (%)'**
+  String get examModalTargetScore;
+
+  /// Hint for target score input in modal
+  ///
+  /// In en, this message translates to:
+  /// **'85'**
+  String get examModalTargetScoreHint;
+
+  /// Label for exam date picker in modal
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Date'**
+  String get examModalExamDate;
+
+  /// Button to add exam countdown
+  ///
+  /// In en, this message translates to:
+  /// **'Add Exam Countdown'**
+  String get examModalAddButton;
+
+  /// Hint for convert to deck title field
+  ///
+  /// In en, this message translates to:
+  /// **'Deck Title'**
+  String get convertDeckTitleHint;
+
+  /// Hint for convert to deck description field
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get convertDeckDescHint;
+
+  /// Error message when restore purchases fails
+  ///
+  /// In en, this message translates to:
+  /// **'Restore error: {error}'**
+  String restoreErrorPrefix(String error);
+
+  /// Link text for Privacy Policy
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// Link text for Terms of Service
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// Link text for Terms of Use / EULA
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use (EULA)'**
+  String get termsOfUseEula;
 }
 
 class _AppLocalizationsDelegate

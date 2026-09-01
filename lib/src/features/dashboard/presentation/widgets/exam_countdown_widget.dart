@@ -102,30 +102,28 @@ class ExamCountdownWidget extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF97316).withAlpha(
+                        color: colors.warning.withAlpha(
                           isDark ? 50 : 25,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFFF97316).withAlpha(120),
+                          color: colors.warning.withAlpha(120),
                           width: 1.2,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.hourglass_top_rounded,
                             size: 14,
-                            color: Color(0xFFF97316),
+                            color: colors.warning,
                           ),
                           const SizedBox(width: 5),
                           Text(
                             l10n.dashboardDaysLeft(countdown.daysRemaining),
                             style: typography.caption.bold.copyWith(
-                              color: isDark
-                                  ? const Color(0xFFFDBA74)
-                                  : const Color(0xFFC2410C),
+                              color: colors.warning,
                               fontSize: 11.5,
                               letterSpacing: 0.6,
                             ),

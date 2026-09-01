@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 class ConvertToDeckActionSheet extends HookWidget {
   const ConvertToDeckActionSheet({
@@ -118,64 +119,30 @@ class ConvertToDeckActionSheet extends HookWidget {
                 const SizedBox(height: 20),
 
                 // Deck Title input
-                Text(
-                  l10n.deckNameLabel,
-                  style: typography.footnote.medium.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
+                AppTextField(
                   controller: titleController,
-                  style: typography.body.medium.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: colors.primary.withAlpha(isDark ? 60 : 30),
-                      ),
-                    ),
-                  ),
+                  label: l10n.deckNameLabel,
+                  hintText: l10n.convertDeckTitleHint,
                 ),
                 const SizedBox(height: 14),
 
                 // Course Code input
-                Text(
-                  'Course Code / Tag',
-                  style: typography.footnote.medium.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
+                AppTextField(
                   controller: courseController,
-                  style: typography.body.medium.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: colors.primary.withAlpha(isDark ? 60 : 30),
-                      ),
-                    ),
-                  ),
+                  label: 'Course Code / Tag',
+                  hintText: 'e.g. PHYS 301',
                 ),
                 const SizedBox(height: 24),
 
                 // Action Button
-                ShrinkableButton(
-                  onTap: () {
+                AppButton(
+                  text: l10n.createDeckAction,
+                  prefixIcon: const Icon(
+                    Icons.auto_awesome,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  onPressed: () {
                     unawaited(HapticFeedback.heavyImpact());
                     Navigator.of(context).pop();
                     onGenerateDeck(
@@ -183,45 +150,6 @@ class ConvertToDeckActionSheet extends HookWidget {
                       courseController.text.trim(),
                     );
                   },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colors.primary,
-                          colors.primary.withAlpha(220),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? 90 : 50),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.auto_awesome,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.createDeckAction,
-                            style: typography.body.bold.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),

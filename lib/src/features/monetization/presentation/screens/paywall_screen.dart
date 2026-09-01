@@ -2,14 +2,18 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Unified Adaptive Paywall Screen for Kortex.
-/// Renders a responsive UI: sleek mobile sheet on iOS/Android,
-/// and centered multi-column pricing layout on Web/Desktop.
+/// Full-Screen RevenueCat In-App Purchase & Web Paywall Modal.
+/// Provides frictionless subscription selection, native StoreKit/PlayBilling
+/// purchase flow, and web Stripe routing.
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({
     super.key,
@@ -18,39 +22,34 @@ class PaywallScreen extends StatefulWidget {
 
   final VoidCallback? onPurchaseSuccess;
 
-  static const String privacyPolicyUrl = 'https://kortexify.app/privacy';
-  static const String termsOfServiceUrl = 'https://kortexify.app/terms';
+  static const String privacyPolicyUrl = 'https://kortexify.com/privacy';
+  static const String termsOfServiceUrl = 'https://kortexify.com/terms';
 
   @override
   State<PaywallScreen> createState() => _PaywallScreenState();
 }
 
 class _PaywallScreenState extends State<PaywallScreen> {
-  bool _isLoading = true;
-  bool _isProcessing = false;
   Offerings? _offerings;
   Package? _selectedPackage;
+  bool _isLoading = true;
+  bool _isProcessing = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_loadOfferings());
+    unawaited(_fetchOfferings());
   }
 
-  Future<void> _loadOfferings() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+  Future<void> _fetchOfferings() async {
+    setState(() => _isLoading = true);
     try {
       final offerings = await RevenueCatService.instance.fetchOfferings();
       if (mounted) {
         setState(() {
           _offerings = offerings;
           _selectedPackage = offerings?.current?.annual ??
-              offerings?.current?.monthly ??
               offerings?.current?.availablePackages.firstOrNull;
           _isLoading = false;
         });
@@ -58,34 +57,35 @@ class _PaywallScreenState extends State<PaywallScreen> {
     } on Object catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load subscription plans: $e';
           _isLoading = false;
+          _errorMessage = e.toString();
         });
       }
     }
   }
 
   Future<void> _handlePurchase() async {
-    final package = _selectedPackage;
-    if (package == null) return;
+    if (_selectedPackage == null) return;
 
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
 
     try {
-      final success = await RevenueCatService.instance.purchasePackage(package);
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        if (success) {
-          widget.onPurchaseSuccess?.call();
-          await Navigator.of(context).maybePop(true);
-        }
+      final success = await RevenueCatService.instance
+          .purchasePackage(_selectedPackage!);
+      if (success && mounted) {
+        widget.onPurchaseSuccess?.call();
+        await Navigator.of(context).maybePop(true);
       }
     } on Object catch (e) {
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _errorMessage = 'Purchase error: $e';
-        });
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
       }
     }
   }
@@ -98,21 +98,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (mounted) {
         setState(() => _isProcessing = false);
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.l10n.paywallRestoreSuccess,
-              ),
-              backgroundColor: const Color(0xFF10B981),
-            ),
+          context.showSnackBar(
+            message: context.l10n.paywallRestoreSuccess,
           );
           widget.onPurchaseSuccess?.call();
           await Navigator.of(context).maybePop(true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.paywallRestoreNoSub),
-            ),
+          context.showSnackBar(
+            message: context.l10n.paywallRestoreNoSub,
+            type: SnackBarType.info,
           );
         }
       }
@@ -120,7 +114,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _errorMessage = 'Restore error: $e';
+          _errorMessage = context.l10n.restoreErrorPrefix('$e');
         });
       }
     }
@@ -135,26 +129,30 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
     final isDesktopOrWeb = MediaQuery.of(context).size.width >= 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor:
+          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white70),
+          icon: Icon(Icons.close, color: colors.textSecondary),
           onPressed: () => Navigator.of(context).maybePop(false),
         ),
         actions: [
           if (!kIsWeb)
             TextButton(
               onPressed: _isProcessing ? null : _handleRestore,
-              child: const Text(
-                'Restore',
-                style: TextStyle(
-                  color: Color(0xFF818CF8),
-                  fontWeight: FontWeight.w600,
+              child: Text(
+                l10n.paywallRestore,
+                style: typography.callout.semiBold.copyWith(
+                  color: colors.primary,
                 ),
               ),
             ),
@@ -162,37 +160,47 @@ class _PaywallScreenState extends State<PaywallScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+            ? Center(
+                child: CircularProgressIndicator(color: colors.primary),
               )
             : isDesktopOrWeb
-                ? _buildWebDesktopLayout()
-                : _buildMobileLayout(),
+                ? _buildWebDesktopLayout(colors, typography, l10n, isDark)
+                : _buildMobileLayout(colors, typography, l10n, isDark),
       ),
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
+          _buildHeader(colors, typography, isDark),
           SizedBox(height: 24.h),
-          _buildFeatureList(),
+          _buildFeatureList(colors, typography, isDark),
           SizedBox(height: 28.h),
-          _buildPackageSelector(),
+          _buildPackageSelector(colors, typography, isDark),
           SizedBox(height: 24.h),
-          _buildCtaButton(),
+          _buildCtaButton(colors, typography),
           SizedBox(height: 20.h),
-          _buildComplianceFooter(),
+          _buildComplianceFooter(colors, typography, l10n),
         ],
       ),
     );
   }
 
-  Widget _buildWebDesktopLayout() {
+  Widget _buildWebDesktopLayout(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 860),
@@ -200,28 +208,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _buildHeader(),
+              _buildHeader(colors, typography, isDark),
               const SizedBox(height: 32),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 5, child: _buildFeatureList()),
+                  Expanded(
+                    flex: 5,
+                    child: _buildFeatureList(colors, typography, isDark),
+                  ),
                   const SizedBox(width: 40),
                   Expanded(
                     flex: 6,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildPackageSelector(),
+                        _buildPackageSelector(colors, typography, isDark),
                         const SizedBox(height: 24),
-                        _buildCtaButton(),
+                        _buildCtaButton(colors, typography),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 32),
-              _buildComplianceFooter(),
+              _buildComplianceFooter(colors, typography, l10n),
             ],
           ),
         ),
@@ -229,29 +240,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     return Column(
       children: [
         Container(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+            color: colors.primary.withAlpha(35),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+              color: colors.primary.withAlpha(90),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.bolt, color: Color(0xFF818CF8), size: 16),
+              Icon(Icons.bolt, color: colors.primary, size: 16),
               SizedBox(width: 6.w),
-              const Text(
+              Text(
                 'KORTEXIFY PRO UNLIMITED',
-                style: TextStyle(
-                  color: Color(0xFF818CF8),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                style: typography.caption.bold.copyWith(
+                  color: colors.primary,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -262,10 +275,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
         Text(
           'Master Any Subject in Minutes',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
+          style: typography.headline.bold.copyWith(
+            color: colors.textPrimary,
             fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
           ),
         ),
         SizedBox(height: 6.h),
@@ -273,8 +285,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           'Instant OCR extraction, unlimited DeepSeek AI streaming, '
           'and automated FSRS scheduling.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white70,
+          style: typography.body.regular.copyWith(
+            color: colors.textSecondary,
             fontSize: 13.sp,
             height: 1.4,
           ),
@@ -283,7 +295,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildFeatureList() {
+  Widget _buildFeatureList(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     final features = [
       'Unlimited Document Ingestion (PDF, Scans, Notes)',
       'High-Speed DeepSeek V4 Pro Reasoning Engine',
@@ -295,9 +311,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.7),
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: colors.surfaceBorder),
       ),
       child: Column(
         children: features
@@ -306,19 +324,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 padding: EdgeInsets.symmetric(vertical: 6.h),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle,
-                      color: Color(0xFF10B981),
+                      color: colors.success,
                       size: 18,
                     ),
                     SizedBox(width: 10.w),
                     Expanded(
                       child: Text(
                         f,
-                        style: TextStyle(
-                          color: Colors.white,
+                        style: typography.subhead.medium.copyWith(
+                          color: colors.textPrimary,
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -331,7 +348,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildPackageSelector() {
+  Widget _buildPackageSelector(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
     final packages = _offerings?.current?.availablePackages ?? [];
 
     if (packages.isEmpty) {
@@ -339,26 +360,26 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: isDark
+              ? colors.surfaceSecondary
+              : colors.surfaceSecondary.withAlpha(120),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF6366F1)),
+          border: Border.all(color: colors.primary),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Pro Annual Access',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              style: typography.body.bold.copyWith(
+                color: colors.textPrimary,
                 fontSize: 15,
               ),
             ),
             Text(
               r'$4.99 / mo',
-              style: TextStyle(
-                color: Color(0xFF818CF8),
-                fontWeight: FontWeight.bold,
+              style: typography.body.bold.copyWith(
+                color: colors.primary,
                 fontSize: 16,
               ),
             ),
@@ -379,13 +400,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF6366F1).withValues(alpha: 0.15)
-                  : const Color(0xFF1E293B).withValues(alpha: 0.5),
+                  ? colors.primary.withAlpha(35)
+                  : (isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfaceSecondary.withAlpha(90)),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF6366F1)
-                    : const Color(0xFF334155),
+                color: isSelected ? colors.primary : colors.surfaceBorder,
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -395,9 +416,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   isSelected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
-                  color: isSelected
-                      ? const Color(0xFF818CF8)
-                      : Colors.white38,
+                  color: isSelected ? colors.primary : colors.textMuted,
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
@@ -410,9 +429,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             pkg.storeProduct.title.isNotEmpty
                                 ? pkg.storeProduct.title
                                 : (isAnnual ? 'Annual Pass' : 'Monthly Pass'),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                            style: typography.body.bold.copyWith(
+                              color: colors.textPrimary,
                               fontSize: 14.sp,
                             ),
                           ),
@@ -424,15 +442,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 vertical: 2.h,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981),
+                                color: colors.success,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'SAVE 45%',
-                                style: TextStyle(
+                                style: typography.caption.bold.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -446,8 +463,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             : (isAnnual
                                 ? 'Billed annually, cancel anytime'
                                 : 'Billed monthly, cancel anytime'),
-                        style: TextStyle(
-                          color: Colors.white60,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
                           fontSize: 11.sp,
                         ),
                       ),
@@ -456,9 +473,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
                 Text(
                   pkg.storeProduct.priceString,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
                     fontSize: 15.sp,
                   ),
                 ),
@@ -470,7 +486,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildCtaButton() {
+  Widget _buildCtaButton(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -478,8 +497,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           Text(
             _errorMessage!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFFEF4444),
+            style: typography.caption.medium.copyWith(
+              color: colors.error,
               fontSize: 12,
             ),
           ),
@@ -488,13 +507,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ElevatedButton(
           onPressed: _isProcessing ? null : _handlePurchase,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: colors.primary,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 16.h),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            elevation: 4,
+            elevation: 2,
           ),
           child: _isProcessing
               ? const SizedBox(
@@ -506,12 +525,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   ),
                 )
               : Text(
-                  kIsWeb
-                      ? 'Continue to Checkout'
-                      : 'Unlock Kortexify Pro',
-                  style: TextStyle(
+                  kIsWeb ? 'Continue to Checkout' : 'Unlock Kortexify Pro',
+                  style: typography.body.bold.copyWith(
+                    color: Colors.white,
                     fontSize: 15.sp,
-                    fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -520,15 +537,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildComplianceFooter() {
+  Widget _buildComplianceFooter(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+  ) {
     return Column(
       children: [
         Text(
           'Subscriptions renew automatically unless cancelled at least '
           '24 hours before the end of the current billing cycle.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white38,
+          style: typography.caption.regular.copyWith(
+            color: colors.textMuted,
             fontSize: 10.sp,
             height: 1.4,
           ),
@@ -539,25 +560,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
           children: [
             GestureDetector(
               onTap: () => _launchUrl(PaywallScreen.privacyPolicyUrl),
-              child: const Text(
-                'Privacy Policy',
-                style: TextStyle(
-                  color: Color(0xFF818CF8),
+              child: Text(
+                l10n.privacyPolicy,
+                style: typography.caption.medium.copyWith(
+                  color: colors.primary,
                   fontSize: 11,
                   decoration: TextDecoration.underline,
                 ),
               ),
             ),
-            const Text(
+            Text(
               ' • ',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: typography.caption.regular.copyWith(
+                color: colors.textMuted,
+                fontSize: 11,
+              ),
             ),
             GestureDetector(
               onTap: () => _launchUrl(PaywallScreen.termsOfServiceUrl),
-              child: const Text(
-                'Terms of Use (EULA)',
-                style: TextStyle(
-                  color: Color(0xFF818CF8),
+              child: Text(
+                l10n.termsOfService,
+                style: typography.caption.medium.copyWith(
+                  color: colors.primary,
                   fontSize: 11,
                   decoration: TextDecoration.underline,
                 ),
