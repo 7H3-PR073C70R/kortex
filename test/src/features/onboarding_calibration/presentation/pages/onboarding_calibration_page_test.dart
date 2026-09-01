@@ -118,6 +118,35 @@ void main() {
       );
       expect(find.text('JAMB / UTME'), findsOneWidget);
       expect(find.text('WAEC / GCE'), findsOneWidget);
+      expect(find.text('SAT'), findsOneWidget);
+    });
+
+    testWidgets('selecting SAT displays tailored SAT subjects',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrapWithTheme(const OnboardingCalibrationPage()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('High School / Exam Prep'));
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.ensureVisible(find.text('SAT'));
+      await tester.tap(find.text('SAT'));
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.text('SAT Reading Comprehension'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('SAT Math: Heart of Algebra'),
+        findsOneWidget,
+      );
     });
   });
 }

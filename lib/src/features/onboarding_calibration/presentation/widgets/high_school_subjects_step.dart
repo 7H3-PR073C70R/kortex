@@ -97,6 +97,12 @@ class HighSchoolSubjectsStep extends StatelessWidget {
       ),
     ];
 
+    final exam =
+        context.watch<CalibrationCubit>().state.profile.highSchoolExam ?? '';
+    final isSat = exam.contains('SAT');
+    final isIelts = exam.contains('IELTS') || exam.contains('TOEFL');
+    final isIgcse = exam.contains('IGCSE') || exam.contains('A-Level');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -118,25 +124,144 @@ class HighSchoolSubjectsStep extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // ── Core ──────────────────────────────────────────────────────────
-        _TrackHeader(label: l10n.calibrationTrackCore, colors: colors),
-        const SizedBox(height: 10),
-        ..._buildChips(context, coreSubjects, selectedSubjects),
+        if (isSat) ...[
+          _TrackHeader(label: 'Reading & Writing', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'SAT Reading Comprehension',
+              'Passage analysis, textual evidence & vocabulary in context',
+              Icons.menu_book_rounded,
+            ),
+            (
+              'SAT Writing & Language',
+              'Standard English conventions, expression of ideas & rhetoric',
+              Icons.spellcheck_rounded,
+            ),
+          ], selectedSubjects),
+          _TrackHeader(label: 'Mathematics', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'SAT Math: Heart of Algebra',
+              'Linear equations, systems, inequalities & function models',
+              Icons.calculate_rounded,
+            ),
+            (
+              'SAT Math: Advanced & Problem Solving',
+              'Nonlinear functions, data analysis, ratios & geometry',
+              Icons.functions_rounded,
+            ),
+          ], selectedSubjects),
+        ] else if (isIelts) ...[
+          _TrackHeader(label: 'Exam Modules', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'Reading Section',
+              'Academic passages, inference, skimming & scanning drills',
+              Icons.menu_book_rounded,
+            ),
+            (
+              'Listening Section',
+              'Conversations, lectures, note-taking & accent recognition',
+              Icons.headphones_rounded,
+            ),
+            (
+              'Writing Section (Task 1 & Task 2)',
+              'Graph analysis, synthesis reports & formal argument essays',
+              Icons.edit_note_rounded,
+            ),
+            (
+              'Speaking Section',
+              'Fluency, lexical range, coherence & pronunciation drills',
+              Icons.mic_rounded,
+            ),
+          ], selectedSubjects),
+        ] else if (isIgcse) ...[
+          _TrackHeader(label: 'Core & Mathematics', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'Cambridge IGCSE Mathematics',
+              'Number, algebra, trigonometry & probability (Core/Ext)',
+              Icons.calculate_rounded,
+            ),
+            (
+              'Additional Mathematics',
+              'Calculus, coordinate geometry & logarithmic functions',
+              Icons.functions_rounded,
+            ),
+            (
+              'English Language & Literature',
+              'Comprehension, directed writing & set text analysis',
+              Icons.spellcheck_rounded,
+            ),
+          ], selectedSubjects),
+          _TrackHeader(label: 'Sciences & Computing', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'IGCSE Physics',
+              'Mechanics, thermal physics, electricity & nuclear physics',
+              Icons.flash_on_rounded,
+            ),
+            (
+              'IGCSE Chemistry',
+              'Stoichiometry, organic reactions & periodic table trends',
+              Icons.science_rounded,
+            ),
+            (
+              'IGCSE Biology',
+              'Cell biology, organ systems, genetics & biotechnology',
+              Icons.biotech_rounded,
+            ),
+            (
+              'Computer Science',
+              'Algorithms, computational thinking, logic gates & Python',
+              Icons.computer_rounded,
+            ),
+          ], selectedSubjects),
+          _TrackHeader(label: 'Business & Humanities', colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, [
+            (
+              'Economics',
+              'Microeconomics, macroeconomic policy, trade & price system',
+              Icons.trending_up_rounded,
+            ),
+            (
+              'Business Studies',
+              'Marketing, finance, operations & business management',
+              Icons.business_center_rounded,
+            ),
+            (
+              'Accounting',
+              'Double entry bookkeeping, ledger accounts & trial balance',
+              Icons.account_balance_rounded,
+            ),
+          ], selectedSubjects),
+        ] else ...[
+          // ── Core (WAEC / JAMB / NECO) ──────────────────────────────────
+          _TrackHeader(label: l10n.calibrationTrackCore, colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, coreSubjects, selectedSubjects),
 
-        // ── Science ───────────────────────────────────────────────────────
-        _TrackHeader(label: l10n.calibrationTrackScience, colors: colors),
-        const SizedBox(height: 10),
-        ..._buildChips(context, scienceSubjects, selectedSubjects),
+          // ── Science ───────────────────────────────────────────────────
+          _TrackHeader(label: l10n.calibrationTrackScience, colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, scienceSubjects, selectedSubjects),
 
-        // ── Commercial ────────────────────────────────────────────────────
-        _TrackHeader(label: l10n.calibrationTrackCommercial, colors: colors),
-        const SizedBox(height: 10),
-        ..._buildChips(context, commercialSubjects, selectedSubjects),
+          // ── Commercial ────────────────────────────────────────────────
+          _TrackHeader(label: l10n.calibrationTrackCommercial, colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, commercialSubjects, selectedSubjects),
 
-        // ── Arts / Humanities ─────────────────────────────────────────────
-        _TrackHeader(label: l10n.calibrationTrackArts, colors: colors),
-        const SizedBox(height: 10),
-        ..._buildChips(context, artsSubjects, selectedSubjects),
+          // ── Arts / Humanities ─────────────────────────────────────────
+          _TrackHeader(label: l10n.calibrationTrackArts, colors: colors),
+          const SizedBox(height: 10),
+          ..._buildChips(context, artsSubjects, selectedSubjects),
+        ],
       ],
     );
   }

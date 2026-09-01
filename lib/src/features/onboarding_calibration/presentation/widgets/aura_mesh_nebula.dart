@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 
 /// A deep, slow-pulsing Aura Mesh Nebula combining Indigo, Violet,
 /// and Cyan gradients into an ambient edge-to-edge backdrop.
@@ -47,10 +48,14 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Solid Surface Base
-        Container(color: colors.surfacePrimary),
+        // 1. Campus Background Atmosphere with breathing motion
+        const Positioned.fill(
+          child: BreathingCampusBackground(
+            baseOpacity: 0.45,
+          ),
+        ),
 
-        // Animated Mesh Nebula Painter
+        // 2. Animated Mesh Nebula Painter
         if (!disableAnimations)
           AnimatedBuilder(
             animation: _controller,

@@ -7,7 +7,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
+import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 import 'package:kortex/src/shared/widgets/typewriter_text.dart';
@@ -251,7 +253,7 @@ class CalibrationChatView extends HookWidget {
                       ? const SizedBox.shrink()
                       : Container(
                           key: ValueKey(state.currentStepIndex),
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? colors.surfaceSecondary.withAlpha(120)
@@ -269,299 +271,352 @@ class CalibrationChatView extends HookWidget {
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
                             child: Row(
-                              children: [
-                                if (state.currentStepIndex == 0) ...[
-                                  _QuickChip(
-                                    icon: Icons.school_rounded,
-                                    label: l10n.calibrationFocusHigherEd,
-                                    onTap: () => handleOptionSelected(
-                                      l10n.calibrationFocusHigherEd,
-                                      () {
-                                        cubit
-                                          ..setAcademicFocus(
-                                            AcademicFocus.higherEducation,
-                                          )
-                                          ..nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatLevelPrompt,
-                                      customThinkingText: 'Configuring...',
-                                    ),
-                                  ),
-                                  _QuickChip(
-                                    icon: Icons.menu_book_rounded,
-                                    label: l10n.calibrationFocusHighSchool,
-                                    onTap: () => handleOptionSelected(
-                                      l10n.calibrationFocusHighSchool,
-                                      () {
-                                        cubit
-                                          ..setAcademicFocus(
-                                            AcademicFocus.highSchool,
-                                          )
-                                          ..nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatLevelPrompt,
-                                      customThinkingText: 'Configuring...',
-                                    ),
-                                  ),
-                                ] else if (state.currentStepIndex == 1) ...[
-                                  if (state.profile.focus ==
-                                      AcademicFocus.higherEducation) ...[
-                                    _QuickChip(
-                                      label: 'BSc (Bachelor)',
-                                      onTap: () => handleOptionSelected(
-                                        'BSc (Bachelor)',
-                                        () {
-                                          cubit
-                                            ..setHigherEdLevel(
-                                              HigherEdLevel.bsc,
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Updating level...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'MSc (Master)',
-                                      onTap: () => handleOptionSelected(
-                                        'MSc (Master)',
-                                        () {
-                                          cubit
-                                            ..setHigherEdLevel(
-                                              HigherEdLevel.msc,
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Updating level...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'PhD (Doctorate)',
-                                      onTap: () => handleOptionSelected(
-                                        'PhD (Doctorate)',
-                                        () {
-                                          cubit
-                                            ..setHigherEdLevel(
-                                              HigherEdLevel.phd,
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Updating level...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'OND / HND',
-                                      onTap: () => handleOptionSelected(
-                                        'OND / HND',
-                                        () {
-                                          cubit
-                                            ..setHigherEdLevel(
-                                              HigherEdLevel.ond,
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Updating level...',
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    _QuickChip(
-                                      label: 'WAEC / GCE',
-                                      onTap: () => handleOptionSelected(
-                                        'WAEC / GCE',
-                                        () {
-                                          cubit
-                                            ..setHighSchoolExam(
-                                              'WAEC / GCE',
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Setting exam...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'JAMB / UTME',
-                                      onTap: () => handleOptionSelected(
-                                        'JAMB / UTME',
-                                        () {
-                                          cubit
-                                            ..setHighSchoolExam(
-                                              'JAMB / UTME',
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Setting exam...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'NECO / SSCE',
-                                      onTap: () => handleOptionSelected(
-                                        'NECO / SSCE',
-                                        () {
-                                          cubit
-                                            ..setHighSchoolExam(
-                                              'NECO / SSCE',
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Setting exam...',
-                                      ),
-                                    ),
-                                    _QuickChip(
-                                      label: 'SAT / IGCSE',
-                                      onTap: () => handleOptionSelected(
-                                        'SAT / IGCSE',
-                                        () {
-                                          cubit
-                                            ..setHighSchoolExam(
-                                              'SAT',
-                                            )
-                                            ..nextStep();
-                                        },
-                                        nextBotPrompt:
-                                            l10n.calibrationChatFieldPrompt,
-                                        customThinkingText: 'Setting exam...',
-                                      ),
-                                    ),
-                                  ],
-                                ] else if (state.currentStepIndex == 2) ...[
-                                  _QuickChip(
-                                    icon: Icons.computer_rounded,
-                                    label: 'Computer Science & AI',
-                                    onTap: () => handleOptionSelected(
-                                      'Computer Science & AI',
-                                      () {
-                                        if (state.profile.focus ==
-                                            AcademicFocus.higherEducation) {
-                                          cubit.setHigherEdField(
-                                            'Computer Science & AI',
-                                          );
-                                        } else {
-                                          cubit.toggleHighSchoolSubject(
-                                            'Mathematics (Core)',
-                                          );
-                                        }
-                                        cubit.nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatGoalPrompt,
-                                      customThinkingText:
-                                          'Configuring model...',
-                                    ),
-                                  ),
-                                  _QuickChip(
-                                    icon: Icons.gavel_rounded,
-                                    label: 'Law & Legal Studies',
-                                    onTap: () => handleOptionSelected(
-                                      'Law & Legal Studies',
-                                      () {
-                                        if (state.profile.focus ==
-                                            AcademicFocus.higherEducation) {
-                                          cubit.setHigherEdField(
-                                            'Law & Legal Studies',
-                                          );
-                                        } else {
-                                          cubit.toggleHighSchoolSubject(
-                                            'Government',
-                                          );
-                                        }
-                                        cubit.nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatGoalPrompt,
-                                      customThinkingText:
-                                          'Configuring model...',
-                                    ),
-                                  ),
-                                  _QuickChip(
-                                    icon: Icons.local_hospital_rounded,
-                                    label: 'Medicine & Health Sciences',
-                                    onTap: () => handleOptionSelected(
-                                      'Medicine & Health Sciences',
-                                      () {
-                                        if (state.profile.focus ==
-                                            AcademicFocus.higherEducation) {
-                                          cubit.setHigherEdField(
-                                            'Medicine & Health Sciences',
-                                          );
-                                        } else {
-                                          cubit.toggleHighSchoolSubject(
-                                            'Biology',
-                                          );
-                                        }
-                                        cubit.nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatGoalPrompt,
-                                      customThinkingText:
-                                          'Configuring model...',
-                                    ),
-                                  ),
-                                  _QuickChip(
-                                    icon: Icons.attach_money_rounded,
-                                    label: 'Business & Finance',
-                                    onTap: () => handleOptionSelected(
-                                      'Business & Finance',
-                                      () {
-                                        if (state.profile.focus ==
-                                            AcademicFocus.higherEducation) {
-                                          cubit.setHigherEdField(
-                                            'Business & Finance',
-                                          );
-                                        } else {
-                                          cubit.toggleHighSchoolSubject(
-                                            'Economics',
-                                          );
-                                        }
-                                        cubit.nextStep();
-                                      },
-                                      nextBotPrompt:
-                                          l10n.calibrationChatGoalPrompt,
-                                      customThinkingText:
-                                          'Configuring model...',
-                                    ),
-                                  ),
-                                ] else if (state.currentStepIndex == 3) ...[
-                                  _QuickChip(
-                                    icon: Icons.rocket_launch_rounded,
-                                    label: l10n.calibrationFinish,
-                                    onTap: () {
-                                      handleOptionSelected(
-                                        l10n.calibrationFinish,
-                                        () {
-                                          unawaited(cubit.finishCalibration());
-                                        },
-                                        customThinkingText:
-                                            'Calibrating neural engine...',
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ],
+                              children: _buildQuickChips(
+                                context: context,
+                                cubit: cubit,
+                                state: state,
+                                l10n: l10n,
+                                handleOptionSelected: handleOptionSelected,
+                              ),
                             ),
                           ),
                         ),
                 ),
+
+                // 3. Launch Action Button (Consistent Primary AppButton)
+                if (state.currentStepIndex == 3 ||
+                    (state.canProceed && state.currentStepIndex >= 2))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    child: AppButton(
+                      text: l10n.calibrationFinish,
+                      isLoading: state.isSubmitting,
+                      onPressed: state.canProceed
+                          ? () {
+                              unawaited(cubit.finishCalibration());
+                            }
+                          : null,
+                    ),
+                  ),
               ],
             ),
           ),
         );
       },
     );
+  }
+
+  List<Widget> _buildQuickChips({
+    required BuildContext context,
+    required CalibrationCubit cubit,
+    required CalibrationState state,
+    required AppLocalizations l10n,
+    required void Function(
+      String label,
+      VoidCallback action, {
+      String? nextBotPrompt,
+      String? customThinkingText,
+    }) handleOptionSelected,
+  }) {
+    if (state.currentStepIndex == 0) {
+      return [
+        _QuickChip(
+          icon: Icons.school_rounded,
+          label: l10n.calibrationFocusHigherEd,
+          onTap: () => handleOptionSelected(
+            l10n.calibrationFocusHigherEd,
+            () {
+              cubit
+                ..setAcademicFocus(AcademicFocus.higherEducation)
+                ..nextStep();
+            },
+            nextBotPrompt: l10n.calibrationQuestionA2,
+            customThinkingText: 'Configuring curriculum...',
+          ),
+        ),
+        _QuickChip(
+          icon: Icons.menu_book_rounded,
+          label: l10n.calibrationFocusHighSchool,
+          onTap: () => handleOptionSelected(
+            l10n.calibrationFocusHighSchool,
+            () {
+              cubit
+                ..setAcademicFocus(AcademicFocus.highSchool)
+                ..nextStep();
+            },
+            nextBotPrompt: l10n.calibrationQuestionB2,
+            customThinkingText: 'Configuring exam tracks...',
+          ),
+        ),
+      ];
+    }
+
+    if (state.currentStepIndex == 1) {
+      if (state.profile.focus == AcademicFocus.higherEducation) {
+        return [
+          _QuickChip(
+            icon: Icons.history_edu_rounded,
+            label: l10n.calibrationOptionBSc,
+            onTap: () => handleOptionSelected(
+              l10n.calibrationOptionBSc,
+              () {
+                cubit
+                  ..setHigherEdLevel(HigherEdLevel.bsc)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA3,
+              customThinkingText: 'Updating degree level...',
+            ),
+          ),
+          _QuickChip(
+            icon: Icons.workspace_premium_rounded,
+            label: l10n.calibrationOptionMSc,
+            onTap: () => handleOptionSelected(
+              l10n.calibrationOptionMSc,
+              () {
+                cubit
+                  ..setHigherEdLevel(HigherEdLevel.msc)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA3,
+              customThinkingText: 'Updating degree level...',
+            ),
+          ),
+          _QuickChip(
+            icon: Icons.psychology_alt_rounded,
+            label: l10n.calibrationOptionPhD,
+            onTap: () => handleOptionSelected(
+              l10n.calibrationOptionPhD,
+              () {
+                cubit
+                  ..setHigherEdLevel(HigherEdLevel.phd)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA3,
+              customThinkingText: 'Updating degree level...',
+            ),
+          ),
+          _QuickChip(
+            icon: Icons.menu_book_rounded,
+            label: l10n.calibrationOptionOND,
+            onTap: () => handleOptionSelected(
+              l10n.calibrationOptionOND,
+              () {
+                cubit
+                  ..setHigherEdLevel(HigherEdLevel.ond)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA3,
+              customThinkingText: 'Updating degree level...',
+            ),
+          ),
+          _QuickChip(
+            icon: Icons.auto_stories_rounded,
+            label: l10n.calibrationOptionHND,
+            onTap: () => handleOptionSelected(
+              l10n.calibrationOptionHND,
+              () {
+                cubit
+                  ..setHigherEdLevel(HigherEdLevel.hnd)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA3,
+              customThinkingText: 'Updating degree level...',
+            ),
+          ),
+        ];
+      } else {
+        final exams = [
+          (l10n.calibrationExamWAEC, Icons.school_rounded),
+          (l10n.calibrationExamJAMB, Icons.quiz_rounded),
+          (l10n.calibrationExamNECO, Icons.assignment_turned_in_rounded),
+          (l10n.calibrationExamSAT, Icons.public_rounded),
+          (l10n.calibrationExamIGCSE, Icons.military_tech_rounded),
+          (l10n.calibrationExamIELTS, Icons.translate_rounded),
+        ];
+        return exams.map((e) {
+          return _QuickChip(
+            icon: e.$2,
+            label: e.$1,
+            onTap: () => handleOptionSelected(
+              e.$1,
+              () {
+                cubit
+                  ..setHighSchoolExam(e.$1)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionB3,
+              customThinkingText: 'Loading exam bank...',
+            ),
+          );
+        }).toList();
+      }
+    }
+
+    if (state.currentStepIndex == 2) {
+      if (state.profile.focus == AcademicFocus.higherEducation) {
+        final fields = [
+          (l10n.calibrationFieldComputerScience, Icons.memory_rounded),
+          (l10n.calibrationFieldMedicine, Icons.medical_services_rounded),
+          (l10n.calibrationFieldLaw, Icons.gavel_rounded),
+          (l10n.calibrationFieldBusiness, Icons.business_center_rounded),
+          (l10n.calibrationFieldHumanities, Icons.menu_book_rounded),
+          (l10n.calibrationFieldSocialSciences, Icons.groups_rounded),
+          (l10n.calibrationFieldMath, Icons.functions_rounded),
+          (l10n.calibrationFieldPhysics, Icons.blur_on_rounded),
+          (l10n.calibrationFieldChemEng, Icons.science_rounded),
+          (
+            l10n.calibrationFieldRobotics,
+            Icons.precision_manufacturing_rounded,
+          ),
+        ];
+        return fields.map((f) {
+          return _QuickChip(
+            icon: f.$2,
+            label: f.$1,
+            onTap: () => handleOptionSelected(
+              f.$1,
+              () {
+                cubit
+                  ..setHigherEdField(f.$1)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionA4,
+              customThinkingText: 'Configuring domain models...',
+            ),
+          );
+        }).toList();
+      } else {
+        final exam = state.profile.highSchoolExam ?? '';
+        final isSat = exam.contains('SAT');
+        final isIelts = exam.contains('IELTS') || exam.contains('TOEFL');
+        final isIgcse = exam.contains('IGCSE') || exam.contains('A-Level');
+
+        final List<(String, IconData)> subjects;
+        if (isSat) {
+          subjects = [
+            ('SAT Reading Comprehension', Icons.menu_book_rounded),
+            ('SAT Writing & Language', Icons.spellcheck_rounded),
+            ('SAT Math: Heart of Algebra', Icons.calculate_rounded),
+            ('SAT Math: Advanced & Problem Solving', Icons.functions_rounded),
+          ];
+        } else if (isIelts) {
+          subjects = [
+            ('Reading Section', Icons.menu_book_rounded),
+            ('Listening Section', Icons.headphones_rounded),
+            ('Writing (Task 1 & 2)', Icons.edit_note_rounded),
+            ('Speaking Section', Icons.mic_rounded),
+          ];
+        } else if (isIgcse) {
+          subjects = [
+            ('Cambridge IGCSE Mathematics', Icons.calculate_rounded),
+            ('Additional Mathematics', Icons.functions_rounded),
+            ('English Language & Literature', Icons.spellcheck_rounded),
+            ('IGCSE Physics', Icons.flash_on_rounded),
+            ('IGCSE Chemistry', Icons.science_rounded),
+            ('IGCSE Biology', Icons.biotech_rounded),
+            ('Computer Science', Icons.computer_rounded),
+            ('Economics & Business', Icons.trending_up_rounded),
+            ('Accounting', Icons.account_balance_rounded),
+          ];
+        } else {
+          subjects = [
+            (l10n.calibrationSubjectCoreMath, Icons.calculate_rounded),
+            (l10n.calibrationSubjectEnglish, Icons.spellcheck_rounded),
+            (l10n.calibrationSubjectPhysics, Icons.flash_on_rounded),
+            (l10n.calibrationSubjectChemistry, Icons.science_rounded),
+            (l10n.calibrationSubjectBiology, Icons.biotech_rounded),
+            (l10n.calibrationSubjectFurtherMath, Icons.functions_rounded),
+            (l10n.calibrationSubjectAccounting, Icons.account_balance_rounded),
+            (l10n.calibrationSubjectEconomics, Icons.trending_up_rounded),
+            (l10n.calibrationSubjectCommerce, Icons.store_rounded),
+            (l10n.calibrationSubjectLiterature, Icons.menu_book_rounded),
+            (
+              l10n.calibrationSubjectGovernment,
+              Icons.account_balance_wallet_rounded,
+            ),
+            (l10n.calibrationSubjectHistory, Icons.history_edu_rounded),
+            (l10n.calibrationSubjectCRK, Icons.church_rounded),
+          ];
+        }
+
+        return subjects.map((s) {
+          final isSelected =
+              state.profile.highSchoolSubjects.contains(s.$1);
+          return _QuickChip(
+            icon: s.$2,
+            label: s.$1,
+            isSelected: isSelected,
+            onTap: () => handleOptionSelected(
+              s.$1,
+              () {
+                cubit
+                  ..toggleHighSchoolSubject(s.$1)
+                  ..nextStep();
+              },
+              nextBotPrompt: l10n.calibrationQuestionB4,
+              customThinkingText: 'Mapping curriculum...',
+            ),
+          );
+        }).toList();
+      }
+    }
+
+    if (state.currentStepIndex == 3) {
+      if (state.profile.focus == AcademicFocus.higherEducation) {
+        final goals = [
+          (l10n.calibrationGoalThesis, Icons.article_rounded),
+          (l10n.calibrationGoalCaseLaw, Icons.gavel_rounded),
+          (l10n.calibrationGoalSocratic, Icons.psychology_rounded),
+          (l10n.calibrationGoalSpacedRep, Icons.schedule_rounded),
+          (l10n.calibrationGoalMockExams, Icons.timer_outlined),
+          (l10n.calibrationGoalEssayPrep, Icons.edit_note_rounded),
+        ];
+        return goals.map((g) {
+          final isSelected = state.profile.higherEdGoals.contains(g.$1);
+          return _QuickChip(
+            icon: g.$2,
+            label: g.$1,
+            isSelected: isSelected,
+            onTap: () => handleOptionSelected(
+              g.$1,
+              () {
+                cubit.toggleHigherEdGoal(g.$1);
+              },
+              nextBotPrompt:
+                  'Curriculum calibrated! Ready to launch your workspace.',
+              customThinkingText: 'Configuring tools...',
+            ),
+          );
+        }).toList();
+      } else {
+        final timelines = [
+          (l10n.calibrationTimeline1Month, Icons.local_fire_department_rounded),
+          (l10n.calibrationTimeline3Months, Icons.speed_rounded),
+          (l10n.calibrationTimeline6Months, Icons.calendar_month_rounded),
+          (l10n.calibrationTimelineNextYear, Icons.hourglass_top_rounded),
+        ];
+        return timelines.map((t) {
+          final isSelected = state.profile.highSchoolTimeline == t.$1;
+          return _QuickChip(
+            icon: t.$2,
+            label: t.$1,
+            isSelected: isSelected,
+            onTap: () => handleOptionSelected(
+              t.$1,
+              () {
+                cubit.setHighSchoolTimeline(t.$1);
+              },
+              nextBotPrompt: 'Study schedule synchronized! '
+                  'Ready to launch your workspace.',
+              customThinkingText: 'Pacing schedule...',
+            ),
+          );
+        }).toList();
+      }
+    }
+
+    return [];
   }
 }
 
@@ -682,11 +737,13 @@ class _QuickChip extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon,
+    this.isSelected = false,
   });
 
   final String label;
   final VoidCallback onTap;
   final IconData? icon;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -698,36 +755,64 @@ class _QuickChip extends StatelessWidget {
       padding: const EdgeInsets.only(right: 8),
       child: Semantics(
         button: true,
+        selected: isSelected,
         label: 'Quick action: $label',
         child: ShrinkableButton(
+          shrinkScale: 0.98,
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(140)
-                  : colors.surfacePrimary,
+              color: isSelected
+                  ? colors.primary.withAlpha(isDark ? 80 : 35)
+                  : (isDark
+                      ? colors.surfaceSecondary.withAlpha(140)
+                      : colors.surfacePrimary),
               border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(70)
-                    : colors.surfaceBorder,
+                color: isSelected
+                    ? colors.primary
+                    : (isDark
+                        ? colors.surfaceBorderHighlight.withAlpha(70)
+                        : colors.surfaceBorder),
+                width: isSelected ? 1.5 : 1.0,
               ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 16, color: colors.primary),
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected ? colors.primary : colors.primary,
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: typography.callout.semiBold.copyWith(
-                    color: colors.textPrimary,
+                    color: isSelected ? colors.primary : colors.textPrimary,
                     fontSize: 13,
                   ),
                 ),
+                if (isSelected) ...[
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 14,
+                    color: colors.primary,
+                  ),
+                ],
               ],
             ),
           ),

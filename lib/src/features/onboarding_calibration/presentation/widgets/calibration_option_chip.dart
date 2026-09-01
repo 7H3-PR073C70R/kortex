@@ -40,12 +40,13 @@ class CalibrationOptionChip extends StatelessWidget {
       selected: isSelected,
       label: semanticLabel,
       child: ShrinkableButton(
+        shrinkScale: 0.985,
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
           onTap();
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -61,7 +62,7 @@ class CalibrationOptionChip extends StatelessWidget {
                   : (isDark
                       ? colors.surfaceBorderHighlight.withAlpha(70)
                       : colors.surfaceBorder),
-              width: isSelected ? 1.8 : 1,
+              width: 1.5,
             ),
             boxShadow: isSelected
                 ? [

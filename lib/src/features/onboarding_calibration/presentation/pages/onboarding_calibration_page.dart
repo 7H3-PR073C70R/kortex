@@ -95,30 +95,32 @@ class _CalibrationView extends StatelessWidget {
                 // Top Bar with Logo, Step Tracker, Skip & Mode Switch Toggle
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppAssets.svgs.kortexLogo.svg(
-                            width: 26,
-                            height: 26,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.appName,
-                            style: typography.caption.bold.copyWith(
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.4,
-                              fontSize: 14,
-                              color: colors.textPrimary,
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppAssets.svgs.kortexLogo.svg(
+                              width: 24,
+                              height: 24,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.appName,
+                              style: typography.caption.bold.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                                fontSize: 13,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -135,7 +137,7 @@ class _CalibrationView extends StatelessWidget {
                                     currentStep: state.currentStepIndex,
                                     totalSteps: state.totalSteps,
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Semantics(
                                     button: true,
                                     label: l10n.calibrationSkipSemantics,
@@ -147,15 +149,19 @@ class _CalibrationView extends StatelessWidget {
                                       ),
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 6,
+                                          horizontal: 6,
+                                          vertical: 4,
                                         ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       child: Text(
                                         l10n.calibrationSkip,
                                         style: typography.caption.semiBold
                                             .copyWith(
                                           color: colors.textSecondary,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
@@ -254,31 +260,48 @@ class _MobileCalibrationLayout extends StatelessWidget {
               physics: const ClampingScrollPhysics(),
               child: CalibrationGlassCard(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
+                  duration: const Duration(milliseconds: 250),
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        ?currentChild,
+                      ],
+                    );
+                  },
                   transitionBuilder: (child, animation) {
-                    final slideTween = Tween<Offset>(
-                      begin: Offset(
-                        state.isForwardTrajectory ? 0.08 : -0.08,
-                        0,
-                      ),
-                      end: Offset.zero,
-                    ).chain(CurveTween(curve: Curves.easeOutCubic));
+                    final isCurrentChild = child.key ==
+                        ValueKey<int>(state.currentStepIndex);
+                    final offsetTween = isCurrentChild
+                        ? Tween<Offset>(
+                            begin: Offset(
+                              state.isForwardTrajectory ? 0.05 : -0.05,
+                              0,
+                            ),
+                            end: Offset.zero,
+                          ).chain(CurveTween(curve: Curves.easeOutCubic))
+                        : Tween<Offset>(
+                            begin: Offset(
+                              state.isForwardTrajectory ? -0.05 : 0.05,
+                              0,
+                            ),
+                            end: Offset.zero,
+                          ).chain(CurveTween(curve: Curves.easeInCubic));
 
                     return SlideTransition(
-                      position: animation.drive(slideTween),
+                      position: animation.drive(offsetTween),
                       child: FadeTransition(
                         opacity: CurvedAnimation(
                           parent: animation,
-                          curve: Curves.easeOut,
+                          curve: Curves.easeInOut,
                         ),
                         child: child,
                       ),
                     );
                   },
                   child: KeyedSubtree(
-                    key: ValueKey<String>(
-                      'step_${state.currentStepIndex}_${state.profile.focus}',
-                    ),
+                    key: ValueKey<int>(state.currentStepIndex),
                     child: _buildActiveStep(state),
                   ),
                 ),
