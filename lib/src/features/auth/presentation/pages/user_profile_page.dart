@@ -5,15 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_slider.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/track_selector_card.dart';
-import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -243,8 +240,6 @@ class UserProfilePage extends HookWidget {
                               retentionBenchmark: retentionBenchmark.value,
                             ),
                           );
-
-                      locator<DashboardBloc>().add(const DashboardStarted());
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

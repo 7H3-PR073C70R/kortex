@@ -28,8 +28,8 @@ class AuthPage extends HookWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(
-          create: (_) => locator<AuthBloc>(),
+        BlocProvider<AuthBloc>.value(
+          value: locator<AuthBloc>(),
         ),
         BlocProvider<AuthModeCubit>.value(
           value: locator<AuthModeCubit>(),
