@@ -105,9 +105,11 @@ import 'package:kortex/src/features/planner/domain/repositories/planner_reposito
 import 'package:kortex/src/features/planner/domain/use_cases/calculate_daily_cram_target_use_case.dart';
 import 'package:kortex/src/features/planner/domain/use_cases/create_exam_countdown_use_case.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/features/quiz/data/client/supabase_past_questions_client.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source_impl.dart';
 import 'package:kortex/src/features/quiz/data/repositories/past_questions_repository_impl.dart';
 import 'package:kortex/src/features/quiz/data/repositories/quiz_repository_impl.dart';
-import 'package:kortex/src/features/quiz/data/services/past_questions_crawler_service.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';

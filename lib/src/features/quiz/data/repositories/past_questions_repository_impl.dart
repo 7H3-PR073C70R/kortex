@@ -1,13 +1,13 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
-import 'package:kortex/src/features/quiz/data/services/past_questions_crawler_service.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 
 class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
-  PastQuestionsRepositoryImpl(this._crawlerService);
+  PastQuestionsRepositoryImpl(this._remoteDataSource);
 
-  final PastQuestionsCrawlerService _crawlerService;
+  final PastQuestionsRemoteDataSource _remoteDataSource;
   final Set<String> _bookmarkedIds = {};
 
   @override
@@ -18,11 +18,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     String? searchQuery,
   }) async {
     try {
-      if (!_crawlerService.isCrawlingCompleted) {
-        await _crawlerService.crawlAllPastQuestions();
-      }
-
-      final models = _crawlerService.queryQuestions(
+      final models = await _remoteDataSource.getPastQuestions(
         examCategory: examCategory,
         subject: subject,
         year: year,
@@ -48,12 +44,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     ExamCategory category,
   ) async {
     try {
-      if (!_crawlerService.isCrawlingCompleted) {
-        await _crawlerService.crawlAllPastQuestions();
-      }
-
-      final models = _crawlerService.queryQuestions(examCategory: category);
-      final subjects = models.map((m) => m.subject).toSet().toList()..sort();
+      final subjects = await _remoteDataSource.getAvailableSubjects(category);
       return Right(subjects);
     } on Object catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -65,13 +56,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     ExamCategory category,
   ) async {
     try {
-      if (!_crawlerService.isCrawlingCompleted) {
-        await _crawlerService.crawlAllPastQuestions();
-      }
-
-      final models = _crawlerService.queryQuestions(examCategory: category);
-      final years = models.map((m) => m.year).toSet().toList()
-        ..sort((a, b) => b.compareTo(a)); // Descending order
+      final years = await _remoteDataSource.getAvailableYears(category);
       return Right(years);
     } on Object catch (e) {
       return Left(ServerFailure(message: e.toString()));

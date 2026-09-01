@@ -70,4 +70,7 @@ class AppApiEndpoint {
   static const String sharedDecks = '/rest/v1/shared_decks';
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
+
+  // Past Questions & Question Bank (Supabase REST)
+  static const String pastQuestions = '/rest/v1/past_questions';
 }

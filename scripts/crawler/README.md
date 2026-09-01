@@ -1,54 +1,70 @@
-# Kortex Past Questions Crawler & Ingestion Tool (Python)
+# Kortex Open Web PDF Past Questions Crawler & Ingestion Engine
 
-A standalone Python CLI crawler that aggregates, deduplicates (via SHA-256 fingerprint hashing), and directly ingests 5-year past examination questions into your Supabase database (`past_questions` table).
+A Python document-crawling CLI tool that discovers, downloads, and processes 5-year past examination **PDF documents** (2020–2024), parses structured multiple-choice questions with `pypdf`, deduplicates content using SHA-256 fingerprints, and synchronizes directly to Supabase.
 
 ---
 
-## 1. Prerequisites & Installation
+## 1. How It Works
 
-Make sure you have Python 3 installed. Install the dependencies:
-
-```bash
-pip install -r scripts/crawler/requirements.txt
+```
+┌────────────────────────────────────────────────────────┐
+│             OPEN WEB EXAM ARCHIVES & PDFS              │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           │ (1. Download & Stage PDFs)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│               LOCAL PDF STAGING REPO                   │
+│         storage/crawled_pdfs/{exam}/{year}/            │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           │ (2. Extract Text & Parse Questions via pypdf)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│           PDF PROCESSING & DEDUPLICATION ENGINE        │
+│  - Compute Document content_hash (SHA-256)             │
+│  - Compute Question fingerprint (SHA-256)              │
+│  - Extract Options, Answers, LaTeX & Explanations      │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           │ (3. Direct PostgREST Database Sync)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│                  SUPABASE DATABASE                     │
+│  - public.past_questions (Extracted & Deduplicated Qs) │
+│  - public.documents (PDF Files & Metadata)             │
+└────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Supabase Database Setup
+## 2. Requirements & Setup
 
-Before running the sync for the first time, ensure the `past_questions` migration has been applied:
+Install the required Python packages:
 
 ```bash
-# Apply with Supabase CLI
-supabase db push
-# OR apply supabase/migrations/20260831170000_create_past_questions_table.sql directly in Supabase SQL editor
+python3 -m pip install -r scripts/crawler/requirements.txt
 ```
 
 ---
 
-## 3. Running the Crawler
+## 3. Usage Commands
 
-### A. Preview Crawled & Deduplicated Questions (Dry Run)
+### A. Preview PDF Discovery & Document Extraction (Dry Run)
 ```bash
 python3 scripts/crawler/crawler.py --dry-run
 ```
 
-### B. Sync All Past Questions to Supabase
+### B. Ingest and Synchronize to Supabase
 ```bash
 python3 scripts/crawler/crawler.py --sync-db
 ```
 
-### C. Filter by Exam Type or Year
+### C. Filter by Specific Exam or Year
 ```bash
-# Only harvest and sync WAEC 2024 questions
+# Only process WAEC 2024 PDF exam papers:
 python3 scripts/crawler/crawler.py --exam WAEC --year 2024 --sync-db
 
-# Only harvest and sync SAT questions
+# Only process SAT papers:
 python3 scripts/crawler/crawler.py --exam SAT --sync-db
-```
-
-### D. Custom Supabase Credentials
-By default, the crawler automatically loads `API_BASE_URL` and `SUPABASE_ANON_KEY` from `.env.development`. You can also supply them via CLI:
-```bash
-python3 scripts/crawler/crawler.py --url https://your-project.supabase.co --key your_service_role_key --sync-db
 ```

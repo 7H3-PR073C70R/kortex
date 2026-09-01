@@ -40,5 +40,8 @@ void _initClients() {
     )
     ..registerLazySingleton<EphemeralPresenceClient>(
       EphemeralPresenceClientImpl.new,
+    )
+    ..registerLazySingleton<SupabasePastQuestionsClient>(
+      () => SupabasePastQuestionsClient(locator<Dio>()),
     );
 }

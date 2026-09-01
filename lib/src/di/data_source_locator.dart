@@ -70,5 +70,10 @@ void _initDataSource() {
       () => LmsImportDataSourceImpl(
         dio: locator<Dio>(),
       ),
+    )
+    ..registerLazySingleton<PastQuestionsRemoteDataSource>(
+      () => PastQuestionsRemoteDataSourceImpl(
+        locator<SupabasePastQuestionsClient>(),
+      ),
     );
 }

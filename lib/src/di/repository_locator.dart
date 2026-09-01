@@ -71,12 +71,9 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<QuizRepository>(
       QuizRepositoryImpl.new,
     )
-    ..registerLazySingleton<PastQuestionsCrawlerService>(
-      PastQuestionsCrawlerService.new,
-    )
     ..registerLazySingleton<PastQuestionsRepository>(
       () => PastQuestionsRepositoryImpl(
-        locator<PastQuestionsCrawlerService>(),
+        locator<PastQuestionsRemoteDataSource>(),
       ),
     )
     ..registerLazySingleton<LmsRepository>(
