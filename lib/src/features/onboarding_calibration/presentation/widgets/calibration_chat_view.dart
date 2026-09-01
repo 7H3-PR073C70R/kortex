@@ -289,7 +289,7 @@ class CalibrationChatView extends HookWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: AppButton(
-                      text: l10n.calibrationFinish,
+                      text: l10n.calibrationContinue,
                       isLoading: state.isSubmitting,
                       onPressed: state.canProceed
                           ? () {

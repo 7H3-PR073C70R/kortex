@@ -3,15 +3,20 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/permissions_cubit.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/widgets/permissions_chat_view.dart';
+import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class PermissionsPage extends StatelessWidget {
@@ -36,7 +41,10 @@ class _PermissionsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
     final isChatMode = context.watch<AuthModeCubit>().state.isChat;
 
     return BlocListener<PermissionsCubit, PermissionsState>(
@@ -57,32 +65,116 @@ class _PermissionsView extends StatelessWidget {
       child: Scaffold(
         body: AuraMeshNebula(
           child: SafeArea(
-            child: isChatMode
-                ? const PermissionsChatView()
-                : Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 24),
-                            _PermissionsHeader(l10n: l10n),
-                            const SizedBox(height: 32),
-                            _NotificationPermissionCard(l10n: l10n),
-                            const SizedBox(height: 16),
-                            _StoragePermissionCard(l10n: l10n),
-                            const SizedBox(height: 36),
-                            _PermissionsFooter(l10n: l10n),
-                          ],
-                        ),
-                      ),
-                    ),
+            child: Column(
+              children: [
+                // Top Bar with Logo, Mode Switch, and Skip button
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
                   ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppAssets.svgs.kortexLogo.svg(
+                            width: 24,
+                            height: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.appName,
+                            style: typography.caption.bold.copyWith(
+                              letterSpacing: 1.5,
+                              fontSize: 13,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ModeSwitchButton(
+                            isChatMode: isChatMode,
+                            onToggle: () {
+                              context.read<AuthModeCubit>().toggleMode();
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              context
+                                  .read<PermissionsCubit>()
+                                  .skipPermissions();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary.withAlpha(120)
+                                    : colors.surfacePrimary.withAlpha(160),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withAlpha(
+                                    isDark ? 60 : 40,
+                                  ),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                l10n.permissionsSkip,
+                                style: typography.callout.semiBold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Main Content
+                Expanded(
+                  child: isChatMode
+                      ? const PermissionsChatView()
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 480),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  _PermissionsHeader(l10n: l10n),
+                                  const SizedBox(height: 28),
+                                  _NotificationPermissionCard(l10n: l10n),
+                                  const SizedBox(height: 14),
+                                  _StoragePermissionCard(l10n: l10n),
+                                  const SizedBox(height: 32),
+                                  _PermissionsFooter(l10n: l10n),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -98,31 +190,38 @@ class _PermissionsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
+
     return Column(
       children: [
         Container(
-          width: 80,
-          height: 80,
+          width: 76,
+          height: 76,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+            gradient: LinearGradient(
+              colors: [
+                colors.primary,
+                colors.syllabotAccent,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6366F1).withAlpha(100),
+                color: colors.primary.withAlpha(isDark ? 80 : 60),
                 blurRadius: 28,
-                spreadRadius: 4,
+                spreadRadius: 2,
               ),
             ],
           ),
           child: const Icon(
             Icons.lock_open_rounded,
             color: Colors.white,
-            size: 38,
+            size: 36,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Semantics(
           header: true,
           child: Text(
@@ -130,17 +229,18 @@ class _PermissionsHeader extends StatelessWidget {
             textAlign: TextAlign.center,
             style: typography.title1.bold.copyWith(
               color: colors.textPrimary,
-              fontSize: 26,
+              fontSize: 25,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(
           l10n.permissionsSubtitle,
           textAlign: TextAlign.center,
           style: typography.callout.regular.copyWith(
             color: colors.textSecondary,
-            height: 1.5,
+            height: 1.45,
+            fontSize: 14,
           ),
         ),
       ],
@@ -174,52 +274,58 @@ class _PermissionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: colors.surfacePrimary.withAlpha(60),
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfacePrimary.withAlpha(210),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isGranted
-                  ? const Color(0xFF34D399).withAlpha(120)
-                  : Colors.white.withAlpha(40),
-              width: isGranted ? 1.5 : 1,
+                  ? const Color(0xFF10B981)
+                  : (isDark
+                      ? colors.surfaceBorderHighlight.withAlpha(70)
+                      : colors.surfaceBorder),
+              width: isGranted ? 1.5 : 1.0,
             ),
-            boxShadow: isGranted
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF34D399).withAlpha(40),
-                      blurRadius: 16,
-                    ),
-                  ]
-                : null,
+            boxShadow: [
+              BoxShadow(
+                color: isGranted
+                    ? const Color(0xFF10B981).withAlpha(isDark ? 30 : 20)
+                    : Colors.black.withAlpha(isDark ? 30 : 10),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               // Icon badge
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isGranted
-                      ? const Color(0xFF34D399).withAlpha(40)
-                      : const Color(0xFF6366F1).withAlpha(40),
+                      ? const Color(0xFF10B981).withAlpha(isDark ? 40 : 25)
+                      : colors.primary.withAlpha(isDark ? 40 : 20),
                 ),
                 child: Icon(
                   isGranted ? Icons.check_circle_rounded : icon,
                   color: isGranted
-                      ? const Color(0xFF34D399)
-                      : const Color(0xFF6366F1),
-                  size: 26,
+                      ? const Color(0xFF10B981)
+                      : colors.primary,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,51 +334,57 @@ class _PermissionCard extends StatelessWidget {
                       title,
                       style: typography.callout.semiBold.copyWith(
                         color: colors.textPrimary,
+                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       description,
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
-                        height: 1.4,
+                        height: 1.35,
+                        fontSize: 12.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               if (!isGranted)
                 Semantics(
                   button: true,
                   label: semanticsLabel,
-                  child: TextButton(
-                    onPressed: isRequesting ? null : onAllow,
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1).withAlpha(40),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                  child: ShrinkableButton(
+                    onTap: isRequesting ? () {} : onAllow,
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 9,
                       ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 50 : 25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 90 : 50),
+                        ),
+                      ),
+                      child: isRequesting
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colors.primary,
+                              ),
+                            )
+                          : Text(
+                              allowLabel,
+                              style: typography.caption.semiBold.copyWith(
+                                color: colors.primary,
+                                fontSize: 13,
+                              ),
+                            ),
                     ),
-                    child: isRequesting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF6366F1),
-                            ),
-                          )
-                        : Text(
-                            allowLabel,
-                            style: typography.caption.semiBold.copyWith(
-                              color: const Color(0xFF6366F1),
-                            ),
-                          ),
                   ),
                 ),
             ],
@@ -339,57 +451,32 @@ class _PermissionsFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final typography = context.typography;
-    return BlocBuilder<PermissionsCubit, PermissionsState>(
-      builder: (context, state) {
-        final allGranted = state.notificationsGranted && state.storageGranted;
-        return Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: allGranted
-                    ? () => context.read<PermissionsCubit>().finishPermissions()
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(
-                    0xFF6366F1,
-                  ).withAlpha(80),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  l10n.permissionsContinue,
-                  style: typography.callout.semiBold.copyWith(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
+
+    return Column(
+      children: [
+        AppButton(
+          text: l10n.permissionsContinue,
+          onPressed: () =>
+              context.read<PermissionsCubit>().finishPermissions(),
+        ),
+        const SizedBox(height: 12),
+        Semantics(
+          button: true,
+          label: l10n.permissionsSkipSemantics,
+          child: TextButton(
+            onPressed: () =>
+                context.read<PermissionsCubit>().skipPermissions(),
+            child: Text(
+              l10n.permissionsSkip,
+              style: typography.callout.regular.copyWith(
+                color: colors.textSecondary,
               ),
             ),
-            const SizedBox(height: 12),
-            Semantics(
-              button: true,
-              label: l10n.permissionsSkipSemantics,
-              child: TextButton(
-                onPressed: () =>
-                    context.read<PermissionsCubit>().skipPermissions(),
-                child: Text(
-                  l10n.permissionsSkip,
-                  style: typography.callout.regular.copyWith(
-                    color: Colors.white60,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }

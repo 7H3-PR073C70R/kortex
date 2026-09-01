@@ -63,7 +63,7 @@ class _CalibrationView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == CalibrationStatus.completed) {
           unawaited(
-            context.router.replaceAll([const OnboardingContentRoute()]),
+            context.router.replaceAll([const PermissionsRoute()]),
           );
         } else if (state.status == CalibrationStatus.error &&
             state.errorMessage != null) {
@@ -248,7 +248,6 @@ class _MobileCalibrationLayout extends StatelessWidget {
     final l10n = context.l10n;
 
     final state = context.watch<CalibrationCubit>().state;
-    final isLastStep = state.currentStepIndex == state.totalSteps - 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -329,9 +328,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
               Expanded(
                 flex: 5,
                 child: AppButton(
-                  text: isLastStep
-                      ? l10n.calibrationFinish
-                      : l10n.calibrationContinue,
+                  text: l10n.calibrationContinue,
                   isLoading: state.isSubmitting,
                   onPressed: state.canProceed
                       ? () {
