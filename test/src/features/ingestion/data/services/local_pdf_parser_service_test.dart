@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -107,6 +109,32 @@ Cellular respiration generates ATP in the mitochondria.
         isFalse,
       );
     });
+
+    test(
+      'rejects punctuation glyph soup and synthesizes clean high-yield educational cards',
+      () {
+        const punctuationGlyphSoup =
+            '(-,,-,.+++O..O//.--///O//.../../...--/---////...,,,...-,,...///O//O//.--,++,++O..0..O//,++..--O//.--.--/../..-.,/.././...../..O..,+';
+
+        expect(
+          DocumentParserService.isMeaningfulEducationalText(
+            punctuationGlyphSoup,
+          ),
+          isFalse,
+        );
+
+        final cards = service.parsePdfBytesToFlashcards(
+          documentId: 'doc_glyph_soup',
+          bytes: Uint8List.fromList(utf8.encode(punctuationGlyphSoup)),
+          filename: 'trading_presentation.pdf',
+        );
+
+        expect(cards.length, greaterThanOrEqualTo(5));
+        expect(cards.any((c) => c.topic.contains('What is Key Concept')), isFalse);
+        expect(cards.any((c) => c.rawText.contains('(-,,-,')), isFalse);
+        expect(cards.any((c) => c.topic.contains('Rectangle')), isTrue);
+      },
+    );
 
     test('gracefully handles empty or corrupted PDF bytes without failing', () {
       final emptyBytes = Uint8List(0);

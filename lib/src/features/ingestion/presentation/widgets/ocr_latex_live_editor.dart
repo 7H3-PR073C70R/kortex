@@ -52,20 +52,24 @@ class OcrLatexLiveEditor extends HookWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Topic Input
+          // Question / Prompt Input
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: colors.syllabotAccent.withAlpha(30),
+                  color: colors.primary.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 80 : 40),
+                  ),
                 ),
                 child: Text(
-                  'TOPIC',
+                  l10n.cardQuestionBadge,
                   style: typography.caption.bold.copyWith(
-                    color: colors.syllabotAccent,
+                    color: colors.primary,
                     fontSize: 10,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -77,10 +81,13 @@ class OcrLatexLiveEditor extends HookWidget {
                   style: typography.footnote.bold.copyWith(
                     color: colors.textPrimary,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
-                    hintText: 'Enter topic name...',
+                    hintText: l10n.cardQuestionHint,
+                    hintStyle: typography.footnote.regular.copyWith(
+                      color: colors.textMuted,
+                    ),
                   ),
                 ),
               ),
@@ -88,17 +95,18 @@ class OcrLatexLiveEditor extends HookWidget {
           ),
           const Divider(height: 20),
 
-          // Raw Extracted Text Input
+          // Answer / Explanation Input
           Text(
-            'Extracted Text / Explanation',
-            style: typography.caption.medium.copyWith(
+            l10n.cardAnswerLabel,
+            style: typography.caption.bold.copyWith(
               color: colors.textSecondary,
+              letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: rawTextController,
-            maxLines: 3,
+            maxLines: 4,
             minLines: 2,
             onChanged: (_) => notifyUpdate(),
             style: typography.body.regular.copyWith(
@@ -109,6 +117,10 @@ class OcrLatexLiveEditor extends HookWidget {
               fillColor: isDark
                   ? colors.backgroundSecondary.withAlpha(120)
                   : colors.backgroundPrimary,
+              hintText: l10n.cardAnswerHint,
+              hintStyle: typography.body.regular.copyWith(
+                color: colors.textMuted,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -120,9 +132,9 @@ class OcrLatexLiveEditor extends HookWidget {
           ),
           const SizedBox(height: 14),
 
-          // LaTeX Input
+          // LaTeX Formula Input
           Text(
-            r'LaTeX Equation Block (e.g. $$\int f(x)dx$$)',
+            l10n.cardEquationLabel,
             style: typography.caption.medium.copyWith(
               color: colors.textSecondary,
             ),
@@ -142,6 +154,11 @@ class OcrLatexLiveEditor extends HookWidget {
               fillColor: isDark
                   ? colors.backgroundSecondary.withAlpha(120)
                   : colors.backgroundPrimary,
+              hintText: l10n.cardEquationHint,
+              hintStyle: typography.code.regular.copyWith(
+                color: colors.textMuted,
+                fontSize: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
@@ -156,7 +173,7 @@ class OcrLatexLiveEditor extends HookWidget {
           // Live LaTeX Math Preview
           if (latexController.text.isNotEmpty) ...[
             Text(
-              'Live Formula Preview',
+              l10n.liveFormulaPreviewLabel,
               style: typography.caption.medium.copyWith(
                 color: colors.textSecondary,
               ),
@@ -200,7 +217,7 @@ class OcrLatexLiveEditor extends HookWidget {
           if (snippet.imageUrl != null && snippet.imageUrl!.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(
-              'Extracted Diagram / Visual Asset',
+              l10n.extractedVisualDiagramLabel,
               style: typography.caption.medium.copyWith(
                 color: colors.textSecondary,
               ),

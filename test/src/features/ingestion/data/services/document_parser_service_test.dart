@@ -64,24 +64,27 @@ Enter on M1 candle close outside rectangle.
 
       expect(snippets.length, greaterThanOrEqualTo(5));
       expect(
-        snippets.any((s) => s.topic.contains('Rectangle Defined')),
+        snippets.any((s) => s.topic.contains('Rectangle')),
         isTrue,
       );
       expect(
-        snippets.any((s) => s.topic.contains('Timeframes')),
+        snippets.any((s) => s.topic.contains('Timeframes') || s.topic.contains('timeframes')),
         isTrue,
       );
       expect(
         snippets.any(
           (s) =>
-              s.topic.contains('Indicators') || s.topic.contains('Direction'),
+              s.topic.toLowerCase().contains('direction') ||
+              s.topic.contains('EMA') ||
+              s.topic.contains('Indicators'),
         ),
         isTrue,
       );
       expect(
         snippets.any(
           (s) =>
-              s.topic.contains('Strength vs. Weakness') ||
+              s.topic.contains('Weakness') ||
+              s.topic.contains('sweep') ||
               s.topic.contains('Trigger'),
         ),
         isTrue,
@@ -109,8 +112,8 @@ Enter on M1 candle close outside rectangle.
       );
 
       expect(snippets.length, 10);
-      expect(snippets.first.topic, '1.1 The Rectangle Defined');
-      expect(snippets.last.topic, 'Pre-Trade Confirmation Checklist');
+      expect(snippets.first.topic, contains('What is the Rectangle'));
+      expect(snippets.last.topic, contains('Pre-Trade Confirmation Checklist'));
     });
 
     test('extracts embedded JPEG and PNG images from binary PDF stream', () {
@@ -163,9 +166,9 @@ Q: What is the primary function of ATP in cells? A: It acts as the universal ene
       );
 
       expect(snippets.length, 3);
-      expect(snippets[0].topic, 'Mitosis');
+      expect(snippets[0].topic, 'What is Mitosis?');
       expect(snippets[0].rawText, contains('daughter cells'));
-      expect(snippets[1].topic, 'Meiosis');
+      expect(snippets[1].topic, 'What is Meiosis?');
       expect(snippets[1].rawText, contains('reduces the number'));
       expect(snippets[2].topic, contains('primary function of ATP'));
       expect(snippets[2].rawText, contains('energy currency'));

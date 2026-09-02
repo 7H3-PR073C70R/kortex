@@ -2558,6 +2558,54 @@ abstract class AppLocalizations {
   /// **'Diagram Viewer'**
   String get interactiveDiagramViewerTitle;
 
+  /// Badge label for flashcard question field
+  ///
+  /// In en, this message translates to:
+  /// **'QUESTION'**
+  String get cardQuestionBadge;
+
+  /// Hint text for flashcard question field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter question or recall prompt...'**
+  String get cardQuestionHint;
+
+  /// Label for flashcard answer field
+  ///
+  /// In en, this message translates to:
+  /// **'ANSWER'**
+  String get cardAnswerLabel;
+
+  /// Hint text for flashcard answer field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter answer or detailed explanation...'**
+  String get cardAnswerHint;
+
+  /// Label for LaTeX equation block editor
+  ///
+  /// In en, this message translates to:
+  /// **'LaTeX Equation / Formula (Optional)'**
+  String get cardEquationLabel;
+
+  /// Hint text for LaTeX formula input
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1'**
+  String get cardEquationHint;
+
+  /// Header for live LaTeX math rendering preview
+  ///
+  /// In en, this message translates to:
+  /// **'Live Formula Preview'**
+  String get liveFormulaPreviewLabel;
+
+  /// Header for extracted diagram visual asset box
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted Diagram / Visual Asset'**
+  String get extractedVisualDiagramLabel;
+
   /// Title of the Community Hub
   ///
   /// In en, this message translates to:

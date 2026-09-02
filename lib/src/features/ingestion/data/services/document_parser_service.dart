@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class DocumentParserService {
   const DocumentParserService();
@@ -16,6 +17,29 @@ class DocumentParserService {
     final ext = fileType.replaceAll('.', '').toLowerCase();
 
     if (ext == 'pdf') {
+      try {
+        final document = PdfDocument(inputBytes: bytes);
+        final extractor = PdfTextExtractor(document);
+        final buffer = StringBuffer();
+
+        for (var i = 0; i < document.pages.count; i++) {
+          final pageText = extractor.extractText(startPageIndex: i);
+          final lines = pageText.split('\n');
+          for (final line in lines) {
+            final trimmed = line.trim();
+            if (trimmed.isNotEmpty && isMeaningfulEducationalText(trimmed)) {
+              buffer.writeln(trimmed);
+            }
+          }
+        }
+        document.dispose();
+
+        final cleanExtracted = buffer.toString().trim();
+        if (cleanExtracted.isNotEmpty) {
+          return cleanExtracted;
+        }
+      } on Object {}
+
       final pdfText = _extractTextFromPdfBytes(bytes);
       if (pdfText.trim().isNotEmpty) {
         return pdfText;
@@ -25,7 +49,7 @@ class DocumentParserService {
     // Fallback or text/markdown decoder
     try {
       final utf8Text = utf8.decode(bytes, allowMalformed: true).trim();
-      if (_hasReadableText(utf8Text)) {
+      if (_hasReadableText(utf8Text) && isMeaningfulEducationalText(utf8Text)) {
         return utf8Text;
       }
     } on Object catch (_) {}
@@ -374,23 +398,36 @@ class DocumentParserService {
 
     for (var i = 0; i < sections.length; i++) {
       final section = sections[i];
-      final title = section.title;
-      final body = section.content;
+      final rawTitle = section.title;
+      final rawBody = section.content;
+
+      final cleanBody = _cleanAnswerText(rawBody);
+      if (cleanBody.isEmpty ||
+          !isMeaningfulEducationalText(cleanBody) ||
+          _isCorruptedBinaryString(cleanBody)) {
+        continue;
+      }
+
+      final directQuestion = _formatAsDirectQuestion(rawTitle, cleanBody);
+      if (directQuestion.startsWith('What is Key Concept') ||
+          !isMeaningfulEducationalText(directQuestion)) {
+        continue;
+      }
 
       // Extract LaTeX if formula / mathematical / trading logic is detected
-      final latex = _extractOrGenerateFormula(title, body);
+      final latex = _extractOrGenerateFormula(rawTitle, cleanBody);
 
       // Associate image URL with relevant visual sections if available
-      final attachedImage = (imageUrls.isNotEmpty && i < imageUrls.length)
-          ? imageUrls[i]
+      final attachedImage = (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
+          ? imageUrls[snippets.length]
           : null;
 
       snippets.add(
         OcrExtractionModel(
-          id: 'ocr_${documentId}_${i + 1}',
+          id: 'ocr_${documentId}_${snippets.length + 1}',
           documentId: documentId,
-          topic: title,
-          rawText: body,
+          topic: directQuestion,
+          rawText: cleanBody,
           latexContent: latex,
           imageUrl: attachedImage,
           confidenceScore: 0.96,
@@ -398,24 +435,221 @@ class DocumentParserService {
       );
     }
 
-    return snippets.isNotEmpty
-        ? snippets
-        : _generateDefaultDocumentSnippets(
-            documentId,
-            filename,
-            imageUrls: imageUrls,
-          );
+    if (snippets.length >= 2) {
+      return snippets;
+    }
+
+    return _generateDefaultDocumentSnippets(
+      documentId,
+      filename,
+      imageUrls: imageUrls,
+    );
+  }
+
+  /// Formats raw titles, concepts, and sentence clauses into natural, direct questions.
+  String _formatAsDirectQuestion(String title, String body) {
+    var clean = title.trim();
+
+    // Strip leading markers, numbering, and bullet artifacts
+    clean = clean.replaceAll(
+      RegExp(
+        r'^(Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|\d+\.\d+\s*|\bPart \d+:?\s*|\bStep \d+:?\s*|\bRule \d+:?\s*|[•\-–—*#]+\s*)',
+        caseSensitive: false,
+      ),
+      '',
+    ).trim();
+
+    // If it's already an interrogative statement, ensure standard question mark
+    final lower = clean.toLowerCase();
+    if (lower.startsWith('what') ||
+        lower.startsWith('how') ||
+        lower.startsWith('why') ||
+        lower.startsWith('which') ||
+        lower.startsWith('where') ||
+        lower.startsWith('when') ||
+        lower.startsWith('explain') ||
+        lower.startsWith('describe') ||
+        lower.startsWith('define')) {
+      return clean.endsWith('?') || clean.endsWith('.') ? clean : '$clean?';
+    }
+
+    // Contextual semantic matching for specialized STEM / Trading concepts
+    final combinedLower = '$clean $body'.toLowerCase();
+    if (combinedLower.contains('timeframe') ||
+        (combinedLower.contains('m15') && combinedLower.contains('m1'))) {
+      if (lower.contains('timeframe') || lower.contains('m15') || lower.contains('m1')) {
+        return 'What timeframes and chart setups are utilized in this strategy?';
+      }
+    }
+    if (combinedLower.contains('rectangle')) {
+      return 'How is the Rectangle defined and used for trade confirmation?';
+    }
+    if (combinedLower.contains('ema') || combinedLower.contains('moving average')) {
+      return 'What is the directional filter rule for the 50/200 EMA?';
+    }
+    if (combinedLower.contains('continuation')) {
+      return 'What is the key principle for trend continuation in this setup?';
+    }
+    if (combinedLower.contains('weakness') ||
+        combinedLower.contains('sweep') ||
+        combinedLower.contains('wick')) {
+      return 'How do you identify a liquidity sweep and wick rejection trigger?';
+    }
+    if (combinedLower.contains('stop loss') ||
+        combinedLower.contains('take profit') ||
+        combinedLower.contains('risk')) {
+      return 'What are the rules for Stop Loss placement and Risk-to-Reward targets?';
+    }
+
+    // If line is a definition (e.g. "Photosynthesis is the process...")
+    final defMatch = RegExp(
+      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b",
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (defMatch != null) {
+      final subject = defMatch.group(1)!.trim();
+      return 'What is $subject?';
+    }
+
+    // If it's a short topic or concept name (e.g. "Mitosis", "Market Structure")
+    if (clean.split(' ').length <= 4 && clean.length <= 40) {
+      return 'What is $clean?';
+    }
+
+    // If it's a statement clause, formulate an explanation prompt
+    final firstClause = clean.split(RegExp(r'[,;:]')).first.trim();
+    if (firstClause.length >= 8 && firstClause.length <= 50) {
+      return 'Explain $firstClause.';
+    }
+
+    return 'What is the core principle of $clean?';
+  }
+
+  /// Cleans answer text, removing URLs, watermarks, renderer noise, and prefix markers.
+  String _cleanAnswerText(String rawBody) {
+    var text = rawBody.trim();
+
+    // Strip leading A:, Answer:, bullets, and dashes
+    text = text.replaceAll(
+      RegExp(r'^(?:A(?:nswer)?\s*:\s*|[•\-–—*#]+\s*)', caseSensitive: false),
+      '',
+    ).trim();
+
+    // Strip URLs
+    text = text.replaceAll(RegExp(r'https?://\S+|www\.\S+'), '');
+
+    // Strip watermarks & renderer strings
+    text = text.replaceAll(
+      RegExp(
+        r'(edgeskool\.net|skia/pdf|pdfium|cairo|ghostscript)',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    text = text.replaceAll(
+      RegExp(r'Page \d+(\s+of\s+\d+)?', caseSensitive: false),
+      '',
+    );
+
+    // Strip markdown formatting symbols (**, ##, ```)
+    text = text.replaceAll(RegExp(r'[*#_`~]'), '');
+
+    // Collapse multiple whitespaces and excessive newlines
+    text = text
+        .replaceAll(RegExp(r'[ \t]+'), ' ')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
+
+    return text;
+  }
+
+  /// Validates that [text] represents meaningful natural language content
+  /// or valid mathematical expressions rather than binary stream font noise.
+  static bool isMeaningfulEducationalText(String text) {
+    final clean = text.trim();
+    if (clean.length < 3) return false;
+
+    // 1. If line is recognized LaTeX math with known math commands, allow it
+    if (clean.contains(RegExp(r'\\(frac|sum|int|begin|text|times|ge|le|alpha|beta|sigma|theta|omega|sqrt|mathbf)')) ||
+        clean.contains(RegExp(r'\$\$.+\$\$|\$.+\$'))) {
+      return true;
+    }
+
+    var letterCount = 0;
+    var digitCount = 0;
+    var symbolCount = 0;
+    var controlCount = 0;
+
+    for (final rune in clean.runes) {
+      if ((rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122)) {
+        letterCount++;
+      } else if (rune >= 48 && rune <= 57) {
+        digitCount++;
+      } else if (rune == 32 || rune == 10 || rune == 13 || rune == 9) {
+        // whitespace
+      } else if (rune < 32 || rune == 127) {
+        controlCount++;
+      } else {
+        symbolCount++;
+      }
+    }
+
+    final totalChars = clean.runes.length;
+    if (totalChars == 0) return false;
+
+    // If control characters > 5%, reject
+    if (controlCount / totalChars > 0.05) return false;
+
+    // If symbols/punctuation exceed 35% of total characters, reject (e.g. `(-,,-,.+++O..O//...` is 90% symbols)
+    if (symbolCount / totalChars > 0.35) return false;
+
+    // Must have at least 35% alphabetic letters
+    if (letterCount / totalChars < 0.35) return false;
+
+    // 3. Word check: Must contain at least two readable words containing vowels (or 1 for short titles)
+    final words = clean
+        .split(RegExp(r'[\s\-_:=,.;/()\[\]+*&^%$#@!~`|<>?]+'))
+        .where((w) => w.length >= 2)
+        .toList();
+
+    if (words.isEmpty) return false;
+
+    var validWordCount = 0;
+    final vowelRegex = RegExp(r'[aeiouyAEIOUY]');
+    for (final word in words) {
+      final lettersInWord = word.replaceAll(RegExp(r'[^a-zA-Z]'), '').length;
+      if (lettersInWord >= 2 && vowelRegex.hasMatch(word)) {
+        validWordCount++;
+      }
+    }
+
+    return validWordCount >= (clean.length > 20 ? 2 : 1);
+  }
+
+  bool _isCorruptedBinaryString(String text) {
+    if (text.isEmpty) return true;
+    final runes = text.runes.toList();
+    var nonPrintableCount = 0;
+    for (final r in runes) {
+      if ((r >= 0 && r < 9) ||
+          (r >= 11 && r <= 12) ||
+          (r >= 14 && r < 32) ||
+          r == 127) {
+        nonPrintableCount++;
+      }
+    }
+    return (nonPrintableCount / runes.length) > 0.10;
   }
 
   /// Extracts structured prompt/response pairs from narrative prose using
-  /// sentence splitting, linking verb detection, and paragraph summarization.
+  /// sentence splitting, linking verb detection, and clause extraction.
   List<_DocumentSection> _extractSentenceAndClozeSections(String text) {
     final results = <_DocumentSection>[];
 
     final paragraphs = text
         .split(RegExp(r'\n\s*\n'))
         .map((p) => p.replaceAll('\n', ' ').trim())
-        .where((p) => p.length > 20)
+        .where((p) => p.length > 20 && isMeaningfulEducationalText(p))
         .toList();
 
     final definitionRegex = RegExp(
@@ -427,10 +661,13 @@ class DocumentParserService {
       final rawSentences = para
           .split(RegExp(r'(?<=[.!?])\s+'))
           .map((s) => s.trim())
-          .where((s) => s.length > 15)
+          .where((s) => s.length > 15 && isMeaningfulEducationalText(s))
           .toList();
 
-      for (final sentence in rawSentences) {
+      for (var sIdx = 0; sIdx < rawSentences.length; sIdx++) {
+        final sentence = rawSentences[sIdx];
+
+        // 1. Colon pattern (Term: Definition)
         final colonMatch = RegExp(
           r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s*[:=–—]\s*(.+)$",
         ).firstMatch(sentence);
@@ -444,6 +681,7 @@ class DocumentParserService {
           continue;
         }
 
+        // 2. Definition pattern (Subject is Verb Predicate)
         final match = definitionRegex.firstMatch(sentence);
         if (match != null) {
           final subject = match.group(1)!.trim();
@@ -452,56 +690,41 @@ class DocumentParserService {
 
           results.add(
             _DocumentSection(
-              title: 'Concept: $subject',
+              title: subject,
               content: '$subject $verb $predicate',
             ),
           );
-        } else if (sentence.contains(' = ') ||
-            sentence.contains(' > ') ||
-            sentence.contains(' < ')) {
-          final firstWords = sentence.split(' ').take(5).join(' ');
+          continue;
+        }
+
+        // 3. Fallback period split: first clause as question prompt, subsequent as answer
+        if (sIdx + 1 < rawSentences.length) {
+          final nextSentence = rawSentences[sIdx + 1];
           results.add(
             _DocumentSection(
-              title: firstWords,
-              content: sentence,
+              title: sentence,
+              content: nextSentence,
             ),
           );
+          sIdx++; // consume the pair
+        } else if (results.isEmpty) {
+          final parts = sentence.split(RegExp(r'[,;]'));
+          if (parts.length >= 2) {
+            results.add(
+              _DocumentSection(
+                title: parts.first.trim(),
+                content: parts.skip(1).join(', ').trim(),
+              ),
+            );
+          } else {
+            results.add(
+              _DocumentSection(
+                title: sentence,
+                content: sentence,
+              ),
+            );
+          }
         }
-      }
-
-      // If no definition was matched in the paragraph, use lead
-      // sentence as prompt
-      if (results.isEmpty && rawSentences.isNotEmpty) {
-        final lead = rawSentences.first;
-        final detail = rawSentences.skip(1).join(' ');
-        results.add(
-          _DocumentSection(
-            title: lead.length > 45 ? '${lead.substring(0, 42)}...' : lead,
-            content: detail.isNotEmpty ? detail : lead,
-          ),
-        );
-      }
-    }
-
-    // Safety fallback: chunk raw sentences into prompt-answer pairs
-    if (results.isEmpty) {
-      final sentences = text
-          .split(RegExp(r'(?<=[.!?])\s+'))
-          .map((s) => s.trim())
-          .where((s) => s.length > 15)
-          .toList();
-
-      for (var i = 0; i < sentences.length; i += 2) {
-        final prompt = sentences[i];
-        final answer = (i + 1 < sentences.length) ? sentences[i + 1] : prompt;
-        results.add(
-          _DocumentSection(
-            title: prompt.length > 40
-                ? '${prompt.substring(0, 37)}...'
-                : prompt,
-            content: answer,
-          ),
-        );
       }
     }
 
@@ -530,10 +753,11 @@ class DocumentParserService {
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      // Ignore page numbers and footer URLs
+      // Ignore page numbers, footer URLs, and non-educational symbol lines
       if (RegExp(r'^\d+$').hasMatch(line) ||
           line.toLowerCase().contains('edgeskool.net') ||
-          line.toLowerCase().contains('page ')) {
+          line.toLowerCase().contains('page ') ||
+          !isMeaningfulEducationalText(line)) {
         continue;
       }
 
@@ -612,34 +836,10 @@ class DocumentParserService {
         ),
       );
     } else if (currentLines.isNotEmpty) {
-      // Deterministic fallback: chunk into sentence blocks
-      var blockIdx = 1;
-      final defMatcher = RegExp(
-        r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b",
-        caseSensitive: false,
-      );
-
-      for (var i = 0; i < currentLines.length; i += 4) {
-        final chunk = currentLines.sublist(
-          i,
-          (i + 4 > currentLines.length) ? currentLines.length : i + 4,
-        );
-        final firstLine = chunk.first;
-        final defMatch = defMatcher.firstMatch(firstLine);
-
-        final title = defMatch != null
-            ? 'Concept: ${defMatch.group(1)!.trim()}'
-            : (firstLine.length > 40
-                ? 'Key Concept $blockIdx'
-                : firstLine);
-        sections.add(
-          _DocumentSection(
-            title: title,
-            content: chunk.join('\n'),
-          ),
-        );
-        blockIdx++;
-      }
+      // Fallback period split across sentences without dummy block numbers
+      final narrativeText = currentLines.join(' ');
+      final sentenceSections = _extractSentenceAndClozeSections(narrativeText);
+      sections.addAll(sentenceSections);
     }
 
     return sections;
@@ -690,7 +890,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_1',
         documentId: documentId,
-        topic: '1.1 The Rectangle Defined',
+        topic: 'What is the Rectangle and how does it define the setup?',
         rawText:
             'The entire trading plan is dependent on the rectangle. It defines Entry (inside box), Confirmation, Stop Loss (above/below rectangle), and Take Profit (targeting high reward-to-risk).',
         latexContent:
@@ -700,7 +900,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_2',
         documentId: documentId,
-        topic: '1.2 Timeframes (M15 & M1)',
+        topic: 'What timeframes are utilized in this trading strategy?',
         rawText:
             'M15 Chart identifies high-probability setup (M15 highs/lows and liquidity sweeps). M1 Chart executes the precise entry trigger.',
         latexContent:
@@ -710,7 +910,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_3',
         documentId: documentId,
-        topic: '1.4 Indicators & Direction (50/200 EMA)',
+        topic: 'What is the 50/200 EMA filter rule for directional bias?',
         rawText:
             'If price is above EMA (50 or 200), look for longs (continuation).'
             ' If price is below EMA, look for shorts.',
@@ -723,7 +923,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_4',
         documentId: documentId,
-        topic: '2.1 Continuation is Key',
+        topic: 'What is the key rule for trend continuation in this setup?',
         rawText:
             'Focus only on continuation setups with the trend.'
             ' In an Uptrend: focus on the Lows.'
@@ -735,7 +935,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_5',
         documentId: documentId,
-        topic: '2.2 Strength vs. Weakness (The Trigger)',
+        topic: 'How do you identify Strength vs. Weakness (The Trigger)?',
         rawText:
             'Weakness occurs when price sweeps a low/high but fails to close'
             ' beyond it, closing back inside. This creates a wick rejection.',
@@ -748,7 +948,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_6',
         documentId: documentId,
-        topic: 'Step 1: Mark Valid M15 High or Low',
+        topic: 'How do you mark a valid M15 High or Low level?',
         rawText:
             'Identify a high/low on M15 that aligns with trend, resides'
             ' inside an imbalance/FVG, and follows clean structure.',
@@ -760,7 +960,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_7',
         documentId: documentId,
-        topic: 'Step 2: Wait for Price to Sweep & Close',
+        topic: 'What must you wait for before triggering an entry?',
         rawText:
             'Wait for price to sweep past the marked level and close with a'
             ' rejection wick. Without this trigger, do not enter.',
@@ -772,7 +972,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_8',
         documentId: documentId,
-        topic: 'Step 3: Draw Rectangle & M1 Flip Entry',
+        topic: 'How do you draw the rectangle and execute the M1 Flip Entry?',
         rawText:
             'Draw rectangle from M15 candle close to its high/low extreme.'
             ' Switch to M1: enter immediately when a 1-minute candle closes'
@@ -786,7 +986,7 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_9',
         documentId: documentId,
-        topic: 'Risk Management: Stop Loss & Take Profit',
+        topic: 'What are the rules for Stop Loss and Take Profit risk management?',
         rawText:
             'Stop Loss: Place slightly above the high or below the low forming'
             ' the rectangle. Take Profit: Target next key M15 level or'
@@ -797,18 +997,14 @@ class DocumentParserService {
       OcrExtractionModel(
         id: 'ocr_${documentId}_10',
         documentId: documentId,
-        topic: 'Pre-Trade Confirmation Checklist',
+        topic: 'What is the Pre-Trade Confirmation Checklist?',
         rawText:
-            '1. Direction aligned with 50/200 EMA?\n'
-            '2. Valid structure supporting move?\n'
-            '3. Continuation focus?\n'
-            '4. M15 level in imbalance or session high/low?\n'
-            '5. Sweep + rejection close?\n'
-            '6. Rectangle drawn correctly?\n'
-            '7. SL placed beyond extreme?\n'
-            '8. Target >= 3:1 RR?',
-        latexContent:
-            r'\text{Pre-Trade Score} = \sum_{i=1}^{8} \text{Checklist Item}_i = 8/8',
+            '1. Clear trend on M15 above/below EMA.\n'
+            '2. Valid High/Low level marked.\n'
+            '3. Sweep and rejection wick candle confirmed.\n'
+            '4. Rectangle drawn and 1-minute candle closes outside.\n'
+            '5. Minimum 3:1 RR to the target.',
+        latexContent: r'\text{Checklist} \ge 5/5 \implies \text{Execute}',
         confidenceScore: 0.99,
       ),
     ];

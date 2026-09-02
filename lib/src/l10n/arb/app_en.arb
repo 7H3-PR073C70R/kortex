@@ -2011,6 +2011,38 @@
     "@interactiveDiagramViewerTitle": {
         "description": "Title for interactive full-screen diagram viewer"
     },
+    "cardQuestionBadge": "QUESTION",
+    "@cardQuestionBadge": {
+        "description": "Badge label for flashcard question field"
+    },
+    "cardQuestionHint": "Enter question or recall prompt...",
+    "@cardQuestionHint": {
+        "description": "Hint text for flashcard question field"
+    },
+    "cardAnswerLabel": "ANSWER",
+    "@cardAnswerLabel": {
+        "description": "Label for flashcard answer field"
+    },
+    "cardAnswerHint": "Enter answer or detailed explanation...",
+    "@cardAnswerHint": {
+        "description": "Hint text for flashcard answer field"
+    },
+    "cardEquationLabel": "LaTeX Equation / Formula (Optional)",
+    "@cardEquationLabel": {
+        "description": "Label for LaTeX equation block editor"
+    },
+    "cardEquationHint": "e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1",
+    "@cardEquationHint": {
+        "description": "Hint text for LaTeX formula input"
+    },
+    "liveFormulaPreviewLabel": "Live Formula Preview",
+    "@liveFormulaPreviewLabel": {
+        "description": "Header for live LaTeX math rendering preview"
+    },
+    "extractedVisualDiagramLabel": "Extracted Diagram / Visual Asset",
+    "@extractedVisualDiagramLabel": {
+        "description": "Header for extracted diagram visual asset box"
+    },
     "communityTitle": "Community & Study Hub",
     "@communityTitle": {
         "description": "Title of the Community Hub"

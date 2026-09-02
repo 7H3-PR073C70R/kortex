@@ -1428,6 +1428,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interactiveDiagramViewerTitle => 'Diagram Viewer';
 
   @override
+  String get cardQuestionBadge => 'QUESTION';
+
+  @override
+  String get cardQuestionHint => 'Enter question or recall prompt...';
+
+  @override
+  String get cardAnswerLabel => 'ANSWER';
+
+  @override
+  String get cardAnswerHint => 'Enter answer or detailed explanation...';
+
+  @override
+  String get cardEquationLabel => 'LaTeX Equation / Formula (Optional)';
+
+  @override
+  String get cardEquationHint =>
+      'e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1';
+
+  @override
+  String get liveFormulaPreviewLabel => 'Live Formula Preview';
+
+  @override
+  String get extractedVisualDiagramLabel => 'Extracted Diagram / Visual Asset';
+
+  @override
   String get communityTitle => 'Community & Study Hub';
 
   @override

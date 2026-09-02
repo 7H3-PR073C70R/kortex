@@ -87,6 +87,11 @@ class LocalPdfParserService {
         continue;
       }
 
+      // 3. Meaningful natural language / formula validation
+      if (!DocumentParserService.isMeaningfulEducationalText(trimmed)) {
+        continue;
+      }
+
       cleanLines.add(trimmed);
     }
 
