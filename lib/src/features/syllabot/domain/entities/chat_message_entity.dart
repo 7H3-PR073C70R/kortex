@@ -17,7 +17,7 @@ class ChatMessageEntity extends Equatable {
     required this.text,
     required this.timestamp,
     this.latexSnippets = const [],
-    this.engineType = ExecutionEngineType.cloudSupabase,
+    this.engineType = ExecutionEngineType.cloudRemote,
     this.tokensCount = 0,
     this.isStreaming = false,
     this.isError = false,

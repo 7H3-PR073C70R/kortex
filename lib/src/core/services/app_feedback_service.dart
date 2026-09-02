@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 
 /// Centralized haptic and sensory feedback controller for Kortex.
 /// Respects user preferences configured in App & Sensory Settings.

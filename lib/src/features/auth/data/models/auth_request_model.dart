@@ -44,6 +44,7 @@ abstract class SocialAuthRequestModel with _$SocialAuthRequestModel {
   const factory SocialAuthRequestModel({
     required String provider,
     required String idToken,
+    String? accessToken,
     String? rawNonce,
   }) = _SocialAuthRequestModel;
 

@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}

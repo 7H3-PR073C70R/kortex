@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_state.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 
 /// Business logic component managing ThemeMode, Presets, and Custom Accents.
 class ThemeCubit extends Cubit<ThemeState> {

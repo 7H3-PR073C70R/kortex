@@ -142,8 +142,8 @@ extension ErrorHandler on Exception {
     if (lower.contains('error sending confirmation email') ||
         lower.contains('error sending email') ||
         lower.contains('unable to send email')) {
-      return 'Unable to send confirmation email. Please check your Supabase '
-          'SMTP configuration or disable email confirmation in dashboard.';
+      return 'Unable to send confirmation email. Please check your '
+          'SMTP configuration or try again later.';
     }
     if (lower.contains('email not confirmed')) {
       return 'Please check your email inbox to confirm your account '

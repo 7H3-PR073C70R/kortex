@@ -7,7 +7,7 @@ import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
-import 'package:kortex/src/services/user_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
@@ -85,7 +85,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       final entity = model.toEntity();
       if (entity.token != null) {
-        await _userStorageService.saveToken(entity.token!);
+        if (entity.refreshToken != null) {
+          await _userStorageService.saveAuthTokens(
+            accessToken: entity.token!,
+            refreshToken: entity.refreshToken!,
+          );
+        } else {
+          await _userStorageService.saveToken(entity.token!);
+        }
       }
       _authStateController.add(AuthSessionStatus.authenticatedComplete);
       return Right(entity);
@@ -110,7 +117,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       final entity = model.toEntity();
       if (entity.token != null) {
-        await _userStorageService.saveToken(entity.token!);
+        if (entity.refreshToken != null) {
+          await _userStorageService.saveAuthTokens(
+            accessToken: entity.token!,
+            refreshToken: entity.refreshToken!,
+          );
+        } else {
+          await _userStorageService.saveToken(entity.token!);
+        }
       }
       _authStateController
           .add(AuthSessionStatus.authenticatedNeedsOnboarding);
@@ -136,7 +150,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       final entity = model.toEntity();
       if (entity.token != null) {
-        await _userStorageService.saveToken(entity.token!);
+        if (entity.refreshToken != null) {
+          await _userStorageService.saveAuthTokens(
+            accessToken: entity.token!,
+            refreshToken: entity.refreshToken!,
+          );
+        } else {
+          await _userStorageService.saveToken(entity.token!);
+        }
       }
       _authStateController.add(AuthSessionStatus.authenticatedComplete);
       return Right(entity);
@@ -185,7 +206,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       final entity = model.toEntity();
       if (entity.token != null) {
-        await _userStorageService.saveToken(entity.token!);
+        if (entity.refreshToken != null) {
+          await _userStorageService.saveAuthTokens(
+            accessToken: entity.token!,
+            refreshToken: entity.refreshToken!,
+          );
+        } else {
+          await _userStorageService.saveToken(entity.token!);
+        }
       }
       _authStateController.add(AuthSessionStatus.authenticatedComplete);
       return Right(entity);

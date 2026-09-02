@@ -20,7 +20,7 @@ class SyllabotChatState extends Equatable {
     this.sessionId = '',
     this.streamingText = '',
     this.socraticMode = SocraticMode.stepByStep,
-    this.engineType = ExecutionEngineType.cloudSupabase,
+    this.engineType = ExecutionEngineType.cloudRemote,
     this.errorMessage,
     this.generatedDeck,
     this.lastPrompt,

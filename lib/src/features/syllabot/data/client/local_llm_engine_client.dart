@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 
 /// Intelligent academic reasoning engine and local LLM client for Syllabot AI.
 ///

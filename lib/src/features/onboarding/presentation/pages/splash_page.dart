@@ -8,8 +8,8 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
-import 'package:kortex/src/services/user_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 
 @RoutePage()
 class SplashPage extends StatefulWidget {

@@ -1,11 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 
 abstract class UserStorageService {
   Future<void> saveToken(String token);
 
   String? getToken();
+
+  Future<void> saveRefreshToken(String refreshToken);
+
+  String? getRefreshToken();
+
+  Future<void> saveAuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  });
 
   String? getUserId();
 
@@ -17,11 +26,21 @@ class UserStorageServiceImpl implements UserStorageService {
   final LocalStorageService _localStorageService;
 
   final _tokenKey = '__token';
+  final _refreshTokenKey = '__refresh_token';
 
   @override
   String? getToken() {
     try {
       return _localStorageService.getPreference(key: _tokenKey);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  String? getRefreshToken() {
+    try {
+      return _localStorageService.getPreference(key: _refreshTokenKey);
     } on Object {
       return null;
     }
@@ -55,7 +74,39 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
+  Future<void> saveRefreshToken(String refreshToken) async {
+    try {
+      await _localStorageService.savePreference(
+        key: _refreshTokenKey,
+        data: refreshToken,
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  @override
+  Future<void> saveAuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    try {
+      await _localStorageService.savePreference(
+        key: _tokenKey,
+        data: accessToken,
+      );
+      await _localStorageService.savePreference(
+        key: _refreshTokenKey,
+        data: refreshToken,
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  @override
   void clearStorage() {
     unawaited(_localStorageService.deletePreference(key: _tokenKey));
+    unawaited(_localStorageService.deletePreference(key: _refreshTokenKey));
   }
 }

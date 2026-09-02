@@ -3,7 +3,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_illustrations.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 
 /// Data source interface for managing localized onboarding slide data

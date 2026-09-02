@@ -5,23 +5,20 @@ void _initClients() {
     ..registerLazySingleton<AuthApiClient>(
       () => AuthApiClient(locator<Dio>()),
     )
-    ..registerLazySingleton<SupabaseAuthClient>(
-      () => SupabaseAuthClient(locator<Dio>()),
-    )
     ..registerLazySingleton<DashboardApiClient>(
       () => DashboardApiClient(locator<Dio>()),
     )
     ..registerLazySingleton<DecksApiClient>(
       () => DecksApiClient(locator<Dio>()),
     )
-    ..registerLazySingleton<SupabaseSyllabotClient>(
-      () => SupabaseSyllabotClient(locator<Dio>()),
+    ..registerLazySingleton<SyllabotApiClient>(
+      () => SyllabotApiClient(locator<Dio>()),
     )
-    ..registerLazySingleton<SupabaseIngestionClient>(
-      () => SupabaseIngestionClient(locator<Dio>()),
+    ..registerLazySingleton<IngestionApiClient>(
+      () => IngestionApiClient(locator<Dio>()),
     )
-    ..registerLazySingleton<SupabaseCommunityClient>(
-      () => SupabaseCommunityClient(locator<Dio>()),
+    ..registerLazySingleton<CommunityApiClient>(
+      () => CommunityApiClient(locator<Dio>()),
     )
     ..registerLazySingleton<VectorSearchClient>(
       () => VectorSearchClient(locator<Dio>()),
@@ -41,8 +38,8 @@ void _initClients() {
     ..registerLazySingleton<EphemeralPresenceClient>(
       EphemeralPresenceClientImpl.new,
     )
-    ..registerLazySingleton<SupabasePastQuestionsClient>(
-      () => SupabasePastQuestionsClient(locator<Dio>()),
+    ..registerLazySingleton<PastQuestionsApiClient>(
+      () => PastQuestionsApiClient(locator<Dio>()),
     )
     ..registerLazySingleton<ProfileApiClient>(
       () => ProfileApiClient(locator<Dio>()),

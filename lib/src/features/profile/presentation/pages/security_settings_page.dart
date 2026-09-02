@@ -22,7 +22,7 @@ import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.da
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -317,7 +317,7 @@ class SecuritySettingsPage extends HookWidget {
                     title: 'App Lock & Two-Factor Authentication',
                     subtitle:
                         'Protect your study notes with biometrics & '
-                        'Supabase MFA',
+                        'Authenticator App (TOTP)',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -424,7 +424,8 @@ class SecuritySettingsPage extends HookWidget {
                   // 3. Active Sessions & Sign Out Everywhere
                   _buildSectionContainer(
                     title: 'Active Sessions & Device Management',
-                    subtitle: 'Review authorized devices connected to Supabase',
+                    subtitle:
+                        'Review authorized devices connected to your account',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -972,7 +973,7 @@ class SecuritySettingsPage extends HookWidget {
           content: Text(
             'This action is irreversible. All your study streak data, '
             'flashcard decks, and AI notes will be completely purged from '
-            'Supabase.',
+            'our servers.',
             style: typography.body.regular.copyWith(
               color: colors.textSecondary,
               fontSize: 13,

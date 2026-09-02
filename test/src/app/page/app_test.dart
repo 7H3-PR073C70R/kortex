@@ -11,7 +11,7 @@ void main() {
 
   group('App', () {
     testWidgets('renders App widget', (tester) async {
-      await tester.pumpWidget(App());
+      await tester.pumpWidget(const App());
       expect(find.byType(App), findsOneWidget);
     });
   });

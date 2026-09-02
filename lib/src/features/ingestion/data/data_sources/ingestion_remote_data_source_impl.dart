@@ -1,15 +1,15 @@
 import 'dart:typed_data';
-import 'package:kortex/src/features/ingestion/data/client/supabase_ingestion_client.dart';
+import 'package:dio/dio.dart';
+import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
-import 'package:kortex/src/services/user_storage_service.dart';
 
 class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
-  IngestionRemoteDataSourceImpl(this._client, this._userStorage);
+  IngestionRemoteDataSourceImpl(this._client, this._dio);
 
-  final SupabaseIngestionClient _client;
-  final UserStorageService _userStorage;
+  final IngestionApiClient _client;
+  final Dio _dio;
 
   @override
   Future<DocumentUploadModel?> findOrCreateDocumentReference({
@@ -18,15 +18,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String fileType,
     required int fileSizeBytes,
   }) async {
-    final token = _userStorage.getToken() ?? '';
-    final data = await _client.findOrCreateDocumentReference(
-      contentHash: contentHash,
-      filename: filename,
-      fileType: fileType,
-      fileSizeBytes: fileSizeBytes,
-      authToken: token,
+    final res = await _client.findOrCreateDocumentReference(
+      {
+        'p_content_hash': contentHash,
+        'p_filename': filename,
+        'p_file_type': fileType,
+        'p_file_size_bytes': fileSizeBytes,
+      },
     );
-    if (data != null && data['document'] != null) {
+    final data = res.data;
+    if (data is Map<String, dynamic> && data['document'] != null) {
       final docMap = data['document'] as Map<String, dynamic>;
       final isDeduplicated = data['is_deduplicated'] as bool? ?? true;
       return DocumentUploadModel.fromJson(
@@ -39,13 +40,19 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
 
   @override
   Future<DocumentUploadModel?> findDocumentByHash(String contentHash) async {
-    final token = _userStorage.getToken() ?? '';
-    final data = await _client.findDocumentByHash(
-      contentHash: contentHash,
-      authToken: token,
+    final res = await _client.fetchDocuments(
+      {
+        'select': '*',
+        'content_hash': 'eq.$contentHash',
+        'limit': '1',
+      },
     );
-    if (data != null) {
-      return DocumentUploadModel.fromJson(data, isDeduplicated: true);
+    final list = res.data is List ? (res.data as List) : <dynamic>[];
+    if (list.isNotEmpty) {
+      return DocumentUploadModel.fromJson(
+        list.first as Map<String, dynamic>,
+        isDeduplicated: true,
+      );
     }
     return null;
   }
@@ -58,7 +65,6 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String contentHash,
     void Function(double progress)? onProgress,
   }) async {
-    final token = _userStorage.getToken() ?? '';
     final docId = 'doc_${DateTime.now().millisecondsSinceEpoch}';
     final ext = fileType.replaceAll('.', '');
     final storagePath = '$docId.$ext';
@@ -75,12 +81,11 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       contentType = 'image/jpeg';
     }
 
-    // 1. Upload to Supabase Storage Bucket
-    await _client.uploadStorageFile(
+    // 1. Upload to Storage Bucket
+    await _dio.uploadStorageFile(
       storagePath: storagePath,
       fileBytes: fileBytes,
       contentType: contentType,
-      authToken: token,
       onProgress: (sent, total) {
         if (total > 0 && onProgress != null) {
           onProgress(sent / total);
@@ -89,16 +94,22 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     );
 
     // 2. Register metadata row in documents table
-    final data = await _client.createDocumentRecord(
-      filename: filename,
-      fileType: fileType,
-      fileSizeBytes: fileBytes.lengthInBytes,
-      storagePath: storagePath,
-      contentHash: contentHash,
-      authToken: token,
+    final res = await _client.createDocumentRecord(
+      {
+        'filename': filename,
+        'file_type': fileType,
+        'file_size_bytes': fileBytes.lengthInBytes,
+        'storage_path': storagePath,
+        'content_hash': contentHash,
+        'processing_status': 'uploaded',
+      },
     );
 
-    return DocumentUploadModel.fromJson(data);
+    final list = res.data is List ? (res.data as List) : <dynamic>[];
+    if (list.isEmpty) {
+      throw Exception('Failed to insert document record');
+    }
+    return DocumentUploadModel.fromJson(list.first as Map<String, dynamic>);
   }
 
   @override
@@ -107,14 +118,17 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String storagePath,
     required String fileType,
   }) async {
-    final token = _userStorage.getToken() ?? '';
-    final result = await _client.triggerParseStemOcr(
-      documentId: documentId,
-      storagePath: storagePath,
-      fileType: fileType,
-      authToken: token,
+    final res = await _client.triggerParseStemOcr(
+      {
+        'documentId': documentId,
+        'storagePath': storagePath,
+        'fileType': fileType,
+      },
     );
 
+    final result = res.data is Map<String, dynamic>
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
     final rawList = result['snippets'] as List<dynamic>? ?? [];
     if (rawList.isNotEmpty) {
       return rawList
@@ -130,18 +144,30 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   Future<List<OcrExtractionModel>> fetchExtractedSnippets(
     String documentId,
   ) async {
-    final token = _userStorage.getToken() ?? '';
-    final data = await _client.fetchExtractedSnippets(
-      documentId: documentId,
-      authToken: token,
+    final res = await _client.fetchExtractedSnippets(
+      {
+        'select': '*',
+        'document_id': 'eq.$documentId',
+        'order': 'created_at.asc',
+      },
     );
-    return data.map(OcrExtractionModel.fromJson).toList();
+    final list = res.data is List ? (res.data as List) : <dynamic>[];
+    return list
+        .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<List<DocumentUploadModel>> fetchUserDocuments() async {
-    final token = _userStorage.getToken() ?? '';
-    final data = await _client.fetchUserDocuments(token);
-    return data.map(DocumentUploadModel.fromJson).toList();
+    final res = await _client.fetchDocuments(
+      {
+        'select': '*',
+        'order': 'created_at.desc',
+      },
+    );
+    final list = res.data is List ? (res.data as List) : <dynamic>[];
+    return list
+        .map((e) => DocumentUploadModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

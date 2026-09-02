@@ -1,14 +1,14 @@
 /// Execution engines available for Syllabot AI.
 enum ExecutionEngineType {
-  cloudSupabase,
+  cloudRemote,
   localOnDevice,
 }
 
 extension ExecutionEngineTypeX on ExecutionEngineType {
   String get nameString {
     switch (this) {
-      case ExecutionEngineType.cloudSupabase:
-        return 'cloudSupabase';
+      case ExecutionEngineType.cloudRemote:
+        return 'cloudRemote';
       case ExecutionEngineType.localOnDevice:
         return 'localOnDevice';
     }
@@ -18,6 +18,6 @@ extension ExecutionEngineTypeX on ExecutionEngineType {
     if (value == 'localOnDevice') {
       return ExecutionEngineType.localOnDevice;
     }
-    return ExecutionEngineType.cloudSupabase;
+    return ExecutionEngineType.cloudRemote;
   }
 }

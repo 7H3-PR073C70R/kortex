@@ -9,6 +9,7 @@ class UserEntity extends Equatable {
     this.photoUrl,
     this.academicInstitution,
     this.token,
+    this.refreshToken,
   });
 
   final String id;
@@ -17,6 +18,7 @@ class UserEntity extends Equatable {
   final String? photoUrl;
   final String? academicInstitution;
   final String? token;
+  final String? refreshToken;
 
   @override
   List<Object?> get props => [
@@ -26,5 +28,6 @@ class UserEntity extends Equatable {
         photoUrl,
         academicInstitution,
         token,
+        refreshToken,
       ];
 }

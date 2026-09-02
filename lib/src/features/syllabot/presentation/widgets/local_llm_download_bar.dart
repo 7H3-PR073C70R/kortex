@@ -12,7 +12,7 @@ class LocalLlmDownloadBar extends StatelessWidget {
   const LocalLlmDownloadBar({
     required this.progress,
     required this.onCancel,
-    this.currentEngine = ExecutionEngineType.cloudSupabase,
+    this.currentEngine = ExecutionEngineType.cloudRemote,
     super.key,
   });
 

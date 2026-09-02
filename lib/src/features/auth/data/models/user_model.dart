@@ -1,22 +1,27 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_entity.dart';
 
-part 'user_model.freezed.dart';
+class UserModel extends Equatable {
+  const UserModel({
+    required this.id,
+    required this.email,
+    this.displayName,
+    this.photoUrl,
+    this.academicInstitution,
+    this.token,
+    this.refreshToken,
+  });
 
-@freezed
-abstract class UserModel with _$UserModel {
-  const factory UserModel({
-    required String id,
-    required String email,
-    String? displayName,
-    String? photoUrl,
-    String? academicInstitution,
-    String? token,
-  }) = _UserModel;
-
-  const UserModel._();
+  final String id;
+  final String email;
+  final String? displayName;
+  final String? photoUrl;
+  final String? academicInstitution;
+  final String? token;
+  final String? refreshToken;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final refreshToken = json['refresh_token'] as String?;
     if (json.containsKey('user') && json['user'] is Map<String, dynamic>) {
       final userObj = json['user'] as Map<String, dynamic>;
       final userMeta = userObj['user_metadata'] as Map<String, dynamic>?;
@@ -29,7 +34,8 @@ abstract class UserModel with _$UserModel {
             userObj['photo_url'] as String?,
         academicInstitution: userMeta?['academic_institution'] as String? ??
             userObj['academic_institution'] as String?,
-        token: json['access_token'] as String?,
+        token: json['access_token'] as String? ?? json['token'] as String?,
+        refreshToken: refreshToken,
       );
     }
     return UserModel(
@@ -41,6 +47,7 @@ abstract class UserModel with _$UserModel {
       academicInstitution: json['academicInstitution'] as String? ??
           json['academic_institution'] as String?,
       token: json['token'] as String? ?? json['access_token'] as String?,
+      refreshToken: refreshToken ?? json['refreshToken'] as String?,
     );
   }
 
@@ -51,5 +58,17 @@ abstract class UserModel with _$UserModel {
         photoUrl: photoUrl,
         academicInstitution: academicInstitution,
         token: token,
+        refreshToken: refreshToken,
       );
+
+  @override
+  List<Object?> get props => [
+        id,
+        email,
+        displayName,
+        photoUrl,
+        academicInstitution,
+        token,
+        refreshToken,
+      ];
 }

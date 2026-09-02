@@ -32,9 +32,9 @@ class CardSyncQueue {
   Map<String, String> get _headers {
     final token = _authToken?.isNotEmpty == true
         ? _authToken!
-        : AppEnv.supabaseAnonKey;
+        : AppEnv.apiKey;
     return {
-      'apikey': AppEnv.supabaseAnonKey,
+      'apikey': AppEnv.apiKey,
       'Authorization': 'Bearer $token',
     };
   }

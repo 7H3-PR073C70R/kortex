@@ -203,8 +203,8 @@ class StudyEngineRouter {
         },
         options: Options(
           headers: {
-            'apikey': AppEnv.supabaseAnonKey,
-            'Authorization': 'Bearer ${AppEnv.supabaseAnonKey}',
+            'apikey': AppEnv.apiKey,
+            'Authorization': 'Bearer ${AppEnv.apiKey}',
           },
         ),
       );

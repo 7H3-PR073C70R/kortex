@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 
 class VectorSearchClient {
@@ -7,18 +6,12 @@ class VectorSearchClient {
 
   final Dio _dio;
 
-  Map<String, String> _headers(String token) => {
-        'apikey': AppEnv.supabaseAnonKey,
-        'Authorization': 'Bearer $token',
-      };
-
   /// Queries pgvector RPC function `match_document_chunks`
   /// for top matching snippets.
   Future<List<Map<String, dynamic>>> matchDocumentChunks({
     required String query,
     required double matchThreshold,
     required int matchCount,
-    required String authToken,
     String? documentId,
   }) async {
     final response = await _dio.post<dynamic>(
@@ -29,7 +22,6 @@ class VectorSearchClient {
         'match_count': matchCount,
         'filter_document_id': ?documentId,
       },
-      options: Options(headers: _headers(authToken)),
     );
 
     if (response.data is List<dynamic>) {
@@ -42,7 +34,6 @@ class VectorSearchClient {
   Future<Map<String, dynamic>> generateEmbeddings({
     required String documentId,
     required String rawText,
-    required String authToken,
     Map<String, dynamic>? metadata,
   }) async {
     final response = await _dio.post<dynamic>(
@@ -52,7 +43,6 @@ class VectorSearchClient {
         'rawText': rawText,
         'metadata': metadata ?? {},
       },
-      options: Options(headers: _headers(authToken)),
     );
 
     if (response.data is Map<String, dynamic>) {

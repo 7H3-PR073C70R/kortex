@@ -9,7 +9,7 @@ void _initDataSource() {
     )
     ..registerLazySingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(
-        authClient: locator<SupabaseAuthClient>(),
+        authClient: locator<AuthApiClient>(),
         userStorage: locator<UserStorageService>(),
       ),
     )
@@ -33,8 +33,8 @@ void _initDataSource() {
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(
       () => SyllabotRemoteDataSourceImpl(
-        locator<SupabaseSyllabotClient>(),
-        locator<UserStorageService>(),
+        locator<SyllabotApiClient>(),
+        locator<Dio>(),
       ),
     )
     ..registerLazySingleton<SyllabotLocalDataSource>(
@@ -44,20 +44,18 @@ void _initDataSource() {
     )
     ..registerLazySingleton<IngestionRemoteDataSource>(
       () => IngestionRemoteDataSourceImpl(
-        locator<SupabaseIngestionClient>(),
-        locator<UserStorageService>(),
+        locator<IngestionApiClient>(),
+        locator<Dio>(),
       ),
     )
     ..registerLazySingleton<CommunityRemoteDataSource>(
       () => CommunityRemoteDataSourceImpl(
-        locator<SupabaseCommunityClient>(),
-        locator<UserStorageService>(),
+        locator<CommunityApiClient>(),
       ),
     )
     ..registerLazySingleton<RagRemoteDataSource>(
       () => RagRemoteDataSourceImpl(
         locator<VectorSearchClient>(),
-        locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<OcrLocalDataSource>(
@@ -73,7 +71,7 @@ void _initDataSource() {
     )
     ..registerLazySingleton<PastQuestionsRemoteDataSource>(
       () => PastQuestionsRemoteDataSourceImpl(
-        locator<SupabasePastQuestionsClient>(),
+        locator<PastQuestionsApiClient>(),
       ),
     )
     ..registerLazySingleton<ProfileRemoteDataSource>(

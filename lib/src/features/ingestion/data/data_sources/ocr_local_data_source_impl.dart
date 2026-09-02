@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ocr_local_data_source.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 
 class OcrLocalDataSourceImpl implements OcrLocalDataSource {
   OcrLocalDataSourceImpl({

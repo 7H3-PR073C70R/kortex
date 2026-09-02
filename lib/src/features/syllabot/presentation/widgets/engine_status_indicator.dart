@@ -24,19 +24,19 @@ class EngineStatusIndicator extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isCloud = engineType == ExecutionEngineType.cloudSupabase;
+    final isCloud = engineType == ExecutionEngineType.cloudRemote;
 
     return ShrinkableButton(
       onTap: () {
         unawaited(HapticFeedback.lightImpact());
         final nextEngine = isCloud
             ? ExecutionEngineType.localOnDevice
-            : ExecutionEngineType.cloudSupabase;
+            : ExecutionEngineType.cloudRemote;
         onToggleEngine(nextEngine);
 
         context.showSnackBar(
           message: l10n.engineSwitched(
-            nextEngine == ExecutionEngineType.cloudSupabase
+            nextEngine == ExecutionEngineType.cloudRemote
                 ? l10n.engineCloudSupabase
                 : l10n.engineLocalOnDevice,
           ),

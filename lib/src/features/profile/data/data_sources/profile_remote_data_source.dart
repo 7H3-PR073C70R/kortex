@@ -3,19 +3,19 @@ import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
 
 /// Contract for Profile & Security remote API data source.
 abstract class ProfileRemoteDataSource {
-  /// Updates the scholar display name in Supabase `profiles` table and Auth.
+  /// Updates the scholar display name in remote `profiles` table and Auth.
   Future<void> updateDisplayName(String displayName);
 
-  /// Updates the scholar avatar URL in Supabase `profiles` table and Auth.
+  /// Updates the scholar avatar URL in remote `profiles` table and Auth.
   Future<void> updateAvatarUrl(String photoUrl);
 
-  /// Updates the user's password in Supabase Auth.
+  /// Updates the user's password in Auth service.
   Future<void> updatePassword(String newPassword);
 
-  /// Sends a password reset email via Supabase Auth.
+  /// Sends a password reset email via Auth service.
   Future<void> sendPasswordResetEmail(String email);
 
-  /// Enrolls in Supabase MFA TOTP (returns Factor ID and secret).
+  /// Enrolls in MFA TOTP (returns Factor ID and secret).
   Future<MfaEnrollResultModel> enrollMfaTotp();
 
   /// Verifies a 6-digit TOTP code for an enrolled factor.

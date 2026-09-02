@@ -10,7 +10,7 @@ class ChatMessageModel {
     required this.text,
     required this.createdAt,
     this.latexSnippets = const [],
-    this.engineType = 'cloudSupabase',
+    this.engineType = 'cloudRemote',
     this.tokensCount = 0,
   });
 
@@ -36,7 +36,7 @@ class ChatMessageModel {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      engineType: json['engine_type'] as String? ?? 'cloudSupabase',
+      engineType: json['engine_type'] as String? ?? 'cloudRemote',
       tokensCount: json['tokens_count'] as int? ?? 0,
     );
   }

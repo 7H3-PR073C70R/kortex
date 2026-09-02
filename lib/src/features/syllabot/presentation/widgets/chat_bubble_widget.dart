@@ -170,7 +170,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                               ),
                               child: Text(
                                 widget.message.engineType ==
-                                        ExecutionEngineType.cloudSupabase
+                                        ExecutionEngineType.cloudRemote
                                     ? l10n.engineCloudSupabase
                                     : l10n.engineLocalOnDevice,
                                 style: typography.caption.medium.copyWith(

@@ -1,6 +1,6 @@
 import 'package:kortex/src/core/constants/app_env.dart';
 
-/// All endpoints used in this project are declared in this class.
+/// All API endpoints used across the Kortex application.
 class AppApiEndpoint {
   const AppApiEndpoint._();
 
@@ -17,16 +17,18 @@ class AppApiEndpoint {
     }
     return raw;
   }
+
   static const int receiveTimeout = 50000;
   static const int sendTimeout = 50000;
 
   static String get baseUri => host.isNotEmpty ? '$scheme://$host' : '';
 
-  // Auth Endpoints (Supabase GoTrue & REST)
+  // Auth & Identity Endpoints
   static const String login = '/auth/v1/token?grant_type=password';
   static const String register = '/auth/v1/signup';
   static const String socialAuth = '/auth/v1/token';
   static const String resetPassword = '/auth/v1/recover';
+  static const String refreshToken = '/auth/v1/token?grant_type=refresh_token';
   static const String magicLink = '/auth/v1/magiclink';
   static const String otpVerify = '/auth/v1/verify';
   static const String userProfiles = '/rest/v1/profiles';
@@ -34,20 +36,20 @@ class AppApiEndpoint {
   static const String updateProfileRpc =
       '/rest/v1/rpc/update_user_profile_track_and_goal';
 
-  // Dashboard Endpoints (Supabase RPC & REST)
+  // Dashboard Endpoints
   static const String dashboardFeed = '/rest/v1/rpc/get_dashboard_feed';
   static const String dashboardReviewQueue =
       '/rest/v1/decks?due_cards=gt.0&order=due_cards.desc&limit=5';
   static const String dashboardStartExam = '/rest/v1/rpc/record_study_session';
 
-  // Decks & Flashcards Endpoints (Supabase REST & RPC)
+  // Decks & Flashcards Endpoints
   static const String decks = '/rest/v1/decks?select=*';
   static const String deckCards =
       '/rest/v1/flashcards?deck_id=eq.{id}&select=*';
   static const String reviewCard = '/rest/v1/rpc/process_card_sm2_review';
   static const String sessionResults = '/rest/v1/rpc/record_study_session';
 
-  // Syllabot AI Endpoints (Supabase Edge Function SSE & REST)
+  // Syllabot AI Endpoints
   static const String syllabotStream = '/functions/v1/syllabot-stream';
   static const String syllabotSessions = '/rest/v1/chat_sessions';
   static const String syllabotMessages = '/rest/v1/chat_messages';
@@ -55,7 +57,7 @@ class AppApiEndpoint {
       '/rest/v1/rpc/match_document_chunks';
   static const String generateEmbeddings = '/functions/v1/generate-embeddings';
 
-  // Document Ingestion & STEM OCR Endpoints (Supabase Storage & Edge Functions)
+  // Document Ingestion & STEM OCR Endpoints
   static const String storageBucket = '/storage/v1/object/study-documents';
   static const String documents = '/rest/v1/documents';
   static const String extractedSnippets = '/rest/v1/extracted_snippets';
@@ -63,7 +65,7 @@ class AppApiEndpoint {
   static const String findOrCreateDocumentReference =
       '/rest/v1/rpc/find_or_create_document_reference';
 
-  // Community & Peer Study Hub Endpoints (Supabase REST & RPC)
+  // Community & Peer Study Hub Endpoints
   static const String studyRooms = '/rest/v1/study_rooms';
   static const String forumPosts = '/rest/v1/forum_posts';
   static const String forumReplies = '/rest/v1/forum_replies';
@@ -71,6 +73,6 @@ class AppApiEndpoint {
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
 
-  // Past Questions & Question Bank (Supabase REST)
+  // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';
 }

@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_enroll_result_model.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
-import 'package:kortex/src/services/user_storage_service.dart';
 
 /// Concrete implementation of [ProfileRemoteDataSource] using
 /// pure REST API client.
@@ -18,7 +18,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   final ProfileApiClient _profileApiClient;
   final UserStorageService _userStorage;
 
-  String get _authToken => _userStorage.getToken() ?? '';
   String get _userId => _userStorage.getUserId() ?? '';
 
   @override
@@ -26,7 +25,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       await _profileApiClient.updateProfile(
         userId: _userId,
-        authToken: _authToken,
         displayName: displayName,
       );
     } on DioException catch (e) {
@@ -41,7 +39,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       await _profileApiClient.updateProfile(
         userId: _userId,
-        authToken: _authToken,
         photoUrl: photoUrl,
       );
     } on DioException catch (e) {
@@ -56,7 +53,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       await _profileApiClient.updatePassword(
         newPassword: newPassword,
-        authToken: _authToken,
       );
     } on DioException catch (e) {
       throw ServerException(message: e.message ?? 'Failed to update password');
@@ -81,7 +77,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<MfaEnrollResultModel> enrollMfaTotp() async {
     try {
-      return await _profileApiClient.enrollMfaTotp(authToken: _authToken);
+      return await _profileApiClient.enrollMfaTotp();
     } on DioException catch (e) {
       throw ServerException(
         message: e.message ?? 'Failed to enroll MFA TOTP',
@@ -100,7 +96,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       await _profileApiClient.verifyMfaTotp(
         factorId: factorId,
         code: code,
-        authToken: _authToken,
       );
     } on DioException catch (e) {
       throw ServerException(
@@ -116,7 +111,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       await _profileApiClient.unenrollMfaTotp(
         factorId: factorId,
-        authToken: _authToken,
       );
     } on DioException catch (e) {
       throw ServerException(
@@ -130,7 +124,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<List<MfaFactorModel>> listMfaFactors() async {
     try {
-      return await _profileApiClient.listMfaFactors(authToken: _authToken);
+      return await _profileApiClient.listMfaFactors();
     } on DioException catch (e) {
       throw ServerException(
         message: e.message ?? 'Failed to list MFA factors',
@@ -143,7 +137,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<void> signOutOtherSessions() async {
     try {
-      await _profileApiClient.signOutOtherSessions(authToken: _authToken);
+      await _profileApiClient.signOutOtherSessions();
     } on DioException catch (e) {
       throw ServerException(
         message: e.message ?? 'Failed to sign out other sessions',
@@ -158,7 +152,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       await _profileApiClient.deleteAccount(
         userId: _userId,
-        authToken: _authToken,
       );
     } on DioException catch (e) {
       throw ServerException(

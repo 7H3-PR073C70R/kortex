@@ -12,7 +12,7 @@ abstract class LocalOcrRepository {
   });
 
   /// Extracts text from captured image locally, queues for sync, and syncs
-  /// to Supabase when online.
+  /// to cloud when online.
   Future<Either<Failure, List<OcrExtractionEntity>>> processCapturedImage({
     required Uint8List imageBytes,
     required String documentId,
@@ -23,6 +23,6 @@ abstract class LocalOcrRepository {
   /// Fetches pending offline OCR synchronization items count.
   Future<Either<Failure, int>> getPendingSyncCount();
 
-  /// Synchronizes all queued local OCR items with Supabase Edge Functions.
+  /// Synchronizes all queued local OCR items with remote Edge Functions.
   Future<Either<Failure, int>> synchronizePendingQueue();
 }

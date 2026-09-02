@@ -10,7 +10,7 @@ import 'package:kortex/src/features/onboarding/presentation/pages/splash_page.da
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_illustrations.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
-import 'package:kortex/src/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}

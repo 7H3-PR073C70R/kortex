@@ -1,46 +1,65 @@
-import 'package:kortex/src/features/auth/data/client/supabase_auth_client.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/features/auth/data/client/auth_api_client.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';
 import 'package:kortex/src/features/auth/data/models/auth_request_model.dart';
 import 'package:kortex/src/features/auth/data/models/course_track_model.dart';
 import 'package:kortex/src/features/auth/data/models/user_model.dart';
 import 'package:kortex/src/features/auth/data/models/user_profile_model.dart';
-import 'package:kortex/src/services/user_storage_service.dart';
 
-/// Implementation of [AuthRemoteDataSource] relying on [SupabaseAuthClient]
-/// with live Supabase SDK synchronization.
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  const AuthRemoteDataSourceImpl({
-    required SupabaseAuthClient authClient,
+  AuthRemoteDataSourceImpl({
+    required AuthApiClient authClient,
     required UserStorageService userStorage,
   })  : _authClient = authClient,
         _userStorage = userStorage;
 
-  final SupabaseAuthClient _authClient;
+  final AuthApiClient _authClient;
   final UserStorageService _userStorage;
 
   @override
-  Future<UserModel> login(LoginRequestModel request) {
-    return _authClient.login(request);
+  Future<UserModel> login(LoginRequestModel request) async {
+    final response = await _authClient.login(request);
+    if (response.token != null && response.token!.isNotEmpty) {
+      await _userStorage.saveToken(response.token!);
+    }
+    if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
+      await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    return response;
   }
 
   @override
-  Future<UserModel> register(RegisterRequestModel request) {
-    return _authClient.register(request);
+  Future<UserModel> register(RegisterRequestModel request) async {
+    final response = await _authClient.register(request.toJson());
+    if (response.token != null && response.token!.isNotEmpty) {
+      await _userStorage.saveToken(response.token!);
+    }
+    if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
+      await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    return response;
   }
 
   @override
-  Future<UserModel> loginWithSocial(SocialAuthRequestModel request) {
-    return _authClient.loginWithSocial(request);
+  Future<UserModel> loginWithSocial(SocialAuthRequestModel request) async {
+    final response = await _authClient.loginWithSocial(request);
+    if (response.token != null && response.token!.isNotEmpty) {
+      await _userStorage.saveToken(response.token!);
+    }
+    if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
+      await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    return response;
   }
 
   @override
-  Future<void> resetPassword(ResetPasswordRequestModel request) {
-    return _authClient.resetPassword(request);
+  Future<void> resetPassword(ResetPasswordRequestModel request) async {
+    await _authClient.resetPassword(request);
   }
 
   @override
-  Future<void> sendMagicLink(String email) {
-    return _authClient.sendMagicLink(email: email);
+  Future<void> sendMagicLink(String email) async {
+    await _authClient.sendMagicLink({'email': email});
   }
 
   @override
@@ -48,25 +67,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String token,
     String type = 'signup',
-  }) {
-    return _authClient.verifyOtp(
-      email: email,
-      token: token,
-      type: type,
-    );
+  }) async {
+    final response = await _authClient.verifyOtp({
+      'email': email,
+      'token': token,
+      'type': type,
+    });
+    if (response.token != null && response.token!.isNotEmpty) {
+      await _userStorage.saveToken(response.token!);
+    }
+    if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
+      await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    return response;
   }
 
   @override
   Future<UserProfileModel> fetchUserProfile() async {
-    final token = _userStorage.getToken() ?? '';
-    final map = await _authClient.fetchUserProfile(authToken: token);
-    if (map.isEmpty) {
-      return const UserProfileModel(
-        id: '',
-        email: '',
-      );
+    final res = await _authClient.fetchUserProfile(
+      {
+        'select': '*',
+        'limit': '1',
+      },
+    );
+    final rawData = res.data;
+    if (rawData is List && rawData.isNotEmpty) {
+      return UserProfileModel.fromJson(rawData.first as Map<String, dynamic>);
     }
-    return UserProfileModel.fromJson(map);
+    return const UserProfileModel(
+      id: '',
+      email: '',
+    );
   }
 
   @override
@@ -76,118 +107,102 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     double retentionBenchmark = 0.85,
     bool isOnboarded = true,
   }) async {
-    final token = _userStorage.getToken() ?? '';
-    final map = await _authClient.updateUserProfileTrackAndGoal(
-      track: track,
-      dailyTarget: dailyTarget,
-      retentionBenchmark: retentionBenchmark,
-      isOnboarded: isOnboarded,
-      authToken: token,
+    final res = await _authClient.updateUserProfileTrackAndGoal(
+      {
+        'p_target_track': track,
+        'p_daily_card_target': dailyTarget,
+        'p_retention_benchmark': retentionBenchmark,
+        'p_is_onboarded': isOnboarded,
+      },
     );
-    return UserProfileModel.fromJson(map);
+    final rawData = res.data;
+    if (rawData is Map<String, dynamic>) {
+      return UserProfileModel.fromJson(rawData);
+    }
+    return const UserProfileModel(id: '', email: '');
   }
 
   @override
   Future<List<CourseTrackModel>> fetchCourseTracks() async {
-    final list = await _authClient.fetchCourseTracks();
-    if (list.isEmpty) {
-      return const [
-        CourseTrackModel(
-          id: 'WAEC',
-          name: 'WAEC / WASSCE',
-          description:
-              'Senior secondary core curriculum (Sciences, Arts & Commercial)',
-          iconName: 'school',
-          examCountdownDays: 68,
-        ),
-        CourseTrackModel(
-          id: 'JAMB',
-          name: 'JAMB / UTME',
-          description:
-              'High-speed CBT drills, subject combinations & past papers',
-          iconName: 'timer',
-          defaultDailyTarget: 25,
-          examCountdownDays: 45,
-        ),
-        CourseTrackModel(
-          id: 'SAT',
-          name: 'SAT',
-          description:
-              'Standardized Reading, Writing, Math & problem solving',
-          iconName: 'calculate',
-          examCountdownDays: 90,
-        ),
-        CourseTrackModel(
-          id: 'TOEFL',
-          name: 'TOEFL iBT',
-          description:
-              'Academic English Reading, Listening, Speaking & Writing',
-          iconName: 'record_voice_over',
-          examCountdownDays: 50,
-        ),
-        CourseTrackModel(
-          id: 'IELTS',
-          name: 'IELTS',
-          description:
-              'International English language proficiency (Academic & General)',
-          iconName: 'translate',
-          examCountdownDays: 50,
-        ),
-        CourseTrackModel(
-          id: 'Medicine',
-          name: 'Medicine & Health Sciences',
-          description:
-              'Anatomy, Physiology, Pharmacology, Pathology & Clinical Skills',
-          iconName: 'medical_services',
-          defaultDailyTarget: 35,
-          examCountdownDays: 40,
-        ),
-        CourseTrackModel(
-          id: 'Law',
-          name: 'Law & Jurisprudence',
-          description:
-              'Constitutional, Criminal, Torts, Commercial Law & Jurisprudence',
-          iconName: 'gavel',
-          defaultDailyTarget: 25,
-          examCountdownDays: 45,
-        ),
-        CourseTrackModel(
-          id: 'Engineering',
-          name: 'Engineering & Technology',
-          description:
-              'Mechanical, Electrical, Civil, Software & Applied Mathematics',
-          iconName: 'engineering',
-          defaultDailyTarget: 30,
-          examCountdownDays: 35,
-        ),
-        CourseTrackModel(
-          id: 'Business',
-          name: 'Business & Economics',
-          description:
-              'Accounting, Finance, Economics, Marketing & Management',
-          iconName: 'trending_up',
-          defaultDailyTarget: 25,
-          examCountdownDays: 40,
-        ),
-        CourseTrackModel(
-          id: 'Humanities',
-          name: 'Arts & Humanities',
-          description:
-              'Literature, History, Philosophy, Linguistics & Mass Comm',
-          iconName: 'menu_book',
-          examCountdownDays: 45,
-        ),
-        CourseTrackModel(
-          id: 'ComputerScience',
-          name: 'Computer Science & AI',
-          description:
-              'Algorithms, Data Structures, Operating Systems & Networks',
-          iconName: 'terminal',
-          defaultDailyTarget: 30,
-          examCountdownDays: 30,
-        ),
-      ];
+    final res = await _authClient.fetchCourseTracks({'select': '*'});
+    final rawData = res.data;
+    if (rawData is List && rawData.isNotEmpty) {
+      return rawData
+          .map((e) => CourseTrackModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
-    return list.map(CourseTrackModel.fromJson).toList();
+    return const [
+      CourseTrackModel(
+        id: 'WAEC',
+        name: 'WAEC / WASSCE',
+        description:
+            'Senior secondary core curriculum (Sciences, Arts & Commercial)',
+        iconName: 'school',
+        examCountdownDays: 68,
+      ),
+      CourseTrackModel(
+        id: 'JAMB',
+        name: 'JAMB / UTME',
+        description:
+            'High-speed CBT drills, subject combinations & past papers',
+        iconName: 'timer',
+        defaultDailyTarget: 25,
+        examCountdownDays: 45,
+      ),
+      CourseTrackModel(
+        id: 'SAT',
+        name: 'SAT',
+        description: 'Standardized Reading, Writing, Math & problem solving',
+        iconName: 'calculate',
+        examCountdownDays: 90,
+      ),
+      CourseTrackModel(
+        id: 'TOEFL',
+        name: 'TOEFL iBT',
+        description: 'Academic English Reading, Listening, Speaking & Writing',
+        iconName: 'record_voice_over',
+        examCountdownDays: 50,
+      ),
+      CourseTrackModel(
+        id: 'IELTS',
+        name: 'IELTS',
+        description:
+            'International English language proficiency (Academic & General)',
+        iconName: 'translate',
+        examCountdownDays: 50,
+      ),
+      CourseTrackModel(
+        id: 'Medicine',
+        name: 'Medicine & Health Sciences',
+        description: 'Pre-clinical anatomy, physiology & pharmacology review',
+        iconName: 'medical_services',
+        defaultDailyTarget: 30,
+        examCountdownDays: 60,
+      ),
+      CourseTrackModel(
+        id: 'Engineering',
+        name: 'Engineering & Physical Sciences',
+        description: 'Engineering mathematics, thermodynamics & coding theory',
+        iconName: 'engineering',
+        defaultDailyTarget: 25,
+        examCountdownDays: 60,
+      ),
+      CourseTrackModel(
+        id: 'Law',
+        name: 'Law & Jurisprudence',
+        description:
+            'Constitutional law, torts, criminal law cases & precedents',
+        iconName: 'gavel',
+        defaultDailyTarget: 20,
+        examCountdownDays: 60,
+      ),
+      CourseTrackModel(
+        id: 'General',
+        name: 'General University Prep',
+        description: 'General studies (GST), research methods & critical logic',
+        iconName: 'auto_stories',
+        examCountdownDays: 30,
+      ),
+    ];
   }
 }

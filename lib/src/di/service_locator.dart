@@ -2,6 +2,12 @@ part of 'locator.dart';
 
 void _initServices() {
   locator
+    ..registerLazySingleton<SessionExpiredService>(
+      SessionExpiredService.new,
+    )
+    ..registerLazySingleton<AppRouter>(
+      AppRouter.new,
+    )
     ..registerLazySingleton<UserStorageService>(
       () => UserStorageServiceImpl(locator()),
     )

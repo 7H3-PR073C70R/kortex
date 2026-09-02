@@ -54,7 +54,7 @@ class SyllabotChatPage extends StatelessWidget {
           prompt: initialPrompt!.trim(),
           sessionId: sid,
           socraticMode: SocraticMode.stepByStep,
-          engineType: ExecutionEngineType.cloudSupabase,
+          engineType: ExecutionEngineType.cloudRemote,
         ),
       );
     }
@@ -136,9 +136,9 @@ class _SyllabotChatView extends HookWidget {
       BuildContext pageContext,
       ExecutionEngineType targetEngine,
     ) {
-      if (targetEngine == ExecutionEngineType.cloudSupabase) {
+      if (targetEngine == ExecutionEngineType.cloudRemote) {
         pageContext.read<SyllabotChatBloc>().add(
-              const ChangeEngineTypeEvent(ExecutionEngineType.cloudSupabase),
+              const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
             );
         pageContext.showSnackBar(
           message: l10n.engineCloudSupabase,
@@ -441,7 +441,7 @@ class _SyllabotChatView extends HookWidget {
                   }
 
                   final isCloudError = state.engineType ==
-                      ExecutionEngineType.cloudSupabase;
+                      ExecutionEngineType.cloudRemote;
 
                   return Container(
                     margin: const EdgeInsets.symmetric(
@@ -491,7 +491,7 @@ class _SyllabotChatView extends HookWidget {
                           children: [
                             // 1-Tap Switch to Offline LLM
                             if (state.engineType ==
-                                ExecutionEngineType.cloudSupabase)
+                                ExecutionEngineType.cloudRemote)
                               ShrinkableButton(
                                 onTap: () => handleEngineSwitch(
                                   context,

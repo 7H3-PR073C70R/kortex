@@ -35,7 +35,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(SocraticMode.stepByStep);
-      registerFallbackValue(ExecutionEngineType.cloudSupabase);
+      registerFallbackValue(ExecutionEngineType.cloudRemote);
     });
 
     setUp(() {
@@ -57,7 +57,7 @@ void main() {
       final bloc = buildBloc();
       expect(bloc.state.status, equals(SyllabotStatus.idle));
       expect(bloc.state.socraticMode, equals(SocraticMode.stepByStep));
-      expect(bloc.state.engineType, equals(ExecutionEngineType.cloudSupabase));
+      expect(bloc.state.engineType, equals(ExecutionEngineType.cloudRemote));
       await bloc.close();
     });
 
@@ -84,7 +84,7 @@ void main() {
           prompt: 'What is photosynthesis?',
           sessionId: 'session_123',
           socraticMode: SocraticMode.stepByStep,
-          engineType: ExecutionEngineType.cloudSupabase,
+          engineType: ExecutionEngineType.cloudRemote,
         ),
       ),
       wait: const Duration(milliseconds: 300),
@@ -125,7 +125,7 @@ void main() {
             prompt: 'Explain light dependent reactions',
             sessionId: 'session_rag_1',
             socraticMode: SocraticMode.stepByStep,
-            preferredEngine: ExecutionEngineType.cloudSupabase,
+            preferredEngine: ExecutionEngineType.cloudRemote,
             contextHistory: any(
               named: 'contextHistory',
               that: isA<List<ChatMessageEntity>>().having(
@@ -148,7 +148,7 @@ void main() {
           prompt: 'Explain light dependent reactions',
           sessionId: 'session_rag_1',
           socraticMode: SocraticMode.stepByStep,
-          engineType: ExecutionEngineType.cloudSupabase,
+          engineType: ExecutionEngineType.cloudRemote,
         ),
       ),
       wait: const Duration(milliseconds: 300),

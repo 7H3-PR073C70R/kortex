@@ -127,7 +127,7 @@ void main() {
     test('initial state has idle status and default socratic mode', () {
       expect(bloc.state.status, SyllabotStatus.idle);
       expect(bloc.state.socraticMode, SocraticMode.stepByStep);
-      expect(bloc.state.engineType, ExecutionEngineType.cloudSupabase);
+      expect(bloc.state.engineType, ExecutionEngineType.cloudRemote);
       expect(bloc.state.messages, isEmpty);
     });
 

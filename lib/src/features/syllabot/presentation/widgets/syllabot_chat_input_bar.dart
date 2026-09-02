@@ -273,7 +273,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isCloud = widget.engineType == ExecutionEngineType.cloudSupabase;
+    final isCloud = widget.engineType == ExecutionEngineType.cloudRemote;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -495,7 +495,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
                       unawaited(HapticFeedback.selectionClick());
                       final next = isCloud
                           ? ExecutionEngineType.localOnDevice
-                          : ExecutionEngineType.cloudSupabase;
+                          : ExecutionEngineType.cloudRemote;
                       widget.onEngineChanged(next);
                     },
                     child: Container(

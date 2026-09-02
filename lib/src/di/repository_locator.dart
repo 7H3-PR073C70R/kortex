@@ -62,7 +62,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<EphemeralRoomRepository>(
       () => EphemeralRoomRepositoryImpl(
         presenceClient: locator<EphemeralPresenceClient>(),
-        communityClient: locator<SupabaseCommunityClient>(),
+        communityClient: locator<CommunityApiClient>(),
       ),
     )
     ..registerLazySingleton<PlannerRepository>(

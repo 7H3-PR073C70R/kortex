@@ -1,25 +1,18 @@
 import 'package:dio/dio.dart';
-import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_enroll_result_model.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
 
 /// Pure REST API client for Profile, Security, MFA, and Account operations.
+/// All authentication headers are automatically attached by TokenInterceptor.
 class ProfileApiClient {
   ProfileApiClient(this._dio);
 
   final Dio _dio;
 
-  Map<String, String> _headers([String? token]) => {
-        'apikey': AppEnv.supabaseAnonKey,
-        if (token != null && token.isNotEmpty)
-          'Authorization': 'Bearer $token',
-      };
-
   /// Updates user profile table and auth user metadata via REST API.
   Future<void> updateProfile({
     required String userId,
-    required String authToken,
     String? displayName,
     String? photoUrl,
   }) async {
@@ -33,7 +26,6 @@ class ProfileApiClient {
       await _dio.patch<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?id=eq.$userId',
         data: data,
-        options: Options(headers: _headers(authToken)),
       );
     }
 
@@ -48,11 +40,10 @@ class ProfileApiClient {
       },
     };
 
-    if (authData.isNotEmpty && authToken.isNotEmpty) {
+    if (authData.isNotEmpty) {
       await _dio.put<dynamic>(
         '${AppApiEndpoint.baseUri}/auth/v1/user',
         data: {'data': authData},
-        options: Options(headers: _headers(authToken)),
       );
     }
   }
@@ -60,12 +51,10 @@ class ProfileApiClient {
   /// Updates password via Auth REST API.
   Future<void> updatePassword({
     required String newPassword,
-    required String authToken,
   }) async {
     await _dio.put<dynamic>(
       '${AppApiEndpoint.baseUri}/auth/v1/user',
       data: {'password': newPassword},
-      options: Options(headers: _headers(authToken)),
     );
   }
 
@@ -74,21 +63,17 @@ class ProfileApiClient {
     await _dio.post<dynamic>(
       '${AppApiEndpoint.baseUri}${AppApiEndpoint.resetPassword}',
       data: {'email': email.trim()},
-      options: Options(headers: _headers()),
     );
   }
 
   /// Enrolls in MFA TOTP via Auth REST API.
-  Future<MfaEnrollResultModel> enrollMfaTotp({
-    required String authToken,
-  }) async {
+  Future<MfaEnrollResultModel> enrollMfaTotp() async {
     final response = await _dio.post<Map<String, dynamic>>(
       '${AppApiEndpoint.baseUri}/auth/v1/factors',
       data: {
         'factor_type': 'totp',
         'friendly_name': 'Kortex Authenticator',
       },
-      options: Options(headers: _headers(authToken)),
     );
 
     final data = response.data;
@@ -108,11 +93,9 @@ class ProfileApiClient {
   Future<void> verifyMfaTotp({
     required String factorId,
     required String code,
-    required String authToken,
   }) async {
     final challengeRes = await _dio.post<Map<String, dynamic>>(
       '${AppApiEndpoint.baseUri}/auth/v1/factors/$factorId/challenge',
-      options: Options(headers: _headers(authToken)),
     );
     final challengeId = challengeRes.data?['id'] as String? ?? '';
 
@@ -122,29 +105,23 @@ class ProfileApiClient {
         'challenge_id': challengeId,
         'code': code.trim(),
       },
-      options: Options(headers: _headers(authToken)),
     );
   }
 
   /// Unenrolls a TOTP factor via Auth REST API.
   Future<void> unenrollMfaTotp({
     required String factorId,
-    required String authToken,
   }) async {
     await _dio.delete<dynamic>(
       '${AppApiEndpoint.baseUri}/auth/v1/factors/$factorId',
-      options: Options(headers: _headers(authToken)),
     );
   }
 
   /// Lists active MFA factors via Auth REST API.
-  Future<List<MfaFactorModel>> listMfaFactors({
-    required String authToken,
-  }) async {
+  Future<List<MfaFactorModel>> listMfaFactors() async {
     try {
       final response = await _dio.get<List<dynamic>>(
         '${AppApiEndpoint.baseUri}/auth/v1/factors',
-        options: Options(headers: _headers(authToken)),
       );
       final list = response.data;
       if (list == null) return const [];
@@ -158,24 +135,19 @@ class ProfileApiClient {
   }
 
   /// Signs out all other sessions via Auth REST API.
-  Future<void> signOutOtherSessions({
-    required String authToken,
-  }) async {
+  Future<void> signOutOtherSessions() async {
     await _dio.post<dynamic>(
       '${AppApiEndpoint.baseUri}/auth/v1/logout?scope=others',
-      options: Options(headers: _headers(authToken)),
     );
   }
 
   /// Permanently deletes user profile and data records from database.
   Future<void> deleteAccount({
     required String userId,
-    required String authToken,
   }) async {
     if (userId.isNotEmpty) {
       await _dio.delete<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?id=eq.$userId',
-        options: Options(headers: _headers(authToken)),
       );
     }
   }

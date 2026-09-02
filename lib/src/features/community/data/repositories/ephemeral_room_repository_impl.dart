@@ -1,18 +1,18 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
-import 'package:kortex/src/features/community/data/client/supabase_community_client.dart';
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 
 class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   EphemeralRoomRepositoryImpl({
     EphemeralPresenceClient? presenceClient,
-    SupabaseCommunityClient? communityClient,
+    CommunityApiClient? communityClient,
   })  : _presenceClient = presenceClient ?? EphemeralPresenceClientImpl(),
         _communityClient = communityClient;
 
   final EphemeralPresenceClient _presenceClient;
-  final SupabaseCommunityClient? _communityClient;
+  final CommunityApiClient? _communityClient;
 
   @override
   Future<void> joinRoomPresence({
@@ -88,10 +88,12 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     try {
       if (_communityClient != null) {
         await _communityClient.recordStudySession(
-          authToken: userId,
-          roomId: roomId,
-          durationMinutes: durationMinutes,
-          subject: subject,
+          {
+            'room_id': roomId,
+            'duration_minutes': durationMinutes,
+            'subject': subject,
+            'completed_at': DateTime.now().toIso8601String(),
+          },
         );
       }
       return const Right(null);
