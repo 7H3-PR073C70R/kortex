@@ -30,5 +30,13 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+
+	<!-- Usage Descriptions -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kortex requires microphone access to enable voice dialogue with Syllabot AI.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Kortex requires speech recognition to transcribe spoken questions to Syllabot AI.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Kortex requires camera access to scan textbook pages and study notes for OCR.</string>
 </dict>
 </plist>

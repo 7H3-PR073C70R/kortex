@@ -52,6 +52,27 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Voice & Speech Permissions -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kortex requires microphone access to enable interactive voice dialogue with Syllabot AI and record study voice notes.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Kortex requires speech recognition to transcribe your spoken questions directly to Syllabot AI.</string>
+
+	<!-- Camera & Photos Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Kortex requires camera access to scan textbook pages, handwritten STEM formulas, and study documents for OCR conversion into flashcard decks.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kortex requires photo library access to upload study diagrams, notes, and PDF snapshots for document analysis.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kortex requires photo library access to save generated study sheets, flashcard exports, and visual summaries.</string>
+
+	<!-- File Handling & Sharing -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
