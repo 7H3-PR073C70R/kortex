@@ -118,7 +118,6 @@ class _OfflineFlashcardGenerationPageState
         context.showSnackBar(
           message: result.userMessage ??
               StudyEngineRouter.offlineModelMissingPrompt,
-          type: SnackBarType.info,
         );
       } else {
         setState(() {

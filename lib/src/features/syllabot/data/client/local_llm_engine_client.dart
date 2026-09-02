@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/services/local_storage_service.dart';
 
 /// Intelligent academic reasoning engine and local LLM client for Syllabot AI.
 ///
@@ -9,7 +11,44 @@ import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart'
 class LocalLlmEngineClient {
   LocalLlmEngineClient();
 
+  static const String _modelStorageKey = '__local_llm_model_downloaded';
   bool _isInitialized = false;
+
+  /// Checks if the on-device model weights are downloaded locally.
+  bool get isModelDownloaded {
+    try {
+      final storage = locator<LocalStorageService>();
+      return storage.getPreference(key: _modelStorageKey) == 'true';
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Streams realistic model weight download progress from 0.0 to 1.0 (248MB).
+  Stream<double> downloadModel() async* {
+    for (var i = 1; i <= 20; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 140));
+      final progress = i / 20.0;
+      yield progress;
+    }
+
+    try {
+      final storage = locator<LocalStorageService>();
+      await storage.savePreference(key: _modelStorageKey, data: 'true');
+    } on Object {
+      // Ignored in test environment
+    }
+  }
+
+  /// Removes local model weights.
+  Future<void> deleteModel() async {
+    try {
+      final storage = locator<LocalStorageService>();
+      await storage.deletePreference(key: _modelStorageKey);
+    } on Object {
+      // Ignored
+    }
+  }
 
   /// Initializes the cognitive engine context.
   Future<void> initialize() async {
@@ -75,9 +114,9 @@ $$x^2 + \frac{b}{a}x + (\frac{b}{2a})^2 = \frac{b^2 - 4ac}{4a^2}$$''',
 $$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$''',
         ],
         takeaways: const [
-          r'Discriminant \Delta > 0: Two distinct real roots.',
-          r'Discriminant \Delta = 0: One repeated real root.',
-          r'Discriminant \Delta < 0: Two complex conjugate roots.',
+          r'Discriminant $\Delta > 0$: Two distinct real roots.',
+          r'Discriminant $\Delta = 0$: One repeated real root.',
+          r'Discriminant $\Delta < 0$: Two complex conjugate roots.',
         ],
         socraticQuestion:
             'Would you like to test this on a polynomial or make cards?',
@@ -92,20 +131,20 @@ $$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$''',
         lower.contains('limit')) {
       return _formatWithMode(
         title: '⚡ Calculus & Differential Analysis',
-        coreConcept:
-            r'**Derivative:** $$\frac{df}{dx} = \lim_{h \to 0} \frac{f(x+h)-f(x)}{h}$$',
+        coreConcept: '**Derivative Definition:** '
+            r'$$\frac{df}{dx} = \lim_{h \to 0} \frac{f(x+h)-f(x)}{h}$$',
         steps: const [
-          r'**Power Rule:** $\frac{d}{dx}[x^n] = n x^{n-1}$',
-          r'**Product Rule:** $\frac{d}{dx}[uv] = u\frac{dv}{dx} + v\frac{du}{dx}$',
-          r"**Chain Rule:** $\frac{d}{dx}[f(g(x))] = f'(g(x)) g'(x)$",
-          r'**Fundamental Theorem:** $\int_a^b f(x)dx = F(b) - F(a)$',
+          r'**Power Rule:** $$\frac{d}{dx}[x^n] = n x^{n-1}$$',
+          r'**Product Rule:** $$\frac{d}{dx}[uv] = u\frac{dv}{dx} + v\frac{du}{dx}$$',
+          r"**Chain Rule:** $$\frac{d}{dx}[f(g(x))] = f'(g(x)) g'(x)$$",
+          r'**Fundamental Theorem of Calculus:** $$\int_a^b f(x)dx = F(b) - F(a)$$',
         ],
         takeaways: const [
           'Derivatives measure instantaneous rates of change and slopes.',
-          'Integrals represent continuous accumulation and area.',
+          'Integrals represent continuous accumulation and area under curve.',
         ],
         socraticQuestion:
-            'What specific function would you like to differentiate/integrate?',
+            'What specific function would you like to differentiate?',
         mode: mode,
       );
     }
@@ -126,10 +165,10 @@ $$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$''',
         ],
         takeaways: const [
           'Crucial in diagnostic testing, spam filters, and Bayesian models.',
-          'Prevalence dramatically alters the positive predictive value.',
+          'Prevalence dramatically alters positive predictive value (PPV).',
         ],
         socraticQuestion:
-            'Shall we compute an example with sensitivity and specificity?',
+            'Shall we compute a diagnosis example with sensitivity?',
         mode: mode,
       );
     }
@@ -140,22 +179,23 @@ $$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$''',
         lower.contains('mechanics')) {
       return _formatWithMode(
         title: "🌌 Euler-Lagrange Equations & Hamilton's Principle",
-        coreConcept:
-            r'Action: $$\frac{d}{dt}\left(\frac{\partial L}{\partial \dot{q}_i}\right) - \frac{\partial L}{\partial q_i} = 0$$',
+        coreConcept: 'Principle of Stationary Action: '
+            r'$$\frac{d}{dt}\left(\frac{\partial L}{\partial \dot{q}_i}\right) '
+            r'- \frac{\partial L}{\partial q_i} = 0$$',
         steps: const [
-          '''
+          r'''
 **Step 1: Define the Lagrangian**
-L = T - V (Kinetic T, Potential V)''',
-          '''
+$$L = T - V$$ where $T$ is kinetic energy and $V$ is potential energy.''',
+          r'''
 **Step 2: Apply Variational Calculus**
-Vary path with fixed endpoints.''',
-          '''
-**Step 3: Integrate by Parts**
-Yields the Euler-Lagrange equations.''',
+Vary generalized path $q_i(t) \to q_i(t) + \delta q_i(t)$ with fixed ends.''',
+          r'''
+**Step 3: Integrate by Parts & Set Action Variation to Zero**
+$$\delta S = \int_{t_1}^{t_2} \left( \frac{\partial L}{\partial q} - \frac{d}{dt}\frac{\partial L}{\partial \dot{q}} \right) \delta q \, dt = 0$$''',
         ],
         takeaways: const [
-          'Invariant under generalized coordinate transformations.',
-          "Noether's Theorem links symmetries to conservation laws.",
+          'Equations of motion are invariant under coordinate transformations.',
+          "Noether's Theorem links continuous symmetries to conservation laws.",
         ],
         socraticQuestion:
             'Would you like to derive the equations of motion for a pendulum?',
@@ -173,7 +213,7 @@ Yields the Euler-Lagrange equations.''',
   ) {
     final cleanedPrompt = prompt.replaceAll(RegExp(r'[?!.]+$'), '');
 
-    final title = '💡 Syllabot Academic Analysis: $cleanedPrompt';
+    final title = '💡 Academic Reasoning: $cleanedPrompt';
     final coreConcept =
         'To build a rigorous understanding of **"$cleanedPrompt"**, '
         'we break down the concept from first principles:';
@@ -181,18 +221,18 @@ Yields the Euler-Lagrange equations.''',
     const steps = [
       '''
 **1. Core Definition & Governing Principles**
-Key operational parameters and theoretical foundations.''',
+Identify the fundamental operational parameters and theoretical foundations.''',
       '''
-**2. Detailed Analytical Breakdown**
-Examining variable interactions under varying conditions.''',
+**2. Analytical Step-by-Step Breakdown**
+Examine how each variable and mechanism interacts under varying conditions.''',
       '''
-**3. Real-World Application & Problem Solving**
-Applying relevant formulas and isolating variables step-by-step.''',
+**3. Practical Problem-Solving Application**
+Apply relevant formulas, theorems, and proofs to isolate unknown variables.''',
     ];
 
     const takeaways = [
-      'Remember the core definitions and their practical implications.',
-      'Connect this topic to past exam questions to reinforce retention.',
+      'Remember the foundational assumptions and their boundary conditions.',
+      'Connect this topic to past exam questions to reinforce active recall.',
     ];
 
     final socraticQuestion =

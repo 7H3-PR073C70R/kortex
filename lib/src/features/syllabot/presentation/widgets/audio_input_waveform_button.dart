@@ -45,7 +45,6 @@ class AudioInputWaveformButton extends HookWidget {
         isRecording.value = true;
         context.showSnackBar(
           message: l10n.voiceInputListening,
-          type: SnackBarType.info,
         );
 
         // Simulate voice transcription completion after 2.5s

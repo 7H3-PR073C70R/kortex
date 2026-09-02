@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -17,12 +18,14 @@ class ChatBubbleWidget extends StatefulWidget {
     required this.message,
     this.ttsHandler,
     this.onRetry,
+    this.onConvertToCard,
     super.key,
   });
 
   final ChatMessageEntity message;
   final TextToSpeechHandler? ttsHandler;
   final VoidCallback? onRetry;
+  final VoidCallback? onConvertToCard;
 
   @override
   State<ChatBubbleWidget> createState() => _ChatBubbleWidgetState();
@@ -71,7 +74,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
+            maxWidth: MediaQuery.sizeOf(context).width * 0.75,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -108,13 +111,13 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
       );
     }
 
-    // Bot Bubble with Glassmorphism, LaTeX formulas, TTS read aloud, and retry
+    // Bot Bubble with Glassmorphism, Rich Markdown, LaTeX formulas, and Actions
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.85,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +155,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Engine badge tag & Actions (Copy & Read Aloud TTS)
+                        // Engine badge tag & Actions (Copy & TTS)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -229,7 +232,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Formatted message content with LaTeX rendering
+                        // Formatted body with Markdown & LaTeX rendering
                         _FormattedMessageBody(
                           text: widget.message.text,
                           isDark: isDark,
@@ -299,16 +302,68 @@ class _FormattedMessageBody extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
 
-    // Parse $$math$$ or regular text chunks
+    // Parse $$math$$ blocks and render standard markdown for everything else
     final parts = text.split(r'$$');
 
-    if (parts.length <= 1) {
-      return Text(
-        text,
-        style: typography.body.regular.copyWith(
-          color: colors.textPrimary,
-          height: 1.45,
+    final markdownStyleSheet = MarkdownStyleSheet(
+      p: typography.body.regular.copyWith(
+        color: colors.textPrimary,
+        height: 1.45,
+        fontSize: 14,
+      ),
+      h1: typography.title1.bold.copyWith(
+        color: colors.textPrimary,
+        fontSize: 18,
+      ),
+      h2: typography.title2.bold.copyWith(
+        color: colors.textPrimary,
+        fontSize: 16,
+      ),
+      h3: typography.title3.bold.copyWith(
+        color: colors.textPrimary,
+        fontSize: 15,
+      ),
+      strong: typography.body.bold.copyWith(
+        color: isDark ? colors.syllabotAccent : colors.primary,
+        fontSize: 14,
+      ),
+      em: typography.body.regular.copyWith(
+        color: colors.textSecondary,
+        fontStyle: FontStyle.italic,
+        fontSize: 14,
+      ),
+      code: typography.caption.medium.copyWith(
+        color: isDark ? colors.syllabotAccent : colors.primary,
+        backgroundColor: colors.surfaceSecondary,
+        fontSize: 12.5,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: isDark ? Colors.black45 : colors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colors.surfaceBorder.withAlpha(80),
         ),
+      ),
+      listBullet: typography.body.bold.copyWith(
+        color: colors.primary,
+      ),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: colors.primary,
+            width: 3,
+          ),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+      blockSpacing: 8,
+    );
+
+    if (parts.length <= 1) {
+      return MarkdownBody(
+        data: text,
+        selectable: true,
+        styleSheet: markdownStyleSheet,
       );
     }
 
@@ -353,14 +408,12 @@ class _FormattedMessageBody extends StatelessWidget {
           ),
         );
       } else {
-        // Plain text block
+        // Rich Markdown Block
         children.add(
-          Text(
-            part,
-            style: typography.body.regular.copyWith(
-              color: colors.textPrimary,
-              height: 1.45,
-            ),
+          MarkdownBody(
+            data: part.trim(),
+            selectable: true,
+            styleSheet: markdownStyleSheet,
           ),
         );
       }

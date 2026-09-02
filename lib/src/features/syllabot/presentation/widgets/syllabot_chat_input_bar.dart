@@ -1,22 +1,28 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Syllabot AI unified input bar with dynamic expanding multi-line textfield,
-/// in-pill Socratic mode selector, and animated morphing voice/send button.
+/// Redesigned Syllabot AI input container with 2-row layout:
+/// - Row 1: '+' Attachment button, flexible auto-expanding AppTextField,
+///   and morphing Mic / Send action.
+/// - Row 2: Socratic Reasoning Mode selector and AI Engine switcher.
 class SyllabotChatInputBar extends StatefulWidget {
   const SyllabotChatInputBar({
     required this.controller,
     required this.socraticMode,
+    required this.engineType,
     required this.onModeChanged,
+    required this.onEngineChanged,
     required this.onSubmit,
-    this.onAttachmentTap,
     this.onVoiceDialogueTap,
     this.isLoading = false,
     super.key,
@@ -24,9 +30,10 @@ class SyllabotChatInputBar extends StatefulWidget {
 
   final TextEditingController controller;
   final SocraticMode socraticMode;
+  final ExecutionEngineType engineType;
   final ValueChanged<SocraticMode> onModeChanged;
+  final ValueChanged<ExecutionEngineType> onEngineChanged;
   final ValueChanged<String> onSubmit;
-  final VoidCallback? onAttachmentTap;
   final VoidCallback? onVoiceDialogueTap;
   final bool isLoading;
 
@@ -34,12 +41,10 @@ class SyllabotChatInputBar extends StatefulWidget {
   State<SyllabotChatInputBar> createState() => _SyllabotChatInputBarState();
 }
 
-class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
-    with SingleTickerProviderStateMixin {
+class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
+  late final SpeechToTextHandler _speechHandler;
   bool _hasInput = false;
   bool _isListening = false;
-  late final SpeechToTextHandler _sttHandler;
-  late final AnimationController _pulseController;
 
   @override
   void initState() {
@@ -47,13 +52,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     _hasInput = widget.controller.text.trim().isNotEmpty;
     widget.controller.addListener(_onTextChanged);
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    unawaited(_pulseController.repeat(reverse: true));
-
-    _sttHandler = SpeechToTextHandler(
+    _speechHandler = SpeechToTextHandler(
       onResult: (text) {
         if (!mounted) return;
         setState(() {
@@ -69,7 +68,20 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
           _isListening = listening;
         });
       },
+      onError: (err) {
+        if (!mounted) return;
+        setState(() {
+          _isListening = false;
+        });
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    _speechHandler.dispose();
+    super.dispose();
   }
 
   void _onTextChanged() {
@@ -81,35 +93,25 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     }
   }
 
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onTextChanged);
-    _pulseController.dispose();
-    _sttHandler.dispose();
-    super.dispose();
-  }
-
   void _handleSend() {
     final text = widget.controller.text.trim();
     if (text.isEmpty || widget.isLoading) return;
 
-    if (_isListening) {
-      unawaited(_sttHandler.stopListening());
-    }
-
+    unawaited(HapticFeedback.lightImpact());
     widget.onSubmit(text);
     widget.controller.clear();
   }
 
-  void _toggleMic() {
+  void _toggleListening() {
     if (_isListening) {
-      unawaited(_sttHandler.stopListening());
+      unawaited(_speechHandler.stopListening());
     } else {
-      unawaited(_sttHandler.startListening());
+      unawaited(_speechHandler.startListening());
     }
   }
 
-  void _showModeMenu(BuildContext context) {
+  void _showSocraticModeSheet() {
+    unawaited(HapticFeedback.selectionClick());
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
@@ -121,344 +123,436 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        builder: (sheetContext) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.textSecondary.withAlpha(60),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+        builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withAlpha(80),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.socraticModeSheetTitle,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.socraticModeSheetTitle,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.socraticModeSheetSubtitle,
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.socraticModeSheetSubtitle,
+                  style: typography.caption.medium.copyWith(
+                    color: colors.textSecondary,
                   ),
-                  const SizedBox(height: 16),
-                  ...SocraticMode.values.map((mode) {
-                    final isSelected = mode == widget.socraticMode;
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      tileColor: isSelected
-                          ? colors.primary.withAlpha(25)
-                          : Colors.transparent,
-                      leading: Icon(
-                        _getModeIcon(mode),
-                        color: isSelected
-                            ? colors.primary
-                            : colors.textSecondary,
-                      ),
-                      title: Text(
-                        _getLocalizedModeLabel(mode, l10n),
-                        style: typography.body.semiBold.copyWith(
-                          color: isSelected
-                              ? colors.primary
-                              : colors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        _getLocalizedModeDescription(mode, l10n),
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle_rounded,
-                              color: colors.primary,
-                              size: 20,
-                            )
-                          : null,
+                ),
+                const SizedBox(height: 16),
+                ...SocraticMode.values.map((mode) {
+                  final isSelected = mode == widget.socraticMode;
+                  final (icon, title, desc) = _getModeDetails(mode, l10n);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ShrinkableButton(
                       onTap: () {
-                        unawaited(HapticFeedback.selectionClick());
                         widget.onModeChanged(mode);
-                        Navigator.of(sheetContext).pop();
+                        Navigator.of(ctx).pop();
                       },
-                    );
-                  }),
-                ],
-              ),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colors.primary.withAlpha(25)
+                              : colors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.surfaceBorder.withAlpha(80),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(icon, style: const TextStyle(fontSize: 20)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: typography.body.bold.copyWith(
+                                      color: isSelected
+                                          ? colors.primary
+                                          : colors.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    desc,
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: colors.primary,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
-          );
-        },
-      ),
-    );
+          ),
+        );
+      },
+    ));
   }
 
-  String _getLocalizedModeLabel(SocraticMode mode, AppLocalizations l10n) {
-    switch (mode) {
-      case SocraticMode.stepByStep:
-        return l10n.socraticModeStepByStepLabel;
-      case SocraticMode.directAnswer:
-        return l10n.socraticModeDirectAnswerLabel;
-      case SocraticMode.examSim:
-        return l10n.socraticModeExamSimLabel;
-      case SocraticMode.deepResearch:
-        return l10n.socraticModeDeepResearchLabel;
-    }
-  }
-
-  String _getLocalizedModeDescription(
-      SocraticMode mode, AppLocalizations l10n) {
-    switch (mode) {
-      case SocraticMode.stepByStep:
-        return l10n.socraticModeStepByStepDesc;
-      case SocraticMode.directAnswer:
-        return l10n.socraticModeDirectAnswerDesc;
-      case SocraticMode.examSim:
-        return l10n.socraticModeExamSimDesc;
-      case SocraticMode.deepResearch:
-        return l10n.socraticModeDeepResearchDesc;
-    }
-  }
-
-  IconData _getModeIcon(SocraticMode mode) {
-    switch (mode) {
-      case SocraticMode.stepByStep:
-        return Icons.alt_route_rounded;
-      case SocraticMode.directAnswer:
-        return Icons.bolt_rounded;
-      case SocraticMode.examSim:
-        return Icons.quiz_outlined;
-      case SocraticMode.deepResearch:
-        return Icons.menu_book_rounded;
-    }
+  (String icon, String title, String desc) _getModeDetails(
+    SocraticMode mode,
+    AppLocalizations l10n,
+  ) {
+    return switch (mode) {
+      SocraticMode.stepByStep => (
+          '🪜',
+          l10n.socraticModeStepByStepLabel,
+          l10n.socraticModeStepByStepDesc,
+        ),
+      SocraticMode.directAnswer => (
+          '⚡',
+          l10n.socraticModeDirectAnswerLabel,
+          l10n.socraticModeDirectAnswerDesc,
+        ),
+      SocraticMode.examSim => (
+          '🎯',
+          l10n.socraticModeExamSimLabel,
+          l10n.socraticModeExamSimDesc,
+        ),
+      SocraticMode.deepResearch => (
+          '🔬',
+          l10n.socraticModeDeepResearchLabel,
+          l10n.socraticModeDeepResearchDesc,
+        ),
+    };
   }
 
   String _getModeShortLabel(SocraticMode mode, AppLocalizations l10n) {
-    switch (mode) {
-      case SocraticMode.stepByStep:
-        return l10n.socraticModeStepByStepShort;
-      case SocraticMode.directAnswer:
-        return l10n.socraticModeDirectAnswerShort;
-      case SocraticMode.examSim:
-        return l10n.socraticModeExamSimShort;
-      case SocraticMode.deepResearch:
-        return l10n.socraticModeDeepResearchShort;
-    }
+    return switch (mode) {
+      SocraticMode.stepByStep => l10n.socraticModeStepByStepShort,
+      SocraticMode.directAnswer => l10n.socraticModeDirectAnswerShort,
+      SocraticMode.examSim => l10n.socraticModeExamSimShort,
+      SocraticMode.deepResearch => l10n.socraticModeDeepResearchShort,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfaceSecondary.withAlpha(220)
-            : colors.surfaceSecondary.withAlpha(180),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(55)
-              : colors.surfaceBorder.withAlpha(140),
-          width: 1.1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 50 : 12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // 1. Plus / Attachment action
-          ShrinkableButton(
-            onTap: widget.onAttachmentTap ?? () {},
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.add_rounded,
-                color: colors.textSecondary,
-                size: 24,
-              ),
+    final isCloud = widget.engineType == ExecutionEngineType.cloudSupabase;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfacePrimary.withAlpha(210)
+                : colors.surfacePrimary.withAlpha(235),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark
+                  ? colors.surfaceBorderHighlight.withAlpha(70)
+                  : colors.surfaceBorder,
+              width: 1.1,
             ),
-          ),
-
-          // 2. Wide Multi-line Reusable AppTextField (1 line initially, max 5)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: AppTextField(
-                controller: widget.controller,
-                minLines: 1,
-                maxLines: 5,
-                showBorder: false,
-                isFilled: false,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 8,
-                ),
-                textInputAction: TextInputAction.newline,
-                style: typography.body.medium.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 15,
-                ),
-                cursorColor: colors.primary,
-                hintText: _isListening
-                    ? l10n.voiceInputListening
-                    : l10n.inputFieldPlaceholder,
-                hintStyle: typography.body.regular.copyWith(
-                  color: _isListening
-                      ? colors.primary
-                      : colors.textSecondary.withAlpha(160),
-                  fontSize: 15,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(isDark ? 80 : 15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-
-          // 3. Compact In-Pill Socratic Mode Selector
-          Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: ShrinkableButton(
-              onTap: () => _showModeMenu(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary.withAlpha(isDark ? 160 : 220),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(40)
-                        : colors.surfaceBorder.withAlpha(100),
-                    width: 0.8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // -------------------------------------------------------------
+              // ROW 1: [+] Attachment, Wide AppTextField, Morphing Mic / Send
+              // -------------------------------------------------------------
+              Row(
+                children: [
+                  // Attachment '+' button
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      context.showSnackBar(
+                        message: 'Document attachment ready for OCR ingestion',
+                      );
+                    },
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(90),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: colors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _getModeShortLabel(widget.socraticMode, l10n),
-                      style: typography.caption.bold.copyWith(
+
+                  const SizedBox(width: 8),
+
+                  // Wide AppTextField expanding from 1 line to 5 lines
+                  Expanded(
+                    child: AppTextField(
+                      controller: widget.controller,
+                      showBorder: false,
+                      isFilled: false,
+                      isDense: true,
+                      minLines: 1,
+                      maxLines: 5,
+                      textInputAction: TextInputAction.newline,
+                      hintText: l10n.inputFieldPlaceholder,
+                      hintStyle: typography.body.regular.copyWith(
+                        color: colors.textSecondary.withAlpha(160),
+                        fontSize: 14,
+                      ),
+                      style: typography.body.medium.copyWith(
                         color: colors.textPrimary,
-                        fontSize: 11.5,
+                        fontSize: 14,
                       ),
+                      cursorColor: colors.primary,
                     ),
-                    const SizedBox(width: 3),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: colors.textSecondary,
-                      size: 16,
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // Morphing Trailing Action: Voice Mic vs Send
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: child,
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 4),
-
-          // 4. Morphing Trailing Action: Voice Mic (when empty) vs
-          // Send (when typed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              transitionBuilder: (child, anim) => ScaleTransition(
-                scale: anim,
-                child: child,
-              ),
-              child: _hasInput
-                  ? ShrinkableButton(
-                      key: const ValueKey('send_button'),
-                      onTap: _handleSend,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(90),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_upward_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    )
-                  : ShrinkableButton(
-                      key: const ValueKey('mic_button'),
-                      onTap: _toggleMic,
-                      child: Padding(
-                        padding: const EdgeInsets.all(7),
-                        child: _isListening
-                            ? AnimatedBuilder(
-                                animation: _pulseController,
-                                builder: (context, child) {
-                                  return Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: colors.error.withAlpha(
-                                        (120 + (_pulseController.value * 120))
-                                            .toInt(),
+                    child: _hasInput
+                        ? ShrinkableButton(
+                            key: const ValueKey('send_action'),
+                            onTap: _handleSend,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(120),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: widget.isLoading
+                                  ? const Center(
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.mic_rounded,
+                                    )
+                                  : const Icon(
+                                      Icons.arrow_upward_rounded,
                                       color: Colors.white,
                                       size: 20,
                                     ),
-                                  );
-                                },
-                              )
-                            : Icon(
-                                Icons.mic_none_rounded,
-                                color: colors.textSecondary,
-                                size: 22,
+                            ),
+                          )
+                        : ShrinkableButton(
+                            key: const ValueKey('voice_action'),
+                            onTap: _toggleListening,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: _isListening
+                                    ? colors.error.withAlpha(40)
+                                    : colors.surfaceSecondary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _isListening
+                                      ? colors.error
+                                      : colors.surfaceBorder.withAlpha(80),
+                                ),
                               ),
+                              child: Icon(
+                                _isListening
+                                    ? Icons.mic_rounded
+                                    : Icons.mic_none_rounded,
+                                color: _isListening
+                                    ? colors.error
+                                    : colors.textSecondary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 6),
+
+              // -------------------------------------------------------------
+              // ROW 2: Mode Selector Pill & AI Engine Switcher Pill
+              // -------------------------------------------------------------
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // 1. Socratic Mode Selector Pill
+                  ShrinkableButton(
+                    onTap: _showSocraticModeSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(90),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _getModeDetails(widget.socraticMode, l10n).$1,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getModeShortLabel(widget.socraticMode, l10n),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: colors.textSecondary,
+                            size: 15,
+                          ),
+                        ],
                       ),
                     ),
-            ),
+                  ),
+
+                  // 2. AI Engine Switcher Pill
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.selectionClick());
+                      final next = isCloud
+                          ? ExecutionEngineType.localOnDevice
+                          : ExecutionEngineType.cloudSupabase;
+                      widget.onEngineChanged(next);
+                      context.showSnackBar(
+                        message: next == ExecutionEngineType.cloudSupabase
+                            ? l10n.engineCloudSupabase
+                            : l10n.engineLocalOnDevice,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(90),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isCloud
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFF59E0B),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isCloud
+                                ? l10n.engineCloudSupabase
+                                : l10n.engineLocalOnDevice,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.swap_horiz_rounded,
+                            color: colors.textSecondary,
+                            size: 15,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

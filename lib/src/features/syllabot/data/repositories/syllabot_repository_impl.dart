@@ -36,7 +36,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       );
     }
 
-    // Cloud engine with transparent local fallback on error
+    // Cloud engine with transparent stream error propagation
     final controller = StreamController<String>();
 
     _remote
@@ -49,20 +49,16 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         )
         .listen(
           controller.add,
-          onError: (_) {
-            // Graceful fallback to on-device LLM
-            _local
-                .generateOfflineResponse(
-                  prompt: prompt,
-                  socraticMode: socraticMode,
-                )
-                .listen(
-                  controller.add,
-                  onDone: controller.close,
-                  onError: controller.addError,
-                );
+          onError: (Object err) {
+            if (!controller.isClosed) {
+              controller.addError(
+                'Unable to reach Cloud Neural Engine. '
+                'Check internet or switch to Offline LLM.',
+              );
+            }
           },
-          onDone: controller.close,
+          onDone: () => unawaited(controller.close()),
+          cancelOnError: true,
         );
 
     return controller.stream;

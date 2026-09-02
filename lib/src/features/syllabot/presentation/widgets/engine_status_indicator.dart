@@ -40,7 +40,6 @@ class EngineStatusIndicator extends StatelessWidget {
                 ? l10n.engineCloudSupabase
                 : l10n.engineLocalOnDevice,
           ),
-          type: SnackBarType.info,
         );
       },
       child: Container(

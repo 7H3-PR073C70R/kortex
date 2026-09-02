@@ -21,7 +21,6 @@ class SupabaseSyllabotClient {
     List<Map<String, String>> contextHistory = const [],
     String? authToken,
   }) async* {
-    final controller = StreamController<String>();
     CancelToken? cancelToken;
 
     try {
@@ -51,7 +50,7 @@ class SupabaseSyllabotClient {
       );
 
       final stream = response.data?.stream;
-      if (stream == null) return;
+      if (stream == null) throw Exception('No stream in response');
 
       final buffer = StringBuffer();
 
@@ -93,12 +92,8 @@ class SupabaseSyllabotClient {
           buffer.write(lines.last);
         }
       }
-    } on Object catch (e) {
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    } finally {
-      await controller.close();
+    } on Object {
+      rethrow;
     }
   }
 

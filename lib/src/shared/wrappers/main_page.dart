@@ -78,16 +78,16 @@ class MainPage extends HookWidget {
     final colors = context.colors;
     final isDark = context.isDarkMode;
 
-    return AutoTabsScaffold(
-      routes: _kNavItems.map((item) => item.route).toList(),
-      animationDuration: const Duration(milliseconds: 250),
-      animationCurve: Curves.easeInOut,
-      extendBody: true,
-      transitionBuilder: (context, child, animation) {
-        final tabsRouter = AutoTabsRouter.of(context);
+    return FloatingSyllabotOverlay(
+      child: AutoTabsScaffold(
+        routes: _kNavItems.map((item) => item.route).toList(),
+        animationDuration: const Duration(milliseconds: 250),
+        animationCurve: Curves.easeInOut,
+        extendBody: true,
+        transitionBuilder: (context, child, animation) {
+          final tabsRouter = AutoTabsRouter.of(context);
 
-        return FloatingSyllabotOverlay(
-          child: ColoredBox(
+          return ColoredBox(
             color: colors.backgroundPrimary,
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -132,16 +132,16 @@ class MainPage extends HookWidget {
                 );
               },
             ),
-          ),
-        );
-      },
-      bottomNavigationBuilder: (context, tabsRouter) {
-        final width = MediaQuery.sizeOf(context).width;
-        if (width >= desktopBreakpoint) {
-          return const SizedBox.shrink();
-        }
-        return _AdaptiveBottomNavDock(tabsRouter: tabsRouter);
-      },
+          );
+        },
+        bottomNavigationBuilder: (context, tabsRouter) {
+          final width = MediaQuery.sizeOf(context).width;
+          if (width >= desktopBreakpoint) {
+            return const SizedBox.shrink();
+          }
+          return _AdaptiveBottomNavDock(tabsRouter: tabsRouter);
+        },
+      ),
     );
   }
 }

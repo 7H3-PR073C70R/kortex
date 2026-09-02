@@ -106,7 +106,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
         } else {
           context.showSnackBar(
             message: context.l10n.paywallRestoreNoSub,
-            type: SnackBarType.info,
           );
         }
       }

@@ -89,7 +89,6 @@ class _DocumentIngestionView extends HookWidget {
               if (state.wasDeduplicated) {
                 context.showSnackBar(
                   message: l10n.contentAlreadyUploadedNotice,
-                  type: SnackBarType.info,
                 );
               }
               // Navigate to STEM OCR Live Preview & Editor
