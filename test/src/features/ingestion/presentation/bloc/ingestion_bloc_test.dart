@@ -7,6 +7,7 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
@@ -125,7 +126,7 @@ void main() {
         ),
         IngestionState(
           status: ProcessingStatus.parsingOcr,
-          stageMessage: 'Extracting text locally...',
+          stageMessage: 'Reading document locally...',
           uploadProgress: 1,
           currentDocument: testDoc,
         ),
@@ -238,7 +239,7 @@ void main() {
       expect: () => [
         const IngestionState(
           status: ProcessingStatus.generatingCards,
-          stageMessage: 'Generating study cards...',
+          stageMessage: 'Structuring flashcards...',
         ),
         const IngestionState(
           status: ProcessingStatus.syncingDb,
@@ -256,6 +257,19 @@ void main() {
               'deckTitle',
               'Calculus Mastery',
             ),
+      ],
+    );
+
+    blocTest<IngestionBloc, IngestionState>(
+      'updates synthesis mode on SetSynthesisModeEvent',
+      build: () => bloc,
+      act: (bloc) => bloc.add(
+        const SetSynthesisModeEvent(SynthesisMode.aiSmart),
+      ),
+      expect: () => [
+        const IngestionState(
+          synthesisMode: SynthesisMode.aiSmart,
+        ),
       ],
     );
   });

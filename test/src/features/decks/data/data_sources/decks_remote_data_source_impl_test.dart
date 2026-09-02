@@ -58,14 +58,14 @@ void main() {
           .thenAnswer(
         (_) async => HttpResponse<dynamic>(
           {'id': 'deck_bio_101'},
-          Response(requestOptions: RequestOptions(path: '')),
+          Response(requestOptions: RequestOptions()),
         ),
       );
 
       when(() => mockClient.bulkInsertCards(any<dynamic>())).thenAnswer(
         (_) async => HttpResponse<dynamic>(
           [{'id': 'card_1'}, {'id': 'card_2'}],
-          Response(requestOptions: RequestOptions(path: '')),
+          Response(requestOptions: RequestOptions()),
         ),
       );
 

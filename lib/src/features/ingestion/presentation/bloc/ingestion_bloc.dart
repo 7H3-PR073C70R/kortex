@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
@@ -21,6 +22,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
+    on<SetSynthesisModeEvent>(_onSetSynthesisMode);
     on<TriggerOcrParsingEvent>(_onTriggerOcrParsing);
     on<UpdateSnippetContentEvent>(_onUpdateSnippetContent);
     on<GenerateFlashcardsFromSnippetsEvent>(_onGenerateFlashcards);
@@ -32,6 +34,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final ProcessStemOcrUseCase _processOcr;
   final GenerateFlashcardsFromDocUseCase _generateDeck;
   final FetchUserDocumentsUseCase _fetchUserDocs;
+
+  void _onSetSynthesisMode(
+    SetSynthesisModeEvent event,
+    Emitter<IngestionState> emit,
+  ) {
+    emit(state.copyWith(synthesisMode: event.mode));
+  }
 
   Future<void> _onPickAndUploadFile(
     PickAndUploadFileEvent event,
@@ -94,10 +103,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     TriggerOcrParsingEvent event,
     Emitter<IngestionState> emit,
   ) async {
+    final isAi = state.synthesisMode.isAiSmart;
     emit(
       state.copyWith(
         status: ProcessingStatus.parsingOcr,
-        stageMessage: 'Extracting text locally...',
+        stageMessage: isAi
+            ? 'Synthesizing with AI Smart Synthesis...'
+            : 'Reading document locally...',
       ),
     );
 
@@ -120,7 +132,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         emit(
           state.copyWith(
             status: ProcessingStatus.completed,
-            stageMessage: 'Extracted ${snippets.length} study cards locally',
+            stageMessage: isAi
+                ? 'AI synthesized ${snippets.length} conceptual cards'
+                : 'Extracted ${snippets.length} study cards locally',
             snippets: snippets,
           ),
         );
@@ -153,7 +167,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     emit(
       state.copyWith(
         status: ProcessingStatus.generatingCards,
-        stageMessage: 'Generating study cards...',
+        stageMessage: 'Structuring flashcards...',
       ),
     );
 

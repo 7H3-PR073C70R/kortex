@@ -47,13 +47,13 @@ class UploadProgressCard extends HookWidget {
         case ProcessingStatus.uploading:
           statusText = l10n.uploadingStatus;
         case ProcessingStatus.parsingOcr:
-          statusText = 'Extracting text locally...';
+          statusText = l10n.readingDocumentLocallyStatus;
         case ProcessingStatus.generatingCards:
-          statusText = 'Generating study cards...';
+          statusText = l10n.structuringFlashcardsStatus;
         case ProcessingStatus.syncingDb:
-          statusText = 'Syncing to Supabase...';
+          statusText = l10n.syncingToSupabaseStatus;
         case ProcessingStatus.completed:
-          statusText = 'Document extraction ready';
+          statusText = l10n.documentExtractionReady;
         case ProcessingStatus.idle:
         case ProcessingStatus.failed:
           statusText = '';

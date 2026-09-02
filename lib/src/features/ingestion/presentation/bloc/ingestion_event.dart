@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 
 @immutable
 sealed class IngestionEvent {
@@ -71,6 +72,12 @@ final class GenerateFlashcardsFromSnippetsEvent extends IngestionEvent {
 /// Fetch list of previously uploaded documents.
 final class FetchUserDocumentsEvent extends IngestionEvent {
   const FetchUserDocumentsEvent();
+}
+
+/// Toggle synthesis mode between Tier 1 (Fast Local) and Tier 2 (AI Smart).
+final class SetSynthesisModeEvent extends IngestionEvent {
+  const SetSynthesisModeEvent(this.mode);
+  final SynthesisMode mode;
 }
 
 /// Reset ingestion pipeline to idle.

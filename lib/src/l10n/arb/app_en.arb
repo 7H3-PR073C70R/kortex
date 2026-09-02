@@ -1947,6 +1947,70 @@
     "@contentAlreadyUploadedNotice": {
         "description": "Snackbar notice when file hash matches an existing document"
     },
+    "fastLocalModeTitle": "Fast Local",
+    "@fastLocalModeTitle": {
+        "description": "Label for Tier 1 Fast Local Extraction mode"
+    },
+    "fastLocalModeBadge": "FREE",
+    "@fastLocalModeBadge": {
+        "description": "Badge for Tier 1 Fast Local mode"
+    },
+    "fastLocalModeSubtitle": "Offline, instant deterministic rule-based cards",
+    "@fastLocalModeSubtitle": {
+        "description": "Subtitle description for Fast Local mode"
+    },
+    "aiSmartModeTitle": "AI Smart Gen",
+    "@aiSmartModeTitle": {
+        "description": "Label for Tier 2 AI Smart Synthesis mode"
+    },
+    "aiSmartModeBadge": "PRO",
+    "@aiSmartModeBadge": {
+        "description": "Badge for Tier 2 AI Smart Gen mode"
+    },
+    "aiSmartModeSubtitle": "Deep conceptual multi-step synthesis with diagrams",
+    "@aiSmartModeSubtitle": {
+        "description": "Subtitle description for AI Smart Gen mode"
+    },
+    "readingDocumentLocallyStatus": "Reading document locally...",
+    "@readingDocumentLocallyStatus": {
+        "description": "Stage status message when reading document on device"
+    },
+    "structuringFlashcardsStatus": "Structuring flashcards...",
+    "@structuringFlashcardsStatus": {
+        "description": "Stage status message when structuring cards from extractions"
+    },
+    "syncingToSupabaseStatus": "Syncing to Supabase...",
+    "@syncingToSupabaseStatus": {
+        "description": "Stage status message when syncing deck to Supabase"
+    },
+    "deckAndFlashcardsSyncedStatus": "Deck & flashcards synced to Supabase",
+    "@deckAndFlashcardsSyncedStatus": {
+        "description": "Stage status message when sync is complete"
+    },
+    "aiSynthesizingStatus": "Synthesizing with AI Smart Synthesis...",
+    "@aiSynthesizingStatus": {
+        "description": "Stage status message when synthesizing with AI"
+    },
+    "documentExtractionReady": "Document extraction ready",
+    "@documentExtractionReady": {
+        "description": "Status message when extraction is ready"
+    },
+    "attachedDiagramLabel": "Attached Diagram",
+    "@attachedDiagramLabel": {
+        "description": "Label for attached diagram thumbnail"
+    },
+    "visualDiagramLinkedLabel": "Visual Diagram Linked to Snippet",
+    "@visualDiagramLinkedLabel": {
+        "description": "Label for visual diagram linked to OCR snippet"
+    },
+    "tapToEnlargeDiagramHint": "Tap image to enlarge & zoom diagram",
+    "@tapToEnlargeDiagramHint": {
+        "description": "Tooltip/hint for zooming diagram"
+    },
+    "interactiveDiagramViewerTitle": "Diagram Viewer",
+    "@interactiveDiagramViewerTitle": {
+        "description": "Title for interactive full-screen diagram viewer"
+    },
     "communityTitle": "Community & Study Hub",
     "@communityTitle": {
         "description": "Title of the Community Hub"

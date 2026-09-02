@@ -1377,6 +1377,57 @@ class AppLocalizationsEn extends AppLocalizations {
       'File already indexed. Loaded existing document extractions instantly.';
 
   @override
+  String get fastLocalModeTitle => 'Fast Local';
+
+  @override
+  String get fastLocalModeBadge => 'FREE';
+
+  @override
+  String get fastLocalModeSubtitle =>
+      'Offline, instant deterministic rule-based cards';
+
+  @override
+  String get aiSmartModeTitle => 'AI Smart Gen';
+
+  @override
+  String get aiSmartModeBadge => 'PRO';
+
+  @override
+  String get aiSmartModeSubtitle =>
+      'Deep conceptual multi-step synthesis with diagrams';
+
+  @override
+  String get readingDocumentLocallyStatus => 'Reading document locally...';
+
+  @override
+  String get structuringFlashcardsStatus => 'Structuring flashcards...';
+
+  @override
+  String get syncingToSupabaseStatus => 'Syncing to Supabase...';
+
+  @override
+  String get deckAndFlashcardsSyncedStatus =>
+      'Deck & flashcards synced to Supabase';
+
+  @override
+  String get aiSynthesizingStatus => 'Synthesizing with AI Smart Synthesis...';
+
+  @override
+  String get documentExtractionReady => 'Document extraction ready';
+
+  @override
+  String get attachedDiagramLabel => 'Attached Diagram';
+
+  @override
+  String get visualDiagramLinkedLabel => 'Visual Diagram Linked to Snippet';
+
+  @override
+  String get tapToEnlargeDiagramHint => 'Tap image to enlarge & zoom diagram';
+
+  @override
+  String get interactiveDiagramViewerTitle => 'Diagram Viewer';
+
+  @override
   String get communityTitle => 'Community & Study Hub';
 
   @override

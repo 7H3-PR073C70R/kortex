@@ -3,11 +3,13 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 
 class IngestionState extends Equatable {
   const IngestionState({
     this.status = ProcessingStatus.idle,
     this.uploadProgress = 0.0,
+    this.synthesisMode = SynthesisMode.fastLocal,
     this.currentDocument,
     this.snippets = const [],
     this.userDocuments = const [],
@@ -19,6 +21,7 @@ class IngestionState extends Equatable {
 
   final ProcessingStatus status;
   final double uploadProgress;
+  final SynthesisMode synthesisMode;
   final DocumentUploadEntity? currentDocument;
   final List<OcrExtractionEntity> snippets;
   final List<DocumentUploadEntity> userDocuments;
@@ -37,6 +40,7 @@ class IngestionState extends Equatable {
   IngestionState copyWith({
     ProcessingStatus? status,
     double? uploadProgress,
+    SynthesisMode? synthesisMode,
     DocumentUploadEntity? currentDocument,
     List<OcrExtractionEntity>? snippets,
     List<DocumentUploadEntity>? userDocuments,
@@ -48,6 +52,7 @@ class IngestionState extends Equatable {
     return IngestionState(
       status: status ?? this.status,
       uploadProgress: uploadProgress ?? this.uploadProgress,
+      synthesisMode: synthesisMode ?? this.synthesisMode,
       currentDocument: currentDocument ?? this.currentDocument,
       snippets: snippets ?? this.snippets,
       userDocuments: userDocuments ?? this.userDocuments,
@@ -62,6 +67,7 @@ class IngestionState extends Equatable {
   List<Object?> get props => [
         status,
         uploadProgress,
+        synthesisMode,
         currentDocument,
         snippets,
         userDocuments,

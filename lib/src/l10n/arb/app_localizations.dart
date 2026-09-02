@@ -2462,6 +2462,102 @@ abstract class AppLocalizations {
   /// **'File already indexed. Loaded existing document extractions instantly.'**
   String get contentAlreadyUploadedNotice;
 
+  /// Label for Tier 1 Fast Local Extraction mode
+  ///
+  /// In en, this message translates to:
+  /// **'Fast Local'**
+  String get fastLocalModeTitle;
+
+  /// Badge for Tier 1 Fast Local mode
+  ///
+  /// In en, this message translates to:
+  /// **'FREE'**
+  String get fastLocalModeBadge;
+
+  /// Subtitle description for Fast Local mode
+  ///
+  /// In en, this message translates to:
+  /// **'Offline, instant deterministic rule-based cards'**
+  String get fastLocalModeSubtitle;
+
+  /// Label for Tier 2 AI Smart Synthesis mode
+  ///
+  /// In en, this message translates to:
+  /// **'AI Smart Gen'**
+  String get aiSmartModeTitle;
+
+  /// Badge for Tier 2 AI Smart Gen mode
+  ///
+  /// In en, this message translates to:
+  /// **'PRO'**
+  String get aiSmartModeBadge;
+
+  /// Subtitle description for AI Smart Gen mode
+  ///
+  /// In en, this message translates to:
+  /// **'Deep conceptual multi-step synthesis with diagrams'**
+  String get aiSmartModeSubtitle;
+
+  /// Stage status message when reading document on device
+  ///
+  /// In en, this message translates to:
+  /// **'Reading document locally...'**
+  String get readingDocumentLocallyStatus;
+
+  /// Stage status message when structuring cards from extractions
+  ///
+  /// In en, this message translates to:
+  /// **'Structuring flashcards...'**
+  String get structuringFlashcardsStatus;
+
+  /// Stage status message when syncing deck to Supabase
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing to Supabase...'**
+  String get syncingToSupabaseStatus;
+
+  /// Stage status message when sync is complete
+  ///
+  /// In en, this message translates to:
+  /// **'Deck & flashcards synced to Supabase'**
+  String get deckAndFlashcardsSyncedStatus;
+
+  /// Stage status message when synthesizing with AI
+  ///
+  /// In en, this message translates to:
+  /// **'Synthesizing with AI Smart Synthesis...'**
+  String get aiSynthesizingStatus;
+
+  /// Status message when extraction is ready
+  ///
+  /// In en, this message translates to:
+  /// **'Document extraction ready'**
+  String get documentExtractionReady;
+
+  /// Label for attached diagram thumbnail
+  ///
+  /// In en, this message translates to:
+  /// **'Attached Diagram'**
+  String get attachedDiagramLabel;
+
+  /// Label for visual diagram linked to OCR snippet
+  ///
+  /// In en, this message translates to:
+  /// **'Visual Diagram Linked to Snippet'**
+  String get visualDiagramLinkedLabel;
+
+  /// Tooltip/hint for zooming diagram
+  ///
+  /// In en, this message translates to:
+  /// **'Tap image to enlarge & zoom diagram'**
+  String get tapToEnlargeDiagramHint;
+
+  /// Title for interactive full-screen diagram viewer
+  ///
+  /// In en, this message translates to:
+  /// **'Diagram Viewer'**
+  String get interactiveDiagramViewerTitle;
+
   /// Title of the Community Hub
   ///
   /// In en, this message translates to:

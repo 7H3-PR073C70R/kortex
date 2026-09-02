@@ -292,8 +292,33 @@ class DocumentParserService {
       );
     }
 
+    // Tiered Extraction Pipeline
+    // Step 1: Try extracting explicit structural patterns & headers
+    var sections = _chunkIntoSections(lines);
+
+    // Step 2: Universal Sentence & Cloze Fallback
+    // If explicit patterns are insufficient (< 3 cards) or missing,
+    // run sentence-splitting heuristics
+    if (sections.length < 3 ||
+        sections.every((s) => s.title.startsWith('Key Concept '))) {
+      final sentenceSections = _extractSentenceAndClozeSections(fullText);
+      if (sentenceSections.isNotEmpty) {
+        if (sections.isEmpty ||
+            sections.every((s) => s.title.startsWith('Key Concept '))) {
+          sections = sentenceSections;
+        } else {
+          final existingTitles =
+              sections.map((s) => s.title.toLowerCase()).toSet();
+          for (final s in sentenceSections) {
+            if (!existingTitles.contains(s.title.toLowerCase())) {
+              sections.add(s);
+            }
+          }
+        }
+      }
+    }
+
     final snippets = <OcrExtractionModel>[];
-    final sections = _chunkIntoSections(lines);
 
     for (var i = 0; i < sections.length; i++) {
       final section = sections[i];
@@ -328,6 +353,107 @@ class DocumentParserService {
             filename,
             imageUrls: imageUrls,
           );
+  }
+
+  /// Extracts structured prompt/response pairs from narrative prose using
+  /// sentence splitting, linking verb detection, and paragraph summarization.
+  List<_DocumentSection> _extractSentenceAndClozeSections(String text) {
+    final results = <_DocumentSection>[];
+
+    final paragraphs = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => p.replaceAll('\n', ' ').trim())
+        .where((p) => p.length > 20)
+        .toList();
+
+    final definitionRegex = RegExp(
+      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b\s+(.+)$",
+      caseSensitive: false,
+    );
+
+    for (final para in paragraphs) {
+      final rawSentences = para
+          .split(RegExp(r'(?<=[.!?])\s+'))
+          .map((s) => s.trim())
+          .where((s) => s.length > 15)
+          .toList();
+
+      for (final sentence in rawSentences) {
+        final colonMatch = RegExp(
+          r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s*[:=–—]\s*(.+)$",
+        ).firstMatch(sentence);
+        if (colonMatch != null && colonMatch.group(2)!.trim().length > 5) {
+          results.add(
+            _DocumentSection(
+              title: colonMatch.group(1)!.trim(),
+              content: colonMatch.group(2)!.trim(),
+            ),
+          );
+          continue;
+        }
+
+        final match = definitionRegex.firstMatch(sentence);
+        if (match != null) {
+          final subject = match.group(1)!.trim();
+          final verb = match.group(2)!.trim();
+          final predicate = match.group(3)!.trim();
+
+          results.add(
+            _DocumentSection(
+              title: 'Concept: $subject',
+              content: '$subject $verb $predicate',
+            ),
+          );
+        } else if (sentence.contains(' = ') ||
+            sentence.contains(' > ') ||
+            sentence.contains(' < ')) {
+          final firstWords = sentence.split(' ').take(5).join(' ');
+          results.add(
+            _DocumentSection(
+              title: firstWords,
+              content: sentence,
+            ),
+          );
+        }
+      }
+
+      // If no definition was matched in the paragraph, use lead
+      // sentence as prompt
+      if (results.isEmpty && rawSentences.isNotEmpty) {
+        final lead = rawSentences.first;
+        final detail = rawSentences.skip(1).join(' ');
+        results.add(
+          _DocumentSection(
+            title: lead.length > 45 ? '${lead.substring(0, 42)}...' : lead,
+            content: detail.isNotEmpty ? detail : lead,
+          ),
+        );
+      }
+    }
+
+    // Safety fallback: chunk raw sentences into prompt-answer pairs
+    if (results.isEmpty) {
+      final sentences = text
+          .split(RegExp(r'(?<=[.!?])\s+'))
+          .map((s) => s.trim())
+          .where((s) => s.length > 15)
+          .toList();
+
+      for (var i = 0; i < sentences.length; i += 2) {
+        final prompt = sentences[i];
+        final answer = (i + 1 < sentences.length) ? sentences[i + 1] : prompt;
+        results.add(
+          _DocumentSection(
+            title: prompt.length > 40
+                ? '${prompt.substring(0, 37)}...'
+                : prompt,
+            content: answer,
+          ),
+        );
+      }
+    }
+
+    return results;
   }
 
   List<_DocumentSection> _chunkIntoSections(List<String> lines) {
@@ -436,15 +562,24 @@ class DocumentParserService {
     } else if (currentLines.isNotEmpty) {
       // Deterministic fallback: chunk into sentence blocks
       var blockIdx = 1;
+      final defMatcher = RegExp(
+        r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b",
+        caseSensitive: false,
+      );
+
       for (var i = 0; i < currentLines.length; i += 4) {
         final chunk = currentLines.sublist(
           i,
           (i + 4 > currentLines.length) ? currentLines.length : i + 4,
         );
         final firstLine = chunk.first;
-        final title = firstLine.length > 40
-            ? 'Key Concept $blockIdx'
-            : firstLine;
+        final defMatch = defMatcher.firstMatch(firstLine);
+
+        final title = defMatch != null
+            ? 'Concept: ${defMatch.group(1)!.trim()}'
+            : (firstLine.length > 40
+                ? 'Key Concept $blockIdx'
+                : firstLine);
         sections.add(
           _DocumentSection(
             title: title,
@@ -544,7 +679,6 @@ class DocumentParserService {
         latexContent:
             r'\text{Uptrend} \implies \text{Sweep Lows}, '
             r'\quad \text{Downtrend} \implies \text{Sweep Highs}',
-        confidenceScore: 0.95,
       ),
       OcrExtractionModel(
         id: 'ocr_${documentId}_5',

@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 class OcrLatexLiveEditor extends HookWidget {
   const OcrLatexLiveEditor({
@@ -18,6 +19,7 @@ class OcrLatexLiveEditor extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final rawTextController = useTextEditingController(text: snippet.rawText);
@@ -230,7 +232,7 @@ class OcrLatexLiveEditor extends HookWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Visual Diagram Linked to Snippet',
+                          l10n.visualDiagramLinkedLabel,
                           style: typography.footnote.regular
                               .copyWith(color: colors.textSecondary),
                         ),
