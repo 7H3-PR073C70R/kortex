@@ -106,7 +106,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<QueryDocumentContextUseCase>(
       () => QueryDocumentContextUseCase(locator<RagRepository>()),
     )
-    ..registerFactory<SyllabotChatBloc>(
+    ..registerLazySingleton<SyllabotChatBloc>(
       () => SyllabotChatBloc(
         streamResponseUseCase: locator<StreamSyllabotResponseUseCase>(),
         getChatHistoryUseCase: locator<GetChatHistoryUseCase>(),

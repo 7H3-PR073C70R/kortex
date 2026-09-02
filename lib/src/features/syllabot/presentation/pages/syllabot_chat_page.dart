@@ -26,6 +26,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/convert_to_dec
 import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_download_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_history_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/voice_dialogue_modal.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -45,22 +46,21 @@ class SyllabotChatPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SyllabotChatBloc>(
-      create: (_) {
-        final bloc = locator<SyllabotChatBloc>();
-        if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
-          final sid = 'session_${DateTime.now().millisecondsSinceEpoch}';
-          bloc.add(
-            SubmitPromptEvent(
-              prompt: initialPrompt!.trim(),
-              sessionId: sid,
-              socraticMode: SocraticMode.stepByStep,
-              engineType: ExecutionEngineType.cloudSupabase,
-            ),
-          );
-        }
-        return bloc;
-      },
+    final bloc = locator<SyllabotChatBloc>();
+    if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
+      final sid = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      bloc.add(
+        SubmitPromptEvent(
+          prompt: initialPrompt!.trim(),
+          sessionId: sid,
+          socraticMode: SocraticMode.stepByStep,
+          engineType: ExecutionEngineType.cloudSupabase,
+        ),
+      );
+    }
+
+    return BlocProvider<SyllabotChatBloc>.value(
+      value: bloc,
       child: _SyllabotChatView(
         initialPrompt: initialPrompt,
         onCollapse: onCollapse,
@@ -282,13 +282,6 @@ class _SyllabotChatView extends HookWidget {
             type: SnackBarType.success,
           );
         }
-
-        if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-          context.showSnackBar(
-            message: state.errorMessage!,
-            type: SnackBarType.error,
-          );
-        }
       },
       child: Scaffold(
         backgroundColor: colors.backgroundPrimary,
@@ -361,7 +354,29 @@ class _SyllabotChatView extends HookWidget {
               },
             ),
 
-            // 3. New Chat Session Action
+            // 3. Conversation History Browser Action
+            BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+              builder: (context, state) {
+                return IconButton(
+                  tooltip: 'Chat History',
+                  icon: Icon(
+                    Icons.history_rounded,
+                    color: colors.textPrimary,
+                    size: 23,
+                  ),
+                  onPressed: () {
+                    unawaited(
+                      SyllabotHistorySheet.show(
+                        context,
+                        currentSessionId: state.sessionId,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+
+            // 4. New Chat Session Action
             IconButton(
               tooltip: l10n.newConversationTooltip,
               icon: Icon(

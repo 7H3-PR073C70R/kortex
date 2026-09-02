@@ -173,20 +173,25 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
             ),
           ),
 
-        // 3. Full-Screen Expanded Syllabot Chat Sheet Overlay
-        if (_isExpanded)
-          Positioned.fill(
+        // 3. Full-Screen Expanded Syllabot Chat Sheet Overlay (Persists state)
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: !_isExpanded,
             child: AnimatedBuilder(
               animation: _expandAnimation,
               builder: (context, child) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.15),
-                    end: Offset.zero,
-                  ).animate(_expandAnimation),
-                  child: FadeTransition(
-                    opacity: _expandAnimation,
-                    child: child,
+                final isHidden = !_isExpanded && _expandAnimation.value == 0;
+                return Offstage(
+                  offstage: isHidden,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.15),
+                      end: Offset.zero,
+                    ).animate(_expandAnimation),
+                    child: FadeTransition(
+                      opacity: _expandAnimation,
+                      child: child,
+                    ),
                   ),
                 );
               },
@@ -198,6 +203,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
               ),
             ),
           ),
+        ),
       ],
     );
   }
