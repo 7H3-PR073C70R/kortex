@@ -1,13 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Subpage displaying app version, documentation, support, and legal links.
 class AboutSupportPage extends StatelessWidget {
   const AboutSupportPage({super.key});
+
+  static const String discordUrl = 'https://discord.gg/kortex';
+  static const String docsUrl = 'https://docs.kortexify.com';
+  static const String privacyPolicyUrl = 'https://kortexify.com/privacy';
+  static const String termsUrl = 'https://kortexify.com/terms';
+
+  Future<void> _launchExternalUrl(BuildContext context, String url) async {
+    AppFeedback.light();
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Opening $url',
+          );
+        }
+      }
+    } on Object catch (_) {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Could not open link.',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +138,7 @@ class AboutSupportPage extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'v1.2.0 • Stable Release',
+                        'v1.0.0+1 • Production STEM Engine',
                         style: typography.caption.bold.copyWith(
                           color: colors.primary,
                           fontSize: 11.5,
@@ -123,26 +153,18 @@ class AboutSupportPage extends StatelessWidget {
               // 2. Resources & Community Links
               _buildLinkCard(
                 icon: Icons.forum_rounded,
-                title: 'Community Discord & Forum',
+                title: 'Community Discord & Study Rooms',
                 subtitle: 'Join study rooms, share decks, and get help',
-                onTap: () {
-                  context.showSnackBar(
-                    message: 'Connecting to Kortexify Discord community...',
-                  );
-                },
+                onTap: () => _launchExternalUrl(context, discordUrl),
                 colors: colors,
                 typography: typography,
               ),
               const SizedBox(height: 12),
               _buildLinkCard(
                 icon: Icons.help_outline_rounded,
-                title: 'Help Center & Guides',
-                subtitle: 'Tutorials on Syllabot AI and FSRS spaced repetition',
-                onTap: () {
-                  context.showSnackBar(
-                    message: 'Opening Kortexify Documentation...',
-                  );
-                },
+                title: 'Documentation & Knowledgebase',
+                subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
+                onTap: () => _launchExternalUrl(context, docsUrl),
                 colors: colors,
                 typography: typography,
               ),
@@ -150,8 +172,8 @@ class AboutSupportPage extends StatelessWidget {
               _buildLinkCard(
                 icon: Icons.privacy_tip_outlined,
                 title: 'Privacy Policy',
-                subtitle: 'How we securely store and protect your data',
-                onTap: () {},
+                subtitle: 'How we securely store and encrypt your data',
+                onTap: () => _launchExternalUrl(context, privacyPolicyUrl),
                 colors: colors,
                 typography: typography,
               ),
@@ -160,7 +182,7 @@ class AboutSupportPage extends StatelessWidget {
                 icon: Icons.description_outlined,
                 title: 'Terms of Service',
                 subtitle: 'End user license agreements and policies',
-                onTap: () {},
+                onTap: () => _launchExternalUrl(context, termsUrl),
                 colors: colors,
                 typography: typography,
               ),

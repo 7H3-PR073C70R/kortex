@@ -1,36 +1,42 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Local-first card review sync queue that buffers logs locally and flushes
 /// them in batches of 50 via idempotent RPC `upsert_fsrs_review_batch`.
 class CardSyncQueue {
   CardSyncQueue({
-    SupabaseClient? supabaseClient,
+    Dio? dio,
     Connectivity? connectivity,
     List<FsrsReviewLog>? initialBuffer,
-  })  : _supabase = supabaseClient,
+    String? authToken,
+  })  : _dio = dio ?? Dio(),
         _connectivity = connectivity ?? Connectivity(),
+        _authToken = authToken,
         _inMemoryLogBuffer = initialBuffer != null
             ? List<FsrsReviewLog>.from(initialBuffer)
             : <FsrsReviewLog>[] {
     _initConnectivityListener();
   }
 
-  final SupabaseClient? _supabase;
+  final Dio _dio;
   final Connectivity _connectivity;
   final List<FsrsReviewLog> _inMemoryLogBuffer;
+  final String? _authToken;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
-  SupabaseClient? get _client {
-    if (_supabase != null) return _supabase;
-    try {
-      return Supabase.instance.client;
-    } on Object {
-      return null;
-    }
+  Map<String, String> get _headers {
+    final token = _authToken?.isNotEmpty == true
+        ? _authToken!
+        : AppEnv.supabaseAnonKey;
+    return {
+      'apikey': AppEnv.supabaseAnonKey,
+      'Authorization': 'Bearer $token',
+    };
   }
 
   static const int syncBatchSize = 50;
@@ -59,7 +65,6 @@ class CardSyncQueue {
       'Total pending: ${getPendingCount()}',
     );
 
-    // Proactive sync attempt if online
     unawaited(flushPendingLogs());
   }
 
@@ -68,7 +73,7 @@ class CardSyncQueue {
     return _inMemoryLogBuffer.where((log) => !log.isSynced).length;
   }
 
-  /// Flushes pending logs to Supabase Postgres using the idempotent RPC
+  /// Flushes pending logs to database using the idempotent RPC
   /// in batches of 50.
   Future<int> flushPendingLogs() async {
     if (_isSyncing) return 0;
@@ -77,14 +82,6 @@ class CardSyncQueue {
     var syncedCount = 0;
 
     try {
-      final client = _client;
-      if (client == null) {
-        debugPrint(
-          '[CardSyncQueue] Supabase client unavailable. Deferring sync.',
-        );
-        return 0;
-      }
-
       final pendingLogs =
           _inMemoryLogBuffer.where((log) => !log.isSynced).toList();
 
@@ -92,7 +89,6 @@ class CardSyncQueue {
         return 0;
       }
 
-      // Process in batches of 50
       for (var i = 0; i < pendingLogs.length; i += syncBatchSize) {
         final endIndex = (i + syncBatchSize < pendingLogs.length)
             ? i + syncBatchSize
@@ -102,13 +98,12 @@ class CardSyncQueue {
         final payload = batch.map((log) => log.toSupabasePayload()).toList();
 
         try {
-          // 1. Primary: Call idempotent Supabase Postgres RPC function
-          await client.rpc<dynamic>(
-            'upsert_fsrs_review_batch',
-            params: {'reviews': payload},
+          await _dio.post<dynamic>(
+            '${AppApiEndpoint.baseUri}/rest/v1/rpc/upsert_fsrs_review_batch',
+            data: {'reviews': payload},
+            options: Options(headers: _headers),
           );
 
-          // Mark batch as synced locally
           for (final syncedLog in batch) {
             final index = _inMemoryLogBuffer.indexWhere(
               (l) => l.transactionUuid == syncedLog.transactionUuid,
@@ -139,9 +134,17 @@ class CardSyncQueue {
         } on Object catch (rpcErr) {
           debugPrint('[CardSyncQueue] RPC sync failed: $rpcErr');
 
-          // Fallback direct upsert
           try {
-            await client.from('study_review_logs').upsert(payload);
+            await _dio.post<dynamic>(
+              '${AppApiEndpoint.baseUri}/rest/v1/study_review_logs',
+              data: payload,
+              options: Options(
+                headers: {
+                  ..._headers,
+                  'Prefer': 'resolution=merge-duplicates',
+                },
+              ),
+            );
             for (final syncedLog in batch) {
               final index = _inMemoryLogBuffer.indexWhere(
                 (l) => l.transactionUuid == syncedLog.transactionUuid,
@@ -168,7 +171,7 @@ class CardSyncQueue {
             debugPrint(
               '[CardSyncQueue] Direct upsert fallback error: $fallbackErr',
             );
-            break; // Stop and retry on next connectivity cycle
+            break;
           }
         }
       }

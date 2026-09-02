@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:kortex/src/core/error/failure.dart';
-import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';
 import 'package:kortex/src/features/auth/data/models/auth_request_model.dart';
@@ -199,10 +198,6 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> signOut() async {
     try {
       _userStorageService.clearStorage();
-      final client = SupabaseSafe.client;
-      if (client != null) {
-        await client.auth.signOut();
-      }
       _authStateController.add(AuthSessionStatus.unauthenticated);
       return const Right(null);
     } on Object {

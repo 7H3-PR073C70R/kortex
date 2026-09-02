@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/decks/data/services/local_inference_isolate_manager.dart';
 import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum StudyEngineExecutionMode {
   cloudRemote,
@@ -71,25 +73,16 @@ class StudyEngineRouter {
     Connectivity? connectivity,
     OfflineModelInstaller? modelInstaller,
     LocalInferenceIsolateManager? isolateManager,
-    SupabaseClient? supabaseClient,
+    Dio? dio,
   })  : _connectivity = connectivity ?? Connectivity(),
         _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
         _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
-        _supabase = supabaseClient;
+        _dio = dio ?? Dio();
 
   final Connectivity _connectivity;
   final OfflineModelInstaller _modelInstaller;
   final LocalInferenceIsolateManager _isolateManager;
-  final SupabaseClient? _supabase;
-
-  SupabaseClient? get _supabaseClient {
-    if (_supabase != null) return _supabase;
-    try {
-      return Supabase.instance.client;
-    } on Object {
-      return null;
-    }
-  }
+  final Dio _dio;
 
   static const String offlineModelMissingPrompt =
       'Offline mode requires the offline model pack. '
@@ -128,7 +121,6 @@ class StudyEngineRouter {
     final mode = await getExecutionMode();
 
     if (mode == StudyEngineExecutionMode.cloudRemote) {
-      // 1. Online Cloud Path
       debugPrint('[StudyEngineRouter] Online: Routing payload to Cloud API...');
       final cards = await _fetchFromCloud(
         topic: topic,
@@ -142,7 +134,6 @@ class StudyEngineRouter {
     }
 
     if (mode == StudyEngineExecutionMode.offlineOnDevice) {
-      // 2. Offline On-Device GGUF Path
       debugPrint(
         '[StudyEngineRouter] Offline: Routing payload to Local '
         'Fllama Isolate...',
@@ -167,7 +158,6 @@ class StudyEngineRouter {
       );
     }
 
-    // 3. Offline without local model pack
     debugPrint('[StudyEngineRouter] Offline without model: Prompting user...');
     return const StudyPackResult(
       cards: [],
@@ -203,31 +193,34 @@ class StudyEngineRouter {
     required int count,
     String? sourceText,
   }) async {
-    final client = _supabaseClient;
-    if (client != null) {
-      try {
-        final response = await client.functions.invoke(
-          'generate-flashcards-stream',
-          body: {
-            'topic': topic,
-            'sourceText': sourceText,
-            'count': count,
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
+        data: {
+          'topic': topic,
+          'sourceText': sourceText,
+          'count': count,
+        },
+        options: Options(
+          headers: {
+            'apikey': AppEnv.supabaseAnonKey,
+            'Authorization': 'Bearer ${AppEnv.supabaseAnonKey}',
           },
-        );
+        ),
+      );
 
-        final data = response.data;
-        if (data != null && data is Map<String, dynamic>) {
-          final cardsList = data['cards'] as List<dynamic>?;
-          if (cardsList != null && cardsList.isNotEmpty) {
-            return cardsList
-                .map((c) =>
-                    GeneratedFlashcard.fromJson(c as Map<String, dynamic>))
-                .toList();
-          }
+      final data = response.data;
+      if (data != null) {
+        final cardsList = data['cards'] as List<dynamic>?;
+        if (cardsList != null && cardsList.isNotEmpty) {
+          return cardsList
+              .map((c) =>
+                  GeneratedFlashcard.fromJson(c as Map<String, dynamic>))
+              .toList();
         }
-      } on Object catch (err) {
-        debugPrint('[StudyEngineRouter] Cloud API note: $err');
       }
+    } on Object catch (err) {
+      debugPrint('[StudyEngineRouter] Cloud API note: $err');
     }
 
     return _createSyntheticCloudCards(topic, count);

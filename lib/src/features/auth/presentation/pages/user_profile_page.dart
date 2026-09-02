@@ -7,14 +7,16 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/presentation/pages/about_support_page.dart';
 import 'package:kortex/src/features/profile/presentation/pages/academic_track_settings_page.dart';
 import 'package:kortex/src/features/profile/presentation/pages/account_security_page.dart';
@@ -25,7 +27,6 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 @RoutePage()
 class UserProfilePage extends HookWidget {
@@ -232,13 +233,14 @@ class UserProfilePage extends HookWidget {
         'Kortexify Scholar';
     final email = profile?.email ??
         state.user?.email ??
-        SupabaseSafe.currentUser?.email ??
         'scholar@kortexify.com';
 
     final streakDays = profile?.streakDays ?? 0;
     final level = profile?.level ?? 1;
     final retentionPct =
         ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
+
+    final photoUrl = profile?.photoUrl;
 
     return Container(
       decoration: BoxDecoration(
@@ -255,29 +257,63 @@ class UserProfilePage extends HookWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Avatar with gradient glow
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colors.primary,
-                        colors.syllabotAccent,
-                      ],
-                    ),
-                    shape: BoxShape.circle,
+                // Interactive Avatar with gradient glow and edit badge
+                ShrinkableButton(
+                  onTap: () => _showAvatarPickerDialog(
+                    context,
+                    colors,
+                    typography,
                   ),
-                  child: Center(
-                    child: Text(
-                      displayName.isNotEmpty
-                          ? displayName[0].toUpperCase()
-                          : 'K',
-                      style: typography.title3.bold.copyWith(
-                        color: Colors.white,
-                        fontSize: 20,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary,
+                              colors.syllabotAccent,
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(isDark ? 80 : 40),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: _buildAvatarContent(
+                            photoUrl: photoUrl,
+                            displayName: displayName,
+                            typography: typography,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colors.surfaceBorder,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt_rounded,
+                            size: 11,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -675,8 +711,259 @@ class UserProfilePage extends HookWidget {
     );
   }
 
+  Widget _buildAvatarContent({
+    required String? photoUrl,
+    required String displayName,
+    required TypographyThemeExtension typography,
+  }) {
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      if (photoUrl.startsWith('emoji:')) {
+        return Text(
+          photoUrl.replaceFirst('emoji:', ''),
+          style: const TextStyle(fontSize: 26),
+        );
+      } else if (photoUrl.startsWith('http://') ||
+          photoUrl.startsWith('https://')) {
+        return ClipOval(
+          child: Image.network(
+            photoUrl,
+            width: 54,
+            height: 54,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Text(
+              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
+              style: typography.title3.bold.copyWith(
+                color: Colors.white,
+                fontSize: 20,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Text(
+      displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
+      style: typography.title3.bold.copyWith(
+        color: Colors.white,
+        fontSize: 20,
+      ),
+    );
+  }
+
+  void _showAvatarPickerDialog(
+    BuildContext context,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) {
+    AppFeedback.selection();
+    final urlController = TextEditingController();
+
+    final avatars = [
+      {'emoji': '🎓', 'label': 'Scholar', 'id': 'emoji:🎓'},
+      {'emoji': '🧠', 'label': 'Neuro', 'id': 'emoji:🧠'},
+      {'emoji': '⚡', 'label': 'Quantum', 'id': 'emoji:⚡'},
+      {'emoji': '🧬', 'label': 'Biotech', 'id': 'emoji:🧬'},
+      {'emoji': '🤖', 'label': 'AI Cyber', 'id': 'emoji:🤖'},
+      {'emoji': '⚖️', 'label': 'Jurist', 'id': 'emoji:⚖️'},
+      {'emoji': '🩺', 'label': 'Medic', 'id': 'emoji:🩺'},
+      {'emoji': '🚀', 'label': 'Astro', 'id': 'emoji:🚀'},
+    ];
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (ctx) => Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(90),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Customize Scholar Avatar',
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 17,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Choose a STEM persona badge or link a photo URL',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Grid of STEM Persona Avatars
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemCount: avatars.length,
+                itemBuilder: (context, index) {
+                  final item = avatars[index];
+                  return ShrinkableButton(
+                    onTap: () async {
+                      Navigator.of(ctx).pop();
+                      await _persistPhotoUrl(context, item['id']!);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(80),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            item['emoji']!,
+                            style: const TextStyle(fontSize: 26),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item['label']!,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Divider(height: 1, color: colors.surfaceBorder.withAlpha(70)),
+              const SizedBox(height: 16),
+
+              // Custom Photo URL Input
+              Text(
+                'Or Custom Photo Link',
+                style: typography.body.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: urlController,
+                      hintText: 'https://example.com/photo.jpg',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ShrinkableButton(
+                    onTap: () async {
+                      final url = urlController.text.trim();
+                      if (url.isNotEmpty) {
+                        Navigator.of(ctx).pop();
+                        await _persistPhotoUrl(context, url);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Apply',
+                        style: typography.caption.bold.copyWith(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {
+    AppFeedback.light();
+    final result = await locator<UpdateAvatarUseCase>()(photoUrl);
+    result.fold(
+      (failure) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Could not sync avatar: ${failure.message}',
+            type: SnackBarType.error,
+          );
+        }
+      },
+      (_) {
+        if (context.mounted) {
+          context.read<AuthBloc>().add(const AuthProfileFetchRequested());
+          context.showSnackBar(
+            message: 'Avatar updated successfully!',
+            type: SnackBarType.success,
+          );
+        }
+      },
+    );
+  }
+
   void _showEditProfileDialog(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
+    AppFeedback.selection();
     unawaited(
       AppDialog.show(
         context: context,
@@ -693,31 +980,29 @@ class UserProfilePage extends HookWidget {
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
-            try {
-              final client = SupabaseSafe.client;
-              if (client != null) {
-                await client.auth.updateUser(
-                  UserAttributes(data: {'display_name': newName}),
-                );
-              }
-              AppFeedback.light();
-              if (context.mounted) {
-                context.read<AuthBloc>().add(
-                      const AuthProfileFetchRequested(),
-                    );
-                context.showSnackBar(
-                  message: 'Profile updated: $newName',
-                  type: SnackBarType.success,
-                );
-              }
-            } on Object catch (e) {
-              if (context.mounted) {
-                context.showSnackBar(
-                  message: 'Could not sync name: $e',
-                  type: SnackBarType.error,
-                );
-              }
-            }
+            final result = await locator<UpdateDisplayNameUseCase>()(newName);
+            result.fold(
+              (failure) {
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message: 'Could not sync name: ${failure.message}',
+                    type: SnackBarType.error,
+                  );
+                }
+              },
+              (_) {
+                AppFeedback.light();
+                if (context.mounted) {
+                  context.read<AuthBloc>().add(
+                        const AuthProfileFetchRequested(),
+                      );
+                  context.showSnackBar(
+                    message: 'Profile updated: $newName',
+                    type: SnackBarType.success,
+                  );
+                }
+              },
+            );
           }
         },
       ),

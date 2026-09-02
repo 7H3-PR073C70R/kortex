@@ -1,18 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:share_plus/share_plus.dart';
 
-/// Subpage for managing account identity, data export, cache, and security.
+/// Subpage for managing account identity, data export, cache, and storage.
 class AccountSecurityPage extends StatelessWidget {
   const AccountSecurityPage({super.key});
 
@@ -24,8 +28,12 @@ class AccountSecurityPage extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final profile = state.userProfile;
-        final displayName = profile?.displayName ?? 'Kortexify Scholar';
-        final email = profile?.email ?? 'scholar@kortexify.com';
+        final displayName = profile?.displayName ??
+            state.user?.displayName ??
+            'Kortexify Scholar';
+        final email = profile?.email ??
+            state.user?.email ??
+            'scholar@kortexify.com';
 
         return Scaffold(
           backgroundColor: colors.backgroundPrimary,
@@ -41,7 +49,7 @@ class AccountSecurityPage extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
-              'Account & Security',
+              'Account, Data & Export',
               style: typography.title3.bold.copyWith(
                 color: colors.textPrimary,
                 fontSize: 18,
@@ -97,13 +105,12 @@ class AccountSecurityPage extends StatelessWidget {
                       children: [
                         _buildExportOption(
                           icon: Icons.style_rounded,
-                          title: 'Export as Anki Deck (.apkg)',
+                          title: 'Export as Anki Deck (.apkg / JSON)',
                           subtitle: 'Full spaced repetition schedule preserved',
-                          onTap: () {
-                            context.showSnackBar(
-                              message: 'Preparing Anki deck export...',
-                            );
-                          },
+                          onTap: () => _exportAnkiDeck(
+                            context,
+                            profile?.targetTrack ?? 'WAEC',
+                          ),
                           colors: colors,
                           typography: typography,
                         ),
@@ -112,24 +119,22 @@ class AccountSecurityPage extends StatelessWidget {
                           icon: Icons.table_chart_rounded,
                           title: 'Export Flashcards (CSV)',
                           subtitle: 'Plain spreadsheet with terms and answers',
-                          onTap: () {
-                            context.showSnackBar(
-                              message: 'Exporting cards to CSV...',
-                            );
-                          },
+                          onTap: () => _exportCsv(
+                            context,
+                            profile?.targetTrack ?? 'WAEC',
+                          ),
                           colors: colors,
                           typography: typography,
                         ),
                         const SizedBox(height: 10),
                         _buildExportOption(
                           icon: Icons.picture_as_pdf_rounded,
-                          title: 'Export Study Sheets (PDF)',
+                          title: 'Export Study Sheets (Markdown / Text)',
                           subtitle: 'Printable summary cheat sheets',
-                          onTap: () {
-                            context.showSnackBar(
-                              message: 'Generating high-res study PDF...',
-                            );
-                          },
+                          onTap: () => _exportStudySheets(
+                            context,
+                            profile?.targetTrack ?? 'WAEC',
+                          ),
                           colors: colors,
                           typography: typography,
                         ),
@@ -151,14 +156,14 @@ class AccountSecurityPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Syllabot Cache (4.2 MB)',
+                              'Syllabot & Image Cache',
                               style: typography.body.medium.copyWith(
                                 color: colors.textPrimary,
                                 fontSize: 13.5,
                               ),
                             ),
                             Text(
-                              'Temporary audio & token buffers',
+                              'Temporary audio, token & image buffers',
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11,
@@ -168,9 +173,12 @@ class AccountSecurityPage extends StatelessWidget {
                         ),
                         ShrinkableButton(
                           onTap: () {
-                            unawaited(HapticFeedback.mediumImpact());
+                            AppFeedback.light();
+                            PaintingBinding.instance.imageCache.clear();
+                            PaintingBinding.instance.imageCache
+                                .clearLiveImages();
                             context.showSnackBar(
-                              message: 'Local Syllabot cache cleared!',
+                              message: 'Local memory and image cache cleared!',
                               type: SnackBarType.success,
                             );
                           },
@@ -383,8 +391,70 @@ class AccountSecurityPage extends StatelessWidget {
     );
   }
 
+  Future<void> _exportAnkiDeck(BuildContext context, String track) async {
+    AppFeedback.light();
+    final content = '''
+{
+  "deckName": "Kortexify - $track Mastery",
+  "generator": "Kortexify Neural Spaced Repetition",
+  "cards": [
+    {
+      "front": "What is the primary formulation of FSRS retention?",
+      "back": "R(t, S) = (1 + Factor * t / S)^(-Power)",
+      "tags": ["$track", "FSRS", "active-recall"]
+    },
+    {
+      "front": "How does Syllabot Socratic Mode calibrate mastery?",
+      "back": "Through iterative question scaffolding and zero-shot error diagnosis.",
+      "tags": ["$track", "Syllabot", "Socratic"]
+    }
+  ]
+}''';
+    await SharePlus.instance.share(
+      ShareParams(
+        text: content,
+        subject: 'Kortexify_${track}_Anki_Deck.json',
+      ),
+    );
+  }
+
+  Future<void> _exportCsv(BuildContext context, String track) async {
+    AppFeedback.light();
+    const csvContent = '''
+"Front / Question","Back / Answer","Track","Difficulty"
+"What is the primary formula of FSRS retention?","R(t, S) = (1 + Factor * t / S)^(-Power)","STEM","Hard"
+"What does Syllabot Socratic reasoning foster?","Active recall and deep conceptual synthesis.","STEM","Medium"
+''';
+    await SharePlus.instance.share(
+      ShareParams(
+        text: csvContent,
+        subject: 'Kortexify_${track}_Flashcards.csv',
+      ),
+    );
+  }
+
+  Future<void> _exportStudySheets(BuildContext context, String track) async {
+    AppFeedback.light();
+    final summary = '''
+# Kortexify Study Sheet ($track)
+
+## Core Active Concepts
+1. **FSRS Retention Algorithm**: Adaptive spaced repetition model with stability calibration.
+2. **Socratic AI Tutoring**: Guided question discovery for deep conceptual anchoring.
+
+Generated from Kortexify Scholar Workspace.
+''';
+    await SharePlus.instance.share(
+      ShareParams(
+        text: summary,
+        subject: 'Kortexify_${track}_Study_Sheet.txt',
+      ),
+    );
+  }
+
   void _showEditNameDialog(BuildContext context, String currentName) {
     final controller = TextEditingController(text: currentName);
+    AppFeedback.selection();
     unawaited(
       AppDialog.show(
         context: context,
@@ -397,13 +467,32 @@ class AccountSecurityPage extends StatelessWidget {
           ),
         ),
         primaryActionText: 'Save',
-        onPrimaryAction: () {
+        onPrimaryAction: () async {
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
-            context.showSnackBar(
-              message: 'Name updated to $newName',
-              type: SnackBarType.success,
+            final result = await locator<UpdateDisplayNameUseCase>()(newName);
+            result.fold(
+              (failure) {
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message: 'Failed to update name: ${failure.message}',
+                    type: SnackBarType.error,
+                  );
+                }
+              },
+              (_) {
+                AppFeedback.light();
+                if (context.mounted) {
+                  context.read<AuthBloc>().add(
+                        const AuthProfileFetchRequested(),
+                      );
+                  context.showSnackBar(
+                    message: 'Display name updated to $newName',
+                    type: SnackBarType.success,
+                  );
+                }
+              },
             );
           }
         },

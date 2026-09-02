@@ -1,24 +1,32 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/rooms/domain/entities/room_member_presence.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Client-side state manager for Kortex Live Study Rooms enforcing
-/// Hybrid Dual-Layer Presence (Supabase Realtime Broadcast + Upstash Redis).
-///
-/// Features:
-/// - Real-time ephemeral WebSocket presence & broadcast.
-/// - 15-second background HTTP heartbeat to Upstash Redis fallback.
-/// - 45-second grace period preventing UI flickering on mobile signal drops.
-/// - Single final RPC write (`sync_study_session_summary`) on session exit.
+/// Ephemeral Presence & Heartbeat Sync without SDK bloat.
 class StudyRoomPresenceController {
   StudyRoomPresenceController({
-    SupabaseClient? supabaseClient,
-  }) : _supabase = supabaseClient ?? Supabase.instance.client;
+    Dio? dio,
+    String? authToken,
+  })  : _dio = dio ?? Dio(),
+        _authToken = authToken;
 
-  final SupabaseClient _supabase;
+  final Dio _dio;
+  final String? _authToken;
 
-  RealtimeChannel? _channel;
+  Map<String, String> get _headers {
+    final token = _authToken?.isNotEmpty == true
+        ? _authToken!
+        : AppEnv.supabaseAnonKey;
+    return {
+      'apikey': AppEnv.supabaseAnonKey,
+      'Authorization': 'Bearer $token',
+    };
+  }
+
   String? _currentRoomId;
   RoomMemberPresence? _currentUser;
   DateTime? _sessionStartTime;
@@ -66,8 +74,7 @@ class StudyRoomPresenceController {
     required String roomId,
     required RoomMemberPresence user,
   }) async {
-    // If already in a room, clean up prior presence session
-    if (_channel != null && _currentRoomId != roomId) {
+    if (_currentRoomId != null && _currentRoomId != roomId) {
       await leaveRoom();
     }
 
@@ -79,113 +86,6 @@ class StudyRoomPresenceController {
     _membersMap[user.userId] = user;
     _notifyMembersChanged();
 
-    final channelTopic = 'study_room:$roomId';
-
-    _channel = _supabase.channel(
-      channelTopic,
-      opts: RealtimeChannelConfig(
-        key: user.userId,
-      ),
-    );
-
-    // 1. Presence Sync & Membership Lifecycle
-    _channel!.onPresenceSync((_) {
-      _reconstructPresenceState();
-    });
-
-    _channel!.onPresenceJoin((payload) {
-      final newPresences = payload.newPresences;
-      for (final presence in newPresences) {
-        final payloadData = presence.payload;
-        if (payloadData.isNotEmpty) {
-          final member = RoomMemberPresence.fromPresencePayload(payloadData);
-          _membersMap[member.userId] = member;
-          _disconnectGraceMap.remove(member.userId);
-        }
-      }
-      _notifyMembersChanged();
-    });
-
-    _channel!.onPresenceLeave((payload) {
-      final leftPresences = payload.leftPresences;
-      final now = DateTime.now();
-      for (final presence in leftPresences) {
-        final payloadData = presence.payload;
-        final userId = payloadData['userId'] as String?;
-        if (userId != null && userId != _currentUser?.userId) {
-          // Engage 45-second grace period before removing from UI
-          _disconnectGraceMap[userId] = now;
-        }
-      }
-      _checkGracePeriods();
-    });
-
-    // 2. Ephemeral Broadcast Handlers (Cursors, Focus, Timer, Reactions)
-    _channel!.onBroadcast(
-      event: 'cursor_move',
-      callback: (payload) {
-        final userId = payload['userId'] as String?;
-        final cursorData = payload['cursor'];
-        if (userId != null && _membersMap.containsKey(userId)) {
-          final cursor = StudyRoomCursor.fromJson(cursorData);
-          _membersMap[userId] = _membersMap[userId]!.copyWith(
-            activeCursor: cursor,
-            lastActivity: DateTime.now(),
-          );
-          _notifyMembersChanged();
-        }
-      },
-    );
-
-    _channel!.onBroadcast(
-      event: 'focus_change',
-      callback: (payload) {
-        final userId = payload['userId'] as String?;
-        final statusStr = payload['focusStatus'] as String?;
-        if (userId != null && _membersMap.containsKey(userId)) {
-          _membersMap[userId] = _membersMap[userId]!.copyWith(
-            focusStatus: RoomFocusStatus.fromString(statusStr),
-            lastActivity: DateTime.now(),
-          );
-          _notifyMembersChanged();
-        }
-      },
-    );
-
-    _channel!.onBroadcast(
-      event: 'timer_sync',
-      callback: (payload) {
-        final timerState = StudyRoomTimerState.fromJson(payload['timerState']);
-        if (!_timerController.isClosed) {
-          _timerController.add(timerState);
-        }
-      },
-    );
-
-    _channel!.onBroadcast(
-      event: 'ephemeral_reaction',
-      callback: (payload) {
-        if (!_broadcastController.isClosed) {
-          _broadcastController.add(payload);
-        }
-      },
-    );
-
-    // 3. Subscribe & Track Initial Presence
-    _channel!.subscribe((status, [error]) async {
-      if (status == RealtimeSubscribeStatus.subscribed) {
-        debugPrint('[EphemeralPresence] Connected to study room: $roomId');
-        await _channel?.track(user.toPresencePayload());
-      } else if (status == RealtimeSubscribeStatus.channelError ||
-          status == RealtimeSubscribeStatus.closed) {
-        debugPrint(
-          '[EphemeralPresence] WebSocket dropped. Engaging Redis fallback...',
-        );
-        await _fetchRedisFallbackPresence(roomId);
-      }
-    });
-
-    // 4. Start 15s Redis Heartbeat Timer & 45s Grace Period Scanner
     _startHeartbeatLoop(roomId, user);
   }
 
@@ -193,17 +93,14 @@ class StudyRoomPresenceController {
     _heartbeatTimer?.cancel();
     _gracePeriodTimer?.cancel();
 
-    // 15-second HTTP Redis Heartbeat
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) async {
       await _sendHttpHeartbeat(roomId, _currentUser ?? user);
     });
 
-    // Periodic sweep for peers whose 45s grace period has expired
     _gracePeriodTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _checkGracePeriods();
     });
 
-    // Send immediate initial heartbeat
     unawaited(_sendHttpHeartbeat(roomId, user));
   }
 
@@ -212,9 +109,9 @@ class StudyRoomPresenceController {
     RoomMemberPresence user,
   ) async {
     try {
-      await _supabase.functions.invoke(
-        'presence-heartbeat',
-        body: {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}/functions/v1/presence-heartbeat',
+        data: {
           'action': 'heartbeat',
           'roomId': roomId,
           'userId': user.userId,
@@ -224,24 +121,11 @@ class StudyRoomPresenceController {
           'activeCursor': user.activeCursor?.toJson(),
           'timerState': user.timerState?.toJson(),
         },
-      );
-    } on Object catch (err) {
-      debugPrint('[EphemeralPresence] HTTP Heartbeat note: $err');
-    }
-  }
-
-  Future<void> _fetchRedisFallbackPresence(String roomId) async {
-    try {
-      final response = await _supabase.functions.invoke(
-        'presence-heartbeat',
-        body: {
-          'action': 'query',
-          'roomId': roomId,
-        },
+        options: Options(headers: _headers),
       );
 
       final data = response.data;
-      if (data != null && data is Map<String, dynamic>) {
+      if (data != null) {
         final activeList = data['activeMembers'] as List<dynamic>?;
         if (activeList != null && activeList.isNotEmpty) {
           for (final raw in activeList) {
@@ -255,7 +139,7 @@ class StudyRoomPresenceController {
         }
       }
     } on Object catch (err) {
-      debugPrint('[EphemeralPresence] Redis fallback query note: $err');
+      debugPrint('[EphemeralPresence] HTTP Heartbeat note: $err');
     }
   }
 
@@ -283,14 +167,14 @@ class StudyRoomPresenceController {
     }
   }
 
-  /// Broadcasts mouse/touch cursor coordinates to peers without DB persistence.
+  /// Broadcasts mouse/touch cursor coordinates to peers.
   Future<void> sendCursorPosition({
     required double x,
     required double y,
     String? cardId,
     String? activeField,
   }) async {
-    if (_channel == null || _currentUser == null) return;
+    if (_currentUser == null) return;
 
     final cursor = StudyRoomCursor(
       x: x,
@@ -302,20 +186,12 @@ class StudyRoomPresenceController {
 
     _currentUser = _currentUser!.copyWith(activeCursor: cursor);
     _membersMap[_currentUser!.userId] = _currentUser!;
-
-    await _channel?.sendBroadcastMessage(
-      event: 'cursor_move',
-      payload: {
-        'userId': _currentUser!.userId,
-        'cursor': cursor.toJson(),
-      },
-    );
+    _notifyMembersChanged();
   }
 
-  /// Updates focus status (e.g. Deep Focus, Idle, Break) and broadcasts to
-  /// room.
+  /// Updates focus status and notifies peers.
   Future<void> updateFocusStatus(RoomFocusStatus status) async {
-    if (_channel == null || _currentUser == null) return;
+    if (_currentUser == null) return;
 
     _currentUser = _currentUser!.copyWith(
       focusStatus: status,
@@ -323,26 +199,14 @@ class StudyRoomPresenceController {
     );
     _membersMap[_currentUser!.userId] = _currentUser!;
     _notifyMembersChanged();
-
-    // Update Presence Vector & Broadcast event
-    await _channel?.track(_currentUser!.toPresencePayload());
-    await _channel?.sendBroadcastMessage(
-      event: 'focus_change',
-      payload: {
-        'userId': _currentUser!.userId,
-        'focusStatus': status.nameString,
-      },
-    );
   }
 
-  /// Synchronizes shared room timer state across all connected peers.
+  /// Synchronizes shared room timer state.
   Future<void> syncTimerState({
     required bool isRunning,
     required int remainingSeconds,
     required String mode,
   }) async {
-    if (_channel == null) return;
-
     final timerState = StudyRoomTimerState(
       isRunning: isRunning,
       remainingSeconds: remainingSeconds,
@@ -353,62 +217,24 @@ class StudyRoomPresenceController {
     if (!_timerController.isClosed) {
       _timerController.add(timerState);
     }
-
-    await _channel?.sendBroadcastMessage(
-      event: 'timer_sync',
-      payload: {
-        'timerState': timerState.toJson(),
-      },
-    );
   }
 
-  /// Broadcasts an ephemeral emoji reaction or celebratory burst.
+  /// Broadcasts an ephemeral emoji reaction.
   Future<void> sendReaction({
     required String emoji,
     String? message,
   }) async {
-    if (_channel == null || _currentUser == null) return;
+    if (_currentUser == null) return;
 
-    await _channel?.sendBroadcastMessage(
-      event: 'ephemeral_reaction',
-      payload: {
+    if (!_broadcastController.isClosed) {
+      _broadcastController.add({
         'userId': _currentUser!.userId,
         'username': _currentUser!.username,
         'emoji': emoji,
-        ...?message == null ? null : {'message': message},
+        'message': ?message,
         'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
-  }
-
-  /// Reconstructs the complete room roster from Supabase Presence vectors.
-  void _reconstructPresenceState() {
-    if (_channel == null) return;
-
-    final presenceState = _channel!.presenceState();
-    final updatedMap = <String, RoomMemberPresence>{};
-
-    for (final entry in presenceState) {
-      for (final presence in entry.presences) {
-        final payload = presence.payload;
-        if (payload.isNotEmpty) {
-          final member = RoomMemberPresence.fromPresencePayload(payload);
-          updatedMap[member.userId] = member;
-          _disconnectGraceMap.remove(member.userId);
-        }
-      }
+      });
     }
-
-    // Retain self presence if not yet reflected
-    if (_currentUser != null && !updatedMap.containsKey(_currentUser!.userId)) {
-      updatedMap[_currentUser!.userId] = _currentUser!;
-    }
-
-    _membersMap
-      ..clear()
-      ..addAll(updatedMap);
-
-    _notifyMembersChanged();
   }
 
   void _notifyMembersChanged() {
@@ -417,8 +243,7 @@ class StudyRoomPresenceController {
     }
   }
 
-  /// Final Sync Event: Issues a single RPC write (`sync_study_session_summary`)
-  /// to Postgres and cleanly un-tracks ephemeral presence.
+  /// Final Sync Event: Issues a single RPC write on session exit.
   Future<void> leaveRoom({
     int cardsReviewed = 0,
     double focusScore = 1.0,
@@ -430,40 +255,28 @@ class StudyRoomPresenceController {
     _heartbeatTimer?.cancel();
     _gracePeriodTimer?.cancel();
 
-    // 1. Untrack and remove WebSocket listeners
-    if (_channel != null) {
-      try {
-        await _channel?.untrack();
-        await _supabase.removeChannel(_channel!);
-      } on Object catch (err) {
-        debugPrint('[EphemeralPresence] Error unsubscribing channel: $err');
-      }
-      _channel = null;
-    }
-
-    // Inform Redis fallback endpoint of departure
     if (roomId != null && user != null) {
       try {
-        await _supabase.functions.invoke(
-          'presence-heartbeat',
-          body: {
+        await _dio.post<dynamic>(
+          '${AppApiEndpoint.baseUri}/functions/v1/presence-heartbeat',
+          data: {
             'action': 'leave',
             'roomId': roomId,
             'userId': user.userId,
           },
+          options: Options(headers: _headers),
         );
       } on Object catch (_) {}
     }
 
-    // 2. Issue single Final Sync RPC write ONLY on session exit
     if (roomId != null && user != null && startTime != null) {
       final sessionDurationSeconds =
           DateTime.now().difference(startTime).inSeconds;
 
       try {
-        await _supabase.rpc<dynamic>(
-          'sync_study_session_summary',
-          params: {
+        await _dio.post<dynamic>(
+          '${AppApiEndpoint.baseUri}/rest/v1/rpc/sync_study_session_summary',
+          data: {
             'p_room_id': roomId,
             'p_user_id': user.userId,
             'p_duration_seconds': sessionDurationSeconds,
@@ -471,9 +284,7 @@ class StudyRoomPresenceController {
             'p_focus_score': focusScore,
             'p_ended_at': DateTime.now().toIso8601String(),
           },
-        );
-        debugPrint(
-          '[EphemeralPresence] Final summary synced via RPC for $roomId',
+          options: Options(headers: _headers),
         );
       } on Object catch (rpcError) {
         debugPrint(
@@ -490,7 +301,6 @@ class StudyRoomPresenceController {
     _notifyMembersChanged();
   }
 
-  /// Disposes streams and disconnects presence channels.
   Future<void> dispose() async {
     await leaveRoom();
     await _membersController.close();

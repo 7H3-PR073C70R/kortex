@@ -212,5 +212,35 @@ void _initUseCaseLocator() {
         benchmark: locator<DevicePerformanceBenchmark>(),
         guardFactory: locator<HardwareGuardFactory>(),
       ),
+    )
+    ..registerLazySingleton<UpdateDisplayNameUseCase>(
+      () => UpdateDisplayNameUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<UpdateAvatarUseCase>(
+      () => UpdateAvatarUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<UpdatePasswordUseCase>(
+      () => UpdatePasswordUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<SendPasswordResetEmailUseCase>(
+      () => SendPasswordResetEmailUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<EnrollMfaTotpUseCase>(
+      () => EnrollMfaTotpUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<VerifyMfaTotpUseCase>(
+      () => VerifyMfaTotpUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<UnenrollMfaTotpUseCase>(
+      () => UnenrollMfaTotpUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<ListMfaFactorsUseCase>(
+      () => ListMfaFactorsUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<SignOutOtherSessionsUseCase>(
+      () => SignOutOtherSessionsUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<DeleteAccountUseCase>(
+      () => DeleteAccountUseCase(locator<ProfileRepository>()),
     );
 }

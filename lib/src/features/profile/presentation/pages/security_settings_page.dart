@@ -1,24 +1,34 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
+import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
+import 'package:kortex/src/services/local_storage_service.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 /// Comprehensive security and account control page.
-/// Supports password change, session invalidation, 2FA, and danger zone.
+/// Supports password change, session invalidation, Supabase MFA 2FA,
+/// Biometric App Lock, and Danger Zone data purge through clean architecture.
 class SecuritySettingsPage extends HookWidget {
   const SecuritySettingsPage({super.key});
 
@@ -35,6 +45,31 @@ class SecuritySettingsPage extends HookWidget {
     final isUpdatingPassword = useState<bool>(false);
     final biometricLockEnabled = useState<bool>(false);
     final twoFactorEnabled = useState<bool>(false);
+    final activeTotpFactorId = useState<String?>(null);
+
+    final storage = locator<LocalStorageService>();
+
+    useEffect(() {
+      final savedBiometric =
+          storage.getPreference(key: '__biometric_lock_enabled') == 'true';
+      biometricLockEnabled.value = savedBiometric;
+
+      Future<void> loadMfa() async {
+        final result =
+            await locator<ListMfaFactorsUseCase>()(const NoParams());
+        if (result.isRight) {
+          final factors =
+              (result as Right<Failure, List<MfaFactorEntity>>).value;
+          if (factors.isNotEmpty) {
+            twoFactorEnabled.value = true;
+            activeTotpFactorId.value = factors.first.id;
+          }
+        }
+      }
+
+      unawaited(loadMfa());
+      return null;
+    }, const []);
 
     // Password strength evaluator
     final newPasswordText = useValueListenable(newPasswordController).text;
@@ -45,8 +80,7 @@ class SecuritySettingsPage extends HookWidget {
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        final email =
-            state.userProfile?.email ??
+        final email = state.userProfile?.email ??
             state.user?.email ??
             'scholar@kortexify.com';
 
@@ -54,7 +88,6 @@ class SecuritySettingsPage extends HookWidget {
           backgroundColor: colors.backgroundPrimary,
           appBar: AppBar(
             backgroundColor: colors.backgroundPrimary,
-            elevation: 0,
             leading: IconButton(
               icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -164,13 +197,25 @@ class SecuritySettingsPage extends HookWidget {
                                   }
 
                                   isUpdatingPassword.value = true;
-                                  try {
-                                    final client = SupabaseSafe.client;
-                                    if (client != null) {
-                                      await client.auth.updateUser(
-                                        UserAttributes(password: newPass),
+                                  final result =
+                                      await locator<UpdatePasswordUseCase>()(
+                                    newPass,
+                                  );
+                                  isUpdatingPassword.value = false;
+
+                                  if (result.isLeft) {
+                                    final failure =
+                                        (result as Left<Failure, void>).value;
+                                    AppFeedback.heavy();
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Failed to update: '
+                                            '${failure.message ?? "Error"}',
+                                        type: SnackBarType.error,
                                       );
                                     }
+                                  } else {
                                     AppFeedback.light();
                                     if (context.mounted) {
                                       context.showSnackBar(
@@ -182,16 +227,6 @@ class SecuritySettingsPage extends HookWidget {
                                       newPasswordController.clear();
                                       confirmPasswordController.clear();
                                     }
-                                  } on Object catch (e) {
-                                    AppFeedback.heavy();
-                                    if (context.mounted) {
-                                      context.showSnackBar(
-                                        message: 'Failed to update: $e',
-                                        type: SnackBarType.error,
-                                      );
-                                    }
-                                  } finally {
-                                    isUpdatingPassword.value = false;
                                   }
                                 },
                                 child: Container(
@@ -227,23 +262,24 @@ class SecuritySettingsPage extends HookWidget {
                             ShrinkableButton(
                               onTap: () async {
                                 AppFeedback.selection();
-                                try {
-                                  final client = SupabaseSafe.client;
-                                  if (client != null) {
-                                    await client.auth
-                                        .resetPasswordForEmail(email);
+                                final result = await locator<
+                                    SendPasswordResetEmailUseCase>()(email);
+                                if (result.isLeft) {
+                                  final failure =
+                                      (result as Left<Failure, void>).value;
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message:
+                                          'Failed to send reset link: '
+                                          '${failure.message ?? "Error"}',
+                                      type: SnackBarType.error,
+                                    );
                                   }
+                                } else {
                                   if (context.mounted) {
                                     context.showSnackBar(
                                       message: 'Reset link sent to $email',
                                       type: SnackBarType.success,
-                                    );
-                                  }
-                                } on Object catch (e) {
-                                  if (context.mounted) {
-                                    context.showSnackBar(
-                                      message: 'Failed to send reset link: $e',
-                                      type: SnackBarType.error,
                                     );
                                   }
                                 }
@@ -279,7 +315,9 @@ class SecuritySettingsPage extends HookWidget {
                   // 2. Biometric Lock & 2FA
                   _buildSectionContainer(
                     title: 'App Lock & Two-Factor Authentication',
-                    subtitle: 'Protect your study notes with device biometrics',
+                    subtitle:
+                        'Protect your study notes with biometrics & '
+                        'Supabase MFA',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -312,6 +350,17 @@ class SecuritySettingsPage extends HookWidget {
                               onChanged: (val) {
                                 AppFeedback.selection();
                                 biometricLockEnabled.value = val;
+                                unawaited(
+                                  storage.savePreference(
+                                    key: '__biometric_lock_enabled',
+                                    data: val.toString(),
+                                  ),
+                                );
+                                context.showSnackBar(
+                                  message: val
+                                      ? 'Biometric App Lock enabled!'
+                                      : 'Biometric App Lock disabled.',
+                                );
                               },
                             ),
                           ],
@@ -331,9 +380,13 @@ class SecuritySettingsPage extends HookWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Authenticator code required on new logins',
+                                  twoFactorEnabled.value
+                                      ? 'Active • Authenticator linked'
+                                      : 'Require 6-digit TOTP code on login',
                                   style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
+                                    color: twoFactorEnabled.value
+                                        ? const Color(0xFF10B981)
+                                        : colors.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -342,9 +395,23 @@ class SecuritySettingsPage extends HookWidget {
                             Switch.adaptive(
                               value: twoFactorEnabled.value,
                               activeTrackColor: colors.primary,
-                              onChanged: (val) {
+                              onChanged: (val) async {
                                 AppFeedback.selection();
-                                twoFactorEnabled.value = val;
+                                if (val) {
+                                  await _enrollTotp(
+                                    context,
+                                    twoFactorEnabled,
+                                    activeTotpFactorId,
+                                    colors,
+                                    typography,
+                                  );
+                                } else {
+                                  await _unenrollTotp(
+                                    context,
+                                    twoFactorEnabled,
+                                    activeTotpFactorId,
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -416,25 +483,27 @@ class SecuritySettingsPage extends HookWidget {
                         ShrinkableButton(
                           onTap: () async {
                             AppFeedback.medium();
-                            try {
-                              final client = SupabaseSafe.client;
-                              if (client != null) {
-                                await client.auth.signOut(
-                                  scope: SignOutScope.others,
+                            final result =
+                                await locator<SignOutOtherSessionsUseCase>()(
+                              const NoParams(),
+                            );
+                            if (result.isLeft) {
+                              final failure =
+                                  (result as Left<Failure, void>).value;
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message:
+                                      failure.message ?? 'Sign out failed',
+                                  type: SnackBarType.error,
                                 );
                               }
+                            } else {
                               if (context.mounted) {
                                 context.showSnackBar(
                                   message:
                                       'Signed out of all other active '
                                       'sessions!',
                                   type: SnackBarType.success,
-                                );
-                              }
-                            } on Object catch (e) {
-                              if (context.mounted) {
-                                context.showSnackBar(
-                                  message: 'Action completed: $e',
                                 );
                               }
                             }
@@ -616,6 +685,270 @@ class SecuritySettingsPage extends HookWidget {
     );
   }
 
+  Future<void> _enrollTotp(
+    BuildContext context,
+    ValueNotifier<bool> twoFactorEnabled,
+    ValueNotifier<String?> activeTotpFactorId,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) async {
+    final result = await locator<EnrollMfaTotpUseCase>()(const NoParams());
+    if (result.isRight) {
+      final enrollResult =
+          (result as Right<Failure, MfaEnrollResultEntity>).value;
+      if (!context.mounted) return;
+      await _showTotpModal(
+        context,
+        factorId: enrollResult.factorId,
+        secret: enrollResult.secret,
+        twoFactorEnabled: twoFactorEnabled,
+        activeTotpFactorId: activeTotpFactorId,
+        colors: colors,
+        typography: typography,
+      );
+    } else {
+      final failure = (result as Left<Failure, MfaEnrollResultEntity>).value;
+      if (context.mounted) {
+        context.showSnackBar(
+          message:
+              'Could not initialize 2FA enrollment: '
+              '${failure.message ?? "Error"}',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _unenrollTotp(
+    BuildContext context,
+    ValueNotifier<bool> twoFactorEnabled,
+    ValueNotifier<String?> activeTotpFactorId,
+  ) async {
+    final factorId = activeTotpFactorId.value;
+    if (factorId != null) {
+      final result = await locator<UnenrollMfaTotpUseCase>()(factorId);
+      if (result.isLeft) {
+        final failure = (result as Left<Failure, void>).value;
+        if (context.mounted) {
+          context.showSnackBar(
+            message:
+                'Could not disable 2FA: ${failure.message ?? "Error"}',
+            type: SnackBarType.error,
+          );
+        }
+      } else {
+        twoFactorEnabled.value = false;
+        activeTotpFactorId.value = null;
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Two-Factor Authentication disabled.',
+          );
+        }
+      }
+    } else {
+      twoFactorEnabled.value = false;
+    }
+  }
+
+  Future<void> _showTotpModal(
+    BuildContext context, {
+    required String factorId,
+    required String secret,
+    required ValueNotifier<bool> twoFactorEnabled,
+    required ValueNotifier<String?> activeTotpFactorId,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) async {
+    final codeController = TextEditingController();
+    final isVerifying = ValueNotifier<bool>(false);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+            border: Border.all(color: colors.surfaceBorder.withAlpha(90)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Set Up Two-Factor Authentication',
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 17,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Add this secret key to your Authenticator app '
+                '(Google Authenticator, Authy, or 1Password):',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Secret Key Box with Copy
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.surfaceBorder),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        secret,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 13,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy_rounded,
+                        color: colors.textSecondary,
+                        size: 18,
+                      ),
+                      onPressed: () {
+                        unawaited(
+                          Clipboard.setData(ClipboardData(text: secret)),
+                        );
+                        context.showSnackBar(
+                          message: 'Secret key copied to clipboard!',
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Enter 6-Digit Code from Authenticator:',
+                style: typography.body.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              AppTextField(
+                controller: codeController,
+                hintText: '123456',
+              ),
+              const SizedBox(height: 18),
+
+              ShrinkableButton(
+                onTap: () async {
+                  final code = codeController.text.trim();
+                  if (code.length != 6) {
+                    context.showSnackBar(
+                      message: 'Please enter a 6-digit verification code.',
+                      type: SnackBarType.error,
+                    );
+                    return;
+                  }
+
+                  isVerifying.value = true;
+                  final result = await locator<VerifyMfaTotpUseCase>()(
+                    VerifyMfaTotpParams(
+                      factorId: factorId,
+                      code: code,
+                    ),
+                  );
+                  isVerifying.value = false;
+
+                  if (result.isLeft) {
+                    final failure = (result as Left<Failure, void>).value;
+                    if (context.mounted) {
+                      context.showSnackBar(
+                        message:
+                            'Verification failed: '
+                            '${failure.message ?? "Error"}',
+                        type: SnackBarType.error,
+                      );
+                    }
+                  } else {
+                    twoFactorEnabled.value = true;
+                    activeTotpFactorId.value = factorId;
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                    if (context.mounted) {
+                      context.showSnackBar(
+                        message:
+                            'Two-Factor Authentication is now enabled!',
+                        type: SnackBarType.success,
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: isVerifying,
+                      builder: (context, loading, _) => loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Verify & Enable 2FA',
+                              style: typography.body.bold.copyWith(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _confirmAccountDeletion(
     BuildContext context,
     AppThemeColorsExtension colors,
@@ -654,15 +987,20 @@ class SecuritySettingsPage extends HookWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(ctx).pop();
-                context.read<AuthBloc>().add(const AuthSignOutRequested());
-                unawaited(
-                  context.router.root.replaceAll([const LoginRoute()]),
-                );
-                context.showSnackBar(
-                  message: 'Account deletion initiated.',
-                );
+                await locator<DeleteAccountUseCase>()(const NoParams());
+
+                if (context.mounted) {
+                  context.read<AuthBloc>().add(const AuthSignOutRequested());
+                  await context.router.root.replaceAll([const LoginRoute()]);
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: 'Your account and data have been purged.',
+                      type: SnackBarType.success,
+                    );
+                  }
+                }
               },
               child: Text(
                 'Delete Forever',

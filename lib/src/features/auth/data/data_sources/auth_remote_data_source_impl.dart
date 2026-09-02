@@ -1,4 +1,3 @@
-import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/features/auth/data/client/supabase_auth_client.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';
 import 'package:kortex/src/features/auth/data/models/auth_request_model.dart';
@@ -59,43 +58,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserProfileModel> fetchUserProfile() async {
-    final client = SupabaseSafe.client;
-    final user = SupabaseSafe.currentUser;
-    if (client != null && user != null) {
-      try {
-        final res = await client
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (res != null) {
-          final map = Map<String, dynamic>.from(res);
-          map['email'] ??= user.email;
-          map['display_name'] ??= user.userMetadata?['display_name'] ??
-              user.userMetadata?['full_name'];
-          return UserProfileModel.fromJson(map);
-        } else {
-          return UserProfileModel(
-            id: user.id,
-            email: user.email ?? '',
-            displayName: user.userMetadata?['display_name'] as String? ??
-                user.userMetadata?['full_name'] as String?,
-          );
-        }
-      } on Object {
-        // Fall back to current user info if profile query fails
-        if (user.email != null) {
-          return UserProfileModel(
-            id: user.id,
-            email: user.email!,
-            displayName: user.userMetadata?['display_name'] as String? ??
-                user.userMetadata?['full_name'] as String?,
-          );
-        }
-      }
-    }
-
     final token = _userStorage.getToken() ?? '';
     final map = await _authClient.fetchUserProfile(authToken: token);
     if (map.isEmpty) {
@@ -114,35 +76,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     double retentionBenchmark = 0.85,
     bool isOnboarded = true,
   }) async {
-    final client = SupabaseSafe.client;
-    final user = SupabaseSafe.currentUser;
-    if (client != null && user != null) {
-      try {
-        final res = await client
-            .from('profiles')
-            .update({
-              'target_track': track,
-              'daily_card_target': dailyTarget,
-              'retention_benchmark': retentionBenchmark,
-              'is_onboarded': isOnboarded,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', user.id)
-            .select()
-            .maybeSingle();
-
-        if (res != null) {
-          final map = Map<String, dynamic>.from(res);
-          map['email'] ??= user.email;
-          map['display_name'] ??= user.userMetadata?['display_name'] ??
-              user.userMetadata?['full_name'];
-          return UserProfileModel.fromJson(map);
-        }
-      } on Object {
-        // Fall back to REST endpoint
-      }
-    }
-
     final token = _userStorage.getToken() ?? '';
     final map = await _authClient.updateUserProfileTrackAndGoal(
       track: track,

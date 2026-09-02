@@ -43,5 +43,8 @@ void _initClients() {
     )
     ..registerLazySingleton<SupabasePastQuestionsClient>(
       () => SupabasePastQuestionsClient(locator<Dio>()),
+    )
+    ..registerLazySingleton<ProfileApiClient>(
+      () => ProfileApiClient(locator<Dio>()),
     );
 }

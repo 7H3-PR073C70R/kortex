@@ -80,5 +80,10 @@ void _initRepositoryLocator() {
       () => LmsRepositoryImpl(
         dataSource: locator<LmsImportDataSource>(),
       ),
+    )
+    ..registerLazySingleton<ProfileRepository>(
+      () => ProfileRepositoryImpl(
+        remoteDataSource: locator<ProfileRemoteDataSource>(),
+      ),
     );
 }

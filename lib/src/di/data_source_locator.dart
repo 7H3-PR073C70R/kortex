@@ -75,5 +75,11 @@ void _initDataSource() {
       () => PastQuestionsRemoteDataSourceImpl(
         locator<SupabasePastQuestionsClient>(),
       ),
+    )
+    ..registerLazySingleton<ProfileRemoteDataSource>(
+      () => ProfileRemoteDataSourceImpl(
+        profileApiClient: locator<ProfileApiClient>(),
+        userStorage: locator<UserStorageService>(),
+      ),
     );
 }
