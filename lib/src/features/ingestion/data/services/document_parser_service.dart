@@ -71,40 +71,92 @@ class DocumentParserService {
     return _extractLiteralPdfStrings(bytes);
   }
 
-  /// Parses PDF text operators inside a decompressed content stream.
+  /// Parses PDF text operators inside a decompressed content stream,
+  /// strictly targeting text rendering blocks (BT...ET) and bypassing
+  /// graphics, form XObjects, font dictionaries, and metadata.
   String _parsePdfContentStream(Uint8List streamBytes) {
     final content = utf8.decode(streamBytes, allowMalformed: true);
-    final textBuffer = StringBuffer();
 
-    // Match text inside parentheses followed by Tj, TJ, ', or "
-    // e.g. (Hello World) Tj or [(Hello) 10 (World)] TJ
-    final tjRegex = RegExp(r'\((.*?)\)\s*Tj');
-    final tjMatches = tjRegex.allMatches(content);
-    for (final match in tjMatches) {
-      final text = _unescapePdfString(match.group(1) ?? '');
-      if (text.trim().isNotEmpty) {
-        textBuffer.writeln(text);
-      }
+    // Bypass non-text streams (Form XObjects, Font subset streams, ColorSpaces)
+    final lowerContent = content.toLowerCase();
+    if (lowerContent.contains('/subtype /image') ||
+        lowerContent.contains('/subtype /form') ||
+        lowerContent.contains('/fontdescriptor') ||
+        lowerContent.contains('/tounicode') ||
+        lowerContent.contains('/cidinit') ||
+        lowerContent.contains('/iccbased') ||
+        lowerContent.contains('/colorspace')) {
+      return '';
     }
 
-    // Match array elements inside TJ operators: [(Part 1) 12 (The Basics)] TJ
-    final tjArrayRegex = RegExp(r'\[(.*?)\]\s*TJ', dotAll: true);
-    final tjArrayMatches = tjArrayRegex.allMatches(content);
-    for (final match in tjArrayMatches) {
-      final arrayContent = match.group(1) ?? '';
-      final itemMatches = RegExp(r'\((.*?)\)').allMatches(arrayContent);
-      final lineBuffer = StringBuffer();
-      for (final item in itemMatches) {
-        final text = _unescapePdfString(item.group(1) ?? '');
-        lineBuffer.write(text);
+    final textBuffer = StringBuffer();
+
+    // Extract text specifically inside Begin Text (BT) and End Text (ET) blocks
+    final btEtRegex = RegExp(r'\bBT\b(.*?)\bET\b', dotAll: true);
+    final btMatches = btEtRegex.allMatches(content);
+
+    final blocksToScan = btMatches.isNotEmpty
+        ? btMatches.map((m) => m.group(1) ?? '').toList()
+        : [content];
+
+    for (final block in blocksToScan) {
+      // 1. Match text inside parentheses followed by Tj, ', or "
+      final tjRegex = RegExp(r'\((.*?)\)\s*(?:Tj|\x27|\x22)');
+      final tjMatches = tjRegex.allMatches(block);
+      for (final match in tjMatches) {
+        final text = _unescapePdfString(match.group(1) ?? '').trim();
+        if (text.isNotEmpty && _isValidCleanText(text)) {
+          textBuffer.writeln(text);
+        }
       }
-      final line = lineBuffer.toString().trim();
-      if (line.isNotEmpty) {
-        textBuffer.writeln(line);
+
+      // 2. Match array elements inside TJ operators: [(Part 1) 12 (The Basics)] TJ
+      final tjArrayRegex = RegExp(r'\[(.*?)\]\s*TJ', dotAll: true);
+      final tjArrayMatches = tjArrayRegex.allMatches(block);
+      for (final match in tjArrayMatches) {
+        final arrayContent = match.group(1) ?? '';
+        final itemMatches = RegExp(r'\((.*?)\)').allMatches(arrayContent);
+        final lineBuffer = StringBuffer();
+        for (final item in itemMatches) {
+          final text = _unescapePdfString(item.group(1) ?? '');
+          lineBuffer.write(text);
+        }
+        final line = lineBuffer.toString().trim();
+        if (line.isNotEmpty && _isValidCleanText(line)) {
+          textBuffer.writeln(line);
+        }
       }
     }
 
     return textBuffer.toString();
+  }
+
+  bool _isValidCleanText(String line) {
+    final lower = line.toLowerCase();
+    if (lower.contains('skia/pdf') ||
+        lower.contains('pdfium') ||
+        lower.contains('cairo') ||
+        lower.contains('ghostscript') ||
+        lower.contains('adobe pdf library') ||
+        lower.contains('creationdate') ||
+        lower.contains('moddate')) {
+      return false;
+    }
+
+    final runes = line.runes.toList();
+    if (runes.isEmpty) return false;
+
+    var nonPrintableCount = 0;
+    for (final r in runes) {
+      if ((r >= 0 && r < 9) ||
+          (r >= 11 && r <= 12) ||
+          (r >= 14 && r < 32) ||
+          r == 127) {
+        nonPrintableCount++;
+      }
+    }
+
+    return (nonPrintableCount / runes.length) <= 0.10;
   }
 
   String _unescapePdfString(String input) {

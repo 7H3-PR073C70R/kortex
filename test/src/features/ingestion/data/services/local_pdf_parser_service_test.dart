@@ -62,6 +62,52 @@ void main() {
       },
     );
 
+    test('filters out corrupted binary stream noise from extracted text', () {
+      const corruptedNoise = '>÷B[t {jÜ>tÑ\x00\x01\x02\x03\x04\x05\x06\x07';
+      expect(
+        LocalPdfParserService.isCorruptedBinaryNoise(corruptedNoise),
+        isTrue,
+      );
+
+      const validEducationalText =
+          'Photosynthesis converts sunlight into glucose and oxygen.';
+      expect(
+        LocalPdfParserService.isCorruptedBinaryNoise(validEducationalText),
+        isFalse,
+      );
+
+      const mixedText = '''
+Photosynthesis converts sunlight into chemical energy.
+>÷B[t {jÜ>tÑ\x00\x01\x02\x03\x04\x05\x06\x07\x08
+Cellular respiration generates ATP in the mitochondria.
+''';
+      final clean = LocalPdfParserService.sanitizeExtractedText(mixedText);
+      expect(clean, contains('Photosynthesis'));
+      expect(clean, contains('Cellular respiration'));
+      expect(clean, isNot(contains('>÷B[t')));
+    });
+
+    test('filters out PDF renderer metadata and watermark artifacts', () {
+      expect(
+        LocalPdfParserService.isMetadataOrRendererArtifact('Producer: Skia/PDF m115'),
+        isTrue,
+      );
+      expect(
+        LocalPdfParserService.isMetadataOrRendererArtifact('CreationDate: D:20260902'),
+        isTrue,
+      );
+      expect(
+        LocalPdfParserService.isMetadataOrRendererArtifact('Page 1 of 15'),
+        isTrue,
+      );
+      expect(
+        LocalPdfParserService.isMetadataOrRendererArtifact(
+          'Mitosis is the division of somatic cells into two identical cells.',
+        ),
+        isFalse,
+      );
+    });
+
     test('gracefully handles empty or corrupted PDF bytes without failing', () {
       final emptyBytes = Uint8List(0);
       final text = service.extractTextFromPdfBytes(emptyBytes);
