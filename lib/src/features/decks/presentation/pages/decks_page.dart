@@ -13,9 +13,9 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_empty_state.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
 class DecksPage extends HookWidget {
@@ -162,40 +162,44 @@ class _DecksView extends HookWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.decksTitle,
-                            style: typography.largeTitle.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 24,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.decksTitle,
+                              style: typography.largeTitle.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 26,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.decksSubtitle,
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 12,
+                            const SizedBox(height: 6),
+                            Text(
+                              l10n.decksSubtitle,
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 13,
+                                height: 1.3,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 12),
                       ShrinkableButton(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
                           _showDeckCreationSheet(context);
                         },
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: colors.primary,
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(80),
+                                color: colors.primary.withAlpha(isDark ? 90 : 60),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -210,27 +214,36 @@ class _DecksView extends HookWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
 
                   // 2. Search Field
                   Container(
+                    height: 48,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? colors.surfaceSecondary.withAlpha(160)
-                          : colors.surfacePrimary.withAlpha(220),
-                      borderRadius: BorderRadius.circular(16),
+                          ? colors.surfaceSecondary.withAlpha(200)
+                          : colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(70)
-                            : colors.surfaceBorder.withAlpha(130),
+                            ? colors.surfaceBorderHighlight.withAlpha(90)
+                            : colors.surfaceBorder,
+                        width: 1.2,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isDark ? 30 : 10),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.search_rounded,
-                          color: colors.textMuted,
+                          color: colors.textSecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
@@ -241,6 +254,7 @@ class _DecksView extends HookWidget {
                               color: colors.textPrimary,
                               fontSize: 14,
                             ),
+                            cursorColor: colors.primary,
                             decoration: InputDecoration(
                               hintText: l10n.decksSearchHint,
                               hintStyle: typography.body.regular.copyWith(
@@ -248,9 +262,8 @@ class _DecksView extends HookWidget {
                                 fontSize: 13.5,
                               ),
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
                             onChanged: (query) {
                               context
@@ -267,10 +280,13 @@ class _DecksView extends HookWidget {
                                   .read<DecksBloc>()
                                   .add(const DecksSearchQueryChanged(''));
                             },
-                            child: Icon(
-                              Icons.close_rounded,
-                              color: colors.textMuted,
-                              size: 18,
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: colors.textSecondary,
+                                size: 18,
+                              ),
                             ),
                           ),
                       ],
@@ -325,7 +341,16 @@ class _DecksView extends HookWidget {
 
                   // 4. Decks List / Empty State
                   if (state.filteredDecks.isEmpty)
-                    const _DecksEmptyState()
+                    AppEmptyState(
+                      title: l10n.decksEmptyStateTitle,
+                      subtitle: l10n.decksEmptyStateSubtitle,
+                      primaryActionLabel: l10n.decksCreateDeckButton,
+                      onPrimaryAction: () => _showDeckCreationSheet(context),
+                      secondaryActionLabel: l10n.decksUploadDocTitle,
+                      onSecondaryAction: () => unawaited(
+                        context.router.push(const DocumentIngestionRoute()),
+                      ),
+                    )
                   else
                     ...state.filteredDecks.map((deck) {
                       return Padding(
@@ -351,111 +376,54 @@ class _DecksView extends HookWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Skeleton
-          const Row(
+          // 1. Header Shimmer
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShimmerPlaceholder(height: 24, width: 140, borderRadius: 8),
+                children: const [
+                  ShimmerPlaceholder(width: 140, height: 26, borderRadius: 8),
                   SizedBox(height: 6),
-                  ShimmerPlaceholder(height: 12, width: 220, borderRadius: 6),
+                  ShimmerPlaceholder(width: 220, height: 14, borderRadius: 6),
                 ],
               ),
-              ShimmerPlaceholder(height: 40, width: 40, borderRadius: 20),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Search Bar Skeleton
-          const ShimmerPlaceholder(
-            height: 48,
-            width: double.infinity,
-            borderRadius: 16,
-          ),
-          const SizedBox(height: 16),
-
-          // Filter Chips Skeleton
-          const Row(
-            children: [
-              ShimmerPlaceholder(height: 34, width: 80, borderRadius: 12),
-              SizedBox(width: 8),
-              ShimmerPlaceholder(height: 34, width: 95, borderRadius: 12),
-              SizedBox(width: 8),
-              ShimmerPlaceholder(height: 34, width: 80, borderRadius: 12),
+              const ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
             ],
           ),
           const SizedBox(height: 20),
 
-          // 3 Deck Card Skeletons
+          // 2. Search Bar Shimmer
+          const ShimmerPlaceholder(
+            width: double.infinity,
+            height: 48,
+            borderRadius: 16,
+          ),
+          const SizedBox(height: 16),
+
+          // 3. Filter Category Pills Shimmer
+          Row(
+            children: const [
+              ShimmerPlaceholder(width: 80, height: 32, borderRadius: 16),
+              SizedBox(width: 8),
+              ShimmerPlaceholder(width: 95, height: 32, borderRadius: 16),
+              SizedBox(width: 8),
+              ShimmerPlaceholder(width: 85, height: 32, borderRadius: 16),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // 4. Deck Card List Skeletons
           Expanded(
             child: ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               itemCount: 3,
-              separatorBuilder: (context, index) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                return Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(160)
-                        : colors.surfacePrimary.withAlpha(220),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(90),
-                    ),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ShimmerPlaceholder(
-                            height: 18,
-                            width: 120,
-                            borderRadius: 6,
-                          ),
-                          ShimmerPlaceholder(
-                            height: 18,
-                            width: 50,
-                            borderRadius: 6,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12),
-                      ShimmerPlaceholder(
-                        height: 18,
-                        width: 240,
-                        borderRadius: 6,
-                      ),
-                      SizedBox(height: 8),
-                      ShimmerPlaceholder(
-                        height: 12,
-                        width: 180,
-                        borderRadius: 6,
-                      ),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ShimmerPlaceholder(
-                            height: 14,
-                            width: 90,
-                            borderRadius: 6,
-                          ),
-                          ShimmerPlaceholder(
-                            height: 14,
-                            width: 110,
-                            borderRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (_, __) => const ShimmerPlaceholder(
+                width: double.infinity,
+                height: 120,
+                borderRadius: 20,
+              ),
             ),
           ),
         ],
@@ -491,23 +459,26 @@ class _ActionOptionTile extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isDark
-              ? colors.surfacePrimary.withAlpha(180)
-              : colors.surfaceSecondary.withAlpha(220),
           borderRadius: BorderRadius.circular(16),
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(150)
+              : colors.surfacePrimary.withAlpha(200),
           border: Border.all(
-            color: colors.surfaceBorder.withAlpha(120),
+            color: isDark
+                ? colors.surfaceBorderHighlight.withAlpha(50)
+                : colors.surfaceBorder.withAlpha(100),
           ),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: iconColor.withAlpha(isDark ? 40 : 25),
                 borderRadius: BorderRadius.circular(12),
+                color: iconColor.withAlpha(isDark ? 40 : 25),
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
@@ -518,8 +489,9 @@ class _ActionOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: typography.callout.bold.copyWith(
+                    style: typography.body.bold.copyWith(
                       color: colors.textPrimary,
+                      fontSize: 14.5,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -533,6 +505,7 @@ class _ActionOptionTile extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Icon(
               Icons.chevron_right_rounded,
               color: colors.textMuted,
@@ -626,61 +599,3 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _DecksEmptyState extends StatelessWidget {
-  const _DecksEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      child: Column(
-        children: [
-          const SyllabotAvatar(size: 54),
-          const SizedBox(height: 18),
-          Text(
-            l10n.decksEmptyStateTitle,
-            style: typography.title3.bold.copyWith(color: colors.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.decksEmptyStateSubtitle,
-            textAlign: TextAlign.center,
-            style: typography.footnote.regular.copyWith(
-              color: colors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.lightImpact());
-              unawaited(
-                context.router.push(
-                  SyllabotChatRoute(
-                    initialPrompt:
-                        'Generate a new active recall flashcard deck.',
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: colors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                l10n.decksCreateDeckButton,
-                style: typography.caption.bold.copyWith(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -48,6 +48,11 @@ class HeaderProfileBar extends StatelessWidget {
         ? effectiveName.trim().split(' ').first
         : l10n.dashboardScholarFallback;
 
+    final effectiveStreak = (authProfile?.streakDays != null &&
+            authProfile!.streakDays > 0)
+        ? authProfile.streakDays
+        : analytics.currentStreakDays;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,21 +115,20 @@ class HeaderProfileBar extends StatelessWidget {
                             l10n.dashboardHeyUser(displayName),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: typography.title3.bold.copyWith(
+                            style: typography.headline.bold.copyWith(
                               color: colors.textPrimary,
-                              fontSize: 18,
-                              letterSpacing: -0.2,
+                              fontSize: 16,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Row(
                             children: [
                               Container(
-                                width: 6,
-                                height: 6,
+                                width: 7,
+                                height: 7,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: colors.syllabotAccent,
+                                  color: colors.success,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -157,7 +161,7 @@ class HeaderProfileBar extends StatelessWidget {
                 // Study Streak Pill
                 Semantics(
                   label: l10n.dashboardStreakTooltip(
-                    analytics.currentStreakDays,
+                    effectiveStreak,
                   ),
                   button: true,
                   child: ShrinkableButton(
@@ -198,7 +202,7 @@ class HeaderProfileBar extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${analytics.currentStreakDays}',
+                                '$effectiveStreak',
                                 style: typography.callout.bold.copyWith(
                                   color: colors.textPrimary,
                                   fontSize: 13.5,

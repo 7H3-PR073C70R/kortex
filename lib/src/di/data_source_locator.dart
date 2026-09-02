@@ -24,6 +24,7 @@ void _initDataSource() {
     ..registerLazySingleton<DashboardRemoteDataSource>(
       () => DashboardRemoteDataSourceImpl(
         locator<DashboardApiClient>(),
+        userActivityService: locator<UserActivityService>(),
       ),
     )
     ..registerLazySingleton<DecksRemoteDataSource>(
@@ -46,6 +47,7 @@ void _initDataSource() {
       () => IngestionRemoteDataSourceImpl(
         locator<IngestionApiClient>(),
         locator<Dio>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<CommunityRemoteDataSource>(

@@ -7,6 +7,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for customizing appearance, sensory haptics, and study reminders.
@@ -17,7 +18,8 @@ class AppPreferencesPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
+    final l10n = context.l10n;
+    final themeMode = context.watch<ThemeCubit>().state.themeMode;
 
     final haptics = useState<bool>(AppFeedback.isHapticsEnabled);
     final notifications = useState<bool>(true);
@@ -37,7 +39,7 @@ class AppPreferencesPage extends HookWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'App & Sensory Settings',
+          l10n.preferencesTitle,
           style: typography.title3.bold.copyWith(
             color: colors.textPrimary,
             fontSize: 18,
@@ -50,10 +52,10 @@ class AppPreferencesPage extends HookWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Appearance Theme
+              // 1. Appearance Theme (3 options: System, Light, Dark)
               _buildSectionContainer(
-                title: 'Color Appearance',
-                subtitle: 'Switch between sleek dark mode or clear light mode',
+                title: l10n.preferencesAppearanceTitle,
+                subtitle: l10n.preferencesAppearanceSubtitle,
                 colors: colors,
                 typography: typography,
                 child: Row(
@@ -61,34 +63,53 @@ class AppPreferencesPage extends HookWidget {
                     Expanded(
                       child: _buildThemeCard(
                         context: context,
-                        title: 'Dark Mode',
-                        icon: Icons.dark_mode_rounded,
-                        isSelected: isDark,
+                        title: l10n.preferencesThemeSystem,
+                        icon: Icons.brightness_auto_rounded,
+                        isSelected: themeMode == ThemeMode.system,
                         onTap: () {
                           AppFeedback.selection();
                           unawaited(
                             context
                                 .read<ThemeCubit>()
-                                .setThemeMode(ThemeMode.dark),
+                                .setThemeMode(ThemeMode.system),
                           );
                         },
                         colors: colors,
                         typography: typography,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _buildThemeCard(
                         context: context,
-                        title: 'Light Mode',
+                        title: l10n.preferencesThemeLight,
                         icon: Icons.light_mode_rounded,
-                        isSelected: !isDark,
+                        isSelected: themeMode == ThemeMode.light,
                         onTap: () {
                           AppFeedback.selection();
                           unawaited(
                             context
                                 .read<ThemeCubit>()
                                 .setThemeMode(ThemeMode.light),
+                          );
+                        },
+                        colors: colors,
+                        typography: typography,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildThemeCard(
+                        context: context,
+                        title: l10n.preferencesThemeDark,
+                        icon: Icons.dark_mode_rounded,
+                        isSelected: themeMode == ThemeMode.dark,
+                        onTap: () {
+                          AppFeedback.selection();
+                          unawaited(
+                            context
+                                .read<ThemeCubit>()
+                                .setThemeMode(ThemeMode.dark),
                           );
                         },
                         colors: colors,
@@ -102,8 +123,8 @@ class AppPreferencesPage extends HookWidget {
 
               // 2. Sensory & Audio Effects
               _buildSectionContainer(
-                title: 'Sensory & Audio Experience',
-                subtitle: 'Tactile vibrations and audio cues during study',
+                title: l10n.preferencesSensoryTitle,
+                subtitle: l10n.preferencesSensorySubtitle,
                 colors: colors,
                 typography: typography,
                 child: Column(
@@ -111,24 +132,26 @@ class AppPreferencesPage extends HookWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Haptic Feedback',
-                              style: typography.body.medium.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13.5,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.preferencesHapticsTitle,
+                                style: typography.body.medium.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 13.5,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Vibrate on card flip & quiz grading',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
+                              Text(
+                                l10n.preferencesHapticsSubtitle,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         Switch.adaptive(
                           value: haptics.value,
@@ -147,24 +170,26 @@ class AppPreferencesPage extends HookWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Sound Effects (SFX)',
-                              style: typography.body.medium.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13.5,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.preferencesSfxTitle,
+                                style: typography.body.medium.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 13.5,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Play audio cues on correct answers',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
+                              Text(
+                                l10n.preferencesSfxSubtitle,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         Switch.adaptive(
                           value: soundEffects.value,
@@ -183,31 +208,33 @@ class AppPreferencesPage extends HookWidget {
 
               // 3. Notifications & Study Reminders
               _buildSectionContainer(
-                title: 'Notifications & Streak Protections',
-                subtitle: 'Daily reminders so you never break your study habit',
+                title: l10n.preferencesNotificationsTitle,
+                subtitle: l10n.preferencesNotificationsSubtitle,
                 colors: colors,
                 typography: typography,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Daily Study Reminder',
-                          style: typography.body.medium.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 13.5,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.preferencesReminderTitle,
+                            style: typography.body.medium.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 13.5,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Alert 1 hour before streak reset (8:00 PM)',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
+                          Text(
+                            l10n.preferencesReminderSubtitle,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Switch.adaptive(
                       value: notifications.value,
@@ -277,39 +304,47 @@ class AppPreferencesPage extends HookWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
-    return ShrinkableButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withAlpha(30)
-              : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: title,
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          decoration: BoxDecoration(
             color: isSelected
-                ? colors.primary
-                : colors.surfaceBorder.withAlpha(90),
-            width: isSelected ? 1.5 : 1,
+                ? colors.primary.withAlpha(28)
+                : colors.surfacePrimary,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? colors.primary
+                  : colors.surfaceBorder.withAlpha(90),
+              width: isSelected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? colors.primary : colors.textSecondary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: typography.caption.bold.copyWith(
-                color: isSelected ? colors.primary : colors.textPrimary,
-                fontSize: 12.5,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? colors.primary : colors.textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.caption.bold.copyWith(
+                  color: isSelected ? colors.primary : colors.textPrimary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3733,6 +3733,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Conversation'**
   String get newConversationTooltip;
+
+  /// Title for app preferences page
+  ///
+  /// In en, this message translates to:
+  /// **'App & Sensory Settings'**
+  String get preferencesTitle;
+
+  /// Appearance section title
+  ///
+  /// In en, this message translates to:
+  /// **'Color Appearance'**
+  String get preferencesAppearanceTitle;
+
+  /// Appearance section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between sleek dark mode, clear light mode, or sync with system'**
+  String get preferencesAppearanceSubtitle;
+
+  /// System theme option
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get preferencesThemeSystem;
+
+  /// Light theme option
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get preferencesThemeLight;
+
+  /// Dark theme option
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get preferencesThemeDark;
+
+  /// Sensory section title
+  ///
+  /// In en, this message translates to:
+  /// **'Sensory & Audio Experience'**
+  String get preferencesSensoryTitle;
+
+  /// Sensory section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Tactile vibrations and audio cues during study'**
+  String get preferencesSensorySubtitle;
+
+  /// Haptics switch title
+  ///
+  /// In en, this message translates to:
+  /// **'Haptic Feedback'**
+  String get preferencesHapticsTitle;
+
+  /// Haptics switch subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate on card flip & quiz grading'**
+  String get preferencesHapticsSubtitle;
+
+  /// Sound effects switch title
+  ///
+  /// In en, this message translates to:
+  /// **'Sound Effects (SFX)'**
+  String get preferencesSfxTitle;
+
+  /// Sound effects switch subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Play audio cues on correct answers'**
+  String get preferencesSfxSubtitle;
+
+  /// Notifications section title
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications & Streak Protections'**
+  String get preferencesNotificationsTitle;
+
+  /// Notifications section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reminders so you never break your study habit'**
+  String get preferencesNotificationsSubtitle;
+
+  /// Reminder switch title
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Study Reminder'**
+  String get preferencesReminderTitle;
+
+  /// Reminder switch subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Alert 1 hour before streak reset (8:00 PM)'**
+  String get preferencesReminderSubtitle;
 }
 
 class _AppLocalizationsDelegate

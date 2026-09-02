@@ -31,11 +31,11 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: UserProfileRoute.page),
     AutoRoute(page: TwoFactorSetupRoute.page),
     AutoRoute(page: PastQuestionsBoardRoute.page),
+    AutoRoute(page: SyllabotChatRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [
         AutoRoute(page: DashboardRoute.page),
-        AutoRoute(page: SyllabotChatRoute.page),
         AutoRoute(page: DecksRoute.page),
         AutoRoute(page: CommunityHubRoute.page),
         AutoRoute(page: ProfileRoute.page),

@@ -2116,4 +2116,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newConversationTooltip => 'New Conversation';
+
+  @override
+  String get preferencesTitle => 'App & Sensory Settings';
+
+  @override
+  String get preferencesAppearanceTitle => 'Color Appearance';
+
+  @override
+  String get preferencesAppearanceSubtitle =>
+      'Switch between sleek dark mode, clear light mode, or sync with system';
+
+  @override
+  String get preferencesThemeSystem => 'System';
+
+  @override
+  String get preferencesThemeLight => 'Light';
+
+  @override
+  String get preferencesThemeDark => 'Dark';
+
+  @override
+  String get preferencesSensoryTitle => 'Sensory & Audio Experience';
+
+  @override
+  String get preferencesSensorySubtitle =>
+      'Tactile vibrations and audio cues during study';
+
+  @override
+  String get preferencesHapticsTitle => 'Haptic Feedback';
+
+  @override
+  String get preferencesHapticsSubtitle =>
+      'Vibrate on card flip & quiz grading';
+
+  @override
+  String get preferencesSfxTitle => 'Sound Effects (SFX)';
+
+  @override
+  String get preferencesSfxSubtitle => 'Play audio cues on correct answers';
+
+  @override
+  String get preferencesNotificationsTitle =>
+      'Notifications & Streak Protections';
+
+  @override
+  String get preferencesNotificationsSubtitle =>
+      'Daily reminders so you never break your study habit';
+
+  @override
+  String get preferencesReminderTitle => 'Daily Study Reminder';
+
+  @override
+  String get preferencesReminderSubtitle =>
+      'Alert 1 hour before streak reset (8:00 PM)';
 }

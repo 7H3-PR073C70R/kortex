@@ -2970,5 +2970,69 @@
     "newConversationTooltip": "New Conversation",
     "@newConversationTooltip": {
         "description": "Tooltip for starting new conversation"
+    },
+    "preferencesTitle": "App & Sensory Settings",
+    "@preferencesTitle": {
+        "description": "Title for app preferences page"
+    },
+    "preferencesAppearanceTitle": "Color Appearance",
+    "@preferencesAppearanceTitle": {
+        "description": "Appearance section title"
+    },
+    "preferencesAppearanceSubtitle": "Switch between sleek dark mode, clear light mode, or sync with system",
+    "@preferencesAppearanceSubtitle": {
+        "description": "Appearance section subtitle"
+    },
+    "preferencesThemeSystem": "System",
+    "@preferencesThemeSystem": {
+        "description": "System theme option"
+    },
+    "preferencesThemeLight": "Light",
+    "@preferencesThemeLight": {
+        "description": "Light theme option"
+    },
+    "preferencesThemeDark": "Dark",
+    "@preferencesThemeDark": {
+        "description": "Dark theme option"
+    },
+    "preferencesSensoryTitle": "Sensory & Audio Experience",
+    "@preferencesSensoryTitle": {
+        "description": "Sensory section title"
+    },
+    "preferencesSensorySubtitle": "Tactile vibrations and audio cues during study",
+    "@preferencesSensorySubtitle": {
+        "description": "Sensory section subtitle"
+    },
+    "preferencesHapticsTitle": "Haptic Feedback",
+    "@preferencesHapticsTitle": {
+        "description": "Haptics switch title"
+    },
+    "preferencesHapticsSubtitle": "Vibrate on card flip & quiz grading",
+    "@preferencesHapticsSubtitle": {
+        "description": "Haptics switch subtitle"
+    },
+    "preferencesSfxTitle": "Sound Effects (SFX)",
+    "@preferencesSfxTitle": {
+        "description": "Sound effects switch title"
+    },
+    "preferencesSfxSubtitle": "Play audio cues on correct answers",
+    "@preferencesSfxSubtitle": {
+        "description": "Sound effects switch subtitle"
+    },
+    "preferencesNotificationsTitle": "Notifications & Streak Protections",
+    "@preferencesNotificationsTitle": {
+        "description": "Notifications section title"
+    },
+    "preferencesNotificationsSubtitle": "Daily reminders so you never break your study habit",
+    "@preferencesNotificationsSubtitle": {
+        "description": "Notifications section subtitle"
+    },
+    "preferencesReminderTitle": "Daily Study Reminder",
+    "@preferencesReminderTitle": {
+        "description": "Reminder switch title"
+    },
+    "preferencesReminderSubtitle": "Alert 1 hour before streak reset (8:00 PM)",
+    "@preferencesReminderSubtitle": {
+        "description": "Reminder switch subtitle"
     }
 }

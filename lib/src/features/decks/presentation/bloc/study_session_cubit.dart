@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
@@ -126,7 +129,19 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       final finalRetention =
           ((newHard * 0.7) + (newGood * 1.0) + (newEasy * 1.0)) /
               (totalReviewed == 0 ? 1 : totalReviewed);
+      final mastered = newGood + newEasy;
 
+      // 1. Record in UserActivityService for persistent analytics & streak calculation
+      try {
+        await locator<UserActivityService>().recordStudySession(
+          cardsReviewed: totalReviewed,
+          durationSeconds: state.elapsedSeconds,
+          retentionScore: finalRetention.clamp(0.0, 1.0),
+          masteredCards: mastered,
+        );
+      } on Object catch (_) {}
+
+      // 2. Save session results to backend API
       unawaited(
         _saveSessionResultsUseCase(
           SaveSessionResultsParams(
@@ -138,9 +153,14 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         ),
       );
 
-      // Increment streak optimistically across the entire app
+      // 3. Increment streak in AuthBloc
       try {
         locator<AuthBloc>().add(const AuthStreakIncremented());
+      } on Object catch (_) {}
+
+      // 4. Trigger live refresh on DashboardBloc
+      try {
+        locator<DashboardBloc>().add(const DashboardRefreshed());
       } on Object catch (_) {}
 
       emit(
