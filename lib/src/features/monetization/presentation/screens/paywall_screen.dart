@@ -306,7 +306,7 @@ class _PaywallScreenState extends State<PaywallScreen>
         ),
         SizedBox(height: 6.h),
         Text(
-          'Unlimited Syllabot AI reasoning, instant multimodal STEM OCR, '
+          'Unlimited Syllabot AI reasoning, instant multimodal Document OCR, '
           'and cloud-synced FSRS spaced repetition.',
           textAlign: TextAlign.center,
           style: typography.caption.regular.copyWith(

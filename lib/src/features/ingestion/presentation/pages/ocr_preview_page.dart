@@ -37,7 +37,7 @@ class OcrPreviewPage extends HookWidget {
     void handleGenerateCards() {
       final previewCards = currentSnippets.value.map((s) {
         return GeneratedCardPreviewItem(
-          front: s.topic.isNotEmpty ? s.topic : 'STEM Concept',
+          front: s.topic.isNotEmpty ? s.topic : 'Core Concept',
           back: s.rawText,
           backLatex: s.latexContent,
           topic: s.topic,
@@ -49,7 +49,7 @@ class OcrPreviewPage extends HookWidget {
           GeneratedCardsReviewRoute(
             documentId: documentId,
             deckTitle: filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
-            subject: 'STEM Analysis',
+            subject: 'Study Review',
             initialCards: previewCards,
             rawSnippets: currentSnippets.value,
           ),

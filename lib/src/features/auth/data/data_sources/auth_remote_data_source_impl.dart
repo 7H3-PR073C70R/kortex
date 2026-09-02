@@ -169,10 +169,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         examCountdownDays: 45,
       ),
       CourseTrackModel(
-        id: 'STEM',
-        name: 'STEM & Pure Sciences',
+        id: 'Sciences',
+        name: 'Pure & Applied Sciences',
         description:
-            'Advanced physics, pure mathematics, organic chemistry & biology',
+            'Physics, mathematics, chemistry, biology & general sciences',
         iconName: 'calculate',
         defaultDailyTarget: 25,
         examCountdownDays: 90,

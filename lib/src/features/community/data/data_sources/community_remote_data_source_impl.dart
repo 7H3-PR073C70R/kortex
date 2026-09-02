@@ -61,9 +61,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       final isFocus = elapsed < 1200;
       return StudyRoomModel(
         id: roomId,
-        title: 'STEM Deep Work & Socratic Pod',
-        subject: 'Calculus & Quantum Mechanics',
-        category: 'STEM',
+        title: 'Deep Work & Socratic Pod',
+        subject: 'General Study & Concept Mastery',
+        category: 'General',
         pomodoroState: isFocus ? 'focusing' : 'break',
         pomodoroStartedAt: DateTime.now().subtract(Duration(seconds: elapsed)),
         activeParticipantsCount: 8 + (tick % 5),

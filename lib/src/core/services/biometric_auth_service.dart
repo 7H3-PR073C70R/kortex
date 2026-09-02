@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:local_auth/local_auth.dart';
 
 abstract class BiometricAuthService {
+  ValueListenable<bool> get isEnabledListenable;
   Future<bool> canAuthenticate();
   Future<bool> authenticate({String? localizedReason});
   bool isBiometricLockEnabled();
@@ -12,12 +14,27 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
   BiometricAuthServiceImpl(
     this._localStorageService, {
     LocalAuthentication? auth,
-  }) : _auth = auth ?? LocalAuthentication();
+  })  : _auth = auth ?? LocalAuthentication();
 
   final LocalStorageService _localStorageService;
   final LocalAuthentication _auth;
+  late final ValueNotifier<bool> _enabledNotifier = ValueNotifier<bool>(
+    _readInitialEnabled(),
+  );
+  bool _isPrompting = false;
 
   static const _biometricKey = '__biometric_lock_enabled';
+
+  bool _readInitialEnabled() {
+    try {
+      return _localStorageService.getPreference(key: _biometricKey) == 'true';
+    } on Object {
+      return false;
+    }
+  }
+
+  @override
+  ValueListenable<bool> get isEnabledListenable => _enabledNotifier;
 
   @override
   Future<bool> canAuthenticate() async {
@@ -32,6 +49,8 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
 
   @override
   Future<bool> authenticate({String? localizedReason}) async {
+    if (_isPrompting) return false;
+    _isPrompting = true;
     try {
       return await _auth.authenticate(
         localizedReason: localizedReason ??
@@ -39,6 +58,8 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
       );
     } on Object catch (_) {
       return false;
+    } finally {
+      _isPrompting = false;
     }
   }
 
@@ -58,6 +79,7 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
         key: _biometricKey,
         data: enabled.toString(),
       );
+      _enabledNotifier.value = enabled;
     } on Object catch (_) {}
   }
 }

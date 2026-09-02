@@ -48,11 +48,11 @@
     "@onboardingSlide1Title": {
         "description": "Title for slide 1"
     },
-    "onboardingSlide1Desc": "Transform dense syllabi, past papers, and STEM lecture slides into structured active-recall systems instantly.",
+    "onboardingSlide1Desc": "Transform dense syllabi, past papers, and course lecture slides into structured active-recall systems instantly.",
     "@onboardingSlide1Desc": {
         "description": "Description for slide 1"
     },
-    "onboardingSlide2Badge": "PRECISION STEM OCR",
+    "onboardingSlide2Badge": "PRECISION ACADEMIC OCR",
     "@onboardingSlide2Badge": {
         "description": "Badge for slide 2"
     },

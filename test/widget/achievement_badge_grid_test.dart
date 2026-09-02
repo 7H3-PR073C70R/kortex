@@ -31,12 +31,12 @@ void main() {
       expect(find.text('Night Owl'), findsOneWidget);
       expect(find.text('Century Club'), findsOneWidget);
       expect(find.text('Streak Master'), findsOneWidget);
-      expect(find.text('STEM Alchemist'), findsOneWidget);
+      expect(find.text('Master Scholar'), findsOneWidget);
 
       // Verify unlocked and progress indicators
       expect(find.text('COMPLETED'), findsNWidgets(2));
       expect(find.text('9 / 14'), findsOneWidget); // Streak Master
-      expect(find.text('32 / 50'), findsOneWidget); // STEM Alchemist
+      expect(find.text('32 / 50'), findsOneWidget); // Master Scholar
     });
   });
 }

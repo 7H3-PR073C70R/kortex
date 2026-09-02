@@ -28,7 +28,7 @@ enum ThemePreset {
       case ThemePreset.midnightOled:
         return 'Midnight OLED';
       case ThemePreset.emeraldStem:
-        return 'Emerald STEM';
+        return 'Emerald Focus';
       case ThemePreset.royalAmethyst:
         return 'Royal Amethyst';
     }

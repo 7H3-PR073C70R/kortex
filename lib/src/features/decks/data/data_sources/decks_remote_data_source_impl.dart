@@ -99,7 +99,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         totalCards: 12,
         dueCards: 4,
         masteryRate: 0.85,
-        category: 'STEM',
+        category: 'Mathematics',
         description: 'Partial differential equations and s-domain theorems.',
         lastStudied: DateTime.now().subtract(const Duration(hours: 18)),
         cards: _generateFallbackCardsForDeck('deck_laplace_1'),

@@ -118,7 +118,7 @@ class AboutSupportPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Next-Gen STEM & Exam Mastery Engine',
+                      'Next-Gen Academic & Exam Mastery Engine',
                       style: typography.caption.medium.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12.5,
@@ -138,7 +138,7 @@ class AboutSupportPage extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'v1.0.0+1 • Production STEM Engine',
+                        'v1.0.0+1 • Production Neural Engine',
                         style: typography.caption.bold.copyWith(
                           color: colors.primary,
                           fontSize: 11.5,

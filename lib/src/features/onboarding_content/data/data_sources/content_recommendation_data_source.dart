@@ -29,7 +29,7 @@ class ContentRecommendationDataSourceImpl
         : 'Final Exams';
     final subjectsList = !isHigherEd && profile.highSchoolSubjects.isNotEmpty
         ? profile.highSchoolSubjects.take(3).join(', ')
-        : (profile.higherEdField ?? 'Core STEM Modules');
+        : (profile.higherEdField ?? 'Core Academic Modules');
 
     final pastPapersDesc = localizeHandler('pastPapersDesc', {
       'examType': examType,
@@ -57,7 +57,7 @@ class ContentRecommendationDataSourceImpl
         ? profile.higherEdField!
         : (profile.highSchoolSubjects.isNotEmpty
             ? profile.highSchoolSubjects.first
-            : 'Core STEM Concepts');
+            : 'Core Subject Concepts');
 
     final flashcardsDesc = localizeHandler('flashcardsDesc', {
       'field': fieldOfStudy,

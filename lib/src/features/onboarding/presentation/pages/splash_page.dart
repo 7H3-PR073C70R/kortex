@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/biometric_auth_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/shared/widgets/tailored_biometric_lock_view.dart';
 
 @RoutePage()
 class SplashPage extends StatefulWidget {
@@ -28,6 +32,8 @@ class _SplashPageState extends State<SplashPage>
   late final Animation<double> _glowExpansionAnimation;
   late final Animation<double> _textFadeAnimation;
   Timer? _navigationTimer;
+  bool _showBiometricChallenge = false;
+  bool _isAuthenticating = false;
 
   @override
   void initState() {
@@ -82,7 +88,7 @@ class _SplashPageState extends State<SplashPage>
     );
 
     _navigationTimer = Timer(
-      const Duration(milliseconds: 2000),
+      const Duration(milliseconds: 1800),
       _navigateNext,
     );
   }
@@ -102,21 +108,19 @@ class _SplashPageState extends State<SplashPage>
     final isAuthenticated = token != null && token.isNotEmpty;
 
     if (isAuthenticated) {
-      final calibRepo = locator<CalibrationRepository>();
-      final calibResult = await calibRepo.getCalibrationProfile();
-      final isCalibrated = calibResult.fold(
-        (_) => false,
-        (profile) => profile?.isCalibrated ?? false,
-      );
+      locator<AuthBloc>().add(const AuthProfileFetchRequested());
 
-      if (!mounted) return;
-      if (isCalibrated) {
-        await context.router.replaceAll([const MainRoute()]);
-        return;
-      } else {
-        await context.router.replaceAll([const OnboardingCalibrationRoute()]);
+      final biometricService = locator<BiometricAuthService>();
+      if (biometricService.isBiometricLockEnabled()) {
+        setState(() {
+          _showBiometricChallenge = true;
+        });
+        unawaited(_triggerBiometricAuth());
         return;
       }
+
+      await _proceedToApp();
+      return;
     }
 
     final storage = locator<LocalStorageService>();
@@ -134,8 +138,51 @@ class _SplashPageState extends State<SplashPage>
     }
   }
 
+  Future<void> _triggerBiometricAuth() async {
+    if (_isAuthenticating) return;
+    _isAuthenticating = true;
+    try {
+      final success = await locator<BiometricAuthService>().authenticate(
+        localizedReason: 'Unlock Kortex to access your workspace',
+      );
+      if (success && mounted) {
+        await _proceedToApp();
+      }
+    } on Object catch (_) {
+    } finally {
+      _isAuthenticating = false;
+    }
+  }
+
+  Future<void> _proceedToApp() async {
+    final calibRepo = locator<CalibrationRepository>();
+    final calibResult = await calibRepo.getCalibrationProfile();
+    final isCalibrated = calibResult.fold(
+      (_) => false,
+      (profile) => profile?.isCalibrated ?? false,
+    );
+
+    if (!mounted) return;
+    if (isCalibrated) {
+      await context.router.replaceAll([const MainRoute()]);
+    } else {
+      await context.router.replaceAll([const OnboardingCalibrationRoute()]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_showBiometricChallenge) {
+      return TailoredBiometricLockView(
+        onUnlock: _triggerBiometricAuth,
+        onAlternativeAction: () async {
+          locator<UserStorageService>().clearStorage();
+          locator<AuthBloc>().add(const AuthSignOutRequested());
+          await context.router.replaceAll([const LoginRoute()]);
+        },
+        alternativeActionLabel: 'Sign In with Password',
+      );
+    }
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;

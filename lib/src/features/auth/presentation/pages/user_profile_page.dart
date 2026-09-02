@@ -204,7 +204,7 @@ class UserProfilePage extends HookWidget {
                   // 4. App Version Footer
                   Center(
                     child: Text(
-                      'Kortexify v1.2.0 • Build 1 • Advanced STEM AI',
+                      'Kortexify v1.2.0 • Neural Study AI',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary.withAlpha(120),
                         fontSize: 11,
@@ -785,13 +785,15 @@ class UserProfilePage extends HookWidget {
 
     final avatars = [
       {'emoji': '🎓', 'label': 'Scholar', 'id': 'emoji:🎓'},
-      {'emoji': '🧠', 'label': 'Neuro', 'id': 'emoji:🧠'},
-      {'emoji': '⚡', 'label': 'Quantum', 'id': 'emoji:⚡'},
-      {'emoji': '🧬', 'label': 'Biotech', 'id': 'emoji:🧬'},
-      {'emoji': '🤖', 'label': 'AI Cyber', 'id': 'emoji:🤖'},
-      {'emoji': '⚖️', 'label': 'Jurist', 'id': 'emoji:⚖️'},
-      {'emoji': '🩺', 'label': 'Medic', 'id': 'emoji:🩺'},
-      {'emoji': '🚀', 'label': 'Astro', 'id': 'emoji:🚀'},
+      {'emoji': '📚', 'label': 'Academic', 'id': 'emoji:📚'},
+      {'emoji': '💡', 'label': 'Innovator', 'id': 'emoji:💡'},
+      {'emoji': '🎨', 'label': 'Creative', 'id': 'emoji:🎨'},
+      {'emoji': '⚖️', 'label': 'Law', 'id': 'emoji:⚖️'},
+      {'emoji': '🩺', 'label': 'Medical', 'id': 'emoji:🩺'},
+      {'emoji': '💼', 'label': 'Business', 'id': 'emoji:💼'},
+      {'emoji': '🔬', 'label': 'Science', 'id': 'emoji:🔬'},
+      {'emoji': '🌍', 'label': 'Humanities', 'id': 'emoji:🌍'},
+      {'emoji': '✍️', 'label': 'Author', 'id': 'emoji:✍️'},
     ];
 
     unawaited(
@@ -832,7 +834,7 @@ class UserProfilePage extends HookWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Customize Scholar Avatar',
+                    'Customize Profile Avatar',
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                       fontSize: 17,
@@ -850,7 +852,7 @@ class UserProfilePage extends HookWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Upload a photo from your device or choose a STEM badge',
+                'Upload a photo from your device or pick a scholar avatar',
                 style: typography.caption.regular.copyWith(
                   color: colors.textSecondary,
                   fontSize: 12,
@@ -957,22 +959,23 @@ class UserProfilePage extends HookWidget {
               const SizedBox(height: 14),
 
               Text(
-                'Or Select STEM Persona Badge',
+                'Or Select an Avatar Icon',
                 style: typography.body.bold.copyWith(
                   color: colors.textPrimary,
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              // Grid of STEM Persona Avatars
+              // Aesthetic Avatar Tokens Grid
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 5,
                   crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.78,
                 ),
                 itemCount: avatars.length,
                 itemBuilder: (context, index) {
@@ -982,31 +985,38 @@ class UserProfilePage extends HookWidget {
                       Navigator.of(ctx).pop();
                       await _persistPhotoUrl(context, item['id']!);
                     },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(80),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item['emoji']!,
-                            style: const TextStyle(fontSize: 26),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['label']!,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 10.5,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colors.surfaceSecondary,
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(90),
+                              width: 1.2,
                             ),
                           ),
-                        ],
-                      ),
+                          child: Center(
+                            child: Text(
+                              item['emoji']!,
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          item['label']!,
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 10.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   );
                 },

@@ -11,7 +11,7 @@ class SharedDeckEntity extends Equatable {
     required this.subject,
     required this.totalCards,
     this.description,
-    this.category = 'STEM',
+    this.category = 'General',
     this.downloadsCount = 0,
     this.rating = 4.8,
     this.cards = const [],

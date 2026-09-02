@@ -47,10 +47,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingSlide1Desc =>
-      'Transform dense syllabi, past papers, and STEM lecture slides into structured active-recall systems instantly.';
+      'Transform dense syllabi, past papers, and course lecture slides into structured active-recall systems instantly.';
 
   @override
-  String get onboardingSlide2Badge => 'PRECISION STEM OCR';
+  String get onboardingSlide2Badge => 'PRECISION ACADEMIC OCR';
 
   @override
   String get onboardingSlide2Title => 'Flawless Math & Science OCR';
@@ -283,10 +283,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authDesktopHeroSubtitle =>
-      'Ingest syllabi, STEM equations, and lecture slides into an active-recall mastery system in seconds.';
+      'Ingest syllabi, academic equations, and lecture slides into an active-recall mastery system in seconds.';
 
   @override
-  String get authDesktopFeature1 => 'Zero-latency multimodal STEM OCR';
+  String get authDesktopFeature1 => 'Zero-latency multimodal Document OCR';
 
   @override
   String get authDesktopFeature2 => 'Adaptive SM-2 spaced repetition schedules';
@@ -447,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calibrationGoalThesis => 'Thesis / Dissertation Support';
 
   @override
-  String get calibrationGoalSocratic => 'Deep-Dive STEM Socratic AI';
+  String get calibrationGoalSocratic => 'Deep-Dive Socratic AI Tutor';
 
   @override
   String get calibrationGoalSpacedRep => 'Spaced Repetition (SM-2) Mastery';
@@ -567,7 +567,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calibrationDesktopMetric1 => 'Adaptive RAG Knowledge Base';
 
   @override
-  String get calibrationDesktopMetric2 => 'Curriculum-Specific STEM Prompts';
+  String get calibrationDesktopMetric2 => 'Curriculum-Specific Study Prompts';
 
   @override
   String get calibrationDesktopMetric3 =>
@@ -639,7 +639,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contentDesktopHeroSubtitle =>
-      'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive STEM decks, and automated Socratic dialogue channels.';
+      'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive study decks, and automated Socratic dialogue channels.';
 
   @override
   String get contentFeature1 => 'Pre-indexed exam question banks';
@@ -908,7 +908,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardIngestSubtitle =>
-      'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse STEM OCR & generate flashcards.';
+      'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse Document OCR & generate flashcards.';
 
   @override
   String get dashboardUploadPdf => 'Upload PDF';
@@ -920,7 +920,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardScanNotes => 'Scan Notes';
 
   @override
-  String get dashboardStemOcr => 'STEM OCR';
+  String get dashboardStemOcr => 'Document OCR';
 
   @override
   String dashboardDaysLeft(int count) {
@@ -1224,7 +1224,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get convertToDeckDescription =>
-      'Syllabot AI will extract key STEM formulas, terms, and concepts into an active-recall deck.';
+      'Syllabot AI will extract key formulas, terms, and concepts into an active-recall deck.';
 
   @override
   String get deckNameLabel => 'Deck Title';
@@ -1275,13 +1275,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadingStatus => 'Uploading document...';
 
   @override
-  String get processingOcrStatus => 'Extracting STEM formulas & LaTeX...';
+  String get processingOcrStatus => 'Extracting formulas & text...';
 
   @override
   String get generatingCardsStatus => 'Generating active recall cards...';
 
   @override
-  String get ocrPreviewTitle => 'STEM OCR Live Editor';
+  String get ocrPreviewTitle => 'Document OCR Live Editor';
 
   @override
   String get saveToDecksButton => 'Convert to Flashcards';
@@ -1317,7 +1317,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contentAlreadyUploadedNotice =>
-      'File already indexed. Loaded existing STEM extractions instantly.';
+      'File already indexed. Loaded existing document extractions instantly.';
 
   @override
   String get communityTitle => 'Community & Study Hub';
@@ -1392,7 +1392,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeTitle => 'Welcome to Kortexify';
 
   @override
-  String get welcomeSubtitle => 'Your AI-powered adaptive STEM study companion';
+  String get welcomeSubtitle => 'Your AI-powered adaptive study companion';
 
   @override
   String get selectCourseTrackPrompt => 'Select Your Focus Track';
@@ -1413,7 +1413,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waecTrackDesc =>
-      'Senior secondary school core curriculum & STEM exams';
+      'Senior secondary school core curriculum & final exams';
 
   @override
   String get jambTrackLabel => 'JAMB / UTME';
@@ -1423,17 +1423,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'High-speed multiple choice drills & past questions';
 
   @override
-  String get satTrackLabel => 'SAT STEM';
+  String get satTrackLabel => 'SAT Prep';
 
   @override
-  String get satTrackDesc => 'Standardized math, geometry, and problem solving';
+  String get satTrackDesc => 'Standardized math, reading, and problem solving';
 
   @override
-  String get universityTrackLabel => 'University STEM';
+  String get universityTrackLabel => 'University & Higher Ed';
 
   @override
   String get universityTrackDesc =>
-      'Engineering, physics, calculus, and biochemistry';
+      'Sciences, humanities, engineering, and business';
 
   @override
   String get completeOnboardingButton => 'Complete Setup & Launch';
@@ -1780,11 +1780,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Maintained an unbroken 14-day study streak.';
 
   @override
-  String get badgeStemAlchemistTitle => 'STEM Alchemist';
+  String get badgeStemAlchemistTitle => 'Master Scholar';
 
   @override
   String get badgeStemAlchemistDesc =>
-      'Mastered 50 complex mathematical or science cards.';
+      'Mastered 50 complex concept or subject cards.';
 
   @override
   String get offlineLowMemoryNotice =>
@@ -1855,7 +1855,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get examTrackWaecStem => 'WAEC STEM';
+  String get examTrackWaecStem => 'WAEC Track';
 
   @override
   String get examTrackJambUtme => 'JAMB UTME';
@@ -1864,7 +1864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get examTrackSatDigital => 'SAT Digital';
 
   @override
-  String get examTrackUniversityStem => 'University STEM';
+  String get examTrackUniversityStem => 'University Track';
 
   @override
   String get onboardingAppBarTitle => 'Kortexify Onboarding';
@@ -2037,7 +2037,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syllabotEmptySubtitle =>
-      'Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards';
+      'Your 24/7 AI tutor for concept derivations, exam prep, and flashcards';
 
   @override
   String deckCreatedFromSyllabot(String title, int count) {

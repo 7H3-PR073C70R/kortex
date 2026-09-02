@@ -113,7 +113,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
         totalCards: cards.length,
         dueCards: cards.length,
         masteryRate: 0,
-        category: 'STEM Ingestion',
+        category: 'Document Ingestion',
         description: 'Auto-synthesized from document $documentId',
         cards: cards,
       );

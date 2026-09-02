@@ -47,7 +47,7 @@ class UploadProgressCard extends HookWidget {
         case ProcessingStatus.generatingCards:
           statusText = l10n.generatingCardsStatus;
         case ProcessingStatus.completed:
-          statusText = 'STEM OCR extraction ready';
+          statusText = 'Document extraction ready';
         case ProcessingStatus.idle:
         case ProcessingStatus.failed:
           statusText = '';

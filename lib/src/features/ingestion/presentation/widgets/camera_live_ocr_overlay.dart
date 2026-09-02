@@ -22,7 +22,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Live STEM OCR Camera Scanner View with '
+      label: 'Live Document OCR Camera Scanner View with '
           '${detectedBlocks.length} detected text blocks',
       child: Stack(
         fit: StackFit.expand,
@@ -86,7 +86,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
             child: Center(
               child: Semantics(
                 button: true,
-                label: 'Capture Camera Frame for STEM Extraction',
+                label: 'Capture Camera Frame for Document Extraction',
                 child: GestureDetector(
                   onTap: isProcessing ? null : onCapture,
                   child: Container(

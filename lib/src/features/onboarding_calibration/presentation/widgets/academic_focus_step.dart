@@ -42,7 +42,7 @@ class AcademicFocusStep extends StatelessWidget {
         CalibrationOptionChip(
           title: l10n.calibrationOptionUniversity,
           subtitle:
-              'Higher research, thesis support & specialized STEM degrees',
+              'Higher research, thesis support & undergraduate degrees',
           icon: Icons.account_balance_rounded,
           isSelected: selectedFocus == AcademicFocus.higherEducation,
           onTap: () {

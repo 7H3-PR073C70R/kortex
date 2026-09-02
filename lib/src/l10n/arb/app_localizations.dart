@@ -169,13 +169,13 @@ abstract class AppLocalizations {
   /// Description for slide 1
   ///
   /// In en, this message translates to:
-  /// **'Transform dense syllabi, past papers, and STEM lecture slides into structured active-recall systems instantly.'**
+  /// **'Transform dense syllabi, past papers, and course lecture slides into structured active-recall systems instantly.'**
   String get onboardingSlide1Desc;
 
   /// Badge for slide 2
   ///
   /// In en, this message translates to:
-  /// **'PRECISION STEM OCR'**
+  /// **'PRECISION ACADEMIC OCR'**
   String get onboardingSlide2Badge;
 
   /// Title for slide 2
@@ -577,13 +577,13 @@ abstract class AppLocalizations {
   /// Hero subtitle for desktop auth panel
   ///
   /// In en, this message translates to:
-  /// **'Ingest syllabi, STEM equations, and lecture slides into an active-recall mastery system in seconds.'**
+  /// **'Ingest syllabi, academic equations, and lecture slides into an active-recall mastery system in seconds.'**
   String get authDesktopHeroSubtitle;
 
   /// Hero bullet feature 1
   ///
   /// In en, this message translates to:
-  /// **'Zero-latency multimodal STEM OCR'**
+  /// **'Zero-latency multimodal Document OCR'**
   String get authDesktopFeature1;
 
   /// Hero bullet feature 2
@@ -877,7 +877,7 @@ abstract class AppLocalizations {
   /// Socratic AI goal
   ///
   /// In en, this message translates to:
-  /// **'Deep-Dive STEM Socratic AI'**
+  /// **'Deep-Dive Socratic AI Tutor'**
   String get calibrationGoalSocratic;
 
   /// Spaced repetition goal
@@ -1111,7 +1111,7 @@ abstract class AppLocalizations {
   /// Desktop metric 2
   ///
   /// In en, this message translates to:
-  /// **'Curriculum-Specific STEM Prompts'**
+  /// **'Curriculum-Specific Study Prompts'**
   String get calibrationDesktopMetric2;
 
   /// Desktop metric 3
@@ -1217,7 +1217,7 @@ abstract class AppLocalizations {
   /// Desktop hero subtitle in content recommendation
   ///
   /// In en, this message translates to:
-  /// **'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive STEM decks, and automated Socratic dialogue channels.'**
+  /// **'Zero blank pages. We\'ve pre-seeded your library with verified past exams, adaptive study decks, and automated Socratic dialogue channels.'**
   String get contentDesktopHeroSubtitle;
 
   /// Content recommendation feature 1
@@ -1673,7 +1673,7 @@ abstract class AppLocalizations {
   /// Subtitle for study material upload sheet
   ///
   /// In en, this message translates to:
-  /// **'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse STEM OCR & generate flashcards.'**
+  /// **'Drop lecture slides, PDFs or handwritten past papers. Syllabot will parse Document OCR & generate flashcards.'**
   String get dashboardIngestSubtitle;
 
   /// Upload PDF option
@@ -1694,10 +1694,10 @@ abstract class AppLocalizations {
   /// **'Scan Notes'**
   String get dashboardScanNotes;
 
-  /// STEM OCR subtitle
+  /// Document OCR subtitle
   ///
   /// In en, this message translates to:
-  /// **'STEM OCR'**
+  /// **'Document OCR'**
   String get dashboardStemOcr;
 
   /// Exam countdown days remaining badge
@@ -2207,7 +2207,7 @@ abstract class AppLocalizations {
   /// Description in convert to deck modal
   ///
   /// In en, this message translates to:
-  /// **'Syllabot AI will extract key STEM formulas, terms, and concepts into an active-recall deck.'**
+  /// **'Syllabot AI will extract key formulas, terms, and concepts into an active-recall deck.'**
   String get convertToDeckDescription;
 
   /// Input label for generated deck title
@@ -2303,7 +2303,7 @@ abstract class AppLocalizations {
   /// Progress message during OCR processing
   ///
   /// In en, this message translates to:
-  /// **'Extracting STEM formulas & LaTeX...'**
+  /// **'Extracting formulas & text...'**
   String get processingOcrStatus;
 
   /// Progress message during flashcard generation
@@ -2315,7 +2315,7 @@ abstract class AppLocalizations {
   /// Title for the OCR preview and editor page
   ///
   /// In en, this message translates to:
-  /// **'STEM OCR Live Editor'**
+  /// **'Document OCR Live Editor'**
   String get ocrPreviewTitle;
 
   /// Button to convert OCR snippets into cards
@@ -2375,7 +2375,7 @@ abstract class AppLocalizations {
   /// Snackbar notice when file hash matches an existing document
   ///
   /// In en, this message translates to:
-  /// **'File already indexed. Loaded existing STEM extractions instantly.'**
+  /// **'File already indexed. Loaded existing document extractions instantly.'**
   String get contentAlreadyUploadedNotice;
 
   /// Title of the Community Hub
@@ -2513,7 +2513,7 @@ abstract class AppLocalizations {
   /// Subtitle on welcome screen
   ///
   /// In en, this message translates to:
-  /// **'Your AI-powered adaptive STEM study companion'**
+  /// **'Your AI-powered adaptive study companion'**
   String get welcomeSubtitle;
 
   /// Prompt on onboarding track selection step
@@ -2549,7 +2549,7 @@ abstract class AppLocalizations {
   /// Description for WAEC track
   ///
   /// In en, this message translates to:
-  /// **'Senior secondary school core curriculum & STEM exams'**
+  /// **'Senior secondary school core curriculum & final exams'**
   String get waecTrackDesc;
 
   /// Label for JAMB track
@@ -2567,25 +2567,25 @@ abstract class AppLocalizations {
   /// Label for SAT track
   ///
   /// In en, this message translates to:
-  /// **'SAT STEM'**
+  /// **'SAT Prep'**
   String get satTrackLabel;
 
   /// Description for SAT track
   ///
   /// In en, this message translates to:
-  /// **'Standardized math, geometry, and problem solving'**
+  /// **'Standardized math, reading, and problem solving'**
   String get satTrackDesc;
 
   /// Label for University track
   ///
   /// In en, this message translates to:
-  /// **'University STEM'**
+  /// **'University & Higher Ed'**
   String get universityTrackLabel;
 
   /// Description for University track
   ///
   /// In en, this message translates to:
-  /// **'Engineering, physics, calculus, and biochemistry'**
+  /// **'Sciences, humanities, engineering, and business'**
   String get universityTrackDesc;
 
   /// Button to finalize onboarding stepper
@@ -3140,16 +3140,16 @@ abstract class AppLocalizations {
   /// **'Maintained an unbroken 14-day study streak.'**
   String get badgeStreakMasterDesc;
 
-  /// Badge title for solving 50 LaTeX formula cards
+  /// Badge title for solving 50 formula cards
   ///
   /// In en, this message translates to:
-  /// **'STEM Alchemist'**
+  /// **'Master Scholar'**
   String get badgeStemAlchemistTitle;
 
-  /// Badge description for STEM Alchemist
+  /// Badge description for Master Scholar
   ///
   /// In en, this message translates to:
-  /// **'Mastered 50 complex mathematical or science cards.'**
+  /// **'Mastered 50 complex concept or subject cards.'**
   String get badgeStemAlchemistDesc;
 
   /// Notice when offline on a low-memory device unable to run local GGUF models
@@ -3269,7 +3269,7 @@ abstract class AppLocalizations {
   /// Dropdown label for WAEC track
   ///
   /// In en, this message translates to:
-  /// **'WAEC STEM'**
+  /// **'WAEC Track'**
   String get examTrackWaecStem;
 
   /// Dropdown label for JAMB track
@@ -3287,7 +3287,7 @@ abstract class AppLocalizations {
   /// Dropdown label for University track
   ///
   /// In en, this message translates to:
-  /// **'University STEM'**
+  /// **'University Track'**
   String get examTrackUniversityStem;
 
   /// App bar title for onboarding wrapper
@@ -3611,7 +3611,7 @@ abstract class AppLocalizations {
   /// Subtitle on Syllabot empty greeting
   ///
   /// In en, this message translates to:
-  /// **'Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards'**
+  /// **'Your 24/7 AI tutor for concept derivations, exam prep, and flashcards'**
   String get syllabotEmptySubtitle;
 
   /// Success message when deck created from Syllabot
