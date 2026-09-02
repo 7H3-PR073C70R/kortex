@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
@@ -17,15 +18,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, List<StudyRoomEntity>>> fetchStudyRooms({
     String? category,
-  }) async {
-    try {
-      final models = await _remoteDataSource.fetchStudyRooms(
-        category: category,
-      );
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .fetchStudyRooms(category: category)
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -39,30 +36,26 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String subject,
     required String category,
     required int pomodoroMinutes,
-  }) async {
-    try {
-      final model = await _remoteDataSource.createStudyRoom(
-        title: title,
-        subject: subject,
-        category: category,
-        pomodoroMinutes: pomodoroMinutes,
-      );
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .createStudyRoom(
+          title: title,
+          subject: subject,
+          category: category,
+          pomodoroMinutes: pomodoroMinutes,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
-  }) async {
-    try {
-      final models = await _remoteDataSource.fetchForumPosts(track: track);
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .fetchForumPosts(track: track)
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -71,18 +64,16 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String content,
     required String track,
     String? latexContent,
-  }) async {
-    try {
-      final model = await _remoteDataSource.createForumPost(
-        title: title,
-        content: content,
-        track: track,
-        latexContent: latexContent,
-      );
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .createForumPost(
+          title: title,
+          content: content,
+          track: track,
+          latexContent: latexContent,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
   }
 
   @override
@@ -90,31 +81,25 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String postId,
     required String content,
     String? latexContent,
-  }) async {
-    try {
-      final model = await _remoteDataSource.replyToForumPost(
-        postId: postId,
-        content: content,
-        latexContent: latexContent,
-      );
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .replyToForumPost(
+          postId: postId,
+          content: content,
+          latexContent: latexContent,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
     String? subject,
-  }) async {
-    try {
-      final models = await _remoteDataSource.fetchSharedDecks(
-        subject: subject,
-      );
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .fetchSharedDecks(subject: subject)
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -125,31 +110,28 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String category,
     required int totalCards,
     required List<Map<String, dynamic>> cardsJson,
-  }) async {
-    try {
-      final model = await _remoteDataSource.publishDeck(
-        title: title,
-        subject: subject,
-        description: description,
-        category: category,
-        totalCards: totalCards,
-        cardsJson: cardsJson,
-      );
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .publishDeck(
+          title: title,
+          subject: subject,
+          description: description,
+          category: category,
+          totalCards: totalCards,
+          cardsJson: cardsJson,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, DeckEntity>> cloneSharedDeck(
     String sharedDeckId,
-  ) async {
-    try {
-      final result = await _remoteDataSource.cloneSharedDeck(sharedDeckId);
+  ) {
+    return _remoteDataSource.cloneSharedDeck(sharedDeckId).then((result) {
       final newDeckId =
           result['new_deck_id'] as String? ?? 'cloned_$sharedDeckId';
-      final clonedDeck = DeckEntity(
+      return DeckEntity(
         id: newDeckId,
         title: 'Cloned Deck',
         subject: 'Community Resource',
@@ -159,10 +141,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
         category: 'Community',
         description: 'Cloned from Community Marketplace',
       );
-      return Right(clonedDeck);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 
   @override
@@ -175,13 +154,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,
-  }) async {
-    try {
-      final models = await _remoteDataSource.fetchLeaderboards(track: track);
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .fetchLeaderboards(track: track)
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -189,30 +166,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String courseCode,
     required String title,
     String? department,
-  }) async {
-    try {
-      final model = await _remoteDataSource.autoProvisionCommunity(
-        courseCode: courseCode,
-        title: title,
-        department: department,
-      );
-      return Right(model);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .autoProvisionCommunity(
+          courseCode: courseCode,
+          title: title,
+          department: department,
+        )
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
     String courseCode,
-  ) async {
-    try {
-      final model = await _remoteDataSource.fetchCourseCommunityStats(
-        courseCode,
-      );
-      return Right(model);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  ) {
+    return _remoteDataSource
+        .fetchCourseCommunityStats(courseCode)
+        .makeRequest();
   }
 }

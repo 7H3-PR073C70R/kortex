@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
@@ -84,8 +85,8 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     required String roomId,
     required int durationMinutes,
     required String subject,
-  }) async {
-    try {
+  }) {
+    return Future<void>.sync(() async {
       if (_communityClient != null) {
         await _communityClient.recordStudySession(
           {
@@ -96,9 +97,6 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
           },
         );
       }
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 }

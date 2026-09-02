@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
@@ -12,25 +13,21 @@ class DecksRepositoryImpl implements DecksRepository {
   final DecksRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Either<Failure, List<DeckEntity>>> getUserDecks() async {
-    try {
-      final models = await _remoteDataSource.getUserDecks();
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, List<DeckEntity>>> getUserDecks() {
+    return _remoteDataSource
+        .getUserDecks()
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, List<FlashcardEntity>>> getDeckCards(
     String deckId,
-  ) async {
-    try {
-      final models = await _remoteDataSource.getDeckCards(deckId);
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  ) {
+    return _remoteDataSource
+        .getDeckCards(deckId)
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -40,19 +37,16 @@ class DecksRepositoryImpl implements DecksRepository {
     required int previousInterval,
     required int previousRepetitions,
     required double previousEaseFactor,
-  }) async {
-    try {
-      final result = await _remoteDataSource.processCardReview(
-        cardId: cardId,
-        quality: quality,
-        previousInterval: previousInterval,
-        previousRepetitions: previousRepetitions,
-        previousEaseFactor: previousEaseFactor,
-      );
-      return Right(result);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .processCardReview(
+          cardId: cardId,
+          quality: quality,
+          previousInterval: previousInterval,
+          previousRepetitions: previousRepetitions,
+          previousEaseFactor: previousEaseFactor,
+        )
+        .makeRequest();
   }
 
   @override
@@ -61,17 +55,14 @@ class DecksRepositoryImpl implements DecksRepository {
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
-  }) async {
-    try {
-      await _remoteDataSource.saveSessionResults(
-        deckId: deckId,
-        cardsReviewed: cardsReviewed,
-        durationSeconds: durationSeconds,
-        retentionScore: retentionScore,
-      );
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .saveSessionResults(
+          deckId: deckId,
+          cardsReviewed: cardsReviewed,
+          durationSeconds: durationSeconds,
+          retentionScore: retentionScore,
+        )
+        .makeRequest();
   }
 }

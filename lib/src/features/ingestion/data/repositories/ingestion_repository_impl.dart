@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -20,8 +21,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String fileType,
     required Uint8List fileBytes,
     void Function(double progress)? onProgress,
-  }) async {
-    try {
+  }) {
+    return Future<DocumentUploadEntity>.sync(() async {
       // 1. Compute SHA-256 content hash for smart storage deduplication
       final hash = sha256.convert(fileBytes).toString();
 
@@ -35,7 +36,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
 
       if (existing != null) {
         if (onProgress != null) onProgress(1);
-        return Right(existing.toEntity());
+        return existing.toEntity();
       }
 
       // 3. Brand-new content: upload to storage and register metadata
@@ -47,10 +48,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
         onProgress: onProgress,
       );
 
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+      return model.toEntity();
+    }).makeRequest();
   }
 
   @override
@@ -58,28 +57,23 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String documentId,
     required String storagePath,
     required String fileType,
-  }) async {
-    try {
-      final models = await _remoteDataSource.processStemOcr(
-        documentId: documentId,
-        storagePath: storagePath,
-        fileType: fileType,
-      );
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .processStemOcr(
+          documentId: documentId,
+          storagePath: storagePath,
+          fileType: fileType,
+        )
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
-  Future<Either<Failure, List<DocumentUploadEntity>>>
-      fetchUserDocuments() async {
-    try {
-      final models = await _remoteDataSource.fetchUserDocuments();
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, List<DocumentUploadEntity>>> fetchUserDocuments() {
+    return _remoteDataSource
+        .fetchUserDocuments()
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -88,8 +82,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String deckTitle,
     required String subject,
     required List<OcrExtractionEntity> snippets,
-  }) async {
-    try {
+  }) {
+    return Future<DeckEntity>.sync(() {
       final cards = <FlashcardEntity>[];
 
       for (var i = 0; i < snippets.length; i++) {
@@ -112,7 +106,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
         0,
         documentId.length > 8 ? 8 : documentId.length,
       );
-      final deck = DeckEntity(
+      return DeckEntity(
         id: 'deck_$prefix',
         title: deckTitle,
         subject: subject,
@@ -123,10 +117,6 @@ class IngestionRepositoryImpl implements IngestionRepository {
         description: 'Auto-synthesized from document $documentId',
         cards: cards,
       );
-
-      return Right(deck);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 }

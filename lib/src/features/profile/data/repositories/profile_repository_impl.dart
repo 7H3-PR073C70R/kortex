@@ -1,5 +1,5 @@
-import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
@@ -15,125 +15,63 @@ class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Either<Failure, void>> updateDisplayName(String displayName) async {
-    try {
-      await _remoteDataSource.updateDisplayName(displayName);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> updateDisplayName(String displayName) {
+    return _remoteDataSource.updateDisplayName(displayName).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> updateAvatarUrl(String photoUrl) async {
-    try {
-      await _remoteDataSource.updateAvatarUrl(photoUrl);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> updateAvatarUrl(String photoUrl) {
+    return _remoteDataSource.updateAvatarUrl(photoUrl).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> updatePassword(String newPassword) async {
-    try {
-      await _remoteDataSource.updatePassword(newPassword);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> updatePassword(String newPassword) {
+    return _remoteDataSource.updatePassword(newPassword).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> sendPasswordResetEmail(String email) async {
-    try {
-      await _remoteDataSource.sendPasswordResetEmail(email);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email) {
+    return _remoteDataSource.sendPasswordResetEmail(email).makeRequest();
   }
 
   @override
-  Future<Either<Failure, MfaEnrollResultEntity>> enrollMfaTotp() async {
-    try {
-      final res = await _remoteDataSource.enrollMfaTotp();
-      return Right(res);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, MfaEnrollResultEntity>> enrollMfaTotp() {
+    return _remoteDataSource
+        .enrollMfaTotp()
+        .then((res) => res as MfaEnrollResultEntity)
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, void>> verifyMfaTotp({
     required String factorId,
     required String code,
-  }) async {
-    try {
-      await _remoteDataSource.verifyMfaTotp(factorId: factorId, code: code);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .verifyMfaTotp(factorId: factorId, code: code)
+        .makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> unenrollMfaTotp(String factorId) async {
-    try {
-      await _remoteDataSource.unenrollMfaTotp(factorId);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> unenrollMfaTotp(String factorId) {
+    return _remoteDataSource.unenrollMfaTotp(factorId).makeRequest();
   }
 
   @override
-  Future<Either<Failure, List<MfaFactorEntity>>> listMfaFactors() async {
-    try {
-      final list = await _remoteDataSource.listMfaFactors();
-      return Right(list);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, List<MfaFactorEntity>>> listMfaFactors() {
+    return _remoteDataSource
+        .listMfaFactors()
+        .then((list) => list.cast<MfaFactorEntity>())
+        .makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> signOutOtherSessions() async {
-    try {
-      await _remoteDataSource.signOutOtherSessions();
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> signOutOtherSessions() {
+    return _remoteDataSource.signOutOtherSessions().makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> deleteAccount() async {
-    try {
-      await _remoteDataSource.deleteAccount();
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> deleteAccount() {
+    return _remoteDataSource.deleteAccount().makeRequest();
   }
 }

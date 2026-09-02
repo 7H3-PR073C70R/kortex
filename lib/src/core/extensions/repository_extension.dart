@@ -25,30 +25,31 @@ extension RepositoryExtension<T> on Future<T> {
     } on DioException catch (e, s) {
       debugPrint(e.toString());
       debugPrint(s.toString());
-      debugPrintStack();
       return Left(
         ServerFailure(
-          message: e.errorMessage,
+          message: e.errorMessage ??
+              'Please check your internet connection and try again',
         ),
       );
     } on ServerException catch (e, s) {
       onFailure?.call();
       debugPrint(e.toString());
       debugPrint(s.toString());
-      debugPrintStack();
       return Left(
         ServerFailure(
-          message: e.errorMessage,
+          message: e.errorMessage ??
+              e.message ??
+              'Our servers are experiencing temporary hiccups. Please try again',
         ),
       );
     } on Object catch (e, s) {
       onFailure?.call();
       debugPrint(e.toString());
       debugPrint(s.toString());
-      debugPrintStack();
-      return const Left(
+      final msg = e is Exception ? e.errorMessage : null;
+      return Left(
         ServerFailure(
-          message: 'Something went wrong. Please try again',
+          message: msg ?? e.toString(),
         ),
       );
     }

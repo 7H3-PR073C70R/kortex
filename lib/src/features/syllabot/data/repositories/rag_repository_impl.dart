@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/syllabot/data/data_sources/rag_remote_data_source.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
@@ -15,18 +16,16 @@ class RagRepositoryImpl implements RagRepository {
     double matchThreshold = 0.70,
     int matchCount = 3,
     String? documentId,
-  }) async {
-    try {
-      final models = await _remoteDataSource.queryDocumentContext(
-        query: query,
-        matchThreshold: matchThreshold,
-        matchCount: matchCount,
-        documentId: documentId,
-      );
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .queryDocumentContext(
+          query: query,
+          matchThreshold: matchThreshold,
+          matchCount: matchCount,
+          documentId: documentId,
+        )
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
@@ -34,16 +33,13 @@ class RagRepositoryImpl implements RagRepository {
     required String documentId,
     required String rawText,
     Map<String, dynamic>? metadata,
-  }) async {
-    try {
-      final chunksCount = await _remoteDataSource.generateDocumentEmbeddings(
-        documentId: documentId,
-        rawText: rawText,
-        metadata: metadata,
-      );
-      return Right(chunksCount);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remoteDataSource
+        .generateDocumentEmbeddings(
+          documentId: documentId,
+          rawText: rawText,
+          metadata: metadata,
+        )
+        .makeRequest();
   }
 }

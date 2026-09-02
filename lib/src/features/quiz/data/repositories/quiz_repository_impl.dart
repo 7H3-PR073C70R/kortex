@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_question_model.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_result_model.dart';
@@ -14,31 +15,20 @@ class QuizRepositoryImpl implements QuizRepository {
     required String deckId,
     String? deckTitle,
     int questionCount = 10,
-  }) async {
-    try {
-      final sampleQuestions = _generateMockQuestions(
-        count: questionCount,
-      );
-
-      return Right(sampleQuestions);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return Future<List<QuizQuestionEntity>>.sync(() {
+      return _generateMockQuestions(count: questionCount);
+    }).makeRequest();
   }
 
   @override
   Future<Either<Failure, List<QuizQuestionEntity>>> generateQuizFromDocument({
     required String documentId,
     int questionCount = 10,
-  }) async {
-    try {
-      final sampleQuestions = _generateMockQuestions(
-        count: questionCount,
-      );
-      return Right(sampleQuestions);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return Future<List<QuizQuestionEntity>>.sync(() {
+      return _generateMockQuestions(count: questionCount);
+    }).makeRequest();
   }
 
   @override
@@ -46,8 +36,8 @@ class QuizRepositoryImpl implements QuizRepository {
     required String quizTitle,
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
-  }) async {
-    try {
+  }) {
+    return Future<QuizResultEntity>.sync(() {
       final total = questions.length;
       final correctCount = questions.where((q) => q.isCorrect).length;
 
@@ -67,7 +57,7 @@ class QuizRepositoryImpl implements QuizRepository {
         );
       }).toList();
 
-      final result = QuizResultModel(
+      return QuizResultModel(
         id: 'quiz-res-${DateTime.now().millisecondsSinceEpoch}',
         quizTitle: quizTitle,
         totalQuestions: total,
@@ -76,11 +66,7 @@ class QuizRepositoryImpl implements QuizRepository {
         weaknesses: weaknesses,
         completedAt: DateTime.now(),
       );
-
-      return Right(result);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 
   List<QuizQuestionModel> _generateMockQuestions({

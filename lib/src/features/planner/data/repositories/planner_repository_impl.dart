@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
@@ -16,12 +17,10 @@ class PlannerRepositoryImpl implements PlannerRepository {
   final List<ExamEventModel> _cachedExams = [];
 
   @override
-  Future<Either<Failure, List<ExamEventEntity>>> getActiveExams() async {
-    try {
-      return Right(_cachedExams);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, List<ExamEventEntity>>> getActiveExams() {
+    return Future<List<ExamEventEntity>>.value(
+      List<ExamEventEntity>.from(_cachedExams),
+    ).makeRequest();
   }
 
   @override
@@ -31,8 +30,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String subjectTrack,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
-  }) async {
-    try {
+  }) {
+    return Future<ExamEventEntity>.sync(() {
       final daysRemaining = targetDate.difference(DateTime.now()).inDays;
       final dailyTarget = _calculator.calculateDailyTarget(
         remainingCards: totalCardsCount,
@@ -53,19 +52,14 @@ class PlannerRepositoryImpl implements PlannerRepository {
       );
 
       _cachedExams.add(newExam);
-      return Right(newExam);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+      return newExam;
+    }).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> deleteExam(String examId) async {
-    try {
+  Future<Either<Failure, void>> deleteExam(String examId) {
+    return Future<void>.sync(() {
       _cachedExams.removeWhere((e) => e.id == examId);
-      return const Right(null);
-    } on Exception catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 }

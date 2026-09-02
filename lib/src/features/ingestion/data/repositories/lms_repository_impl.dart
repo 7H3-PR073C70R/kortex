@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/lms_import_data_source.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/lms_repository.dart';
@@ -12,31 +13,23 @@ class LmsRepositoryImpl implements LmsRepository {
   @override
   Future<Either<Failure, List<LmsCourse>>> fetchGoogleClassroomCourses({
     required String oauthToken,
-  }) async {
-    try {
-      final courses = await _dataSource.fetchGoogleClassroomCourses(
-        oauthToken: oauthToken,
-      );
-      return Right(courses);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _dataSource
+        .fetchGoogleClassroomCourses(oauthToken: oauthToken)
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, List<LmsCourse>>> fetchCanvasCourses({
     required String canvasDomain,
     required String apiToken,
-  }) async {
-    try {
-      final courses = await _dataSource.fetchCanvasCourses(
-        canvasDomain: canvasDomain,
-        apiToken: apiToken,
-      );
-      return Right(courses);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _dataSource
+        .fetchCanvasCourses(
+          canvasDomain: canvasDomain,
+          apiToken: apiToken,
+        )
+        .makeRequest();
   }
 
   @override
@@ -45,17 +38,14 @@ class LmsRepositoryImpl implements LmsRepository {
     required String courseId,
     required String authToken,
     String? canvasDomain,
-  }) async {
-    try {
-      final bundle = await _dataSource.importCourseData(
-        platform: platform,
-        courseId: courseId,
-        authToken: authToken,
-        canvasDomain: canvasDomain,
-      );
-      return Right(bundle);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _dataSource
+        .importCourseData(
+          platform: platform,
+          courseId: courseId,
+          authToken: authToken,
+          canvasDomain: canvasDomain,
+        )
+        .makeRequest();
   }
 }

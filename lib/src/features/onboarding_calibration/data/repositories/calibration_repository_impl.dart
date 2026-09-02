@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/models/calibration_profile_model.dart';
@@ -15,23 +16,17 @@ class CalibrationRepositoryImpl implements CalibrationRepository {
   @override
   Future<Either<Failure, void>> saveCalibrationProfile(
     CalibrationProfile profile,
-  ) async {
-    try {
-      final model = CalibrationProfileModel.fromEntity(profile);
-      await _localDataSource.saveCalibrationProfile(model);
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  ) {
+    return _localDataSource
+        .saveCalibrationProfile(CalibrationProfileModel.fromEntity(profile))
+        .makeRequest();
   }
 
   @override
-  Future<Either<Failure, CalibrationProfile?>> getCalibrationProfile() async {
-    try {
-      final model = await _localDataSource.getCalibrationProfile();
-      return Right(model?.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, CalibrationProfile?>> getCalibrationProfile() {
+    return _localDataSource
+        .getCalibrationProfile()
+        .then((model) => model?.toEntity())
+        .makeRequest();
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
@@ -21,16 +22,13 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
   Future<Either<Failure, List<RecognizedTextBlock>>> processLiveCameraFrame({
     required Uint8List frameBytes,
     String? imagePath,
-  }) async {
-    try {
-      final blocks = await _local.processFrame(
-        frameBytes,
-        imagePath: imagePath,
-      );
-      return Right(blocks);
-    } on Object catch (e) {
-      return Left(CacheFailure(message: e.toString()));
-    }
+  }) {
+    return _local
+        .processFrame(
+          frameBytes,
+          imagePath: imagePath,
+        )
+        .makeRequest();
   }
 
   @override
@@ -39,8 +37,8 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
     required String documentId,
     String? imagePath,
     bool isOnline = true,
-  }) async {
-    try {
+  }) {
+    return Future<List<OcrExtractionEntity>>.sync(() async {
       // 1. Instant on-device ML Kit OCR extraction
       final localEntities = await _local.extractFromImage(
         imageBytes,
@@ -67,32 +65,28 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
           );
           await _local.markSyncComplete(documentId);
           if (cloudModels.isNotEmpty) {
-            return Right(cloudModels.map((m) => m.toEntity()).toList());
+            return cloudModels.map((m) => m.toEntity()).toList();
           }
         } on Object catch (_) {
           // If remote fails, seamlessly return local extraction
         }
       }
 
-      return Right(localEntities);
-    } on Object catch (e) {
-      return Left(CacheFailure(message: e.toString()));
-    }
+      return localEntities;
+    }).makeRequest();
   }
 
   @override
-  Future<Either<Failure, int>> getPendingSyncCount() async {
-    try {
-      final items = await _local.getPendingSyncItems();
-      return Right(items.length);
-    } on Object catch (e) {
-      return Left(CacheFailure(message: e.toString()));
-    }
+  Future<Either<Failure, int>> getPendingSyncCount() {
+    return _local
+        .getPendingSyncItems()
+        .then((items) => items.length)
+        .makeRequest();
   }
 
   @override
-  Future<Either<Failure, int>> synchronizePendingQueue() async {
-    try {
+  Future<Either<Failure, int>> synchronizePendingQueue() {
+    return Future<int>.sync(() async {
       final items = await _local.getPendingSyncItems();
       var syncedCount = 0;
 
@@ -114,9 +108,7 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
         }
       }
 
-      return Right(syncedCount);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+      return syncedCount;
+    }).makeRequest();
   }
 }

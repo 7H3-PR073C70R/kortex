@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -65,72 +66,57 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
   }
 
   @override
-  Future<Either<Failure, List<ConversationSessionEntity>>>
-      getChatSessions() async {
-    try {
-      final models = await _remote.getChatSessions();
-      return Right(models.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, List<ConversationSessionEntity>>> getChatSessions() {
+    return _remote
+        .getChatSessions()
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, ConversationSessionEntity>> createChatSession({
     required String title,
     required SocraticMode socraticMode,
-  }) async {
-    try {
-      final model = await _remote.createChatSession(
-        title: title,
-        socraticMode: socraticMode,
-      );
-      return Right(model.toEntity());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remote
+        .createChatSession(
+          title: title,
+          socraticMode: socraticMode,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
   }
 
   @override
   Future<Either<Failure, List<ChatMessageEntity>>> getSessionMessages({
     required String sessionId,
-  }) async {
-    try {
+  }) {
+    return Future<List<ChatMessageEntity>>.sync(() async {
       final remote = await _remote.getSessionMessages(sessionId: sessionId);
       if (remote.isNotEmpty) {
-        return Right(remote.map((m) => m.toEntity()).toList());
+        return remote.map((m) => m.toEntity()).toList();
       }
       // Fall back to local cache
       final cached = await _local.getCachedMessages(sessionId: sessionId);
-      return Right(cached.map((m) => m.toEntity()).toList());
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+      return cached.map((m) => m.toEntity()).toList();
+    }).makeRequest();
   }
 
   @override
   Future<Either<Failure, void>> deleteChatSession({
     required String sessionId,
-  }) async {
-    try {
-      await _remote.deleteSession(sessionId: sessionId);
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  }) {
+    return _remote.deleteSession(sessionId: sessionId).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> clearAllChatSessions() async {
-    try {
+  Future<Either<Failure, void>> clearAllChatSessions() {
+    return Future<void>.sync(() async {
       final sessions = await _remote.getChatSessions();
       await Future.wait(
         sessions.map((s) => _remote.deleteSession(sessionId: s.id)),
       );
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 
   @override
@@ -139,8 +125,8 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     required String deckTitle,
     required String courseCode,
     List<ChatMessageEntity> messages = const [],
-  }) async {
-    try {
+  }) {
+    return Future<DeckEntity>.sync(() {
       // Extract key formulas and concept lines from Syllabot responses
       final syllabotMessages = messages
           .where((m) => m.sender == MessageSender.syllabot)
@@ -172,7 +158,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
 
       final prefix =
           sessionId.substring(0, sessionId.length > 8 ? 8 : sessionId.length);
-      final deck = DeckEntity(
+      return DeckEntity(
         id: 'gen_$prefix',
         title: deckTitle,
         subject: courseCode,
@@ -183,20 +169,11 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         description: 'Auto-generated from Syllabot conversation',
         cards: cards,
       );
-
-      return Right(deck);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 
   @override
-  Future<Either<Failure, void>> purgeExpiredAiCache() async {
-    try {
-      await _local.clearExpiredCache();
-      return const Right(null);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+  Future<Either<Failure, void>> purgeExpiredAiCache() {
+    return _local.clearExpiredCache().makeRequest();
   }
 }

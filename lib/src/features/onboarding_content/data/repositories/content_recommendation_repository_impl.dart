@@ -1,4 +1,5 @@
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_content/data/data_sources/content_recommendation_data_source.dart';
@@ -18,15 +19,12 @@ class ContentRecommendationRepositoryImpl
     required CalibrationProfile profile,
     required String Function(String key, Map<String, dynamic> params)
         localizeHandler,
-  }) async {
-    try {
-      final items = _dataSource.generateRecommendations(
+  }) {
+    return Future<List<RecommendedContentItem>>.sync(() {
+      return _dataSource.generateRecommendations(
         profile: profile,
         localizeHandler: localizeHandler,
       );
-      return Right(items);
-    } on Object catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    }).makeRequest();
   }
 }
