@@ -7,6 +7,7 @@ class OcrExtractionEntity extends Equatable {
     required this.documentId,
     required this.rawText,
     this.latexContent,
+    this.imageUrl,
     this.topic = 'General',
     this.confidenceScore = 0.95,
   });
@@ -15,6 +16,7 @@ class OcrExtractionEntity extends Equatable {
   final String documentId;
   final String rawText;
   final String? latexContent;
+  final String? imageUrl;
   final String topic;
   final double confidenceScore;
 
@@ -23,6 +25,7 @@ class OcrExtractionEntity extends Equatable {
     String? documentId,
     String? rawText,
     String? latexContent,
+    String? imageUrl,
     String? topic,
     double? confidenceScore,
   }) {
@@ -31,6 +34,7 @@ class OcrExtractionEntity extends Equatable {
       documentId: documentId ?? this.documentId,
       rawText: rawText ?? this.rawText,
       latexContent: latexContent ?? this.latexContent,
+      imageUrl: imageUrl ?? this.imageUrl,
       topic: topic ?? this.topic,
       confidenceScore: confidenceScore ?? this.confidenceScore,
     );
@@ -42,6 +46,7 @@ class OcrExtractionEntity extends Equatable {
         documentId,
         rawText,
         latexContent,
+        imageUrl,
         topic,
         confidenceScore,
       ];

@@ -97,6 +97,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     emit(
       state.copyWith(
         status: ProcessingStatus.parsingOcr,
+        stageMessage: 'Extracting text locally...',
       ),
     );
 
@@ -119,6 +120,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         emit(
           state.copyWith(
             status: ProcessingStatus.completed,
+            stageMessage: 'Extracted ${snippets.length} study cards locally',
             snippets: snippets,
           ),
         );
@@ -148,7 +150,19 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     GenerateFlashcardsFromSnippetsEvent event,
     Emitter<IngestionState> emit,
   ) async {
-    emit(state.copyWith(status: ProcessingStatus.generatingCards));
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.generatingCards,
+        stageMessage: 'Generating study cards...',
+      ),
+    );
+
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.syncingDb,
+        stageMessage: 'Syncing to Supabase...',
+      ),
+    );
 
     final deckResult = await _generateDeck(
       documentId: event.documentId,
@@ -170,6 +184,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         emit(
           state.copyWith(
             status: ProcessingStatus.completed,
+            stageMessage: 'Deck & flashcards synced to Supabase',
             generatedDeck: deck,
           ),
         );

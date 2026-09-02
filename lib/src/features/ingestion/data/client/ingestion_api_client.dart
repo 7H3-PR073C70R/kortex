@@ -42,10 +42,11 @@ extension IngestionStorageUpload on Dio {
     required String storagePath,
     required Uint8List fileBytes,
     required String contentType,
+    String bucket = AppApiEndpoint.storageBucket,
     void Function(int sent, int total)? onProgress,
   }) async {
     await post<dynamic>(
-      '${AppApiEndpoint.baseUri}${AppApiEndpoint.storageBucket}/$storagePath',
+      '${AppApiEndpoint.baseUri}$bucket/$storagePath',
       data: fileBytes,
       options: Options(
         headers: {

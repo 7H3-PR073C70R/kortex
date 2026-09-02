@@ -88,6 +88,7 @@ class _GeneratedCardsReviewView extends HookWidget {
           documentId: documentId,
           rawText: c.back,
           latexContent: c.backLatex,
+          imageUrl: c.imageUrl,
           topic: c.front,
         );
       }).toList();

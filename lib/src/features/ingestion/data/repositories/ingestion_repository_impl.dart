@@ -109,6 +109,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
                 : 'Formula / Concept ${i + 1}',
             back: snippet.rawText,
             backLatex: snippet.latexContent,
+            imageUrl: snippet.imageUrl,
+            sourceTopic: snippet.topic,
             nextDueDate: DateTime.now().add(const Duration(days: 1)),
           ),
         );

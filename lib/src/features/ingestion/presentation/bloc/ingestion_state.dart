@@ -13,6 +13,7 @@ class IngestionState extends Equatable {
     this.userDocuments = const [],
     this.generatedDeck,
     this.errorMessage,
+    this.stageMessage,
     this.wasDeduplicated = false,
   });
 
@@ -23,11 +24,13 @@ class IngestionState extends Equatable {
   final List<DocumentUploadEntity> userDocuments;
   final DeckEntity? generatedDeck;
   final String? errorMessage;
+  final String? stageMessage;
   final bool wasDeduplicated;
 
   bool get isUploading => status == ProcessingStatus.uploading;
   bool get isParsingOcr => status == ProcessingStatus.parsingOcr;
   bool get isGeneratingCards => status == ProcessingStatus.generatingCards;
+  bool get isSyncingDb => status == ProcessingStatus.syncingDb;
   bool get isCompleted => status == ProcessingStatus.completed;
   bool get hasFailed => status == ProcessingStatus.failed;
 
@@ -39,6 +42,7 @@ class IngestionState extends Equatable {
     List<DocumentUploadEntity>? userDocuments,
     DeckEntity? generatedDeck,
     String? errorMessage,
+    String? stageMessage,
     bool? wasDeduplicated,
   }) {
     return IngestionState(
@@ -49,6 +53,7 @@ class IngestionState extends Equatable {
       userDocuments: userDocuments ?? this.userDocuments,
       generatedDeck: generatedDeck ?? this.generatedDeck,
       errorMessage: errorMessage ?? this.errorMessage,
+      stageMessage: stageMessage ?? this.stageMessage,
       wasDeduplicated: wasDeduplicated ?? this.wasDeduplicated,
     );
   }
@@ -62,6 +67,7 @@ class IngestionState extends Equatable {
         userDocuments,
         generatedDeck,
         errorMessage,
+        stageMessage,
         wasDeduplicated,
       ];
 }

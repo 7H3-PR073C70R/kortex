@@ -16,6 +16,7 @@ class GeneratedCardPreviewItem {
     required this.back,
     this.frontLatex,
     this.backLatex,
+    this.imageUrl,
     this.topic = 'General',
   });
 
@@ -23,6 +24,7 @@ class GeneratedCardPreviewItem {
   final String back;
   final String? frontLatex;
   final String? backLatex;
+  final String? imageUrl;
   final String topic;
 
   GeneratedCardPreviewItem copyWith({
@@ -30,6 +32,7 @@ class GeneratedCardPreviewItem {
     String? back,
     String? frontLatex,
     String? backLatex,
+    String? imageUrl,
     String? topic,
   }) {
     return GeneratedCardPreviewItem(
@@ -37,6 +40,7 @@ class GeneratedCardPreviewItem {
       back: back ?? this.back,
       frontLatex: frontLatex ?? this.frontLatex,
       backLatex: backLatex ?? this.backLatex,
+      imageUrl: imageUrl ?? this.imageUrl,
       topic: topic ?? this.topic,
     );
   }

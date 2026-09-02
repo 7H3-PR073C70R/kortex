@@ -40,6 +40,7 @@ class OcrPreviewPage extends HookWidget {
           front: s.topic.isNotEmpty ? s.topic : 'Core Concept',
           back: s.rawText,
           backLatex: s.latexContent,
+          imageUrl: s.imageUrl,
           topic: s.topic,
         );
       }).toList();

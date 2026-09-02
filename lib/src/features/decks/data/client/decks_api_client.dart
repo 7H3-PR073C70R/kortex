@@ -13,6 +13,18 @@ abstract class DecksApiClient {
   @GET(AppApiEndpoint.decks)
   Future<List<DeckModel>> getUserDecks();
 
+  @POST('/rest/v1/decks')
+  Future<HttpResponse<dynamic>> createDeckRecord(
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
+
+  @POST('/rest/v1/flashcards')
+  Future<HttpResponse<dynamic>> bulkInsertCards(
+    @Body() dynamic body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
+
   @GET(AppApiEndpoint.deckCards)
   Future<List<FlashcardModel>> getDeckCards(@Path('id') String deckId);
 

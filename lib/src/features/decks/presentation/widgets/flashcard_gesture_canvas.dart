@@ -348,7 +348,7 @@ class _CardFace extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Center Content (Text + LaTeX Formula)
+                // Center Content (Text + Image + LaTeX Formula)
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
@@ -356,6 +356,7 @@ class _CardFace extends StatelessWidget {
                       child: LatexCardContentViewer(
                         text: mainText,
                         latexFormula: latexFormula,
+                        imageUrl: card.imageUrl,
                         isBackFace: isBackFace,
                       ),
                     ),

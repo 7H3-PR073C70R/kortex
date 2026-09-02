@@ -8,6 +8,7 @@ class FlashcardEntity extends Equatable {
     required this.back,
     this.frontLatex,
     this.backLatex,
+    this.imageUrl,
     this.interval = 1,
     this.repetitions = 0,
     this.easeFactor = 2.5,
@@ -22,6 +23,7 @@ class FlashcardEntity extends Equatable {
   final String back;
   final String? frontLatex;
   final String? backLatex;
+  final String? imageUrl;
   final int interval;
   final int repetitions;
   final double easeFactor;
@@ -45,6 +47,7 @@ class FlashcardEntity extends Equatable {
     String? back,
     String? frontLatex,
     String? backLatex,
+    String? imageUrl,
     int? interval,
     int? repetitions,
     double? easeFactor,
@@ -59,6 +62,7 @@ class FlashcardEntity extends Equatable {
       back: back ?? this.back,
       frontLatex: frontLatex ?? this.frontLatex,
       backLatex: backLatex ?? this.backLatex,
+      imageUrl: imageUrl ?? this.imageUrl,
       interval: interval ?? this.interval,
       repetitions: repetitions ?? this.repetitions,
       easeFactor: easeFactor ?? this.easeFactor,
@@ -76,6 +80,7 @@ class FlashcardEntity extends Equatable {
         back,
         frontLatex,
         backLatex,
+        imageUrl,
         interval,
         repetitions,
         easeFactor,

@@ -30,6 +30,7 @@ void _initDataSource() {
     ..registerLazySingleton<DecksRemoteDataSource>(
       () => DecksRemoteDataSourceImpl(
         locator<DecksApiClient>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(

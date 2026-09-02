@@ -59,11 +59,15 @@ class AppApiEndpoint {
 
   // Document Ingestion & STEM OCR Endpoints
   static const String storageBucket = '/storage/v1/object/study-documents';
+  static const String cardAssetsBucket = '/storage/v1/object/card-assets';
   static const String documents = '/rest/v1/documents';
   static const String extractedSnippets = '/rest/v1/extracted_snippets';
   static const String parseStemOcr = '/functions/v1/parse-stem-ocr';
   static const String findOrCreateDocumentReference =
       '/rest/v1/rpc/find_or_create_document_reference';
+
+  static String getCardAssetPublicUrl(String path) =>
+      '$baseUri/storage/v1/object/public/card-assets/$path';
 
   // Community & Peer Study Hub Endpoints
   static const String studyRooms = '/rest/v1/study_rooms';

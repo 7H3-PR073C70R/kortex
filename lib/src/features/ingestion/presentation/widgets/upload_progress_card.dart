@@ -10,6 +10,7 @@ class UploadProgressCard extends HookWidget {
     required this.filename,
     required this.status,
     required this.progress,
+    this.stageMessage,
     this.wasDeduplicated = false,
     this.errorMessage,
     this.onRetry,
@@ -19,6 +20,7 @@ class UploadProgressCard extends HookWidget {
   final String filename;
   final ProcessingStatus status;
   final double progress;
+  final String? stageMessage;
   final bool wasDeduplicated;
   final String? errorMessage;
   final VoidCallback? onRetry;
@@ -36,6 +38,8 @@ class UploadProgressCard extends HookWidget {
     String statusText;
     if (isFailed) {
       statusText = errorMessage ?? 'Processing failed';
+    } else if (stageMessage != null && stageMessage!.isNotEmpty) {
+      statusText = stageMessage!;
     } else if (wasDeduplicated) {
       statusText = l10n.contentAlreadyUploadedNotice;
     } else {
@@ -43,9 +47,11 @@ class UploadProgressCard extends HookWidget {
         case ProcessingStatus.uploading:
           statusText = l10n.uploadingStatus;
         case ProcessingStatus.parsingOcr:
-          statusText = l10n.processingOcrStatus;
+          statusText = 'Extracting text locally...';
         case ProcessingStatus.generatingCards:
-          statusText = l10n.generatingCardsStatus;
+          statusText = 'Generating study cards...';
+        case ProcessingStatus.syncingDb:
+          statusText = 'Syncing to Supabase...';
         case ProcessingStatus.completed:
           statusText = 'Document extraction ready';
         case ProcessingStatus.idle:

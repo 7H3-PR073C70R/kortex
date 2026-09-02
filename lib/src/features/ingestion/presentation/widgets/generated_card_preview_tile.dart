@@ -200,6 +200,50 @@ class GeneratedCardPreviewTile extends HookWidget {
                               color: colors.textPrimary,
                             ),
                           ),
+                          if (card.imageUrl != null &&
+                              card.imageUrl!.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                constraints:
+                                    const BoxConstraints(maxHeight: 120),
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceSecondary,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(50),
+                                  ),
+                                ),
+                                child: Image.network(
+                                  card.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.insert_photo_outlined,
+                                          size: 16,
+                                          color: colors.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Attached Diagram',
+                                          style: typography.caption.medium
+                                              .copyWith(
+                                            color: colors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       )),
           ),

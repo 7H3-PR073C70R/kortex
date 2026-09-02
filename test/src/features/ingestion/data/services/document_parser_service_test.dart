@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
@@ -110,6 +111,64 @@ Enter on M1 candle close outside rectangle.
       expect(snippets.length, 10);
       expect(snippets.first.topic, '1.1 The Rectangle Defined');
       expect(snippets.last.topic, 'Pre-Trade Confirmation Checklist');
+    });
+
+    test('extracts embedded JPEG and PNG images from binary PDF stream', () {
+      // Create mock PDF bytes with embedded JPEG SOI and EOI
+      final mockPdfWithImage = <int>[
+        ...utf8.encode('%PDF-1.4\n1 0 obj\n<< /Type /XObject /Subtype /Image >>\nstream\n'),
+        0xFF, 0xD8, 0xFF, 0xE0, // JPEG SOI + APP0
+        ...List.filled(100, 0x42), // Image payload
+        0xFF, 0xD9, // JPEG EOI
+        ...utf8.encode('\nendstream\nendobj\n%%EOF'),
+      ];
+
+      final extractedImages = service.extractImagesFromPdfBytes(
+        Uint8List.fromList(mockPdfWithImage),
+      );
+
+      expect(extractedImages.isNotEmpty, isTrue);
+      expect(extractedImages.first.extension, 'jpg');
+      expect(extractedImages.first.bytes.length, greaterThan(100));
+    });
+
+    test('associates visual diagram URLs with generated flashcards', () {
+      final snippets = service.synthesizeSnippetsFromDocument(
+        documentId: 'doc_visual',
+        fullText: '',
+        filename: 'trading_strategy.pdf',
+        imageUrls: [
+          'https://api.kortex.app/storage/v1/object/public/card-assets/ema_chart.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/wick_rejection.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/m1_flip.jpg',
+        ],
+      );
+
+      final visualCards = snippets.where((s) => s.imageUrl != null).toList();
+      expect(visualCards.length, greaterThanOrEqualTo(3));
+      expect(visualCards.first.imageUrl, contains('ema_chart.jpg'));
+    });
+
+    test('deterministically parses Term: Definition and Q&A pairs', () {
+      const notes = '''
+Mitosis: The process where a single cell divides into two identical daughter cells.
+Meiosis: A type of cell division that reduces the number of chromosomes in the parent cell by half.
+Q: What is the primary function of ATP in cells? A: It acts as the universal energy currency for cellular reactions.
+''';
+
+      final snippets = service.synthesizeSnippetsFromDocument(
+        documentId: 'doc_bio_101',
+        fullText: notes,
+        filename: 'biology_notes.txt',
+      );
+
+      expect(snippets.length, 3);
+      expect(snippets[0].topic, 'Mitosis');
+      expect(snippets[0].rawText, contains('daughter cells'));
+      expect(snippets[1].topic, 'Meiosis');
+      expect(snippets[1].rawText, contains('reduces the number'));
+      expect(snippets[2].topic, contains('primary function of ATP'));
+      expect(snippets[2].rawText, contains('energy currency'));
     });
   });
 }

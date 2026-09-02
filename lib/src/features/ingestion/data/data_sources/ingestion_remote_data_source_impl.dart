@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
@@ -192,7 +193,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       if (snippets.isNotEmpty) return snippets;
     } on Object catch (_) {}
 
-    // 3. Document Parsing Engine: Extract from actual uploaded document
+    // 3. Document Parsing Engine: Extract text & images from uploaded document
     final fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
 
@@ -202,10 +203,36 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         fileType: fileType,
         filename: filename,
       );
+
+      final extractedImages =
+          _parserService.extractImagesFromPdfBytes(fileBytes);
+      final uploadedImageUrls = <String>[];
+
+      // Upload extracted diagrams to Supabase Storage `card-assets` bucket
+      for (var i = 0; i < extractedImages.length; i++) {
+        final img = extractedImages[i];
+        final assetPath = '${documentId}_img_${i + 1}.${img.extension}';
+        final contentType =
+            img.extension == 'png' ? 'image/png' : 'image/jpeg';
+
+        try {
+          await _dio.uploadStorageFile(
+            storagePath: assetPath,
+            fileBytes: img.bytes,
+            contentType: contentType,
+            bucket: AppApiEndpoint.cardAssetsBucket,
+          );
+        } on Object catch (_) {}
+
+        final publicUrl = AppApiEndpoint.getCardAssetPublicUrl(assetPath);
+        uploadedImageUrls.add(publicUrl);
+      }
+
       final snippets = _parserService.synthesizeSnippetsFromDocument(
         documentId: documentId,
         fullText: text,
         filename: filename,
+        imageUrls: uploadedImageUrls,
       );
       return snippets;
     }

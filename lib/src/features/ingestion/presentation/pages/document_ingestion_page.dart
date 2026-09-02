@@ -137,6 +137,7 @@ class _DocumentIngestionView extends HookWidget {
                             'Selected Document',
                         status: state.status,
                         progress: state.uploadProgress,
+                        stageMessage: state.stageMessage,
                         wasDeduplicated: state.wasDeduplicated,
                         errorMessage: state.errorMessage,
                         onRetry: () {

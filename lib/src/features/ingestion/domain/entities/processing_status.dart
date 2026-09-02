@@ -4,6 +4,7 @@ enum ProcessingStatus {
   uploading,
   parsingOcr,
   generatingCards,
+  syncingDb,
   completed,
   failed,
 }
@@ -19,6 +20,8 @@ extension ProcessingStatusX on ProcessingStatus {
         return 'parsingOcr';
       case ProcessingStatus.generatingCards:
         return 'generatingCards';
+      case ProcessingStatus.syncingDb:
+        return 'syncingDb';
       case ProcessingStatus.completed:
         return 'completed';
       case ProcessingStatus.failed:
@@ -35,6 +38,8 @@ extension ProcessingStatusX on ProcessingStatus {
         return ProcessingStatus.parsingOcr;
       case 'generatingCards':
         return ProcessingStatus.generatingCards;
+      case 'syncingDb':
+        return ProcessingStatus.syncingDb;
       case 'completed':
         return ProcessingStatus.completed;
       case 'failed':

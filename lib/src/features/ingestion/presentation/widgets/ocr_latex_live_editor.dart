@@ -193,6 +193,54 @@ class OcrLatexLiveEditor extends HookWidget {
               ),
             ),
           ],
+
+          // Extracted Diagram Image Attachment Preview
+          if (snippet.imageUrl != null && snippet.imageUrl!.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Extracted Diagram / Visual Asset',
+              style: typography.caption.medium.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 160),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 60 : 30),
+                  ),
+                ),
+                child: Image.network(
+                  snippet.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.insert_photo_outlined,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Visual Diagram Linked to Snippet',
+                          style: typography.footnote.regular
+                              .copyWith(color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

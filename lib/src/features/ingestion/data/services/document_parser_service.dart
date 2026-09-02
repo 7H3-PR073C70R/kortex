@@ -193,12 +193,90 @@ class DocumentParserService {
     return alphaCount / s.length > 0.4;
   }
 
+  /// Extracts embedded image streams (JPEG / PNG / illustrations) from PDF bytes.
+  List<ExtractedImageAttachment> extractImagesFromPdfBytes(Uint8List bytes) {
+    final images = <ExtractedImageAttachment>[];
+
+    // 1. Scan for raw embedded JPEG streams: SOI 0xFF, 0xD8 ... EOI 0xFF, 0xD9
+    var i = 0;
+    var imgIdx = 1;
+    while (i < bytes.length - 4) {
+      if (bytes[i] == 0xFF && bytes[i + 1] == 0xD8 && bytes[i + 2] == 0xFF) {
+        final start = i;
+        var end = start + 3;
+        while (end < bytes.length - 1) {
+          if (bytes[end] == 0xFF && bytes[end + 1] == 0xD9) {
+            end += 2;
+            break;
+          }
+          end++;
+        }
+
+        if (end > start + 64 && end <= bytes.length) {
+          final imgBytes = bytes.sublist(start, end);
+          images.add(
+            ExtractedImageAttachment(
+              bytes: imgBytes,
+              extension: 'jpg',
+              label: 'Diagram / Illustration $imgIdx',
+            ),
+          );
+          imgIdx++;
+          i = end;
+          continue;
+        }
+      }
+      i++;
+    }
+
+    // 2. Scan for embedded PNG streams:
+    // 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+    var p = 0;
+    while (p < bytes.length - 8) {
+      if (bytes[p] == 0x89 &&
+          bytes[p + 1] == 0x50 &&
+          bytes[p + 2] == 0x4E &&
+          bytes[p + 3] == 0x47) {
+        final start = p;
+        var end = start + 8;
+        while (end < bytes.length - 8) {
+          if (bytes[end] == 73 &&
+              bytes[end + 1] == 69 &&
+              bytes[end + 2] == 78 &&
+              bytes[end + 3] == 68) {
+            end += 8;
+            break;
+          }
+          end++;
+        }
+
+        if (end > start + 32 && end <= bytes.length) {
+          final imgBytes = bytes.sublist(start, end);
+          images.add(
+            ExtractedImageAttachment(
+              bytes: imgBytes,
+              extension: 'png',
+              label: 'Diagram / Chart $imgIdx',
+            ),
+          );
+          imgIdx++;
+          p = end;
+          continue;
+        }
+      }
+      p++;
+    }
+
+    return images;
+  }
+
   /// Synthesizes comprehensive, high-yield flashcard snippets from
-  /// the extracted document text.
+  /// the extracted document text and visual diagram assets.
   List<OcrExtractionModel> synthesizeSnippetsFromDocument({
     required String documentId,
     required String fullText,
     required String filename,
+    List<String> imageUrls = const [],
   }) {
     final lines = fullText
         .split('\n')
@@ -207,7 +285,11 @@ class DocumentParserService {
         .toList();
 
     if (lines.isEmpty) {
-      return _generateDefaultDocumentSnippets(documentId, filename);
+      return _generateDefaultDocumentSnippets(
+        documentId,
+        filename,
+        imageUrls: imageUrls,
+      );
     }
 
     final snippets = <OcrExtractionModel>[];
@@ -221,6 +303,11 @@ class DocumentParserService {
       // Extract LaTeX if formula / mathematical / trading logic is detected
       final latex = _extractOrGenerateFormula(title, body);
 
+      // Associate image URL with relevant visual sections if available
+      final attachedImage = (imageUrls.isNotEmpty && i < imageUrls.length)
+          ? imageUrls[i]
+          : null;
+
       snippets.add(
         OcrExtractionModel(
           id: 'ocr_${documentId}_${i + 1}',
@@ -228,6 +315,7 @@ class DocumentParserService {
           topic: title,
           rawText: body,
           latexContent: latex,
+          imageUrl: attachedImage,
           confidenceScore: 0.96,
         ),
       );
@@ -235,7 +323,11 @@ class DocumentParserService {
 
     return snippets.isNotEmpty
         ? snippets
-        : _generateDefaultDocumentSnippets(documentId, filename);
+        : _generateDefaultDocumentSnippets(
+            documentId,
+            filename,
+            imageUrls: imageUrls,
+          );
   }
 
   List<_DocumentSection> _chunkIntoSections(List<String> lines) {
@@ -244,18 +336,76 @@ class DocumentParserService {
     final currentLines = <String>[];
 
     final headerRegex = RegExp(
-      r'^(Part \d+:|Step \d+:|\d+\.\d+|\b[A-Z][a-zA-Z\s]{3,35}:|Simple Checklist|Summary|Key Concept|Formula|Rule)',
+      r'^(Part \d+:?|Step \d+:?|\d+\.\d+|\b[A-Z\s]{3,35}$|Simple Checklist|Summary|Key Concept|Formula|Rule)',
       caseSensitive: false,
     );
 
-    for (final line in lines) {
-      // Ignore page number lines
+    final termDefRegex = RegExp(
+      r'^([A-Z0-9][a-zA-Z0-9\s\-_/]{1,45})\s*[:=–—]\s*(.+)$',
+    );
+
+    final qaRegex = RegExp(
+      r'^(Q(?:uestion)?\s*:\s*.+?)\s*(?:A(?:nswer)?\s*:\s*(.+))$',
+      caseSensitive: false,
+    );
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      // Ignore page numbers and footer URLs
       if (RegExp(r'^\d+$').hasMatch(line) ||
           line.toLowerCase().contains('edgeskool.net') ||
           line.toLowerCase().contains('page ')) {
         continue;
       }
 
+      // 1. Check for Question & Answer pattern: Q: ... A: ...
+      final qaMatch = qaRegex.firstMatch(line);
+      if (qaMatch != null) {
+        if (currentTitle != null && currentLines.isNotEmpty) {
+          sections.add(
+            _DocumentSection(
+              title: currentTitle,
+              content: currentLines.join('\n'),
+            ),
+          );
+          currentLines.clear();
+          currentTitle = null;
+        }
+        sections.add(
+          _DocumentSection(
+            title: qaMatch.group(1)!.trim(),
+            content: qaMatch.group(2)!.trim(),
+          ),
+        );
+        continue;
+      }
+
+      // 2. Check for Single-Line Term: Definition pattern
+      final termDefMatch = termDefRegex.firstMatch(line);
+      if (termDefMatch != null &&
+          termDefMatch.group(2)!.trim().length > 10 &&
+          !line.startsWith('http')) {
+        if (currentTitle != null && currentLines.isNotEmpty) {
+          sections.add(
+            _DocumentSection(
+              title: currentTitle,
+              content: currentLines.join('\n'),
+            ),
+          );
+          currentLines.clear();
+          currentTitle = null;
+        }
+        sections.add(
+          _DocumentSection(
+            title: termDefMatch.group(1)!.trim(),
+            content: termDefMatch.group(2)!.trim(),
+          ),
+        );
+        continue;
+      }
+
+      // 3. Section Headers & Structural Markers
       if (headerRegex.hasMatch(line) ||
           (line.length < 50 &&
               line.endsWith(':') &&
@@ -284,7 +434,7 @@ class DocumentParserService {
         ),
       );
     } else if (currentLines.isNotEmpty) {
-      // Split into logical blocks of 3-5 lines
+      // Deterministic fallback: chunk into sentence blocks
       var blockIdx = 1;
       for (var i = 0; i < currentLines.length; i += 4) {
         final chunk = currentLines.sublist(
@@ -342,8 +492,13 @@ class DocumentParserService {
 
   List<OcrExtractionModel> _generateDefaultDocumentSnippets(
     String documentId,
-    String filename,
-  ) {
+    String filename, {
+    List<String> imageUrls = const [],
+  }) {
+    final img1 = imageUrls.isNotEmpty ? imageUrls[0] : null;
+    final img2 = imageUrls.length > 1 ? imageUrls[1] : null;
+    final img3 = imageUrls.length > 2 ? imageUrls[2] : null;
+
     return [
       OcrExtractionModel(
         id: 'ocr_${documentId}_1',
@@ -375,6 +530,7 @@ class DocumentParserService {
         latexContent:
             r'\text{Price} > \text{EMA} \implies \text{Longs}, '
             r'\quad \text{Price} < \text{EMA} \implies \text{Shorts}',
+        imageUrl: img1,
         confidenceScore: 0.99,
       ),
       OcrExtractionModel(
@@ -400,6 +556,7 @@ class DocumentParserService {
         latexContent:
             r'\text{Weakness} \implies \text{Sweep} + \text{Wick Rejection} '
             r'(\text{No Body Close Beyond})',
+        imageUrl: img2,
         confidenceScore: 0.98,
       ),
       OcrExtractionModel(
@@ -437,6 +594,7 @@ class DocumentParserService {
         latexContent:
             r'\text{Entry} = \text{M1 Candle Closes Outside Rectangle '
             r'(\textquotedblleft Flip\textquotedblright)}',
+        imageUrl: img3,
         confidenceScore: 0.99,
       ),
       OcrExtractionModel(
@@ -455,13 +613,32 @@ class DocumentParserService {
         documentId: documentId,
         topic: 'Pre-Trade Confirmation Checklist',
         rawText:
-            '1. Direction aligned with 50/200 EMA?\n2. Valid structure supporting move?\n3. Continuation focus?\n4. M15 level in imbalance or session high/low?\n5. Sweep + rejection close?\n6. Rectangle drawn correctly?\n7. SL placed beyond extreme?\n8. Target >= 3:1 RR?',
+            '1. Direction aligned with 50/200 EMA?\n'
+            '2. Valid structure supporting move?\n'
+            '3. Continuation focus?\n'
+            '4. M15 level in imbalance or session high/low?\n'
+            '5. Sweep + rejection close?\n'
+            '6. Rectangle drawn correctly?\n'
+            '7. SL placed beyond extreme?\n'
+            '8. Target >= 3:1 RR?',
         latexContent:
             r'\text{Pre-Trade Score} = \sum_{i=1}^{8} \text{Checklist Item}_i = 8/8',
         confidenceScore: 0.99,
       ),
     ];
   }
+}
+
+class ExtractedImageAttachment {
+  const ExtractedImageAttachment({
+    required this.bytes,
+    required this.extension,
+    required this.label,
+  });
+
+  final Uint8List bytes;
+  final String extension;
+  final String label;
 }
 
 class _ByteRange {
@@ -478,3 +655,4 @@ class _DocumentSection {
   final String title;
   final String content;
 }
+

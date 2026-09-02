@@ -1,3 +1,4 @@
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
@@ -9,10 +10,12 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   DecksRemoteDataSourceImpl(
     this._client, {
     this.sm2Engine = const Sm2AlgorithmEngine(),
-  });
+    UserStorageService? userStorage,
+  }) : _userStorage = userStorage;
 
   final DecksApiClient _client;
   final Sm2AlgorithmEngine sm2Engine;
+  final UserStorageService? _userStorage;
   final Map<String, List<FlashcardModel>> _localDeckCards = {};
   final List<DeckModel> _localCreatedDecks = [];
 
@@ -21,10 +24,59 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required DeckModel deck,
     required List<FlashcardModel> cards,
   }) async {
+    // 1. Instant local persistence for zero-latency UI responsiveness
     _localDeckCards[deck.id] = cards;
     _localCreatedDecks
       ..removeWhere((d) => d.id == deck.id)
       ..insert(0, deck.copyWith(cards: cards));
+
+    // 2. Seamless Supabase Database Persistence
+    final userId = _userStorage?.getUserId() ?? '';
+
+    // Insert Deck Record
+    try {
+      final deckPayload = <String, dynamic>{
+        'id': deck.id,
+        'title': deck.title,
+        'subject': deck.subject,
+        'total_cards': cards.length,
+        'due_cards': cards.length,
+        'mastery_rate': deck.masteryRate,
+        'description': deck.description,
+        if (userId.isNotEmpty) 'user_id': userId,
+      };
+      await _client.createDeckRecord(deckPayload);
+    } on Object catch (_) {
+      // Offline/Local continues gracefully
+    }
+
+    // Bulk Insert Associated Flashcards
+    try {
+      final cardsPayload = cards.map((c) {
+        return <String, dynamic>{
+          'id': c.id,
+          'deck_id': deck.id,
+          'front': c.front,
+          'back': c.back,
+          if (c.frontLatex != null) 'front_latex': c.frontLatex,
+          if (c.backLatex != null) 'back_latex': c.backLatex,
+          if (c.imageUrl != null) 'image_url': c.imageUrl,
+          if (c.sourceTopic != null) 'source_topic': c.sourceTopic,
+          'interval': c.interval,
+          'repetitions': c.repetitions,
+          'ease_factor': c.easeFactor,
+          if (c.nextDueDate != null)
+            'next_due_date': c.nextDueDate!.toIso8601String(),
+          if (userId.isNotEmpty) 'user_id': userId,
+        };
+      }).toList();
+
+      if (cardsPayload.isNotEmpty) {
+        await _client.bulkInsertCards(cardsPayload);
+      }
+    } on Object catch (_) {
+      // Offline/Local continues gracefully
+    }
   }
 
   @override

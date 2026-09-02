@@ -6,6 +6,7 @@ class OcrExtractionModel {
     required this.documentId,
     required this.rawText,
     this.latexContent,
+    this.imageUrl,
     this.topic = 'General',
     this.confidenceScore = 0.95,
   });
@@ -14,6 +15,7 @@ class OcrExtractionModel {
   final String documentId;
   final String rawText;
   final String? latexContent;
+  final String? imageUrl;
   final String topic;
   final double confidenceScore;
 
@@ -23,6 +25,7 @@ class OcrExtractionModel {
       documentId: json['document_id'] as String,
       rawText: json['raw_text'] as String,
       latexContent: json['latex_content'] as String?,
+      imageUrl: json['image_url'] as String?,
       topic: json['topic'] as String? ?? 'General',
       confidenceScore: (json['confidence_score'] as num?)?.toDouble() ?? 0.95,
     );
@@ -34,6 +37,7 @@ class OcrExtractionModel {
       'document_id': documentId,
       'raw_text': rawText,
       'latex_content': latexContent,
+      if (imageUrl != null) 'image_url': imageUrl,
       'topic': topic,
       'confidence_score': confidenceScore,
     };
@@ -45,6 +49,7 @@ class OcrExtractionModel {
       documentId: documentId,
       rawText: rawText,
       latexContent: latexContent,
+      imageUrl: imageUrl,
       topic: topic,
       confidenceScore: confidenceScore,
     );
@@ -56,6 +61,7 @@ class OcrExtractionModel {
       documentId: entity.documentId,
       rawText: entity.rawText,
       latexContent: entity.latexContent,
+      imageUrl: entity.imageUrl,
       topic: entity.topic,
       confidenceScore: entity.confidenceScore,
     );

@@ -125,11 +125,13 @@ void main() {
         ),
         IngestionState(
           status: ProcessingStatus.parsingOcr,
+          stageMessage: 'Extracting text locally...',
           uploadProgress: 1,
           currentDocument: testDoc,
         ),
         IngestionState(
           status: ProcessingStatus.completed,
+          stageMessage: 'Extracted 1 study cards locally',
           uploadProgress: 1,
           currentDocument: testDoc,
           snippets: const [testSnippet],
@@ -234,9 +236,21 @@ void main() {
         ),
       ),
       expect: () => [
-        const IngestionState(status: ProcessingStatus.generatingCards),
+        const IngestionState(
+          status: ProcessingStatus.generatingCards,
+          stageMessage: 'Generating study cards...',
+        ),
+        const IngestionState(
+          status: ProcessingStatus.syncingDb,
+          stageMessage: 'Syncing to Supabase...',
+        ),
         isA<IngestionState>()
             .having((s) => s.status, 'status', ProcessingStatus.completed)
+            .having(
+              (s) => s.stageMessage,
+              'stageMessage',
+              'Deck & flashcards synced to Supabase',
+            )
             .having(
               (s) => s.generatedDeck?.title,
               'deckTitle',
