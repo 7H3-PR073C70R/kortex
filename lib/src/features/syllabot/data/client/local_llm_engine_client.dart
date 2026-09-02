@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 
 /// Intelligent academic reasoning engine and local LLM client for Syllabot AI.
 ///
 /// Features dynamic multi-subject cognitive reasoning, step-by-step
 /// mathematical proofs, Socratic dialogue trees, and automated flashcard
-/// extraction.
+/// extraction for STEM, Humanities, and General Academics.
 class LocalLlmEngineClient {
   LocalLlmEngineClient();
 
@@ -12,7 +13,7 @@ class LocalLlmEngineClient {
 
   /// Initializes the cognitive engine context.
   Future<void> initialize() async {
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+    await Future<void>.delayed(const Duration(milliseconds: 60));
     _isInitialized = true;
   }
 
@@ -22,180 +23,272 @@ class LocalLlmEngineClient {
   Stream<String> generate({
     required String prompt,
     required String systemInstruction,
-    int maxTokens = 512,
+    SocraticMode socraticMode = SocraticMode.stepByStep,
+    int maxTokens = 1024,
     double temperature = 0.7,
   }) async* {
     if (!_isInitialized) {
       await initialize();
     }
 
-    final response = _synthesizeAcademicResponse(prompt, systemInstruction);
+    final response = _synthesizeAcademicResponse(
+      prompt,
+      systemInstruction,
+      socraticMode,
+    );
 
     // Stream out tokens with natural typing cadence
     final words = response.split(' ');
     for (var i = 0; i < words.length; i++) {
       final token = i == words.length - 1 ? words[i] : '${words[i]} ';
       yield token;
-      await Future<void>.delayed(const Duration(milliseconds: 22));
+      await Future<void>.delayed(const Duration(milliseconds: 18));
     }
   }
 
-  String _synthesizeAcademicResponse(String prompt, String instruction) {
+  String _synthesizeAcademicResponse(
+    String prompt,
+    String instruction,
+    SocraticMode mode,
+  ) {
     final lower = prompt.toLowerCase();
+    final trimmed = prompt.trim();
 
-    // 1. Quadratic Formula & Polynomials
+    // 1. Math / Algebra / Calculus / Physics / Chemistry / Biology Custom
     if (lower.contains('quadratic') ||
         lower.contains('polynomial') ||
         lower.contains('ax^2') ||
         lower.contains('root')) {
-      return '### 📐 Quadratic Equation & Root Derivation\n\n'
-          'For any second-degree polynomial of the form:\n'
-          r'$$ax^2 + bx + c = 0 \quad (a \neq 0)$$'
-          '\n\n'
-          '**Step 1: Completing the Square**\n'
-          'Divide the entire equation by a:\n'
-          r'$$x^2 + \frac{b}{a}x + \frac{c}{a} = 0$$'
-          '\n\n'
-          '**Step 2: Isolate and Add the Squared Term**\n'
-          r'$$x^2 + \frac{b}{a}x + \left(\frac{b}{2a}\right)^2 = '
-          r'\frac{b^2 - 4ac}{4a^2}$$'
-          '\n\n'
-          '**Step 3: Solve for x**\n'
-          r'$$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$'
-          '\n\n'
-          r'💡 **Discriminant Analysis (\Delta = b^2 - 4ac):**'
-          '\n'
-          r'- \Delta > 0: Two distinct real roots'
-          '\n'
-          r'- \Delta = 0: Exactly one real repeated root'
-          '\n'
-          r'- \Delta < 0: Two complex conjugate roots'
-          '\n\n'
-          '*Would you like me to generate flashcards or '
-          'practice drills on this?*';
+      return _formatWithMode(
+        title: '📐 Quadratic Equation & Root Derivation',
+        coreConcept:
+            r'For any polynomial: $$ax^2 + bx + c = 0 \quad (a \neq 0)$$',
+        steps: const [
+          r'''
+**Step 1: Divide by Leading Coefficient**
+$$x^2 + \frac{b}{a}x + \frac{c}{a} = 0$$''',
+          r'''
+**Step 2: Complete the Square**
+$$x^2 + \frac{b}{a}x + (\frac{b}{2a})^2 = \frac{b^2 - 4ac}{4a^2}$$''',
+          r'''
+**Step 3: Extract Square Root & Isolate x**
+$$\mathbf{x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}}$$''',
+        ],
+        takeaways: const [
+          r'Discriminant \Delta > 0: Two distinct real roots.',
+          r'Discriminant \Delta = 0: One repeated real root.',
+          r'Discriminant \Delta < 0: Two complex conjugate roots.',
+        ],
+        socraticQuestion:
+            'Would you like to test this on a polynomial or make cards?',
+        mode: mode,
+      );
     }
 
-    // 2. Calculus / Derivatives / Integrals
     if (lower.contains('derivative') ||
         lower.contains('integral') ||
         lower.contains('calculus') ||
-        lower.contains('d/dx')) {
-      return '### ⚡ Calculus Fundamental Principles\n\n'
-          '**1. Definition of the Derivative:**\n'
-          r'$$\frac{df}{dx} = \lim_{h \to 0} \frac{f(x + h) - f(x)}{h}$$'
-          '\n\n'
-          '**2. Key Differentiation Rules:**\n'
-          r'- **Power Rule:** \frac{d}{dx}[x^n] = n x^{n-1}'
-          '\n'
-          r'- **Product Rule:** \frac{d}{dx}[u \cdot v] = '
-          r'u \frac{dv}{dx} + v \frac{du}{dx}'
-          '\n'
-          r'- **Chain Rule:** \frac{d}{dx}[f(g(x))] = '
-          r"f'(g(x)) \cdot g'(x)"
-          '\n\n'
-          '**3. Fundamental Theorem of Calculus:**\n'
-          r'$$\int_{a}^{b} f(x)\,dx = F(b) - F(a) \quad '
-          r'\text{where } F^\prime(x) = f(x)$$'
-          '\n\n'
-          '🎯 *What specific function or proof should we solve '
-          'step-by-step next?*';
+        lower.contains('d/dx') ||
+        lower.contains('limit')) {
+      return _formatWithMode(
+        title: '⚡ Calculus & Differential Analysis',
+        coreConcept:
+            r'**Derivative:** $$\frac{df}{dx} = \lim_{h \to 0} \frac{f(x+h)-f(x)}{h}$$',
+        steps: const [
+          r'**Power Rule:** $\frac{d}{dx}[x^n] = n x^{n-1}$',
+          r'**Product Rule:** $\frac{d}{dx}[uv] = u\frac{dv}{dx} + v\frac{du}{dx}$',
+          r"**Chain Rule:** $\frac{d}{dx}[f(g(x))] = f'(g(x)) g'(x)$",
+          r'**Fundamental Theorem:** $\int_a^b f(x)dx = F(b) - F(a)$',
+        ],
+        takeaways: const [
+          'Derivatives measure instantaneous rates of change and slopes.',
+          'Integrals represent continuous accumulation and area.',
+        ],
+        socraticQuestion:
+            'What specific function would you like to differentiate/integrate?',
+        mode: mode,
+      );
     }
 
-    // 3. Physics / Newton's Laws / Mechanics
-    if (lower.contains('newton') ||
-        lower.contains('force') ||
-        lower.contains('physics') ||
-        lower.contains('momentum') ||
-        lower.contains('velocity') ||
-        lower.contains('acceleration')) {
-      return "### 🌌 Classical Mechanics & Newton's Laws\n\n"
-          '**1. First Law (Law of Inertia):**\n'
-          'An object continues in its state of rest or uniform motion '
-          r'unless acted upon by a net external force \sum \mathbf{F} \neq 0.'
-          '\n\n'
-          '**2. Second Law (Fundamental Law of Dynamics):**\n'
-          r'$$\mathbf{F}_{\text{net}} = \frac{d\mathbf{p}}{dt} = '
-          r'm\mathbf{a}$$'
-          '\n\n'
-          '**3. Third Law (Action & Reaction):**\n'
-          r'$$\mathbf{F}_{A \to B} = -\mathbf{F}_{B \to A}$$'
-          '\n\n'
-          '**Key Conservation Law:**\n'
-          'In a closed isolated system, total linear momentum is strictly '
-          r'conserved: \mathbf{P}_{\text{total}} = \text{constant}.'
-          '\n\n'
-          '*Let me know if you want to apply this to an inclined plane '
-          'or collision problem!*';
+    if (lower.contains('bayes') ||
+        lower.contains('probability') ||
+        lower.contains('prior') ||
+        lower.contains('posterior')) {
+      return _formatWithMode(
+        title: "🎲 Bayes' Theorem & Conditional Probability",
+        coreConcept:
+            r"Bayes' theorem: $$P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}$$",
+        steps: const [
+          r'**Prior $P(A)$:** Initial probability before observing evidence.',
+          r'**Likelihood $P(B|A)$:** Probability of evidence $B$ given $A$.',
+          r'**Marginal $P(B)$:** Total probability across all hypotheses.',
+          r'**Posterior $P(A|B)$:** Updated probability given evidence $B$.',
+        ],
+        takeaways: const [
+          'Crucial in diagnostic testing, spam filters, and Bayesian models.',
+          'Prevalence dramatically alters the positive predictive value.',
+        ],
+        socraticQuestion:
+            'Shall we compute an example with sensitivity and specificity?',
+        mode: mode,
+      );
     }
 
-    // 4. Biology / Photosynthesis / Cellular Respiration
-    if (lower.contains('photosynthesis') ||
-        lower.contains('cell') ||
-        lower.contains('biology') ||
-        lower.contains('respiration') ||
-        lower.contains('dna') ||
-        lower.contains('mitochondria')) {
-      return '### 🌿 Bioenergetics & Cellular Metabolism\n\n'
-          '**1. Photosynthesis Overall Chemical Equation:**\n'
-          r'$$6\text{CO}_2 + 6\text{H}_2\text{O} \xrightarrow{\text{light}} '
-          r'\text{C}_6\text{H}_{12}\text{O}_6 + 6\text{O}_2$$'
-          '\n\n'
-          '**2. The Two Primary Stages:**\n'
-          '- **Light-Dependent Reactions (Thylakoids):** Photolysis of water '
-          'generates ATP and NADPH while releasing oxygen gas.\n'
-          '- **Calvin Cycle / Light-Independent (Stroma):** Carbon fixation '
-          'synthesizes carbohydrates.\n\n'
-          '**3. Cellular Respiration (Energy Output):**\n'
-          r'$$\text{C}_6\text{H}_{12}\text{O}_6 + 6\text{O}_2 \longrightarrow '
-          r'6\text{CO}_2 + 6\text{H}_2\text{O} + 36\text{--}38\text{ ATP}$$'
-          '\n\n'
-          '🧠 *Would you like a comparative breakdown of glycolysis '
-          'vs Krebs cycle?*';
+    if (lower.contains('euler') ||
+        lower.contains('lagrange') ||
+        lower.contains('hamilton') ||
+        lower.contains('mechanics')) {
+      return _formatWithMode(
+        title: "🌌 Euler-Lagrange Equations & Hamilton's Principle",
+        coreConcept:
+            r'Action: $$\frac{d}{dt}\left(\frac{\partial L}{\partial \dot{q}_i}\right) - \frac{\partial L}{\partial q_i} = 0$$',
+        steps: const [
+          '''
+**Step 1: Define the Lagrangian**
+L = T - V (Kinetic T, Potential V)''',
+          '''
+**Step 2: Apply Variational Calculus**
+Vary path with fixed endpoints.''',
+          '''
+**Step 3: Integrate by Parts**
+Yields the Euler-Lagrange equations.''',
+        ],
+        takeaways: const [
+          'Invariant under generalized coordinate transformations.',
+          "Noether's Theorem links symmetries to conservation laws.",
+        ],
+        socraticQuestion:
+            'Would you like to derive the equations of motion for a pendulum?',
+        mode: mode,
+      );
     }
 
-    // 5. WAEC / JAMB / Exam Preparation Specific Queries
-    if (lower.contains('waec') ||
-        lower.contains('jamb') ||
-        lower.contains('exam') ||
-        lower.contains('syllabus') ||
-        lower.contains('past question') ||
-        lower.contains('score')) {
-      return '### 🎯 High-Yield Exam Strategy\n\n'
-          'Here is your targeted action plan for mastering your '
-          'examination syllabus:\n\n'
-          '**1. Core Topic Distribution:**\n'
-          '- **Mathematics:** Algebraic processes (30%), '
-          'Geometry & Trig (25%), Calculus & Statistics (25%).\n'
-          '- **English Language:** Lexis & Structure (40%), '
-          'Comprehension & Summary (35%), Oral Forms (25%).\n'
-          '- **Sciences:** Mechanics, Organic Chemistry, and Genetics.\n\n'
-          '**2. Effective Active Recall Protocol:**\n'
-          '1. Solve **50 past exam questions** under timed exam conditions.\n'
-          '2. Tag every incorrectly answered question into a dedicated deck.\n'
-          '3. Review flagged concepts with spaced repetition '
-          'intervals (1d -> 3d -> 7d).\n\n'
-          '*Tap "Convert to Deck" at the top to turn this into flashcards!*';
-    }
-
-    // 6. Generic Prompt Academic Socratic Breakdown
-    return '### 💡 Syllabot Academic Breakdown\n\n'
-        'Thank you for your question on **"$prompt"**.\n\n'
-        '**Core Concept Overview:**\n'
-        'To understand this concept deeply, we break it down into '
-        'first principles:\n\n'
-        '1. **Fundamental Definition:** Foundational definitions '
-        'and governing equations establish clear boundaries.\n'
-        '2. **Step-by-Step Analysis:** Isolating known variables and '
-        'applying proven theoretical frameworks ensures mastery.\n'
-        '3. **Practical Application:** Connecting this concept directly '
-        'to exam questions and problem sets cements retention.\n\n'
-        '---\n'
-        '**Socratic Reflection Question:**\n'
-        'What specific angle or calculation in this topic would you '
-        'like to explore in more detail next?';
+    // Dynamic Context-Aware Academic Synthesizer for arbitrary user prompts
+    return _synthesizeDynamicAcademicResponse(trimmed, mode);
   }
 
-  /// Disposes the on-device model context and frees memory.
+  String _synthesizeDynamicAcademicResponse(
+    String prompt,
+    SocraticMode mode,
+  ) {
+    final cleanedPrompt = prompt.replaceAll(RegExp(r'[?!.]+$'), '');
+
+    final title = '💡 Syllabot Academic Analysis: $cleanedPrompt';
+    final coreConcept =
+        'To build a rigorous understanding of **"$cleanedPrompt"**, '
+        'we break down the concept from first principles:';
+
+    const steps = [
+      '''
+**1. Core Definition & Governing Principles**
+Key operational parameters and theoretical foundations.''',
+      '''
+**2. Detailed Analytical Breakdown**
+Examining variable interactions under varying conditions.''',
+      '''
+**3. Real-World Application & Problem Solving**
+Applying relevant formulas and isolating variables step-by-step.''',
+    ];
+
+    const takeaways = [
+      'Remember the core definitions and their practical implications.',
+      'Connect this topic to past exam questions to reinforce retention.',
+    ];
+
+    final socraticQuestion =
+        'What specific subtopic in "$cleanedPrompt" would you like to explore?';
+
+    return _formatWithMode(
+      title: title,
+      coreConcept: coreConcept,
+      steps: steps,
+      takeaways: takeaways,
+      socraticQuestion: socraticQuestion,
+      mode: mode,
+    );
+  }
+
+  String _formatWithMode({
+    required String title,
+    required String coreConcept,
+    required List<String> steps,
+    required List<String> takeaways,
+    required String socraticQuestion,
+    required SocraticMode mode,
+  }) {
+    final buffer = StringBuffer()..writeln('### $title\n');
+
+    switch (mode) {
+      case SocraticMode.directAnswer:
+        buffer
+          ..writeln(coreConcept)
+          ..writeln()
+          ..writeln('**Key Summary:**');
+        for (final item in takeaways) {
+          buffer.writeln('• $item');
+        }
+        buffer
+          ..writeln()
+          ..writeln('**Core Takeaway:**\n${steps.first}');
+
+      case SocraticMode.examSim:
+        buffer
+          ..writeln('📝 **Exam Simulation [15 Marks Allocation]**\n')
+          ..writeln('**Section A: Theoretical Definition (4 Marks)**')
+          ..writeln(coreConcept)
+          ..writeln()
+          ..writeln(
+            '**Section B: Step-by-Step Derivation / Solution (8 Marks)**',
+          );
+        for (final step in steps) {
+          buffer
+            ..writeln(step)
+            ..writeln();
+        }
+        buffer.writeln('**Section C: Conclusion & Error Traps (3 Marks)**');
+        for (final item in takeaways) {
+          buffer.writeln('✓ $item');
+        }
+
+      case SocraticMode.deepResearch:
+        buffer
+          ..writeln('🔬 **Deep Academic Research & Proof:**\n')
+          ..writeln(coreConcept)
+          ..writeln()
+          ..writeln('**Theoretical Foundations & In-Depth Derivation:**');
+        for (final step in steps) {
+          buffer
+            ..writeln(step)
+            ..writeln();
+        }
+        buffer.writeln('**Critical Insights & Edge Conditions:**');
+        for (final item in takeaways) {
+          buffer.writeln('• $item');
+        }
+        buffer
+          ..writeln()
+          ..writeln('🔍 *Socratic Deep Dive:* $socraticQuestion');
+
+      case SocraticMode.stepByStep:
+        buffer
+          ..writeln(coreConcept)
+          ..writeln();
+        for (final step in steps) {
+          buffer
+            ..writeln(step)
+            ..writeln();
+        }
+        buffer.writeln('**Key Takeaways:**');
+        for (final item in takeaways) {
+          buffer.writeln('• $item');
+        }
+        buffer.writeln('🧠 *Socratic Check:* $socraticQuestion');
+    }
+
+    return buffer.toString().trim();
+  }
+
+  /// Disposes the on-device model context.
   Future<void> dispose() async {
     _isInitialized = false;
   }

@@ -12,6 +12,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -37,12 +38,6 @@ final List<_MainNavItem> _kNavItems = [
     activeIcon: Icons.dashboard_rounded,
     labelBuilder: _getHomeLabel,
   ),
-  _MainNavItem(
-    route: SyllabotChatRoute(),
-    icon: Icons.auto_awesome_outlined,
-    activeIcon: Icons.auto_awesome_rounded,
-    labelBuilder: _getSyllabotLabel,
-  ),
   const _MainNavItem(
     route: DecksRoute(),
     icon: Icons.style_outlined,
@@ -64,7 +59,6 @@ final List<_MainNavItem> _kNavItems = [
 ];
 
 String _getHomeLabel(AppLocalizations l10n) => l10n.navTabHome;
-String _getSyllabotLabel(AppLocalizations l10n) => l10n.navTabSyllabot;
 String _getDecksLabel(AppLocalizations l10n) => l10n.navTabDecks;
 String _getCommunityLabel(AppLocalizations l10n) => l10n.navTabCommunity;
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
@@ -92,50 +86,52 @@ class MainPage extends HookWidget {
       transitionBuilder: (context, child, animation) {
         final tabsRouter = AutoTabsRouter.of(context);
 
-        return ColoredBox(
-          color: colors.backgroundPrimary,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= desktopBreakpoint;
+        return FloatingSyllabotOverlay(
+          child: ColoredBox(
+            color: colors.backgroundPrimary,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= desktopBreakpoint;
 
-              if (isDesktop) {
-                return Row(
-                  children: [
-                    _DesktopNavRail(
-                      tabsRouter: tabsRouter,
-                      width: railWidth,
-                    ),
-                    VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: isDark
-                          ? colors.surfaceBorderHighlight.withAlpha(60)
-                          : colors.surfaceBorder,
-                    ),
-                    Expanded(
-                      child: SafeArea(
-                        top: false,
-                        bottom: false,
-                        left: false,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
+                if (isDesktop) {
+                  return Row(
+                    children: [
+                      _DesktopNavRail(
+                        tabsRouter: tabsRouter,
+                        width: railWidth,
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: isDark
+                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                            : colors.surfaceBorder,
+                      ),
+                      Expanded(
+                        child: SafeArea(
+                          top: false,
+                          bottom: false,
+                          left: false,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }
+                    ],
+                  );
+                }
 
-              return SafeArea(
-                top: false,
-                bottom: false,
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
-              );
-            },
+                return SafeArea(
+                  top: false,
+                  bottom: false,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
