@@ -13,7 +13,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Navigation item definition for Kortex main tabs.
 class _MainNavItem {
@@ -88,6 +88,7 @@ class MainPage extends HookWidget {
       routes: _kNavItems.map((item) => item.route).toList(),
       animationDuration: const Duration(milliseconds: 250),
       animationCurve: Curves.easeInOut,
+      extendBody: true,
       transitionBuilder: (context, child, animation) {
         final tabsRouter = AutoTabsRouter.of(context);
 
@@ -127,6 +128,7 @@ class MainPage extends HookWidget {
               }
 
               return SafeArea(
+                top: false,
                 bottom: false,
                 child: FadeTransition(
                   opacity: animation,
@@ -430,45 +432,15 @@ class _AdaptiveBottomNavDock extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// iOS Liquid Glass Floating Dock (Draggable Capsule + Visible Page Names)
+// iOS Liquid Glass Floating Dock (using GlassTabBar.bottom)
 // ---------------------------------------------------------------------------
 
-class _IOSLiquidGlassDock extends StatefulWidget {
+class _IOSLiquidGlassDock extends StatelessWidget {
   const _IOSLiquidGlassDock({
     required this.tabsRouter,
   });
 
   final TabsRouter tabsRouter;
-
-  @override
-  State<_IOSLiquidGlassDock> createState() => _IOSLiquidGlassDockState();
-}
-
-class _IOSLiquidGlassDockState extends State<_IOSLiquidGlassDock> {
-  double? _dragAlignment;
-  bool _isDragging = false;
-  int? _highlightedIndex;
-
-  int get _lastIndex => _kNavItems.length - 1;
-
-  double _getAlignment(int index) {
-    if (_lastIndex == 0) return 0;
-    return -1.0 + (index * 2 / _lastIndex);
-  }
-
-  void _updateHighlightedIndex() {
-    if (!_isDragging || _dragAlignment == null) {
-      _highlightedIndex = null;
-      return;
-    }
-
-    final normalized = ((_dragAlignment! + 1) / 2).clamp(0.0, 1.0);
-    final index = (normalized * _lastIndex).round().clamp(0, _lastIndex);
-    if (_highlightedIndex != index) {
-      _highlightedIndex = index;
-      unawaited(HapticFeedback.selectionClick());
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -478,269 +450,64 @@ class _IOSLiquidGlassDockState extends State<_IOSLiquidGlassDock> {
     final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final currentActiveIndex = _isDragging
-        ? (_highlightedIndex ?? widget.tabsRouter.activeIndex)
-        : widget.tabsRouter.activeIndex;
+    final tabs = _kNavItems.map((item) {
+      final label = item.labelBuilder(l10n);
+      return GlassTab(
+        icon: Icon(item.icon, size: 22),
+        activeIcon: Icon(item.activeIcon, size: 22),
+        label: label,
+        semanticLabel: label,
+      );
+    }).toList();
 
-    const dockHeight = 64.0;
+    final glassSettings = LiquidGlassSettings(
+      thickness: 24,
+      blur: 24,
+      glassColor: isDark
+          ? const Color(0x351E2430)
+          : const Color(0x75FFFFFF),
+      lightIntensity: isDark ? 0.4 : 0.85,
+      refractiveIndex: 1.25,
+    );
 
-    return Semantics(
-      container: true,
-      label: l10n.navBarSemanticsLabel,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          0,
-          16,
-          math.max(10, bottomInset > 0 ? bottomInset : 14),
-        ),
-        child: Stack(
-          children: [
-            // Ambient depth shadow
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(34),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(isDark ? 80 : 18),
-                      blurRadius: 28,
-                      offset: const Offset(0, 8),
-                    ),
-                    if (!isDark)
-                      BoxShadow(
-                        color: colors.primary.withAlpha(20),
-                        blurRadius: 18,
-                        offset: const Offset(0, 2),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+    final indicatorGlassSettings = LiquidGlassSettings(
+      thickness: 14,
+      blur: 10,
+      glassColor: isDark
+          ? const Color(0x40FFFFFF)
+          : const Color(0xF0FFFFFF),
+      lightIntensity: isDark ? 0.6 : 0.95,
+      refractiveIndex: 1.15,
+    );
 
-            // Liquid Glass Morphism Layer
-            LiquidGlass.withOwnLayer(
-              shape: const LiquidRoundedRectangle(borderRadius: 34),
-              settings: LiquidGlassSettings(
-                blur: 24,
-                glassColor: isDark
-                    ? colors.surfaceSecondary.withAlpha(165)
-                    : colors.surfacePrimary.withAlpha(225),
-                lightIntensity: isDark ? 0.45 : 0.7,
-                refractiveIndex: 1.45,
-              ),
-              child: Container(
-                height: dockHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(34),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(90)
-                        : colors.surfaceBorder.withAlpha(190),
-                    width: 1.2,
-                  ),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final itemWidth =
-                        constraints.maxWidth / _kNavItems.length;
-                    final totalDragWidth = constraints.maxWidth - itemWidth;
-
-                    return GestureDetector(
-                      onHorizontalDragStart: (details) {
-                        setState(() {
-                          _isDragging = true;
-                          _dragAlignment =
-                              _getAlignment(widget.tabsRouter.activeIndex);
-                          _updateHighlightedIndex();
-                        });
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        if (!_isDragging || totalDragWidth <= 0) return;
-                        setState(() {
-                          final deltaAlignment =
-                              (details.primaryDelta! / totalDragWidth) * 2.0;
-                          _dragAlignment = (_dragAlignment! + deltaAlignment)
-                              .clamp(-1.0, 1.0);
-                          _updateHighlightedIndex();
-                        });
-                      },
-                      onHorizontalDragEnd: (details) {
-                        setState(() {
-                          _isDragging = false;
-                          final currentA = _dragAlignment ??
-                              _getAlignment(widget.tabsRouter.activeIndex);
-                          final normalized =
-                              ((currentA + 1) / 2).clamp(0.0, 1.0);
-                          final targetIndex = (normalized * _lastIndex)
-                              .round()
-                              .clamp(0, _lastIndex);
-                          _highlightedIndex = null;
-                          _dragAlignment = null;
-
-                          final label =
-                              _kNavItems[targetIndex].labelBuilder(l10n);
-                          _handleTabTap(
-                            context,
-                            widget.tabsRouter,
-                            targetIndex,
-                            label,
-                          );
-                        });
-                      },
-                      onHorizontalDragCancel: () {
-                        setState(() {
-                          _isDragging = false;
-                          _highlightedIndex = null;
-                          _dragAlignment = null;
-                        });
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Draggable Liquid Selection Capsule
-                          AnimatedAlign(
-                            duration: _isDragging
-                                ? Duration.zero
-                                : const Duration(milliseconds: 260),
-                            curve: Curves.easeOutCubic,
-                            alignment: Alignment(
-                              _isDragging
-                                  ? (_dragAlignment ??
-                                      _getAlignment(
-                                        widget.tabsRouter.activeIndex,
-                                      ))
-                                  : _getAlignment(
-                                      widget.tabsRouter.activeIndex,
-                                    ),
-                              0,
-                            ),
-                            child: Container(
-                              width: itemWidth,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    colors.primary
-                                        .withAlpha(isDark ? 55 : 35),
-                                    colors.primary
-                                        .withAlpha(isDark ? 30 : 15),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(26),
-                                border: Border.all(
-                                  color: colors.primary
-                                      .withAlpha(isDark ? 110 : 80),
-                                  width: 1.1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.primary
-                                        .withAlpha(isDark ? 50 : 25),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Nav Items with Persistent Page Names
-                          Row(
-                            children:
-                                List.generate(_kNavItems.length, (index) {
-                              final item = _kNavItems[index];
-                              final isSelected = currentActiveIndex == index;
-                              final label = item.labelBuilder(l10n);
-
-                              return Expanded(
-                                child: Semantics(
-                                  button: true,
-                                  selected: isSelected,
-                                  label: l10n.navTabSemantics(
-                                    label,
-                                    index + 1,
-                                    _kNavItems.length,
-                                  ),
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () => _handleTabTap(
-                                      context,
-                                      widget.tabsRouter,
-                                      index,
-                                      label,
-                                    ),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          AnimatedScale(
-                                            scale: isSelected ? 1.12 : 1.0,
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            curve: Curves.easeOutBack,
-                                            child: Icon(
-                                              isSelected
-                                                  ? item.activeIcon
-                                                  : item.icon,
-                                              size: 22,
-                                              color: isSelected
-                                                  ? colors.primary
-                                                  : colors.textSecondary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 3),
-                                          // Page Name / Label (Always Visible)
-                                          AnimatedDefaultTextStyle(
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            style: isSelected
-                                                ? typography.caption.bold
-                                                    .copyWith(
-                                                    color: colors.primary,
-                                                    fontSize: 10,
-                                                    height: 1.1,
-                                                  )
-                                                : typography.caption.medium
-                                                    .copyWith(
-                                                    color:
-                                                        colors.textSecondary,
-                                                    fontSize: 10,
-                                                    height: 1.1,
-                                                  ),
-                                            child: Text(
-                                              label,
-                                              maxLines: 1,
-                                              overflow:
-                                                  TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
+    return GlassTabBar.bottom(
+      tabs: tabs,
+      selectedIndex: tabsRouter.activeIndex,
+      onTabSelected: (index) {
+        final label = _kNavItems[index].labelBuilder(l10n);
+        _handleTabTap(context, tabsRouter, index, label);
+      },
+      settings: glassSettings,
+      indicatorSettings: indicatorGlassSettings,
+      indicatorColor: isDark
+          ? const Color(0x30FFFFFF)
+          : const Color(0xEBFFFFFF),
+      selectedIconColor: colors.primary,
+      unselectedIconColor: colors.textSecondary,
+      selectedLabelColor: colors.primary,
+      unselectedLabelColor: colors.textSecondary,
+      selectedLabelStyle: typography.caption.bold.copyWith(
+        color: colors.primary,
+        fontSize: 10,
+        height: 1.1,
       ),
+      unselectedLabelStyle: typography.caption.medium.copyWith(
+        color: colors.textSecondary,
+        fontSize: 10,
+        height: 1.1,
+      ),
+      horizontalPadding: 16,
+      verticalPadding: math.max(10, bottomInset > 0 ? bottomInset : 14),
     );
   }
 }

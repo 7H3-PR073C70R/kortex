@@ -6,25 +6,22 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
-/// A reusable platform-adaptive segmented tab bar with authentic iOS/macOS
-/// Liquid Glass effects and fluid horizontal drag-to-select physics.
+/// A reusable platform-adaptive segmented tab bar.
 ///
 /// On iOS and macOS:
-/// - Renders a [LiquidGlass] shader container with refractive glass borders,
-///   depth lighting, and frosted backdrop blur.
-/// - Supports smooth horizontal drag gestures to smoothly glide the liquid
-///   selection capsule across tabs with tactile haptics and elastic snap.
+/// - Uses [GlassSegmentedControl] from `liquid_glass_widgets` with authentic
+///   iOS liquid glass physics, drag gesture support, and specular refraction.
 ///
 /// On Android and other platforms:
 /// - Renders a clean Material 3 tonal container with drag & tap interaction.
-class AppLiquidGlassTabBar extends StatefulWidget {
+class AppLiquidGlassTabBar extends StatelessWidget {
   const AppLiquidGlassTabBar({
     required this.tabs,
     required this.selectedIndex,
     required this.onTabSelected,
-    this.height = 44.0,
+    this.height = 42.0,
     this.padding = const EdgeInsets.all(4),
     this.isCompact = false,
     super.key,
@@ -37,39 +34,9 @@ class AppLiquidGlassTabBar extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final bool isCompact;
 
-  @override
-  State<AppLiquidGlassTabBar> createState() => _AppLiquidGlassTabBarState();
-}
-
-class _AppLiquidGlassTabBarState extends State<AppLiquidGlassTabBar> {
-  double? _dragAlignment;
-  bool _isDragging = false;
-  int? _highlightedIndex;
-
   bool get _isApplePlatform {
     if (kIsWeb) return false;
     return Platform.isIOS || Platform.isMacOS;
-  }
-
-  int get _lastIndex => widget.tabs.length - 1;
-
-  double _getAlignment(int index) {
-    if (_lastIndex == 0) return 0;
-    return -1.0 + (index * 2 / _lastIndex);
-  }
-
-  void _updateHighlightedIndex() {
-    if (!_isDragging || _dragAlignment == null) {
-      _highlightedIndex = null;
-      return;
-    }
-
-    final normalized = ((_dragAlignment! + 1) / 2).clamp(0.0, 1.0);
-    final index = (normalized * _lastIndex).round().clamp(0, _lastIndex);
-    if (_highlightedIndex != index) {
-      _highlightedIndex = index;
-      unawaited(HapticFeedback.selectionClick());
-    }
   }
 
   @override
@@ -85,238 +52,46 @@ class _AppLiquidGlassTabBarState extends State<AppLiquidGlassTabBar> {
     }
   }
 
-  /// iOS & macOS Liquid Glass Segmented Control with Drag Interaction
+  /// iOS & macOS Liquid Glass Segmented Control
   Widget _buildLiquidGlassBar(
     BuildContext context,
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    final effectiveHeight = widget.height;
-    final currentActiveIndex = _isDragging
-        ? (_highlightedIndex ?? widget.selectedIndex)
-        : widget.selectedIndex;
+    final fontSize = isCompact ? 11.5 : 12.5;
 
-    return Container(
-      padding: widget.padding,
-      child: Stack(
-        children: [
-          // Ambient depth shadow
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(effectiveHeight / 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 50 : 12),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Liquid Glass Shader Layer
-          LiquidGlass.withOwnLayer(
-            shape: LiquidRoundedRectangle(
-              borderRadius: effectiveHeight / 2,
-            ),
-            settings: LiquidGlassSettings(
-              thickness: 18,
-              blur: 20,
-              glassColor: isDark
-                  ? colors.surfaceSecondary.withAlpha(160)
-                  : colors.surfacePrimary.withAlpha(210),
-              lightIntensity: isDark ? 0.45 : 0.65,
-              refractiveIndex: 1.45,
-            ),
-            child: Container(
-              height: effectiveHeight,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(effectiveHeight / 2),
-                border: Border.all(
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                      : colors.surfaceBorder.withAlpha(140),
-                  width: 1.1,
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final tabWidth = constraints.maxWidth / widget.tabs.length;
-                  final totalDragWidth = constraints.maxWidth - tabWidth;
-
-                  return GestureDetector(
-                    onHorizontalDragStart: (details) {
-                      setState(() {
-                        _isDragging = true;
-                        _dragAlignment = _getAlignment(widget.selectedIndex);
-                        _updateHighlightedIndex();
-                      });
-                    },
-                    onHorizontalDragUpdate: (details) {
-                      if (!_isDragging || totalDragWidth <= 0) return;
-                      setState(() {
-                        final deltaAlignment =
-                            (details.primaryDelta! / totalDragWidth) * 2.0;
-                        _dragAlignment =
-                            (_dragAlignment! + deltaAlignment).clamp(-1.0, 1.0);
-                        _updateHighlightedIndex();
-                      });
-                    },
-                    onHorizontalDragEnd: (details) {
-                      setState(() {
-                        _isDragging = false;
-                        final currentA = _dragAlignment ??
-                            _getAlignment(widget.selectedIndex);
-                        final normalized =
-                            ((currentA + 1) / 2).clamp(0.0, 1.0);
-                        final targetIndex = (normalized * _lastIndex)
-                            .round()
-                            .clamp(0, _lastIndex);
-                        _highlightedIndex = null;
-                        _dragAlignment = null;
-
-                        if (targetIndex != widget.selectedIndex) {
-                          unawaited(HapticFeedback.selectionClick());
-                          widget.onTabSelected(targetIndex);
-                        }
-                      });
-                    },
-                    onHorizontalDragCancel: () {
-                      setState(() {
-                        _isDragging = false;
-                        _highlightedIndex = null;
-                        _dragAlignment = null;
-                      });
-                    },
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Draggable & Animating Liquid Selection Capsule
-                        AnimatedAlign(
-                          duration: _isDragging
-                              ? Duration.zero
-                              : const Duration(milliseconds: 260),
-                          curve: Curves.easeOutCubic,
-                          alignment: Alignment(
-                            _isDragging
-                                ? (_dragAlignment ??
-                                    _getAlignment(widget.selectedIndex))
-                                : _getAlignment(widget.selectedIndex),
-                            0,
-                          ),
-                          child: Container(
-                            width: tabWidth,
-                            height: effectiveHeight - 6,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  colors.primary,
-                                  colors.primary.withAlpha(220),
-                                  colors.primary.withAlpha(190),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                (effectiveHeight - 6) / 2,
-                              ),
-                              border: Border.all(
-                                color: Colors.white
-                                    .withAlpha(isDark ? 65 : 100),
-                                width: 0.9,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.primary
-                                      .withAlpha(isDark ? 95 : 65),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Tab Titles
-                        Row(
-                          children: List.generate(widget.tabs.length, (index) {
-                            final isSelected = currentActiveIndex == index;
-                            return Expanded(
-                              child: Semantics(
-                                button: true,
-                                selected: isSelected,
-                                label: widget.tabs[index],
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    if (widget.selectedIndex != index) {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      widget.onTabSelected(index);
-                                    }
-                                  },
-                                  child: Center(
-                                    child: AnimatedDefaultTextStyle(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      style: isSelected
-                                          ? typography.caption.bold.copyWith(
-                                              color: Colors.white,
-                                              fontSize: widget.isCompact
-                                                  ? 11.5
-                                                  : 12.5,
-                                            )
-                                          : typography.caption.medium.copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: widget.isCompact
-                                                  ? 11.5
-                                                  : 12.5,
-                                            ),
-                                      child: Text(
-                                        widget.tabs[index],
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+    return Padding(
+      padding: padding,
+      child: GlassSegmentedControl(
+        segments: tabs.map((tab) => GlassSegment(label: tab)).toList(),
+        selectedIndex: selectedIndex,
+        onSegmentSelected: onTabSelected,
+        height: height,
+        useOwnLayer: true,
+        indicatorColor: colors.primary,
+        selectedTextStyle: typography.caption.bold.copyWith(
+          color: Colors.white,
+          fontSize: fontSize,
+        ),
+        unselectedTextStyle: typography.caption.medium.copyWith(
+          color: colors.textSecondary,
+          fontSize: fontSize,
+        ),
       ),
     );
   }
 
   /// Android & Cross-Platform Material 3 Segmented Control
-  /// with Drag Interaction
   Widget _buildMaterialSegmentedBar(
     BuildContext context,
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    final effectiveHeight = widget.height;
-    final currentActiveIndex = _isDragging
-        ? (_highlightedIndex ?? widget.selectedIndex)
-        : widget.selectedIndex;
-
     return Container(
-      height: effectiveHeight,
-      padding: widget.padding,
+      height: height,
+      padding: padding,
       decoration: BoxDecoration(
         color: isDark
             ? colors.surfaceSecondary.withAlpha(180)
@@ -330,131 +105,78 @@ class _AppLiquidGlassTabBarState extends State<AppLiquidGlassTabBar> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / widget.tabs.length;
-          final totalDragWidth = constraints.maxWidth - tabWidth;
+          final tabWidth = constraints.maxWidth / tabs.length;
 
-          return GestureDetector(
-            onHorizontalDragStart: (details) {
-              setState(() {
-                _isDragging = true;
-                _dragAlignment = _getAlignment(widget.selectedIndex);
-                _updateHighlightedIndex();
-              });
-            },
-            onHorizontalDragUpdate: (details) {
-              if (!_isDragging || totalDragWidth <= 0) return;
-              setState(() {
-                final deltaAlignment =
-                    (details.primaryDelta! / totalDragWidth) * 2.0;
-                _dragAlignment =
-                    (_dragAlignment! + deltaAlignment).clamp(-1.0, 1.0);
-                _updateHighlightedIndex();
-              });
-            },
-            onHorizontalDragEnd: (details) {
-              setState(() {
-                _isDragging = false;
-                final currentA =
-                    _dragAlignment ?? _getAlignment(widget.selectedIndex);
-                final normalized = ((currentA + 1) / 2).clamp(0.0, 1.0);
-                final targetIndex =
-                    (normalized * _lastIndex).round().clamp(0, _lastIndex);
-                _highlightedIndex = null;
-                _dragAlignment = null;
-
-                if (targetIndex != widget.selectedIndex) {
-                  unawaited(HapticFeedback.selectionClick());
-                  widget.onTabSelected(targetIndex);
-                }
-              });
-            },
-            onHorizontalDragCancel: () {
-              setState(() {
-                _isDragging = false;
-                _highlightedIndex = null;
-                _dragAlignment = null;
-              });
-            },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Sliding indicator
-                AnimatedAlign(
-                  duration: _isDragging
-                      ? Duration.zero
-                      : const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment(
-                    _isDragging
-                        ? (_dragAlignment ??
-                            _getAlignment(widget.selectedIndex))
-                        : _getAlignment(widget.selectedIndex),
-                    0,
-                  ),
-                  child: Container(
-                    width: tabWidth,
-                    height: effectiveHeight - 8,
-                    decoration: BoxDecoration(
-                      color: isDark ? colors.primary : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isDark ? 45 : 18),
-                          blurRadius: 5,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
-                    ),
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Sliding active pill
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                left: selectedIndex * tabWidth,
+                top: 0,
+                bottom: 0,
+                width: tabWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? colors.primary : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(isDark ? 45 : 18),
+                        blurRadius: 5,
+                        offset: const Offset(0, 1.5),
+                      ),
+                    ],
                   ),
                 ),
+              ),
 
-                // Tab items
-                Row(
-                  children: List.generate(widget.tabs.length, (index) {
-                    final isSelected = currentActiveIndex == index;
-                    return Expanded(
-                      child: Semantics(
-                        button: true,
-                        selected: isSelected,
-                        label: widget.tabs[index],
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            if (widget.selectedIndex != index) {
-                              unawaited(HapticFeedback.selectionClick());
-                              widget.onTabSelected(index);
-                            }
-                          },
-                          child: Center(
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 180),
-                              style: isSelected
-                                  ? typography.caption.bold.copyWith(
-                                      color: isDark
-                                          ? Colors.white
-                                          : colors.primary,
-                                      fontSize:
-                                          widget.isCompact ? 11.5 : 12.5,
-                                    )
-                                  : typography.caption.medium.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize:
-                                          widget.isCompact ? 11.5 : 12.5,
-                                    ),
-                              child: Text(
-                                widget.tabs[index],
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+              // Tab items
+              Row(
+                children: List.generate(tabs.length, (index) {
+                  final isSelected = selectedIndex == index;
+                  return Expanded(
+                    child: Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: tabs[index],
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (selectedIndex != index) {
+                            unawaited(HapticFeedback.selectionClick());
+                            onTabSelected(index);
+                          }
+                        },
+                        child: Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            style: isSelected
+                                ? typography.caption.bold.copyWith(
+                                    color: isDark
+                                        ? Colors.white
+                                        : colors.primary,
+                                    fontSize: isCompact ? 11.5 : 12.5,
+                                  )
+                                : typography.caption.medium.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: isCompact ? 11.5 : 12.5,
+                                  ),
+                            child: Text(
+                              tabs[index],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
                       ),
-                    );
-                  }),
-                ),
-              ],
-            ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           );
         },
       ),
