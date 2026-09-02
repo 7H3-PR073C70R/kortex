@@ -143,7 +143,7 @@ class _GeneratedCardsReviewView extends HookWidget {
           },
           builder: (context, state) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -203,38 +203,32 @@ class _GeneratedCardsReviewView extends HookWidget {
             );
           },
         ),
-        bottomSheet: Container(
-          color: Colors.transparent,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            12,
-            16,
-            MediaQuery.of(context).viewPadding.bottom + 12,
-          ),
-          child: ShrinkableButton(
-            onTap: handleConfirmAndStudy,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colors.primary,
-                    colors.primary.withAlpha(220),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: ShrinkableButton(
+              onTap: handleConfirmAndStudy,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary,
+                      colors.primary.withAlpha(220),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(isDark ? 90 : 50),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withAlpha(isDark ? 90 : 50),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.play_arrow_rounded,

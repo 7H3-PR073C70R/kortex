@@ -7,6 +7,11 @@ abstract class DecksRemoteDataSource {
 
   Future<List<FlashcardModel>> getDeckCards(String deckId);
 
+  Future<void> saveGeneratedDeck({
+    required DeckModel deck,
+    required List<FlashcardModel> cards,
+  });
+
   Future<Sm2CalculationResult> processCardReview({
     required String cardId,
     required int quality,

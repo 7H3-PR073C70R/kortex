@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/repositories/ingestion_repository_impl.dart';
@@ -10,8 +13,12 @@ import 'package:mocktail/mocktail.dart';
 class MockIngestionRemoteDataSource extends Mock
     implements IngestionRemoteDataSource {}
 
+class MockDecksRemoteDataSource extends Mock
+    implements DecksRemoteDataSource {}
+
 void main() {
   late MockIngestionRemoteDataSource mockDataSource;
+  late MockDecksRemoteDataSource mockDecksDataSource;
   late IngestionRepositoryImpl repository;
 
   final testBytes = Uint8List.fromList([10, 20, 30, 40]);
@@ -44,11 +51,27 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(
+      const DeckModel(
+        id: 'fallback_deck',
+        title: 'fallback',
+        subject: 'fallback',
+        totalCards: 0,
+        dueCards: 0,
+        masteryRate: 0,
+        category: 'fallback',
+      ),
+    );
+    registerFallbackValue(const <FlashcardModel>[]);
   });
 
   setUp(() {
     mockDataSource = MockIngestionRemoteDataSource();
-    repository = IngestionRepositoryImpl(mockDataSource);
+    mockDecksDataSource = MockDecksRemoteDataSource();
+    repository = IngestionRepositoryImpl(
+      mockDataSource,
+      decksRemoteDataSource: mockDecksDataSource,
+    );
   });
 
   group('IngestionRepositoryImpl - Content-Addressable Deduplication', () {
@@ -150,6 +173,13 @@ void main() {
         ),
       ];
 
+      when(
+        () => mockDecksDataSource.saveGeneratedDeck(
+          deck: any(named: 'deck'),
+          cards: any(named: 'cards'),
+        ),
+      ).thenAnswer((_) async {});
+
       final result = await repository.generateFlashcardsFromDoc(
         documentId: 'doc_12345678',
         deckTitle: 'Calculus Fundamentals',
@@ -171,6 +201,13 @@ void main() {
           );
         },
       );
+
+      verify(
+        () => mockDecksDataSource.saveGeneratedDeck(
+          deck: any(named: 'deck'),
+          cards: any(named: 'cards'),
+        ),
+      ).called(1);
     });
   });
 }

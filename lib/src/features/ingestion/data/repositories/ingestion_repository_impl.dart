@@ -3,6 +3,9 @@ import 'package:crypto/crypto.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
@@ -11,9 +14,13 @@ import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_ent
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 
 class IngestionRepositoryImpl implements IngestionRepository {
-  IngestionRepositoryImpl(this._remoteDataSource);
+  IngestionRepositoryImpl(
+    this._remoteDataSource, {
+    DecksRemoteDataSource? decksRemoteDataSource,
+  }) : _decksRemoteDataSource = decksRemoteDataSource;
 
   final IngestionRemoteDataSource _remoteDataSource;
+  final DecksRemoteDataSource? _decksRemoteDataSource;
 
   @override
   Future<Either<Failure, DocumentUploadEntity>> uploadDocument({
@@ -83,7 +90,12 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String subject,
     required List<OcrExtractionEntity> snippets,
   }) {
-    return Future<DeckEntity>.sync(() {
+    return Future<DeckEntity>.sync(() async {
+      final prefix = documentId.substring(
+        0,
+        documentId.length > 8 ? 8 : documentId.length,
+      );
+      final deckId = 'deck_$prefix';
       final cards = <FlashcardEntity>[];
 
       for (var i = 0; i < snippets.length; i++) {
@@ -91,7 +103,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
         cards.add(
           FlashcardEntity(
             id: 'ocr_card_${documentId}_$i',
-            deckId: 'deck_$documentId',
+            deckId: deckId,
             front: snippet.topic.isNotEmpty
                 ? snippet.topic
                 : 'Formula / Concept ${i + 1}',
@@ -102,12 +114,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
         );
       }
 
-      final prefix = documentId.substring(
-        0,
-        documentId.length > 8 ? 8 : documentId.length,
-      );
-      return DeckEntity(
-        id: 'deck_$prefix',
+      final deckEntity = DeckEntity(
+        id: deckId,
         title: deckTitle,
         subject: subject,
         totalCards: cards.length,
@@ -117,6 +125,13 @@ class IngestionRepositoryImpl implements IngestionRepository {
         description: 'Auto-synthesized from document $documentId',
         cards: cards,
       );
+
+      await _decksRemoteDataSource?.saveGeneratedDeck(
+        deck: DeckModel.fromEntity(deckEntity),
+        cards: cards.map(FlashcardModel.fromEntity).toList(),
+      );
+
+      return deckEntity;
     }).makeRequest();
   }
 }

@@ -41,6 +41,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<IngestionRepository>(
       () => IngestionRepositoryImpl(
         locator<IngestionRemoteDataSource>(),
+        decksRemoteDataSource: locator<DecksRemoteDataSource>(),
       ),
     )
     ..registerLazySingleton<CommunityRepository>(

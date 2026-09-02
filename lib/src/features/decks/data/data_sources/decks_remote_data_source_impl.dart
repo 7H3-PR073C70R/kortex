@@ -6,32 +6,55 @@ import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result
 import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 
 class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
-  const DecksRemoteDataSourceImpl(
+  DecksRemoteDataSourceImpl(
     this._client, {
     this.sm2Engine = const Sm2AlgorithmEngine(),
   });
 
   final DecksApiClient _client;
   final Sm2AlgorithmEngine sm2Engine;
+  final Map<String, List<FlashcardModel>> _localDeckCards = {};
+  final List<DeckModel> _localCreatedDecks = [];
+
+  @override
+  Future<void> saveGeneratedDeck({
+    required DeckModel deck,
+    required List<FlashcardModel> cards,
+  }) async {
+    _localDeckCards[deck.id] = cards;
+    _localCreatedDecks
+      ..removeWhere((d) => d.id == deck.id)
+      ..insert(0, deck.copyWith(cards: cards));
+  }
 
   @override
   Future<List<DeckModel>> getUserDecks() async {
     try {
-      final decks = await _client.getUserDecks();
-      return decks;
+      final remoteDecks = await _client.getUserDecks();
+      final remoteIds = remoteDecks.map((d) => d.id).toSet();
+      final merged = [
+        ..._localCreatedDecks.where((d) => !remoteIds.contains(d.id)),
+        ...remoteDecks,
+      ];
+      return merged;
     } on Object catch (_) {
-      return const [];
+      return _localCreatedDecks;
     }
   }
 
   @override
   Future<List<FlashcardModel>> getDeckCards(String deckId) async {
+    if (_localDeckCards.containsKey(deckId) &&
+        _localDeckCards[deckId]!.isNotEmpty) {
+      return _localDeckCards[deckId]!;
+    }
     try {
       final cards = await _client.getDeckCards(deckId);
-      return cards;
-    } on Object catch (_) {
-      return const [];
-    }
+      if (cards.isNotEmpty) {
+        return cards;
+      }
+    } on Object catch (_) {}
+    return _localDeckCards[deckId] ?? const [];
   }
 
   @override

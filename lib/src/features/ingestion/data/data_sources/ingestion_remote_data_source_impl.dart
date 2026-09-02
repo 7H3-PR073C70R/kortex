@@ -5,17 +5,24 @@ import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.d
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 
 class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   IngestionRemoteDataSourceImpl(
     this._client,
     this._dio, {
     UserStorageService? userStorage,
-  }) : _userStorage = userStorage;
+    DocumentParserService parserService = const DocumentParserService(),
+  })  : _userStorage = userStorage,
+        _parserService = parserService;
 
   final IngestionApiClient _client;
   final Dio _dio;
   final UserStorageService? _userStorage;
+  final DocumentParserService _parserService;
+
+  final Map<String, Uint8List> _documentBytesCache = {};
+  final Map<String, String> _documentFilenamesCache = {};
 
   @override
   Future<DocumentUploadModel?> findOrCreateDocumentReference({
@@ -87,6 +94,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       contentType = 'image/jpeg';
     }
 
+    _documentBytesCache[docId] = fileBytes;
+    _documentFilenamesCache[docId] = filename;
+
     // 1. Upload to Storage Bucket
     try {
       await _dio.uploadStorageFile(
@@ -122,7 +132,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         return DocumentUploadModel.fromJson(list.first as Map<String, dynamic>);
       }
     } on Object catch (_) {
-      // If RLS or DB rejects direct insert, attempt RPC or return constructed model
+      // If RLS or DB rejects direct insert, attempt RPC or return model
       try {
         final rpcResult = await findOrCreateDocumentReference(
           contentHash: contentHash,
@@ -153,6 +163,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String storagePath,
     required String fileType,
   }) async {
+    // 1. Try remote Edge Function if active
     try {
       final res = await _client.triggerParseStemOcr(
         {
@@ -172,17 +183,38 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             .toList();
       }
     } on Object catch (_) {
-      // Remote Edge function failed or table not found in schema cache
+      // Remote function unavailable, parse directly from document bytes
     }
 
-    // Try fetch from DB directly if available
+    // 2. Try fetch from DB directly if available
     try {
       final snippets = await fetchExtractedSnippets(documentId);
       if (snippets.isNotEmpty) return snippets;
     } on Object catch (_) {}
 
-    // Fallback: Generate structured STEM formula and concept extractions
-    return _generateLocalStemExtractions(documentId, fileType);
+    // 3. Document Parsing Engine: Extract from actual uploaded document
+    final fileBytes = _documentBytesCache[documentId];
+    final filename = _documentFilenamesCache[documentId] ?? 'Document';
+
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      final text = _parserService.extractTextFromBytes(
+        fileBytes,
+        fileType: fileType,
+        filename: filename,
+      );
+      final snippets = _parserService.synthesizeSnippetsFromDocument(
+        documentId: documentId,
+        fullText: text,
+        filename: filename,
+      );
+      return snippets;
+    }
+
+    return _parserService.synthesizeSnippetsFromDocument(
+      documentId: documentId,
+      fullText: '',
+      filename: filename,
+    );
   }
 
   @override
@@ -222,42 +254,5 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     } on Object catch (_) {
       return [];
     }
-  }
-
-  List<OcrExtractionModel> _generateLocalStemExtractions(
-    String documentId,
-    String fileType,
-  ) {
-    return [
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_1',
-        documentId: documentId,
-        rawText:
-            r'Fourier Transform Definition: F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-j\omega t}dt',
-        latexContent:
-            r'F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-j\omega t}dt',
-        topic: 'Signal Analysis & Calculus',
-        confidenceScore: 0.98,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_2',
-        documentId: documentId,
-        rawText:
-            r'Maxwell-Faraday Equation: \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}',
-        latexContent:
-            r'\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}',
-        topic: 'Electromagnetism & Field Theory',
-        confidenceScore: 0.96,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_3',
-        documentId: documentId,
-        rawText:
-            r'Schrödinger Time-Independent Equation: \hat{H}\psi = E\psi',
-        latexContent: r'\hat{H}\psi = E\psi',
-        topic: 'Quantum Mechanics & Modern Physics',
-        confidenceScore: 0.95,
-      ),
-    ];
   }
 }
