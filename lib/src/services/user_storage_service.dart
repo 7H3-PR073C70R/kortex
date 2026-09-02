@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:kortex/src/services/local_storage_service.dart';
 
 abstract class UserStorageService {
@@ -33,5 +34,7 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
-  void clearStorage() {}
+  void clearStorage() {
+    unawaited(_localStorageService.deletePreference(key: _tokenKey));
+  }
 }

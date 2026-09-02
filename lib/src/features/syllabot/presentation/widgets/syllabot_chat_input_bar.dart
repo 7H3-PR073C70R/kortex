@@ -497,11 +497,6 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
                           ? ExecutionEngineType.localOnDevice
                           : ExecutionEngineType.cloudSupabase;
                       widget.onEngineChanged(next);
-                      context.showSnackBar(
-                        message: next == ExecutionEngineType.cloudSupabase
-                            ? l10n.engineCloudSupabase
-                            : l10n.engineLocalOnDevice,
-                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(

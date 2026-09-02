@@ -1,0 +1,317 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/theme_cubit.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+/// Subpage for customizing appearance, sensory haptics, and study reminders.
+class AppPreferencesPage extends HookWidget {
+  const AppPreferencesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final haptics = useState<bool>(AppFeedback.isHapticsEnabled);
+    final notifications = useState<bool>(true);
+    final soundEffects = useState<bool>(true);
+
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      appBar: AppBar(
+        backgroundColor: colors.backgroundPrimary,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: colors.textPrimary,
+            size: 18,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'App & Sensory Settings',
+          style: typography.title3.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 18,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Appearance Theme
+              _buildSectionContainer(
+                title: 'Color Appearance',
+                subtitle: 'Switch between sleek dark mode or clear light mode',
+                colors: colors,
+                typography: typography,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildThemeCard(
+                        context: context,
+                        title: 'Dark Mode',
+                        icon: Icons.dark_mode_rounded,
+                        isSelected: isDark,
+                        onTap: () {
+                          AppFeedback.selection();
+                          unawaited(
+                            context
+                                .read<ThemeCubit>()
+                                .setThemeMode(ThemeMode.dark),
+                          );
+                        },
+                        colors: colors,
+                        typography: typography,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildThemeCard(
+                        context: context,
+                        title: 'Light Mode',
+                        icon: Icons.light_mode_rounded,
+                        isSelected: !isDark,
+                        onTap: () {
+                          AppFeedback.selection();
+                          unawaited(
+                            context
+                                .read<ThemeCubit>()
+                                .setThemeMode(ThemeMode.light),
+                          );
+                        },
+                        colors: colors,
+                        typography: typography,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 2. Sensory & Audio Effects
+              _buildSectionContainer(
+                title: 'Sensory & Audio Experience',
+                subtitle: 'Tactile vibrations and audio cues during study',
+                colors: colors,
+                typography: typography,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Haptic Feedback',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Text(
+                              'Vibrate on card flip & quiz grading',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch.adaptive(
+                          value: haptics.value,
+                          activeTrackColor: colors.primary,
+                          onChanged: (val) {
+                            haptics.value = val;
+                            unawaited(
+                              AppFeedback.setHapticsEnabled(enabled: val),
+                            );
+                            if (val) AppFeedback.light();
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sound Effects (SFX)',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Text(
+                              'Play audio cues on correct answers',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch.adaptive(
+                          value: soundEffects.value,
+                          activeTrackColor: colors.primary,
+                          onChanged: (val) {
+                            AppFeedback.selection();
+                            soundEffects.value = val;
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 3. Notifications & Study Reminders
+              _buildSectionContainer(
+                title: 'Notifications & Streak Protections',
+                subtitle: 'Daily reminders so you never break your study habit',
+                colors: colors,
+                typography: typography,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Daily Study Reminder',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        Text(
+                          'Alert 1 hour before streak reset (8:00 PM)',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch.adaptive(
+                      value: notifications.value,
+                      activeTrackColor: colors.primary,
+                      onChanged: (val) {
+                        AppFeedback.selection();
+                        notifications.value = val;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionContainer({
+    required String title,
+    required String subtitle,
+    required Widget child,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.surfaceBorder.withAlpha(80),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: typography.body.bold.copyWith(
+              color: colors.textPrimary,
+              fontSize: 14.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: typography.caption.regular.copyWith(
+              color: colors.textSecondary,
+              fontSize: 11.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return ShrinkableButton(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withAlpha(30)
+              : colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.surfaceBorder.withAlpha(90),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? colors.primary : colors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: typography.caption.bold.copyWith(
+                color: isSelected ? colors.primary : colors.textPrimary,
+                fontSize: 12.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

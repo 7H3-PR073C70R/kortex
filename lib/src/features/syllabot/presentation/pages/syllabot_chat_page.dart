@@ -430,13 +430,18 @@ class _SyllabotChatView extends HookWidget {
               // Switch
               BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
                 buildWhen: (p, c) =>
-                    p.status != c.status || p.errorMessage != c.errorMessage,
+                    p.status != c.status ||
+                    p.errorMessage != c.errorMessage ||
+                    p.engineType != c.engineType,
                 builder: (context, state) {
-                  if (state.status != SyllabotStatus.error &&
-                      (state.errorMessage == null ||
-                          state.errorMessage!.isEmpty)) {
+                  if (state.status != SyllabotStatus.error ||
+                      state.errorMessage == null ||
+                      state.errorMessage!.isEmpty) {
                     return const SizedBox.shrink();
                   }
+
+                  final isCloudError = state.engineType ==
+                      ExecutionEngineType.cloudSupabase;
 
                   return Container(
                     margin: const EdgeInsets.symmetric(
@@ -457,16 +462,21 @@ class _SyllabotChatView extends HookWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.wifi_off_rounded,
+                              isCloudError
+                                  ? Icons.wifi_off_rounded
+                                  : Icons.error_outline_rounded,
                               color: colors.error,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                state.errorMessage ??
-                                    'Network error. Connect to network or '
-                                        'switch to Offline On-Device LLM.',
+                                isCloudError
+                                    ? (state.errorMessage ??
+                                        'Network error. Connect to network or '
+                                            'switch to Offline On-Device LLM.')
+                                    : 'Offline Engine encountered an issue. '
+                                        'Tap retry.',
                                 style: typography.caption.medium.copyWith(
                                   color: colors.textPrimary,
                                   fontSize: 12,

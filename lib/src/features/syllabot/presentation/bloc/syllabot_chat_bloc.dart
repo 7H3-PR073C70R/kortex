@@ -209,7 +209,14 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     ChangeEngineTypeEvent event,
     Emitter<SyllabotChatState> emit,
   ) {
-    emit(state.copyWith(engineType: event.engine));
+    emit(
+      state.copyWith(
+        engineType: event.engine,
+        status: state.status == SyllabotStatus.error
+            ? SyllabotStatus.idle
+            : state.status,
+      ),
+    );
   }
 
   Future<void> _onLoadChatMessages(

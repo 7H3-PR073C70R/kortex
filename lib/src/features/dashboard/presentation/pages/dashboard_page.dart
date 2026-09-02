@@ -33,8 +33,8 @@ class DashboardPage extends HookWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<DashboardBloc>(
-          create: (_) => locator<DashboardBloc>()
-            ..add(const DashboardStarted()),
+          create: (_) =>
+              locator<DashboardBloc>()..add(const DashboardStarted()),
         ),
         BlocProvider<CramPlannerCubit>(
           create: (_) {
@@ -98,9 +98,9 @@ class _DashboardView extends HookWidget {
                       const SizedBox(height: 20),
                       ShrinkableButton(
                         onTap: () {
-                          context
-                              .read<DashboardBloc>()
-                              .add(const DashboardStarted());
+                          context.read<DashboardBloc>().add(
+                            const DashboardStarted(),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -303,10 +303,6 @@ class _CompactDashboardLayout extends StatelessWidget {
         const SizedBox(height: 18),
 
         // 2. Syllabot Floating Prompt Bar
-        SyllabotQuickPromptBar(
-          insightText: feed.syllabotDailyInsight,
-        ),
-        const SizedBox(height: 18),
 
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         const ExamCountdownBanner(),

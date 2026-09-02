@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -57,7 +57,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                     label: l10n.dashboardUploadNotes,
                     color: colors.primary,
                     onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
+                      AppFeedback.light();
                       _showUploadBottomSheet(context);
                     },
                   ),
@@ -67,7 +67,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                     label: l10n.dashboardQBankAction,
                     color: const Color(0xFFF59E0B),
                     onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
+                      AppFeedback.light();
                       unawaited(
                         context.router.push(PastQuestionsBoardRoute()),
                       );
@@ -79,24 +79,10 @@ class QuickActionSpeedDial extends StatelessWidget {
                     label: l10n.dashboardNewDeck,
                     color: const Color(0xFF8B5CF6),
                     onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
+                      AppFeedback.light();
                       unawaited(
                         context.navigateTo(
                           const MainRoute(children: [DecksRoute()]),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDivider(colors, isDark),
-                  _ActionItem(
-                    icon: Icons.auto_awesome_rounded,
-                    label: l10n.dashboardAiPartner,
-                    color: colors.syllabotAccent,
-                    onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      unawaited(
-                        context.navigateTo(
-                          MainRoute(children: [SyllabotChatRoute()]),
                         ),
                       );
                     },

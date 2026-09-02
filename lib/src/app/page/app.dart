@@ -5,6 +5,7 @@ import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/theme_state.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
 
@@ -15,8 +16,15 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: locator<ThemeCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ThemeCubit>.value(
+          value: locator<ThemeCubit>(),
+        ),
+        BlocProvider<AuthBloc>.value(
+          value: locator<AuthBloc>(),
+        ),
+      ],
       child: BlocBuilder<ThemeCubit, ThemeState>(
         builder: (context, state) {
           return DismissKeyboard(

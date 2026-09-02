@@ -167,8 +167,8 @@ void main() {
       );
 
       expect(find.text('Upload Notes'), findsOneWidget);
+      expect(find.text('Q-Bank'), findsOneWidget);
       expect(find.text('New Deck'), findsOneWidget);
-      expect(find.text('AI Partner'), findsOneWidget);
     });
   });
 }

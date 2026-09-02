@@ -103,10 +103,26 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       },
     );
 
-    // Auto-start listening after short delay
+    // Speak initial AI greeting before listening
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_startListening());
+      unawaited(_speakInitialGreeting());
     });
+  }
+
+  Future<void> _speakInitialGreeting() async {
+    const greeting =
+        "Hello! I'm Syllabot. What topic or problem would you like to explore "
+        'together today?';
+    if (!mounted) return;
+    setState(() {
+      _latestResponse = greeting;
+      _state = DialogueState.speaking;
+    });
+
+    await widget.ttsHandler.speak(greeting);
+    if (mounted && _state == DialogueState.speaking) {
+      await _startListening();
+    }
   }
 
   @override
