@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
@@ -134,6 +137,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           ),
         ),
       );
+
+      // Increment streak optimistically across the entire app
+      try {
+        locator<AuthBloc>().add(const AuthStreakIncremented());
+      } on Object catch (_) {}
 
       emit(
         state.copyWith(

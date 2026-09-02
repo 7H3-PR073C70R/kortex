@@ -2060,6 +2060,90 @@ abstract class AppLocalizations {
   /// **'12d'**
   String get studyRatingEasyInterval;
 
+  /// Title of create or ingest modal sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Create or Ingest Deck'**
+  String get decksCreateSheetTitle;
+
+  /// Subtitle of create or ingest modal sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to add active recall cards to your study deck.'**
+  String get decksCreateSheetSubtitle;
+
+  /// Action tile title for AI generation
+  ///
+  /// In en, this message translates to:
+  /// **'Generate with Syllabot AI'**
+  String get decksGenerateWithAiTitle;
+
+  /// Action tile subtitle for AI generation
+  ///
+  /// In en, this message translates to:
+  /// **'Create recall decks automatically from any topic.'**
+  String get decksGenerateWithAiSubtitle;
+
+  /// Action tile title for uploading documents
+  ///
+  /// In en, this message translates to:
+  /// **'Scan & Upload Course Material'**
+  String get decksUploadDocTitle;
+
+  /// Action tile subtitle for uploading documents
+  ///
+  /// In en, this message translates to:
+  /// **'Extract cards from PDFs, lecture notes, or slides.'**
+  String get decksUploadDocSubtitle;
+
+  /// Default prompt when creating deck via AI chat
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a new active recall flashcard deck.'**
+  String get decksAiPromptDefault;
+
+  /// Hint shown on back face of card
+  ///
+  /// In en, this message translates to:
+  /// **'Rate recall below or swipe card'**
+  String get studySessionTapToFlipBack;
+
+  /// Gesture swipe guide for study session
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe Left: Hard · Right: Good · Up: Easy · Down: Again'**
+  String get studySessionSwipe4WayHint;
+
+  /// Key shortcut hint below rating button
+  ///
+  /// In en, this message translates to:
+  /// **'Key {key}'**
+  String studyRatingKeyShortcut(String key);
+
+  /// Swipe route badge for Hard
+  ///
+  /// In en, this message translates to:
+  /// **'Hard ({interval})'**
+  String studySessionRouteHard(String interval);
+
+  /// Swipe route badge for Good
+  ///
+  /// In en, this message translates to:
+  /// **'Good ({interval})'**
+  String studySessionRouteGood(String interval);
+
+  /// Swipe route badge for Easy
+  ///
+  /// In en, this message translates to:
+  /// **'Easy ({interval})'**
+  String studySessionRouteEasy(String interval);
+
+  /// Swipe route badge for Again
+  ///
+  /// In en, this message translates to:
+  /// **'Again ({interval})'**
+  String studySessionRouteAgain(String interval);
+
   /// Timer label in study session
   ///
   /// In en, this message translates to:

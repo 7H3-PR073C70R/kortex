@@ -1142,6 +1142,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get studyRatingEasyInterval => '12d';
 
   @override
+  String get decksCreateSheetTitle => 'Create or Ingest Deck';
+
+  @override
+  String get decksCreateSheetSubtitle =>
+      'Choose how you want to add active recall cards to your study deck.';
+
+  @override
+  String get decksGenerateWithAiTitle => 'Generate with Syllabot AI';
+
+  @override
+  String get decksGenerateWithAiSubtitle =>
+      'Create recall decks automatically from any topic.';
+
+  @override
+  String get decksUploadDocTitle => 'Scan & Upload Course Material';
+
+  @override
+  String get decksUploadDocSubtitle =>
+      'Extract cards from PDFs, lecture notes, or slides.';
+
+  @override
+  String get decksAiPromptDefault =>
+      'Generate a new active recall flashcard deck.';
+
+  @override
+  String get studySessionTapToFlipBack => 'Rate recall below or swipe card';
+
+  @override
+  String get studySessionSwipe4WayHint =>
+      'Swipe Left: Hard · Right: Good · Up: Easy · Down: Again';
+
+  @override
+  String studyRatingKeyShortcut(String key) {
+    return 'Key $key';
+  }
+
+  @override
+  String studySessionRouteHard(String interval) {
+    return 'Hard ($interval)';
+  }
+
+  @override
+  String studySessionRouteGood(String interval) {
+    return 'Good ($interval)';
+  }
+
+  @override
+  String studySessionRouteEasy(String interval) {
+    return 'Easy ($interval)';
+  }
+
+  @override
+  String studySessionRouteAgain(String interval) {
+    return 'Again ($interval)';
+  }
+
+  @override
   String studySessionTimer(String time) {
     return 'Session Time: $time';
   }

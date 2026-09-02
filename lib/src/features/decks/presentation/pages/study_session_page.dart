@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
@@ -13,6 +14,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture
 import 'package:kortex/src/features/decks/presentation/widgets/sm2_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
@@ -80,7 +82,7 @@ class _StudySessionView extends HookWidget {
           },
           builder: (context, state) {
             if (state.status == StudySessionStatus.loading) {
-              return const Center(child: CircularProgressIndicator());
+              return _buildSessionShimmerSkeleton(colors, isDark);
             }
 
             if (state.status == StudySessionStatus.error) {
@@ -161,7 +163,7 @@ class _StudySessionView extends HookWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. Main Flashcard Canvas with 3D Flip & Physics
+                    // 2. Main Flashcard Canvas with 3D Flip & 4-Way Physics
                     Expanded(
                       child: Center(
                         child: FlashcardGestureCanvas(
@@ -178,6 +180,16 @@ class _StudySessionView extends HookWidget {
                           onSwipeRight: () {
                             unawaited(
                               context.read<StudySessionCubit>().rateCard(4),
+                            );
+                          },
+                          onSwipeUp: () {
+                            unawaited(
+                              context.read<StudySessionCubit>().rateCard(5),
+                            );
+                          },
+                          onSwipeDown: () {
+                            unawaited(
+                              context.read<StudySessionCubit>().rateCard(0),
                             );
                           },
                         ),
@@ -216,6 +228,100 @@ class _StudySessionView extends HookWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildSessionShimmerSkeleton(
+    AppThemeColorsExtension colors,
+    bool isDark,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: Column(
+        children: [
+          // Progress Top Bar Skeleton
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ShimmerPlaceholder(height: 36, width: 36, borderRadius: 18),
+              ShimmerPlaceholder(height: 16, width: 80, borderRadius: 8),
+              ShimmerPlaceholder(height: 36, width: 36, borderRadius: 18),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Main Flashcard Skeleton
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceSecondary.withAlpha(160)
+                    : colors.surfacePrimary.withAlpha(220),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: colors.surfaceBorder.withAlpha(100),
+                ),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ShimmerPlaceholder(
+                        height: 22,
+                        width: 100,
+                        borderRadius: 8,
+                      ),
+                      ShimmerPlaceholder(
+                        height: 16,
+                        width: 70,
+                        borderRadius: 6,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      ShimmerPlaceholder(
+                        height: 22,
+                        width: 260,
+                        borderRadius: 8,
+                      ),
+                      SizedBox(height: 12),
+                      ShimmerPlaceholder(
+                        height: 18,
+                        width: 200,
+                        borderRadius: 8,
+                      ),
+                      SizedBox(height: 24),
+                      ShimmerPlaceholder(
+                        height: 60,
+                        width: 240,
+                        borderRadius: 14,
+                      ),
+                    ],
+                  ),
+                  ShimmerPlaceholder(
+                    height: 14,
+                    width: 180,
+                    borderRadius: 6,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Bottom Bar Skeleton
+          const ShimmerPlaceholder(
+            height: 52,
+            width: double.infinity,
+            borderRadius: 16,
+          ),
+        ],
       ),
     );
   }

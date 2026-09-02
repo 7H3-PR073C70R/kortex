@@ -18,6 +18,8 @@ class FlashcardGestureCanvas extends HookWidget {
     required this.onTapFlip,
     required this.onSwipeLeft,
     required this.onSwipeRight,
+    this.onSwipeUp,
+    this.onSwipeDown,
     super.key,
   });
 
@@ -26,6 +28,8 @@ class FlashcardGestureCanvas extends HookWidget {
   final VoidCallback onTapFlip;
   final VoidCallback onSwipeLeft;
   final VoidCallback onSwipeRight;
+  final VoidCallback? onSwipeUp;
+  final VoidCallback? onSwipeDown;
 
   @override
   Widget build(BuildContext context) {
@@ -52,30 +56,80 @@ class FlashcardGestureCanvas extends HookWidget {
       [isFlipped],
     );
 
-    // Swipe Offset State for drag gestures
+    // 2D Swipe Offset State for drag gestures
     final dragOffset = useState<Offset>(Offset.zero);
     final isDragging = useState<bool>(false);
+
+    final dx = dragOffset.value.dx;
+    final dy = dragOffset.value.dy;
+
+    // Determine current drag direction for visual route overlay
+    Color? routeColor;
+    String? routeLabel;
+    IconData? routeIcon;
+    double dragProgress = 0;
+
+    if (dx.abs() > 30 || dy.abs() > 30) {
+      if (dx.abs() >= dy.abs()) {
+        if (dx > 0) {
+          routeColor = colors.recallGood;
+          routeLabel = l10n.studySessionRouteGood(l10n.studyRatingGoodInterval);
+          routeIcon = Icons.thumb_up_rounded;
+          dragProgress = (dx / 120).clamp(0.0, 1.0);
+        } else {
+          routeColor = colors.recallHard;
+          routeLabel = l10n.studySessionRouteHard(l10n.studyRatingHardInterval);
+          routeIcon = Icons.bolt_rounded;
+          dragProgress = (dx.abs() / 120).clamp(0.0, 1.0);
+        }
+      } else {
+        if (dy < 0) {
+          routeColor = colors.recallEasy;
+          routeLabel = l10n.studySessionRouteEasy(l10n.studyRatingEasyInterval);
+          routeIcon = Icons.rocket_launch_rounded;
+          dragProgress = (dy.abs() / 100).clamp(0.0, 1.0);
+        } else {
+          routeColor = colors.recallAgain;
+          routeLabel =
+              l10n.studySessionRouteAgain(l10n.studyRatingAgainInterval);
+          routeIcon = Icons.replay_rounded;
+          dragProgress = (dy / 100).clamp(0.0, 1.0);
+        }
+      }
+    }
 
     return GestureDetector(
       onTap: () {
         unawaited(HapticFeedback.lightImpact());
         onTapFlip();
       },
-      onHorizontalDragStart: (_) {
+      onPanStart: (_) {
         isDragging.value = true;
       },
-      onHorizontalDragUpdate: (details) {
-        dragOffset.value += Offset(details.primaryDelta ?? 0, 0);
+      onPanUpdate: (details) {
+        dragOffset.value += details.delta;
       },
-      onHorizontalDragEnd: (details) {
+      onPanEnd: (details) {
         isDragging.value = false;
-        final dx = dragOffset.value.dx;
-        if (dx < -120) {
-          unawaited(HapticFeedback.mediumImpact());
-          onSwipeLeft();
-        } else if (dx > 120) {
-          unawaited(HapticFeedback.mediumImpact());
-          onSwipeRight();
+        final currentDx = dragOffset.value.dx;
+        final currentDy = dragOffset.value.dy;
+
+        if (currentDx.abs() >= currentDy.abs()) {
+          if (currentDx < -90) {
+            unawaited(HapticFeedback.mediumImpact());
+            onSwipeLeft();
+          } else if (currentDx > 90) {
+            unawaited(HapticFeedback.mediumImpact());
+            onSwipeRight();
+          }
+        } else {
+          if (currentDy < -80) {
+            unawaited(HapticFeedback.mediumImpact());
+            (onSwipeUp ?? onSwipeRight)();
+          } else if (currentDy > 80) {
+            unawaited(HapticFeedback.mediumImpact());
+            (onSwipeDown ?? onSwipeLeft)();
+          }
         }
         dragOffset.value = Offset.zero;
       },
@@ -88,41 +142,94 @@ class FlashcardGestureCanvas extends HookWidget {
           final transformMatrix = Matrix4.identity()
             ..setEntry(3, 2, 0.001)
             ..multiply(
-              Matrix4.translationValues(dragOffset.value.dx, 0, 0),
+              Matrix4.translationValues(
+                dragOffset.value.dx,
+                dragOffset.value.dy * 0.7,
+                0,
+              ),
             )
-            ..rotateZ(dragOffset.value.dx * 0.0005)
+            ..rotateZ(dragOffset.value.dx * 0.0004)
             ..rotateY(flipAngle);
 
-          return Transform(
+          return Stack(
+            clipBehavior: Clip.none,
             alignment: Alignment.center,
-            transform: transformMatrix,
-            child: isUnder
-                ? Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.identity()..rotateY(math.pi),
-                    child: _CardFace(
-                      badgeText: l10n.studySessionBackBadge,
-                      badgeColor: colors.success,
-                      mainText: card.back,
-                      latexFormula: card.backLatex,
-                      isBackFace: true,
-                      colors: colors,
-                      typography: typography,
-                      isDark: isDark,
-                      card: card,
+            children: [
+              Transform(
+                alignment: Alignment.center,
+                transform: transformMatrix,
+                child: isUnder
+                    ? Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()..rotateY(math.pi),
+                        child: _CardFace(
+                          badgeText: l10n.studySessionBackBadge,
+                          badgeColor: colors.success,
+                          mainText: card.back,
+                          latexFormula: card.backLatex,
+                          isBackFace: true,
+                          colors: colors,
+                          typography: typography,
+                          isDark: isDark,
+                          card: card,
+                        ),
+                      )
+                    : _CardFace(
+                        badgeText: l10n.studySessionFrontBadge,
+                        badgeColor: colors.primary,
+                        mainText: card.front,
+                        latexFormula: card.frontLatex,
+                        isBackFace: false,
+                        colors: colors,
+                        typography: typography,
+                        isDark: isDark,
+                        card: card,
+                      ),
+              ),
+
+              // Visual Drag Direction Route Indicator Overlay
+              if (routeColor != null && routeLabel != null && routeIcon != null)
+                Positioned(
+                  top: 24,
+                  child: Opacity(
+                    opacity: dragProgress,
+                    child: Transform.scale(
+                      scale: 0.85 + (0.25 * dragProgress),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: routeColor.withAlpha(isDark ? 230 : 255),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: routeColor.withAlpha(120),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(routeIcon, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              routeLabel,
+                              style: typography.caption.bold.copyWith(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  )
-                : _CardFace(
-                    badgeText: l10n.studySessionFrontBadge,
-                    badgeColor: colors.primary,
-                    mainText: card.front,
-                    latexFormula: card.frontLatex,
-                    isBackFace: false,
-                    colors: colors,
-                    typography: typography,
-                    isDark: isDark,
-                    card: card,
                   ),
+                ),
+            ],
           );
         },
       ),
@@ -155,12 +262,11 @@ class _CardFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return Semantics(
       container: true,
       button: true,
       label: isBackFace
-          ? 'Back of card: $mainText. Tap or spacebar to flip.'
+          ? 'Back of card: $mainText. Rate recall or tap to flip.'
           : 'Front of card: $mainText. Tap or spacebar to reveal answer.',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
@@ -258,18 +364,22 @@ class _CardFace extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Bottom Hint
+                // Bottom Self-Aware Hint
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.touch_app_rounded,
+                      isBackFace
+                          ? Icons.swap_vert_rounded
+                          : Icons.touch_app_rounded,
                       size: 14,
                       color: colors.textMuted,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      l10n.studySessionTapToFlip,
+                      isBackFace
+                          ? context.l10n.studySessionTapToFlipBack
+                          : context.l10n.studySessionTapToFlip,
                       style: typography.footnote.regular.copyWith(
                         color: colors.textMuted,
                         fontSize: 11.5,

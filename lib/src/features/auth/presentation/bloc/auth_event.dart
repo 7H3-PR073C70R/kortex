@@ -151,6 +151,11 @@ class AuthDisplayNameUpdated extends AuthEvent {
   List<Object?> get props => [displayName];
 }
 
+/// Dispatched when user finishes a study deck session to increment daily streak.
+class AuthStreakIncremented extends AuthEvent {
+  const AuthStreakIncremented();
+}
+
 /// Dispatched when user taps Sign Out.
 class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();

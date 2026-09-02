@@ -44,6 +44,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthUpdateCourseTrackRequested>(_onUpdateCourseTrackRequested);
     on<AuthAvatarUpdated>(_onAvatarUpdated);
     on<AuthDisplayNameUpdated>(_onDisplayNameUpdated);
+    on<AuthStreakIncremented>(_onStreakIncremented);
     on<AuthSignOutRequested>(_onSignOutRequested);
 
     _authSubscription = _observeAuthStateUseCase().listen((status) {
@@ -432,6 +433,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           userProfile:
               state.userProfile!.copyWith(displayName: event.displayName),
+        ),
+      );
+    }
+  }
+
+  void _onStreakIncremented(
+    AuthStreakIncremented event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.userProfile != null) {
+      final updatedStreak = (state.userProfile!.streakDays <= 0)
+          ? 1
+          : state.userProfile!.streakDays + 1;
+      emit(
+        state.copyWith(
+          userProfile:
+              state.userProfile!.copyWith(streakDays: updatedStreak),
         ),
       );
     }

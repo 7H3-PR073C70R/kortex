@@ -1625,6 +1625,92 @@
     "@studyRatingEasyInterval": {
         "description": "SM-2 Easy interval"
     },
+    "decksCreateSheetTitle": "Create or Ingest Deck",
+    "@decksCreateSheetTitle": {
+        "description": "Title of create or ingest modal sheet"
+    },
+    "decksCreateSheetSubtitle": "Choose how you want to add active recall cards to your study deck.",
+    "@decksCreateSheetSubtitle": {
+        "description": "Subtitle of create or ingest modal sheet"
+    },
+    "decksGenerateWithAiTitle": "Generate with Syllabot AI",
+    "@decksGenerateWithAiTitle": {
+        "description": "Action tile title for AI generation"
+    },
+    "decksGenerateWithAiSubtitle": "Create recall decks automatically from any topic.",
+    "@decksGenerateWithAiSubtitle": {
+        "description": "Action tile subtitle for AI generation"
+    },
+    "decksUploadDocTitle": "Scan & Upload Course Material",
+    "@decksUploadDocTitle": {
+        "description": "Action tile title for uploading documents"
+    },
+    "decksUploadDocSubtitle": "Extract cards from PDFs, lecture notes, or slides.",
+    "@decksUploadDocSubtitle": {
+        "description": "Action tile subtitle for uploading documents"
+    },
+    "decksAiPromptDefault": "Generate a new active recall flashcard deck.",
+    "@decksAiPromptDefault": {
+        "description": "Default prompt when creating deck via AI chat"
+    },
+    "studySessionTapToFlipBack": "Rate recall below or swipe card",
+    "@studySessionTapToFlipBack": {
+        "description": "Hint shown on back face of card"
+    },
+    "studySessionSwipe4WayHint": "Swipe Left: Hard · Right: Good · Up: Easy · Down: Again",
+    "@studySessionSwipe4WayHint": {
+        "description": "Gesture swipe guide for study session"
+    },
+    "studyRatingKeyShortcut": "Key {key}",
+    "@studyRatingKeyShortcut": {
+        "description": "Key shortcut hint below rating button",
+        "placeholders": {
+            "key": {
+                "type": "String",
+                "example": "1"
+            }
+        }
+    },
+    "studySessionRouteHard": "Hard ({interval})",
+    "@studySessionRouteHard": {
+        "description": "Swipe route badge for Hard",
+        "placeholders": {
+            "interval": {
+                "type": "String",
+                "example": "1d"
+            }
+        }
+    },
+    "studySessionRouteGood": "Good ({interval})",
+    "@studySessionRouteGood": {
+        "description": "Swipe route badge for Good",
+        "placeholders": {
+            "interval": {
+                "type": "String",
+                "example": "6d"
+            }
+        }
+    },
+    "studySessionRouteEasy": "Easy ({interval})",
+    "@studySessionRouteEasy": {
+        "description": "Swipe route badge for Easy",
+        "placeholders": {
+            "interval": {
+                "type": "String",
+                "example": "12d"
+            }
+        }
+    },
+    "studySessionRouteAgain": "Again ({interval})",
+    "@studySessionRouteAgain": {
+        "description": "Swipe route badge for Again",
+        "placeholders": {
+            "interval": {
+                "type": "String",
+                "example": "<10m"
+            }
+        }
+    },
     "studySessionTimer": "Session Time: {time}",
     "@studySessionTimer": {
         "description": "Timer label in study session",
