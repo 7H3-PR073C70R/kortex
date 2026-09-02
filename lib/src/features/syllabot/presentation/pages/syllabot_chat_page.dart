@@ -249,9 +249,52 @@ class _SyllabotChatView extends HookWidget {
         return;
       }
 
+      final userPrompts = state.messages
+          .where((m) => m.sender == MessageSender.user)
+          .map((m) => m.text.trim())
+          .toList();
+
+      var derivedTitle = 'Study Notes';
+      var derivedCourseCode = 'GEN 101';
+
+      if (userPrompts.isNotEmpty) {
+        final firstPrompt = userPrompts.first;
+        final clean = firstPrompt.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+        derivedTitle =
+            clean.length > 38 ? '${clean.substring(0, 35)}...' : clean;
+
+        final lower = firstPrompt.toLowerCase();
+        if (lower.contains('circle') ||
+            lower.contains('theorem') ||
+            lower.contains('geometry') ||
+            lower.contains('angle') ||
+            lower.contains('math')) {
+          derivedCourseCode = 'MATH 101';
+        } else if (lower.contains('physics') ||
+            lower.contains('euler') ||
+            lower.contains('lagrange') ||
+            lower.contains('force') ||
+            lower.contains('mechanic')) {
+          derivedCourseCode = 'PHYS 201';
+        } else if (lower.contains('bio') ||
+            lower.contains('cell') ||
+            lower.contains('mitosis') ||
+            lower.contains('dna')) {
+          derivedCourseCode = 'BIO 101';
+        } else if (lower.contains('chem') || lower.contains('reaction')) {
+          derivedCourseCode = 'CHEM 101';
+        } else if (lower.contains('algo') ||
+            lower.contains('code') ||
+            lower.contains('binary')) {
+          derivedCourseCode = 'CS 101';
+        }
+      }
+
       unawaited(
         ConvertToDeckActionSheet.show(
           sheetContext,
+          initialTitle: derivedTitle,
+          initialCourseCode: derivedCourseCode,
           onGenerateDeck: (title, courseCode) {
             sheetContext.read<SyllabotChatBloc>().add(
                   ConvertToDeckEvent(

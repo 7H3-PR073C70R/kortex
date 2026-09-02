@@ -36,6 +36,7 @@ void _initRepositoryLocator() {
       () => SyllabotRepositoryImpl(
         remoteDataSource: locator<SyllabotRemoteDataSource>(),
         localDataSource: locator<SyllabotLocalDataSource>(),
+        decksRemoteDataSource: locator<DecksRemoteDataSource>(),
       ),
     )
     ..registerLazySingleton<IngestionRepository>(

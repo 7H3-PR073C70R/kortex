@@ -11,14 +11,20 @@ import 'package:kortex/src/shared/widgets/app_text_field.dart';
 class ConvertToDeckActionSheet extends HookWidget {
   const ConvertToDeckActionSheet({
     required this.onGenerateDeck,
+    this.initialTitle,
+    this.initialCourseCode,
     super.key,
   });
 
   final void Function(String title, String courseCode) onGenerateDeck;
+  final String? initialTitle;
+  final String? initialCourseCode;
 
   static Future<void> show(
     BuildContext context, {
     required void Function(String title, String courseCode) onGenerateDeck,
+    String? initialTitle,
+    String? initialCourseCode,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -26,6 +32,8 @@ class ConvertToDeckActionSheet extends HookWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => ConvertToDeckActionSheet(
         onGenerateDeck: onGenerateDeck,
+        initialTitle: initialTitle,
+        initialCourseCode: initialCourseCode,
       ),
     );
   }
@@ -38,8 +46,9 @@ class ConvertToDeckActionSheet extends HookWidget {
     final isDark = context.isDarkMode;
 
     final titleController =
-        useTextEditingController(text: 'Syllabot Study Notes');
-    final courseController = useTextEditingController(text: 'PHYS 301');
+        useTextEditingController(text: initialTitle ?? 'Syllabot Study Notes');
+    final courseController =
+        useTextEditingController(text: initialCourseCode ?? 'GEN 101');
 
     return Padding(
       padding: EdgeInsets.only(

@@ -42,6 +42,7 @@ void _initDataSource() {
     ..registerLazySingleton<SyllabotLocalDataSource>(
       () => SyllabotLocalDataSourceImpl(
         locator<LocalLlmEngineClient>(),
+        storageService: locator<LocalStorageService>(),
       ),
     )
     ..registerLazySingleton<IngestionRemoteDataSource>(

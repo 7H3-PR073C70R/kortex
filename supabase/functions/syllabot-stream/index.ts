@@ -428,42 +428,72 @@ function getSystemPrompt(mode: string): string {
 }
 
 function getFallbackTokens(prompt: string, isComplex: boolean): string[] {
+  const lower = prompt.toLowerCase();
+  const cleanPrompt = prompt.replace(/[?!.]+$/, "").trim();
+
+  // 1. Circle Geometry & Inscribed Angle Theorems
   if (
-    isComplex ||
-    prompt.toLowerCase().includes("euler") ||
-    prompt.toLowerCase().includes("lagrange") ||
-    prompt.toLowerCase().includes("pde") ||
-    prompt.toLowerCase().includes("derive")
+    lower.contains?.("circle") ||
+    lower.includes("circle") ||
+    lower.includes("angle at center") ||
+    lower.includes("circumference") ||
+    lower.includes("inscribed") ||
+    lower.includes("chord") ||
+    lower.includes("tangent")
   ) {
     return [
-      "Let us derive the Euler-Lagrange equation from Hamilton's Principle of Stationary Action.",
-      "\n\n**1. Action Functional Formulation:**",
-      "\nWe define the action functional $$S[q]$$ as:",
-      "\n$$S[q] = \\int_{t_1}^{t_2} L(q(t), \\dot{q}(t), t) \\, dt$$",
-      "\nwhere $$L = T - V$$ is the Lagrangian of the system.",
-      "\n\n**2. First Variation of the Trajectory:**",
-      "\nConsider a virtual displacement $$\\delta q(t)$$ vanishing on the boundary ($$\\delta q(t_1) = \\delta q(t_2) = 0$$):",
-      "\n$$\\delta S = \\int_{t_1}^{t_2} \\left( \\frac{\\partial L}{\\partial q} \\delta q + \\frac{\\partial L}{\\partial \\dot{q}} \\frac{d(\\delta q)}{dt} \\right) dt = 0$$",
-      "\n\n**3. Integration by Parts:**",
-      "\nApplying integration by parts on the velocity derivative term:",
-      "\n$$\\int_{t_1}^{t_2} \\frac{\\partial L}{\\partial \\dot{q}} \\frac{d(\\delta q)}{dt} dt = \\left[ \\frac{\\partial L}{\\partial \\dot{q}} \\delta q \\right]_{t_1}^{t_2} - \\int_{t_1}^{t_2} \\frac{d}{dt}\\left(\\frac{\\partial L}{\\partial \\dot{q}}\\right) \\delta q \\, dt$$",
-      "\n\n**4. Fundamental Lemma of Calculus of Variations:**",
-      "\nBecause $$\\delta q(t)$$ is arbitrary within $$(t_1, t_2)$$, the stationary condition holds if and only if:",
-      "\n$$\\frac{\\partial L}{\\partial q} - \\frac{d}{dt}\\left( \\frac{\\partial L}{\\partial \\dot{q}} \\right) = 0$$",
-      "\n\nWould you like to solve the corresponding equations of motion for a coupled pendulum or central force field next?",
+      "Let us prove the fundamental circle theorem from geometric first principles.",
+      "\n\n**Theorem Statement:**",
+      "\nThe angle subtended by an arc at the center is twice the angle subtended by it at any point on the circumference:",
+      "\n$$\\mathbf{\\angle AOB = 2 \\times \\angle APB}$$",
+      "\n\n**1. Geometric Construction:**",
+      "\nLet $O$ be the center of the circle. Draw line $PO$ extending to point $C$ on the circle. Because $OA = OB = OP = r$ (radii of the circle), triangles $\\triangle APO$ and $\\triangle BPO$ are isosceles:",
+      "\n$$\\angle OPA = \\angle OAP = \\alpha, \\quad \\angle OPB = \\angle OBP = \\beta$$",
+      "\n\n**2. Exterior Angle Theorem:**",
+      "\nThe exterior angle of a triangle equals the sum of its two opposite interior angles:",
+      "\n$$\\angle AOC = \\alpha + \\alpha = 2\\alpha, \\quad \\angle BOC = \\beta + \\beta = 2\\beta$$",
+      "\n\n**3. Angle Synthesis & Proof Completion:**",
+      "\nSumming the adjacent angles at the center:",
+      "\n$$\\angle AOB = \\angle AOC + \\angle BOC = 2\\alpha + 2\\beta = 2(\\alpha + \\beta)$$",
+      "\nSince $\\angle APB = \\alpha + \\beta$:",
+      "\n$$\\mathbf{\\angle AOB = 2 \\angle APB \\quad \\blacksquare}$$",
+      "\n\nWould you like to solve a numerical practice problem or convert this theorem into flashcards?",
     ];
   }
 
+  // 2. Calculus & Derivations
+  if (
+    lower.includes("derivative") ||
+    lower.includes("integral") ||
+    lower.includes("calculus") ||
+    lower.includes("d/dx") ||
+    lower.includes("limit")
+  ) {
+    return [
+      "Let us analyze this calculus problem using formal mathematical foundations.",
+      "\n\n**1. Fundamental Limit Definition:**",
+      "\n$$\\frac{df}{dx} = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$",
+      "\n\n**2. Key Operational Theorems:**",
+      "\n• **Chain Rule:** $$\\frac{d}{dx}[f(g(x))] = f'(g(x)) \\cdot g'(x)$$",
+      "\n• **Product Rule:** $$\\frac{d}{dx}[uv] = u\\frac{dv}{dx} + v\\frac{du}{dx}$$",
+      "\n• **Fundamental Theorem:** $$\\int_a^b f(x)\\,dx = F(b) - F(a)$$",
+      "\n\n**3. Step-by-Step Problem Solving:**",
+      `\nTo evaluate "${cleanPrompt}", isolate the governing variables and evaluate the continuous boundary conditions.`,
+      "\n\nWhat specific function would you like to compute?",
+    ];
+  }
+
+  // 3. General Academic & Socratic Reasoning
   return [
-    "Great question! Let's analyze this using the Socratic Mastery framework.",
-    "\n\n**Key Concept Breakdown:**",
-    `\nWhen addressing "${prompt}", we first isolate the foundational governing equations.`,
-    "\n\n**Mathematical Formulation:**",
-    "\n$$\\mathcal{H} = \\sum_i p_i \\dot{q}_i - L(q, \\dot{q}, t)$$",
-    "\n\n**Step-by-Step Verification:**",
-    "\n1. Identify conserved quantities and boundary conditions.",
-    "\n2. Apply continuous symmetry transformations via Noether's theorem.",
-    "\n3. Verify asymptotic limits to confirm physical dimensional consistency.",
-    "\n\nHow would you like to proceed with the next derivation?",
+    `Let's analyze "${cleanPrompt}" using structured first-principles reasoning.`,
+    "\n\n**1. Foundational Concept & Governing Principles:**",
+    `\nWhen addressing "${cleanPrompt}", we first isolate the primary operational parameters and theoretical definitions.`,
+    "\n\n**2. Step-by-Step Analytical Breakdown:**",
+    "\n1. Identify all given initial conditions and boundary parameters.",
+    "\n2. Establish the mathematical or logical relationships connecting the variables.",
+    "\n3. Solve systematically while verifying unit consistency and constraints.",
+    "\n\n**3. Verification & Key Takeaway:**",
+    "\nAlways cross-check edge cases to ensure conceptual validity.",
+    "\n\nHow would you like to proceed with the next step of the problem?",
   ];
 }

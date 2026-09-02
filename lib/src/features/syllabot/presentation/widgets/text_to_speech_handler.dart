@@ -58,8 +58,21 @@ class TextToSpeechHandler {
   Future<void> _applyVoiceConfiguration() async {
     try {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setSpeechRate(0.5);
-      await _flutterTts.setVolume(1);
+      await _flutterTts.setSpeechRate(0.48);
+      await _flutterTts.setVolume(1.0);
+
+      // Explicitly configure audio session category for iOS speaker playback
+      try {
+        await _flutterTts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playAndRecord,
+          [
+            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+            IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+            IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+          ],
+        );
+        await _flutterTts.awaitSpeakCompletion(true);
+      } on Object catch (_) {}
 
       if (_gender == VoiceGender.female) {
         await _flutterTts.setPitch(1.15);
@@ -67,40 +80,47 @@ class TextToSpeechHandler {
         await _flutterTts.setPitch(0.85);
       }
 
-      // Query available voices to pick best native acoustic matching gender
-      final voices = await _flutterTts.getVoices;
-      if (voices is List) {
-        for (final dynamic voice in voices) {
-          if (voice is Map) {
-            final name = voice['name']?.toString().toLowerCase() ?? '';
-            final locale = voice['locale']?.toString().toLowerCase() ?? '';
-            if (locale.contains('en')) {
-              if (_gender == VoiceGender.female &&
-                  (name.contains('female') ||
-                      name.contains('samantha') ||
-                      name.contains('karen') ||
-                      name.contains('zira'))) {
-                await _flutterTts.setVoice({
-                  'name': voice['name'].toString(),
-                  'locale': voice['locale'].toString(),
-                });
-                break;
-              } else if (_gender == VoiceGender.male &&
-                  (name.contains('male') ||
-                      name.contains('daniel') ||
-                      name.contains('david') ||
-                      name.contains('alex') ||
-                      name.contains('guy'))) {
-                await _flutterTts.setVoice({
-                  'name': voice['name'].toString(),
-                  'locale': voice['locale'].toString(),
-                });
-                break;
+      // Query available voices safely with timeout
+      try {
+        final voices = await _flutterTts.getVoices.timeout(
+          const Duration(milliseconds: 600),
+          onTimeout: () => null,
+        );
+        if (voices is List) {
+          for (final dynamic voice in voices) {
+            if (voice is Map) {
+              final name = voice['name']?.toString().toLowerCase() ?? '';
+              final locale = voice['locale']?.toString().toLowerCase() ?? '';
+              if (locale.contains('en')) {
+                if (_gender == VoiceGender.female &&
+                    (name.contains('female') ||
+                        name.contains('samantha') ||
+                        name.contains('karen') ||
+                        name.contains('zira') ||
+                        name.contains('victoria'))) {
+                  await _flutterTts.setVoice({
+                    'name': voice['name'].toString(),
+                    'locale': voice['locale'].toString(),
+                  });
+                  break;
+                } else if (_gender == VoiceGender.male &&
+                    (name.contains('male') ||
+                        name.contains('daniel') ||
+                        name.contains('david') ||
+                        name.contains('alex') ||
+                        name.contains('guy') ||
+                        name.contains('oliver'))) {
+                  await _flutterTts.setVoice({
+                    'name': voice['name'].toString(),
+                    'locale': voice['locale'].toString(),
+                  });
+                  break;
+                }
               }
             }
           }
         }
-      }
+      } on Object catch (_) {}
     } on Object catch (e) {
       onError?.call(e.toString());
     }

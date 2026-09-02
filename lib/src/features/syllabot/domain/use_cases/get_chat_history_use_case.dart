@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/conversation_session_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/repositories/syllabot_repository.dart';
 
 class GetChatHistoryUseCase {
@@ -17,6 +18,16 @@ class GetChatHistoryUseCase {
     required String sessionId,
   }) {
     return _repository.getSessionMessages(sessionId: sessionId);
+  }
+
+  Future<Either<Failure, ConversationSessionEntity>> createSession({
+    required String title,
+    required SocraticMode socraticMode,
+  }) {
+    return _repository.createChatSession(
+      title: title,
+      socraticMode: socraticMode,
+    );
   }
 
   Future<Either<Failure, void>> deleteSession({required String sessionId}) {

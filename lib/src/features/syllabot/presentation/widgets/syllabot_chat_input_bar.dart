@@ -41,8 +41,10 @@ class SyllabotChatInputBar extends StatefulWidget {
   State<SyllabotChatInputBar> createState() => _SyllabotChatInputBarState();
 }
 
-class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
+class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
+    with SingleTickerProviderStateMixin {
   late final SpeechToTextHandler _speechHandler;
+  late final AnimationController _micPulseController;
   bool _hasInput = false;
   bool _isListening = false;
 
@@ -51,6 +53,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
     super.initState();
     _hasInput = widget.controller.text.trim().isNotEmpty;
     widget.controller.addListener(_onTextChanged);
+
+    _micPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
 
     _speechHandler = SpeechToTextHandler(
       onResult: (text) {
@@ -67,12 +74,20 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
         setState(() {
           _isListening = listening;
         });
+        if (listening) {
+          unawaited(_micPulseController.repeat(reverse: true));
+        } else {
+          _micPulseController.stop();
+          _micPulseController.reset();
+        }
       },
       onError: (err) {
         if (!mounted) return;
         setState(() {
           _isListening = false;
         });
+        _micPulseController.stop();
+        _micPulseController.reset();
       },
     );
   }
@@ -80,6 +95,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
+    _micPulseController.dispose();
     _speechHandler.dispose();
     super.dispose();
   }
@@ -408,33 +424,66 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar> {
                                     ),
                             ),
                           )
-                        : ShrinkableButton(
-                            key: const ValueKey('voice_action'),
-                            onTap: _toggleListening,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: _isListening
-                                    ? colors.error.withAlpha(40)
-                                    : colors.surfaceSecondary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: _isListening
-                                      ? colors.error
-                                      : colors.surfaceBorder.withAlpha(80),
+                        : AnimatedBuilder(
+                            animation: _micPulseController,
+                            builder: (context, _) {
+                              final pulse = _micPulseController.value;
+                              return ShrinkableButton(
+                                key: const ValueKey('voice_action'),
+                                onTap: _toggleListening,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    if (_isListening)
+                                      Container(
+                                        width: 36 + (pulse * 12),
+                                        height: 36 + (pulse * 12),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: colors.error.withAlpha(
+                                            (90 * (1 - pulse)).toInt(),
+                                          ),
+                                        ),
+                                      ),
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: _isListening
+                                            ? colors.error
+                                            : colors.surfaceSecondary,
+                                        shape: BoxShape.circle,
+                                        boxShadow: _isListening
+                                            ? [
+                                                BoxShadow(
+                                                  color: colors.error.withAlpha(
+                                                    (140 + (pulse * 100)).toInt().clamp(0, 255),
+                                                  ),
+                                                  blurRadius: 10 + (pulse * 6),
+                                                  spreadRadius: 1 + (pulse * 2),
+                                                ),
+                                              ]
+                                            : null,
+                                        border: Border.all(
+                                          color: _isListening
+                                              ? Colors.white.withAlpha(180)
+                                              : colors.surfaceBorder.withAlpha(80),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        _isListening
+                                            ? Icons.mic_rounded
+                                            : Icons.mic_none_rounded,
+                                        color: _isListening
+                                            ? Colors.white
+                                            : colors.textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              child: Icon(
-                                _isListening
-                                    ? Icons.mic_rounded
-                                    : Icons.mic_none_rounded,
-                                color: _isListening
-                                    ? colors.error
-                                    : colors.textSecondary,
-                                size: 20,
-                              ),
-                            ),
+                              );
+                            },
                           ),
                   ),
                 ],

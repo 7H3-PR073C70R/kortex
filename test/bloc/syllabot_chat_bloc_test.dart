@@ -3,6 +3,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/conversation_session_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
@@ -43,6 +44,24 @@ void main() {
       mockGetChatHistoryUseCase = MockGetChatHistoryUseCase();
       mockGenerateDeckUseCase = MockGenerateDeckFromChatUseCase();
       mockQueryDocumentContextUseCase = MockQueryDocumentContextUseCase();
+
+      when(
+        () => mockGetChatHistoryUseCase.createSession(
+          title: any(named: 'title'),
+          socraticMode: any(named: 'socraticMode'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(
+          ConversationSessionEntity(
+            id: 'sess_1',
+            userId: 'user_1',
+            title: 'Test Session',
+            socraticMode: SocraticMode.stepByStep,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ),
+      );
     });
 
     SyllabotChatBloc buildBloc({bool withRag = false}) => SyllabotChatBloc(

@@ -56,6 +56,16 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     final updatedMessages = [...state.messages, userMessage];
 
+    // Automatically create and register conversation session if starting new dialogue
+    if (state.messages.isEmpty) {
+      unawaited(
+        _getChatHistory.createSession(
+          title: event.prompt,
+          socraticMode: event.socraticMode,
+        ),
+      );
+    }
+
     emit(
       state.copyWith(
         status: SyllabotStatus.streaming,
