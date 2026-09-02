@@ -25,6 +25,22 @@ class TrackSelectorCard extends StatelessWidget {
         return Icons.calculate_outlined;
       case 'biotech':
         return Icons.biotech_outlined;
+      case 'medical_services':
+        return Icons.medical_services_outlined;
+      case 'gavel':
+        return Icons.gavel_rounded;
+      case 'engineering':
+        return Icons.engineering_outlined;
+      case 'trending_up':
+        return Icons.trending_up_rounded;
+      case 'menu_book':
+        return Icons.menu_book_rounded;
+      case 'terminal':
+        return Icons.terminal_rounded;
+      case 'record_voice_over':
+        return Icons.record_voice_over_outlined;
+      case 'translate':
+        return Icons.translate_rounded;
       default:
         return Icons.auto_stories_rounded;
     }
@@ -47,39 +63,39 @@ class TrackSelectorCard extends StatelessWidget {
       child: ShrinkableButton(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(18),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? colors.primary.withAlpha(isDark ? 45 : 25)
+                ? colors.primary.withAlpha(isDark ? 35 : 18)
                 : isDark
                     ? colors.surfaceSecondary
                     : colors.surfacePrimary,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? colors.primary
-                  : colors.primary.withAlpha(isDark ? 30 : 15),
-              width: isSelected ? 2 : 1,
+                  : colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
+              width: isSelected ? 1.5 : 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected
-                    ? colors.primary.withAlpha(isDark ? 40 : 20)
-                    : Colors.black.withAlpha(isDark ? 40 : 10),
-                blurRadius: isSelected ? 14 : 6,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(isDark ? 30 : 15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
               // Track Icon Container
               Container(
-                width: 52,
-                height: 52,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isSelected
@@ -88,19 +104,19 @@ class TrackSelectorCard extends StatelessWidget {
                             colors.primary.withAlpha(200),
                           ]
                         : [
-                            colors.primary.withAlpha(isDark ? 50 : 30),
-                            colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                            colors.primary.withAlpha(isDark ? 40 : 25),
+                            colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
                           ],
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   _getIconData(track.iconName),
                   color: isSelected ? Colors.white : colors.primary,
-                  size: 26,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
 
               // Title, Description & Badge
               Expanded(
@@ -108,46 +124,51 @@ class TrackSelectorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Text(
                             track.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: typography.title3.bold.copyWith(
+                            style: typography.body.bold.copyWith(
                               color: colors.textPrimary,
+                              fontSize: 14,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: 6,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? colors.primary.withAlpha(50)
+                                ? colors.primary.withAlpha(40)
                                 : colors.surfaceTertiary,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(
-                            '~${track.examCountdownDays}d exam',
+                            '~${track.examCountdownDays}d',
                             style: typography.caption.bold.copyWith(
                               color: isSelected
                                   ? colors.primary
                                   : colors.textSecondary,
+                              fontSize: 10,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       track.description,
-                      style: typography.footnote.regular.copyWith(
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
+                        fontSize: 11.5,
+                        height: 1.25,
                       ),
                     ),
                   ],
@@ -155,25 +176,25 @@ class TrackSelectorCard extends StatelessWidget {
               ),
 
               // Selection Checkmark
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
+                duration: const Duration(milliseconds: 180),
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected ? colors.primary : Colors.transparent,
                   border: Border.all(
                     color: isSelected
                         ? colors.primary
-                        : colors.textSecondary.withAlpha(80),
-                    width: 2,
+                        : colors.textSecondary.withAlpha(70),
+                    width: 1.5,
                   ),
                 ),
                 child: isSelected
                     ? const Icon(
                         Icons.check,
-                        size: 16,
+                        size: 14,
                         color: Colors.white,
                       )
                     : null,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
@@ -99,14 +100,18 @@ class _SplashPageState extends State<SplashPage>
     if (!mounted) return;
 
     final token = locator<UserStorageService>().getToken();
-    final calibRepo = locator<CalibrationRepository>();
-    final calibResult = await calibRepo.getCalibrationProfile();
-    final isCalibrated = calibResult.fold(
-      (_) => false,
-      (profile) => profile?.isCalibrated ?? false,
-    );
+    final supabaseUser = SupabaseSafe.currentUser;
+    final isAuthenticated =
+        (token != null && token.isNotEmpty) || supabaseUser != null;
 
-    if (token != null && token.isNotEmpty) {
+    if (isAuthenticated) {
+      final calibRepo = locator<CalibrationRepository>();
+      final calibResult = await calibRepo.getCalibrationProfile();
+      final isCalibrated = calibResult.fold(
+        (_) => false,
+        (profile) => profile?.isCalibrated ?? false,
+      );
+
       if (!mounted) return;
       if (isCalibrated) {
         await context.router.replaceAll([const MainRoute()]);
@@ -125,8 +130,8 @@ class _SplashPageState extends State<SplashPage>
 
     if (!mounted) return;
 
-    if (hasCompletedOnboarding && isCalibrated) {
-      await context.router.replaceAll([const MainRoute()]);
+    if (hasCompletedOnboarding) {
+      await context.router.replaceAll([const LoginRoute()]);
     } else {
       await context.router.replace(const OnboardingRoute());
     }

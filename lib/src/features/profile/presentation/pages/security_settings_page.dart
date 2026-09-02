@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -164,9 +165,9 @@ class SecuritySettingsPage extends HookWidget {
 
                                   isUpdatingPassword.value = true;
                                   try {
-                                    if (Supabase.instance.isInitialized) {
-                                      await Supabase.instance.client.auth
-                                          .updateUser(
+                                    final client = SupabaseSafe.client;
+                                    if (client != null) {
+                                      await client.auth.updateUser(
                                         UserAttributes(password: newPass),
                                       );
                                     }
@@ -227,8 +228,9 @@ class SecuritySettingsPage extends HookWidget {
                               onTap: () async {
                                 AppFeedback.selection();
                                 try {
-                                  if (Supabase.instance.isInitialized) {
-                                    await Supabase.instance.client.auth
+                                  final client = SupabaseSafe.client;
+                                  if (client != null) {
+                                    await client.auth
                                         .resetPasswordForEmail(email);
                                   }
                                   if (context.mounted) {
@@ -415,8 +417,9 @@ class SecuritySettingsPage extends HookWidget {
                           onTap: () async {
                             AppFeedback.medium();
                             try {
-                              if (Supabase.instance.isInitialized) {
-                                await Supabase.instance.client.auth.signOut(
+                              final client = SupabaseSafe.client;
+                              if (client != null) {
+                                await client.auth.signOut(
                                   scope: SignOutScope.others,
                                 );
                               }

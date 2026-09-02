@@ -12,6 +12,8 @@ class UserProfileModel extends Equatable {
     this.retentionBenchmark = 0.85,
     this.level = 1,
     this.streakDays = 0,
+    this.xpPoints = 0,
+    this.subscriptionTier = 'free',
     this.isOnboarded = false,
   });
 
@@ -27,6 +29,9 @@ class UserProfileModel extends Equatable {
           (json['retention_benchmark'] as num?)?.toDouble() ?? 0.85,
       level: (json['level'] as num?)?.toInt() ?? 1,
       streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
+      xpPoints: (json['xp_points'] as num?)?.toInt() ?? 0,
+      subscriptionTier:
+          (json['subscription_tier'] as String?)?.toLowerCase() ?? 'free',
       isOnboarded: json['is_onboarded'] as bool? ?? false,
     );
   }
@@ -40,6 +45,8 @@ class UserProfileModel extends Equatable {
   final double retentionBenchmark;
   final int level;
   final int streakDays;
+  final int xpPoints;
+  final String subscriptionTier;
   final bool isOnboarded;
 
   Map<String, dynamic> toJson() {
@@ -53,6 +60,8 @@ class UserProfileModel extends Equatable {
       'retention_benchmark': retentionBenchmark,
       'level': level,
       'streak_days': streakDays,
+      'xp_points': xpPoints,
+      'subscription_tier': subscriptionTier,
       'is_onboarded': isOnboarded,
     };
   }
@@ -68,6 +77,8 @@ class UserProfileModel extends Equatable {
       retentionBenchmark: retentionBenchmark,
       level: level,
       streakDays: streakDays,
+      xpPoints: xpPoints,
+      subscriptionTier: subscriptionTier,
       isOnboarded: isOnboarded,
     );
   }
@@ -83,6 +94,8 @@ class UserProfileModel extends Equatable {
         retentionBenchmark,
         level,
         streakDays,
+        xpPoints,
+        subscriptionTier,
         isOnboarded,
       ];
 }

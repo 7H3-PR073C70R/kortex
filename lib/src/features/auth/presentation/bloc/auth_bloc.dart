@@ -67,6 +67,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(state.copyWith(status: AuthStatus.loading));
+
     final profileRes = await _authRepository.getUserProfile();
     profileRes.fold(
       (failure) => emit(
@@ -76,6 +77,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       ),
       (profile) {
+        if (profile.id.isEmpty && profile.email.isEmpty) {
+          emit(
+            state.copyWith(
+              status: AuthStatus.unauthenticated,
+              sessionStatus: AuthSessionStatus.unauthenticated,
+            ),
+          );
+          return;
+        }
+
         final session = profile.isOnboarded
             ? AuthSessionStatus.authenticatedComplete
             : AuthSessionStatus.authenticatedNeedsOnboarding;

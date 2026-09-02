@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/supabase_safe_helper.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
@@ -67,7 +68,7 @@ class UserProfilePage extends HookWidget {
               ),
             ),
             actions: [
-              // Pro Upgrade Badge Button
+              // Pro Upgrade / Status Pill
               ShrinkableButton(
                 onTap: () {
                   AppFeedback.selection();
@@ -80,34 +81,41 @@ class UserProfilePage extends HookWidget {
                   );
                 },
                 child: Container(
-                  margin: const EdgeInsets.only(right: 14),
+                  margin: const EdgeInsets.only(right: 16),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        colors.primary,
-                        colors.syllabotAccent,
-                      ],
+                      colors: profile?.isPro == true
+                          ? [
+                              const Color(0xFFF59E0B),
+                              const Color(0xFFD97706),
+                            ]
+                          : [
+                              colors.primary,
+                              colors.syllabotAccent,
+                            ],
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.auto_awesome_rounded,
+                      Icon(
+                        profile?.isPro == true
+                            ? Icons.verified_rounded
+                            : Icons.auto_awesome_rounded,
                         color: Colors.white,
                         size: 13,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Pro',
+                        profile?.isPro == true ? 'Pro Active' : 'Go Pro',
                         style: typography.caption.bold.copyWith(
                           color: Colors.white,
-                          fontSize: 11.5,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -118,26 +126,31 @@ class UserProfilePage extends HookWidget {
           ),
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 36),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Profile Header & Identity Card
-                  _buildProfileCard(
+                  // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
+                  _buildUnifiedScholarCard(
                     context,
+                    state,
                     profile,
                     colors,
                     typography,
                     isDark,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // 2. Study Performance Quick Metrics Matrix
-                  _buildMetricsGrid(profile, colors, typography, isDark),
-                  const SizedBox(height: 18),
-
-                  // 3. Active Target Track Highlight Capsule
-                  _buildActiveTrackHighlight(
+                  // 2. Settings & Feature Management Menu
+                  Text(
+                    'Settings & Preferences',
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 14.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildNavigationMenu(
                     context,
                     targetTrack,
                     dailyTarget,
@@ -145,27 +158,15 @@ class UserProfilePage extends HookWidget {
                     typography,
                     isDark,
                   ),
-                  const SizedBox(height: 22),
-
-                  // 4. Grouped Settings & Features Navigation
-                  Text(
-                    'Preferences & Management',
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14.5,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildNavigationMenu(context, colors, typography, isDark),
                   const SizedBox(height: 24),
 
-                  // 5. Sign Out Action Button
+                  // 3. Sign Out Button
                   Center(
                     child: ShrinkableButton(
                       onTap: () => _confirmSignOut(context, colors, typography),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
+                          horizontal: 24,
                           vertical: 11,
                         ),
                         decoration: BoxDecoration(
@@ -195,9 +196,9 @@ class UserProfilePage extends HookWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
-                  // 6. App Version & Build Footer
+                  // 4. App Version Footer
                   Center(
                     child: Text(
                       'Kortexify v1.2.0 • Build 1 • Advanced STEM AI',
@@ -216,293 +217,225 @@ class UserProfilePage extends HookWidget {
     );
   }
 
-  Widget _buildProfileCard(
+  /// Unified card containing Scholar Avatar, Name, Email,
+  /// and 3-stat performance row.
+  Widget _buildUnifiedScholarCard(
     BuildContext context,
+    AuthState state,
     UserProfileEntity? profile,
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    final displayName = profile?.displayName ?? 'Kortexify Scholar';
-    final email = profile?.email ?? 'scholar@kortexify.com';
+    final displayName = profile?.displayName ??
+        state.user?.displayName ??
+        'Kortexify Scholar';
+    final email = profile?.email ??
+        state.user?.email ??
+        SupabaseSafe.currentUser?.email ??
+        'scholar@kortexify.com';
+
+    final streakDays = profile?.streakDays ?? 0;
+    final level = profile?.level ?? 1;
+    final retentionPct =
+        ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(isDark ? 100 : 70),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: colors.primary.withAlpha(40),
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
-              style: typography.title2.bold.copyWith(
-                color: colors.primary,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Upper Identity Strip
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayName,
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15.5,
+                // Avatar with gradient glow
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colors.primary,
+                        colors.syllabotAccent,
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'K',
+                      style: typography.title3.bold.copyWith(
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              style: typography.body.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: profile?.isPro == true
+                                  ? const Color(0xFFF59E0B).withAlpha(35)
+                                  : colors.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              profile?.isPro == true ? 'PRO' : 'Free Tier',
+                              style: typography.caption.bold.copyWith(
+                                color: profile?.isPro == true
+                                    ? const Color(0xFFF59E0B)
+                                    : colors.primary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 12,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(30),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Tier 1',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 12,
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    color: colors.textSecondary,
+                    size: 20,
+                  ),
+                  tooltip: 'Edit Profile Name',
+                  onPressed: () => _showEditProfileDialog(
+                    context,
+                    displayName,
+                  ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(
-              Icons.edit_outlined,
-              color: colors.textSecondary,
-              size: 20,
+
+          // Divider
+          Divider(
+            height: 1,
+            color: colors.surfaceBorder.withAlpha(60),
+          ),
+
+          // Integrated 3-Stat Metric Strip
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildMetricCol(
+                    label: 'Daily Streak',
+                    value: '$streakDays Days 🔥',
+                    colors: colors,
+                    typography: typography,
+                  ),
+                ),
+                Container(
+                  height: 28,
+                  width: 1,
+                  color: colors.surfaceBorder.withAlpha(70),
+                ),
+                Expanded(
+                  child: _buildMetricCol(
+                    label: 'Scholar Rank',
+                    value: 'Level $level 🎯',
+                    colors: colors,
+                    typography: typography,
+                  ),
+                ),
+                Container(
+                  height: 28,
+                  width: 1,
+                  color: colors.surfaceBorder.withAlpha(70),
+                ),
+                Expanded(
+                  child: _buildMetricCol(
+                    label: 'Retention',
+                    value: '$retentionPct% 🧠',
+                    colors: colors,
+                    typography: typography,
+                  ),
+                ),
+              ],
             ),
-            tooltip: 'Edit Profile Name',
-            onPressed: () => _showEditProfileDialog(context, displayName),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMetricsGrid(
-    UserProfileEntity? profile,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-  ) {
-    return Row(
+  Widget _buildMetricCol({
+    required String label,
+    required String value,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return Column(
       children: [
-        Expanded(
-          child: _buildMetricTile(
-            title: 'Daily Streak',
-            value: '${profile?.streakDays ?? 0} Days 🔥',
-            accentColor: Colors.orangeAccent,
-            colors: colors,
-            typography: typography,
-            isDark: isDark,
+        Text(
+          value,
+          style: typography.caption.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 13,
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricTile(
-            title: 'Scholar Rank',
-            value: 'Level ${profile?.level ?? 1} 🎯',
-            accentColor: colors.primary,
-            colors: colors,
-            typography: typography,
-            isDark: isDark,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricTile(
-            title: 'Retention',
-            value:
-                '${((profile?.retentionBenchmark ?? 0.85) * 100).toInt()}% 🧠',
-            accentColor: const Color(0xFF10B981),
-            colors: colors,
-            typography: typography,
-            isDark: isDark,
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: typography.caption.regular.copyWith(
+            color: colors.textSecondary,
+            fontSize: 11,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMetricTile({
-    required String title,
-    required String value,
-    required Color accentColor,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: accentColor.withAlpha(isDark ? 50 : 30),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: typography.caption.medium.copyWith(
-              color: colors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: typography.body.bold.copyWith(
-              color: accentColor,
-              fontSize: 13.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveTrackHighlight(
-    BuildContext context,
-    String track,
-    int dailyTarget,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-  ) {
-    return ShrinkableButton(
-      onTap: () {
-        AppFeedback.selection();
-        unawaited(
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const AcademicTrackSettingsPage(),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colors.primary.withAlpha(isDark ? 45 : 25),
-              colors.surfaceSecondary,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 90 : 60),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colors.primary.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.school_rounded,
-                color: Colors.blueAccent,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Target: $track',
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14.5,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(25),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '$dailyTarget cards/day',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Custom syllabus, exam countdown & FSRS scheduling',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: colors.textSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  /// Categorized settings list
   Widget _buildNavigationMenu(
     BuildContext context,
+    String targetTrack,
+    int dailyTarget,
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     bool isDark,
@@ -517,12 +450,13 @@ class UserProfilePage extends HookWidget {
       ),
       child: Column(
         children: [
+          // 1. Academic Track & Target
           _buildNavTile(
             context: context,
-            icon: Icons.track_changes_rounded,
+            icon: Icons.school_rounded,
             iconColor: Colors.blueAccent,
             title: 'Academic Track & Study Goals',
-            subtitle: 'Calibrate target exams and daily review load',
+            subtitle: '$targetTrack • $dailyTarget cards/day target',
             onTap: () {
               unawaited(
                 Navigator.of(context).push(
@@ -536,6 +470,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 2. Syllabot AI & Neural Engine
           _buildNavTile(
             context: context,
             icon: Icons.psychology_rounded,
@@ -555,6 +491,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 3. Security & Access Control
           _buildNavTile(
             context: context,
             icon: Icons.lock_outline_rounded,
@@ -574,6 +512,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 4. Membership & Pro Tier
           _buildNavTile(
             context: context,
             icon: Icons.workspace_premium_rounded,
@@ -593,6 +533,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 5. App & Sensory Preferences
           _buildNavTile(
             context: context,
             icon: Icons.tune_rounded,
@@ -612,6 +554,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 6. Account, Data & Export
           _buildNavTile(
             context: context,
             icon: Icons.shield_outlined,
@@ -631,6 +575,8 @@ class UserProfilePage extends HookWidget {
             typography: typography,
             showDivider: true,
           ),
+
+          // 7. About, Support & Community
           _buildNavTile(
             context: context,
             icon: Icons.info_outline_rounded,
@@ -748,8 +694,9 @@ class UserProfilePage extends HookWidget {
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
             try {
-              if (Supabase.instance.isInitialized) {
-                await Supabase.instance.client.auth.updateUser(
+              final client = SupabaseSafe.client;
+              if (client != null) {
+                await client.auth.updateUser(
                   UserAttributes(data: {'display_name': newName}),
                 );
               }

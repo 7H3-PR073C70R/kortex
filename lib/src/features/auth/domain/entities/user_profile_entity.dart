@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a persistent user profile with track preferences and targets.
+/// Represents a persistent user profile with track preferences,
+/// study goals, and subscription tier.
 class UserProfileEntity extends Equatable {
   const UserProfileEntity({
     required this.id,
@@ -12,6 +13,8 @@ class UserProfileEntity extends Equatable {
     this.retentionBenchmark = 0.85,
     this.level = 1,
     this.streakDays = 0,
+    this.xpPoints = 0,
+    this.subscriptionTier = 'free',
     this.isOnboarded = false,
   });
 
@@ -24,7 +27,11 @@ class UserProfileEntity extends Equatable {
   final double retentionBenchmark;
   final int level;
   final int streakDays;
+  final int xpPoints;
+  final String subscriptionTier;
   final bool isOnboarded;
+
+  bool get isPro => subscriptionTier.toLowerCase() == 'pro';
 
   UserProfileEntity copyWith({
     String? id,
@@ -36,6 +43,8 @@ class UserProfileEntity extends Equatable {
     double? retentionBenchmark,
     int? level,
     int? streakDays,
+    int? xpPoints,
+    String? subscriptionTier,
     bool? isOnboarded,
   }) {
     return UserProfileEntity(
@@ -48,6 +57,8 @@ class UserProfileEntity extends Equatable {
       retentionBenchmark: retentionBenchmark ?? this.retentionBenchmark,
       level: level ?? this.level,
       streakDays: streakDays ?? this.streakDays,
+      xpPoints: xpPoints ?? this.xpPoints,
+      subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       isOnboarded: isOnboarded ?? this.isOnboarded,
     );
   }
@@ -63,6 +74,8 @@ class UserProfileEntity extends Equatable {
         retentionBenchmark,
         level,
         streakDays,
+        xpPoints,
+        subscriptionTier,
         isOnboarded,
       ];
 }
