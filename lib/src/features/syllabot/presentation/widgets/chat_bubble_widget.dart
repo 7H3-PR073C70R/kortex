@@ -7,21 +7,56 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
-class ChatBubbleWidget extends StatelessWidget {
+class ChatBubbleWidget extends StatefulWidget {
   const ChatBubbleWidget({
     required this.message,
+    this.ttsHandler,
     this.onRetry,
     super.key,
   });
 
   final ChatMessageEntity message;
+  final TextToSpeechHandler? ttsHandler;
   final VoidCallback? onRetry;
 
-  bool get isUser => message.sender == MessageSender.user;
+  @override
+  State<ChatBubbleWidget> createState() => _ChatBubbleWidgetState();
+}
+
+class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
+  bool _isSpeakingThis = false;
+
+  bool get isUser => widget.message.sender == MessageSender.user;
+
+  void _toggleSpeak() {
+    final tts = widget.ttsHandler;
+    if (tts == null) return;
+
+    if (_isSpeakingThis) {
+      unawaited(tts.stop());
+      setState(() {
+        _isSpeakingThis = false;
+      });
+    } else {
+      setState(() {
+        _isSpeakingThis = true;
+      });
+      unawaited(
+        tts.speak(widget.message.text).then((_) {
+          if (mounted) {
+            setState(() {
+              _isSpeakingThis = false;
+            });
+          }
+        }),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +98,7 @@ class ChatBubbleWidget extends StatelessWidget {
             ],
           ),
           child: Text(
-            message.text,
+            widget.message.text,
             style: typography.body.medium.copyWith(
               color: Colors.white,
               height: 1.4,
@@ -73,7 +108,7 @@ class ChatBubbleWidget extends StatelessWidget {
       );
     }
 
-    // Bot Bubble with Glassmorphism, LaTeX formulas, and retry support
+    // Bot Bubble with Glassmorphism, LaTeX formulas, TTS read aloud, and retry
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -109,7 +144,7 @@ class ChatBubbleWidget extends StatelessWidget {
                         bottomRight: Radius.circular(20),
                       ),
                       border: Border.all(
-                        color: message.isError
+                        color: widget.message.isError
                             ? colors.error.withAlpha(120)
                             : colors.primary.withAlpha(isDark ? 50 : 30),
                       ),
@@ -117,7 +152,7 @@ class ChatBubbleWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Engine badge tag
+                        // Engine badge tag & Actions (Copy & Read Aloud TTS)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -131,7 +166,7 @@ class ChatBubbleWidget extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                message.engineType ==
+                                widget.message.engineType ==
                                         ExecutionEngineType.cloudSupabase
                                     ? l10n.engineCloudSupabase
                                     : l10n.engineLocalOnDevice,
@@ -141,24 +176,54 @@ class ChatBubbleWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.copy_rounded,
-                                size: 14,
-                                color: colors.textSecondary,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                unawaited(
-                                  Clipboard.setData(
-                                    ClipboardData(text: message.text),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 1. Read Aloud TTS button
+                                if (!widget.message.isError)
+                                  IconButton(
+                                    tooltip: _isSpeakingThis
+                                        ? l10n.syllabotStopReading
+                                        : l10n.syllabotReadAloud,
+                                    icon: Icon(
+                                      _isSpeakingThis
+                                          ? Icons.stop_circle_rounded
+                                          : Icons.volume_up_rounded,
+                                      size: 17,
+                                      color: _isSpeakingThis
+                                          ? colors.syllabotAccent
+                                          : colors.textSecondary,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: _toggleSpeak,
                                   ),
-                                );
-                                context.showSnackBar(
-                                  message: context.l10n.copiedToClipboard,
-                                );
-                              },
+                                const SizedBox(width: 8),
+
+                                // 2. Copy button
+                                IconButton(
+                                  tooltip: l10n.copiedToClipboard,
+                                  icon: Icon(
+                                    Icons.copy_rounded,
+                                    size: 15,
+                                    color: colors.textSecondary,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    unawaited(
+                                      Clipboard.setData(
+                                        ClipboardData(
+                                          text: widget.message.text,
+                                        ),
+                                      ),
+                                    );
+                                    context.showSnackBar(
+                                      message: context.l10n.copiedToClipboard,
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -166,15 +231,15 @@ class ChatBubbleWidget extends StatelessWidget {
 
                         // Formatted message content with LaTeX rendering
                         _FormattedMessageBody(
-                          text: message.text,
+                          text: widget.message.text,
                           isDark: isDark,
                         ),
 
                         // Retry Button for error state
-                        if (message.isError) ...[
+                        if (widget.message.isError) ...[
                           const SizedBox(height: 12),
                           ShrinkableButton(
-                            onTap: onRetry ?? message.onRetry,
+                            onTap: widget.onRetry ?? widget.message.onRetry,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,

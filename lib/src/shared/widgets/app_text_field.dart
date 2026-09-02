@@ -14,6 +14,7 @@ class AppTextField extends StatefulWidget {
     this.focusNode,
     this.label,
     this.hintText,
+    this.hintStyle,
     this.helperText,
     this.errorText,
     this.prefixIcon,
@@ -41,6 +42,11 @@ class AppTextField extends StatefulWidget {
     this.contentPadding,
     this.borderRadius,
     this.fillColor,
+    this.isFilled = true,
+    this.showBorder = true,
+    this.customBorder,
+    this.isDense = false,
+    this.cursorColor,
     this.semanticLabel,
     this.semanticHint,
   });
@@ -50,6 +56,7 @@ class AppTextField extends StatefulWidget {
   final FocusNode? focusNode;
   final String? label;
   final String? hintText;
+  final TextStyle? hintStyle;
   final String? helperText;
   final String? errorText;
   final Widget? prefixIcon;
@@ -77,6 +84,11 @@ class AppTextField extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
   final double? borderRadius;
   final Color? fillColor;
+  final bool isFilled;
+  final bool showBorder;
+  final InputBorder? customBorder;
+  final bool isDense;
+  final Color? cursorColor;
   final String? semanticLabel;
   final String? semanticHint;
 
@@ -138,33 +150,45 @@ class _AppTextFieldState extends State<AppTextField> {
     final l10n = context.l10n;
     final effectiveRadius = widget.borderRadius ?? 12.0;
 
-    final inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(effectiveRadius),
-      borderSide: BorderSide(color: colors.surfaceBorder),
-    );
+    final inputBorder = widget.customBorder ??
+        (widget.showBorder
+            ? OutlineInputBorder(
+                borderRadius: BorderRadius.circular(effectiveRadius),
+                borderSide: BorderSide(color: colors.surfaceBorder),
+              )
+            : InputBorder.none);
 
-    final focusedBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(effectiveRadius),
-      borderSide: BorderSide(
-        color: colors.primary,
-        width: 1.5,
-      ),
-    );
+    final focusedBorder = widget.customBorder ??
+        (widget.showBorder
+            ? OutlineInputBorder(
+                borderRadius: BorderRadius.circular(effectiveRadius),
+                borderSide: BorderSide(
+                  color: colors.primary,
+                  width: 1.5,
+                ),
+              )
+            : InputBorder.none);
 
-    final errorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(effectiveRadius),
-      borderSide: BorderSide(
-        color: colors.error,
-      ),
-    );
+    final errorBorder = widget.customBorder ??
+        (widget.showBorder
+            ? OutlineInputBorder(
+                borderRadius: BorderRadius.circular(effectiveRadius),
+                borderSide: BorderSide(
+                  color: colors.error,
+                ),
+              )
+            : InputBorder.none);
 
-    final focusedErrorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(effectiveRadius),
-      borderSide: BorderSide(
-        color: colors.error,
-        width: 1.5,
-      ),
-    );
+    final focusedErrorBorder = widget.customBorder ??
+        (widget.showBorder
+            ? OutlineInputBorder(
+                borderRadius: BorderRadius.circular(effectiveRadius),
+                borderSide: BorderSide(
+                  color: colors.error,
+                  width: 1.5,
+                ),
+              )
+            : InputBorder.none);
 
     Widget? effectiveSuffix;
     if (widget.isPassword) {
@@ -224,12 +248,13 @@ class _AppTextFieldState extends State<AppTextField> {
       validator: widget.validator,
       inputFormatters: widget.inputFormatters,
       autovalidateMode: widget.autovalidateMode,
-      cursorColor: colors.primary,
+      cursorColor: widget.cursorColor ?? colors.primary,
       decoration: InputDecoration(
         hintText: widget.hintText,
         helperText: widget.helperText,
         errorText: widget.errorText,
-        filled: true,
+        filled: widget.isFilled,
+        isDense: widget.isDense,
         fillColor: widget.fillColor ??
             (widget.enabled
                 ? colors.surfaceSecondary
@@ -253,9 +278,10 @@ class _AppTextFieldState extends State<AppTextField> {
         focusedBorder: focusedBorder,
         errorBorder: errorBorder,
         focusedErrorBorder: focusedErrorBorder,
-        hintStyle: typography.callout.regular.copyWith(
-          color: colors.textMuted,
-        ),
+        hintStyle: widget.hintStyle ??
+            typography.callout.regular.copyWith(
+              color: colors.textMuted,
+            ),
         helperStyle: typography.caption.regular.copyWith(
           color: colors.textMuted,
         ),

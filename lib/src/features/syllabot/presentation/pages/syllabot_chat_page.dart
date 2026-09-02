@@ -11,6 +11,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/models/prompt_suggestion_model.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -21,8 +22,10 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_sta
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/convert_to_deck_action_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/engine_status_indicator.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/gemini_chat_input_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/voice_dialogue_modal.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -82,6 +85,12 @@ class _SyllabotChatView extends HookWidget {
 
     final textController = useTextEditingController();
     final scrollController = useScrollController();
+    final ttsHandler = useMemoized(TextToSpeechHandler.new);
+
+    useEffect(
+      () => ttsHandler.dispose,
+      [ttsHandler],
+    );
 
     void scrollToBottom() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,6 +106,45 @@ class _SyllabotChatView extends HookWidget {
       });
     }
 
+    void openVoiceDialogue(
+      BuildContext dialogContext,
+      SyllabotChatState state,
+    ) {
+      unawaited(
+        VoiceDialogueModal.show(
+          context: dialogContext,
+          ttsHandler: ttsHandler,
+          initialMode: state.socraticMode,
+          onSendPrompt: (voicePrompt) async {
+            final nowMs = DateTime.now().millisecondsSinceEpoch;
+            final sid = state.sessionId.isNotEmpty
+                ? state.sessionId
+                : 'session_$nowMs';
+
+            dialogContext.read<SyllabotChatBloc>().add(
+                  SubmitPromptEvent(
+                    prompt: voicePrompt,
+                    sessionId: sid,
+                    socraticMode: state.socraticMode,
+                    engineType: state.engineType,
+                  ),
+                );
+
+            // Get dynamic response text for voice synthesizer
+            final localLlm = locator<LocalLlmEngineClient>();
+            final stream = localLlm.generate(
+              prompt: voicePrompt,
+              systemInstruction: '',
+              socraticMode: state.socraticMode,
+            );
+            final buffer = StringBuffer();
+            await stream.forEach(buffer.write);
+            return buffer.toString();
+          },
+        ),
+      );
+    }
+
     return BlocListener<SyllabotChatBloc, SyllabotChatState>(
       listener: (context, state) {
         if (state.status == SyllabotStatus.streaming) {
@@ -107,8 +155,10 @@ class _SyllabotChatView extends HookWidget {
           final deck = state.generatedDeck!;
           locator<DecksBloc>().add(const DecksRefreshed());
           context.showSnackBar(
-            message: 'Flashcard Deck "${deck.title}" created with '
-                '${deck.totalCards} cards!',
+            message: l10n.deckCreatedFromSyllabot(
+              deck.title,
+              deck.totalCards,
+            ),
           );
         }
 
@@ -132,7 +182,9 @@ class _SyllabotChatView extends HookWidget {
                   : Icons.arrow_back_ios_new_rounded,
               color: colors.textPrimary,
             ),
-            tooltip: onCollapse != null ? 'Minimize Chat' : 'Back',
+            tooltip: onCollapse != null
+                ? l10n.minimizeChatTooltip
+                : l10n.backButton,
             onPressed: () {
               if (onCollapse != null) {
                 onCollapse!();
@@ -174,13 +226,28 @@ class _SyllabotChatView extends HookWidget {
             ],
           ),
           actions: [
-            // 1. New Chat Session Action
+            // 1. Interactive Voice Dialogue Mode Action
+            BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+              builder: (context, state) {
+                return IconButton(
+                  tooltip: l10n.voiceDialogueModeTooltip,
+                  icon: Icon(
+                    Icons.graphic_eq_rounded,
+                    color: colors.syllabotAccent,
+                    size: 22,
+                  ),
+                  onPressed: () => openVoiceDialogue(context, state),
+                );
+              },
+            ),
+
+            // 2. New Chat Session Action
             IconButton(
-              tooltip: 'New Conversation',
+              tooltip: l10n.newConversationTooltip,
               icon: Icon(
                 Icons.add_comment_outlined,
                 color: colors.textSecondary,
-                size: 22,
+                size: 20,
               ),
               onPressed: () {
                 unawaited(HapticFeedback.lightImpact());
@@ -190,7 +257,7 @@ class _SyllabotChatView extends HookWidget {
               },
             ),
 
-            // 2. Convert to Flashcard Deck Action
+            // 3. Convert to Flashcard Deck Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
                 if (state.messages.isEmpty) return const SizedBox.shrink();
@@ -227,14 +294,14 @@ class _SyllabotChatView extends HookWidget {
         body: SafeArea(
           child: Column(
             children: [
-              // 1. Main Chat Area (Empty Gemini Greeting or Message Stream)
+              // 1. Main Chat Area (Empty Syllabot Greeting or Message Stream)
               Expanded(
                 child: BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
                   builder: (context, state) {
                     if (state.messages.isEmpty &&
                         state.streamingText.isEmpty &&
                         state.status != SyllabotStatus.streaming) {
-                      return _buildEmptyGeminiGreeting(
+                      return _buildEmptySyllabotGreeting(
                         context,
                         colors,
                         typography,
@@ -249,6 +316,7 @@ class _SyllabotChatView extends HookWidget {
                       colors,
                       typography,
                       scrollController,
+                      ttsHandler,
                     );
                   },
                 ),
@@ -292,8 +360,7 @@ class _SyllabotChatView extends HookWidget {
                         Expanded(
                           child: Text(
                             state.errorMessage ??
-                                'Unable to generate response. '
-                                    'Check connection.',
+                                l10n.unableToGenerateResponse,
                             style: typography.caption.medium.copyWith(
                               color: colors.textPrimary,
                               fontSize: 12,
@@ -318,7 +385,7 @@ class _SyllabotChatView extends HookWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                'Retry',
+                                l10n.retryAction,
                                 style: typography.caption.bold.copyWith(
                                   color: Colors.white,
                                   fontSize: 11.5,
@@ -332,15 +399,17 @@ class _SyllabotChatView extends HookWidget {
                 },
               ),
 
-              // 3. Gemini-Style Unified Input Pill Bar
+              // 3. Syllabot Chat Input Bar
               BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
                 builder: (context, state) {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                    child: GeminiChatInputBar(
+                    child: SyllabotChatInputBar(
                       controller: textController,
                       socraticMode: state.socraticMode,
                       isLoading: state.status == SyllabotStatus.streaming,
+                      onVoiceDialogueTap: () =>
+                          openVoiceDialogue(context, state),
                       onModeChanged: (mode) {
                         context.read<SyllabotChatBloc>().add(
                               ChangeSocraticModeEvent(mode),
@@ -372,8 +441,8 @@ class _SyllabotChatView extends HookWidget {
     );
   }
 
-  /// Empty Gemini Greeting & Academic Suggestion Cards
-  Widget _buildEmptyGeminiGreeting(
+  /// Empty Syllabot Greeting & Academic Suggestion Cards
+  Widget _buildEmptySyllabotGreeting(
     BuildContext context,
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
@@ -399,7 +468,7 @@ class _SyllabotChatView extends HookWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards',
+              l10n.syllabotEmptySubtitle,
               textAlign: TextAlign.center,
               style: typography.body.regular.copyWith(
                 color: colors.textSecondary,
@@ -470,6 +539,7 @@ class _SyllabotChatView extends HookWidget {
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     ScrollController scrollController,
+    TextToSpeechHandler ttsHandler,
   ) {
     return ListView.builder(
       controller: scrollController,
@@ -481,6 +551,7 @@ class _SyllabotChatView extends HookWidget {
           final message = state.messages[index];
           return ChatBubbleWidget(
             message: message,
+            ttsHandler: ttsHandler,
             onRetry: message.sender == MessageSender.syllabot
                 ? () {
                     context.read<SyllabotChatBloc>().add(

@@ -2750,5 +2750,139 @@
     "termsOfUseEula": "Terms of Use (EULA)",
     "@termsOfUseEula": {
         "description": "Link text for Terms of Use / EULA"
+    },
+    "socraticModeSheetTitle": "Socratic Reasoning Mode",
+    "@socraticModeSheetTitle": {
+        "description": "Title for Socratic reasoning mode bottom sheet"
+    },
+    "socraticModeSheetSubtitle": "Select how Syllabot structures your academic explanations",
+    "@socraticModeSheetSubtitle": {
+        "description": "Subtitle for Socratic reasoning mode bottom sheet"
+    },
+    "socraticModeStepByStepLabel": "Step-by-Step Proof",
+    "@socraticModeStepByStepLabel": {
+        "description": "Label for step by step mode"
+    },
+    "socraticModeStepByStepDesc": "Walk through the problem step-by-step from first principles",
+    "@socraticModeStepByStepDesc": {
+        "description": "Description for step by step mode"
+    },
+    "socraticModeStepByStepShort": "Step-by-Step",
+    "@socraticModeStepByStepShort": {
+        "description": "Short label for step by step mode"
+    },
+    "socraticModeDirectAnswerLabel": "Direct Answer",
+    "@socraticModeDirectAnswerLabel": {
+        "description": "Label for direct answer mode"
+    },
+    "socraticModeDirectAnswerDesc": "Get a concise, comprehensive answer immediately",
+    "@socraticModeDirectAnswerDesc": {
+        "description": "Description for direct answer mode"
+    },
+    "socraticModeDirectAnswerShort": "Direct",
+    "@socraticModeDirectAnswerShort": {
+        "description": "Short label for direct answer mode"
+    },
+    "socraticModeExamSimLabel": "Exam Simulator",
+    "@socraticModeExamSimLabel": {
+        "description": "Label for exam simulator mode"
+    },
+    "socraticModeExamSimDesc": "Simulate an exam scenario with mark breakdowns",
+    "@socraticModeExamSimDesc": {
+        "description": "Description for exam simulator mode"
+    },
+    "socraticModeExamSimShort": "Exam Sim",
+    "@socraticModeExamSimShort": {
+        "description": "Short label for exam simulator mode"
+    },
+    "socraticModeDeepResearchLabel": "Deep Research",
+    "@socraticModeDeepResearchLabel": {
+        "description": "Label for deep research mode"
+    },
+    "socraticModeDeepResearchDesc": "Explore deep theoretical proofs and edge cases",
+    "@socraticModeDeepResearchDesc": {
+        "description": "Description for deep research mode"
+    },
+    "socraticModeDeepResearchShort": "Research",
+    "@socraticModeDeepResearchShort": {
+        "description": "Short label for deep research mode"
+    },
+    "voiceGenderFemale": "Female Voice",
+    "@voiceGenderFemale": {
+        "description": "Label for female voice"
+    },
+    "voiceGenderMale": "Male Voice",
+    "@voiceGenderMale": {
+        "description": "Label for male voice"
+    },
+    "voiceDialogueListening": "Listening to your question...",
+    "@voiceDialogueListening": {
+        "description": "Status text while voice dialogue is listening"
+    },
+    "voiceDialogueThinking": "Syllabot is thinking...",
+    "@voiceDialogueThinking": {
+        "description": "Status text while Syllabot is thinking"
+    },
+    "voiceDialogueSpeaking": "Syllabot is speaking...",
+    "@voiceDialogueSpeaking": {
+        "description": "Status text while Syllabot is speaking"
+    },
+    "voiceDialogueTapToSpeak": "Tap to Speak",
+    "@voiceDialogueTapToSpeak": {
+        "description": "Button text to speak in voice dialogue"
+    },
+    "voiceDialogueDoneSpeaking": "Done Speaking",
+    "@voiceDialogueDoneSpeaking": {
+        "description": "Button text when student is done speaking"
+    },
+    "syllabotReadAloud": "Read aloud",
+    "@syllabotReadAloud": {
+        "description": "Tooltip to read message aloud"
+    },
+    "syllabotStopReading": "Stop reading",
+    "@syllabotStopReading": {
+        "description": "Tooltip to stop reading message"
+    },
+    "voiceDialogueModeTooltip": "Voice Dialogue Mode",
+    "@voiceDialogueModeTooltip": {
+        "description": "Tooltip for voice dialogue mode"
+    },
+    "syllabotEmptySubtitle": "Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards",
+    "@syllabotEmptySubtitle": {
+        "description": "Subtitle on Syllabot empty greeting"
+    },
+    "deckCreatedFromSyllabot": "Flashcard Deck \"{title}\" created with {count} cards!",
+    "@deckCreatedFromSyllabot": {
+        "description": "Success message when deck created from Syllabot",
+        "placeholders": {
+            "title": {
+                "type": "String",
+                "example": "Physics 101"
+            },
+            "count": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "unableToGenerateResponse": "Unable to generate response. Check connection.",
+    "@unableToGenerateResponse": {
+        "description": "Error banner message when generation fails"
+    },
+    "retryAction": "Retry",
+    "@retryAction": {
+        "description": "Retry action button text"
+    },
+    "askSyllabotPill": "Ask Syllabot",
+    "@askSyllabotPill": {
+        "description": "Floating overlay pill text"
+    },
+    "minimizeChatTooltip": "Minimize Chat",
+    "@minimizeChatTooltip": {
+        "description": "Tooltip for minimizing chat"
+    },
+    "newConversationTooltip": "New Conversation",
+    "@newConversationTooltip": {
+        "description": "Tooltip for starting new conversation"
     }
 }

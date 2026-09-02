@@ -3463,6 +3463,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terms of Use (EULA)'**
   String get termsOfUseEula;
+
+  /// Title for Socratic reasoning mode bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Socratic Reasoning Mode'**
+  String get socraticModeSheetTitle;
+
+  /// Subtitle for Socratic reasoning mode bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Select how Syllabot structures your academic explanations'**
+  String get socraticModeSheetSubtitle;
+
+  /// Label for step by step mode
+  ///
+  /// In en, this message translates to:
+  /// **'Step-by-Step Proof'**
+  String get socraticModeStepByStepLabel;
+
+  /// Description for step by step mode
+  ///
+  /// In en, this message translates to:
+  /// **'Walk through the problem step-by-step from first principles'**
+  String get socraticModeStepByStepDesc;
+
+  /// Short label for step by step mode
+  ///
+  /// In en, this message translates to:
+  /// **'Step-by-Step'**
+  String get socraticModeStepByStepShort;
+
+  /// Label for direct answer mode
+  ///
+  /// In en, this message translates to:
+  /// **'Direct Answer'**
+  String get socraticModeDirectAnswerLabel;
+
+  /// Description for direct answer mode
+  ///
+  /// In en, this message translates to:
+  /// **'Get a concise, comprehensive answer immediately'**
+  String get socraticModeDirectAnswerDesc;
+
+  /// Short label for direct answer mode
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get socraticModeDirectAnswerShort;
+
+  /// Label for exam simulator mode
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Simulator'**
+  String get socraticModeExamSimLabel;
+
+  /// Description for exam simulator mode
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate an exam scenario with mark breakdowns'**
+  String get socraticModeExamSimDesc;
+
+  /// Short label for exam simulator mode
+  ///
+  /// In en, this message translates to:
+  /// **'Exam Sim'**
+  String get socraticModeExamSimShort;
+
+  /// Label for deep research mode
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Research'**
+  String get socraticModeDeepResearchLabel;
+
+  /// Description for deep research mode
+  ///
+  /// In en, this message translates to:
+  /// **'Explore deep theoretical proofs and edge cases'**
+  String get socraticModeDeepResearchDesc;
+
+  /// Short label for deep research mode
+  ///
+  /// In en, this message translates to:
+  /// **'Research'**
+  String get socraticModeDeepResearchShort;
+
+  /// Label for female voice
+  ///
+  /// In en, this message translates to:
+  /// **'Female Voice'**
+  String get voiceGenderFemale;
+
+  /// Label for male voice
+  ///
+  /// In en, this message translates to:
+  /// **'Male Voice'**
+  String get voiceGenderMale;
+
+  /// Status text while voice dialogue is listening
+  ///
+  /// In en, this message translates to:
+  /// **'Listening to your question...'**
+  String get voiceDialogueListening;
+
+  /// Status text while Syllabot is thinking
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot is thinking...'**
+  String get voiceDialogueThinking;
+
+  /// Status text while Syllabot is speaking
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot is speaking...'**
+  String get voiceDialogueSpeaking;
+
+  /// Button text to speak in voice dialogue
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to Speak'**
+  String get voiceDialogueTapToSpeak;
+
+  /// Button text when student is done speaking
+  ///
+  /// In en, this message translates to:
+  /// **'Done Speaking'**
+  String get voiceDialogueDoneSpeaking;
+
+  /// Tooltip to read message aloud
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get syllabotReadAloud;
+
+  /// Tooltip to stop reading message
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading'**
+  String get syllabotStopReading;
+
+  /// Tooltip for voice dialogue mode
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Dialogue Mode'**
+  String get voiceDialogueModeTooltip;
+
+  /// Subtitle on Syllabot empty greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards'**
+  String get syllabotEmptySubtitle;
+
+  /// Success message when deck created from Syllabot
+  ///
+  /// In en, this message translates to:
+  /// **'Flashcard Deck \"{title}\" created with {count} cards!'**
+  String deckCreatedFromSyllabot(String title, int count);
+
+  /// Error banner message when generation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to generate response. Check connection.'**
+  String get unableToGenerateResponse;
+
+  /// Retry action button text
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryAction;
+
+  /// Floating overlay pill text
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Syllabot'**
+  String get askSyllabotPill;
+
+  /// Tooltip for minimizing chat
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize Chat'**
+  String get minimizeChatTooltip;
+
+  /// Tooltip for starting new conversation
+  ///
+  /// In en, this message translates to:
+  /// **'New Conversation'**
+  String get newConversationTooltip;
 }
 
 class _AppLocalizationsDelegate

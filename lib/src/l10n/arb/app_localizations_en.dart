@@ -1957,4 +1957,106 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsOfUseEula => 'Terms of Use (EULA)';
+
+  @override
+  String get socraticModeSheetTitle => 'Socratic Reasoning Mode';
+
+  @override
+  String get socraticModeSheetSubtitle =>
+      'Select how Syllabot structures your academic explanations';
+
+  @override
+  String get socraticModeStepByStepLabel => 'Step-by-Step Proof';
+
+  @override
+  String get socraticModeStepByStepDesc =>
+      'Walk through the problem step-by-step from first principles';
+
+  @override
+  String get socraticModeStepByStepShort => 'Step-by-Step';
+
+  @override
+  String get socraticModeDirectAnswerLabel => 'Direct Answer';
+
+  @override
+  String get socraticModeDirectAnswerDesc =>
+      'Get a concise, comprehensive answer immediately';
+
+  @override
+  String get socraticModeDirectAnswerShort => 'Direct';
+
+  @override
+  String get socraticModeExamSimLabel => 'Exam Simulator';
+
+  @override
+  String get socraticModeExamSimDesc =>
+      'Simulate an exam scenario with mark breakdowns';
+
+  @override
+  String get socraticModeExamSimShort => 'Exam Sim';
+
+  @override
+  String get socraticModeDeepResearchLabel => 'Deep Research';
+
+  @override
+  String get socraticModeDeepResearchDesc =>
+      'Explore deep theoretical proofs and edge cases';
+
+  @override
+  String get socraticModeDeepResearchShort => 'Research';
+
+  @override
+  String get voiceGenderFemale => 'Female Voice';
+
+  @override
+  String get voiceGenderMale => 'Male Voice';
+
+  @override
+  String get voiceDialogueListening => 'Listening to your question...';
+
+  @override
+  String get voiceDialogueThinking => 'Syllabot is thinking...';
+
+  @override
+  String get voiceDialogueSpeaking => 'Syllabot is speaking...';
+
+  @override
+  String get voiceDialogueTapToSpeak => 'Tap to Speak';
+
+  @override
+  String get voiceDialogueDoneSpeaking => 'Done Speaking';
+
+  @override
+  String get syllabotReadAloud => 'Read aloud';
+
+  @override
+  String get syllabotStopReading => 'Stop reading';
+
+  @override
+  String get voiceDialogueModeTooltip => 'Voice Dialogue Mode';
+
+  @override
+  String get syllabotEmptySubtitle =>
+      'Your 24/7 AI tutor for STEM derivations, exam prep, and flashcards';
+
+  @override
+  String deckCreatedFromSyllabot(String title, int count) {
+    return 'Flashcard Deck \"$title\" created with $count cards!';
+  }
+
+  @override
+  String get unableToGenerateResponse =>
+      'Unable to generate response. Check connection.';
+
+  @override
+  String get retryAction => 'Retry';
+
+  @override
+  String get askSyllabotPill => 'Ask Syllabot';
+
+  @override
+  String get minimizeChatTooltip => 'Minimize Chat';
+
+  @override
+  String get newConversationTooltip => 'New Conversation';
 }
