@@ -4,6 +4,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -43,17 +44,18 @@ class AboutSupportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     return Scaffold(
-      backgroundColor: colors.backgroundPrimary,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: colors.backgroundPrimary,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: colors.textPrimary,
-            size: 18,
+            size: 20,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -61,133 +63,138 @@ class AboutSupportPage extends StatelessWidget {
           'About & Support',
           style: typography.title3.bold.copyWith(
             color: colors.textPrimary,
-            fontSize: 18,
           ),
         ),
+        centerTitle: false,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            children: [
-              // 1. Kortexify Brand Hero
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary.withAlpha(40),
-                      colors.surfaceSecondary,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(80),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary,
-                            colors.syllabotAccent,
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.psychology_rounded,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Kortexify',
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Next-Gen Academic & Exam Mastery Engine',
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(90),
-                        ),
-                      ),
-                      child: Text(
-                        'v1.0.0+1 • Production Neural Engine',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          children: [
+            // App Branding Hero Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colors.primary.withAlpha(isDark ? 40 : 25),
+                    colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
                   ],
                 ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: colors.primary.withAlpha(80),
+                ),
               ),
-              const SizedBox(height: 20),
+              child: Column(
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.surfacePrimary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors.primary.withAlpha(80),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withAlpha(isDark ? 70 : 35),
+                          blurRadius: 18,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: AppAssets.images.logo.svg(
+                        width: 44,
+                        height: 44,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Kortexify',
+                    style: typography.title2.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Next-Gen Academic & Exam Mastery Engine',
+                    style: typography.caption.medium.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(90),
+                      ),
+                    ),
+                    child: Text(
+                      'v1.0.0+1 • Production Neural Engine',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
-              // 2. Resources & Community Links
-              _buildLinkCard(
-                icon: Icons.forum_rounded,
-                title: 'Community Discord & Study Rooms',
-                subtitle: 'Join study rooms, share decks, and get help',
-                onTap: () => _launchExternalUrl(context, discordUrl),
-                colors: colors,
-                typography: typography,
-              ),
-              const SizedBox(height: 12),
-              _buildLinkCard(
-                icon: Icons.help_outline_rounded,
-                title: 'Documentation & Knowledgebase',
-                subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
-                onTap: () => _launchExternalUrl(context, docsUrl),
-                colors: colors,
-                typography: typography,
-              ),
-              const SizedBox(height: 12),
-              _buildLinkCard(
-                icon: Icons.privacy_tip_outlined,
-                title: 'Privacy Policy',
-                subtitle: 'How we securely store and encrypt your data',
-                onTap: () => _launchExternalUrl(context, privacyPolicyUrl),
-                colors: colors,
-                typography: typography,
-              ),
-              const SizedBox(height: 12),
-              _buildLinkCard(
-                icon: Icons.description_outlined,
-                title: 'Terms of Service',
-                subtitle: 'End user license agreements and policies',
-                onTap: () => _launchExternalUrl(context, termsUrl),
-                colors: colors,
-                typography: typography,
-              ),
-            ],
-          ),
+            // Resources & Community Links
+            _buildLinkCard(
+              icon: Icons.forum_rounded,
+              title: 'Community Discord & Study Rooms',
+              subtitle: 'Join study rooms, share decks, and get help',
+              onTap: () => _launchExternalUrl(context, discordUrl),
+              colors: colors,
+              typography: typography,
+            ),
+            const SizedBox(height: 12),
+            _buildLinkCard(
+              icon: Icons.help_outline_rounded,
+              title: 'Documentation & Knowledgebase',
+              subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
+              onTap: () => _launchExternalUrl(context, docsUrl),
+              colors: colors,
+              typography: typography,
+            ),
+            const SizedBox(height: 12),
+            _buildLinkCard(
+              icon: Icons.security_rounded,
+              title: 'Privacy Policy',
+              subtitle: 'How we securely store and encrypt your data',
+              onTap: () => _launchExternalUrl(context, privacyPolicyUrl),
+              colors: colors,
+              typography: typography,
+            ),
+            const SizedBox(height: 12),
+            _buildLinkCard(
+              icon: Icons.description_rounded,
+              title: 'Terms of Service',
+              subtitle: 'End user license agreements and policies',
+              onTap: () => _launchExternalUrl(context, termsUrl),
+              colors: colors,
+              typography: typography,
+            ),
+          ],
         ),
       ),
     );
@@ -204,9 +211,9 @@ class AboutSupportPage extends StatelessWidget {
     return ShrinkableButton(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: colors.surfaceSecondary,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: colors.surfaceBorder.withAlpha(80),
@@ -215,39 +222,43 @@ class AboutSupportPage extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: colors.primary.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: colors.primary, size: 20),
+              child: Icon(
+                icon,
+                color: colors.primary,
+                size: 20,
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: typography.body.bold.copyWith(
+                    style: typography.callout.bold.copyWith(
                       color: colors.textPrimary,
-                      fontSize: 13.5,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: typography.caption.regular.copyWith(
                       color: colors.textSecondary,
-                      fontSize: 11.5,
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
             Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: colors.textSecondary,
+              Icons.chevron_right_rounded,
+              color: colors.textSecondary.withAlpha(120),
+              size: 20,
             ),
           ],
         ),

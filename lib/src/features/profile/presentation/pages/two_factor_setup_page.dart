@@ -7,12 +7,14 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -103,9 +105,7 @@ class TwoFactorSetupPage extends HookWidget {
       ),
       body: SafeArea(
         child: isEnrolling.value
-            ? Center(
-                child: CircularProgressIndicator(color: colors.primary),
-              )
+            ? _buildShimmerLoadingSkeleton(colors, isDark)
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
                 child: Column(
@@ -479,7 +479,7 @@ class TwoFactorSetupPage extends HookWidget {
                                     strokeWidth: 2.2,
                                   ),
                                 )
-                              : Text(
+                               : Text(
                                   'Verify & Enable 2FA',
                                   style: typography.body.bold.copyWith(
                                     color: Colors.white,
@@ -492,6 +492,149 @@ class TwoFactorSetupPage extends HookWidget {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoadingSkeleton(
+    AppThemeColorsExtension colors,
+    bool isDark,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header description skeleton
+          const ShimmerPlaceholder(height: 14, width: 280, borderRadius: 6),
+          const SizedBox(height: 6),
+          const ShimmerPlaceholder(height: 14, width: 200, borderRadius: 6),
+          const SizedBox(height: 20),
+
+          // Step 1: QR Code Card Skeleton
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: colors.surfaceBorder.withAlpha(90),
+              ),
+            ),
+            child: const Column(
+              children: [
+                Row(
+                  children: [
+                    ShimmerPlaceholder(
+                      height: 24,
+                      width: 24,
+                      borderRadius: 12,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: ShimmerPlaceholder(
+                        height: 16,
+                        width: 200,
+                        borderRadius: 6,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 18),
+                ShimmerPlaceholder(
+                  height: 190,
+                  width: 190,
+                  borderRadius: 16,
+                ),
+                SizedBox(height: 14),
+                ShimmerPlaceholder(
+                  height: 12,
+                  width: 220,
+                  borderRadius: 6,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Step 2: Copy Secret Key Skeleton
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: colors.surfaceBorder.withAlpha(90),
+              ),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ShimmerPlaceholder(
+                      height: 24,
+                      width: 24,
+                      borderRadius: 12,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: ShimmerPlaceholder(
+                        height: 16,
+                        width: 180,
+                        borderRadius: 6,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14),
+                ShimmerPlaceholder(height: 48, borderRadius: 14),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Step 3: Verify Code Skeleton
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: colors.surfaceBorder.withAlpha(90),
+              ),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ShimmerPlaceholder(
+                      height: 24,
+                      width: 24,
+                      borderRadius: 12,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: ShimmerPlaceholder(
+                        height: 16,
+                        width: 160,
+                        borderRadius: 6,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14),
+                ShimmerPlaceholder(height: 50, borderRadius: 14),
+                SizedBox(height: 16),
+                ShimmerPlaceholder(height: 52, borderRadius: 16),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -788,12 +788,12 @@ class UserProfilePage extends HookWidget {
       {'emoji': '📚', 'label': 'Academic', 'id': 'emoji:📚'},
       {'emoji': '💡', 'label': 'Innovator', 'id': 'emoji:💡'},
       {'emoji': '🎨', 'label': 'Creative', 'id': 'emoji:🎨'},
-      {'emoji': '⚖️', 'label': 'Law', 'id': 'emoji:⚖️'},
+      {'emoji': '🏛️', 'label': 'Law', 'id': 'emoji:🏛️'},
       {'emoji': '🩺', 'label': 'Medical', 'id': 'emoji:🩺'},
       {'emoji': '💼', 'label': 'Business', 'id': 'emoji:💼'},
-      {'emoji': '🔬', 'label': 'Science', 'id': 'emoji:🔬'},
+      {'emoji': '🧪', 'label': 'Science', 'id': 'emoji:🧪'},
       {'emoji': '🌍', 'label': 'Humanities', 'id': 'emoji:🌍'},
-      {'emoji': '✍️', 'label': 'Author', 'id': 'emoji:✍️'},
+      {'emoji': '📝', 'label': 'Author', 'id': 'emoji:📝'},
     ];
 
     unawaited(
@@ -989,24 +989,36 @@ class UserProfilePage extends HookWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 52,
-                          height: 52,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: colors.surfaceSecondary,
                             border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(90),
+                              color: colors.surfaceBorder.withAlpha(120),
                               width: 1.2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black
+                                    .withAlpha(context.isDarkMode ? 40 : 15),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Center(
                             child: Text(
                               item['emoji']!,
-                              style: const TextStyle(fontSize: 24),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                height: 1.1,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 6),
                         Text(
                           item['label']!,
                           style: typography.caption.medium.copyWith(
