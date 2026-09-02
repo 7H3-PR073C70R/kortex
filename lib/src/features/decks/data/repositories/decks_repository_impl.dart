@@ -65,4 +65,9 @@ class DecksRepositoryImpl implements DecksRepository {
         )
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, void>> deleteDeck(String deckId) {
+    return _remoteDataSource.deleteDeck(deckId).makeRequest();
+  }
 }

@@ -121,7 +121,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
         title: deckTitle,
         subject: subject,
         totalCards: cards.length,
-        dueCards: cards.length,
+        dueCards: cards.where((c) => c.isDueToday).length,
         masteryRate: 0,
         category: 'Document Ingestion',
         description: 'Auto-synthesized from document $documentId',

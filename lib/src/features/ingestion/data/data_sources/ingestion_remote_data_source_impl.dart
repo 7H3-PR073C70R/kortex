@@ -98,51 +98,57 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     _documentBytesCache[docId] = fileBytes;
     _documentFilenamesCache[docId] = filename;
 
-    // 1. Upload to Storage Bucket
-    try {
-      await _dio.uploadStorageFile(
-        storagePath: storagePath,
-        fileBytes: fileBytes,
-        contentType: contentType,
-        onProgress: (sent, total) {
-          if (total > 0 && onProgress != null) {
-            onProgress(sent / total);
-          }
-        },
-      );
-    } on Object catch (_) {
-      // Offline/Local storage continues smoothly
+    final token = _userStorage?.getToken();
+    final userId = _userStorage?.getUserId() ?? '';
+
+    // 1. Upload to Storage Bucket (when active authenticated session exists)
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _dio.uploadStorageFile(
+          storagePath: storagePath,
+          fileBytes: fileBytes,
+          contentType: contentType,
+          onProgress: (sent, total) {
+            if (total > 0 && onProgress != null) {
+              onProgress(sent / total);
+            }
+          },
+        );
+      } on Object catch (_) {
+        // Offline/Local deterministic storage continues smoothly
+      }
     }
 
     // 2. Register metadata row in documents table with authenticated user_id
-    final userId = _userStorage?.getUserId() ?? '';
-    final payload = <String, dynamic>{
-      'filename': filename,
-      'file_type': fileType,
-      'file_size_bytes': fileBytes.lengthInBytes,
-      'storage_path': storagePath,
-      'content_hash': contentHash,
-      'processing_status': 'uploaded',
-      if (userId.isNotEmpty) 'user_id': userId,
-    };
+    if (userId.isNotEmpty && token != null && token.isNotEmpty) {
+      final payload = <String, dynamic>{
+        'filename': filename,
+        'file_type': fileType,
+        'file_size_bytes': fileBytes.lengthInBytes,
+        'storage_path': storagePath,
+        'content_hash': contentHash,
+        'processing_status': 'uploaded',
+        'user_id': userId,
+      };
 
-    try {
-      final res = await _client.createDocumentRecord(payload);
-      final list = res.data is List ? (res.data as List) : <dynamic>[];
-      if (list.isNotEmpty) {
-        return DocumentUploadModel.fromJson(list.first as Map<String, dynamic>);
-      }
-    } on Object catch (_) {
-      // If RLS or DB rejects direct insert, attempt RPC or return model
       try {
-        final rpcResult = await findOrCreateDocumentReference(
-          contentHash: contentHash,
-          filename: filename,
-          fileType: fileType,
-          fileSizeBytes: fileBytes.lengthInBytes,
-        );
-        if (rpcResult != null) return rpcResult;
-      } on Object catch (_) {}
+        final res = await _client.createDocumentRecord(payload);
+        final list = res.data is List ? (res.data as List) : <dynamic>[];
+        if (list.isNotEmpty) {
+          return DocumentUploadModel.fromJson(list.first as Map<String, dynamic>);
+        }
+      } on Object catch (_) {
+        // If RLS or DB rejects direct insert, attempt RPC or fallback
+        try {
+          final rpcResult = await findOrCreateDocumentReference(
+            contentHash: contentHash,
+            filename: filename,
+            fileType: fileType,
+            fileSizeBytes: fileBytes.lengthInBytes,
+          );
+          if (rpcResult != null) return rpcResult;
+        } on Object catch (_) {}
+      }
     }
 
     return DocumentUploadModel(
@@ -204,6 +210,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         filename: filename,
       );
 
+      final token = _userStorage?.getToken();
       final extractedImages =
           _parserService.extractImagesFromPdfBytes(fileBytes);
       final uploadedImageUrls = <String>[];
@@ -215,14 +222,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         final contentType =
             img.extension == 'png' ? 'image/png' : 'image/jpeg';
 
-        try {
-          await _dio.uploadStorageFile(
-            storagePath: assetPath,
-            fileBytes: img.bytes,
-            contentType: contentType,
-            bucket: AppApiEndpoint.cardAssetsBucket,
-          );
-        } on Object catch (_) {}
+        if (token != null && token.isNotEmpty) {
+          try {
+            await _dio.uploadStorageFile(
+              storagePath: assetPath,
+              fileBytes: img.bytes,
+              contentType: contentType,
+              bucket: AppApiEndpoint.cardAssetsBucket,
+            );
+          } on Object catch (_) {}
+        }
 
         final publicUrl = AppApiEndpoint.getCardAssetPublicUrl(assetPath);
         uploadedImageUrls.add(publicUrl);

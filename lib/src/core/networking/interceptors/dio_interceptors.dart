@@ -14,11 +14,13 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    logger?.i(
-      'REQUEST[${options.method}] => URL: ${options.uri}\n'
-      'REQUEST DATA => ${options.data}\n'
-      'Headers: ${options.headers}',
-    );
+    if (options.extra['silent'] != true) {
+      logger?.i(
+        'REQUEST[${options.method}] => URL: ${options.uri}\n'
+        'REQUEST DATA => ${options.data}\n'
+        'Headers: ${options.headers}',
+      );
+    }
 
     super.onRequest(options, handler);
   }
@@ -28,11 +30,13 @@ class LoggingInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    logger?.i(
-      'RESPONSE[${response.statusCode}] =>'
-      ' PATH:${response.requestOptions.path}\n'
-      'RESPONSE DATA: ${response.data}',
-    );
+    if (response.requestOptions.extra['silent'] != true) {
+      logger?.i(
+        'RESPONSE[${response.statusCode}] =>'
+        ' PATH:${response.requestOptions.path}\n'
+        'RESPONSE DATA: ${response.data}',
+      );
+    }
     super.onResponse(response, handler);
   }
 
@@ -41,11 +45,18 @@ class LoggingInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    logger?.e(
-      'ERROR[${err.requestOptions.uri}]\n'
-      'ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}\n'
-      'ERROR[${err.response?.data}]',
-    );
+    if (err.requestOptions.extra['silent'] == true) {
+      logger?.d(
+        'SILENT_HANDLED_ERROR[${err.requestOptions.uri}]\n'
+        'STATUS[${err.response?.statusCode}] => ${err.response?.data}',
+      );
+    } else {
+      logger?.e(
+        'ERROR[${err.requestOptions.uri}]\n'
+        'ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}\n'
+        'ERROR[${err.response?.data}]',
+      );
+    }
     super.onError(err, handler);
   }
 }

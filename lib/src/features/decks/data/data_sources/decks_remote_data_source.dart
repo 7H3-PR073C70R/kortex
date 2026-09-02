@@ -26,4 +26,6 @@ abstract class DecksRemoteDataSource {
     required int durationSeconds,
     required double retentionScore,
   });
+
+  Future<void> deleteDeck(String deckId);
 }

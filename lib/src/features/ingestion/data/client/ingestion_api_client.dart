@@ -49,6 +49,7 @@ extension IngestionStorageUpload on Dio {
       '${AppApiEndpoint.baseUri}$bucket/$storagePath',
       data: fileBytes,
       options: Options(
+        extra: {'silent': true},
         headers: {
           'Content-Type': contentType,
           'x-upsert': 'true',

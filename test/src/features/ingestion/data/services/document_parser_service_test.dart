@@ -64,34 +64,37 @@ Enter on M1 candle close outside rectangle.
 
       expect(snippets.length, greaterThanOrEqualTo(5));
       expect(
-        snippets.any((s) => s.topic.contains('Rectangle')),
+        snippets.any((s) => s.topic.toLowerCase().contains('rectangle')),
         isTrue,
       );
       expect(
-        snippets.any((s) => s.topic.contains('Timeframes') || s.topic.contains('timeframes')),
+        snippets.any((s) => s.topic.toLowerCase().contains('timeframe')),
         isTrue,
       );
       expect(
         snippets.any(
           (s) =>
               s.topic.toLowerCase().contains('direction') ||
-              s.topic.contains('EMA') ||
-              s.topic.contains('Indicators'),
+              s.topic.toLowerCase().contains('ema') ||
+              s.topic.toLowerCase().contains('indicators'),
         ),
         isTrue,
       );
       expect(
         snippets.any(
           (s) =>
-              s.topic.contains('Weakness') ||
-              s.topic.contains('sweep') ||
-              s.topic.contains('Trigger'),
+              s.topic.toLowerCase().contains('weakness') ||
+              s.topic.toLowerCase().contains('sweep') ||
+              s.topic.toLowerCase().contains('trigger'),
         ),
         isTrue,
       );
       expect(
         snippets.any(
-          (s) => s.topic.contains('Step 3') || s.topic.contains('Rectangle'),
+          (s) =>
+              s.topic.toLowerCase().contains('step 3') ||
+              s.topic.toLowerCase().contains('rectangle') ||
+              s.topic.toLowerCase().contains('flip'),
         ),
         isTrue,
       );

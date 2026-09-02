@@ -3,10 +3,14 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class DeckListTileCard extends StatelessWidget {
@@ -16,6 +20,22 @@ class DeckListTileCard extends StatelessWidget {
   });
 
   final DeckEntity deck;
+
+  void _confirmDelete(BuildContext context) {
+    final l10n = context.l10n;
+    AppDialog.show(
+      context: context,
+      title: 'Delete Study Deck',
+      description:
+          'Are you sure you want to delete "${deck.title}" and its ${deck.totalCards} cards? This action cannot be undone.',
+      primaryActionText: 'Delete Deck',
+      isDestructive: true,
+      onPrimaryAction: () {
+        context.read<DecksBloc>().add(DecksDeckDeleted(deck.id));
+      },
+      secondaryActionText: 'Cancel',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,35 +110,56 @@ class DeckListTileCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (deck.hasDueCards)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.error.withAlpha(isDark ? 45 : 20),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: colors.error.withAlpha(100),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (deck.hasDueCards)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.error.withAlpha(isDark ? 45 : 20),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.error.withAlpha(100),
+                                ),
+                              ),
+                              child: Text(
+                                l10n.decksDueBadge(deck.dueCards),
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.error,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            )
+                          else
+                            Text(
+                              l10n.decksTotalCards(deck.totalCards),
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textMuted,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              _confirmDelete(context);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 17,
+                                color: colors.textMuted.withAlpha(160),
+                              ),
                             ),
                           ),
-                          child: Text(
-                            l10n.decksDueBadge(deck.dueCards),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.error,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        )
-                      else
-                        Text(
-                          l10n.decksTotalCards(deck.totalCards),
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 11.5,
-                          ),
-                        ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),

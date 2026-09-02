@@ -32,3 +32,12 @@ class DecksSearchQueryChanged extends DecksEvent {
   @override
   List<Object?> get props => [query];
 }
+
+class DecksDeckDeleted extends DecksEvent {
+  const DecksDeckDeleted(this.deckId);
+
+  final String deckId;
+
+  @override
+  List<Object?> get props => [deckId];
+}

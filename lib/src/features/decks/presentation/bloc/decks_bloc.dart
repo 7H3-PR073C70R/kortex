@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
@@ -8,15 +9,40 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 class DecksBloc extends Bloc<DecksEvent, DecksState> {
   DecksBloc({
     required GetUserDecksUseCase getUserDecksUseCase,
+    DeleteDeckUseCase? deleteDeckUseCase,
   })  : _getUserDecksUseCase = getUserDecksUseCase,
+        _deleteDeckUseCase = deleteDeckUseCase,
         super(const DecksState()) {
     on<DecksStarted>(_onDecksStarted);
     on<DecksRefreshed>(_onDecksRefreshed);
     on<DecksFilterChanged>(_onDecksFilterChanged);
     on<DecksSearchQueryChanged>(_onDecksSearchQueryChanged);
+    on<DecksDeckDeleted>(_onDeckDeleted);
   }
 
   final GetUserDecksUseCase _getUserDecksUseCase;
+  final DeleteDeckUseCase? _deleteDeckUseCase;
+
+  Future<void> _onDeckDeleted(
+    DecksDeckDeleted event,
+    Emitter<DecksState> emit,
+  ) async {
+    final updatedAll = state.allDecks.where((d) => d.id != event.deckId).toList();
+    emit(
+      state.copyWith(
+        allDecks: updatedAll,
+        filteredDecks: _applyFilterAndSearch(
+          updatedAll,
+          state.activeFilter,
+          state.searchQuery,
+        ),
+      ),
+    );
+
+    if (_deleteDeckUseCase != null) {
+      await _deleteDeckUseCase(event.deckId);
+    }
+  }
 
   Future<void> _onDecksStarted(
     DecksStarted event,

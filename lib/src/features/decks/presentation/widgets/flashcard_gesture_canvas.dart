@@ -335,14 +335,22 @@ class _CardFace extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (card.sourceTopic != null)
-                      Text(
-                        card.sourceTopic!,
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textMuted,
-                          fontSize: 11.5,
+                    if (card.sourceTopic != null &&
+                        (isBackFace || card.sourceTopic != mainText)) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          card.sourceTopic!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textMuted,
+                            fontSize: 11.5,
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
 

@@ -39,4 +39,7 @@ abstract class DecksApiClient {
     @Path('id') String deckId,
     @Body() Map<String, dynamic> body,
   );
+
+  @DELETE('/rest/v1/decks?id=eq.{id}')
+  Future<HttpResponse<dynamic>> deleteDeck(@Path('id') String id);
 }

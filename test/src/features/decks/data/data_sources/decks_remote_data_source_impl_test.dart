@@ -103,5 +103,20 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('deleteDeck removes deck and cards locally and calls remote API', () async {
+      when(() => mockClient.deleteDeck(any())).thenAnswer(
+        (_) async => HttpResponse<dynamic>(
+          null,
+          Response(requestOptions: RequestOptions()),
+        ),
+      );
+
+      await dataSource.deleteDeck('deck_bio_101');
+
+      final userDecks = await dataSource.getUserDecks();
+      expect(userDecks.any((d) => d.id == 'deck_bio_101'), isFalse);
+      verify(() => mockClient.deleteDeck('deck_bio_101')).called(1);
+    });
   });
 }

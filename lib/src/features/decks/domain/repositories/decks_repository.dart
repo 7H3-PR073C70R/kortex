@@ -23,4 +23,6 @@ abstract class DecksRepository {
     required int durationSeconds,
     required double retentionScore,
   });
+
+  Future<Either<Failure, void>> deleteDeck(String deckId);
 }

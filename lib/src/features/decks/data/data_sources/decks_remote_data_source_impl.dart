@@ -33,6 +33,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     // 2. Seamless Supabase Database Persistence
     final userId = _userStorage?.getUserId() ?? '';
 
+    final actualDueCount = cards.where((c) => c.isDueToday).length;
+
     // Insert Deck Record
     try {
       final deckPayload = <String, dynamic>{
@@ -40,7 +42,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         'title': deck.title,
         'subject': deck.subject,
         'total_cards': cards.length,
-        'due_cards': cards.length,
+        'due_cards': actualDueCount,
         'mastery_rate': deck.masteryRate,
         'description': deck.description,
         if (userId.isNotEmpty) 'user_id': userId,
@@ -103,6 +105,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     try {
       final cards = await _client.getDeckCards(deckId);
       if (cards.isNotEmpty) {
+        _localDeckCards[deckId] = cards;
         return cards;
       }
     } on Object catch (_) {}
@@ -117,7 +120,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required int previousRepetitions,
     required double previousEaseFactor,
   }) async {
-    // Run SM-2 calculation locally for zero-latency instant feedback
+    // Run SM-2 calculation locally for zero-latency instant card swiping
     final localResult = sm2Engine.calculate(
       quality: quality,
       previousInterval: previousInterval,
@@ -125,16 +128,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       previousEaseFactor: previousEaseFactor,
     );
 
-    try {
-      await _client.processCardReview(cardId, {
-        'quality': quality,
-        'nextInterval': localResult.nextInterval,
-        'newEaseFactor': localResult.newEaseFactor,
-        'newRepetitions': localResult.newRepetitions,
-        'nextDueDate': localResult.nextDueDate.toIso8601String(),
-      });
-    } on Object catch (_) {
-      // Offline fallback: return computed SM-2 result safely
+    // Update in-memory cached card state immediately
+    for (final deckCards in _localDeckCards.values) {
+      final idx = deckCards.indexWhere((c) => c.id == cardId);
+      if (idx != -1) {
+        deckCards[idx] = deckCards[idx].copyWith(
+          interval: localResult.nextInterval,
+          repetitions: localResult.newRepetitions,
+          easeFactor: localResult.newEaseFactor,
+          nextDueDate: localResult.nextDueDate,
+        );
+        break;
+      }
     }
 
     return localResult;
@@ -156,6 +161,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       });
     } on Object catch (_) {
       // Session results synced locally
+    }
+  }
+
+  @override
+  Future<void> deleteDeck(String deckId) async {
+    _localDeckCards.remove(deckId);
+    _localCreatedDecks.removeWhere((d) => d.id == deckId);
+
+    try {
+      await _client.deleteDeck(deckId);
+    } on Object catch (_) {
+      // Offline/Local deletion continues smoothly
     }
   }
 }

@@ -69,6 +69,11 @@ class _FakeDecksRepository implements DecksRepository {
   }) async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, void>> deleteDeck(String deckId) async {
+    return const Right(null);
+  }
 }
 
 void main() {

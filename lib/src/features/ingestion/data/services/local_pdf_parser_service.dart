@@ -25,8 +25,9 @@ class LocalPdfParserService {
   }
 
   /// Extracts raw text page-by-page from raw PDF [bytes] using Syncfusion,
-  /// applying strict UTF-8 character validation, vector/graphics stream
-  /// exclusion, and PDF generator metadata filtering.
+  /// applying dynamic cross-page repeating line frequency analysis to strip
+  /// marginalia/headers/footers, UTF-8 character validation, vector/graphics
+  /// stream exclusion, and grammar-aware line-unwrapping.
   String extractTextFromPdfBytes(
     Uint8List bytes, {
     String filename = 'document.pdf',
@@ -36,21 +37,22 @@ class LocalPdfParserService {
     try {
       final document = PdfDocument(inputBytes: bytes);
       final extractor = PdfTextExtractor(document);
-      final buffer = StringBuffer();
+      final pageTexts = <String>[];
 
       for (var i = 0; i < document.pages.count; i++) {
         final pageText = extractor.extractText(startPageIndex: i);
-        final sanitizedPageText = sanitizeExtractedText(pageText);
-        if (sanitizedPageText.isNotEmpty) {
-          buffer.writeln(sanitizedPageText);
+        if (pageText.trim().isNotEmpty) {
+          pageTexts.add(pageText);
         }
       }
 
       document.dispose();
 
-      final extracted = buffer.toString().trim();
-      if (extracted.isNotEmpty) {
-        return extracted;
+      if (pageTexts.isNotEmpty) {
+        final sanitized = sanitizeExtractedPages(pageTexts);
+        if (sanitized.isNotEmpty) {
+          return sanitized;
+        }
       }
     } on Object {
       // Fallback to byte stream extraction if PDF structure is non-standard
@@ -65,37 +67,135 @@ class LocalPdfParserService {
     return sanitizeExtractedText(fallbackText);
   }
 
-  /// Sanitizes raw extracted text by filtering out non-printable binary
-  /// corruption, control character noise, and PDF generator/renderer metadata.
-  static String sanitizeExtractedText(String rawText) {
-    if (rawText.isEmpty) return '';
+  /// Dynamically sanitizes extracted pages by computing line occurrence frequency
+  /// across pages to automatically identify and eliminate repeating headers,
+  /// footers, watermarks, and marginalia without hardcoded rules.
+  static String sanitizeExtractedPages(List<String> pages) {
+    if (pages.isEmpty) return '';
 
-    final lines = rawText.split('\n');
-    final cleanLines = <String>[];
+    // 1. Compute line frequency across all pages to detect dynamic repeating headers/footers
+    final linePageCounts = <String, int>{};
+    final pageLinesList = <List<String>>[];
 
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
+    for (final page in pages) {
+      final lines = page.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final seenOnThisPage = <String>{};
 
-      // 1. Filter out renderer metadata & watermarks
-      if (isMetadataOrRendererArtifact(trimmed)) {
-        continue;
+      for (final line in lines) {
+        final normalized = _normalizeLineForFrequency(line);
+        if (normalized.length >= 3 && !seenOnThisPage.contains(normalized)) {
+          seenOnThisPage.add(normalized);
+          linePageCounts[normalized] = (linePageCounts[normalized] ?? 0) + 1;
+        }
       }
-
-      // 2. Strict UTF-8 & printable character validation (> 10% corrupted -> discard)
-      if (isCorruptedBinaryNoise(trimmed)) {
-        continue;
-      }
-
-      // 3. Meaningful natural language / formula validation
-      if (!DocumentParserService.isMeaningfulEducationalText(trimmed)) {
-        continue;
-      }
-
-      cleanLines.add(trimmed);
+      pageLinesList.add(lines);
     }
 
-    return cleanLines.join('\n');
+    // A line appearing on >= 40% of pages in a multi-page document is classified as repeating marginalia
+    final totalPages = pages.length;
+    final repeatingMarginalia = <String>{};
+    if (totalPages >= 2) {
+      for (final entry in linePageCounts.entries) {
+        if (entry.value >= 2 && (entry.value / totalPages >= 0.40)) {
+          repeatingMarginalia.add(entry.key);
+        }
+      }
+    }
+
+    final collectedValidLines = <String>[];
+
+    for (final lines in pageLinesList) {
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty) continue;
+
+        final normalized = _normalizeLineForFrequency(trimmed);
+
+        // Discard dynamically identified repeating marginalia/headers/footers
+        if (repeatingMarginalia.contains(normalized)) {
+          continue;
+        }
+
+        // Discard renderer metadata & dynamic page number patterns
+        if (isMetadataOrRendererArtifact(trimmed)) {
+          continue;
+        }
+
+        // Discard non-printable corrupted binary glyph noise (> 10% corrupted)
+        if (isCorruptedBinaryNoise(trimmed)) {
+          continue;
+        }
+
+        // Must satisfy general natural language / formula density threshold
+        if (!DocumentParserService.isMeaningfulEducationalText(trimmed)) {
+          continue;
+        }
+
+        // Strip standalone URLs and bullet symbols
+        final clean = trimmed
+            .replaceAll(RegExp(r'https?://\S+|www\.\S+'), '')
+            .replaceAll(RegExp(r'^(?:[•\-–—*#]+\s*)'), '')
+            .trim();
+
+        if (clean.isNotEmpty) {
+          collectedValidLines.add(clean);
+        }
+      }
+    }
+
+    return _unwrapContinuousLines(collectedValidLines);
+  }
+
+  /// Sanitizes raw single-block extracted text into coherent paragraphs.
+  static String sanitizeExtractedText(String rawText) {
+    if (rawText.isEmpty) return '';
+    return sanitizeExtractedPages([rawText]);
+  }
+
+  static String _normalizeLineForFrequency(String line) {
+    return line
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'\d+'), '')
+        .trim();
+  }
+
+  /// Grammar-aware line unwrapping: joins mid-sentence line breaks with single spaces
+  /// while maintaining paragraph breaks after sentence terminators or structural headings.
+  static String _unwrapContinuousLines(List<String> validLines) {
+    if (validLines.isEmpty) return '';
+
+    final buffer = StringBuffer();
+    final headerRegex = RegExp(
+      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
+      caseSensitive: false,
+    );
+
+    for (var i = 0; i < validLines.length; i++) {
+      final current = validLines[i];
+      buffer.write(current);
+
+      if (i < validLines.length - 1) {
+        final next = validLines[i + 1];
+
+        final isHeader = headerRegex.hasMatch(current) || current.endsWith(':');
+        final nextIsHeader = headerRegex.hasMatch(next) || next.endsWith(':');
+
+        final endsWithSentenceTerminator = current.endsWith('.') ||
+            current.endsWith('?') ||
+            current.endsWith('!') ||
+            current.endsWith(':');
+
+        if (isHeader || nextIsHeader || (endsWithSentenceTerminator && next.isNotEmpty && next[0].toUpperCase() == next[0])) {
+          buffer.write('\n\n');
+        } else {
+          // Wrapped line mid-sentence -> join with single space
+          buffer.write(' ');
+        }
+      }
+    }
+
+    return buffer.toString().trim();
   }
 
   /// Discards strings where more than 10% of characters are non-printable,
@@ -127,14 +227,7 @@ class LocalPdfParserService {
         continue;
       }
 
-      // Common valid Unicode text & symbol blocks:
-      // - Latin-1 Supplement (160-255: letters, accents, math symbols)
-      // - Latin Extended-A & B (256-591)
-      // - Greek & Coptic (0x0370 - 0x03FF)
-      // - General Punctuation (0x2000 - 0x206F: quotes, dashes, bullets)
-      // - Currency Symbols (0x20A0 - 0x20CF)
-      // - Letterlike Symbols & Number Forms (0x2100 - 0x218F)
-      // - Mathematical Operators (0x2200 - 0x22FF)
+      // Common valid Unicode text & symbol blocks
       if ((r >= 160 && r <= 591) ||
           (r >= 0x0370 && r <= 0x03FF) ||
           (r >= 0x2000 && r <= 0x206F) ||
@@ -149,7 +242,6 @@ class LocalPdfParserService {
         continue;
       }
 
-      // Any other exotic/unrecognized high bytes in non-CJK documents are counted as invalid
       nonPrintableCount++;
     }
 
@@ -169,11 +261,21 @@ class LocalPdfParserService {
     return false;
   }
 
-  /// Filters out incidental PDF generator metadata or renderer strings.
+  /// Dynamically identifies generic PDF generator metadata, renderer strings,
+  /// and arbitrary page counter patterns.
   static bool isMetadataOrRendererArtifact(String line) {
-    final lower = line.toLowerCase();
+    final lower = line.toLowerCase().trim();
 
-    final metadataPatterns = [
+    // Universal pagination formats: "Page 1 of 12", "1 / 15", "- 12 -", "[ 1 ]", standalone digits
+    if (RegExp(
+      r'^(?:page\s+\d+(\s+(?:of|/)\s+\d+)?|\d+\s*/\s*\d+|\-+\s*\d+\s*\-+|\(?\s*\d+\s*\)?|\d+)$',
+      caseSensitive: false,
+    ).hasMatch(lower)) {
+      return true;
+    }
+
+    // Standard PDF renderer & engine metadata tags
+    final metadataKeywords = [
       'skia/pdf',
       'pdfium',
       'cairo',
@@ -186,8 +288,6 @@ class LocalPdfParserService {
       'pdftex',
       'creationdate',
       'moddate',
-      'aapl:keywords',
-      'ptx.fullbanner',
       'producer (',
       'creator (',
       '/subtype /form',
@@ -199,18 +299,10 @@ class LocalPdfParserService {
       '/iccbased',
     ];
 
-    for (final pattern in metadataPatterns) {
-      if (lower.contains(pattern)) {
+    for (final keyword in metadataKeywords) {
+      if (lower.contains(keyword)) {
         return true;
       }
-    }
-
-    // Page numbering artifacts like "Page 1 of 12" or "1 / 15"
-    if (RegExp(
-      r'^(page\s+\d+(\s+of\s+\d+)?|\d+\s*/\s*\d+|\d+)$',
-      caseSensitive: false,
-    ).hasMatch(line)) {
-      return true;
     }
 
     return false;

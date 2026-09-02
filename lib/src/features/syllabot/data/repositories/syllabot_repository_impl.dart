@@ -163,7 +163,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         title: deckTitle,
         subject: courseCode,
         totalCards: cards.length,
-        dueCards: cards.length,
+        dueCards: cards.where((c) => c.isDueToday).length,
         masteryRate: 0,
         category: 'AI Generated',
         description: 'Auto-generated from Syllabot conversation',

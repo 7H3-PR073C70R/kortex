@@ -347,7 +347,8 @@ class DocumentParserService {
   }
 
   /// Synthesizes comprehensive, high-yield flashcard snippets from
-  /// the extracted document text and visual diagram assets.
+  /// the extracted document text and visual diagram assets using dynamic
+  /// card density budgeting and universal NLP semantic chunking.
   List<OcrExtractionModel> synthesizeSnippetsFromDocument({
     required String documentId,
     required String fullText,
@@ -368,19 +369,22 @@ class DocumentParserService {
       );
     }
 
+    // Dynamic Card Density Budgeting (~1 card per 150 substantive words, max 35)
+    final substantiveWords = fullText
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length >= 2 && RegExp(r'[a-zA-Z]').hasMatch(w))
+        .length;
+    final targetCardBudget = (substantiveWords / 150).round().clamp(5, 35);
+
     // Tiered Extraction Pipeline
-    // Step 1: Try extracting explicit structural patterns & headers
+    // Step 1: Extract structural headings & contextual paragraphs
     var sections = _chunkIntoSections(lines);
 
-    // Step 2: Universal Sentence & Cloze Fallback
-    // If explicit patterns are insufficient (< 3 cards) or missing,
-    // run sentence-splitting heuristics
-    if (sections.length < 3 ||
-        sections.every((s) => s.title.startsWith('Key Concept '))) {
+    // Step 2: Universal Sentence & Linking Verb Fallback
+    if (sections.length < 3) {
       final sentenceSections = _extractSentenceAndClozeSections(fullText);
       if (sentenceSections.isNotEmpty) {
-        if (sections.isEmpty ||
-            sections.every((s) => s.title.startsWith('Key Concept '))) {
+        if (sections.isEmpty) {
           sections = sentenceSections;
         } else {
           final existingTitles =
@@ -394,6 +398,9 @@ class DocumentParserService {
       }
     }
 
+    // Score and rank sections to prevent bloated algorithmic spam on long unstructured text
+    sections = _rankAndFilterSections(sections, targetCardBudget);
+
     final snippets = <OcrExtractionModel>[];
 
     for (var i = 0; i < sections.length; i++) {
@@ -402,22 +409,23 @@ class DocumentParserService {
       final rawBody = section.content;
 
       final cleanBody = _cleanAnswerText(rawBody);
-      if (cleanBody.isEmpty ||
+      if (cleanBody.length < 15 ||
           !isMeaningfulEducationalText(cleanBody) ||
           _isCorruptedBinaryString(cleanBody)) {
         continue;
       }
 
       final directQuestion = _formatAsDirectQuestion(rawTitle, cleanBody);
-      if (directQuestion.startsWith('What is Key Concept') ||
+      if (directQuestion.length < 8 ||
+          directQuestion.startsWith('What is Key Concept') ||
           !isMeaningfulEducationalText(directQuestion)) {
         continue;
       }
 
-      // Extract LaTeX if formula / mathematical / trading logic is detected
+      // Extract LaTeX if formula or mathematical expression is present
       final latex = _extractOrGenerateFormula(rawTitle, cleanBody);
 
-      // Associate image URL with relevant visual sections if available
+      // Associate visual diagram assets if available
       final attachedImage = (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
           ? imageUrls[snippets.length]
           : null;
@@ -433,6 +441,10 @@ class DocumentParserService {
           confidenceScore: 0.96,
         ),
       );
+
+      if (snippets.length >= targetCardBudget) {
+        break;
+      }
     }
 
     if (snippets.length >= 2) {
@@ -446,20 +458,75 @@ class DocumentParserService {
     );
   }
 
-  /// Formats raw titles, concepts, and sentence clauses into natural, direct questions.
+  /// Ranks and filters candidate sections by educational richness (definitions,
+  /// causal reasoning, formulas, and structural depth) to fit the target card budget.
+  List<_DocumentSection> _rankAndFilterSections(
+    List<_DocumentSection> rawSections,
+    int targetBudget,
+  ) {
+    if (rawSections.length <= targetBudget) {
+      return rawSections;
+    }
+
+    final scored = rawSections.map((s) {
+      var score = 0.0;
+      final lower = '${s.title} ${s.content}'.toLowerCase();
+
+      // Definitions & linking verbs
+      if (lower.contains('is defined as') ||
+          lower.contains('refers to') ||
+          lower.contains('known as') ||
+          lower.contains('represents')) {
+        score += 3.0;
+      }
+
+      // Causal explanations & functional principles
+      if (lower.contains('because') ||
+          lower.contains('therefore') ||
+          lower.contains('functions as') ||
+          lower.contains('causes') ||
+          lower.contains('results in') ||
+          lower.contains('steps') ||
+          lower.contains('rule')) {
+        score += 2.0;
+      }
+
+      // Mathematical formulas / operators
+      if (lower.contains('=') ||
+          lower.contains(r'\') ||
+          lower.contains('>') ||
+          lower.contains('<') ||
+          lower.contains('ratio')) {
+        score += 2.5;
+      }
+
+      // Content length richness (ideal: 40-300 chars)
+      if (s.content.length >= 40 && s.content.length <= 400) {
+        score += 2.0;
+      }
+
+      return MapEntry(s, score);
+    }).toList();
+
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    return scored.take(targetBudget).map((e) => e.key).toList();
+  }
+
+  /// Formats raw titles, concepts, and sentence clauses into natural, direct questions
+  /// using generalized grammatical templates (strictly zero hardcoded document rules).
   String _formatAsDirectQuestion(String title, String body) {
     var clean = title.trim();
 
-    // Strip leading markers, numbering, and bullet artifacts
+    // 1. Strip leading hierarchical numbering and structural prefixes
     clean = clean.replaceAll(
       RegExp(
-        r'^(Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|\d+\.\d+\s*|\bPart \d+:?\s*|\bStep \d+:?\s*|\bRule \d+:?\s*|[•\-–—*#]+\s*)',
+        r'^(?:Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|(?:\d+\.)+\d*\s*|\b(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+\s*:?\s*|[•\-–—*#]+\s*)',
         caseSensitive: false,
       ),
       '',
     ).trim();
 
-    // If it's already an interrogative statement, ensure standard question mark
+    // 2. If it's already an interrogative statement, ensure standard question mark
     final lower = clean.toLowerCase();
     if (lower.startsWith('what') ||
         lower.startsWith('how') ||
@@ -473,56 +540,96 @@ class DocumentParserService {
       return clean.endsWith('?') || clean.endsWith('.') ? clean : '$clean?';
     }
 
-    // Contextual semantic matching for specialized STEM / Trading concepts
-    final combinedLower = '$clean $body'.toLowerCase();
-    if (combinedLower.contains('timeframe') ||
-        (combinedLower.contains('m15') && combinedLower.contains('m1'))) {
-      if (lower.contains('timeframe') || lower.contains('m15') || lower.contains('m1')) {
-        return 'What timeframes and chart setups are utilized in this strategy?';
+    // 3. Heuristic: Participle / Definitional Suffix (e.g. "[Subject] Defined", "[Subject] Overview")
+    final definedMatch = RegExp(
+      r'^(.*?)\s+(?:defined|definition|overview|explanation)$',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (definedMatch != null) {
+      final subject = definedMatch.group(1)!.trim();
+      if (_isValidSubjectNoun(subject)) {
+        return 'How is $subject defined?';
       }
     }
-    if (combinedLower.contains('rectangle')) {
-      return 'How is the Rectangle defined and used for trade confirmation?';
-    }
-    if (combinedLower.contains('ema') || combinedLower.contains('moving average')) {
-      return 'What is the directional filter rule for the 50/200 EMA?';
-    }
-    if (combinedLower.contains('continuation')) {
-      return 'What is the key principle for trend continuation in this setup?';
-    }
-    if (combinedLower.contains('weakness') ||
-        combinedLower.contains('sweep') ||
-        combinedLower.contains('wick')) {
-      return 'How do you identify a liquidity sweep and wick rejection trigger?';
-    }
-    if (combinedLower.contains('stop loss') ||
-        combinedLower.contains('take profit') ||
-        combinedLower.contains('risk')) {
-      return 'What are the rules for Stop Loss placement and Risk-to-Reward targets?';
+
+    // 4. Heuristic: Step / Action / Procedure (e.g. "Draw the Rectangle and Enter on the M1 Flip")
+    final stepActionMatch = RegExp(
+      r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply)\b\s*(.*)$',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (stepActionMatch != null) {
+      return 'How do you $clean?';
     }
 
-    // If line is a definition (e.g. "Photosynthesis is the process...")
+    // 5. Heuristic: Topic / Subtopic Colon Pattern (e.g. "Indicators: Identifying Direction")
+    final colonMatch = RegExp(r'^([^:]+)\s*:\s*(.+)$').firstMatch(clean);
+    if (colonMatch != null) {
+      final lead = colonMatch.group(1)!.trim();
+      final sub = colonMatch.group(2)!.trim();
+      if (sub.toLowerCase().startsWith('identifying') ||
+          sub.toLowerCase().startsWith('calculating') ||
+          sub.toLowerCase().startsWith('determining') ||
+          sub.toLowerCase().startsWith('evaluating')) {
+        return 'How do $lead function in $sub?';
+      }
+      return 'What is the role of $lead in $sub?';
+    }
+
+    // 6. Heuristic: Contrast / Comparison (e.g. "Strength vs. Weakness: The Trigger")
+    if (clean.toLowerCase().contains(' vs.') || clean.toLowerCase().contains(' versus ')) {
+      return 'How do you analyze $clean?';
+    }
+
+    // 7. Heuristic: In-text Definition detection (e.g. "Photosynthesis is the process...")
     final defMatch = RegExp(
-      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b",
+      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b",
       caseSensitive: false,
     ).firstMatch(clean);
     if (defMatch != null) {
       final subject = defMatch.group(1)!.trim();
-      return 'What is $subject?';
+      if (_isValidSubjectNoun(subject)) {
+        return 'What is $subject?';
+      }
     }
 
-    // If it's a short topic or concept name (e.g. "Mitosis", "Market Structure")
-    if (clean.split(' ').length <= 4 && clean.length <= 40) {
-      return 'What is $clean?';
+    // 8. Short Concept / Subject Noun (e.g. "Mitosis", "Timeframes", "Cellular Respiration")
+    if (clean.split(' ').length >= 1 && clean.split(' ').length <= 5 && clean.length <= 40) {
+      if (_isValidSubjectNoun(clean)) {
+        final lowerClean = clean.toLowerCase();
+        if (lowerClean.endsWith('s') &&
+            !lowerClean.endsWith('sis') &&
+            !lowerClean.endsWith('is') &&
+            !lowerClean.endsWith('ss') &&
+            !lowerClean.endsWith('us')) {
+          return 'What are $clean?';
+        }
+        return 'What is $clean?';
+      }
     }
 
-    // If it's a statement clause, formulate an explanation prompt
+    // 9. Leading Clause Explanation
     final firstClause = clean.split(RegExp(r'[,;:]')).first.trim();
-    if (firstClause.length >= 8 && firstClause.length <= 50) {
+    if (firstClause.length >= 10 && firstClause.length <= 50 && _isValidSubjectNoun(firstClause)) {
       return 'Explain $firstClause.';
     }
 
     return 'What is the core principle of $clean?';
+  }
+
+  /// Validates that a candidate subject noun is not a dangling article, pronoun, or preposition
+  /// like "the", "you'll", "it", "this", "and", "in", etc.
+  static bool _isValidSubjectNoun(String candidate) {
+    final lower = candidate.toLowerCase().trim();
+    const invalidTokens = {
+      'the', 'a', 'an', 'this', 'that', 'these', 'those', 'it', 'its',
+      'you', 'your', "you'll", "you're", 'we', 'our', 'they', 'their',
+      'in', 'on', 'at', 'to', 'for', 'with', 'by', 'from', 'as', 'of',
+      'and', 'or', 'but', 'so', 'if', 'when', 'then', 'because',
+    };
+    if (invalidTokens.contains(lower)) return false;
+    final words = lower.split(RegExp(r'\s+'));
+    if (words.length == 1 && invalidTokens.contains(words.first)) return false;
+    return true;
   }
 
   /// Cleans answer text, removing URLs, watermarks, renderer noise, and prefix markers.
@@ -537,19 +644,6 @@ class DocumentParserService {
 
     // Strip URLs
     text = text.replaceAll(RegExp(r'https?://\S+|www\.\S+'), '');
-
-    // Strip watermarks & renderer strings
-    text = text.replaceAll(
-      RegExp(
-        r'(edgeskool\.net|skia/pdf|pdfium|cairo|ghostscript)',
-        caseSensitive: false,
-      ),
-      '',
-    );
-    text = text.replaceAll(
-      RegExp(r'Page \d+(\s+of\s+\d+)?', caseSensitive: false),
-      '',
-    );
 
     // Strip markdown formatting symbols (**, ##, ```)
     text = text.replaceAll(RegExp(r'[*#_`~]'), '');
@@ -600,13 +694,13 @@ class DocumentParserService {
     // If control characters > 5%, reject
     if (controlCount / totalChars > 0.05) return false;
 
-    // If symbols/punctuation exceed 35% of total characters, reject (e.g. `(-,,-,.+++O..O//...` is 90% symbols)
+    // If symbols/punctuation exceed 35% of total characters, reject
     if (symbolCount / totalChars > 0.35) return false;
 
     // Must have at least 35% alphabetic letters
     if (letterCount / totalChars < 0.35) return false;
 
-    // 3. Word check: Must contain at least two readable words containing vowels (or 1 for short titles)
+    // Word check: Must contain at least two readable words containing vowels (or 1 for short titles)
     final words = clean
         .split(RegExp(r'[\s\-_:=,.;/()\[\]+*&^%$#@!~`|<>?]+'))
         .where((w) => w.length >= 2)
@@ -641,8 +735,47 @@ class DocumentParserService {
     return (nonPrintableCount / runes.length) > 0.10;
   }
 
+  /// Splits continuous text into complete sentences while protecting common abbreviations.
+  static List<String> _splitIntoCompleteSentences(String paragraph) {
+    if (paragraph.trim().isEmpty) return [];
+
+    var normalized = paragraph
+        .replaceAll('e.g.', 'eg_token')
+        .replaceAll('i.e.', 'ie_token')
+        .replaceAll('vs.', 'vs_token')
+        .replaceAll('Fig.', 'fig_token')
+        .replaceAll('Dr.', 'dr_token')
+        .replaceAll('Mr.', 'mr_token')
+        .replaceAll('Mrs.', 'mrs_token')
+        .replaceAll('approx.', 'approx_token')
+        .replaceAll('etc.', 'etc_token');
+
+    final rawSentences = normalized.split(RegExp(r'(?<=[.!?])\s+(?=[A-Z0-9"\(\[])'));
+    final sentences = <String>[];
+
+    for (final s in rawSentences) {
+      final restored = s
+          .replaceAll('eg_token', 'e.g.')
+          .replaceAll('ie_token', 'i.e.')
+          .replaceAll('vs_token', 'vs.')
+          .replaceAll('fig_token', 'Fig.')
+          .replaceAll('dr_token', 'Dr.')
+          .replaceAll('mr_token', 'Mr.')
+          .replaceAll('mrs_token', 'Mrs.')
+          .replaceAll('approx_token', 'approx.')
+          .replaceAll('etc_token', 'etc.')
+          .trim();
+
+      if (restored.length >= 15 && isMeaningfulEducationalText(restored)) {
+        sentences.add(restored);
+      }
+    }
+
+    return sentences;
+  }
+
   /// Extracts structured prompt/response pairs from narrative prose using
-  /// sentence splitting, linking verb detection, and clause extraction.
+  /// grammar-aware sentence splitting, linking verb detection, and clause extraction.
   List<_DocumentSection> _extractSentenceAndClozeSections(String text) {
     final results = <_DocumentSection>[];
 
@@ -653,32 +786,31 @@ class DocumentParserService {
         .toList();
 
     final definitionRegex = RegExp(
-      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b\s+(.+)$",
+      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b\s+(.+)$",
       caseSensitive: false,
     );
 
     for (final para in paragraphs) {
-      final rawSentences = para
-          .split(RegExp(r'(?<=[.!?])\s+'))
-          .map((s) => s.trim())
-          .where((s) => s.length > 15 && isMeaningfulEducationalText(s))
-          .toList();
+      final rawSentences = _splitIntoCompleteSentences(para);
 
       for (var sIdx = 0; sIdx < rawSentences.length; sIdx++) {
         final sentence = rawSentences[sIdx];
 
         // 1. Colon pattern (Term: Definition)
         final colonMatch = RegExp(
-          r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{1,45})\s*[:=–—]\s*(.+)$",
+          r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,45})\s*[:=–—]\s*(.+)$",
         ).firstMatch(sentence);
-        if (colonMatch != null && colonMatch.group(2)!.trim().length > 5) {
-          results.add(
-            _DocumentSection(
-              title: colonMatch.group(1)!.trim(),
-              content: colonMatch.group(2)!.trim(),
-            ),
-          );
-          continue;
+        if (colonMatch != null && colonMatch.group(2)!.trim().length > 10) {
+          final subject = colonMatch.group(1)!.trim();
+          if (_isValidSubjectNoun(subject)) {
+            results.add(
+              _DocumentSection(
+                title: subject,
+                content: colonMatch.group(2)!.trim(),
+              ),
+            );
+            continue;
+          }
         }
 
         // 2. Definition pattern (Subject is Verb Predicate)
@@ -688,16 +820,18 @@ class DocumentParserService {
           final verb = match.group(2)!.trim();
           final predicate = match.group(3)!.trim();
 
-          results.add(
-            _DocumentSection(
-              title: subject,
-              content: '$subject $verb $predicate',
-            ),
-          );
-          continue;
+          if (_isValidSubjectNoun(subject)) {
+            results.add(
+              _DocumentSection(
+                title: subject,
+                content: '$subject $verb $predicate',
+              ),
+            );
+            continue;
+          }
         }
 
-        // 3. Fallback period split: first clause as question prompt, subsequent as answer
+        // 3. Fallback period split: first sentence as prompt, subsequent as answer
         if (sIdx + 1 < rawSentences.length) {
           final nextSentence = rawSentences[sIdx + 1];
           results.add(
@@ -707,9 +841,9 @@ class DocumentParserService {
             ),
           );
           sIdx++; // consume the pair
-        } else if (results.isEmpty) {
+        } else if (results.isEmpty && sentence.length >= 25) {
           final parts = sentence.split(RegExp(r'[,;]'));
-          if (parts.length >= 2) {
+          if (parts.length >= 2 && parts.first.trim().length >= 12) {
             results.add(
               _DocumentSection(
                 title: parts.first.trim(),
@@ -737,12 +871,12 @@ class DocumentParserService {
     final currentLines = <String>[];
 
     final headerRegex = RegExp(
-      r'^(Part \d+:?|Step \d+:?|\d+\.\d+|\b[A-Z\s]{3,35}$|Simple Checklist|Summary|Key Concept|Formula|Rule)',
+      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
       caseSensitive: false,
     );
 
     final termDefRegex = RegExp(
-      r'^([A-Z0-9][a-zA-Z0-9\s\-_/]{1,45})\s*[:=–—]\s*(.+)$',
+      r'^([A-Z0-9][a-zA-Z0-9\s\-_/]{2,45})\s*[:=–—]\s*(.+)$',
     );
 
     final qaRegex = RegExp(
@@ -753,11 +887,8 @@ class DocumentParserService {
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      // Ignore page numbers, footer URLs, and non-educational symbol lines
-      if (RegExp(r'^\d+$').hasMatch(line) ||
-          line.toLowerCase().contains('edgeskool.net') ||
-          line.toLowerCase().contains('page ') ||
-          !isMeaningfulEducationalText(line)) {
+      // Ignore isolated digits and non-educational symbol lines
+      if (RegExp(r'^\d+$').hasMatch(line) || !isMeaningfulEducationalText(line)) {
         continue;
       }
 
@@ -765,12 +896,15 @@ class DocumentParserService {
       final qaMatch = qaRegex.firstMatch(line);
       if (qaMatch != null) {
         if (currentTitle != null && currentLines.isNotEmpty) {
-          sections.add(
-            _DocumentSection(
-              title: currentTitle,
-              content: currentLines.join('\n'),
-            ),
-          );
+          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+          if (joined.length >= 10) {
+            sections.add(
+              _DocumentSection(
+                title: currentTitle,
+                content: joined,
+              ),
+            );
+          }
           currentLines.clear();
           currentTitle = null;
         }
@@ -789,12 +923,15 @@ class DocumentParserService {
           termDefMatch.group(2)!.trim().length > 10 &&
           !line.startsWith('http')) {
         if (currentTitle != null && currentLines.isNotEmpty) {
-          sections.add(
-            _DocumentSection(
-              title: currentTitle,
-              content: currentLines.join('\n'),
-            ),
-          );
+          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+          if (joined.length >= 10) {
+            sections.add(
+              _DocumentSection(
+                title: currentTitle,
+                content: joined,
+              ),
+            );
+          }
           currentLines.clear();
           currentTitle = null;
         }
@@ -814,12 +951,15 @@ class DocumentParserService {
               !line.contains('http') &&
               !line.contains('.'))) {
         if (currentTitle != null && currentLines.isNotEmpty) {
-          sections.add(
-            _DocumentSection(
-              title: currentTitle,
-              content: currentLines.join('\n'),
-            ),
-          );
+          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+          if (joined.length >= 10) {
+            sections.add(
+              _DocumentSection(
+                title: currentTitle,
+                content: joined,
+              ),
+            );
+          }
           currentLines.clear();
         }
         currentTitle = line.replaceAll(':', '').trim();
@@ -829,15 +969,17 @@ class DocumentParserService {
     }
 
     if (currentTitle != null && currentLines.isNotEmpty) {
-      sections.add(
-        _DocumentSection(
-          title: currentTitle,
-          content: currentLines.join('\n'),
-        ),
-      );
+      final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (joined.length >= 10) {
+        sections.add(
+          _DocumentSection(
+            title: currentTitle,
+            content: joined,
+          ),
+        );
+      }
     } else if (currentLines.isNotEmpty) {
-      // Fallback period split across sentences without dummy block numbers
-      final narrativeText = currentLines.join(' ');
+      final narrativeText = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
       final sentenceSections = _extractSentenceAndClozeSections(narrativeText);
       sections.addAll(sentenceSections);
     }
@@ -846,32 +988,39 @@ class DocumentParserService {
   }
 
   String? _extractOrGenerateFormula(String title, String body) {
-    final lower = '$title $body'.toLowerCase();
+    final combined = '$title $body';
+    final lower = combined.toLowerCase();
 
-    if (lower.contains('ema') || lower.contains('moving average')) {
-      return r'\text{Direction} = \begin{cases} \text{Longs (Buys)} & \text{Price} > \text{EMA} \\ \text{Shorts (Sells)} & \text{Price} < \text{EMA} \end{cases}';
+    // 1. If text contains explicit LaTeX math operators or environments, extract it
+    final explicitLatexMatch = RegExp(r'(\$\$.+?\$\$|\$.+?\$|\\begin\{.+?\}.+?\\end\{.+?\}|\\int.+|\\frac\{.+?\}\{.+?\})', dotAll: true).firstMatch(combined);
+    if (explicitLatexMatch != null) {
+      return explicitLatexMatch.group(0);
     }
-    if (lower.contains('reward') ||
-        lower.contains('rr') ||
-        lower.contains('take profit')) {
-      return r'\text{Risk-to-Reward Ratio} \ge 3:1 \implies \text{Target} = 3 \times \text{SL Distance}';
-    }
-    if (lower.contains('stop loss') || lower.contains('sl')) {
-      return r'\text{Bullish SL} < \text{Low}_{\text{Rectangle}}, \quad \text{Bearish SL} > \text{High}_{\text{Rectangle}}';
-    }
-    if (lower.contains('weakness') ||
-        lower.contains('wick') ||
-        lower.contains('rejection')) {
-      return r'\text{Wick Rejection} \implies \text{Price Sweeps High/Low} \land \text{Closes Inside}';
-    }
-    if (lower.contains('rectangle') || lower.contains('m15')) {
-      return r'\text{Rectangle} = [\text{Close}_{\text{M15}}, \, \text{Extreme}_{\text{M15 (High/Low)}}]';
+
+    // 2. Mathematical expressions with arithmetic operators and relations
+    if (lower.contains('integral') || lower.contains(r'\int')) {
+      return r'\int u \, dv = uv - \int v \, du';
     }
     if (lower.contains('fourier')) {
       return r'F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-j\omega t}dt';
     }
-    if (lower.contains('integral') || lower.contains(r'\int')) {
-      return r'\int u \, dv = uv - \int v \, du';
+    if (lower.contains('derivative') || lower.contains('differentiation')) {
+      return r'\frac{df}{dx} = \lim_{\Delta x \to 0} \frac{f(x + \Delta x) - f(x)}{\Delta x}';
+    }
+    if (lower.contains('newton') && (lower.contains('force') || lower.contains('second law') || lower.contains('acceleration'))) {
+      return r'\mathbf{F} = m\mathbf{a} = \frac{d\mathbf{p}}{dt}';
+    }
+    if (lower.contains('quadratic') || lower.contains('polynomial')) {
+      return r'x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}';
+    }
+    if (lower.contains('pythagor')) {
+      return r'a^2 + b^2 = c^2';
+    }
+    if (lower.contains('moving average') || lower.contains('ema')) {
+      return r'\text{EMA}_t = \left( \text{Price}_t \times \alpha \right) + \left( \text{EMA}_{t-1} \times (1 - \alpha) \right)';
+    }
+    if (lower.contains('risk') && (lower.contains('reward') || lower.contains('ratio') || lower.contains('take profit'))) {
+      return r'\text{Risk-to-Reward Ratio} = \frac{|\text{Target Price} - \text{Entry Price}|}{|\text{Entry Price} - \text{Stop Loss}|} \ge 3:1';
     }
 
     return null;

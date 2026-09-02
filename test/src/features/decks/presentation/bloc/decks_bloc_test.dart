@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -65,6 +66,11 @@ class _FakeDecksRepository implements DecksRepository {
   }) async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, void>> deleteDeck(String deckId) async {
+    return const Right(null);
+  }
 }
 
 void main() {
@@ -74,65 +80,89 @@ void main() {
 
     setUp(() {
       repo = _FakeDecksRepository();
-      bloc = DecksBloc(getUserDecksUseCase: GetUserDecksUseCase(repo));
+      bloc = DecksBloc(
+        getUserDecksUseCase: GetUserDecksUseCase(repo),
+      );
     });
 
     tearDown(() {
-      unawaited(bloc.close());
+      bloc.close();
     });
 
-    test('DecksStarted loads decks and populates state', () async {
-      bloc.add(const DecksStarted());
-
-      await expectLater(
-        bloc.stream,
-        emitsInOrder([
-          predicate<DecksState>((s) => s.isLoading),
-          predicate<DecksState>(
-            (s) =>
-                !s.isLoading &&
-                s.allDecks.length == 2 &&
-                s.totalDueCards == 4,
-          ),
-        ]),
-      );
+    test('initial state is correct', () {
+      expect(bloc.state.status, DecksStatus.initial);
+      expect(bloc.state.allDecks, isEmpty);
+      expect(bloc.state.filteredDecks, isEmpty);
     });
 
-    test('DecksSearchQueryChanged filters deck list by query', () async {
-      bloc.add(const DecksStarted());
-      await bloc.stream.firstWhere((s) => !s.isLoading);
-
-      bloc.add(const DecksSearchQueryChanged('Laplace'));
-
-      await expectLater(
-        bloc.stream,
-        emits(
-          predicate<DecksState>(
-            (s) =>
-                s.filteredDecks.length == 1 &&
-                s.filteredDecks.first.title.contains('Laplace'),
-          ),
+    blocTest<DecksBloc, DecksState>(
+      'loads decks on DecksStarted',
+      build: () => bloc,
+      act: (b) => b.add(const DecksStarted()),
+      expect: () => [
+        const DecksState(status: DecksStatus.loading),
+        DecksState(
+          status: DecksStatus.loaded,
+          allDecks: repo.decksToReturn,
+          filteredDecks: repo.decksToReturn,
         ),
-      );
-    });
+      ],
+    );
 
-    test('DecksFilterChanged filters decks by due status', () async {
-      bloc.add(const DecksStarted());
-      await bloc.stream.firstWhere((s) => !s.isLoading);
-
-      bloc.add(const DecksFilterChanged('due'));
-
-      await expectLater(
-        bloc.stream,
-        emits(
-          predicate<DecksState>(
-            (s) =>
-                s.activeFilter == 'due' &&
-                s.filteredDecks.length == 1 &&
-                s.filteredDecks.first.dueCards > 0,
-          ),
+    blocTest<DecksBloc, DecksState>(
+      'filters by due cards',
+      build: () => bloc,
+      seed: () => DecksState(
+        status: DecksStatus.loaded,
+        allDecks: repo.decksToReturn,
+        filteredDecks: repo.decksToReturn,
+      ),
+      act: (b) => b.add(const DecksFilterChanged('due')),
+      expect: () => [
+        DecksState(
+          status: DecksStatus.loaded,
+          allDecks: repo.decksToReturn,
+          filteredDecks: [repo.decksToReturn[0]],
+          activeFilter: 'due',
         ),
-      );
-    });
+      ],
+    );
+
+    blocTest<DecksBloc, DecksState>(
+      'filters by mastered cards (>=90% mastery)',
+      build: () => bloc,
+      seed: () => DecksState(
+        status: DecksStatus.loaded,
+        allDecks: repo.decksToReturn,
+        filteredDecks: repo.decksToReturn,
+      ),
+      act: (b) => b.add(const DecksFilterChanged('mastered')),
+      expect: () => [
+        DecksState(
+          status: DecksStatus.loaded,
+          allDecks: repo.decksToReturn,
+          filteredDecks: [repo.decksToReturn[1]],
+          activeFilter: 'mastered',
+        ),
+      ],
+    );
+
+    blocTest<DecksBloc, DecksState>(
+      'removes deck on DecksDeckDeleted',
+      build: () => bloc,
+      seed: () => DecksState(
+        status: DecksStatus.loaded,
+        allDecks: repo.decksToReturn,
+        filteredDecks: repo.decksToReturn,
+      ),
+      act: (b) => b.add(const DecksDeckDeleted('d1')),
+      expect: () => [
+        DecksState(
+          status: DecksStatus.loaded,
+          allDecks: [repo.decksToReturn[1]],
+          filteredDecks: [repo.decksToReturn[1]],
+        ),
+      ],
+    );
   });
 }

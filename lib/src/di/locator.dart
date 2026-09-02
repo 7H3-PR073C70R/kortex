@@ -64,6 +64,7 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dar
 import 'package:kortex/src/features/decks/domain/logic/scheduler_factory.dart';
 import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
