@@ -471,6 +471,7 @@ Generated from Kortexify Scholar Workspace.
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
+            context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
             final result = await locator<UpdateDisplayNameUseCase>()(newName);
             result.fold(
               (failure) {

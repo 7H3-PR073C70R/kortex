@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
+import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';

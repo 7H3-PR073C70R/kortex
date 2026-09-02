@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 
 class StreakLeaderboardWidget extends StatelessWidget {
   const StreakLeaderboardWidget({
@@ -204,13 +205,14 @@ class _PodiumAvatar extends StatelessWidget {
         Stack(
           alignment: Alignment.topRight,
           children: [
-            CircleAvatar(
-              radius: place == 1 ? 28 : 22,
-              backgroundColor: color.withAlpha(100),
-              child: Text(
-                entry.userName.isNotEmpty ? entry.userName[0] : '?',
-                style: typography.title3.bold.copyWith(color: Colors.white),
-              ),
+            AppAvatar(
+              customDimension: place == 1 ? 56 : 44,
+              imageUrl: entry.avatarUrl,
+              name: entry.userName,
+              backgroundColor: color.withAlpha(50),
+              foregroundColor: colors.textPrimary,
+              borderColor: color,
+              borderWidth: 2,
             ),
             Container(
               padding: const EdgeInsets.all(4),

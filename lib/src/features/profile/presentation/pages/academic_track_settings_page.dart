@@ -57,9 +57,18 @@ class AcademicTrackSettingsPage extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final selectedTrack = useState<String>('WAEC');
-    final dailyTarget = useState<int>(20);
-    final retentionBenchmark = useState<double>(0.85);
+    final currentProfile = context.read<AuthBloc>().state.userProfile;
+    final selectedTrack = useState<String>(
+      currentProfile?.targetTrack.isNotEmpty == true
+          ? currentProfile!.targetTrack
+          : 'WAEC',
+    );
+    final dailyTarget = useState<int>(
+      currentProfile?.dailyCardTarget ?? 20,
+    );
+    final retentionBenchmark = useState<double>(
+      currentProfile?.retentionBenchmark ?? 0.85,
+    );
 
     useEffect(() {
       context.read<AuthBloc>().add(const AuthProfileFetchRequested());

@@ -42,6 +42,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthResetPasswordRequested>(_onResetPasswordRequested);
     on<AuthProfileFetchRequested>(_onProfileFetchRequested);
     on<AuthUpdateCourseTrackRequested>(_onUpdateCourseTrackRequested);
+    on<AuthAvatarUpdated>(_onAvatarUpdated);
+    on<AuthDisplayNameUpdated>(_onDisplayNameUpdated);
     on<AuthSignOutRequested>(_onSignOutRequested);
 
     _authSubscription = _observeAuthStateUseCase().listen((status) {
@@ -376,7 +378,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthUpdateCourseTrackRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    if (state.userProfile != null) {
+      emit(
+        state.copyWith(
+          userProfile: state.userProfile!.copyWith(
+            targetTrack: event.track,
+            dailyCardTarget: event.dailyTarget,
+            retentionBenchmark: event.retentionBenchmark,
+          ),
+        ),
+      );
+    }
     final res = await _updateCourseTrackUseCase(
       track: event.track,
       dailyTarget: event.dailyTarget,
@@ -392,10 +404,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (profile) => emit(
         state.copyWith(
           status: AuthStatus.authenticated,
-          userProfile: profile,
+          userProfile: profile.id.isNotEmpty ? profile : state.userProfile,
         ),
       ),
     );
+  }
+
+  void _onAvatarUpdated(
+    AuthAvatarUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.userProfile != null) {
+      emit(
+        state.copyWith(
+          userProfile: state.userProfile!.copyWith(photoUrl: event.photoUrl),
+        ),
+      );
+    }
+  }
+
+  void _onDisplayNameUpdated(
+    AuthDisplayNameUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    if (state.userProfile != null) {
+      emit(
+        state.copyWith(
+          userProfile:
+              state.userProfile!.copyWith(displayName: event.displayName),
+        ),
+      );
+    }
   }
 
   Future<void> _onSignOutRequested(

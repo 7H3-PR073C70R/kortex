@@ -3,11 +3,13 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
-import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -16,12 +18,14 @@ class HeaderProfileBar extends StatelessWidget {
     required this.analytics,
     required this.isProfileUncalibrated,
     this.userName,
+    this.userPhotoUrl,
     super.key,
   });
 
   final AnalyticsSummaryEntity analytics;
   final bool isProfileUncalibrated;
   final String? userName;
+  final String? userPhotoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +34,18 @@ class HeaderProfileBar extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final displayName = (userName != null && userName!.trim().isNotEmpty)
-        ? userName!.trim().split(' ').first
+    final authState = context.watch<AuthBloc?>()?.state;
+    final authProfile = authState?.userProfile;
+    final effectiveName = userName ??
+        authProfile?.displayName ??
+        authState?.user?.displayName;
+    final effectivePhoto = userPhotoUrl ??
+        authProfile?.photoUrl ??
+        authState?.user?.photoUrl;
+
+    final displayName = (effectiveName != null &&
+            effectiveName.trim().isNotEmpty)
+        ? effectiveName.trim().split(' ').first
         : l10n.dashboardScholarFallback;
 
     return Column(
@@ -77,11 +91,13 @@ class HeaderProfileBar extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: ClipOval(
-                          child: Image(
-                            image: AppAssets.images.syllabotAvatar.provider(),
-                            fit: BoxFit.cover,
-                          ),
+                        child: AppAvatar(
+                          customDimension: 42,
+                          imageUrl: effectivePhoto,
+                          name: effectiveName ?? displayName,
+                          borderWidth: 0,
+                          backgroundColor: colors.primary.withAlpha(25),
+                          foregroundColor: colors.primary,
                         ),
                       ),
                     ),

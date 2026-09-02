@@ -107,19 +107,40 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     double retentionBenchmark = 0.85,
     bool isOnboarded = true,
   }) async {
-    final res = await _authClient.updateUserProfileTrackAndGoal(
-      {
-        'p_target_track': track,
-        'p_daily_card_target': dailyTarget,
-        'p_retention_benchmark': retentionBenchmark,
-        'p_is_onboarded': isOnboarded,
-      },
+    try {
+      final res = await _authClient.updateUserProfileTrackAndGoal(
+        {
+          'p_target_track': track,
+          'p_daily_card_target': dailyTarget,
+          'p_retention_benchmark': retentionBenchmark,
+          'p_is_onboarded': isOnboarded,
+        },
+      );
+      final rawData = res.data;
+      if (rawData is Map<String, dynamic>) {
+        return UserProfileModel.fromJson(rawData);
+      } else if (rawData is List &&
+          rawData.isNotEmpty &&
+          rawData.first is Map<String, dynamic>) {
+        return UserProfileModel.fromJson(
+          rawData.first as Map<String, dynamic>,
+        );
+      }
+    } on Object catch (_) {}
+
+    try {
+      final profile = await fetchUserProfile();
+      if (profile.id.isNotEmpty) return profile;
+    } on Object catch (_) {}
+
+    return UserProfileModel(
+      id: '',
+      email: '',
+      targetTrack: track,
+      dailyCardTarget: dailyTarget,
+      retentionBenchmark: retentionBenchmark,
+      isOnboarded: isOnboarded,
     );
-    final rawData = res.data;
-    if (rawData is Map<String, dynamic>) {
-      return UserProfileModel.fromJson(rawData);
-    }
-    return const UserProfileModel(id: '', email: '');
   }
 
   @override
@@ -138,38 +159,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         description:
             'Senior secondary core curriculum (Sciences, Arts & Commercial)',
         iconName: 'school',
-        examCountdownDays: 68,
       ),
       CourseTrackModel(
         id: 'JAMB',
-        name: 'JAMB / UTME',
-        description:
-            'High-speed CBT drills, subject combinations & past papers',
+        name: 'JAMB / UTME Prep',
+        description: 'Comprehensive past questions & high-yield revision',
         iconName: 'timer',
-        defaultDailyTarget: 25,
+        defaultDailyTarget: 30,
         examCountdownDays: 45,
       ),
       CourseTrackModel(
-        id: 'SAT',
-        name: 'SAT',
-        description: 'Standardized Reading, Writing, Math & problem solving',
-        iconName: 'calculate',
-        examCountdownDays: 90,
-      ),
-      CourseTrackModel(
-        id: 'TOEFL',
-        name: 'TOEFL iBT',
-        description: 'Academic English Reading, Listening, Speaking & Writing',
-        iconName: 'record_voice_over',
-        examCountdownDays: 50,
-      ),
-      CourseTrackModel(
-        id: 'IELTS',
-        name: 'IELTS',
+        id: 'STEM',
+        name: 'STEM & Pure Sciences',
         description:
-            'International English language proficiency (Academic & General)',
-        iconName: 'translate',
-        examCountdownDays: 50,
+            'Advanced physics, pure mathematics, organic chemistry & biology',
+        iconName: 'calculate',
+        defaultDailyTarget: 25,
+        examCountdownDays: 90,
       ),
       CourseTrackModel(
         id: 'Medicine',
@@ -177,7 +183,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         description: 'Pre-clinical anatomy, physiology & pharmacology review',
         iconName: 'medical_services',
         defaultDailyTarget: 30,
-        examCountdownDays: 60,
       ),
       CourseTrackModel(
         id: 'Engineering',

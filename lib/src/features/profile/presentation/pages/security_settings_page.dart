@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -9,6 +8,8 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/biometric_auth_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -17,12 +18,11 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
-import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/features/profile/presentation/pages/two_factor_setup_page.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -347,20 +347,61 @@ class SecuritySettingsPage extends HookWidget {
                             Switch.adaptive(
                               value: biometricLockEnabled.value,
                               activeTrackColor: colors.primary,
-                              onChanged: (val) {
+                              onChanged: (val) async {
                                 AppFeedback.selection();
-                                biometricLockEnabled.value = val;
-                                unawaited(
-                                  storage.savePreference(
-                                    key: '__biometric_lock_enabled',
-                                    data: val.toString(),
-                                  ),
-                                );
-                                context.showSnackBar(
-                                  message: val
-                                      ? 'Biometric App Lock enabled!'
-                                      : 'Biometric App Lock disabled.',
-                                );
+                                final biometricService =
+                                    locator<BiometricAuthService>();
+                                if (val) {
+                                  final canAuth =
+                                      await biometricService.canAuthenticate();
+                                  if (!canAuth) {
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Biometrics is not available or enrolled on this device.',
+                                        type: SnackBarType.error,
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  final authenticated =
+                                      await biometricService.authenticate(
+                                    localizedReason:
+                                        'Confirm biometrics to enable App Lock',
+                                  );
+                                  if (!authenticated) {
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Biometric verification was not completed.',
+                                        type: SnackBarType.error,
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  await biometricService
+                                      .setBiometricLockEnabled(enabled: true);
+                                  biometricLockEnabled.value = true;
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message:
+                                          'Biometric App Lock enabled! Kortex '
+                                          'will require authentication on '
+                                          'launch.',
+                                      type: SnackBarType.success,
+                                    );
+                                  }
+                                } else {
+                                  await biometricService
+                                      .setBiometricLockEnabled(enabled: false);
+                                  biometricLockEnabled.value = false;
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message: 'Biometric App Lock disabled.',
+                                      type: SnackBarType.info,
+                                    );
+                                  }
+                                }
                               },
                             ),
                           ],
@@ -693,30 +734,17 @@ class SecuritySettingsPage extends HookWidget {
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
   ) async {
-    final result = await locator<EnrollMfaTotpUseCase>()(const NoParams());
-    if (result.isRight) {
-      final enrollResult =
-          (result as Right<Failure, MfaEnrollResultEntity>).value;
-      if (!context.mounted) return;
-      await _showTotpModal(
-        context,
-        factorId: enrollResult.factorId,
-        secret: enrollResult.secret,
-        twoFactorEnabled: twoFactorEnabled,
-        activeTotpFactorId: activeTotpFactorId,
-        colors: colors,
-        typography: typography,
-      );
+    final email = context.read<AuthBloc>().state.userProfile?.email ??
+        'scholar@kortexify.com';
+    final success = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => TwoFactorSetupPage(email: email),
+      ),
+    );
+    if (success == true) {
+      twoFactorEnabled.value = true;
     } else {
-      final failure = (result as Left<Failure, MfaEnrollResultEntity>).value;
-      if (context.mounted) {
-        context.showSnackBar(
-          message:
-              'Could not initialize 2FA enrollment: '
-              '${failure.message ?? "Error"}',
-          type: SnackBarType.error,
-        );
-      }
+      twoFactorEnabled.value = false;
     }
   }
 
@@ -749,205 +777,6 @@ class SecuritySettingsPage extends HookWidget {
     } else {
       twoFactorEnabled.value = false;
     }
-  }
-
-  Future<void> _showTotpModal(
-    BuildContext context, {
-    required String factorId,
-    required String secret,
-    required ValueNotifier<bool> twoFactorEnabled,
-    required ValueNotifier<String?> activeTotpFactorId,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) async {
-    final codeController = TextEditingController();
-    final isVerifying = ValueNotifier<bool>(false);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Container(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          decoration: BoxDecoration(
-            color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-            border: Border.all(color: colors.surfaceBorder.withAlpha(90)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceBorder,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Set Up Two-Factor Authentication',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 17,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Add this secret key to your Authenticator app '
-                '(Google Authenticator, Authy, or 1Password):',
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Secret Key Box with Copy
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.surfaceBorder),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        secret,
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 13,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.copy_rounded,
-                        color: colors.textSecondary,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        unawaited(
-                          Clipboard.setData(ClipboardData(text: secret)),
-                        );
-                        context.showSnackBar(
-                          message: 'Secret key copied to clipboard!',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Enter 6-Digit Code from Authenticator:',
-                style: typography.body.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 12.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              AppTextField(
-                controller: codeController,
-                hintText: '123456',
-              ),
-              const SizedBox(height: 18),
-
-              ShrinkableButton(
-                onTap: () async {
-                  final code = codeController.text.trim();
-                  if (code.length != 6) {
-                    context.showSnackBar(
-                      message: 'Please enter a 6-digit verification code.',
-                      type: SnackBarType.error,
-                    );
-                    return;
-                  }
-
-                  isVerifying.value = true;
-                  final result = await locator<VerifyMfaTotpUseCase>()(
-                    VerifyMfaTotpParams(
-                      factorId: factorId,
-                      code: code,
-                    ),
-                  );
-                  isVerifying.value = false;
-
-                  if (result.isLeft) {
-                    final failure = (result as Left<Failure, void>).value;
-                    if (context.mounted) {
-                      context.showSnackBar(
-                        message:
-                            'Verification failed: '
-                            '${failure.message ?? "Error"}',
-                        type: SnackBarType.error,
-                      );
-                    }
-                  } else {
-                    twoFactorEnabled.value = true;
-                    activeTotpFactorId.value = factorId;
-                    if (ctx.mounted) Navigator.of(ctx).pop();
-                    if (context.mounted) {
-                      context.showSnackBar(
-                        message:
-                            'Two-Factor Authentication is now enabled!',
-                        type: SnackBarType.success,
-                      );
-                    }
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Center(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: isVerifying,
-                      builder: (context, loading, _) => loading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'Verify & Enable 2FA',
-                              style: typography.body.bold.copyWith(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _confirmAccountDeletion(

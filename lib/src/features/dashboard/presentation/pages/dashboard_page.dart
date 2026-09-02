@@ -61,6 +61,8 @@ class _DashboardView extends HookWidget {
     final authState = context.watch<AuthBloc?>()?.state;
     final userName =
         authState?.userProfile?.displayName ?? authState?.user?.displayName;
+    final userPhotoUrl =
+        authState?.userProfile?.photoUrl ?? authState?.user?.photoUrl;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -144,16 +146,19 @@ class _DashboardView extends HookWidget {
                     return _ExpandedDashboardLayout(
                       feed: feed,
                       userName: userName,
+                      userPhotoUrl: userPhotoUrl,
                     );
                   } else if (isMedium) {
                     return _MediumDashboardLayout(
                       feed: feed,
                       userName: userName,
+                      userPhotoUrl: userPhotoUrl,
                     );
                   } else {
                     return _CompactDashboardLayout(
                       feed: feed,
                       userName: userName,
+                      userPhotoUrl: userPhotoUrl,
                     );
                   }
                 },
@@ -277,10 +282,12 @@ class _CompactDashboardLayout extends StatelessWidget {
   const _CompactDashboardLayout({
     required this.feed,
     this.userName,
+    this.userPhotoUrl,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
+  final String? userPhotoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +306,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
           userName: userName,
+          userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 18),
 
@@ -522,10 +530,12 @@ class _MediumDashboardLayout extends StatelessWidget {
   const _MediumDashboardLayout({
     required this.feed,
     this.userName,
+    this.userPhotoUrl,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
+  final String? userPhotoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -539,6 +549,7 @@ class _MediumDashboardLayout extends StatelessWidget {
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
           userName: userName,
+          userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 18),
         const ExamCountdownBanner(),
@@ -548,7 +559,7 @@ class _MediumDashboardLayout extends StatelessWidget {
           children: [
             // Left Column
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Column(
                 children: [
                   SyllabotQuickPromptBar(
@@ -592,15 +603,17 @@ class _MediumDashboardLayout extends StatelessWidget {
   }
 }
 
-/// Expanded Viewport (> 1024dp - Desktop/Web) Center Workspace + Right Utility Panel
+/// Expanded Viewport (>= 1024dp - Desktop/Web) Responsive Dashboard
 class _ExpandedDashboardLayout extends StatelessWidget {
   const _ExpandedDashboardLayout({
     required this.feed,
     this.userName,
+    this.userPhotoUrl,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
+  final String? userPhotoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -623,6 +636,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     analytics: feed.analyticsSummary,
                     isProfileUncalibrated: feed.isProfileUncalibrated,
                     userName: userName,
+                    userPhotoUrl: userPhotoUrl,
                   ),
                   const SizedBox(height: 20),
                   const ExamCountdownBanner(),

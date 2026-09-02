@@ -59,6 +59,10 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Kortex requires speech recognition to transcribe your spoken questions directly to Syllabot AI.</string>
 
+	<!-- Biometrics Permissions -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Kortex uses Face ID / Touch ID to secure your study notes and prevent unauthorized access.</string>
+
 	<!-- Camera & Photos Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>Kortex requires camera access to scan textbook pages, handwritten STEM formulas, and study documents for OCR conversion into flashcard decks.</string>

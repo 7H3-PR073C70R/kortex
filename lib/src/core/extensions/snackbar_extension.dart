@@ -14,24 +14,24 @@ extension BuildContextExtension on BuildContext {
   void showSnackBar({
     required String message,
     SnackBarType type = SnackBarType.info,
-    Duration duration = const Duration(milliseconds: 2500),
+    Duration duration = const Duration(milliseconds: 4500),
   }) {
     showTopSnackBar(
       Overlay.of(this),
-      _ThemedSlimSnackBar(
+      _ThemedDistinctSnackBar(
         message: message,
         type: type,
       ),
       displayDuration: duration,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      curve: Curves.easeOutBack,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
   }
 }
 
-class _ThemedSlimSnackBar extends StatefulWidget {
-  const _ThemedSlimSnackBar({
+class _ThemedDistinctSnackBar extends StatefulWidget {
+  const _ThemedDistinctSnackBar({
     required this.message,
     required this.type,
   });
@@ -40,39 +40,34 @@ class _ThemedSlimSnackBar extends StatefulWidget {
   final SnackBarType type;
 
   @override
-  State<_ThemedSlimSnackBar> createState() => _ThemedSlimSnackBarState();
+  State<_ThemedDistinctSnackBar> createState() =>
+      _ThemedDistinctSnackBarState();
 }
 
-class _ThemedSlimSnackBarState extends State<_ThemedSlimSnackBar>
+class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _emojiController;
-  late final Animation<double> _emojiScale;
+  late final AnimationController _badgeController;
+  late final Animation<double> _badgeScale;
 
   @override
   void initState() {
     super.initState();
-    _emojiController = AnimationController(
+    _badgeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     );
-    _emojiScale = CurvedAnimation(
-      parent: _emojiController,
+    _badgeScale = CurvedAnimation(
+      parent: _badgeController,
       curve: Curves.elasticOut,
     );
-    unawaited(_emojiController.forward());
+    unawaited(_badgeController.forward());
   }
 
   @override
   void dispose() {
-    _emojiController.dispose();
+    _badgeController.dispose();
     super.dispose();
   }
-
-  String get emoji => switch (widget.type) {
-        SnackBarType.success => '😊',
-        SnackBarType.error => '😢',
-        SnackBarType.info => '💡',
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -80,70 +75,122 @@ class _ThemedSlimSnackBarState extends State<_ThemedSlimSnackBar>
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final accentColor = switch (widget.type) {
-      SnackBarType.success => colors.success,
-      SnackBarType.error => colors.error,
-      SnackBarType.info => colors.primary,
+    final (
+      Color accentColor,
+      Color bgTint,
+      Color borderColor,
+      IconData icon,
+      String title
+    ) = switch (widget.type) {
+      SnackBarType.error => (
+          const Color(0xFFEF4444),
+          const Color(0xFFEF4444).withAlpha(isDark ? 55 : 35),
+          const Color(0xFFEF4444).withAlpha(isDark ? 160 : 120),
+          Icons.error_outline_rounded,
+          'Notice',
+        ),
+      SnackBarType.success => (
+          const Color(0xFF10B981),
+          const Color(0xFF10B981).withAlpha(isDark ? 50 : 30),
+          const Color(0xFF10B981).withAlpha(isDark ? 150 : 110),
+          Icons.check_circle_rounded,
+          'Success',
+        ),
+      SnackBarType.info => (
+          const Color(0xFF6366F1),
+          const Color(0xFF6366F1).withAlpha(isDark ? 50 : 30),
+          const Color(0xFF6366F1).withAlpha(isDark ? 150 : 110),
+          Icons.info_outline_rounded,
+          'Info',
+        ),
     };
 
     return Center(
       child: Material(
         color: Colors.transparent,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.88,
+                maxWidth: MediaQuery.sizeOf(context).width * 0.92,
               ),
               padding: const EdgeInsets.symmetric(
                 horizontal: 14,
-                vertical: 8,
+                vertical: 12,
               ),
               decoration: BoxDecoration(
                 color: isDark
-                    ? colors.surfacePrimary.withAlpha(225)
-                    : colors.surfacePrimary.withAlpha(240),
-                borderRadius: BorderRadius.circular(24),
+                    ? colors.surfacePrimary.withAlpha(240)
+                    : colors.surfacePrimary.withAlpha(250),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: accentColor.withAlpha(isDark ? 90 : 60),
-                  width: 1.1,
+                  color: borderColor,
+                  width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withAlpha(isDark ? 45 : 25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: accentColor.withAlpha(isDark ? 70 : 40),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 80 : 15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withAlpha(isDark ? 90 : 20),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Prominent Status Icon Badge
                   ScaleTransition(
-                    scale: _emojiScale,
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 18),
+                    scale: _badgeScale,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: bgTint,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: accentColor.withAlpha(isDark ? 120 : 80),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: accentColor,
+                        size: 20,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      widget.message,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 12.5,
-                        height: 1.25,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 12),
+                  // Message Text
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: typography.caption.bold.copyWith(
+                            color: accentColor,
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.message,
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                 ],

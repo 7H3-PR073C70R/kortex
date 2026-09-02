@@ -490,6 +490,7 @@ class _PermissionsFooter extends StatelessWidget {
                   color: colors.textPrimary,
                   fontSize: 14.5,
                   decoration: TextDecoration.underline,
+                  decorationStyle: TextDecorationStyle.solid,
                   decorationColor: isDark
                       ? colors.textPrimary.withAlpha(160)
                       : colors.textPrimary.withAlpha(160),

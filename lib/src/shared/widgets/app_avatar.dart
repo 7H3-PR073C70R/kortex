@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -22,7 +23,8 @@ enum AppAvatarSize {
   final double badgeSize;
 }
 
-/// Accessible circle avatar with network loading, initials, and status badge.
+/// Accessible circle avatar with network loading, Base64 support,
+/// initials, and status badge.
 class AppAvatar extends StatelessWidget {
   const AppAvatar({
     super.key,
@@ -86,34 +88,77 @@ class AppAvatar extends StatelessWidget {
     final initials = _getInitials(name);
 
     Widget content;
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      content = Image.network(
-        imageUrl!,
-        width: _dimension,
-        height: _dimension,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallback(
+    final url = imageUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('emoji:')) {
+        content = Center(
+          child: Text(
+            url.replaceFirst('emoji:', ''),
+            style: TextStyle(fontSize: _dimension * 0.52),
+          ),
+        );
+      } else if (url.startsWith('data:image') || url.startsWith('data:')) {
+        try {
+          final commaIndex = url.indexOf(',');
+          final base64Data =
+              commaIndex != -1 ? url.substring(commaIndex + 1) : url;
+          final bytes = base64Decode(base64Data);
+          content = Image.memory(
+            bytes,
+            width: _dimension,
+            height: _dimension,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildFallback(
+              initials,
+              effectiveFg,
+              typography,
+              colors,
+            ),
+          );
+        } on Object catch (_) {
+          content = _buildFallback(
+            initials,
+            effectiveFg,
+            typography,
+            colors,
+          );
+        }
+      } else if (url.startsWith('http://') || url.startsWith('https://')) {
+        content = Image.network(
+          url,
+          width: _dimension,
+          height: _dimension,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildFallback(
+            initials,
+            effectiveFg,
+            typography,
+            colors,
+          ),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              color: effectiveBg,
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: _dimension * 0.4,
+                height: _dimension * 0.4,
+                child: CircularProgressIndicator.adaptive(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(effectiveFg),
+                ),
+              ),
+            );
+          },
+        );
+      } else {
+        content = _buildFallback(
           initials,
           effectiveFg,
           typography,
           colors,
-        ),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: effectiveBg,
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: _dimension * 0.4,
-              height: _dimension * 0.4,
-              child: CircularProgressIndicator.adaptive(
-                strokeWidth: 1.5,
-                valueColor: AlwaysStoppedAnimation<Color>(effectiveFg),
-              ),
-            ),
-          );
-        },
-      );
+        );
+      }
     } else {
       content = _buildFallback(
         initials,

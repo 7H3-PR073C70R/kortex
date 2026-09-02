@@ -39,7 +39,8 @@ extension RepositoryExtension<T> on Future<T> {
         ServerFailure(
           message: e.errorMessage ??
               e.message ??
-              'Our servers are experiencing temporary hiccups. Please try again',
+              'Our servers are experiencing temporary hiccups. '
+                  'Please try again',
         ),
       );
     } on Object catch (e, s) {

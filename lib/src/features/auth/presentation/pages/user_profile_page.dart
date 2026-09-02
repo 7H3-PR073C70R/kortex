@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -722,6 +724,28 @@ class UserProfilePage extends HookWidget {
           photoUrl.replaceFirst('emoji:', ''),
           style: const TextStyle(fontSize: 26),
         );
+      } else if (photoUrl.startsWith('data:image')) {
+        try {
+          final base64String = photoUrl.contains(',')
+              ? photoUrl.split(',').last
+              : photoUrl;
+          final bytes = base64Decode(base64String);
+          return ClipOval(
+            child: Image.memory(
+              bytes,
+              width: 54,
+              height: 54,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Text(
+                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
+                style: typography.title3.bold.copyWith(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          );
+        } on Object catch (_) {}
       } else if (photoUrl.startsWith('http://') ||
           photoUrl.startsWith('https://')) {
         return ClipOval(
@@ -826,13 +850,120 @@ class UserProfilePage extends HookWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Choose a STEM persona badge or link a photo URL',
+                'Upload a photo from your device or choose a STEM badge',
                 style: typography.caption.regular.copyWith(
                   color: colors.textSecondary,
                   fontSize: 12,
                 ),
               ),
               const SizedBox(height: 18),
+
+              // 1. Device Photo Picker Buttons (Gallery & Camera)
+              Row(
+                children: [
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () async {
+                        Navigator.of(ctx).pop();
+                        await _pickAndUploadPhoto(context, ImageSource.gallery);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary,
+                              colors.syllabotAccent,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(50),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.photo_library_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Choose Photo',
+                              style: typography.caption.bold.copyWith(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () async {
+                        Navigator.of(ctx).pop();
+                        await _pickAndUploadPhoto(context, ImageSource.camera);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(80),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_rounded,
+                              color: colors.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Take Photo',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Divider(height: 1, color: colors.surfaceBorder.withAlpha(70)),
+              const SizedBox(height: 14),
+
+              Text(
+                'Or Select STEM Persona Badge',
+                style: typography.body.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 10),
 
               // Grid of STEM Persona Avatars
               GridView.builder(
@@ -880,13 +1011,13 @@ class UserProfilePage extends HookWidget {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               Divider(height: 1, color: colors.surfaceBorder.withAlpha(70)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Custom Photo URL Input
               Text(
-                'Or Custom Photo Link',
+                'Or Web Photo Link',
                 style: typography.body.bold.copyWith(
                   color: colors.textPrimary,
                   fontSize: 13,
@@ -937,8 +1068,42 @@ class UserProfilePage extends HookWidget {
     );
   }
 
+  Future<void> _pickAndUploadPhoto(
+    BuildContext context,
+    ImageSource source,
+  ) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+      if (context.mounted) {
+        await _persistPhotoUrl(context, base64String);
+      }
+    } on Object catch (e) {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Could not select photo: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
   Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {
     AppFeedback.light();
+    // 1. Immediately reflect the change in local AuthBloc state
+    context.read<AuthBloc>().add(AuthAvatarUpdated(photoUrl));
+
+    // 2. Persist to cloud repository
     final result = await locator<UpdateAvatarUseCase>()(photoUrl);
     result.fold(
       (failure) {
@@ -980,6 +1145,8 @@ class UserProfilePage extends HookWidget {
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
+            // Immediate optimistic reflection
+            context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
             final result = await locator<UpdateDisplayNameUseCase>()(newName);
             result.fold(
               (failure) {

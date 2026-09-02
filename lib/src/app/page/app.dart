@@ -12,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
+import 'package:kortex/src/shared/widgets/biometric_lock_overlay.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
 
 class App extends StatefulWidget {
@@ -79,9 +80,13 @@ class _AppState extends State<App> {
                 themeAnimationDuration: const Duration(milliseconds: 300),
                 themeAnimationCurve: Curves.easeInOut,
                 debugShowCheckedModeBanner: false,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates:
+                    AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 routerConfig: _appRouter.config(),
+                builder: (context, child) => BiometricLockOverlay(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             ),
           );

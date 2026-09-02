@@ -131,6 +131,26 @@ class AuthUpdateCourseTrackRequested extends AuthEvent {
   List<Object?> get props => [track, dailyTarget, retentionBenchmark];
 }
 
+/// Dispatched to immediately update avatar URL across the application.
+class AuthAvatarUpdated extends AuthEvent {
+  const AuthAvatarUpdated(this.photoUrl);
+
+  final String photoUrl;
+
+  @override
+  List<Object?> get props => [photoUrl];
+}
+
+/// Dispatched to immediately update display name across the application.
+class AuthDisplayNameUpdated extends AuthEvent {
+  const AuthDisplayNameUpdated(this.displayName);
+
+  final String displayName;
+
+  @override
+  List<Object?> get props => [displayName];
+}
+
 /// Dispatched when user taps Sign Out.
 class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();

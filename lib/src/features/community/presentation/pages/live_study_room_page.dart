@@ -8,6 +8,7 @@ import 'package:kortex/src/features/community/domain/entities/study_room_entity.
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -168,15 +169,12 @@ class _LiveStudyRoomView extends StatelessWidget {
                           const SizedBox(width: 10),
                       itemBuilder: (context, index) {
                         final name = state.participants[index];
-                        return CircleAvatar(
-                          radius: 24,
+                        return AppAvatar(
+                          customDimension: 48,
+                          name: name,
                           backgroundColor: colors.primary.withAlpha(50),
-                          child: Text(
-                            name[0],
-                            style: typography.footnote.bold.copyWith(
-                              color: colors.primary,
-                            ),
-                          ),
+                          foregroundColor: colors.primary,
+                          borderColor: colors.primary.withAlpha(100),
                         );
                       },
                     ),
