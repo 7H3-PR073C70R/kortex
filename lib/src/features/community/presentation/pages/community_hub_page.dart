@@ -16,6 +16,7 @@ import 'package:kortex/src/features/community/presentation/widgets/marketplace_d
 import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 
 @RoutePage()
@@ -43,6 +44,7 @@ class _CommunityHubView extends HookWidget {
     final isDark = context.isDarkMode;
 
     final tabController = useTabController(initialLength: 4);
+    useListenable(tabController);
 
     useEffect(() {
       void listener() {
@@ -69,33 +71,24 @@ class _CommunityHubView extends HookWidget {
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary
-                  : colors.surfaceSecondary.withAlpha(100),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TabBar(
-              controller: tabController,
-              indicator: BoxDecoration(
-                color: colors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.white,
-              unselectedLabelColor: colors.textSecondary,
-              labelStyle: typography.caption.bold,
-              unselectedLabelStyle: typography.caption.medium,
-              dividerColor: Colors.transparent,
+          preferredSize: const Size.fromHeight(50),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AppLiquidGlassTabBar(
               tabs: [
-                Tab(text: l10n.liveRoomsTab),
-                Tab(text: l10n.forumTab),
-                Tab(text: l10n.marketplaceTab),
-                Tab(text: l10n.leaderboardTab),
+                l10n.liveRoomsTab,
+                l10n.forumTab,
+                l10n.marketplaceTab,
+                l10n.leaderboardTab,
               ],
+              selectedIndex: tabController.index,
+              onTabSelected: (index) {
+                tabController.animateTo(index);
+                context
+                    .read<CommunityHubBloc>()
+                    .add(SwitchCommunityTabEvent(index));
+              },
+              isCompact: true,
             ),
           ),
         ),

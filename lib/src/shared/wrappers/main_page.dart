@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 /// Navigation item definition for Kortex main tabs.
 class _MainNavItem {
@@ -430,15 +430,45 @@ class _AdaptiveBottomNavDock extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// iOS Liquid Glass Floating Dock
+// iOS Liquid Glass Floating Dock (Draggable Capsule + Visible Page Names)
 // ---------------------------------------------------------------------------
 
-class _IOSLiquidGlassDock extends StatelessWidget {
+class _IOSLiquidGlassDock extends StatefulWidget {
   const _IOSLiquidGlassDock({
     required this.tabsRouter,
   });
 
   final TabsRouter tabsRouter;
+
+  @override
+  State<_IOSLiquidGlassDock> createState() => _IOSLiquidGlassDockState();
+}
+
+class _IOSLiquidGlassDockState extends State<_IOSLiquidGlassDock> {
+  double? _dragAlignment;
+  bool _isDragging = false;
+  int? _highlightedIndex;
+
+  int get _lastIndex => _kNavItems.length - 1;
+
+  double _getAlignment(int index) {
+    if (_lastIndex == 0) return 0;
+    return -1.0 + (index * 2 / _lastIndex);
+  }
+
+  void _updateHighlightedIndex() {
+    if (!_isDragging || _dragAlignment == null) {
+      _highlightedIndex = null;
+      return;
+    }
+
+    final normalized = ((_dragAlignment! + 1) / 2).clamp(0.0, 1.0);
+    final index = (normalized * _lastIndex).round().clamp(0, _lastIndex);
+    if (_highlightedIndex != index) {
+      _highlightedIndex = index;
+      unawaited(HapticFeedback.selectionClick());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -447,6 +477,12 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    final currentActiveIndex = _isDragging
+        ? (_highlightedIndex ?? widget.tabsRouter.activeIndex)
+        : widget.tabsRouter.activeIndex;
+
+    const dockHeight = 64.0;
 
     return Semantics(
       container: true,
@@ -458,146 +494,251 @@ class _IOSLiquidGlassDock extends StatelessWidget {
           16,
           math.max(10, bottomInset > 0 ? bottomInset : 14),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(
-              height: 68,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(160)
-                    : colors.surfacePrimary.withAlpha(225),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(90)
-                      : colors.surfaceBorder.withAlpha(190),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 90 : 18),
-                    blurRadius: 28,
-                    offset: const Offset(0, 8),
-                  ),
-                  if (!isDark)
+        child: Stack(
+          children: [
+            // Ambient depth shadow
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(34),
+                  boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withAlpha(15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withAlpha(isDark ? 80 : 18),
+                      blurRadius: 28,
+                      offset: const Offset(0, 8),
                     ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(_kNavItems.length, (index) {
-                  final item = _kNavItems[index];
-                  final isSelected = tabsRouter.activeIndex == index;
-                  final label = item.labelBuilder(l10n);
-
-                  return Expanded(
-                    child: _IOSDockTabItem(
-                      icon: isSelected ? item.activeIcon : item.icon,
-                      label: label,
-                      isSelected: isSelected,
-                      itemIndex: index,
-                      totalItems: _kNavItems.length,
-                      colors: colors,
-                      typography: typography,
-                      isDark: isDark,
-                      onTap: () => _handleTabTap(
-                        context,
-                        tabsRouter,
-                        index,
-                        label,
+                    if (!isDark)
+                      BoxShadow(
+                        color: colors.primary.withAlpha(20),
+                        blurRadius: 18,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  );
-                }),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
-class _IOSDockTabItem extends StatelessWidget {
-  const _IOSDockTabItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.itemIndex,
-    required this.totalItems,
-    required this.colors,
-    required this.typography,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final int itemIndex;
-  final int totalItems;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
-      child: ShrinkableButton(
-        onTap: onTap,
-        shrinkScale: 0.92,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 4,
-                ),
+            // Liquid Glass Morphism Layer
+            LiquidGlass.withOwnLayer(
+              shape: const LiquidRoundedRectangle(borderRadius: 34),
+              settings: LiquidGlassSettings(
+                blur: 24,
+                glassColor: isDark
+                    ? colors.surfaceSecondary.withAlpha(165)
+                    : colors.surfacePrimary.withAlpha(225),
+                lightIntensity: isDark ? 0.45 : 0.7,
+                refractiveIndex: 1.45,
+              ),
+              child: Container(
+                height: dockHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: isSelected
-                      ? colors.primary.withAlpha(isDark ? 50 : 25)
-                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(34),
+                  border: Border.all(
+                    color: isDark
+                        ? colors.surfaceBorderHighlight.withAlpha(90)
+                        : colors.surfaceBorder.withAlpha(190),
+                    width: 1.2,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: isSelected ? colors.primary : colors.textSecondary,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth =
+                        constraints.maxWidth / _kNavItems.length;
+                    final totalDragWidth = constraints.maxWidth - itemWidth;
+
+                    return GestureDetector(
+                      onHorizontalDragStart: (details) {
+                        setState(() {
+                          _isDragging = true;
+                          _dragAlignment =
+                              _getAlignment(widget.tabsRouter.activeIndex);
+                          _updateHighlightedIndex();
+                        });
+                      },
+                      onHorizontalDragUpdate: (details) {
+                        if (!_isDragging || totalDragWidth <= 0) return;
+                        setState(() {
+                          final deltaAlignment =
+                              (details.primaryDelta! / totalDragWidth) * 2.0;
+                          _dragAlignment = (_dragAlignment! + deltaAlignment)
+                              .clamp(-1.0, 1.0);
+                          _updateHighlightedIndex();
+                        });
+                      },
+                      onHorizontalDragEnd: (details) {
+                        setState(() {
+                          _isDragging = false;
+                          final currentA = _dragAlignment ??
+                              _getAlignment(widget.tabsRouter.activeIndex);
+                          final normalized =
+                              ((currentA + 1) / 2).clamp(0.0, 1.0);
+                          final targetIndex = (normalized * _lastIndex)
+                              .round()
+                              .clamp(0, _lastIndex);
+                          _highlightedIndex = null;
+                          _dragAlignment = null;
+
+                          final label =
+                              _kNavItems[targetIndex].labelBuilder(l10n);
+                          _handleTabTap(
+                            context,
+                            widget.tabsRouter,
+                            targetIndex,
+                            label,
+                          );
+                        });
+                      },
+                      onHorizontalDragCancel: () {
+                        setState(() {
+                          _isDragging = false;
+                          _highlightedIndex = null;
+                          _dragAlignment = null;
+                        });
+                      },
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Draggable Liquid Selection Capsule
+                          AnimatedAlign(
+                            duration: _isDragging
+                                ? Duration.zero
+                                : const Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            alignment: Alignment(
+                              _isDragging
+                                  ? (_dragAlignment ??
+                                      _getAlignment(
+                                        widget.tabsRouter.activeIndex,
+                                      ))
+                                  : _getAlignment(
+                                      widget.tabsRouter.activeIndex,
+                                    ),
+                              0,
+                            ),
+                            child: Container(
+                              width: itemWidth,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colors.primary
+                                        .withAlpha(isDark ? 55 : 35),
+                                    colors.primary
+                                        .withAlpha(isDark ? 30 : 15),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(26),
+                                border: Border.all(
+                                  color: colors.primary
+                                      .withAlpha(isDark ? 110 : 80),
+                                  width: 1.1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary
+                                        .withAlpha(isDark ? 50 : 25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Nav Items with Persistent Page Names
+                          Row(
+                            children:
+                                List.generate(_kNavItems.length, (index) {
+                              final item = _kNavItems[index];
+                              final isSelected = currentActiveIndex == index;
+                              final label = item.labelBuilder(l10n);
+
+                              return Expanded(
+                                child: Semantics(
+                                  button: true,
+                                  selected: isSelected,
+                                  label: l10n.navTabSemantics(
+                                    label,
+                                    index + 1,
+                                    _kNavItems.length,
+                                  ),
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => _handleTabTap(
+                                      context,
+                                      widget.tabsRouter,
+                                      index,
+                                      label,
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          AnimatedScale(
+                                            scale: isSelected ? 1.12 : 1.0,
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
+                                            curve: Curves.easeOutBack,
+                                            child: Icon(
+                                              isSelected
+                                                  ? item.activeIcon
+                                                  : item.icon,
+                                              size: 22,
+                                              color: isSelected
+                                                  ? colors.primary
+                                                  : colors.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          // Page Name / Label (Always Visible)
+                                          AnimatedDefaultTextStyle(
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
+                                            style: isSelected
+                                                ? typography.caption.bold
+                                                    .copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 10,
+                                                    height: 1.1,
+                                                  )
+                                                : typography.caption.medium
+                                                    .copyWith(
+                                                    color:
+                                                        colors.textSecondary,
+                                                    fontSize: 10,
+                                                    height: 1.1,
+                                                  ),
+                                            child: Text(
+                                              label,
+                                              maxLines: 1,
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: typography.caption.semiBold.copyWith(
-                  color: isSelected ? colors.primary : colors.textMuted,
-                  fontSize: 10,
-                  height: 1.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
