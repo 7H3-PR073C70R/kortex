@@ -27,7 +27,8 @@ extension RepositoryExtension<T> on Future<T> {
       debugPrint(s.toString());
       return Left(
         ServerFailure(
-          message: e.errorMessage ??
+          message:
+              e.errorMessage ??
               'Please check your internet connection and try again',
         ),
       );
@@ -37,7 +38,8 @@ extension RepositoryExtension<T> on Future<T> {
       debugPrint(s.toString());
       return Left(
         ServerFailure(
-          message: e.errorMessage ??
+          message:
+              e.errorMessage ??
               e.message ??
               'Our servers are experiencing temporary hiccups. '
                   'Please try again',

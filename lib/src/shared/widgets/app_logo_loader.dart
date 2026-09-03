@@ -71,9 +71,7 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
                     : _controller.value * 2 * math.pi;
                 final scale = disableAnimations
                     ? 1.0
-                    : 0.94 +
-                        0.06 *
-                            math.sin(_controller.value * 2 * math.pi);
+                    : 0.94 + 0.06 * math.sin(_controller.value * 2 * math.pi);
 
                 return Stack(
                   alignment: Alignment.center,

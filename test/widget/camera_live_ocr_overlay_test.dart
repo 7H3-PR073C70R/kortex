@@ -36,34 +36,36 @@ void main() {
       );
     }
 
-    testWidgets('renders camera overlay with guidance hint and capture button',
-        (tester) async {
-      var captured = false;
+    testWidgets(
+      'renders camera overlay with guidance hint and capture button',
+      (tester) async {
+        var captured = false;
 
-      await tester.pumpWidget(
-        createTestApp(
-          CameraLiveOcrOverlay(
-            detectedBlocks: tBlocks,
-            onCapture: () {
-              captured = true;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            CameraLiveOcrOverlay(
+              detectedBlocks: tBlocks,
+              onCapture: () {
+                captured = true;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(
-        find.text('Align textbook or lecture note text within frame'),
-        findsOneWidget,
-      );
+        expect(
+          find.text('Align textbook or lecture note text within frame'),
+          findsOneWidget,
+        );
 
-      expect(find.byIcon(Icons.camera_alt_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.camera_alt_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.camera_alt_rounded));
-      await tester.pump();
+        await tester.tap(find.byIcon(Icons.camera_alt_rounded));
+        await tester.pump();
 
-      expect(captured, isTrue);
-    });
+        expect(captured, isTrue);
+      },
+    );
   });
 }

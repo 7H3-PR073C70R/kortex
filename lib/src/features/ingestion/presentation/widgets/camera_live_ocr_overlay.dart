@@ -22,7 +22,8 @@ class CameraLiveOcrOverlay extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Live Document OCR Camera Scanner View with '
+      label:
+          'Live Document OCR Camera Scanner View with '
           '${detectedBlocks.length} detected text blocks',
       child: Stack(
         fit: StackFit.expand,

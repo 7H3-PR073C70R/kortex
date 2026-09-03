@@ -9,15 +9,18 @@ void main() {
       client = TextToSpeechClient();
     });
 
-    test('cleanLatexForSpeech converts mathematical formulas to plain English',
-        () {
-      const raw = r'Calculate \frac{a}{b} and \sqrt{x} where \alpha \approx 1';
-      final cleaned = client.cleanLatexForSpeech(raw);
+    test(
+      'cleanLatexForSpeech converts mathematical formulas to plain English',
+      () {
+        const raw =
+            r'Calculate \frac{a}{b} and \sqrt{x} where \alpha \approx 1';
+        final cleaned = client.cleanLatexForSpeech(raw);
 
-      expect(cleaned, contains('a over b'));
-      expect(cleaned, contains('square root of x'));
-      expect(cleaned, contains('alpha is approximately equal to 1'));
-    });
+        expect(cleaned, contains('a over b'));
+        expect(cleaned, contains('square root of x'));
+        expect(cleaned, contains('alpha is approximately equal to 1'));
+      },
+    );
 
     test('cleanLatexForSpeech handles integrals, summations, and symbols', () {
       const raw = r'The value is \int_0^\infty f(x) dx \pm \infty';

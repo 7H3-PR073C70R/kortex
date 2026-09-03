@@ -117,7 +117,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   EphemeralPresenceClientImpl();
 
   final Map<String, StreamController<List<EphemeralParticipant>>>
-      _participantsControllers = {};
+  _participantsControllers = {};
   final Map<String, StreamController<PomodoroSyncEvent>> _pomodoroControllers =
       {};
   final Map<String, Map<String, EphemeralParticipant>> _roomParticipants = {};
@@ -151,8 +151,9 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }) async {
     if (_roomParticipants[roomId]?.containsKey(userId) == true) {
       final current = _roomParticipants[roomId]![userId]!;
-      _roomParticipants[roomId]![userId] =
-          current.copyWith(isHandRaised: isHandRaised);
+      _roomParticipants[roomId]![userId] = current.copyWith(
+        isHandRaised: isHandRaised,
+      );
       _notifyParticipants(roomId);
     }
   }
@@ -168,7 +169,8 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }
 
   StreamController<List<EphemeralParticipant>> _getParticipantsController(
-      String roomId) {
+    String roomId,
+  ) {
     return _participantsControllers.putIfAbsent(
       roomId,
       () => StreamController<List<EphemeralParticipant>>.broadcast(

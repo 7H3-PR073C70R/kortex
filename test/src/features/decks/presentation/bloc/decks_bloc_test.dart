@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
@@ -85,8 +84,8 @@ void main() {
       );
     });
 
-    tearDown(() {
-      bloc.close();
+    tearDown(() async {
+      await bloc.close();
     });
 
     test('initial state is correct', () {

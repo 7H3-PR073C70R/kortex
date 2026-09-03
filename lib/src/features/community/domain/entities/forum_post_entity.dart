@@ -62,19 +62,19 @@ class ForumPostEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        authorId,
-        authorName,
-        authorAvatar,
-        track,
-        title,
-        content,
-        latexContent,
-        upvotes,
-        repliesCount,
-        createdAt,
-        replies,
-      ];
+    id,
+    authorId,
+    authorName,
+    authorAvatar,
+    track,
+    title,
+    content,
+    latexContent,
+    upvotes,
+    repliesCount,
+    createdAt,
+    replies,
+  ];
 }
 
 /// Represents a nested reply in a forum thread.
@@ -103,14 +103,14 @@ class ForumReplyEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        postId,
-        authorId,
-        authorName,
-        authorAvatar,
-        content,
-        latexContent,
-        upvotes,
-        createdAt,
-      ];
+    id,
+    postId,
+    authorId,
+    authorName,
+    authorAvatar,
+    content,
+    latexContent,
+    upvotes,
+    createdAt,
+  ];
 }

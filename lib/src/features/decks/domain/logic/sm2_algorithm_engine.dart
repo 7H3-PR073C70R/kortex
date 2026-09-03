@@ -44,8 +44,8 @@ class Sm2AlgorithmEngine {
 
     // Update Ease Factor: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
     final qDiff = 5 - clampedQuality;
-    var newEaseFactor = previousEaseFactor +
-        (0.1 - (qDiff * (0.08 + (qDiff * 0.02))));
+    var newEaseFactor =
+        previousEaseFactor + (0.1 - (qDiff * (0.08 + (qDiff * 0.02))));
     if (newEaseFactor < 1.3) {
       newEaseFactor = 1.3;
     }

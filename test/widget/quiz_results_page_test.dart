@@ -37,24 +37,25 @@ void main() {
     );
 
     testWidgets(
-        'renders score percentage, sub-topic weaknesses, and practice button',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          const QuizResultsPage(result: tResult),
-        ),
-      );
+      'renders score percentage, sub-topic weaknesses, and practice button',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            const QuizResultsPage(result: tResult),
+          ),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('WAEC Thermodynamics Mock'), findsOneWidget);
-      expect(find.text('Your Score: 80%'), findsOneWidget);
-      expect(find.text('8 of 10 questions correct'), findsOneWidget);
-      expect(find.text('Entropy & 2nd Law'), findsOneWidget);
-      expect(find.text('Calorimetry'), findsOneWidget);
-      expect(find.text('50%'), findsOneWidget);
-      expect(find.text('100%'), findsOneWidget);
-      expect(find.text('Practice Weak Flashcards'), findsOneWidget);
-    });
+        expect(find.text('WAEC Thermodynamics Mock'), findsOneWidget);
+        expect(find.text('Your Score: 80%'), findsOneWidget);
+        expect(find.text('8 of 10 questions correct'), findsOneWidget);
+        expect(find.text('Entropy & 2nd Law'), findsOneWidget);
+        expect(find.text('Calorimetry'), findsOneWidget);
+        expect(find.text('50%'), findsOneWidget);
+        expect(find.text('100%'), findsOneWidget);
+        expect(find.text('Practice Weak Flashcards'), findsOneWidget);
+      },
+    );
   });
 }

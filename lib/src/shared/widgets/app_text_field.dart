@@ -150,7 +150,8 @@ class _AppTextFieldState extends State<AppTextField> {
     final l10n = context.l10n;
     final effectiveRadius = widget.borderRadius ?? 12.0;
 
-    final inputBorder = widget.customBorder ??
+    final inputBorder =
+        widget.customBorder ??
         (widget.showBorder
             ? OutlineInputBorder(
                 borderRadius: BorderRadius.circular(effectiveRadius),
@@ -158,7 +159,8 @@ class _AppTextFieldState extends State<AppTextField> {
               )
             : InputBorder.none);
 
-    final focusedBorder = widget.customBorder ??
+    final focusedBorder =
+        widget.customBorder ??
         (widget.showBorder
             ? OutlineInputBorder(
                 borderRadius: BorderRadius.circular(effectiveRadius),
@@ -169,7 +171,8 @@ class _AppTextFieldState extends State<AppTextField> {
               )
             : InputBorder.none);
 
-    final errorBorder = widget.customBorder ??
+    final errorBorder =
+        widget.customBorder ??
         (widget.showBorder
             ? OutlineInputBorder(
                 borderRadius: BorderRadius.circular(effectiveRadius),
@@ -179,7 +182,8 @@ class _AppTextFieldState extends State<AppTextField> {
               )
             : InputBorder.none);
 
-    final focusedErrorBorder = widget.customBorder ??
+    final focusedErrorBorder =
+        widget.customBorder ??
         (widget.showBorder
             ? OutlineInputBorder(
                 borderRadius: BorderRadius.circular(effectiveRadius),
@@ -192,8 +196,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
     Widget? effectiveSuffix;
     if (widget.isPassword) {
-      final buttonLabel =
-          _obscureText ? l10n.showPassword : l10n.hidePassword;
+      final buttonLabel = _obscureText ? l10n.showPassword : l10n.hidePassword;
       effectiveSuffix = Semantics(
         button: true,
         label: buttonLabel,
@@ -227,7 +230,8 @@ class _AppTextFieldState extends State<AppTextField> {
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
       textCapitalization: widget.textCapitalization,
-      style: widget.style ??
+      style:
+          widget.style ??
           typography.body.regular.copyWith(
             color: colors.textPrimary,
             fontSize: 15,
@@ -255,11 +259,13 @@ class _AppTextFieldState extends State<AppTextField> {
         errorText: widget.errorText,
         filled: widget.isFilled,
         isDense: widget.isDense,
-        fillColor: widget.fillColor ??
+        fillColor:
+            widget.fillColor ??
             (widget.enabled
                 ? colors.surfaceSecondary
                 : colors.surfaceSecondary.withAlpha((255 * 0.5).round())),
-        contentPadding: widget.contentPadding ??
+        contentPadding:
+            widget.contentPadding ??
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         prefixIcon: widget.prefixIcon != null
             ? ExcludeSemantics(
@@ -278,7 +284,8 @@ class _AppTextFieldState extends State<AppTextField> {
         focusedBorder: focusedBorder,
         errorBorder: errorBorder,
         focusedErrorBorder: focusedErrorBorder,
-        hintStyle: widget.hintStyle ??
+        hintStyle:
+            widget.hintStyle ??
             typography.callout.regular.copyWith(
               color: colors.textMuted,
             ),

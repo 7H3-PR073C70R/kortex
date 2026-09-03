@@ -17,30 +17,32 @@ Widget createTestApp(Widget child) {
 
 void main() {
   group('StreakShieldIndicator Widget Test Suite', () {
-    testWidgets('renders active streak days and shield button when unequipped',
-        (tester) async {
-      var purchaseTapped = false;
+    testWidgets(
+      'renders active streak days and shield button when unequipped',
+      (tester) async {
+        var purchaseTapped = false;
 
-      await tester.pumpWidget(
-        createTestApp(
-          StreakShieldIndicator(
-            streakDays: 7,
-            hasStreakFreeze: false,
-            userXp: 450,
-            onPurchaseFreeze: () {
-              purchaseTapped = true;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            StreakShieldIndicator(
+              streakDays: 7,
+              hasStreakFreeze: false,
+              userXp: 450,
+              onPurchaseFreeze: () {
+                purchaseTapped = true;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('7 Days Streak'), findsOneWidget);
-      expect(find.text('Equip Streak Shield (200 XP)'), findsOneWidget);
+        expect(find.text('7 Days Streak'), findsOneWidget);
+        expect(find.text('Equip Streak Shield (200 XP)'), findsOneWidget);
 
-      await tester.tap(find.text('Equip Streak Shield (200 XP)'));
-      await tester.pump();
-      expect(purchaseTapped, isTrue);
-    });
+        await tester.tap(find.text('Equip Streak Shield (200 XP)'));
+        await tester.pump();
+        expect(purchaseTapped, isTrue);
+      },
+    );
 
     testWidgets('renders active shield banner when equipped', (tester) async {
       await tester.pumpWidget(

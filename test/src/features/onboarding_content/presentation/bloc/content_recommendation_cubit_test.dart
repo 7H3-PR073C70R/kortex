@@ -69,10 +69,12 @@ void main() {
     blocTest<ContentRecommendationCubit, ContentRecommendationState>(
       'loadRecommendations emits [loading, loaded] with items on success',
       build: () {
-        when(() => mockGetProfileUseCase(const NoParams()))
-            .thenAnswer((_) async => const Right(CalibrationProfile()));
-        when(() => mockGetContentUseCase(any()))
-            .thenAnswer((_) async => const Right(testItems));
+        when(
+          () => mockGetProfileUseCase(const NoParams()),
+        ).thenAnswer((_) async => const Right(CalibrationProfile()));
+        when(
+          () => mockGetContentUseCase(any()),
+        ).thenAnswer((_) async => const Right(testItems));
         return ContentRecommendationCubit(
           getRecommendedContentUseCase: mockGetContentUseCase,
           getCalibrationProfileUseCase: mockGetProfileUseCase,
@@ -95,8 +97,9 @@ void main() {
     blocTest<ContentRecommendationCubit, ContentRecommendationState>(
       'loadRecommendations emits [loading, error] on failure',
       build: () {
-        when(() => mockGetProfileUseCase(const NoParams()))
-            .thenAnswer((_) async => const Right(CalibrationProfile()));
+        when(
+          () => mockGetProfileUseCase(const NoParams()),
+        ).thenAnswer((_) async => const Right(CalibrationProfile()));
         when(() => mockGetContentUseCase(any())).thenAnswer(
           (_) async => const Left(ServerFailure(message: 'Error fetching')),
         );

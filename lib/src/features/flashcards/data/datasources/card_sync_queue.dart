@@ -14,12 +14,12 @@ class CardSyncQueue {
     Connectivity? connectivity,
     List<FsrsReviewLog>? initialBuffer,
     String? authToken,
-  })  : _dio = dio ?? Dio(),
-        _connectivity = connectivity ?? Connectivity(),
-        _authToken = authToken,
-        _inMemoryLogBuffer = initialBuffer != null
-            ? List<FsrsReviewLog>.from(initialBuffer)
-            : <FsrsReviewLog>[] {
+  }) : _dio = dio ?? Dio(),
+       _connectivity = connectivity ?? Connectivity(),
+       _authToken = authToken,
+       _inMemoryLogBuffer = initialBuffer != null
+           ? List<FsrsReviewLog>.from(initialBuffer)
+           : <FsrsReviewLog>[] {
     _initConnectivityListener();
   }
 
@@ -30,9 +30,7 @@ class CardSyncQueue {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   Map<String, String> get _headers {
-    final token = _authToken?.isNotEmpty == true
-        ? _authToken!
-        : AppEnv.apiKey;
+    final token = _authToken?.isNotEmpty == true ? _authToken! : AppEnv.apiKey;
     return {
       'apikey': AppEnv.apiKey,
       'Authorization': 'Bearer $token',
@@ -82,8 +80,9 @@ class CardSyncQueue {
     var syncedCount = 0;
 
     try {
-      final pendingLogs =
-          _inMemoryLogBuffer.where((log) => !log.isSynced).toList();
+      final pendingLogs = _inMemoryLogBuffer
+          .where((log) => !log.isSynced)
+          .toList();
 
       if (pendingLogs.isEmpty) {
         return 0;

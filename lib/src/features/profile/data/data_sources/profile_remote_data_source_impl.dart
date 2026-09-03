@@ -12,8 +12,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   const ProfileRemoteDataSourceImpl({
     required ProfileApiClient profileApiClient,
     required UserStorageService userStorage,
-  })  : _profileApiClient = profileApiClient,
-        _userStorage = userStorage;
+  }) : _profileApiClient = profileApiClient,
+       _userStorage = userStorage;
 
   final ProfileApiClient _profileApiClient;
   final UserStorageService _userStorage;

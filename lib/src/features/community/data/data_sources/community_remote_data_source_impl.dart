@@ -63,7 +63,6 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         id: roomId,
         title: 'Deep Work & Socratic Pod',
         subject: 'General Study & Concept Mastery',
-        category: 'General',
         pomodoroState: isFocus ? 'focusing' : 'break',
         pomodoroStartedAt: DateTime.now().subtract(Duration(seconds: elapsed)),
         activeParticipantsCount: 8 + (tick % 5),
@@ -339,8 +338,6 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       memberCount: 18,
       activeRoomsCount: 1,
       forumThreadsCount: 2,
-      isUserMember: true,
-      isFoundingMember: false,
     );
   }
 }

@@ -73,8 +73,9 @@ void main() {
       mockDashboardRepository = MockDashboardRepository();
       registerUseCase = RegisterWithEmailUseCase(mockAuthRepository);
       completeOnboardingUseCase = CompleteOnboardingUseCase(mockAuthRepository);
-      getDashboardFeedUseCase =
-          GetDashboardFeedUseCase(mockDashboardRepository);
+      getDashboardFeedUseCase = GetDashboardFeedUseCase(
+        mockDashboardRepository,
+      );
     });
 
     test(
@@ -125,13 +126,13 @@ void main() {
         expect(calibrated.retentionBenchmark, equals(0.90));
 
         // Step 3: Dashboard Feed loads calibrated metrics matching user targets
-        when(() => mockDashboardRepository.getDashboardFeed())
-            .thenAnswer((_) async => Right(tDashboardFeed));
+        when(
+          () => mockDashboardRepository.getDashboardFeed(),
+        ).thenAnswer((_) async => Right(tDashboardFeed));
 
         final feedResult = await getDashboardFeedUseCase(const NoParams());
         expect(feedResult.isRight, isTrue);
-        final feed =
-            (feedResult as Right<dynamic, DashboardFeedEntity>).value;
+        final feed = (feedResult as Right<dynamic, DashboardFeedEntity>).value;
 
         expect(feed.calibrationProfile.highSchoolExam, equals('SAT'));
         expect(feed.analyticsSummary.overallRetentionRate, equals(0.90));

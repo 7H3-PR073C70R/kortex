@@ -40,8 +40,9 @@ class PastQuestionsBoardPage extends StatelessWidget {
     }
 
     return BlocProvider<PastQuestionsBloc>(
-      create: (_) => locator<PastQuestionsBloc>()
-        ..add(LoadPastQuestionsEvent(examCategory: initialExam)),
+      create: (_) =>
+          locator<PastQuestionsBloc>()
+            ..add(LoadPastQuestionsEvent(examCategory: initialExam)),
       child: const _PastQuestionsBoardView(),
     );
   }
@@ -59,8 +60,9 @@ class _PastQuestionsBoardView extends HookWidget {
     final searchController = useTextEditingController();
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -126,8 +128,8 @@ class _PastQuestionsBoardView extends HookWidget {
                       ),
                       onChanged: (query) {
                         context.read<PastQuestionsBloc>().add(
-                              LoadPastQuestionsEvent(searchQuery: query),
-                            );
+                          LoadPastQuestionsEvent(searchQuery: query),
+                        );
                       },
                     ),
                   ),
@@ -240,9 +242,9 @@ class _ExamCategoryBar extends StatelessWidget {
                 child: ShrinkableButton(
                   onTap: () {
                     unawaited(HapticFeedback.selectionClick());
-                    context
-                        .read<PastQuestionsBloc>()
-                        .add(ChangeExamCategoryEvent(exam));
+                    context.read<PastQuestionsBloc>().add(
+                      ChangeExamCategoryEvent(exam),
+                    );
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -254,8 +256,8 @@ class _ExamCategoryBar extends StatelessWidget {
                       color: isSelected
                           ? colors.primary
                           : (isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfaceSecondary.withAlpha(90)),
+                                ? colors.surfaceSecondary
+                                : colors.surfaceSecondary.withAlpha(90)),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
@@ -307,9 +309,9 @@ class _SubjectAndYearFilterRow extends StatelessWidget {
                     label: Text(subj),
                     selected: isSelected,
                     onSelected: (_) {
-                      context
-                          .read<PastQuestionsBloc>()
-                          .add(ChangeSubjectEvent(subj));
+                      context.read<PastQuestionsBloc>().add(
+                        ChangeSubjectEvent(subj),
+                      );
                     },
                     selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
                     backgroundColor: isDark
@@ -347,12 +349,13 @@ class _SubjectAndYearFilterRow extends StatelessWidget {
                       label: Text('$yr'),
                       selected: isSelected,
                       onSelected: (val) {
-                        context
-                            .read<PastQuestionsBloc>()
-                            .add(ChangeYearEvent(val ? yr : null));
+                        context.read<PastQuestionsBloc>().add(
+                          ChangeYearEvent(val ? yr : null),
+                        );
                       },
-                      selectedColor:
-                          colors.syllabotAccent.withAlpha(isDark ? 60 : 35),
+                      selectedColor: colors.syllabotAccent.withAlpha(
+                        isDark ? 60 : 35,
+                      ),
                       backgroundColor: isDark
                           ? colors.surfaceSecondary
                           : colors.surfaceSecondary.withAlpha(60),
@@ -471,9 +474,9 @@ class _PastQuestionCard extends StatelessWidget {
                   size: 20,
                 ),
                 onPressed: () {
-                  context
-                      .read<PastQuestionsBloc>()
-                      .add(ToggleBookmarkEvent(question.id));
+                  context.read<PastQuestionsBloc>().add(
+                    ToggleBookmarkEvent(question.id),
+                  );
                 },
               ),
             ],
@@ -517,8 +520,9 @@ class _PastQuestionCard extends StatelessWidget {
           ...question.options.asMap().entries.map((entry) {
             final idx = entry.key;
             final optionText = entry.value;
-            final letter =
-                idx < optionLetters.length ? optionLetters[idx] : '$idx';
+            final letter = idx < optionLetters.length
+                ? optionLetters[idx]
+                : '$idx';
             final isSelected = question.userSelectedOptionIndex == idx;
             final isCorrect = idx == question.correctOptionIndex;
 
@@ -550,11 +554,11 @@ class _PastQuestionCard extends StatelessWidget {
                 onTap: () {
                   unawaited(HapticFeedback.selectionClick());
                   context.read<PastQuestionsBloc>().add(
-                        SelectOptionEvent(
-                          questionId: question.id,
-                          optionIndex: idx,
-                        ),
-                      );
+                    SelectOptionEvent(
+                      questionId: question.id,
+                      optionIndex: idx,
+                    ),
+                  );
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),

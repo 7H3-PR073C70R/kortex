@@ -60,8 +60,9 @@ void main() {
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
     });
 
-    testWidgets('renders cancel icon when answered and incorrect',
-        (tester) async {
+    testWidgets('renders cancel icon when answered and incorrect', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           McqOptionCard(

@@ -25,8 +25,9 @@ class ForumThreadDetailPage extends HookWidget {
     final replies = useState<List<ForumReplyEntity>>(post.replies);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -159,8 +160,7 @@ class ForumThreadDetailPage extends HookWidget {
                     if (replies.value.isEmpty)
                       Center(
                         child: Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 24),
+                          padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Text(
                             'No replies yet. Be the first to share an answer!',
                             style: typography.footnote.medium.copyWith(
@@ -187,8 +187,9 @@ class ForumThreadDetailPage extends HookWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 12,
-                                    backgroundColor:
-                                        colors.primary.withAlpha(30),
+                                    backgroundColor: colors.primary.withAlpha(
+                                      30,
+                                    ),
                                     child: Text(
                                       reply.authorName[0],
                                       style: typography.caption.bold.copyWith(
@@ -224,12 +225,9 @@ class ForumThreadDetailPage extends HookWidget {
 
             // Bottom Reply Bar
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark
-                    ? colors.surfaceSecondary
-                    : colors.surfacePrimary,
+                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
                 border: Border(
                   top: BorderSide(color: colors.primary.withAlpha(30)),
                 ),

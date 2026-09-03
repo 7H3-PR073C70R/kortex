@@ -38,35 +38,37 @@ void main() {
       expect(payload['stability'], equals(review.card.stability));
     });
 
-    test('First review computes stability and difficulty properly for ratings',
-        () {
-      const initialCard = FsrsCard(cardId: 'card_math_101');
+    test(
+      'First review computes stability and difficulty properly for ratings',
+      () {
+        const initialCard = FsrsCard(cardId: 'card_math_101');
 
-      final goodReview = scheduler.reviewCard(
-        currentCard: initialCard,
-        rating: FsrsRating.good,
-        now: DateTime.utc(2026, 8, 31, 12),
-      );
+        final goodReview = scheduler.reviewCard(
+          currentCard: initialCard,
+          rating: FsrsRating.good,
+          now: DateTime.utc(2026, 8, 31, 12),
+        );
 
-      expect(goodReview.card.reps, equals(1));
-      expect(goodReview.card.lapses, equals(0));
-      expect(goodReview.card.state, equals(FsrsCardState.review));
-      expect(goodReview.card.stability, greaterThan(0));
-      expect(goodReview.card.difficulty, inInclusiveRange(1.0, 10.0));
-      expect(goodReview.card.scheduledDays, greaterThanOrEqualTo(1));
-      expect(goodReview.card.due, isNotNull);
+        expect(goodReview.card.reps, equals(1));
+        expect(goodReview.card.lapses, equals(0));
+        expect(goodReview.card.state, equals(FsrsCardState.review));
+        expect(goodReview.card.stability, greaterThan(0));
+        expect(goodReview.card.difficulty, inInclusiveRange(1.0, 10.0));
+        expect(goodReview.card.scheduledDays, greaterThanOrEqualTo(1));
+        expect(goodReview.card.due, isNotNull);
 
-      // Lapse review (Again rating)
-      final againReview = scheduler.reviewCard(
-        currentCard: initialCard,
-        rating: FsrsRating.again,
-        now: DateTime.utc(2026, 8, 31, 12),
-      );
+        // Lapse review (Again rating)
+        final againReview = scheduler.reviewCard(
+          currentCard: initialCard,
+          rating: FsrsRating.again,
+          now: DateTime.utc(2026, 8, 31, 12),
+        );
 
-      expect(againReview.card.reps, equals(1));
-      expect(againReview.card.lapses, equals(1));
-      expect(againReview.card.state, equals(FsrsCardState.learning));
-    });
+        expect(againReview.card.reps, equals(1));
+        expect(againReview.card.lapses, equals(1));
+        expect(againReview.card.state, equals(FsrsCardState.learning));
+      },
+    );
 
     test('Retrievability decays over elapsed time', () {
       const stability = 10.0;
@@ -113,8 +115,9 @@ void main() {
       mockConnectivity = MockConnectivity();
       connectivityController =
           StreamController<List<ConnectivityResult>>.broadcast();
-      when(() => mockConnectivity.onConnectivityChanged)
-          .thenAnswer((_) => connectivityController.stream);
+      when(
+        () => mockConnectivity.onConnectivityChanged,
+      ).thenAnswer((_) => connectivityController.stream);
     });
 
     tearDown(() async {

@@ -80,8 +80,9 @@ void main() {
       mockAuthRepository = MockAuthRepository();
 
       authStreamController = StreamController<AuthSessionStatus>.broadcast();
-      when(() => mockObserveAuthStateUseCase())
-          .thenAnswer((_) => authStreamController.stream);
+      when(
+        () => mockObserveAuthStateUseCase(),
+      ).thenAnswer((_) => authStreamController.stream);
     });
 
     tearDown(() async {
@@ -101,22 +102,25 @@ void main() {
       );
     }
 
-    test('initial state has initial status and unauthenticated session',
-        () async {
-      final bloc = buildBloc();
-      expect(bloc.state.status, equals(AuthStatus.initial));
-      expect(
-        bloc.state.sessionStatus,
-        equals(AuthSessionStatus.unauthenticated),
-      );
-      await bloc.close();
-    });
+    test(
+      'initial state has initial status and unauthenticated session',
+      () async {
+        final bloc = buildBloc();
+        expect(bloc.state.status, equals(AuthStatus.initial));
+        expect(
+          bloc.state.sessionStatus,
+          equals(AuthSessionStatus.unauthenticated),
+        );
+        await bloc.close();
+      },
+    );
 
     blocTest<AuthBloc, AuthState>(
       'AuthCheckRequested emits authenticated when profile is onboarded',
       build: () {
-        when(() => mockAuthRepository.getUserProfile())
-            .thenAnswer((_) async => const Right(tProfileComplete));
+        when(
+          () => mockAuthRepository.getUserProfile(),
+        ).thenAnswer((_) async => const Right(tProfileComplete));
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthCheckRequested()),
@@ -133,8 +137,9 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'AuthCheckRequested emits needsOnboarding when profile is not onboarded',
       build: () {
-        when(() => mockAuthRepository.getUserProfile())
-            .thenAnswer((_) async => const Right(tProfileNeedsOnboarding));
+        when(
+          () => mockAuthRepository.getUserProfile(),
+        ).thenAnswer((_) async => const Right(tProfileNeedsOnboarding));
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthCheckRequested()),
@@ -160,8 +165,9 @@ void main() {
           ),
         ).thenAnswer((_) async => const Right(tUser));
 
-        when(() => mockAuthRepository.getUserProfile())
-            .thenAnswer((_) async => const Right(tProfileComplete));
+        when(
+          () => mockAuthRepository.getUserProfile(),
+        ).thenAnswer((_) async => const Right(tProfileComplete));
 
         return buildBloc();
       },
@@ -222,8 +228,9 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'AuthSignOutRequested clears user state and resets to unauthenticated',
       build: () {
-        when(() => mockAuthRepository.signOut())
-            .thenAnswer((_) async => const Right(null));
+        when(
+          () => mockAuthRepository.signOut(),
+        ).thenAnswer((_) async => const Right(null));
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthSignOutRequested()),

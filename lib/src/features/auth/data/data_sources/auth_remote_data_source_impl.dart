@@ -10,8 +10,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl({
     required AuthApiClient authClient,
     required UserStorageService userStorage,
-  })  : _authClient = authClient,
-        _userStorage = userStorage;
+  }) : _authClient = authClient,
+       _userStorage = userStorage;
 
   final AuthApiClient _authClient;
   final UserStorageService _userStorage;
@@ -190,7 +190,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         description: 'Engineering mathematics, thermodynamics & coding theory',
         iconName: 'engineering',
         defaultDailyTarget: 25,
-        examCountdownDays: 60,
       ),
       CourseTrackModel(
         id: 'Law',
@@ -198,8 +197,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         description:
             'Constitutional law, torts, criminal law cases & precedents',
         iconName: 'gavel',
-        defaultDailyTarget: 20,
-        examCountdownDays: 60,
       ),
       CourseTrackModel(
         id: 'General',

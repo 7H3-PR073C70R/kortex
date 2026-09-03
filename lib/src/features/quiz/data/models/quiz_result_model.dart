@@ -39,8 +39,10 @@ class QuizResultModel extends QuizResultEntity {
     final rawWeaknesses = json['weaknesses'];
     final List<TopicWeakness> parsedWeaknesses = rawWeaknesses is List
         ? rawWeaknesses
-            .map((w) => TopicWeaknessModel.fromJson(w as Map<String, dynamic>))
-            .toList()
+              .map(
+                (w) => TopicWeaknessModel.fromJson(w as Map<String, dynamic>),
+              )
+              .toList()
         : [];
 
     return QuizResultModel(

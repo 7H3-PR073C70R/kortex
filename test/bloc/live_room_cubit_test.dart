@@ -23,8 +23,7 @@ class MockCommunityRepository implements CommunityRepository {
   @override
   Future<Either<Failure, List<StudyRoomEntity>>> fetchStudyRooms({
     String? category,
-  }) async =>
-      const Right([]);
+  }) async => const Right([]);
 
   @override
   Future<Either<Failure, StudyRoomEntity>> createStudyRoom({
@@ -32,14 +31,12 @@ class MockCommunityRepository implements CommunityRepository {
     required String subject,
     required String category,
     required int pomodoroMinutes,
-  }) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
-  }) async =>
-      const Right([]);
+  }) async => const Right([]);
 
   @override
   Future<Either<Failure, ForumPostEntity>> createForumPost({
@@ -47,22 +44,19 @@ class MockCommunityRepository implements CommunityRepository {
     required String content,
     required String track,
     String? latexContent,
-  }) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, ForumReplyEntity>> replyToForumPost({
     required String postId,
     required String content,
     String? latexContent,
-  }) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
     String? subject,
-  }) async =>
-      const Right([]);
+  }) async => const Right([]);
 
   @override
   Future<Either<Failure, SharedDeckEntity>> publishDeckToMarketplace({
@@ -72,14 +66,12 @@ class MockCommunityRepository implements CommunityRepository {
     required String category,
     required int totalCards,
     required List<Map<String, dynamic>> cardsJson,
-  }) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, DeckEntity>> cloneSharedDeck(
     String sharedDeckId,
-  ) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  ) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Stream<List<LeaderboardEntryEntity>> streamLeaderboards({String? track}) =>
@@ -88,22 +80,19 @@ class MockCommunityRepository implements CommunityRepository {
   @override
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,
-  }) async =>
-      const Right([]);
+  }) async => const Right([]);
 
   @override
   Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({
     required String courseCode,
     required String title,
     String? department,
-  }) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
     String courseCode,
-  ) async =>
-      const Left(ServerFailure(message: 'Unimplemented'));
+  ) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   Future<void> dispose() async {
     await _roomController.close();

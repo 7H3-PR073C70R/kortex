@@ -15,8 +15,11 @@ class HighSchoolTimelineStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedTimeline =
-        context.watch<CalibrationCubit>().state.profile.highSchoolTimeline;
+    final selectedTimeline = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .highSchoolTimeline;
 
     final timelines = [
       (
@@ -71,9 +74,9 @@ class HighSchoolTimelineStep extends StatelessWidget {
               icon: timeline.$3,
               isSelected: selectedTimeline == timeline.$1,
               onTap: () {
-                context
-                    .read<CalibrationCubit>()
-                    .setHighSchoolTimeline(timeline.$1);
+                context.read<CalibrationCubit>().setHighSchoolTimeline(
+                  timeline.$1,
+                );
               },
             ),
           );

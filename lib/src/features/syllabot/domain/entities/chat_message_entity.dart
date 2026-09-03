@@ -66,16 +66,16 @@ class ChatMessageEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        sessionId,
-        sender,
-        text,
-        timestamp,
-        latexSnippets,
-        engineType,
-        tokensCount,
-        isStreaming,
-        isError,
-        onRetry != null,
-      ];
+    id,
+    sessionId,
+    sender,
+    text,
+    timestamp,
+    latexSnippets,
+    engineType,
+    tokensCount,
+    isStreaming,
+    isError,
+    onRetry != null,
+  ];
 }

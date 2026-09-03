@@ -82,8 +82,9 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
     });
 
     try {
-      final pdfBytes =
-          await widget.pdfGenerator.generatePrintableDeckPdf(widget.deck);
+      final pdfBytes = await widget.pdfGenerator.generatePrintableDeckPdf(
+        widget.deck,
+      );
       final tempDir = await getTemporaryDirectory();
       final sanitizedTitle = widget.deck.title.replaceAll(RegExp(r'\W+'), '_');
       final file = File('${tempDir.path}/${sanitizedTitle}_cards.pdf');

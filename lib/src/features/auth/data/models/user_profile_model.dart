@@ -85,17 +85,17 @@ class UserProfileModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        email,
-        displayName,
-        photoUrl,
-        targetTrack,
-        dailyCardTarget,
-        retentionBenchmark,
-        level,
-        streakDays,
-        xpPoints,
-        subscriptionTier,
-        isOnboarded,
-      ];
+    id,
+    email,
+    displayName,
+    photoUrl,
+    targetTrack,
+    dailyCardTarget,
+    retentionBenchmark,
+    level,
+    streakDays,
+    xpPoints,
+    subscriptionTier,
+    isOnboarded,
+  ];
 }

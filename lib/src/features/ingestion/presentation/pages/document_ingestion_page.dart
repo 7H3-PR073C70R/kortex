@@ -25,8 +25,8 @@ class DocumentIngestionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<IngestionBloc>(
-      create: (_) => locator<IngestionBloc>()
-        ..add(const FetchUserDocumentsEvent()),
+      create: (_) =>
+          locator<IngestionBloc>()..add(const FetchUserDocumentsEvent()),
       child: const _DocumentIngestionView(),
     );
   }
@@ -49,12 +49,12 @@ class _DocumentIngestionView extends HookWidget {
         onImageCaptured: (filename, bytes) {
           isScanningCamera.value = false;
           context.read<IngestionBloc>().add(
-                PickAndUploadFileEvent(
-                  filename: filename,
-                  fileType: 'jpg',
-                  fileBytes: bytes,
-                ),
-              );
+            PickAndUploadFileEvent(
+              filename: filename,
+              fileType: 'jpg',
+              fileBytes: bytes,
+            ),
+          );
         },
         onClose: () => isScanningCamera.value = false,
       );
@@ -116,28 +116,29 @@ class _DocumentIngestionView extends HookWidget {
                     SynthesisModeToggle(
                       currentMode: state.synthesisMode,
                       onModeSelected: (mode) {
-                        context
-                            .read<IngestionBloc>()
-                            .add(SetSynthesisModeEvent(mode));
+                        context.read<IngestionBloc>().add(
+                          SetSynthesisModeEvent(mode),
+                        );
                       },
                     ),
                     const SizedBox(height: 16),
 
                     // File drop zone
                     FileDropZoneWidget(
-                      onFilePicked: ({
-                        required filename,
-                        required fileType,
-                        required fileBytes,
-                      }) {
-                        context.read<IngestionBloc>().add(
+                      onFilePicked:
+                          ({
+                            required filename,
+                            required fileType,
+                            required fileBytes,
+                          }) {
+                            context.read<IngestionBloc>().add(
                               PickAndUploadFileEvent(
                                 filename: filename,
                                 fileType: fileType,
                                 fileBytes: fileBytes,
                               ),
                             );
-                      },
+                          },
                       onCameraScanTap: () => isScanningCamera.value = true,
                     ),
                     const SizedBox(height: 20),
@@ -145,7 +146,8 @@ class _DocumentIngestionView extends HookWidget {
                     // Progress card if active
                     if (state.status != ProcessingStatus.idle)
                       UploadProgressCard(
-                        filename: state.currentDocument?.filename ??
+                        filename:
+                            state.currentDocument?.filename ??
                             'Selected Document',
                         status: state.status,
                         progress: state.uploadProgress,
@@ -153,9 +155,9 @@ class _DocumentIngestionView extends HookWidget {
                         wasDeduplicated: state.wasDeduplicated,
                         errorMessage: state.errorMessage,
                         onRetry: () {
-                          context
-                              .read<IngestionBloc>()
-                              .add(const ResetIngestionStateEvent());
+                          context.read<IngestionBloc>().add(
+                            const ResetIngestionStateEvent(),
+                          );
                         },
                       ),
                   ],
@@ -204,8 +206,8 @@ class _DocumentIngestionView extends HookWidget {
                             const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final doc = state.userDocuments[index];
-                          final kbSize =
-                              (doc.fileSizeBytes / 1024).toStringAsFixed(1);
+                          final kbSize = (doc.fileSizeBytes / 1024)
+                              .toStringAsFixed(1);
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
@@ -214,8 +216,9 @@ class _DocumentIngestionView extends HookWidget {
                                   : colors.surfacePrimary,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: colors.primary
-                                    .withAlpha(isDark ? 50 : 25),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 50 : 25,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -245,8 +248,8 @@ class _DocumentIngestionView extends HookWidget {
                                         '$kbSize KB',
                                         style: typography.caption.medium
                                             .copyWith(
-                                          color: colors.textSecondary,
-                                        ),
+                                              color: colors.textSecondary,
+                                            ),
                                       ),
                                     ],
                                   ),

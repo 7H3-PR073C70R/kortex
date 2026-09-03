@@ -39,11 +39,11 @@ class ConversationSessionEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        title,
-        socraticMode,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    userId,
+    title,
+    socraticMode,
+    createdAt,
+    updatedAt,
+  ];
 }

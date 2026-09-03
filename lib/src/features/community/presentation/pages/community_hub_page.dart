@@ -26,8 +26,8 @@ class CommunityHubPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<CommunityHubBloc>(
-      create: (_) => locator<CommunityHubBloc>()
-        ..add(const LoadCommunityHubEvent()),
+      create: (_) =>
+          locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
       child: const _CommunityHubView(),
     );
   }
@@ -48,9 +48,9 @@ class _CommunityHubView extends HookWidget {
 
     useEffect(() {
       void listener() {
-        context
-            .read<CommunityHubBloc>()
-            .add(SwitchCommunityTabEvent(tabController.index));
+        context.read<CommunityHubBloc>().add(
+          SwitchCommunityTabEvent(tabController.index),
+        );
       }
 
       tabController.addListener(listener);
@@ -58,8 +58,9 @@ class _CommunityHubView extends HookWidget {
     }, [tabController]);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -84,9 +85,9 @@ class _CommunityHubView extends HookWidget {
               selectedIndex: tabController.index,
               onTabSelected: (index) {
                 tabController.animateTo(index);
-                context
-                    .read<CommunityHubBloc>()
-                    .add(SwitchCommunityTabEvent(index));
+                context.read<CommunityHubBloc>().add(
+                  SwitchCommunityTabEvent(index),
+                );
               },
               isCompact: true,
             ),
@@ -102,13 +103,14 @@ class _CommunityHubView extends HookWidget {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               builder: (ctx) => CreatePostBottomSheet(
-                onSubmit: ({
-                  required title,
-                  required content,
-                  required track,
-                  latexContent,
-                }) {
-                  context.read<CommunityHubBloc>().add(
+                onSubmit:
+                    ({
+                      required title,
+                      required content,
+                      required track,
+                      latexContent,
+                    }) {
+                      context.read<CommunityHubBloc>().add(
                         CreateForumPostEvent(
                           title: title,
                           content: content,
@@ -116,7 +118,7 @@ class _CommunityHubView extends HookWidget {
                           latexContent: latexContent,
                         ),
                       );
-                },
+                    },
               ),
             ),
           );

@@ -26,18 +26,19 @@ void main() {
     );
 
     test(
-        'generates valid Notion CSV format with quotes for fields with commas',
-        () {
-      final csv = formatter.generateNotionCsv(tDeck);
+      'generates valid Notion CSV format with quotes for fields with commas',
+      () {
+        final csv = formatter.generateNotionCsv(tDeck);
 
-      expect(csv, contains('Name,Front,Back,Subject,Deck,Category'));
-      expect(csv, contains('"Organic Chemistry, Part 1 - Card 1"'));
-      expect(csv, contains('What is SN2 reaction mechanism?'));
-      expect(
-        csv,
-        contains('Bimolecular nucleophilic substitution with inversion.'),
-      );
-      expect(csv, contains('"Organic Chemistry, Part 1"'));
-    });
+        expect(csv, contains('Name,Front,Back,Subject,Deck,Category'));
+        expect(csv, contains('"Organic Chemistry, Part 1 - Card 1"'));
+        expect(csv, contains('What is SN2 reaction mechanism?'));
+        expect(
+          csv,
+          contains('Bimolecular nucleophilic substitution with inversion.'),
+        );
+        expect(csv, contains('"Organic Chemistry, Part 1"'));
+      },
+    );
   });
 }

@@ -51,8 +51,9 @@ void main() {
       );
     }
 
-    testWidgets('renders banner with founding badge and triggers open hub',
-        (tester) async {
+    testWidgets('renders banner with founding badge and triggers open hub', (
+      tester,
+    ) async {
       when(() => mockCubit.state).thenReturn(
         const AutoCommunityState(
           status: AutoCommunityStatus.provisioned,
@@ -105,32 +106,34 @@ void main() {
       expect(joinedRoomId, equals('room_bio_pomodoro'));
     });
 
-    testWidgets('QuickJoinRoomChip displays active room and fires tap callback',
-        (tester) async {
-      var tapped = false;
+    testWidgets(
+      'QuickJoinRoomChip displays active room and fires tap callback',
+      (tester) async {
+        var tapped = false;
 
-      await tester.pumpWidget(
-        createTestApp(
-          QuickJoinRoomChip(
-            roomId: 'room_123',
-            roomTitle: 'Organic Chem 25m',
-            activePeersCount: 8,
-            onTap: () {
-              tapped = true;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            QuickJoinRoomChip(
+              roomId: 'room_123',
+              roomTitle: 'Organic Chem 25m',
+              activePeersCount: 8,
+              onTap: () {
+                tapped = true;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      expect(find.text('Organic Chem 25m'), findsOneWidget);
-      expect(find.text('8'), findsOneWidget);
+        expect(find.text('Organic Chem 25m'), findsOneWidget);
+        expect(find.text('8'), findsOneWidget);
 
-      await tester.tap(find.byType(QuickJoinRoomChip));
-      await tester.pump();
+        await tester.tap(find.byType(QuickJoinRoomChip));
+        await tester.pump();
 
-      expect(tapped, isTrue);
-    });
+        expect(tapped, isTrue);
+      },
+    );
   });
 }

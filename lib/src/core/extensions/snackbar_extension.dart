@@ -80,29 +80,29 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
       Color bgTint,
       Color borderColor,
       IconData icon,
-      String title
+      String title,
     ) = switch (widget.type) {
       SnackBarType.error => (
-          const Color(0xFFEF4444),
-          const Color(0xFFEF4444).withAlpha(isDark ? 55 : 35),
-          const Color(0xFFEF4444).withAlpha(isDark ? 160 : 120),
-          Icons.error_outline_rounded,
-          'Notice',
-        ),
+        const Color(0xFFEF4444),
+        const Color(0xFFEF4444).withAlpha(isDark ? 55 : 35),
+        const Color(0xFFEF4444).withAlpha(isDark ? 160 : 120),
+        Icons.error_outline_rounded,
+        'Notice',
+      ),
       SnackBarType.success => (
-          const Color(0xFF10B981),
-          const Color(0xFF10B981).withAlpha(isDark ? 50 : 30),
-          const Color(0xFF10B981).withAlpha(isDark ? 150 : 110),
-          Icons.check_circle_rounded,
-          'Success',
-        ),
+        const Color(0xFF10B981),
+        const Color(0xFF10B981).withAlpha(isDark ? 50 : 30),
+        const Color(0xFF10B981).withAlpha(isDark ? 150 : 110),
+        Icons.check_circle_rounded,
+        'Success',
+      ),
       SnackBarType.info => (
-          const Color(0xFF6366F1),
-          const Color(0xFF6366F1).withAlpha(isDark ? 50 : 30),
-          const Color(0xFF6366F1).withAlpha(isDark ? 150 : 110),
-          Icons.info_outline_rounded,
-          'Info',
-        ),
+        const Color(0xFF6366F1),
+        const Color(0xFF6366F1).withAlpha(isDark ? 50 : 30),
+        const Color(0xFF6366F1).withAlpha(isDark ? 150 : 110),
+        Icons.info_outline_rounded,
+        'Info',
+      ),
     };
 
     return Center(

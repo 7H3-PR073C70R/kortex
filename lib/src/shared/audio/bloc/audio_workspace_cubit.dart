@@ -8,9 +8,9 @@ class AudioWorkspaceCubit extends Cubit<AudioWorkspaceState> {
   AudioWorkspaceCubit({
     SpeechToTextClient? sttClient,
     TextToSpeechClient? ttsClient,
-  })  : _stt = sttClient ?? SpeechToTextClient(),
-        _tts = ttsClient ?? TextToSpeechClient(),
-        super(const AudioWorkspaceState());
+  }) : _stt = sttClient ?? SpeechToTextClient(),
+       _tts = ttsClient ?? TextToSpeechClient(),
+       super(const AudioWorkspaceState());
 
   final SpeechToTextClient _stt;
   final TextToSpeechClient _tts;

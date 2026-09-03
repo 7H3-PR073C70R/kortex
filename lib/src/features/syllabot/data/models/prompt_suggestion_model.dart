@@ -37,7 +37,8 @@ class PromptSuggestionModel {
             category: 'JAMB Biology',
           ),
           PromptSuggestionModel(
-            text: 'Analyze antonyms and sentence interpretation for JAMB English',
+            text:
+                'Analyze antonyms and sentence interpretation for JAMB English',
             icon: '📖',
             category: 'JAMB English',
           ),
@@ -47,12 +48,14 @@ class PromptSuggestionModel {
       if (exam.contains('waec') || exam.contains('neco')) {
         return const [
           PromptSuggestionModel(
-            text: 'Prove circle theorem: angle at center is twice circumference',
+            text:
+                'Prove circle theorem: angle at center is twice circumference',
             icon: '📐',
             category: 'WAEC Mathematics',
           ),
           PromptSuggestionModel(
-            text: 'Calculate terminal voltage and internal resistance of a cell',
+            text:
+                'Calculate terminal voltage and internal resistance of a cell',
             icon: '🔋',
             category: 'WAEC Physics',
           ),
@@ -128,7 +131,8 @@ class PromptSuggestionModel {
     if (field.contains('law') || field.contains('legal')) {
       return const [
         PromptSuggestionModel(
-          text: 'Explain the doctrine of stare decisis with landmark precedents',
+          text:
+              'Explain the doctrine of stare decisis with landmark precedents',
           icon: '⚖️',
           category: 'Jurisprudence',
         ),
@@ -155,25 +159,25 @@ class PromptSuggestionModel {
   }
 
   static List<PromptSuggestionModel> get defaults => const [
-        PromptSuggestionModel(
-          text: 'Derive the Euler-Lagrange equation from Hamilton\'s Principle',
-          icon: '⚛️',
-          category: 'Physics',
-        ),
-        PromptSuggestionModel(
-          text: 'Explain Bayes\' theorem with a medical diagnosis example',
-          icon: '📊',
-          category: 'Statistics',
-        ),
-        PromptSuggestionModel(
-          text: 'Solve the heat equation using separation of variables',
-          icon: '🌡️',
-          category: 'Mathematics',
-        ),
-        PromptSuggestionModel(
-          text: 'Explain the CAP theorem in distributed systems',
-          icon: '💻',
-          category: 'Computer Science',
-        ),
-      ];
+    PromptSuggestionModel(
+      text: 'Derive the Euler-Lagrange equation from Hamilton\'s Principle',
+      icon: '⚛️',
+      category: 'Physics',
+    ),
+    PromptSuggestionModel(
+      text: 'Explain Bayes\' theorem with a medical diagnosis example',
+      icon: '📊',
+      category: 'Statistics',
+    ),
+    PromptSuggestionModel(
+      text: 'Solve the heat equation using separation of variables',
+      icon: '🌡️',
+      category: 'Mathematics',
+    ),
+    PromptSuggestionModel(
+      text: 'Explain the CAP theorem in distributed systems',
+      icon: '💻',
+      category: 'Computer Science',
+    ),
+  ];
 }

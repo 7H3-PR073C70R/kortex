@@ -16,8 +16,11 @@ class HigherEdLevelStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedLevel =
-        context.watch<CalibrationCubit>().state.profile.higherEdLevel;
+    final selectedLevel = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .higherEdLevel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,9 +47,9 @@ class HigherEdLevelStep extends StatelessWidget {
           icon: Icons.history_edu_rounded,
           isSelected: selectedLevel == HigherEdLevel.bsc,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setHigherEdLevel(HigherEdLevel.bsc);
+            context.read<CalibrationCubit>().setHigherEdLevel(
+              HigherEdLevel.bsc,
+            );
           },
         ),
         const SizedBox(height: 12),
@@ -55,9 +58,9 @@ class HigherEdLevelStep extends StatelessWidget {
           icon: Icons.workspace_premium_rounded,
           isSelected: selectedLevel == HigherEdLevel.msc,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setHigherEdLevel(HigherEdLevel.msc);
+            context.read<CalibrationCubit>().setHigherEdLevel(
+              HigherEdLevel.msc,
+            );
           },
         ),
         const SizedBox(height: 12),
@@ -66,9 +69,9 @@ class HigherEdLevelStep extends StatelessWidget {
           icon: Icons.psychology_alt_rounded,
           isSelected: selectedLevel == HigherEdLevel.phd,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setHigherEdLevel(HigherEdLevel.phd);
+            context.read<CalibrationCubit>().setHigherEdLevel(
+              HigherEdLevel.phd,
+            );
           },
         ),
         const SizedBox(height: 12),
@@ -77,9 +80,9 @@ class HigherEdLevelStep extends StatelessWidget {
           icon: Icons.menu_book_rounded,
           isSelected: selectedLevel == HigherEdLevel.ond,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setHigherEdLevel(HigherEdLevel.ond);
+            context.read<CalibrationCubit>().setHigherEdLevel(
+              HigherEdLevel.ond,
+            );
           },
         ),
         const SizedBox(height: 12),
@@ -88,9 +91,9 @@ class HigherEdLevelStep extends StatelessWidget {
           icon: Icons.auto_stories_rounded,
           isSelected: selectedLevel == HigherEdLevel.hnd,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setHigherEdLevel(HigherEdLevel.hnd);
+            context.read<CalibrationCubit>().setHigherEdLevel(
+              HigherEdLevel.hnd,
+            );
           },
         ),
       ],

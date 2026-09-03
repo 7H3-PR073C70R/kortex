@@ -97,9 +97,9 @@ class _SyllabotChatView extends HookWidget {
     useEffect(
       () {
         unawaited(
-          locator<CalibrationRepository>()
-              .getCalibrationProfile()
-              .then((result) {
+          locator<CalibrationRepository>().getCalibrationProfile().then((
+            result,
+          ) {
             result.fold(
               (_) {},
               (profile) {
@@ -138,8 +138,8 @@ class _SyllabotChatView extends HookWidget {
     ) {
       if (targetEngine == ExecutionEngineType.cloudRemote) {
         pageContext.read<SyllabotChatBloc>().add(
-              const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
-            );
+          const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+        );
         pageContext.showSnackBar(
           message: l10n.engineCloudSupabase,
         );
@@ -150,8 +150,8 @@ class _SyllabotChatView extends HookWidget {
       final localLlm = locator<LocalLlmEngineClient>();
       if (localLlm.isModelDownloaded) {
         pageContext.read<SyllabotChatBloc>().add(
-              const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
-            );
+          const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
+        );
         pageContext.showSnackBar(
           message: l10n.engineLocalOnDevice,
           type: SnackBarType.success,
@@ -169,10 +169,10 @@ class _SyllabotChatView extends HookWidget {
             isDownloadingModel.value = false;
             if (pageContext.mounted) {
               pageContext.read<SyllabotChatBloc>().add(
-                    const ChangeEngineTypeEvent(
-                      ExecutionEngineType.localOnDevice,
-                    ),
-                  );
+                const ChangeEngineTypeEvent(
+                  ExecutionEngineType.localOnDevice,
+                ),
+              );
               pageContext.showSnackBar(
                 message: 'On-Device Neural Engine ready! Activated.',
                 type: SnackBarType.success,
@@ -218,13 +218,13 @@ class _SyllabotChatView extends HookWidget {
                 : 'session_$nowMs';
 
             dialogContext.read<SyllabotChatBloc>().add(
-                  SubmitPromptEvent(
-                    prompt: voicePrompt,
-                    sessionId: sid,
-                    socraticMode: state.socraticMode,
-                    engineType: state.engineType,
-                  ),
-                );
+              SubmitPromptEvent(
+                prompt: voicePrompt,
+                sessionId: sid,
+                socraticMode: state.socraticMode,
+                engineType: state.engineType,
+              ),
+            );
 
             // Dynamic response synthesis
             final localLlm = locator<LocalLlmEngineClient>();
@@ -260,8 +260,9 @@ class _SyllabotChatView extends HookWidget {
       if (userPrompts.isNotEmpty) {
         final firstPrompt = userPrompts.first;
         final clean = firstPrompt.replaceAll(RegExp(r'[?!.]+$'), '').trim();
-        derivedTitle =
-            clean.length > 38 ? '${clean.substring(0, 35)}...' : clean;
+        derivedTitle = clean.length > 38
+            ? '${clean.substring(0, 35)}...'
+            : clean;
 
         final lower = firstPrompt.toLowerCase();
         if (lower.contains('circle') ||
@@ -297,12 +298,12 @@ class _SyllabotChatView extends HookWidget {
           initialCourseCode: derivedCourseCode,
           onGenerateDeck: (title, courseCode) {
             sheetContext.read<SyllabotChatBloc>().add(
-                  ConvertToDeckEvent(
-                    sessionId: state.sessionId,
-                    deckTitle: title,
-                    courseCode: courseCode,
-                  ),
-                );
+              ConvertToDeckEvent(
+                sessionId: state.sessionId,
+                deckTitle: title,
+                courseCode: courseCode,
+              ),
+            );
           },
         ),
       );
@@ -430,8 +431,8 @@ class _SyllabotChatView extends HookWidget {
               onPressed: () {
                 unawaited(HapticFeedback.lightImpact());
                 context.read<SyllabotChatBloc>().add(
-                      const StartNewSessionEvent(),
-                    );
+                  const StartNewSessionEvent(),
+                );
               },
             ),
             const SizedBox(width: 4),
@@ -483,8 +484,8 @@ class _SyllabotChatView extends HookWidget {
                     return const SizedBox.shrink();
                   }
 
-                  final isCloudError = state.engineType ==
-                      ExecutionEngineType.cloudRemote;
+                  final isCloudError =
+                      state.engineType == ExecutionEngineType.cloudRemote;
 
                   return Container(
                     margin: const EdgeInsets.symmetric(
@@ -516,10 +517,10 @@ class _SyllabotChatView extends HookWidget {
                               child: Text(
                                 isCloudError
                                     ? (state.errorMessage ??
-                                        'Network error. Connect to network or '
-                                            'switch to Offline On-Device LLM.')
+                                          'Network error. Connect to network or '
+                                              'switch to Offline On-Device LLM.')
                                     : 'Offline Engine encountered an issue. '
-                                        'Tap retry.',
+                                          'Tap retry.',
                                 style: typography.caption.medium.copyWith(
                                   color: colors.textPrimary,
                                   fontSize: 12,
@@ -550,8 +551,9 @@ class _SyllabotChatView extends HookWidget {
                                     color: colors.surfaceSecondary,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color:
-                                          colors.surfaceBorder.withAlpha(120),
+                                      color: colors.surfaceBorder.withAlpha(
+                                        120,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
@@ -580,8 +582,8 @@ class _SyllabotChatView extends HookWidget {
                                 onTap: () {
                                   unawaited(HapticFeedback.mediumImpact());
                                   context.read<SyllabotChatBloc>().add(
-                                        const RetryLastMessageEvent(),
-                                      );
+                                    const RetryLastMessageEvent(),
+                                  );
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -640,8 +642,8 @@ class _SyllabotChatView extends HookWidget {
                                 openVoiceDialogue(context, state),
                             onModeChanged: (mode) {
                               context.read<SyllabotChatBloc>().add(
-                                    ChangeSocraticModeEvent(mode),
-                                  );
+                                ChangeSocraticModeEvent(mode),
+                              );
                             },
                             onEngineChanged: (engine) =>
                                 handleEngineSwitch(context, engine),
@@ -653,13 +655,13 @@ class _SyllabotChatView extends HookWidget {
                                   : 'session_$nowMs';
 
                               context.read<SyllabotChatBloc>().add(
-                                    SubmitPromptEvent(
-                                      prompt: prompt,
-                                      sessionId: sid,
-                                      socraticMode: state.socraticMode,
-                                      engineType: state.engineType,
-                                    ),
-                                  );
+                                SubmitPromptEvent(
+                                  prompt: prompt,
+                                  sessionId: sid,
+                                  socraticMode: state.socraticMode,
+                                  engineType: state.engineType,
+                                ),
+                              );
                             },
                           ),
                   );
@@ -789,7 +791,8 @@ class _SyllabotChatView extends HookWidget {
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      itemCount: state.messages.length +
+      itemCount:
+          state.messages.length +
           (state.status == SyllabotStatus.streaming ? 1 : 0),
       itemBuilder: (context, index) {
         if (index < state.messages.length) {
@@ -800,8 +803,8 @@ class _SyllabotChatView extends HookWidget {
             onRetry: message.sender == MessageSender.syllabot
                 ? () {
                     context.read<SyllabotChatBloc>().add(
-                          const RetryLastMessageEvent(),
-                        );
+                      const RetryLastMessageEvent(),
+                    );
                   }
                 : null,
           );

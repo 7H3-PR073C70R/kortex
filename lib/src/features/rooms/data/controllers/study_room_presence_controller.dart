@@ -11,16 +11,14 @@ class StudyRoomPresenceController {
   StudyRoomPresenceController({
     Dio? dio,
     String? authToken,
-  })  : _dio = dio ?? Dio(),
-        _authToken = authToken;
+  }) : _dio = dio ?? Dio(),
+       _authToken = authToken;
 
   final Dio _dio;
   final String? _authToken;
 
   Map<String, String> get _headers {
-    final token = _authToken?.isNotEmpty == true
-        ? _authToken!
-        : AppEnv.apiKey;
+    final token = _authToken?.isNotEmpty == true ? _authToken! : AppEnv.apiKey;
     return {
       'apikey': AppEnv.apiKey,
       'Authorization': 'Bearer $token',
@@ -270,8 +268,9 @@ class StudyRoomPresenceController {
     }
 
     if (roomId != null && user != null && startTime != null) {
-      final sessionDurationSeconds =
-          DateTime.now().difference(startTime).inSeconds;
+      final sessionDurationSeconds = DateTime.now()
+          .difference(startTime)
+          .inSeconds;
 
       try {
         await _dio.post<dynamic>(

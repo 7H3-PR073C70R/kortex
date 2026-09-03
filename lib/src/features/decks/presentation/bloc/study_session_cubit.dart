@@ -16,10 +16,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     required GetDeckCardsUseCase getDeckCardsUseCase,
     required ProcessCardReviewUseCase processCardReviewUseCase,
     required SaveSessionResultsUseCase saveSessionResultsUseCase,
-  })  : _getDeckCardsUseCase = getDeckCardsUseCase,
-        _processCardReviewUseCase = processCardReviewUseCase,
-        _saveSessionResultsUseCase = saveSessionResultsUseCase,
-        super(const StudySessionState());
+  }) : _getDeckCardsUseCase = getDeckCardsUseCase,
+       _processCardReviewUseCase = processCardReviewUseCase,
+       _saveSessionResultsUseCase = saveSessionResultsUseCase,
+       super(const StudySessionState());
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
   final ProcessCardReviewUseCase _processCardReviewUseCase;
@@ -128,7 +128,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       final totalReviewed = state.cards.length;
       final finalRetention =
           ((newHard * 0.7) + (newGood * 1.0) + (newEasy * 1.0)) /
-              (totalReviewed == 0 ? 1 : totalReviewed);
+          (totalReviewed == 0 ? 1 : totalReviewed);
       final mastered = newGood + newEasy;
 
       // 1. Record in UserActivityService for persistent analytics & streak calculation

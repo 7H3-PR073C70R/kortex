@@ -8,8 +8,7 @@ void main() {
     const client = LocalMlkitOcrClient();
 
     test('extracts recognized text blocks from image bytes', () async {
-      const sampleText =
-          'Maxwell Equations:\ncurl E = -dB/dt\ncurl B = mu0*J';
+      const sampleText = 'Maxwell Equations:\ncurl E = -dB/dt\ncurl B = mu0*J';
       final bytes = Uint8List.fromList(utf8.encode(sampleText));
 
       final blocks = await client.processImageBytes(bytes);
@@ -20,14 +19,16 @@ void main() {
       expect(blocks.first.left, greaterThan(0));
     });
 
-    test('returns default STEM mathematical blocks when bytes are raw',
-        () async {
-      final emptyBytes = Uint8List.fromList([0, 0, 0, 0]);
+    test(
+      'returns default STEM mathematical blocks when bytes are raw',
+      () async {
+        final emptyBytes = Uint8List.fromList([0, 0, 0, 0]);
 
-      final blocks = await client.processImageBytes(emptyBytes);
+        final blocks = await client.processImageBytes(emptyBytes);
 
-      expect(blocks.length, equals(2));
-      expect(blocks.first.text, contains(r'\int_{0}^{\infty}'));
-    });
+        expect(blocks.length, equals(2));
+        expect(blocks.first.text, contains(r'\int_{0}^{\infty}'));
+      },
+    );
   });
 }

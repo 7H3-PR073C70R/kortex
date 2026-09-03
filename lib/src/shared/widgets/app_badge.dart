@@ -40,13 +40,13 @@ class AppBadge extends StatelessWidget {
     Color? color,
     String? semanticLabel,
   }) : this(
-          key: key,
-          variant: variant,
-          dotOnly: true,
-          dotSize: dotSize,
-          backgroundColor: color,
-          semanticLabel: semanticLabel,
-        );
+         key: key,
+         variant: variant,
+         dotOnly: true,
+         dotSize: dotSize,
+         backgroundColor: color,
+         semanticLabel: semanticLabel,
+       );
 
   /// Factory for a numeric counter badge.
   const AppBadge.count({
@@ -56,12 +56,12 @@ class AppBadge extends StatelessWidget {
     int maxCount = 99,
     String? semanticLabel,
   }) : this(
-          key: key,
-          count: count,
-          variant: variant,
-          maxCount: maxCount,
-          semanticLabel: semanticLabel,
-        );
+         key: key,
+         count: count,
+         variant: variant,
+         maxCount: maxCount,
+         semanticLabel: semanticLabel,
+       );
 
   final String? label;
   final int? count;
@@ -118,7 +118,8 @@ class AppBadge extends StatelessWidget {
     }
 
     final badgeContent = Container(
-      padding: padding ??
+      padding:
+          padding ??
           EdgeInsets.symmetric(
             horizontal: count != null ? 7 : 9,
             vertical: 3,
@@ -126,8 +127,9 @@ class AppBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: resolvedBg,
         borderRadius: BorderRadius.circular(borderRadius ?? 12),
-        border:
-            resolvedBorder != null ? Border.all(color: resolvedBorder) : null,
+        border: resolvedBorder != null
+            ? Border.all(color: resolvedBorder)
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

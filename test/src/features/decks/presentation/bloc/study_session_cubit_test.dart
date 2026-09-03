@@ -98,15 +98,17 @@ void main() {
       expect(cubit.state.status, StudySessionStatus.initial);
     });
 
-    test('startSession loads cards and transitions to studying state',
-        () async {
-      await cubit.startSession('d1');
+    test(
+      'startSession loads cards and transitions to studying state',
+      () async {
+        await cubit.startSession('d1');
 
-      expect(cubit.state.status, StudySessionStatus.studying);
-      expect(cubit.state.cards.length, 2);
-      expect(cubit.state.currentIndex, 0);
-      expect(cubit.state.isFlipped, false);
-    });
+        expect(cubit.state.status, StudySessionStatus.studying);
+        expect(cubit.state.cards.length, 2);
+        expect(cubit.state.currentIndex, 0);
+        expect(cubit.state.isFlipped, false);
+      },
+    );
 
     test('toggleFlip flips card state', () async {
       await cubit.startSession('d1');

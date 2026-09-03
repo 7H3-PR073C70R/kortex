@@ -56,15 +56,15 @@ class DocumentUploadEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        filename,
-        fileType,
-        fileSizeBytes,
-        storagePath,
-        contentHash,
-        status,
-        createdAt,
-        isDeduplicated,
-      ];
+    id,
+    userId,
+    filename,
+    fileType,
+    fileSizeBytes,
+    storagePath,
+    contentHash,
+    status,
+    createdAt,
+    isDeduplicated,
+  ];
 }

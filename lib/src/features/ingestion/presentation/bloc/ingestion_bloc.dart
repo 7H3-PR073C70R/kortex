@@ -15,11 +15,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     required ProcessStemOcrUseCase processOcrUseCase,
     required GenerateFlashcardsFromDocUseCase generateDeckUseCase,
     required FetchUserDocumentsUseCase fetchUserDocsUseCase,
-  })  : _upload = uploadUseCase,
-        _processOcr = processOcrUseCase,
-        _generateDeck = generateDeckUseCase,
-        _fetchUserDocs = fetchUserDocsUseCase,
-        super(const IngestionState()) {
+  }) : _upload = uploadUseCase,
+       _processOcr = processOcrUseCase,
+       _generateDeck = generateDeckUseCase,
+       _fetchUserDocs = fetchUserDocsUseCase,
+       super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
     on<SetSynthesisModeEvent>(_onSetSynthesisMode);

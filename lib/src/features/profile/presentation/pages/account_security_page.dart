@@ -28,12 +28,12 @@ class AccountSecurityPage extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final profile = state.userProfile;
-        final displayName = profile?.displayName ??
+        final displayName =
+            profile?.displayName ??
             state.user?.displayName ??
             'Kortexify Scholar';
-        final email = profile?.email ??
-            state.user?.email ??
-            'scholar@kortexify.com';
+        final email =
+            profile?.email ?? state.user?.email ?? 'scholar@kortexify.com';
 
         return Scaffold(
           backgroundColor: colors.backgroundPrimary,
@@ -393,7 +393,8 @@ class AccountSecurityPage extends StatelessWidget {
 
   Future<void> _exportAnkiDeck(BuildContext context, String track) async {
     AppFeedback.light();
-    final content = '''
+    final content =
+        '''
 {
   "deckName": "Kortexify - $track Mastery",
   "generator": "Kortexify Neural Spaced Repetition",
@@ -435,7 +436,8 @@ class AccountSecurityPage extends StatelessWidget {
 
   Future<void> _exportStudySheets(BuildContext context, String track) async {
     AppFeedback.light();
-    final summary = '''
+    final summary =
+        '''
 # Kortexify Study Sheet ($track)
 
 ## Core Active Concepts
@@ -486,8 +488,8 @@ Generated from Kortexify Scholar Workspace.
                 AppFeedback.light();
                 if (context.mounted) {
                   context.read<AuthBloc>().add(
-                        const AuthProfileFetchRequested(),
-                      );
+                    const AuthProfileFetchRequested(),
+                  );
                   context.showSnackBar(
                     message: 'Display name updated to $newName',
                     type: SnackBarType.success,

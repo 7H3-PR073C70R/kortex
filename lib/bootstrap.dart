@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kortex/src/core/enums/environment.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 
 class AppBlocObserver extends BlocObserver {
   const AppBlocObserver();

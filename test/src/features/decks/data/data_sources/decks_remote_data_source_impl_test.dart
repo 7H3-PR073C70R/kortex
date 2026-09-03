@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
 
 class MockDecksApiClient extends Mock implements DecksApiClient {}
+
 class MockUserStorageService extends Mock implements UserStorageService {}
 
 void main() {
@@ -54,8 +55,9 @@ void main() {
         ),
       ];
 
-      when(() => mockClient.createDeckRecord(any<Map<String, dynamic>>()))
-          .thenAnswer(
+      when(
+        () => mockClient.createDeckRecord(any<Map<String, dynamic>>()),
+      ).thenAnswer(
         (_) async => HttpResponse<dynamic>(
           {'id': 'deck_bio_101'},
           Response(requestOptions: RequestOptions()),
@@ -64,7 +66,10 @@ void main() {
 
       when(() => mockClient.bulkInsertCards(any<dynamic>())).thenAnswer(
         (_) async => HttpResponse<dynamic>(
-          [{'id': 'card_1'}, {'id': 'card_2'}],
+          [
+            {'id': 'card_1'},
+            {'id': 'card_2'},
+          ],
           Response(requestOptions: RequestOptions()),
         ),
       );
@@ -104,19 +109,22 @@ void main() {
       ).called(1);
     });
 
-    test('deleteDeck removes deck and cards locally and calls remote API', () async {
-      when(() => mockClient.deleteDeck(any())).thenAnswer(
-        (_) async => HttpResponse<dynamic>(
-          null,
-          Response(requestOptions: RequestOptions()),
-        ),
-      );
+    test(
+      'deleteDeck removes deck and cards locally and calls remote API',
+      () async {
+        when(() => mockClient.deleteDeck(any())).thenAnswer(
+          (_) async => HttpResponse<dynamic>(
+            null,
+            Response(requestOptions: RequestOptions()),
+          ),
+        );
 
-      await dataSource.deleteDeck('deck_bio_101');
+        await dataSource.deleteDeck('deck_bio_101');
 
-      final userDecks = await dataSource.getUserDecks();
-      expect(userDecks.any((d) => d.id == 'deck_bio_101'), isFalse);
-      verify(() => mockClient.deleteDeck('deck_bio_101')).called(1);
-    });
+        final userDecks = await dataSource.getUserDecks();
+        expect(userDecks.any((d) => d.id == 'deck_bio_101'), isFalse);
+        verify(() => mockClient.deleteDeck('deck_bio_101')).called(1);
+      },
+    );
   });
 }

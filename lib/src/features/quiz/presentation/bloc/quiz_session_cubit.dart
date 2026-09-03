@@ -9,9 +9,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   QuizSessionCubit({
     required GenerateQuizFromDeckUseCase generateQuizUseCase,
     required SubmitQuizAnswersUseCase submitQuizUseCase,
-  })  : _generateQuizUseCase = generateQuizUseCase,
-        _submitQuizUseCase = submitQuizUseCase,
-        super(const QuizSessionState());
+  }) : _generateQuizUseCase = generateQuizUseCase,
+       _submitQuizUseCase = submitQuizUseCase,
+       super(const QuizSessionState());
 
   final GenerateQuizFromDeckUseCase _generateQuizUseCase;
   final SubmitQuizAnswersUseCase _submitQuizUseCase;
@@ -74,7 +74,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     if (state.currentQuestion!.isAnswered) return;
 
     final current = state.currentQuestion!;
-    final isCorrect = current.correctAnswer.trim().toLowerCase() ==
+    final isCorrect =
+        current.correctAnswer.trim().toLowerCase() ==
         option.trim().toLowerCase();
 
     final updatedQuestion = current.copyWith(

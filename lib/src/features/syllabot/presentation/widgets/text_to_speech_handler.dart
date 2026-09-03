@@ -59,7 +59,7 @@ class TextToSpeechHandler {
     try {
       await _flutterTts.setLanguage('en-US');
       await _flutterTts.setSpeechRate(0.48);
-      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setVolume(1);
 
       // Explicitly configure audio session category for iOS speaker playback
       try {

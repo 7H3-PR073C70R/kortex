@@ -26,8 +26,9 @@ void main() {
       yesterday: 8,
     };
 
-    testWidgets('renders heatmap title, review counter, and legend',
-        (tester) async {
+    testWidgets('renders heatmap title, review counter, and legend', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           StudyActivityHeatmap(activityData: activityMap),

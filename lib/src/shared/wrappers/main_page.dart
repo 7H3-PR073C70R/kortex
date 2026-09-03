@@ -459,9 +459,7 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final glassSettings = LiquidGlassSettings(
       thickness: 24,
       blur: 24,
-      glassColor: isDark
-          ? const Color(0x351E2430)
-          : const Color(0x75FFFFFF),
+      glassColor: isDark ? const Color(0x351E2430) : const Color(0x75FFFFFF),
       lightIntensity: isDark ? 0.4 : 0.85,
       refractiveIndex: 1.25,
     );
@@ -469,9 +467,7 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final indicatorGlassSettings = LiquidGlassSettings(
       thickness: 14,
       blur: 10,
-      glassColor: isDark
-          ? const Color(0x40FFFFFF)
-          : const Color(0xF0FFFFFF),
+      glassColor: isDark ? const Color(0x40FFFFFF) : const Color(0xF0FFFFFF),
       lightIntensity: isDark ? 0.6 : 0.95,
       refractiveIndex: 1.15,
     );

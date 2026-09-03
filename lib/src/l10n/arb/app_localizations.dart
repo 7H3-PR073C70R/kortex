@@ -2348,7 +2348,7 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get clearAction;
 
-  /// Cancel action
+  /// Button label to cancel action
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
@@ -3973,6 +3973,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alert 1 hour before streak reset (8:00 PM)'**
   String get preferencesReminderSubtitle;
+
+  /// Delete deck confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Study Deck'**
+  String get deleteStudyDeckTitle;
+
+  /// Delete deck confirmation dialog message
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{title}\" and its {count} cards? This action cannot be undone.'**
+  String deleteStudyDeckDesc(String title, int count);
+
+  /// Button label to confirm deck deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Deck'**
+  String get deleteDeckAction;
 }
 
 class _AppLocalizationsDelegate

@@ -120,7 +120,8 @@ class ChatOnboardingBloc
       ChatOnboardingMessage(
         id: 'msg_welcome',
         sender: ChatSender.ai,
-        text: 'Hello! I am Syllabot, your AI Academic Guide. '
+        text:
+            'Hello! I am Syllabot, your AI Academic Guide. '
             'I will help configure your optimal study plan, spaced repetition '
             'intervals, and target curriculum.',
         timestamp: DateTime.now(),
@@ -128,7 +129,8 @@ class ChatOnboardingBloc
       ChatOnboardingMessage(
         id: 'msg_pick_track',
         sender: ChatSender.ai,
-        text: 'First, which examination or academic track are you preparing '
+        text:
+            'First, which examination or academic track are you preparing '
             'for?',
         timestamp: DateTime.now().add(const Duration(milliseconds: 200)),
         embeddedWidgetType: EmbeddedWidgetType.trackPicker,
@@ -158,7 +160,8 @@ class ChatOnboardingBloc
     final aiResponse = ChatOnboardingMessage(
       id: 'msg_ai_${DateTime.now().millisecondsSinceEpoch}',
       sender: ChatSender.ai,
-      text: 'Excellent choice! ${event.trackName} is aligned with our '
+      text:
+          'Excellent choice! ${event.trackName} is aligned with our '
           'AI-curated question banks and dynamic mock schedules. '
           'Now, calibrate your daily spaced-repetition target cards:',
       timestamp: DateTime.now(),
@@ -181,7 +184,8 @@ class ChatOnboardingBloc
     final userMsg = ChatOnboardingMessage(
       id: 'msg_user_${DateTime.now().millisecondsSinceEpoch}',
       sender: ChatSender.user,
-      text: 'Target set: ${event.dailyTarget} cards/day '
+      text:
+          'Target set: ${event.dailyTarget} cards/day '
           '(${event.retentionPercent}% retention).',
       timestamp: DateTime.now(),
     );
@@ -195,7 +199,8 @@ class ChatOnboardingBloc
     final aiResponse = ChatOnboardingMessage(
       id: 'msg_ai_${DateTime.now().millisecondsSinceEpoch}',
       sender: ChatSender.ai,
-      text: 'Great commitment! Your personalized Ebbinghaus retention curve is '
+      text:
+          'Great commitment! Your personalized Ebbinghaus retention curve is '
           'calibrated. You are ready to launch your learning workspace:',
       timestamp: DateTime.now(),
       embeddedWidgetType: EmbeddedWidgetType.summaryReady,
@@ -232,7 +237,8 @@ class ChatOnboardingBloc
     final aiResponse = ChatOnboardingMessage(
       id: 'msg_ai_${DateTime.now().millisecondsSinceEpoch}',
       sender: ChatSender.ai,
-      text: 'Got it! I will adapt your curriculum accordingly. '
+      text:
+          'Got it! I will adapt your curriculum accordingly. '
           'Please confirm your selections to complete the onboarding.',
       timestamp: DateTime.now(),
     );

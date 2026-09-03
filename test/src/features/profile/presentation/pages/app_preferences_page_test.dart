@@ -20,14 +20,18 @@ void main() {
 
   setUp(() {
     mockStorage = MockLocalStorageService();
-    when(() => mockStorage.getPreference(key: any(named: 'key')))
-        .thenReturn(null);
-    when(() => mockStorage.savePreference(
-          key: any(named: 'key'),
-          data: any(named: 'data'),
-        )).thenAnswer((_) async {});
-    when(() => mockStorage.deletePreference(key: any(named: 'key')))
-        .thenAnswer((_) async {});
+    when(
+      () => mockStorage.getPreference(key: any(named: 'key')),
+    ).thenReturn(null);
+    when(
+      () => mockStorage.savePreference(
+        key: any(named: 'key'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockStorage.deletePreference(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
 
     themeCubit = ThemeCubit(storageService: mockStorage);
   });
@@ -46,8 +50,9 @@ void main() {
   }
 
   group('AppPreferencesPage Test Suite', () {
-    testWidgets('renders all 3 theme options: System, Light, and Dark',
-        (tester) async {
+    testWidgets('renders all 3 theme options: System, Light, and Dark', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -84,8 +89,9 @@ void main() {
       expect(themeCubit.state.themeMode, equals(ThemeMode.light));
     });
 
-    testWidgets('renders haptics, sfx, and study reminder switches',
-        (tester) async {
+    testWidgets('renders haptics, sfx, and study reminder switches', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 

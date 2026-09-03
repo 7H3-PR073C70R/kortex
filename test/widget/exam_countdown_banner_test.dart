@@ -47,10 +47,12 @@ void main() {
       await cubit.close();
     });
 
-    testWidgets('renders empty state prompt to add exam when no exams exist',
-        (tester) async {
-      when(() => mockRepository.getActiveExams())
-          .thenAnswer((_) async => const Right([]));
+    testWidgets('renders empty state prompt to add exam when no exams exist', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.getActiveExams(),
+      ).thenAnswer((_) async => const Right([]));
 
       await tester.pumpWidget(
         createTestApp(
@@ -66,26 +68,28 @@ void main() {
     });
 
     testWidgets(
-        'renders live countdown and dynamic daily target pace when exam exists',
-        (tester) async {
-      when(() => mockRepository.getActiveExams())
-          .thenAnswer((_) async => Right([tExam]));
+      'renders live countdown and dynamic daily target pace when exam exists',
+      (tester) async {
+        when(
+          () => mockRepository.getActiveExams(),
+        ).thenAnswer((_) async => Right([tExam]));
 
-      await cubit.loadExams();
+        await cubit.loadExams();
 
-      await tester.pumpWidget(
-        createTestApp(
-          BlocProvider<CramPlannerCubit>.value(
-            value: cubit,
-            child: const ExamCountdownBanner(),
+        await tester.pumpWidget(
+          createTestApp(
+            BlocProvider<CramPlannerCubit>.value(
+              value: cubit,
+              child: const ExamCountdownBanner(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
-      expect(find.textContaining('WAEC Physics'), findsOneWidget);
-      expect(find.textContaining('WAEC Track'), findsOneWidget);
-      expect(find.byIcon(Icons.auto_graph_rounded), findsOneWidget);
-    });
+        await tester.pumpAndSettle();
+        expect(find.textContaining('WAEC Physics'), findsOneWidget);
+        expect(find.textContaining('WAEC Track'), findsOneWidget);
+        expect(find.byIcon(Icons.auto_graph_rounded), findsOneWidget);
+      },
+    );
   });
 }

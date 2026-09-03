@@ -28,7 +28,8 @@ class ExamCountdownWidget extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: '${countdown.examName}. '
+      label:
+          '${countdown.examName}. '
           '${l10n.dashboardDaysLeft(countdown.daysRemaining)}. '
           '${l10n.dashboardSyllabusMastery}: $syllabusPercent%.',
       child: ClipRRect(
@@ -193,8 +194,10 @@ class ExamCountdownWidget extends StatelessWidget {
                     child: Stack(
                       children: [
                         FractionallySizedBox(
-                          widthFactor:
-                              countdown.syllabusProgress.clamp(0.05, 1.0),
+                          widthFactor: countdown.syllabusProgress.clamp(
+                            0.05,
+                            1.0,
+                          ),
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(

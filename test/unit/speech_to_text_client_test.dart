@@ -9,25 +9,27 @@ void main() {
       client = SpeechToTextClient();
     });
 
-    test('startListening sets isListening to true and streams decibels',
-        () async {
-      var receivedLevel = 0.0;
-      final success = await client.startListening(
-        onResult: (_) {},
-        onSoundLevelChange: (level) {
-          receivedLevel = level;
-        },
-      );
+    test(
+      'startListening sets isListening to true and streams decibels',
+      () async {
+        var receivedLevel = 0.0;
+        final success = await client.startListening(
+          onResult: (_) {},
+          onSoundLevelChange: (level) {
+            receivedLevel = level;
+          },
+        );
 
-      expect(success, isTrue);
-      expect(client.isListening, isTrue);
+        expect(success, isTrue);
+        expect(client.isListening, isTrue);
 
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      expect(receivedLevel, greaterThan(0.0));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(receivedLevel, greaterThan(0.0));
 
-      await client.stopListening();
-      expect(client.isListening, isFalse);
-    });
+        await client.stopListening();
+        expect(client.isListening, isFalse);
+      },
+    );
 
     test('cancelListening resets isListening', () async {
       await client.startListening(

@@ -11,12 +11,14 @@ void main() {
       service = RevenueCatService.instance;
     });
 
-    test('Initial uninitialized state returns false for isProSubscriber',
-        () async {
-      expect(service.isInitialized, isFalse);
-      final isPro = await service.isProSubscriber();
-      expect(isPro, isFalse);
-    });
+    test(
+      'Initial uninitialized state returns false for isProSubscriber',
+      () async {
+        expect(service.isInitialized, isFalse);
+        final isPro = await service.isProSubscriber();
+        expect(isPro, isFalse);
+      },
+    );
 
     test('fetchOfferings returns null when not initialized', () async {
       final offerings = await service.fetchOfferings();

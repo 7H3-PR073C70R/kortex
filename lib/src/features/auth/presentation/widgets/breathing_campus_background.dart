@@ -35,8 +35,7 @@ class BreathingCampusBackground extends HookWidget {
       animation: controller,
       builder: (context, child) {
         final scale = 1.0 + (0.05 * controller.value);
-        final effectiveBase =
-            baseOpacity ?? (isDark ? 0.55 : 0.68);
+        final effectiveBase = baseOpacity ?? (isDark ? 0.55 : 0.68);
         final dynamicOpacity = effectiveBase + (0.03 * controller.value);
         final bgImageProvider = isDark
             ? AppAssets.images.campusStudentBg.provider()

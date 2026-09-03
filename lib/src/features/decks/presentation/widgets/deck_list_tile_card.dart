@@ -23,17 +23,18 @@ class DeckListTileCard extends StatelessWidget {
 
   void _confirmDelete(BuildContext context) {
     final l10n = context.l10n;
-    AppDialog.show(
-      context: context,
-      title: 'Delete Study Deck',
-      description:
-          'Are you sure you want to delete "${deck.title}" and its ${deck.totalCards} cards? This action cannot be undone.',
-      primaryActionText: 'Delete Deck',
-      isDestructive: true,
-      onPrimaryAction: () {
-        context.read<DecksBloc>().add(DecksDeckDeleted(deck.id));
-      },
-      secondaryActionText: 'Cancel',
+    unawaited(
+      AppDialog.show<void>(
+        context: context,
+        title: l10n.deleteStudyDeckTitle,
+        description: l10n.deleteStudyDeckDesc(deck.title, deck.totalCards),
+        primaryActionText: l10n.deleteDeckAction,
+        isDestructive: true,
+        onPrimaryAction: () {
+          context.read<DecksBloc>().add(DecksDeckDeleted(deck.id));
+        },
+        secondaryActionText: l10n.cancelAction,
+      ),
     );
   }
 
@@ -48,7 +49,8 @@ class DeckListTileCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '${deck.title}. ${deck.subject}. '
+      label:
+          '${deck.title}. ${deck.subject}. '
           '${l10n.decksTotalCards(deck.totalCards)}. '
           '${l10n.decksDueBadge(deck.dueCards)}.',
       child: ShrinkableButton(
@@ -73,8 +75,8 @@ class DeckListTileCard extends StatelessWidget {
                   color: deck.hasDueCards
                       ? colors.primary.withAlpha(isDark ? 110 : 70)
                       : (isDark
-                          ? colors.surfaceBorderHighlight.withAlpha(70)
-                          : colors.surfaceBorder.withAlpha(130)),
+                            ? colors.surfaceBorderHighlight.withAlpha(70)
+                            : colors.surfaceBorder.withAlpha(130)),
                   width: deck.hasDueCards ? 1.4 : 1.0,
                 ),
                 boxShadow: [

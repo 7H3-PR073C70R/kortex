@@ -6,8 +6,7 @@ import 'package:kortex/src/features/community/data/repositories/ephemeral_room_r
 class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   final _participantsController =
       StreamController<List<EphemeralParticipant>>.broadcast();
-  final _pomodoroController =
-      StreamController<PomodoroSyncEvent>.broadcast();
+  final _pomodoroController = StreamController<PomodoroSyncEvent>.broadcast();
 
   final List<EphemeralParticipant> joinedParticipants = [];
   final List<PomodoroSyncEvent> broadcastedTicks = [];
@@ -75,41 +74,45 @@ void main() {
       await fakePresenceClient.dispose();
     });
 
-    test('joinRoomPresence delegates to presence client with participant model',
-        () async {
-      await repository.joinRoomPresence(
-        roomId: 'room-101',
-        userId: 'user-adeola',
-        displayName: 'Adeola',
-        avatarUrl: 'https://avatar.com/adeola.png',
-      );
+    test(
+      'joinRoomPresence delegates to presence client with participant model',
+      () async {
+        await repository.joinRoomPresence(
+          roomId: 'room-101',
+          userId: 'user-adeola',
+          displayName: 'Adeola',
+          avatarUrl: 'https://avatar.com/adeola.png',
+        );
 
-      expect(fakePresenceClient.joinedParticipants.length, equals(1));
-      expect(
-        fakePresenceClient.joinedParticipants.first.displayName,
-        equals('Adeola'),
-      );
-    });
+        expect(fakePresenceClient.joinedParticipants.length, equals(1));
+        expect(
+          fakePresenceClient.joinedParticipants.first.displayName,
+          equals('Adeola'),
+        );
+      },
+    );
 
-    test('broadcastPomodoroTick propagates timer sync event without DB write',
-        () async {
-      await repository.broadcastPomodoroTick(
-        roomId: 'room-101',
-        remainingSeconds: 1200,
-        pomodoroState: 'focusing',
-        senderId: 'user-adeola',
-      );
+    test(
+      'broadcastPomodoroTick propagates timer sync event without DB write',
+      () async {
+        await repository.broadcastPomodoroTick(
+          roomId: 'room-101',
+          remainingSeconds: 1200,
+          pomodoroState: 'focusing',
+          senderId: 'user-adeola',
+        );
 
-      expect(fakePresenceClient.broadcastedTicks.length, equals(1));
-      expect(
-        fakePresenceClient.broadcastedTicks.first.remainingSeconds,
-        equals(1200),
-      );
-      expect(
-        fakePresenceClient.broadcastedTicks.first.pomodoroState,
-        equals('focusing'),
-      );
-    });
+        expect(fakePresenceClient.broadcastedTicks.length, equals(1));
+        expect(
+          fakePresenceClient.broadcastedTicks.first.remainingSeconds,
+          equals(1200),
+        );
+        expect(
+          fakePresenceClient.broadcastedTicks.first.pomodoroState,
+          equals('focusing'),
+        );
+      },
+    );
 
     test('broadcastHandRaise updates participant raise state', () async {
       await repository.broadcastHandRaise(

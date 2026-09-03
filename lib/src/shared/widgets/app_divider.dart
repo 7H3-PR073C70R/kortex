@@ -21,8 +21,8 @@ class AppDivider extends StatelessWidget {
     this.endIndent = 0.0,
     this.color,
     this.margin,
-  })  : isVertical = true,
-        label = null;
+  }) : isVertical = true,
+       label = null;
 
   final double thickness;
   final double indent;

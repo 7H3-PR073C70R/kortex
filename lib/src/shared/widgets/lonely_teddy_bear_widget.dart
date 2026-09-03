@@ -118,16 +118,21 @@ class _TeddyBearPainter extends CustomPainter {
     final h = size.height;
     final center = Offset(w / 2, h / 2);
 
-    final bearColor =
-        isDark ? const Color(0xFF6B5876) : const Color(0xFFC7A7B8);
-    final bearHighlight =
-        isDark ? const Color(0xFF867094) : const Color(0xFFE2C9D7);
-    final innerEarColor =
-        isDark ? const Color(0xFF9E7B9B) : const Color(0xFFF3D6E4);
-    final muzzleColor =
-        isDark ? const Color(0xFF8F7A9E) : const Color(0xFFF5E4EE);
-    final darkDetailColor =
-        isDark ? const Color(0xFF231C28) : const Color(0xFF3F2F3B);
+    final bearColor = isDark
+        ? const Color(0xFF6B5876)
+        : const Color(0xFFC7A7B8);
+    final bearHighlight = isDark
+        ? const Color(0xFF867094)
+        : const Color(0xFFE2C9D7);
+    final innerEarColor = isDark
+        ? const Color(0xFF9E7B9B)
+        : const Color(0xFFF3D6E4);
+    final muzzleColor = isDark
+        ? const Color(0xFF8F7A9E)
+        : const Color(0xFFF5E4EE);
+    final darkDetailColor = isDark
+        ? const Color(0xFF231C28)
+        : const Color(0xFF3F2F3B);
 
     final bearPaint = Paint()
       ..shader = RadialGradient(
@@ -246,8 +251,7 @@ class _TeddyBearPainter extends CustomPainter {
     // H. Tiny Sparkling Single Tear on Cheerful Face
     final tearY = h * 0.45 + (breath * h * 0.03);
     final tearPaint = Paint()
-      ..color =
-          const Color(0xFF60A5FA).withAlpha((180 + breath * 75).toInt());
+      ..color = const Color(0xFF60A5FA).withAlpha((180 + breath * 75).toInt());
     canvas.drawCircle(Offset(w * 0.33, tearY), w * 0.018, tearPaint);
   }
 

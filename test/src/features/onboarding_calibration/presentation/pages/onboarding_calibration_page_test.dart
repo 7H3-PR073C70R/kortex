@@ -42,8 +42,9 @@ void main() {
 
   setUp(() async {
     mockSaveUseCase = MockSaveCalibrationProfileUseCase();
-    when(() => mockSaveUseCase(any()))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockSaveUseCase(any()),
+    ).thenAnswer((_) async => const Right(null));
 
     final locator = GetIt.instance;
     if (locator.isRegistered<CalibrationCubit>()) {
@@ -78,8 +79,9 @@ void main() {
       expect(find.text('High School / Exam Prep'), findsOneWidget);
     });
 
-    testWidgets('selecting Higher Education branch navigates to Step A2',
-        (tester) async {
+    testWidgets('selecting Higher Education branch navigates to Step A2', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingCalibrationPage()),
       );
@@ -100,8 +102,9 @@ void main() {
       );
     });
 
-    testWidgets('selecting High School branch navigates to Step B2',
-        (tester) async {
+    testWidgets('selecting High School branch navigates to Step B2', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingCalibrationPage()),
       );
@@ -121,8 +124,7 @@ void main() {
       expect(find.text('SAT'), findsOneWidget);
     });
 
-    testWidgets('selecting SAT displays tailored SAT subjects',
-        (tester) async {
+    testWidgets('selecting SAT displays tailored SAT subjects', (tester) async {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingCalibrationPage()),
       );

@@ -175,12 +175,12 @@ class AcademicTrackSettingsPage extends HookWidget {
                     onTap: () {
                       AppFeedback.medium();
                       context.read<AuthBloc>().add(
-                            AuthUpdateCourseTrackRequested(
-                              track: selectedTrack.value,
-                              dailyTarget: dailyTarget.value,
-                              retentionBenchmark: retentionBenchmark.value,
-                            ),
-                          );
+                        AuthUpdateCourseTrackRequested(
+                          track: selectedTrack.value,
+                          dailyTarget: dailyTarget.value,
+                          retentionBenchmark: retentionBenchmark.value,
+                        ),
+                      );
 
                       context.showSnackBar(
                         message: l10n.profileSavedSuccessNotice,
@@ -508,9 +508,9 @@ class AcademicTrackSettingsPage extends HookWidget {
                                               track.name,
                                               style: typography.body.bold
                                                   .copyWith(
-                                                color: colors.textPrimary,
-                                                fontSize: 13.5,
-                                              ),
+                                                    color: colors.textPrimary,
+                                                    fontSize: 13.5,
+                                                  ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -530,9 +530,9 @@ class AcademicTrackSettingsPage extends HookWidget {
                                               '~${track.examCountdownDays}d',
                                               style: typography.caption.bold
                                                   .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 9.5,
-                                              ),
+                                                    color: colors.textSecondary,
+                                                    fontSize: 9.5,
+                                                  ),
                                             ),
                                           ),
                                         ],
@@ -542,9 +542,9 @@ class AcademicTrackSettingsPage extends HookWidget {
                                         track.description,
                                         style: typography.caption.regular
                                             .copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 11,
-                                        ),
+                                              color: colors.textSecondary,
+                                              fontSize: 11,
+                                            ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),

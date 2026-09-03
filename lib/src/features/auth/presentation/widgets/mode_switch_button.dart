@@ -26,8 +26,9 @@ class ModeSwitchButton extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final targetLabel =
-        isChatMode ? l10n.authSwitchToForm : l10n.authSwitchToChat;
+    final targetLabel = isChatMode
+        ? l10n.authSwitchToForm
+        : l10n.authSwitchToChat;
     final semanticLabel = l10n.authModeToggleSemantics(targetLabel);
 
     void handleToggle() {

@@ -116,8 +116,8 @@ class _OfflineFlashcardGenerationPageState
 
       if (result.isOfflineModelMissing) {
         context.showSnackBar(
-          message: result.userMessage ??
-              StudyEngineRouter.offlineModelMissingPrompt,
+          message:
+              result.userMessage ?? StudyEngineRouter.offlineModelMissingPrompt,
         );
       } else {
         setState(() {
@@ -154,8 +154,9 @@ class _OfflineFlashcardGenerationPageState
     final isDark = context.isDarkMode;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -216,8 +217,7 @@ class _OfflineFlashcardGenerationPageState
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
   ) {
-    final isOffline =
-        _currentMode == StudyEngineExecutionMode.offlineOnDevice;
+    final isOffline = _currentMode == StudyEngineExecutionMode.offlineOnDevice;
     final badgeColor = isOffline ? colors.syllabotAccent : colors.success;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
@@ -297,8 +297,10 @@ class _OfflineFlashcardGenerationPageState
                   onPressed: _startDownload,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.primary,
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
                   ),
                   child: Text(
                     'Download',
@@ -468,8 +470,7 @@ class _OfflineFlashcardGenerationPageState
               ),
               if (card.isLocalInference)
                 Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(50),
                     borderRadius: BorderRadius.circular(6.r),

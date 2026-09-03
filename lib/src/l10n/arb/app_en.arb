@@ -3130,5 +3130,31 @@
     "preferencesReminderSubtitle": "Alert 1 hour before streak reset (8:00 PM)",
     "@preferencesReminderSubtitle": {
         "description": "Reminder switch subtitle"
+    },
+    "deleteStudyDeckTitle": "Delete Study Deck",
+    "@deleteStudyDeckTitle": {
+        "description": "Delete deck confirmation dialog title"
+    },
+    "deleteStudyDeckDesc": "Are you sure you want to delete \"{title}\" and its {count} cards? This action cannot be undone.",
+    "@deleteStudyDeckDesc": {
+        "description": "Delete deck confirmation dialog message",
+        "placeholders": {
+            "title": {
+                "type": "String",
+                "example": "Biology 101"
+            },
+            "count": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "deleteDeckAction": "Delete Deck",
+    "@deleteDeckAction": {
+        "description": "Button label to confirm deck deletion"
+    },
+    "cancelAction": "Cancel",
+    "@cancelAction": {
+        "description": "Button label to cancel action"
     }
 }

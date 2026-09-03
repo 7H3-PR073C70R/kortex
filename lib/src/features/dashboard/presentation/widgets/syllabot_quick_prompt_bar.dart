@@ -147,8 +147,9 @@ class SyllabotQuickPromptBar extends HookWidget {
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           enabledBorder: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                          ),
                         ),
                       ),
                     ),
@@ -167,10 +168,12 @@ class SyllabotQuickPromptBar extends HookWidget {
                             color: hasText.value
                                 ? colors.primary
                                 : (isDark
-                                    ? colors.surfaceBorderHighlight
-                                        .withAlpha(60)
-                                    : colors.surfaceBorderHighlight
-                                        .withAlpha(90)),
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          60,
+                                        )
+                                      : colors.surfaceBorderHighlight.withAlpha(
+                                          90,
+                                        )),
                           ),
                           alignment: Alignment.center,
                           child: Icon(

@@ -28,8 +28,8 @@ class SchedulerFactory {
   SchedulerFactory({
     Sm2AlgorithmEngine? sm2Engine,
     FsrsAlgorithmEngine? fsrsEngine,
-  })  : _sm2 = sm2Engine ?? const Sm2AlgorithmEngine(),
-        _fsrs = fsrsEngine ?? const FsrsAlgorithmEngine();
+  }) : _sm2 = sm2Engine ?? const Sm2AlgorithmEngine(),
+       _fsrs = fsrsEngine ?? const FsrsAlgorithmEngine();
 
   final Sm2AlgorithmEngine _sm2;
   final FsrsAlgorithmEngine _fsrs;

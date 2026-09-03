@@ -115,8 +115,6 @@ class LocalLlmEngineClient {
         await FlutterLlama.instance.loadModel(
           LlamaConfig(
             modelPath: savedPath,
-            nThreads: 4,
-            useGpu: true,
           ),
         );
       }
@@ -183,7 +181,8 @@ class LocalLlmEngineClient {
     required String systemInstruction,
     required SocraticMode mode,
   }) {
-    return '''<|system|>
+    return '''
+<|system|>
 $systemInstruction
 Mode: ${mode.nameString}
 <|user|>

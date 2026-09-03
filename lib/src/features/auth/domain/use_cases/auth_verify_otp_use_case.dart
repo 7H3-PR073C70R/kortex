@@ -20,8 +20,7 @@ class AuthVerifyOtpParams extends Equatable {
   List<Object?> get props => [email, token, type];
 }
 
-class AuthVerifyOtpUseCase
-    with UseCase<UserEntity, AuthVerifyOtpParams> {
+class AuthVerifyOtpUseCase with UseCase<UserEntity, AuthVerifyOtpParams> {
   const AuthVerifyOtpUseCase(this._repository);
 
   final AuthRepository _repository;

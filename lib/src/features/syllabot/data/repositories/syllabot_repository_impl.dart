@@ -21,9 +21,9 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     required SyllabotRemoteDataSource remoteDataSource,
     required SyllabotLocalDataSource localDataSource,
     DecksRemoteDataSource? decksRemoteDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource,
-        _decksRemoteDataSource = decksRemoteDataSource;
+  }) : _remote = remoteDataSource,
+       _local = localDataSource,
+       _decksRemoteDataSource = decksRemoteDataSource;
 
   final SyllabotRemoteDataSource _remote;
   final SyllabotLocalDataSource _local;
@@ -198,7 +198,8 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           final cardEntity = FlashcardEntity(
             id: cardId,
             deckId: 'deck_$sessionId',
-            front: prompt.startsWith('What') ||
+            front:
+                prompt.startsWith('What') ||
                     prompt.startsWith('How') ||
                     prompt.startsWith('Prove')
                 ? prompt
@@ -213,8 +214,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           flashcardModels.add(FlashcardModel.fromEntity(cardEntity));
 
           // Also extract discrete sub-formulas or step bullets
-          final lines =
-              response.split('\n').where((l) => l.trim().isNotEmpty);
+          final lines = response.split('\n').where((l) => l.trim().isNotEmpty);
           for (final line in lines) {
             if (line.contains(r'$$') ||
                 (line.startsWith('**Step') && line.contains(':'))) {
@@ -268,7 +268,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
 
       // Persist to local cache and Supabase database!
       if (_decksRemoteDataSource != null) {
-        await _decksRemoteDataSource!.saveGeneratedDeck(
+        await _decksRemoteDataSource.saveGeneratedDeck(
           deck: DeckModel.fromEntity(deckEntity),
           cards: flashcardModels,
         );

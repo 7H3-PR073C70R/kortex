@@ -14,7 +14,7 @@ class GetRecommendationsParams extends Equatable {
 
   final CalibrationProfile profile;
   final String Function(String key, Map<String, dynamic> params)
-      localizeHandler;
+  localizeHandler;
 
   @override
   List<Object?> get props => [profile];

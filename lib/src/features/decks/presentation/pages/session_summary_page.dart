@@ -36,8 +36,9 @@ class SessionSummaryPage extends StatelessWidget {
     final durationFormatted = '$minutes:$seconds';
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),

@@ -79,12 +79,10 @@ class QuizWorkspacePage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
                         unawaited(
-                          context
-                              .read<QuizSessionCubit>()
-                              .startQuizFromDeck(
-                                deckId: deckId,
-                                deckTitle: deckTitle,
-                              ),
+                          context.read<QuizSessionCubit>().startQuizFromDeck(
+                            deckId: deckId,
+                            deckTitle: deckTitle,
+                          ),
                         );
                       },
                       child: Text(l10n.quizRetryButton),
@@ -192,8 +190,9 @@ class QuizWorkspacePage extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.15),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -214,12 +213,12 @@ class QuizWorkspacePage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface
-                            .withValues(alpha: 0.8),
+                        color: theme.colorScheme.surface.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: theme.colorScheme.primary
-                              .withValues(alpha: 0.2),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Column(
@@ -264,7 +263,7 @@ class QuizWorkspacePage extends StatelessWidget {
                       final isSelected = current.userSelectedAnswer == opt;
                       final isCorrectOption =
                           opt.trim().toLowerCase() ==
-                              current.correctAnswer.trim().toLowerCase();
+                          current.correctAnswer.trim().toLowerCase();
 
                       return McqOptionCard(
                         optionText: opt,
@@ -273,9 +272,7 @@ class QuizWorkspacePage extends StatelessWidget {
                         isAnswered: current.isAnswered,
                         isCorrect: isCorrectOption,
                         onTap: () {
-                          context
-                              .read<QuizSessionCubit>()
-                              .selectOption(opt);
+                          context.read<QuizSessionCubit>().selectOption(opt);
                         },
                       );
                     }),

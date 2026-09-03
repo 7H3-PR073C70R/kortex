@@ -30,10 +30,12 @@ void main() {
 
     setUp(() {
       mockCommunityRepository = MockCommunityRepository();
-      autoProvisionUseCase =
-          AutoProvisionCommunityUseCase(mockCommunityRepository);
-      fetchStatsUseCase =
-          FetchCourseCommunityStatsUseCase(mockCommunityRepository);
+      autoProvisionUseCase = AutoProvisionCommunityUseCase(
+        mockCommunityRepository,
+      );
+      fetchStatsUseCase = FetchCourseCommunityStatsUseCase(
+        mockCommunityRepository,
+      );
     });
 
     test(
@@ -87,14 +89,14 @@ void main() {
     );
 
     test('fetchCourseCommunityStats retrieves updated peer count', () async {
-      when(() => mockCommunityRepository.fetchCourseCommunityStats('WAEC-CHEM'))
-          .thenAnswer((_) async => const Right(tCommunity));
+      when(
+        () => mockCommunityRepository.fetchCourseCommunityStats('WAEC-CHEM'),
+      ).thenAnswer((_) async => const Right(tCommunity));
 
       final result = await fetchStatsUseCase('WAEC-CHEM');
 
       expect(result.isRight, isTrue);
-      final community =
-          (result as Right<dynamic, StudyCommunityEntity>).value;
+      final community = (result as Right<dynamic, StudyCommunityEntity>).value;
       expect(community.activeRoomsCount, equals(2));
       expect(community.activeRoomTitle, contains('Reaction Kinetics'));
     });

@@ -73,8 +73,9 @@ void main() {
         mockIngestionRepository = MockIngestionRepository();
         uploadUseCase = UploadStudyDocumentUseCase(mockIngestionRepository);
         ocrUseCase = ProcessStemOcrUseCase(mockIngestionRepository);
-        generateDeckUseCase =
-            GenerateFlashcardsFromDocUseCase(mockIngestionRepository);
+        generateDeckUseCase = GenerateFlashcardsFromDocUseCase(
+          mockIngestionRepository,
+        );
       });
 
       test(

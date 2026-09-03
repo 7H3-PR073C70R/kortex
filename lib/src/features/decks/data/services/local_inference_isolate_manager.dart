@@ -61,13 +61,13 @@ class InferenceTask {
   final int numGpuLayers;
 
   Map<String, dynamic> toJson() => {
-        'modelPath': modelPath,
-        'prompt': prompt,
-        'contextTokens': config.contextTokens,
-        'maxOutputTokens': config.maxOutputTokens,
-        'numGpuLayers': numGpuLayers,
-        if (systemInstruction != null) 'systemInstruction': systemInstruction,
-      };
+    'modelPath': modelPath,
+    'prompt': prompt,
+    'contextTokens': config.contextTokens,
+    'maxOutputTokens': config.maxOutputTokens,
+    'numGpuLayers': numGpuLayers,
+    if (systemInstruction != null) 'systemInstruction': systemInstruction,
+  };
 }
 
 /// Executes on-device local GGUF neural inference in a dedicated background
@@ -77,8 +77,8 @@ class LocalInferenceIsolateManager {
   LocalInferenceIsolateManager({
     int estimatedSystemRamMb = 4096,
   }) : _memoryConfig = MemoryLimitConfig.fromSystemRam(
-          estimatedRamMb: estimatedSystemRamMb,
-        );
+         estimatedRamMb: estimatedSystemRamMb,
+       );
 
   final MemoryLimitConfig _memoryConfig;
   static const Duration wallClockTimeout = Duration(seconds: 35);
@@ -100,8 +100,10 @@ class LocalInferenceIsolateManager {
       throw FileSystemException('GGUF model file not found at $modelPath');
     }
 
-    final microPrompts =
-        _createMicroPrompts(topic: topic, sourceText: sourceText);
+    final microPrompts = _createMicroPrompts(
+      topic: topic,
+      sourceText: sourceText,
+    );
     final accumulatedResults = <Map<String, dynamic>>[];
 
     for (final microPrompt in microPrompts) {
@@ -209,8 +211,7 @@ class LocalInferenceIsolateManager {
         },
         {
           'front': 'Invariant Quantity in System',
-          'back':
-              r'$$\mathcal{L} = T - V$$. Euler-Lagrange Action Functional.',
+          'back': r'$$\mathcal{L} = T - V$$. Euler-Lagrange Action Functional.',
           'explanation': 'Local hardware accelerated GGUF output.',
           'maxTokens': maxTokens,
           'isLocalInference': true,

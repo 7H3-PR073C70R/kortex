@@ -118,7 +118,8 @@ class AppDialog extends StatelessWidget {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: iconBackgroundColor ??
+                        color:
+                            iconBackgroundColor ??
                             (isDestructive
                                 ? colors.error.withAlpha(30)
                                 : colors.primary.withAlpha(30)),
@@ -169,7 +170,8 @@ class AppDialog extends StatelessWidget {
                       Expanded(
                         child: AppButton.secondary(
                           text: secondaryActionText!,
-                          onPressed: onSecondaryAction ??
+                          onPressed:
+                              onSecondaryAction ??
                               () => Navigator.of(context).pop(false),
                         ),
                       ),
@@ -183,7 +185,8 @@ class AppDialog extends StatelessWidget {
                               ? AppButtonVariant.destructive
                               : AppButtonVariant.primary,
                           isLoading: isPrimaryLoading,
-                          onPressed: onPrimaryAction ??
+                          onPressed:
+                              onPrimaryAction ??
                               () => Navigator.of(context).pop(true),
                         ),
                       ),

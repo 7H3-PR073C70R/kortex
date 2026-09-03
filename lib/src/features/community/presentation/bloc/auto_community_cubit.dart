@@ -7,9 +7,9 @@ class AutoCommunityCubit extends Cubit<AutoCommunityState> {
   AutoCommunityCubit({
     required AutoProvisionCommunityUseCase autoProvisionCommunityUseCase,
     required FetchCourseCommunityStatsUseCase fetchCourseCommunityStatsUseCase,
-  })  : _autoProvisionCommunityUseCase = autoProvisionCommunityUseCase,
-        _fetchCourseCommunityStatsUseCase = fetchCourseCommunityStatsUseCase,
-        super(const AutoCommunityState());
+  }) : _autoProvisionCommunityUseCase = autoProvisionCommunityUseCase,
+       _fetchCourseCommunityStatsUseCase = fetchCourseCommunityStatsUseCase,
+       super(const AutoCommunityState());
 
   final AutoProvisionCommunityUseCase _autoProvisionCommunityUseCase;
   final FetchCourseCommunityStatsUseCase _fetchCourseCommunityStatsUseCase;

@@ -34,8 +34,8 @@ class CalibrationStepTracker extends StatelessWidget {
             color: isActive
                 ? colors.primary
                 : (isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(80)
-                    : colors.surfaceBorder.withAlpha(120)),
+                      ? colors.surfaceBorderHighlight.withAlpha(80)
+                      : colors.surfaceBorder.withAlpha(120)),
             boxShadow: isCurrent
                 ? [
                     BoxShadow(

@@ -66,14 +66,13 @@ void main() {
       expect(find.text('Allow'), findsNWidgets(2));
     });
 
-    testWidgets('PermissionsCubit skip and finish transition state correctly',
-        (tester) async {
-      final cubit = PermissionsCubit()
-        ..skipPermissions();
+    testWidgets('PermissionsCubit skip and finish transition state correctly', (
+      tester,
+    ) async {
+      final cubit = PermissionsCubit()..skipPermissions();
       expect(cubit.state.isDone, isTrue);
 
-      final cubit2 = PermissionsCubit()
-        ..finishPermissions();
+      final cubit2 = PermissionsCubit()..finishPermissions();
       expect(cubit2.state.isDone, isTrue);
     });
   });

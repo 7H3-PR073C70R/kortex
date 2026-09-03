@@ -80,8 +80,7 @@ class _AppState extends State<App> {
                 themeAnimationDuration: const Duration(milliseconds: 300),
                 themeAnimationCurve: Curves.easeInOut,
                 debugShowCheckedModeBanner: false,
-                localizationsDelegates:
-                    AppLocalizations.localizationsDelegates,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 routerConfig: _appRouter.config(),
                 builder: (context, child) => BiometricLockOverlay(

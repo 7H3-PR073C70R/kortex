@@ -46,8 +46,12 @@ class OtpState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [status, secondsRemaining, canResend, errorMessage];
+  List<Object?> get props => [
+    status,
+    secondsRemaining,
+    canResend,
+    errorMessage,
+  ];
 }
 
 /// Cubit managing 6-digit OTP input, countdown timer, and resend flow.
@@ -55,9 +59,9 @@ class OtpCubit extends Cubit<OtpState> {
   OtpCubit({
     required VerifyOtpUseCase verifyOtpUseCase,
     required ResendOtpUseCase resendOtpUseCase,
-  })  : _verifyOtpUseCase = verifyOtpUseCase,
-        _resendOtpUseCase = resendOtpUseCase,
-        super(const OtpState());
+  }) : _verifyOtpUseCase = verifyOtpUseCase,
+       _resendOtpUseCase = resendOtpUseCase,
+       super(const OtpState());
 
   final VerifyOtpUseCase _verifyOtpUseCase;
   final ResendOtpUseCase _resendOtpUseCase;

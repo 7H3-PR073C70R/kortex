@@ -8,8 +8,7 @@ import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
 
-class MockOfflineModelInstaller extends Mock
-    implements OfflineModelInstaller {}
+class MockOfflineModelInstaller extends Mock implements OfflineModelInstaller {}
 
 class MockLocalInferenceIsolateManager extends Mock
     implements LocalInferenceIsolateManager {}
@@ -22,18 +21,20 @@ void main() {
       mockConnectivity = MockConnectivity();
     });
 
-    test('Fails pre-flight check when connection is cellular (Wi-Fi gate)',
-        () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.mobile],
-      );
+    test(
+      'Fails pre-flight check when connection is cellular (Wi-Fi gate)',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.mobile],
+        );
 
-      final installer = OfflineModelInstaller(connectivity: mockConnectivity);
-      final check = await installer.checkPrerequisites();
+        final installer = OfflineModelInstaller(connectivity: mockConnectivity);
+        final check = await installer.checkPrerequisites();
 
-      expect(check.isWifi, isFalse);
-      expect(check.error, contains('Wi-Fi Required'));
-    });
+        expect(check.isWifi, isFalse);
+        expect(check.error, contains('Wi-Fi Required'));
+      },
+    );
 
     test('Passes Wi-Fi gate when connected to Wi-Fi', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
@@ -65,50 +66,56 @@ void main() {
 
   group('2. LocalInferenceIsolateManager Memory & 60fps UI Thread Safety', () {
     test('Low-RAM Profile (< 4 GB) caps context to 1024 and output to 256', () {
-      final lowRamConfig =
-          MemoryLimitConfig.fromSystemRam(estimatedRamMb: 3000);
+      final lowRamConfig = MemoryLimitConfig.fromSystemRam(
+        estimatedRamMb: 3000,
+      );
       expect(lowRamConfig.isLowRamProfile, isTrue);
       expect(lowRamConfig.contextTokens, equals(1024));
       expect(lowRamConfig.maxOutputTokens, equals(256));
       expect(lowRamConfig.maxChunkWords, equals(800));
 
-      final highRamConfig =
-          MemoryLimitConfig.fromSystemRam(estimatedRamMb: 8192);
+      final highRamConfig = MemoryLimitConfig.fromSystemRam(
+        estimatedRamMb: 8192,
+      );
       expect(highRamConfig.isLowRamProfile, isFalse);
       expect(highRamConfig.contextTokens, equals(2048));
       expect(highRamConfig.maxOutputTokens, equals(512));
     });
 
-    test('Background Isolate execution maintains 60fps main thread frame ticks',
-        () async {
-      final manager = LocalInferenceIsolateManager();
+    test(
+      'Background Isolate execution maintains 60fps main thread frame ticks',
+      () async {
+        final manager = LocalInferenceIsolateManager();
 
-      // Simulate 60fps UI frame scheduler (16ms per frame)
-      var frameTickCount = 0;
-      final frameTimer = Timer.periodic(const Duration(milliseconds: 10), (_) {
-        frameTickCount++;
-      });
+        // Simulate 60fps UI frame scheduler (16ms per frame)
+        var frameTickCount = 0;
+        final frameTimer = Timer.periodic(const Duration(milliseconds: 10), (
+          _,
+        ) {
+          frameTickCount++;
+        });
 
-      const task = InferenceTask(
-        modelPath: '/dummy/path/qwen.gguf',
-        prompt: 'Calculate Euler-Lagrange equations for double pendulum',
-        config: MemoryLimitConfig(
-          contextTokens: 1024,
-          maxOutputTokens: 256,
-          maxChunkWords: 800,
-          isLowRamProfile: true,
-        ),
-      );
+        const task = InferenceTask(
+          modelPath: '/dummy/path/qwen.gguf',
+          prompt: 'Calculate Euler-Lagrange equations for double pendulum',
+          config: MemoryLimitConfig(
+            contextTokens: 1024,
+            maxOutputTokens: 256,
+            maxChunkWords: 800,
+            isLowRamProfile: true,
+          ),
+        );
 
-      final result = await manager.runIsolatedInference(task);
-      frameTimer.cancel();
+        final result = await manager.runIsolatedInference(task);
+        frameTimer.cancel();
 
-      expect(result, contains('Momentum conservation'));
-      // Ensure UI thread was free to tick regularly during background isolate
-      expect(frameTickCount, greaterThan(0));
+        expect(result, contains('Momentum conservation'));
+        // Ensure UI thread was free to tick regularly during background isolate
+        expect(frameTickCount, greaterThan(0));
 
-      await manager.releaseContext();
-    });
+        await manager.releaseContext();
+      },
+    );
 
     test('Enforces 35-second wall clock timeout constant', () {
       expect(
@@ -140,8 +147,10 @@ void main() {
         isolateManager: mockIsolateManager,
       );
 
-      final result =
-          await router.generateStudyPack(topic: 'Calculus', count: 3);
+      final result = await router.generateStudyPack(
+        topic: 'Calculus',
+        count: 3,
+      );
 
       expect(
         result.executionMode,
@@ -156,10 +165,12 @@ void main() {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
         (_) async => [ConnectivityResult.none],
       );
-      when(() => mockInstaller.isModelInstalled())
-          .thenAnswer((_) async => true);
-      when(() => mockInstaller.getModelPath())
-          .thenAnswer((_) async => '/models/qwen.gguf');
+      when(
+        () => mockInstaller.isModelInstalled(),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockInstaller.getModelPath(),
+      ).thenAnswer((_) async => '/models/qwen.gguf');
       when(
         () => mockIsolateManager.executeChunkedInference(
           modelPath: any(named: 'modelPath'),
@@ -197,35 +208,38 @@ void main() {
       expect(result.cards.first.isLocalInference, isTrue);
     });
 
-    test('Offline without model: Returns friendly missing model pack message',
-        () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.none],
-      );
-      when(() => mockInstaller.isModelInstalled())
-          .thenAnswer((_) async => false);
+    test(
+      'Offline without model: Returns friendly missing model pack message',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.none],
+        );
+        when(
+          () => mockInstaller.isModelInstalled(),
+        ).thenAnswer((_) async => false);
 
-      final router = StudyEngineRouter(
-        connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
-        isolateManager: mockIsolateManager,
-      );
+        final router = StudyEngineRouter(
+          connectivity: mockConnectivity,
+          modelInstaller: mockInstaller,
+          isolateManager: mockIsolateManager,
+        );
 
-      final result = await router.generateStudyPack(topic: 'Fluid Dynamics');
+        final result = await router.generateStudyPack(topic: 'Fluid Dynamics');
 
-      expect(
-        result.executionMode,
-        equals(StudyEngineExecutionMode.unavailable),
-      );
-      expect(result.isOfflineModelMissing, isTrue);
-      expect(result.cards, isEmpty);
-      expect(
-        result.userMessage,
-        equals(
-          'Offline mode requires the offline model pack. '
-          'Download it on Wi-Fi to study offline.',
-        ),
-      );
-    });
+        expect(
+          result.executionMode,
+          equals(StudyEngineExecutionMode.unavailable),
+        );
+        expect(result.isOfflineModelMissing, isTrue);
+        expect(result.cards, isEmpty);
+        expect(
+          result.userMessage,
+          equals(
+            'Offline mode requires the offline model pack. '
+            'Download it on Wi-Fi to study offline.',
+          ),
+        );
+      },
+    );
   });
 }

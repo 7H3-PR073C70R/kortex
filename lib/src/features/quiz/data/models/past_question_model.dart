@@ -59,15 +59,16 @@ class PastQuestionModel {
     }
 
     return PastQuestionModel(
-      id: json['id'] as String? ?? 'pq_${DateTime.now().microsecondsSinceEpoch}',
+      id:
+          json['id'] as String? ??
+          'pq_${DateTime.now().microsecondsSinceEpoch}',
       examType: category,
       subject: json['subject'] as String? ?? 'General',
       year: (json['year'] as num?)?.toInt() ?? DateTime.now().year,
       questionNumber: (json['question_number'] as num?)?.toInt() ?? 1,
       prompt: json['prompt'] as String? ?? json['question'] as String? ?? '',
       options: optionsList,
-      correctOptionIndex:
-          (json['correct_option_index'] as num?)?.toInt() ?? 0,
+      correctOptionIndex: (json['correct_option_index'] as num?)?.toInt() ?? 0,
       correctOptionLabel: json['correct_option_label'] as String? ?? 'A',
       explanation: json['explanation'] as String? ?? '',
       topic: json['topic'] as String? ?? 'General',

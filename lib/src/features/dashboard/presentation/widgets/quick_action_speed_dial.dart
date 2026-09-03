@@ -129,8 +129,9 @@ class QuickActionSpeedDial extends StatelessWidget {
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(240)
                       : colors.surfacePrimary.withAlpha(245),
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(28)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
                   border: Border.all(
                     color: isDark
                         ? colors.surfaceBorderHighlight.withAlpha(80)

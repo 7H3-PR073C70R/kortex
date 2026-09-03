@@ -12,54 +12,57 @@ void main() {
     });
 
     test(
-        'getCardOrPlaceholder returns synthesized placeholder during streaming',
-        () {
-      const card1 = GeneratedFlashcard(
-        id: 'c1',
-        front: 'Front 1',
-        back: 'Back 1',
-        explanation: 'Exp 1',
-        isLocalInference: false,
-      );
+      'getCardOrPlaceholder returns synthesized placeholder during streaming',
+      () {
+        const card1 = GeneratedFlashcard(
+          id: 'c1',
+          front: 'Front 1',
+          back: 'Back 1',
+          explanation: 'Exp 1',
+          isLocalInference: false,
+        );
 
-      const state = OnboardingStreamState(
-        cards: [card1],
-        isStreaming: true,
-      );
+        const state = OnboardingStreamState(
+          cards: [card1],
+          isStreaming: true,
+        );
 
-      // Card at index 0 exists
-      final cardAt0 = state.getCardOrPlaceholder(0);
-      expect(cardAt0?.front, equals('Front 1'));
-      expect(state.isCardSynthesizing(0), isFalse);
+        // Card at index 0 exists
+        final cardAt0 = state.getCardOrPlaceholder(0);
+        expect(cardAt0?.front, equals('Front 1'));
+        expect(state.isCardSynthesizing(0), isFalse);
 
-      // Card at index 1 is not yet in buffer -> Returns dynamic skeleton card
-      final cardAt1 = state.getCardOrPlaceholder(1);
-      expect(cardAt1?.id, equals('skeleton_card_1'));
-      expect(cardAt1?.front, contains('Synthesizing card 2...'));
-      expect(state.isCardSynthesizing(1), isTrue);
+        // Card at index 1 is not yet in buffer -> Returns dynamic skeleton card
+        final cardAt1 = state.getCardOrPlaceholder(1);
+        expect(cardAt1?.id, equals('skeleton_card_1'));
+        expect(cardAt1?.front, contains('Synthesizing card 2...'));
+        expect(state.isCardSynthesizing(1), isTrue);
 
-      // Beyond target count -> Returns null
-      final cardAt25 = state.getCardOrPlaceholder(25);
-      expect(cardAt25, isNull);
-    });
+        // Beyond target count -> Returns null
+        final cardAt25 = state.getCardOrPlaceholder(25);
+        expect(cardAt25, isNull);
+      },
+    );
 
-    test('getCardOrPlaceholder returns null for missing cards when completed',
-        () {
-      const card1 = GeneratedFlashcard(
-        id: 'c1',
-        front: 'Front 1',
-        back: 'Back 1',
-        explanation: 'Exp 1',
-        isLocalInference: false,
-      );
+    test(
+      'getCardOrPlaceholder returns null for missing cards when completed',
+      () {
+        const card1 = GeneratedFlashcard(
+          id: 'c1',
+          front: 'Front 1',
+          back: 'Back 1',
+          explanation: 'Exp 1',
+          isLocalInference: false,
+        );
 
-      const state = OnboardingStreamState(
-        cards: [card1],
-        isCompleted: true,
-      );
+        const state = OnboardingStreamState(
+          cards: [card1],
+          isCompleted: true,
+        );
 
-      expect(state.getCardOrPlaceholder(0)?.front, equals('Front 1'));
-      expect(state.getCardOrPlaceholder(1), isNull);
-    });
+        expect(state.getCardOrPlaceholder(0)?.front, equals('Front 1'));
+        expect(state.getCardOrPlaceholder(1), isNull);
+      },
+    );
   });
 }

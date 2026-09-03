@@ -23,9 +23,9 @@ class Sm2CalculationResult extends Equatable {
 
   @override
   List<Object?> get props => [
-        nextInterval,
-        newEaseFactor,
-        newRepetitions,
-        nextDueDate,
-      ];
+    nextInterval,
+    newEaseFactor,
+    newRepetitions,
+    nextDueDate,
+  ];
 }

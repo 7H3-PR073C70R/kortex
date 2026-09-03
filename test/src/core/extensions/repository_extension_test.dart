@@ -16,37 +16,42 @@ void main() {
       expect(result.isLeft, false);
     });
 
-    test('makeRequest should return Left with ServerFailure on DioException',
-        () async {
-      final futureResult = Future<String>.error(
-        DioException(requestOptions: RequestOptions()),
-      ); // Adjust this line
-      final result = await futureResult.makeRequest();
+    test(
+      'makeRequest should return Left with ServerFailure on DioException',
+      () async {
+        final futureResult = Future<String>.error(
+          DioException(requestOptions: RequestOptions()),
+        ); // Adjust this line
+        final result = await futureResult.makeRequest();
 
-      expect(result, isA<Left<Failure, String>>());
-      expect(result.isRight, false);
-      expect(result.isLeft, true);
-    });
-
-    test('makeRequest should return Left with ServerFailure on ServerException',
-        () async {
-      final futureResult = Future<String>.error(const ServerException());
-      final result = await futureResult.makeRequest();
-
-      expect(result, isA<Left<Failure, String>>());
-      expect(result.isRight, false);
-      expect(result.isLeft, true);
-    });
+        expect(result, isA<Left<Failure, String>>());
+        expect(result.isRight, false);
+        expect(result.isLeft, true);
+      },
+    );
 
     test(
-        'makeRequest should return Left with ServerFailure on other exceptions',
-        () async {
-      final futureResult = Future<String>.error(Exception('Some error'));
-      final result = await futureResult.makeRequest();
+      'makeRequest should return Left with ServerFailure on ServerException',
+      () async {
+        final futureResult = Future<String>.error(const ServerException());
+        final result = await futureResult.makeRequest();
 
-      expect(result, isA<Left<Failure, String>>());
-      expect(result.isRight, false);
-      expect(result.isLeft, true);
-    });
+        expect(result, isA<Left<Failure, String>>());
+        expect(result.isRight, false);
+        expect(result.isLeft, true);
+      },
+    );
+
+    test(
+      'makeRequest should return Left with ServerFailure on other exceptions',
+      () async {
+        final futureResult = Future<String>.error(Exception('Some error'));
+        final result = await futureResult.makeRequest();
+
+        expect(result, isA<Left<Failure, String>>());
+        expect(result.isRight, false);
+        expect(result.isLeft, true);
+      },
+    );
   });
 }

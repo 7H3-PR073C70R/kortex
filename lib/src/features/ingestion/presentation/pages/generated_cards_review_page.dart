@@ -94,13 +94,13 @@ class _GeneratedCardsReviewView extends HookWidget {
       }).toList();
 
       context.read<IngestionBloc>().add(
-            GenerateFlashcardsFromSnippetsEvent(
-              documentId: documentId,
-              deckTitle: titleController.text.trim(),
-              subject: subjectController.text.trim(),
-              snippets: updatedSnippets,
-            ),
-          );
+        GenerateFlashcardsFromSnippetsEvent(
+          documentId: documentId,
+          deckTitle: titleController.text.trim(),
+          subject: subjectController.text.trim(),
+          snippets: updatedSnippets,
+        ),
+      );
     }
 
     return AuraMeshNebula(
@@ -192,8 +192,9 @@ class _GeneratedCardsReviewView extends HookWidget {
                       index: index,
                       card: card,
                       onChanged: (updated) {
-                        final updatedList =
-                            List<GeneratedCardPreviewItem>.from(cards.value);
+                        final updatedList = List<GeneratedCardPreviewItem>.from(
+                          cards.value,
+                        );
                         updatedList[index] = updated;
                         cards.value = updatedList;
                       },

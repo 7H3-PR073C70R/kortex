@@ -53,8 +53,8 @@ class OfflineModelInstaller {
   OfflineModelInstaller({
     Dio? dio,
     Connectivity? connectivity,
-  })  : _dio = dio ?? Dio(),
-        _connectivity = connectivity ?? Connectivity();
+  }) : _dio = dio ?? Dio(),
+       _connectivity = connectivity ?? Connectivity();
 
   final Dio _dio;
   final Connectivity _connectivity;
@@ -111,7 +111,7 @@ class OfflineModelInstaller {
   /// Pre-flight validation: Checks Wi-Fi connection and $\ge 4.0\text{ GB}$
   /// free storage space.
   Future<({bool isWifi, bool hasStorage, String? error})>
-      checkPrerequisites() async {
+  checkPrerequisites() async {
     // 1. Wi-Fi Exclusivity Gate
     final connections = await _connectivity.checkConnectivity();
     final isWifi = connections.contains(ConnectivityResult.wifi);
@@ -119,7 +119,8 @@ class OfflineModelInstaller {
       return (
         isWifi: false,
         hasStorage: false,
-        error: 'Wi-Fi Required: GGUF model downloads require an unmetered '
+        error:
+            'Wi-Fi Required: GGUF model downloads require an unmetered '
             'Wi-Fi connection.',
       );
     }

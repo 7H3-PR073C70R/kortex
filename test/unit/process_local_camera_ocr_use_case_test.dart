@@ -31,26 +31,29 @@ void main() {
       useCase = ProcessLocalCameraOcrUseCase(mockRepository);
     });
 
-    test('invokes repository processCapturedImage and returns extractions',
-        () async {
-      when(
-        () => mockRepository.processCapturedImage(
+    test(
+      'invokes repository processCapturedImage and returns extractions',
+      () async {
+        when(
+          () => mockRepository.processCapturedImage(
+            imageBytes: tBytes,
+            documentId: 'doc_math',
+            imagePath: any(named: 'imagePath'),
+          ),
+        ).thenAnswer((_) async => const Right(tEntities));
+
+        final result = await useCase(
           imageBytes: tBytes,
           documentId: 'doc_math',
-          imagePath: any(named: 'imagePath'),
-        ),
-      ).thenAnswer((_) async => const Right(tEntities));
+        );
 
-      final result = await useCase(
-        imageBytes: tBytes,
-        documentId: 'doc_math',
-      );
-
-      expect(result.isRight, isTrue);
-      final list = (result as Right<dynamic, List<OcrExtractionEntity>>).value;
-      expect(list.length, equals(1));
-      expect(list.first.topic, equals('Integration Calculus'));
-      expect(list.first.confidenceScore, equals(0.98));
-    });
+        expect(result.isRight, isTrue);
+        final list =
+            (result as Right<dynamic, List<OcrExtractionEntity>>).value;
+        expect(list.length, equals(1));
+        expect(list.first.topic, equals('Integration Calculus'));
+        expect(list.first.confidenceScore, equals(0.98));
+      },
+    );
   });
 }

@@ -27,93 +27,101 @@ void main() {
       );
     });
 
-    test('Throws LowMemoryDeviceException when physical RAM is < 6.0 GB',
-        () async {
-      final guard = ExperimentalOfflineGuard(
-        connectivity: mockConnectivity,
-        overrideDeviceRamMb: 4096, // 4 GB RAM < 6 GB requirement
-      );
+    test(
+      'Throws LowMemoryDeviceException when physical RAM is < 6.0 GB',
+      () async {
+        final guard = ExperimentalOfflineGuard(
+          connectivity: mockConnectivity,
+          overrideDeviceRamMb: 4096, // 4 GB RAM < 6 GB requirement
+        );
 
-      const settings = OfflineAiUserSettings(
-        enableExperimentalOfflineAI: true,
-      );
+        const settings = OfflineAiUserSettings(
+          enableExperimentalOfflineAI: true,
+        );
 
-      expect(
-        () => guard.preflightCheck(userSettings: settings),
-        throwsA(isA<LowMemoryDeviceException>()),
-      );
-    });
+        expect(
+          () => guard.preflightCheck(userSettings: settings),
+          throwsA(isA<LowMemoryDeviceException>()),
+        );
+      },
+    );
 
-    test('Throws MeteredNetworkException when downloading on cellular',
-        () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.mobile],
-      );
+    test(
+      'Throws MeteredNetworkException when downloading on cellular',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.mobile],
+        );
 
-      final guard = ExperimentalOfflineGuard(
-        connectivity: mockConnectivity,
-        overrideDeviceRamMb: 8192,
-      );
+        final guard = ExperimentalOfflineGuard(
+          connectivity: mockConnectivity,
+          overrideDeviceRamMb: 8192,
+        );
 
-      const settings = OfflineAiUserSettings(
-        enableExperimentalOfflineAI: true,
-      );
+        const settings = OfflineAiUserSettings(
+          enableExperimentalOfflineAI: true,
+        );
 
-      expect(
-        () => guard.preflightCheck(
+        expect(
+          () => guard.preflightCheck(
+            userSettings: settings,
+            isDownloadAction: true,
+          ),
+          throwsA(isA<MeteredNetworkException>()),
+        );
+      },
+    );
+
+    test(
+      'Passes all pre-flight checks when RAM >= 6GB, toggle on, and Wi-Fi',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.wifi],
+        );
+
+        final guard = ExperimentalOfflineGuard(
+          connectivity: mockConnectivity,
+          overrideDeviceRamMb: 8192,
+        );
+
+        const settings = OfflineAiUserSettings(
+          enableExperimentalOfflineAI: true,
+        );
+
+        await expectLater(
+          guard.preflightCheck(
+            userSettings: settings,
+            isDownloadAction: true,
+          ),
+          completes,
+        );
+      },
+    );
+
+    test(
+      'Executes sandboxed inference and returns fallback on low memory',
+      () async {
+        final guard = ExperimentalOfflineGuard(
+          connectivity: mockConnectivity,
+          overrideDeviceRamMb: 3000,
+        );
+
+        const settings = OfflineAiUserSettings(
+          enableExperimentalOfflineAI: true,
+        );
+
+        final result = await guard.executeSandboxedInference(
+          prompt: 'Derive Lagrange equation',
+          modelPath: '/models/qwen.gguf',
           userSettings: settings,
-          isDownloadAction: true,
-        ),
-        throwsA(isA<MeteredNetworkException>()),
-      );
-    });
+        );
 
-    test('Passes all pre-flight checks when RAM >= 6GB, toggle on, and Wi-Fi',
-        () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.wifi],
-      );
-
-      final guard = ExperimentalOfflineGuard(
-        connectivity: mockConnectivity,
-        overrideDeviceRamMb: 8192,
-      );
-
-      const settings = OfflineAiUserSettings(
-        enableExperimentalOfflineAI: true,
-      );
-
-      await expectLater(
-        guard.preflightCheck(
-          userSettings: settings,
-          isDownloadAction: true,
-        ),
-        completes,
-      );
-    });
-
-    test('Executes sandboxed inference and returns fallback on low memory',
-        () async {
-      final guard = ExperimentalOfflineGuard(
-        connectivity: mockConnectivity,
-        overrideDeviceRamMb: 3000,
-      );
-
-      const settings = OfflineAiUserSettings(
-        enableExperimentalOfflineAI: true,
-      );
-
-      final result = await guard.executeSandboxedInference(
-        prompt: 'Derive Lagrange equation',
-        modelPath: '/models/qwen.gguf',
-        userSettings: settings,
-      );
-
-      expect(result.isSuccess, isFalse);
-      expect(
-        result.fallbackMessage,
-        equals(ExperimentalOfflineGuard.resourceFallbackMessage),
-      );
-    });
+        expect(result.isSuccess, isFalse);
+        expect(
+          result.fallbackMessage,
+          equals(ExperimentalOfflineGuard.resourceFallbackMessage),
+        );
+      },
+    );
   });
 }

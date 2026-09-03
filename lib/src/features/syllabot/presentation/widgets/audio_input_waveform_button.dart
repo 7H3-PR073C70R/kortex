@@ -66,8 +66,9 @@ class AudioInputWaveformButton extends HookWidget {
       child: AnimatedBuilder(
         animation: pulseController,
         builder: (context, child) {
-          final scale =
-              isRecording.value ? 1.0 + (pulseController.value * 0.15) : 1.0;
+          final scale = isRecording.value
+              ? 1.0 + (pulseController.value * 0.15)
+              : 1.0;
           return Transform.scale(
             scale: scale,
             child: Container(
@@ -89,11 +90,13 @@ class AudioInputWaveformButton extends HookWidget {
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(3, (i) {
-                          final h = 6.0 +
+                          final h =
+                              6.0 +
                               (math.sin(
-                                    pulseController.value * math.pi + (i * 1.2),
-                                  ) *
-                                  8)
+                                        pulseController.value * math.pi +
+                                            (i * 1.2),
+                                      ) *
+                                      8)
                                   .abs();
                           return Container(
                             margin: const EdgeInsets.symmetric(horizontal: 1.5),

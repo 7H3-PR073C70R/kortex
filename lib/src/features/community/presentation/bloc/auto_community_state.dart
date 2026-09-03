@@ -37,9 +37,9 @@ class AutoCommunityState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        community,
-        isBannerDismissed,
-        errorMessage,
-      ];
+    status,
+    community,
+    isBannerDismissed,
+    errorMessage,
+  ];
 }

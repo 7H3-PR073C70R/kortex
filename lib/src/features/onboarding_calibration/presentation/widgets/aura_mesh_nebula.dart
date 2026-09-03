@@ -128,43 +128,46 @@ class _NebulaMeshPainter extends CustomPainter {
 
     // Orb 1: Primary Indigo Glow
     final paint1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          primary.withAlpha(isDark ? 85 : 45),
-          primary.withAlpha(isDark ? 30 : 15),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.55, 1.0],
-      ).createShader(
-        Rect.fromCircle(center: center1, radius: size.width * 0.7),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              primary.withAlpha(isDark ? 85 : 45),
+              primary.withAlpha(isDark ? 30 : 15),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.55, 1.0],
+          ).createShader(
+            Rect.fromCircle(center: center1, radius: size.width * 0.7),
+          );
     canvas.drawCircle(center1, size.width * 0.7, paint1);
 
     // Orb 2: Syllabot Cyan / Violet Pulse
     final paint2 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          accent.withAlpha(isDark ? 70 : 35),
-          accent.withAlpha(isDark ? 25 : 10),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.5, 1.0],
-      ).createShader(
-        Rect.fromCircle(center: center2, radius: size.width * 0.65),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              accent.withAlpha(isDark ? 70 : 35),
+              accent.withAlpha(isDark ? 25 : 10),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ).createShader(
+            Rect.fromCircle(center: center2, radius: size.width * 0.65),
+          );
     canvas.drawCircle(center2, size.width * 0.65, paint2);
 
     // Orb 3: Deep Ambient Core
     final paint3 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFF6366F1).withAlpha(isDark ? 60 : 30),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 1.0],
-      ).createShader(
-        Rect.fromCircle(center: center3, radius: size.width * 0.55),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFF6366F1).withAlpha(isDark ? 60 : 30),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 1.0],
+          ).createShader(
+            Rect.fromCircle(center: center3, radius: size.width * 0.55),
+          );
     canvas.drawCircle(center3, size.width * 0.55, paint3);
   }
 

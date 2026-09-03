@@ -48,7 +48,6 @@ class LatexCardContentViewer extends StatelessWidget {
                       ),
                     ),
                     child: InteractiveViewer(
-                      minScale: 0.8,
                       maxScale: 4,
                       child: Image.network(
                         url,
@@ -113,8 +112,9 @@ class LatexCardContentViewer extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final baseStyle =
-        isBackFace ? typography.callout.medium : typography.title3.bold;
+    final baseStyle = isBackFace
+        ? typography.callout.medium
+        : typography.title3.bold;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -183,29 +183,30 @@ class LatexCardContentViewer extends StatelessWidget {
                           },
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
-                            height: 120,
-                            color: colors.surfaceSecondary.withAlpha(120),
-                            padding: const EdgeInsets.all(16),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.insert_photo_outlined,
-                                    size: 24,
-                                    color: colors.primary,
+                                height: 120,
+                                color: colors.surfaceSecondary.withAlpha(120),
+                                padding: const EdgeInsets.all(16),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.insert_photo_outlined,
+                                        size: 24,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        l10n.attachedDiagramLabel,
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    l10n.attachedDiagramLabel,
-                                    style: typography.footnote.regular.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
                         ),
                         Container(
                           margin: const EdgeInsets.all(6),

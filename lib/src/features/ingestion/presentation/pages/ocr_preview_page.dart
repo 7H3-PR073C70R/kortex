@@ -31,8 +31,9 @@ class OcrPreviewPage extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final currentSnippets =
-        useState<List<OcrExtractionEntity>>(List.from(snippets));
+    final currentSnippets = useState<List<OcrExtractionEntity>>(
+      List.from(snippets),
+    );
 
     void handleGenerateCards() {
       final previewCards = currentSnippets.value.map((s) {
@@ -122,8 +123,9 @@ class OcrPreviewPage extends HookWidget {
                   return OcrLatexLiveEditor(
                     snippet: snippet,
                     onChanged: (updated) {
-                      final updatedList =
-                          List<OcrExtractionEntity>.from(currentSnippets.value);
+                      final updatedList = List<OcrExtractionEntity>.from(
+                        currentSnippets.value,
+                      );
                       updatedList[index] = updated;
                       currentSnippets.value = updatedList;
                     },

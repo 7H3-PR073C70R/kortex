@@ -10,11 +10,11 @@ class Code extends AppTypography {
     TextStyle? semiBold,
     TextStyle? bold,
   }) : super(
-          regular: regular ?? _base,
-          medium: medium ?? _base.copyWith(fontWeight: FontWeight.w500),
-          semiBold: semiBold ?? _base.copyWith(fontWeight: FontWeight.w600),
-          bold: bold ?? _base.copyWith(fontWeight: FontWeight.w700),
-        );
+         regular: regular ?? _base,
+         medium: medium ?? _base.copyWith(fontWeight: FontWeight.w500),
+         semiBold: semiBold ?? _base.copyWith(fontWeight: FontWeight.w600),
+         bold: bold ?? _base.copyWith(fontWeight: FontWeight.w700),
+       );
 
   static final TextStyle _base = GoogleFonts.jetBrainsMono(
     fontSize: 14,

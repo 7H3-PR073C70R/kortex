@@ -1,12 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FileDropZoneWidget extends HookWidget {
@@ -20,7 +21,8 @@ class FileDropZoneWidget extends HookWidget {
     required String filename,
     required String fileType,
     required Uint8List fileBytes,
-  }) onFilePicked;
+  })
+  onFilePicked;
 
   final VoidCallback? onCameraScanTap;
 
@@ -71,11 +73,11 @@ class FileDropZoneWidget extends HookWidget {
           decoration: BoxDecoration(
             color: isDark
                 ? (isHovering.value
-                    ? colors.primary.withAlpha(30)
-                    : colors.surfaceSecondary.withAlpha(160))
+                      ? colors.primary.withAlpha(30)
+                      : colors.surfaceSecondary.withAlpha(160))
                 : (isHovering.value
-                    ? colors.primary.withAlpha(20)
-                    : colors.surfacePrimary.withAlpha(200)),
+                      ? colors.primary.withAlpha(20)
+                      : colors.surfacePrimary.withAlpha(200)),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isHovering.value

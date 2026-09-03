@@ -75,8 +75,7 @@ class ForgotPasswordPage extends HookWidget {
                   hintText: l10n.authEmailHint,
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon:
-                      const Icon(Icons.mail_outline_rounded, size: 20),
+                  prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
                 ),
                 const SizedBox(height: 24),
                 AppButton.primary(
@@ -86,8 +85,8 @@ class ForgotPasswordPage extends HookWidget {
                     final email = emailController.text.trim();
                     if (email.isNotEmpty) {
                       context.read<AuthBloc>().add(
-                            AuthResetPasswordRequested(email: email),
-                          );
+                        AuthResetPasswordRequested(email: email),
+                      );
                     }
                   },
                 ),

@@ -36,15 +36,15 @@ class CrdtCardRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        cardId,
-        front,
-        back,
-        frontLatex,
-        backLatex,
-        authorId,
-        timestampMicros,
-        isDeleted,
-      ];
+    cardId,
+    front,
+    back,
+    frontLatex,
+    backLatex,
+    authorId,
+    timestampMicros,
+    isDeleted,
+  ];
 }
 
 class CrdtDeckState extends Equatable {

@@ -103,8 +103,8 @@ class HardwareGuardFactory {
       executionMode: isNetworkConnected
           ? AiExecutionMode.cloudEdge
           : (profile.totalRamGb >= 8.0
-              ? AiExecutionMode.localGguf
-              : AiExecutionMode.mlKitOnly),
+                ? AiExecutionMode.localGguf
+                : AiExecutionMode.mlKitOnly),
       reason: userPrefersOfflineAi
           ? HardwareThrottleReason.none
           : HardwareThrottleReason.userPreferenceDisabled,

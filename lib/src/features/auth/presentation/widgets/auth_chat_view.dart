@@ -395,8 +395,9 @@ class AuthChatView extends HookWidget {
           thinkingLabel.value = 'Authenticating credentials with AI...';
           scrollToBottom(animate: true);
 
-          final logEmail =
-              draftState.email.isNotEmpty ? draftState.email : input;
+          final logEmail = draftState.email.isNotEmpty
+              ? draftState.email
+              : input;
           final logPassword = input;
 
           lastRetryDescription.value = 'Sign In';
@@ -562,7 +563,8 @@ class AuthChatView extends HookWidget {
           isTyping.value = false;
           currentFlow.value = _ChatFlowStep.initial;
           final retryCallback = lastRetryAction.value;
-          final err = state.errorMessage ??
+          final err =
+              state.errorMessage ??
               'Unable to connect to the study servers. '
                   'Please check your internet connection and try again.';
           final actionDesc = lastRetryDescription.value.isNotEmpty
@@ -583,11 +585,13 @@ class AuthChatView extends HookWidget {
           isThinking.value = false;
           isTyping.value = false;
           currentFlow.value = _ChatFlowStep.needsEmailConfirmation;
-          final name = state.user?.displayName ??
+          final name =
+              state.user?.displayName ??
               (draftState.displayName.isNotEmpty
                   ? draftState.displayName
                   : 'Scholar');
-          final email = state.user?.email ??
+          final email =
+              state.user?.email ??
               (draftState.email.isNotEmpty
                   ? draftState.email
                   : 'your email address');
@@ -699,7 +703,8 @@ class AuthChatView extends HookWidget {
                             typography: typography,
                             isDark: isDark,
                             isStreaming: isStreaming,
-                            livePasswordText: currentFlow.value ==
+                            livePasswordText:
+                                currentFlow.value ==
                                     _ChatFlowStep.signUpPassword
                                 ? rawInputText.value
                                 : null,
@@ -874,7 +879,8 @@ class AuthChatView extends HookWidget {
                               onTap: () {
                                 lastRetryAction.value = null;
                                 addUserMessage('Resend 6-Digit Code');
-                                final email = authState.user?.email ??
+                                final email =
+                                    authState.user?.email ??
                                     (draftState.email.isNotEmpty
                                         ? draftState.email
                                         : 'your email address');
@@ -984,166 +990,160 @@ class AuthChatView extends HookWidget {
 
                               return Padding(
                                 key: ValueKey(currentFlow.value),
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  4,
+                                  16,
+                                  16,
+                                ),
                                 child: Row(
                                   children: [
-                                        Expanded(
-                                          child: Semantics(
-                                            textField: true,
-                                            label: l10n.authChatInputSemantics,
-                                            hint: getHintText(),
-                                            child: ClipRRect(
-                                              borderRadius: pillRadius,
-                                              child: BackdropFilter(
-                                                filter: ImageFilter.blur(
-                                                  sigmaX: 16,
-                                                  sigmaY: 16,
-                                                ),
-                                                child: TextField(
-                                                  controller: textController,
-                                                  autofocus: true,
-                                                  textCapitalization:
-                                                      currentFlow.value ==
-                                                              _ChatFlowStep
-                                                                  .signUpName
-                                                          ? TextCapitalization
-                                                              .words
-                                                          : TextCapitalization
-                                                              .none,
-                                                  keyboardType: isPasswordField
-                                                      ? TextInputType
-                                                          .visiblePassword
-                                                      : (currentFlow.value ==
-                                                              _ChatFlowStep
-                                                                  .signUpName
-                                                          ? TextInputType.name
-                                                          : TextInputType
+                                    Expanded(
+                                      child: Semantics(
+                                        textField: true,
+                                        label: l10n.authChatInputSemantics,
+                                        hint: getHintText(),
+                                        child: ClipRRect(
+                                          borderRadius: pillRadius,
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 16,
+                                              sigmaY: 16,
+                                            ),
+                                            child: TextField(
+                                              controller: textController,
+                                              autofocus: true,
+                                              textCapitalization:
+                                                  currentFlow.value ==
+                                                      _ChatFlowStep.signUpName
+                                                  ? TextCapitalization.words
+                                                  : TextCapitalization.none,
+                                              keyboardType: isPasswordField
+                                                  ? TextInputType
+                                                        .visiblePassword
+                                                  : (currentFlow.value ==
+                                                            _ChatFlowStep
+                                                                .signUpName
+                                                        ? TextInputType.name
+                                                        : TextInputType
                                                               .emailAddress),
-                                                  obscureText:
-                                                      isPasswordField &&
-                                                          isObscured,
-                                                  style: typography
-                                                      .callout.regular
-                                                      .copyWith(
-                                                        color:
-                                                            colors.textPrimary,
-                                                      ),
-                                                  decoration: InputDecoration(
-                                                    hintText: getHintText(),
-                                                    hintStyle: typography
-                                                        .footnote.regular
-                                                        .copyWith(
+                                              obscureText:
+                                                  isPasswordField && isObscured,
+                                              style: typography.callout.regular
+                                                  .copyWith(
+                                                    color: colors.textPrimary,
+                                                  ),
+                                              decoration: InputDecoration(
+                                                hintText: getHintText(),
+                                                hintStyle: typography
+                                                    .footnote
+                                                    .regular
+                                                    .copyWith(
+                                                      color: colors.textMuted,
+                                                      fontSize: 13,
+                                                    ),
+                                                filled: true,
+                                                fillColor: isDark
+                                                    ? colors.surfaceSecondary
+                                                          .withAlpha(190)
+                                                    : colors.surfacePrimary
+                                                          .withAlpha(220),
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 18,
+                                                      vertical: 12,
+                                                    ),
+                                                suffixIcon: isPasswordField
+                                                    ? IconButton(
+                                                        tooltip: eyeTooltip,
+                                                        icon: Icon(
+                                                          eyeIcon,
+                                                          size: 19,
                                                           color:
                                                               colors.textMuted,
-                                                          fontSize: 13,
                                                         ),
-                                                    filled: true,
-                                                    fillColor: isDark
-                                                        ? colors
-                                                            .surfaceSecondary
-                                                            .withAlpha(190)
-                                                        : colors.surfacePrimary
-                                                            .withAlpha(220),
-                                                    contentPadding:
-                                                        const EdgeInsets
-                                                            .symmetric(
-                                                          horizontal: 18,
-                                                          vertical: 12,
-                                                        ),
-                                                    suffixIcon: isPasswordField
-                                                        ? IconButton(
-                                                            tooltip: eyeTooltip,
-                                                            icon: Icon(
-                                                              eyeIcon,
-                                                              size: 19,
-                                                              color: colors
-                                                                  .textMuted,
-                                                            ),
-                                                            onPressed: () {
-                                                              isPasswordObscured
-                                                                      .value =
-                                                                  !isObscured;
-                                                            },
-                                                          )
-                                                        : null,
-                                                    border: OutlineInputBorder(
+                                                        onPressed: () {
+                                                          isPasswordObscured
+                                                                  .value =
+                                                              !isObscured;
+                                                        },
+                                                      )
+                                                    : null,
+                                                border: OutlineInputBorder(
+                                                  borderRadius: pillRadius,
+                                                  borderSide: side,
+                                                ),
+                                                enabledBorder:
+                                                    OutlineInputBorder(
                                                       borderRadius: pillRadius,
                                                       borderSide: side,
                                                     ),
-                                                    enabledBorder:
-                                                        OutlineInputBorder(
-                                                          borderRadius:
-                                                              pillRadius,
-                                                          borderSide: side,
-                                                        ),
-                                                    focusedBorder:
-                                                        OutlineInputBorder(
-                                                          borderRadius:
-                                                              pillRadius,
-                                                          borderSide:
-                                                              BorderSide(
-                                                            color:
-                                                                colors.primary,
-                                                            width: 1.6,
-                                                          ),
-                                                        ),
-                                                  ),
-                                                  onSubmitted: (_) =>
-                                                      handleSend(),
-                                                ),
+                                                focusedBorder:
+                                                    OutlineInputBorder(
+                                                      borderRadius: pillRadius,
+                                                      borderSide: BorderSide(
+                                                        color: colors.primary,
+                                                        width: 1.6,
+                                                      ),
+                                                    ),
                                               ),
+                                              onSubmitted: (_) => handleSend(),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
-                                        Semantics(
-                                          button: true,
-                                          label: l10n.authChatSendSemantics,
-                                          child: ShrinkableButton(
-                                            onTap: hasInputText.value
-                                                ? handleSend
-                                                : null,
-                                            child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 200,
-                                              ),
-                                              width: 44,
-                                              height: 44,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: hasInputText.value
-                                                    ? colors.primary
-                                                    : borderHighlight,
-                                                boxShadow: hasInputText.value
-                                                    ? [
-                                                        BoxShadow(
-                                                          color: colors.primary
-                                                              .withAlpha(80),
-                                                          blurRadius: 10,
-                                                          offset: const Offset(
-                                                              0, 3),
-                                                        ),
-                                                      ]
-                                                    : null,
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Icon(
-                                                Icons.arrow_upward_rounded,
-                                                color: hasInputText.value
-                                                    ? Colors.white
-                                                    : colors.textMuted
-                                                        .withAlpha(140),
-                                                size: 20,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  );
-                                },
-                              )
+                                    const SizedBox(width: 10),
+                                    Semantics(
+                                      button: true,
+                                      label: l10n.authChatSendSemantics,
+                                      child: ShrinkableButton(
+                                        onTap: hasInputText.value
+                                            ? handleSend
+                                            : null,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: hasInputText.value
+                                                ? colors.primary
+                                                : borderHighlight,
+                                            boxShadow: hasInputText.value
+                                                ? [
+                                                    BoxShadow(
+                                                      color: colors.primary
+                                                          .withAlpha(80),
+                                                      blurRadius: 10,
+                                                      offset: const Offset(
+                                                        0,
+                                                        3,
+                                                      ),
+                                                    ),
+                                                  ]
+                                                : null,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            Icons.arrow_upward_rounded,
+                                            color: hasInputText.value
+                                                ? Colors.white
+                                                : colors.textMuted.withAlpha(
+                                                    140,
+                                                  ),
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          )
                         : const SizedBox.shrink(),
                   ),
                 ],
@@ -1708,8 +1708,9 @@ class _VerticalPasswordRequirementsList extends StatelessWidget {
     final hasMinLength = password.length >= 8;
     final hasNumber = RegExp('[0-9]').hasMatch(password);
     final hasUppercase = RegExp('[A-Z]').hasMatch(password);
-    final hasSpecial =
-        RegExp(r'[!@#$%^&*(),.?":{}|<>/_+\-=\[\]\\;`~]').hasMatch(password);
+    final hasSpecial = RegExp(
+      r'[!@#$%^&*(),.?":{}|<>/_+\-=\[\]\\;`~]',
+    ).hasMatch(password);
 
     return Container(
       margin: const EdgeInsets.only(top: 10),

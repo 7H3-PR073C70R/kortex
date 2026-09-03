@@ -64,8 +64,9 @@ class _OnboardingWrapperView extends StatelessWidget {
         final cubit = context.read<OnboardingCubit>();
 
         return Scaffold(
-          backgroundColor:
-              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -94,8 +95,9 @@ class _OnboardingWrapperView extends StatelessWidget {
                                   : colors.surfacePrimary,
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color:
-                                    colors.primary.withAlpha(isDark ? 40 : 20),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 40 : 20,
+                                ),
                               ),
                             ),
                             child: const ConversationalOnboardingPage(),
@@ -113,8 +115,9 @@ class _OnboardingWrapperView extends StatelessWidget {
                                   : colors.surfacePrimary,
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color:
-                                    colors.primary.withAlpha(isDark ? 40 : 20),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 40 : 20,
+                                ),
                               ),
                             ),
                             child: const TraditionalFormOnboardingPage(),

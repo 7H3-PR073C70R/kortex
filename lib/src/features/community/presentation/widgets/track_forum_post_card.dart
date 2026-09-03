@@ -21,7 +21,8 @@ class TrackForumPostCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final semanticsLabel = 'Forum Post: ${post.title}, Track: ${post.track}, '
+    final semanticsLabel =
+        'Forum Post: ${post.title}, Track: ${post.track}, '
         'By ${post.authorName}';
 
     return Semantics(

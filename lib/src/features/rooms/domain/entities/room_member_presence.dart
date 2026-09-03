@@ -4,7 +4,8 @@ enum RoomFocusStatus {
   active,
   deepFocus,
   idle,
-  onBreak;
+  onBreak
+  ;
 
   String get nameString {
     switch (this) {
@@ -66,12 +67,12 @@ class StudyRoomCursor {
   final DateTime? updatedAt;
 
   Map<String, dynamic> toJson() => {
-        'x': x,
-        'y': y,
-        if (cardId != null) 'cardId': cardId,
-        if (activeField != null) 'activeField': activeField,
-        'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
-      };
+    'x': x,
+    'y': y,
+    if (cardId != null) 'cardId': cardId,
+    if (activeField != null) 'activeField': activeField,
+    'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+  };
 }
 
 @immutable
@@ -107,11 +108,11 @@ class StudyRoomTimerState {
   final DateTime? syncedAt;
 
   Map<String, dynamic> toJson() => {
-        'isRunning': isRunning,
-        'remainingSeconds': remainingSeconds,
-        'mode': mode,
-        'syncedAt': (syncedAt ?? DateTime.now()).toIso8601String(),
-      };
+    'isRunning': isRunning,
+    'remainingSeconds': remainingSeconds,
+    'mode': mode,
+    'syncedAt': (syncedAt ?? DateTime.now()).toIso8601String(),
+  };
 }
 
 @immutable
@@ -190,17 +191,17 @@ class RoomMemberPresence {
   }
 
   Map<String, dynamic> toPresencePayload() => {
-        'userId': userId,
-        'username': username,
-        if (avatarUrl != null) 'avatarUrl': avatarUrl,
-        'focusStatus': focusStatus.nameString,
-        if (activeCursor != null) 'activeCursor': activeCursor!.toJson(),
-        if (timerState != null) 'timerState': timerState!.toJson(),
-        'joinedAt': joinedAt.toIso8601String(),
-        'lastActivity': (lastActivity ?? DateTime.now()).toIso8601String(),
-        'cardsReviewed': cardsReviewed,
-        if (currentDeckId != null) 'currentDeckId': currentDeckId,
-      };
+    'userId': userId,
+    'username': username,
+    if (avatarUrl != null) 'avatarUrl': avatarUrl,
+    'focusStatus': focusStatus.nameString,
+    if (activeCursor != null) 'activeCursor': activeCursor!.toJson(),
+    if (timerState != null) 'timerState': timerState!.toJson(),
+    'joinedAt': joinedAt.toIso8601String(),
+    'lastActivity': (lastActivity ?? DateTime.now()).toIso8601String(),
+    'cardsReviewed': cardsReviewed,
+    if (currentDeckId != null) 'currentDeckId': currentDeckId,
+  };
 
   @override
   bool operator ==(Object other) =>

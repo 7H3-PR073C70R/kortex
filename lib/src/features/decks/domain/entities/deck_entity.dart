@@ -64,17 +64,17 @@ class DeckEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        subject,
-        totalCards,
-        dueCards,
-        masteryRate,
-        category,
-        description,
-        lastStudied,
-        cards,
-        colorHex,
-        iconName,
-      ];
+    id,
+    title,
+    subject,
+    totalCards,
+    dueCards,
+    masteryRate,
+    category,
+    description,
+    lastStudied,
+    cards,
+    colorHex,
+    iconName,
+  ];
 }

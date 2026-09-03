@@ -109,11 +109,11 @@ class SyllabotAiSettingsPage extends HookWidget {
                                     ),
                                     Text(
                                       _getModeSubtitle(mode),
-                                      style:
-                                          typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11.5,
+                                          ),
                                     ),
                                   ],
                                 ),

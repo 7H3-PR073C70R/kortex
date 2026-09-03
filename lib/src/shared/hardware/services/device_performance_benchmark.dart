@@ -84,7 +84,7 @@ abstract class DevicePerformanceBenchmark {
 
 class DevicePerformanceBenchmarkImpl implements DevicePerformanceBenchmark {
   DevicePerformanceBenchmarkImpl({HardwareProfile? initialProfile})
-      : _currentProfile = initialProfile ?? HardwareProfile.baseline();
+    : _currentProfile = initialProfile ?? HardwareProfile.baseline();
 
   HardwareProfile _currentProfile;
   final _profileController = StreamController<HardwareProfile>.broadcast();

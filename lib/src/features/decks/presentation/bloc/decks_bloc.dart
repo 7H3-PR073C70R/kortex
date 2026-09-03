@@ -10,9 +10,9 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
   DecksBloc({
     required GetUserDecksUseCase getUserDecksUseCase,
     DeleteDeckUseCase? deleteDeckUseCase,
-  })  : _getUserDecksUseCase = getUserDecksUseCase,
-        _deleteDeckUseCase = deleteDeckUseCase,
-        super(const DecksState()) {
+  }) : _getUserDecksUseCase = getUserDecksUseCase,
+       _deleteDeckUseCase = deleteDeckUseCase,
+       super(const DecksState()) {
     on<DecksStarted>(_onDecksStarted);
     on<DecksRefreshed>(_onDecksRefreshed);
     on<DecksFilterChanged>(_onDecksFilterChanged);
@@ -27,7 +27,9 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
     DecksDeckDeleted event,
     Emitter<DecksState> emit,
   ) async {
-    final updatedAll = state.allDecks.where((d) => d.id != event.deckId).toList();
+    final updatedAll = state.allDecks
+        .where((d) => d.id != event.deckId)
+        .toList();
     emit(
       state.copyWith(
         allDecks: updatedAll,

@@ -201,8 +201,9 @@ class _IngestionLivePainter extends CustomPainter {
     final p2X = (w * 0.55) + (particle2T * (w * 0.22));
     final p2Y = (h * 0.52) + (math.sin(particle2T * math.pi) * (h * 0.18));
     final particle2Paint = Paint()
-      ..color =
-          Colors.purpleAccent.withAlpha(((1.0 - particle2T) * 220).toInt())
+      ..color = Colors.purpleAccent.withAlpha(
+        ((1.0 - particle2T) * 220).toInt(),
+      )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(p2X, p2Y), 3.5, particle2Paint);
   }
@@ -305,18 +306,19 @@ class _OcrLivePainter extends CustomPainter {
     final beamHeight = h * 0.08;
 
     final beamPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.transparent,
-          accentColor.withAlpha(90),
-          Colors.white.withAlpha(220),
-        ],
-        stops: const [0.0, 0.7, 1.0],
-      ).createShader(
-        Rect.fromLTWH(w * 0.1, sweepY - beamHeight, w * 0.8, beamHeight),
-      );
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              accentColor.withAlpha(90),
+              Colors.white.withAlpha(220),
+            ],
+            stops: const [0.0, 0.7, 1.0],
+          ).createShader(
+            Rect.fromLTWH(w * 0.1, sweepY - beamHeight, w * 0.8, beamHeight),
+          );
 
     canvas.drawRect(
       Rect.fromLTWH(w * 0.1, sweepY - beamHeight, w * 0.8, beamHeight),
@@ -441,8 +443,9 @@ class _RetentionLivePainter extends CustomPainter {
     final pulse1 = progress * 2 * math.pi;
     final r1 = 8.0 + (math.sin(pulse1) * 4.0);
     final ripple1Paint = Paint()
-      ..color = Colors.greenAccent
-          .withAlpha((140 - (math.sin(pulse1) * 60)).toInt().clamp(0, 255))
+      ..color = Colors.greenAccent.withAlpha(
+        (140 - (math.sin(pulse1) * 60)).toInt().clamp(0, 255),
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
@@ -452,8 +455,9 @@ class _RetentionLivePainter extends CustomPainter {
     final pulse2 = (progress + 0.5) * 2 * math.pi;
     final r2 = 8.0 + (math.sin(pulse2) * 4.0);
     final ripple2Paint = Paint()
-      ..color = Colors.greenAccent
-          .withAlpha((140 - (math.sin(pulse2) * 60)).toInt().clamp(0, 255))
+      ..color = Colors.greenAccent.withAlpha(
+        (140 - (math.sin(pulse2) * 60)).toInt().clamp(0, 255),
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);

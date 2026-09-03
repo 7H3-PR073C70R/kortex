@@ -18,20 +18,17 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoginWithEmailUseCase extends Mock
-    implements LoginWithEmailUseCase {}
+class MockLoginWithEmailUseCase extends Mock implements LoginWithEmailUseCase {}
 
 class MockRegisterWithEmailUseCase extends Mock
     implements RegisterWithEmailUseCase {}
 
-class MockAuthVerifyOtpUseCase extends Mock
-    implements AuthVerifyOtpUseCase {}
+class MockAuthVerifyOtpUseCase extends Mock implements AuthVerifyOtpUseCase {}
 
 class MockLoginWithSocialUseCase extends Mock
     implements LoginWithSocialUseCase {}
 
-class MockResetPasswordUseCase extends Mock
-    implements ResetPasswordUseCase {}
+class MockResetPasswordUseCase extends Mock implements ResetPasswordUseCase {}
 
 class MockObserveAuthStateUseCase extends Mock
     implements ObserveAuthStateUseCase {}
@@ -94,10 +91,10 @@ void main() {
     mockUpdateTrackUseCase = MockUpdateCourseTrackUseCase();
     mockAuthRepository = MockAuthRepository();
 
-    when(() => mockObserveUseCase())
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockAuthRepository.getUserProfile())
-        .thenAnswer((_) async => const Right(tProfile));
+    when(() => mockObserveUseCase()).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockAuthRepository.getUserProfile(),
+    ).thenAnswer((_) async => const Right(tProfile));
   });
 
   AuthBloc buildBloc() {

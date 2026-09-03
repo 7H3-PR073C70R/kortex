@@ -90,8 +90,8 @@ class StreakLeaderboardWidget extends StatelessWidget {
                   color: entry.isCurrentUser
                       ? colors.primary.withAlpha(isDark ? 40 : 20)
                       : (isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfacePrimary),
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: entry.isCurrentUser
@@ -109,10 +109,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: isTopThree
                             ? (index == 0
-                                ? Colors.amber.withAlpha(50)
-                                : index == 1
-                                    ? Colors.grey.withAlpha(50)
-                                    : Colors.brown.withAlpha(50))
+                                  ? Colors.amber.withAlpha(50)
+                                  : index == 1
+                                  ? Colors.grey.withAlpha(50)
+                                  : Colors.brown.withAlpha(50))
                             : colors.surfaceSecondary.withAlpha(100),
                       ),
                       child: Center(
@@ -121,10 +121,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                           style: typography.caption.bold.copyWith(
                             color: isTopThree
                                 ? (index == 0
-                                    ? Colors.amber
-                                    : index == 1
-                                        ? Colors.grey.shade400
-                                        : Colors.brown.shade400)
+                                      ? Colors.amber
+                                      : index == 1
+                                      ? Colors.grey.shade400
+                                      : Colors.brown.shade400)
                                 : colors.textSecondary,
                           ),
                         ),

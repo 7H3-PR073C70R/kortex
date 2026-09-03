@@ -7,8 +7,8 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.
 class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
   PastQuestionsBloc({
     required PastQuestionsRepository repository,
-  })  : _repository = repository,
-        super(const PastQuestionsState()) {
+  }) : _repository = repository,
+       super(const PastQuestionsState()) {
     on<LoadPastQuestionsEvent>(_onLoadPastQuestions);
     on<ChangeExamCategoryEvent>(_onChangeExamCategory);
     on<ChangeSubjectEvent>(_onChangeSubject);

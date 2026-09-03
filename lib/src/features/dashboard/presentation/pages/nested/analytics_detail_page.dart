@@ -47,8 +47,9 @@ class _AnalyticsDetailView extends HookWidget {
     const filterOptions = ['Last 7 Days', 'Last 30 Days', 'All Time'];
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -72,7 +73,8 @@ class _AnalyticsDetailView extends HookWidget {
           final analytics = feed?.analyticsSummary ?? _buildEmptyAnalytics();
           final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
 
-          final hasData = analytics.totalCardsMastered > 0 ||
+          final hasData =
+              analytics.totalCardsMastered > 0 ||
               analytics.weeklyMinutesStudied > 0;
 
           var retentionPoints = const <DailyRetentionPoint>[];
@@ -236,8 +238,9 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     final hasCards = analytics.totalCardsMastered > 0;
     final hasStudyTime = analytics.weeklyMinutesStudied > 0;
     final hasStreak = analytics.currentStreakDays > 0;
-    final weeklyHours =
-        (analytics.weeklyMinutesStudied / 60).toStringAsFixed(1);
+    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(
+      1,
+    );
 
     return Column(
       children: [
@@ -465,8 +468,10 @@ class _WeeklyVelocityChart extends StatelessWidget {
       return 0;
     });
 
-    final totalWeekMins =
-        dayMinutesList.fold<int>(0, (sum, mins) => sum + mins);
+    final totalWeekMins = dayMinutesList.fold<int>(
+      0,
+      (sum, mins) => sum + mins,
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -530,8 +535,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                   children: List.generate(7, (i) {
                     final dayMins = dayMinutesList[i];
                     final isGoalMet = dayMins >= targetMinutes;
-                    final heightFactor =
-                        (dayMins / 90.0).clamp(0.08, 1.0);
+                    final heightFactor = (dayMins / 90.0).clamp(0.08, 1.0);
 
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -568,9 +572,10 @@ class _WeeklyVelocityChart extends StatelessWidget {
                                 : null,
                             color: dayMins == 0
                                 ? (isDark
-                                    ? colors.surfaceBorderHighlight
-                                        .withAlpha(30)
-                                    : colors.surfaceBorder.withAlpha(60))
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          30,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(60))
                                 : null,
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -622,8 +627,9 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     final isDark = widget.isDark;
     const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    final hasActivity = widget.analytics.heatMapData
-        .any((d) => d.cardsReviewed > 0 || d.minutesStudied > 0);
+    final hasActivity = widget.analytics.heatMapData.any(
+      (d) => d.cardsReviewed > 0 || d.minutesStudied > 0,
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -669,8 +675,9 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                   Text(
                     hasActivity ? 'Active Habit' : 'Past 28 Days',
                     style: typography.caption.bold.copyWith(
-                      color:
-                          hasActivity ? colors.success : colors.textSecondary,
+                      color: hasActivity
+                          ? colors.success
+                          : colors.textSecondary,
                     ),
                   ),
                 ],
@@ -734,10 +741,10 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                                   color: isSelected
                                       ? colors.textPrimary
                                       : (day.intensityLevel > 0
-                                          ? colors.primary.withAlpha(
-                                              isDark ? 90 : 50,
-                                            )
-                                          : Colors.transparent),
+                                            ? colors.primary.withAlpha(
+                                                isDark ? 90 : 50,
+                                              )
+                                            : Colors.transparent),
                                   width: isSelected ? 1.8 : 0.8,
                                 ),
                                 boxShadow: isSelected
@@ -769,8 +776,8 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                   color: _selectedDay != null
                       ? colors.primary.withAlpha(isDark ? 35 : 15)
                       : (isDark
-                          ? colors.surfacePrimary.withAlpha(80)
-                          : colors.surfaceSecondary.withAlpha(90)),
+                            ? colors.surfacePrimary.withAlpha(80)
+                            : colors.surfaceSecondary.withAlpha(90)),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: _selectedDay != null
@@ -997,8 +1004,9 @@ class _SubjectMasteryCard extends StatelessWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: colors.primary
-                                          .withAlpha(isDark ? 40 : 20),
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 40 : 20,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -1043,13 +1051,16 @@ class _SubjectMasteryCard extends StatelessWidget {
                                 child: Container(
                                   height: 6,
                                   color: isDark
-                                      ? colors.surfaceBorderHighlight
-                                          .withAlpha(40)
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          40,
+                                        )
                                       : colors.surfaceBorder.withAlpha(80),
                                   child: FractionallySizedBox(
                                     alignment: Alignment.centerLeft,
-                                    widthFactor: course.syllabusCoverage
-                                        .clamp(0.05, 1.0),
+                                    widthFactor: course.syllabusCoverage.clamp(
+                                      0.05,
+                                      1.0,
+                                    ),
                                     child: Container(color: colors.primary),
                                   ),
                                 ),

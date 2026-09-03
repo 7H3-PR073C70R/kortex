@@ -59,11 +59,11 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
     unawaited(
       context.read<CramPlannerCubit>().addExamCountdown(
-            examName: _nameController.text.trim(),
-            targetDate: _selectedDate,
-            subjectTrack: _selectedTrack,
-            totalCardsCount: 150,
-          ),
+        examName: _nameController.text.trim(),
+        targetDate: _selectedDate,
+        subjectTrack: _selectedTrack,
+        totalCardsCount: 150,
+      ),
     );
 
     Navigator.of(context).pop();
@@ -139,8 +139,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
               // Subject Track Dropdown
               DropdownButtonFormField<String>(
                 initialValue: _selectedTrack,
-                dropdownColor:
-                    isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                dropdownColor: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfacePrimary,
                 style: typography.body.regular.copyWith(
                   color: colors.textPrimary,
                 ),

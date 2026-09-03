@@ -43,19 +43,17 @@ class QuizResultEntity extends Equatable {
       ? 0
       : ((correctAnswers / totalQuestions) * 100).round();
 
-  List<String> get weakSubTopics => weaknesses
-      .where((w) => w.isWeak)
-      .map((w) => w.subTopic)
-      .toList();
+  List<String> get weakSubTopics =>
+      weaknesses.where((w) => w.isWeak).map((w) => w.subTopic).toList();
 
   @override
   List<Object?> get props => [
-        id,
-        quizTitle,
-        totalQuestions,
-        correctAnswers,
-        durationSeconds,
-        weaknesses,
-        completedAt,
-      ];
+    id,
+    quizTitle,
+    totalQuestions,
+    correctAnswers,
+    durationSeconds,
+    weaknesses,
+    completedAt,
+  ];
 }

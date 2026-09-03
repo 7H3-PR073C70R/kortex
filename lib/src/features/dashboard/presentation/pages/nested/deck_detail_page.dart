@@ -46,8 +46,9 @@ class DeckDetailPage extends HookWidget {
     final isFlipped = useState<bool>(false);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF090D16)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -154,10 +155,12 @@ class DeckDetailPage extends HookWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isFlipped.value
-                                      ? colors.success
-                                          .withAlpha(isDark ? 50 : 25)
-                                      : colors.primary
-                                          .withAlpha(isDark ? 50 : 25),
+                                      ? colors.success.withAlpha(
+                                          isDark ? 50 : 25,
+                                        )
+                                      : colors.primary.withAlpha(
+                                          isDark ? 50 : 25,
+                                        ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

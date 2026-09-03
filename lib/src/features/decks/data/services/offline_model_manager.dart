@@ -96,7 +96,8 @@ class OfflineModelManager {
       _progressController.add(
         const ModelDownloadProgress(
           status: ModelDownloadStatus.error,
-          errorMessage: 'Insufficient storage: At least 3 GB free space '
+          errorMessage:
+              'Insufficient storage: At least 3 GB free space '
               'is required for offline model installation.',
         ),
       );

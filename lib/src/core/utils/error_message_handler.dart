@@ -29,7 +29,8 @@ extension ErrorHandler on Exception {
       final data = error.response!.data;
       String? rawBackendMsg;
       if (data is Map) {
-        rawBackendMsg = (data['msg'] as String?) ??
+        rawBackendMsg =
+            (data['msg'] as String?) ??
             (data['error_description'] as String?) ??
             (data['message'] as String?) ??
             (data['error'] as String?) ??

@@ -10,7 +10,8 @@ enum AppAvatarSize {
   small(dimension: 32, fontSize: 12, badgeSize: 8),
   medium(dimension: 44, fontSize: 16, badgeSize: 10),
   large(dimension: 64, fontSize: 22, badgeSize: 14),
-  extraLarge(dimension: 88, fontSize: 30, badgeSize: 18);
+  extraLarge(dimension: 88, fontSize: 30, badgeSize: 18)
+  ;
 
   const AppAvatarSize({
     required this.dimension,
@@ -67,8 +68,9 @@ class AppAvatar extends StatelessWidget {
     if (parts.length == 1) {
       return parts[0].characters.take(2).toString().toUpperCase();
     }
-    final firstChar =
-        parts[0].characters.isNotEmpty ? parts[0].characters.first : '';
+    final firstChar = parts[0].characters.isNotEmpty
+        ? parts[0].characters.first
+        : '';
     final lastChar = parts[parts.length - 1].characters.isNotEmpty
         ? parts[parts.length - 1].characters.first
         : '';
@@ -100,8 +102,9 @@ class AppAvatar extends StatelessWidget {
       } else if (url.startsWith('data:image') || url.startsWith('data:')) {
         try {
           final commaIndex = url.indexOf(',');
-          final base64Data =
-              commaIndex != -1 ? url.substring(commaIndex + 1) : url;
+          final base64Data = commaIndex != -1
+              ? url.substring(commaIndex + 1)
+              : url;
           final bytes = base64Decode(base64Data);
           content = Image.memory(
             bytes,
@@ -214,8 +217,9 @@ class AppAvatar extends StatelessWidget {
       );
     }
 
-    final userDesc =
-        name != null && name!.isNotEmpty ? name! : l10n.defaultUser;
+    final userDesc = name != null && name!.isNotEmpty
+        ? name!
+        : l10n.defaultUser;
     final defaultImageLabel = showBadge
         ? l10n.profilePictureOfWithStatus(userDesc)
         : l10n.profilePictureOf(userDesc);
@@ -267,7 +271,8 @@ class AppAvatar extends StatelessWidget {
     }
 
     return Center(
-      child: fallbackIcon ??
+      child:
+          fallbackIcon ??
           Icon(
             Icons.person_outline,
             size: _dimension * 0.5,

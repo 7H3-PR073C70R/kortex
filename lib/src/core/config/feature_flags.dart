@@ -49,11 +49,11 @@ class FeatureFlags {
 
   /// Exports current flag states to map.
   Map<String, bool> toMap() => {
-        'enableSocialRooms': _enableSocialRooms,
-        'enableOfflineGGUF': _enableOfflineGGUF,
-        'enableSyllabusImport': _enableSyllabusImport,
-        'enableFSRSFlashcards': _enableFSRSFlashcards,
-      };
+    'enableSocialRooms': _enableSocialRooms,
+    'enableOfflineGGUF': _enableOfflineGGUF,
+    'enableSyllabusImport': _enableSyllabusImport,
+    'enableFSRSFlashcards': _enableFSRSFlashcards,
+  };
 
   /// Ingests flag states from JSON or remote config map.
   void fromMap(Map<String, dynamic> map) {

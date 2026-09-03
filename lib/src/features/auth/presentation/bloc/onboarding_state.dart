@@ -82,16 +82,16 @@ class OnboardingState extends Equatable {
 
   @override
   List<Object?> get props => [
-        activeMode,
-        status,
-        currentStep,
-        selectedTrack,
-        dailyTarget,
-        retentionBenchmark,
-        email,
-        displayName,
-        tracks,
-        errorMessage,
-        completedProfile,
-      ];
+    activeMode,
+    status,
+    currentStep,
+    selectedTrack,
+    dailyTarget,
+    retentionBenchmark,
+    email,
+    displayName,
+    tracks,
+    errorMessage,
+    completedProfile,
+  ];
 }

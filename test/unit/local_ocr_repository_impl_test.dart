@@ -82,47 +82,50 @@ void main() {
       expect(blocks.first.text, equals('PV = nRT'));
     });
 
-    test('processCapturedImage performs on-device OCR and syncs cloud LaTeX',
-        () async {
-      when(
-        () => mockLocalDataSource.extractFromImage(
-          tBytes,
+    test(
+      'processCapturedImage performs on-device OCR and syncs cloud LaTeX',
+      () async {
+        when(
+          () => mockLocalDataSource.extractFromImage(
+            tBytes,
+            documentId: 'doc1',
+            imagePath: any(named: 'imagePath'),
+          ),
+        ).thenAnswer((_) async => tLocalEntities);
+
+        when(
+          () => mockLocalDataSource.queueForSync(
+            documentId: 'doc1',
+            rawText: any(named: 'rawText'),
+            localPath: any(named: 'localPath'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(
+          () => mockRemoteDataSource.processStemOcr(
+            documentId: 'doc1',
+            storagePath: any(named: 'storagePath'),
+            fileType: 'image/jpeg',
+          ),
+        ).thenAnswer((_) async => tCloudModels);
+
+        when(
+          () => mockLocalDataSource.markSyncComplete('doc1'),
+        ).thenAnswer((_) async {});
+
+        final result = await repository.processCapturedImage(
+          imageBytes: tBytes,
           documentId: 'doc1',
-          imagePath: any(named: 'imagePath'),
-        ),
-      ).thenAnswer((_) async => tLocalEntities);
+        );
 
-      when(
-        () => mockLocalDataSource.queueForSync(
-          documentId: 'doc1',
-          rawText: any(named: 'rawText'),
-          localPath: any(named: 'localPath'),
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
-        () => mockRemoteDataSource.processStemOcr(
-          documentId: 'doc1',
-          storagePath: any(named: 'storagePath'),
-          fileType: 'image/jpeg',
-        ),
-      ).thenAnswer((_) async => tCloudModels);
-
-      when(
-        () => mockLocalDataSource.markSyncComplete('doc1'),
-      ).thenAnswer((_) async {});
-
-      final result = await repository.processCapturedImage(
-        imageBytes: tBytes,
-        documentId: 'doc1',
-      );
-
-      expect(result.isRight, isTrue);
-      final list = (result as Right<dynamic, List<OcrExtractionEntity>>).value;
-      expect(list.length, equals(1));
-      expect(list.first.latexContent, equals('E = m c^2'));
-      verify(() => mockLocalDataSource.markSyncComplete('doc1')).called(1);
-    });
+        expect(result.isRight, isTrue);
+        final list =
+            (result as Right<dynamic, List<OcrExtractionEntity>>).value;
+        expect(list.length, equals(1));
+        expect(list.first.latexContent, equals('E = m c^2'));
+        verify(() => mockLocalDataSource.markSyncComplete('doc1')).called(1);
+      },
+    );
 
     test('getPendingSyncCount returns queue count', () async {
       when(() => mockLocalDataSource.getPendingSyncItems()).thenAnswer(

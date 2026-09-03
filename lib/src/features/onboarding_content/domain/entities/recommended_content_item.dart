@@ -25,11 +25,11 @@ class RecommendedContentItem extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        type,
-        badge,
-        tagline,
-        description,
-        formulaChips,
-      ];
+    id,
+    type,
+    badge,
+    tagline,
+    description,
+    formulaChips,
+  ];
 }

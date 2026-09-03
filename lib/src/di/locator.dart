@@ -81,14 +81,14 @@ import 'package:kortex/src/features/ingestion/data/data_sources/ocr_local_data_s
 import 'package:kortex/src/features/ingestion/data/repositories/ingestion_repository_impl.dart';
 import 'package:kortex/src/features/ingestion/data/repositories/lms_repository_impl.dart';
 import 'package:kortex/src/features/ingestion/data/repositories/local_ocr_repository_impl.dart';
-import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
-import 'package:kortex/src/features/ingestion/domain/repositories/lms_repository.dart';
-import 'package:kortex/src/features/ingestion/domain/repositories/local_ocr_repository.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_image_ocr_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/lms_repository.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/local_ocr_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_local_camera_ocr_use_case.dart';

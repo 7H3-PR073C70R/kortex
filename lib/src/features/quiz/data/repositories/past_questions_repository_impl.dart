@@ -20,20 +20,21 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
   }) {
     return _remoteDataSource
         .getPastQuestions(
-      examCategory: examCategory,
-      subject: subject,
-      year: year,
-      searchQuery: searchQuery,
-    )
+          examCategory: examCategory,
+          subject: subject,
+          year: year,
+          searchQuery: searchQuery,
+        )
         .then((models) {
-      return models.map((m) {
-        final entity = m.toEntity();
-        if (_bookmarkedIds.contains(entity.id)) {
-          return entity.copyWith(isBookmarked: true);
-        }
-        return entity;
-      }).toList();
-    }).makeRequest();
+          return models.map((m) {
+            final entity = m.toEntity();
+            if (_bookmarkedIds.contains(entity.id)) {
+              return entity.copyWith(isBookmarked: true);
+            }
+            return entity;
+          }).toList();
+        })
+        .makeRequest();
   }
 
   @override

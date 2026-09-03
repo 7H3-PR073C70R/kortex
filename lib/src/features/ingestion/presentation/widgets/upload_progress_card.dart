@@ -70,8 +70,8 @@ class UploadProgressCard extends HookWidget {
           color: isFailed
               ? colors.error.withAlpha(120)
               : (isCompleted
-                  ? colors.success.withAlpha(100)
-                  : colors.primary.withAlpha(isDark ? 80 : 40)),
+                    ? colors.success.withAlpha(100)
+                    : colors.primary.withAlpha(isDark ? 80 : 40)),
         ),
       ),
       child: Column(
@@ -86,16 +86,16 @@ class UploadProgressCard extends HookWidget {
                   color: isFailed
                       ? colors.error.withAlpha(30)
                       : (isCompleted
-                          ? colors.success.withAlpha(30)
-                          : colors.primary.withAlpha(30)),
+                            ? colors.success.withAlpha(30)
+                            : colors.primary.withAlpha(30)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   isFailed
                       ? Icons.error_outline_rounded
                       : (isCompleted
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.insert_drive_file_outlined),
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.insert_drive_file_outlined),
                   color: isFailed
                       ? colors.error
                       : (isCompleted ? colors.success : colors.primary),
@@ -122,8 +122,8 @@ class UploadProgressCard extends HookWidget {
                         color: isFailed
                             ? colors.error
                             : (isCompleted
-                                ? colors.success
-                                : colors.textSecondary),
+                                  ? colors.success
+                                  : colors.textSecondary),
                       ),
                     ),
                   ],

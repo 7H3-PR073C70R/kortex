@@ -75,15 +75,18 @@ class FsrsAlgorithmEngine {
       final deltaD = -weights[6] * (grade - 3);
       final rawD = currentState.difficulty + deltaD;
       final initD3 = weights[4];
-      newDifficulty =
-          (weights[7] * initD3 + (1.0 - weights[7]) * rawD).clamp(1.0, 10.0);
+      newDifficulty = (weights[7] * initD3 + (1.0 - weights[7]) * rawD).clamp(
+        1.0,
+        10.0,
+      );
 
       // Update Stability
       if (grade == 1) {
         // Lapse / Forget
         newLapses += 1;
         final base = pow(currentState.stability, weights[13]) + 1.0;
-        final lapseS = weights[11] *
+        final lapseS =
+            weights[11] *
             pow(newDifficulty, -weights[12]) *
             pow(base, weights[14]) *
             exp(weights[15] * (1.0 - currentR));
@@ -92,7 +95,8 @@ class FsrsAlgorithmEngine {
         // Success recall
         final hardPenalty = grade == 2 ? weights[15] : 1.0;
         final easyBonus = grade == 4 ? weights[16] : 1.0;
-        final sFactor = 1.0 +
+        final sFactor =
+            1.0 +
             exp(weights[8]) *
                 (11.0 - newDifficulty) *
                 pow(currentState.stability, -weights[9]) *
@@ -106,8 +110,7 @@ class FsrsAlgorithmEngine {
       }
     }
 
-    final scheduledDays =
-        grade == 1 ? 1 : calculateNextInterval(newStability);
+    final scheduledDays = grade == 1 ? 1 : calculateNextInterval(newStability);
     final nextDueDate = now.add(Duration(days: scheduledDays));
 
     return FsrsCardState(

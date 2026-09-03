@@ -29,8 +29,7 @@ class PermissionsState extends Equatable {
   }) {
     return PermissionsState(
       status: status ?? this.status,
-      notificationsGranted:
-          notificationsGranted ?? this.notificationsGranted,
+      notificationsGranted: notificationsGranted ?? this.notificationsGranted,
       storageGranted: storageGranted ?? this.storageGranted,
     );
   }

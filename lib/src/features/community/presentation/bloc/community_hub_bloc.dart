@@ -7,8 +7,8 @@ import 'package:kortex/src/features/community/presentation/bloc/community_state.
 class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
   CommunityHubBloc({
     required CommunityRepository repository,
-  })  : _repository = repository,
-        super(const CommunityState()) {
+  }) : _repository = repository,
+       super(const CommunityState()) {
     on<LoadCommunityHubEvent>(_onLoadCommunityHub);
     on<SwitchCommunityTabEvent>(_onSwitchCommunityTab);
     on<ChangeTrackFilterEvent>(_onChangeTrackFilter);
@@ -28,7 +28,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
   ) async {
     emit(state.copyWith(status: CommunityStatus.loading));
 
-    final effectiveTrack = event.track ??
+    final effectiveTrack =
+        event.track ??
         (state.selectedTrack == 'All' ? null : state.selectedTrack);
     final effectiveCategory = event.category ?? effectiveTrack;
 
@@ -57,8 +58,10 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
             studyRooms: rooms,
             forumPosts: forumRes.fold((_) => [], (posts) => posts),
             sharedDecks: decksRes.fold((_) => [], (decks) => decks),
-            leaderboardEntries:
-                leaderboardRes.fold((_) => [], (entries) => entries),
+            leaderboardEntries: leaderboardRes.fold(
+              (_) => [],
+              (entries) => entries,
+            ),
           ),
         );
       },
@@ -71,10 +74,10 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           track: state.selectedTrack == 'All' ? null : state.selectedTrack,
         )
         .listen((entries) {
-      if (!isClosed) {
-        add(LeaderboardUpdatedEvent(entries));
-      }
-    });
+          if (!isClosed) {
+            add(LeaderboardUpdatedEvent(entries));
+          }
+        });
   }
 
   void _onLeaderboardUpdated(

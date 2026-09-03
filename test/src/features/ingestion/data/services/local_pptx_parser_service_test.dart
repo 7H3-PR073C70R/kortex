@@ -24,15 +24,19 @@ void main() {
 
       final xmlBuffer = StringBuffer()
         ..writeln('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
-        ..writeln('<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
-            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">')
+        ..writeln(
+          '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+          'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">',
+        )
         ..writeln('  <p:cSld>')
         ..writeln('    <p:spTree>');
 
       if (title != null) {
         xmlBuffer
           ..writeln('      <p:sp>')
-          ..writeln('        <p:nvSpPr><p:cNvPr id="1" name="Title"/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>')
+          ..writeln(
+            '        <p:nvSpPr><p:cNvPr id="1" name="Title"/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>',
+          )
           ..writeln('        <p:txBody>')
           ..writeln('          <a:p><a:r><a:t>$title</a:t></a:r></a:p>')
           ..writeln('        </p:txBody>')
@@ -42,10 +46,14 @@ void main() {
       if (bullets.isNotEmpty) {
         xmlBuffer
           ..writeln('      <p:sp>')
-          ..writeln('        <p:nvSpPr><p:cNvPr id="2" name="Body"/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr>')
+          ..writeln(
+            '        <p:nvSpPr><p:cNvPr id="2" name="Body"/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr>',
+          )
           ..writeln('        <p:txBody>');
         for (final bullet in bullets) {
-          xmlBuffer.writeln('          <a:p><a:r><a:t>$bullet</a:t></a:r></a:p>');
+          xmlBuffer.writeln(
+            '          <a:p><a:r><a:t>$bullet</a:t></a:r></a:p>',
+          );
         }
         xmlBuffer
           ..writeln('        </p:txBody>')
@@ -68,35 +76,62 @@ void main() {
   }
 
   group('LocalPptxParserService Test Suite', () {
-    test('extracts structured text and titles from sample PPTX presentation in isolate', () async {
-      final sampleBytes = createSamplePptxBytes(
-        slides: [
-          {
-            'title': 'Introduction to Photosynthesis',
-            'bullets': [
-              'Light-dependent reactions occur in the thylakoid membrane.',
-              'Calvin cycle fixes carbon dioxide into G3P sugars in the stroma.',
-            ],
-          },
-          {
-            'title': 'Cellular Respiration Comparison',
-            'bullets': [
-              'Glycolysis occurs in the cytoplasm producing 2 net ATP.',
-              'Oxidative phosphorylation produces the bulk of cellular ATP.',
-            ],
-          },
-        ],
-      );
+    test(
+      'extracts structured text and titles from sample PPTX presentation in isolate',
+      () async {
+        final sampleBytes = createSamplePptxBytes(
+          slides: [
+            {
+              'title': 'Introduction to Photosynthesis',
+              'bullets': [
+                'Light-dependent reactions occur in the thylakoid membrane.',
+                'Calvin cycle fixes carbon dioxide into G3P sugars in the stroma.',
+              ],
+            },
+            {
+              'title': 'Cellular Respiration Comparison',
+              'bullets': [
+                'Glycolysis occurs in the cytoplasm producing 2 net ATP.',
+                'Oxidative phosphorylation produces the bulk of cellular ATP.',
+              ],
+            },
+          ],
+        );
 
-      final extracted = await pptxParser.extractText(sampleBytes);
+        final extracted = await pptxParser.extractText(sampleBytes);
 
-      expect(extracted, contains('## Slide 1: Introduction to Photosynthesis'));
-      expect(extracted, contains('• Light-dependent reactions occur in the thylakoid membrane.'));
-      expect(extracted, contains('• Calvin cycle fixes carbon dioxide into G3P sugars in the stroma.'));
-      expect(extracted, contains('## Slide 2: Cellular Respiration Comparison'));
-      expect(extracted, contains('• Glycolysis occurs in the cytoplasm producing 2 net ATP.'));
-      expect(extracted, contains('• Oxidative phosphorylation produces the bulk of cellular ATP.'));
-    });
+        expect(
+          extracted,
+          contains('## Slide 1: Introduction to Photosynthesis'),
+        );
+        expect(
+          extracted,
+          contains(
+            '• Light-dependent reactions occur in the thylakoid membrane.',
+          ),
+        );
+        expect(
+          extracted,
+          contains(
+            '• Calvin cycle fixes carbon dioxide into G3P sugars in the stroma.',
+          ),
+        );
+        expect(
+          extracted,
+          contains('## Slide 2: Cellular Respiration Comparison'),
+        );
+        expect(
+          extracted,
+          contains('• Glycolysis occurs in the cytoplasm producing 2 net ATP.'),
+        );
+        expect(
+          extracted,
+          contains(
+            '• Oxidative phosphorylation produces the bulk of cellular ATP.',
+          ),
+        );
+      },
+    );
 
     test('gracefully handles empty bytes returning empty string', () async {
       final extracted = await pptxParser.extractText(Uint8List(0));

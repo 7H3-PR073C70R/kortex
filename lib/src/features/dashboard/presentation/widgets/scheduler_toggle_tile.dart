@@ -21,7 +21,8 @@ class SchedulerToggleTile extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Spaced Repetition Scheduler Setting: '
+      label:
+          'Spaced Repetition Scheduler Setting: '
           '${isFsrs ? "FSRS-4.5 Engine" : "SM-2 Algorithm"}',
       hint: 'Toggle between classical SM-2 and adaptive FSRS spaced repetition',
       child: Container(
@@ -71,14 +72,12 @@ class SchedulerToggleTile extends StatelessWidget {
                       _AlgorithmOptionButton(
                         label: 'SM-2',
                         isSelected: !isFsrs,
-                        onTap: () =>
-                            onChanged(SpacedRepetitionAlgorithm.sm2),
+                        onTap: () => onChanged(SpacedRepetitionAlgorithm.sm2),
                       ),
                       _AlgorithmOptionButton(
                         label: 'FSRS-4.5',
                         isSelected: isFsrs,
-                        onTap: () =>
-                            onChanged(SpacedRepetitionAlgorithm.fsrs),
+                        onTap: () => onChanged(SpacedRepetitionAlgorithm.fsrs),
                       ),
                     ],
                   ),
@@ -87,9 +86,7 @@ class SchedulerToggleTile extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              isFsrs
-                  ? l10n.fsrsModeDescription
-                  : l10n.sm2ModeDescription,
+              isFsrs ? l10n.fsrsModeDescription : l10n.sm2ModeDescription,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.white70,
                 fontSize: 12,
@@ -127,9 +124,7 @@ class _AlgorithmOptionButton extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : Colors.transparent,
+            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

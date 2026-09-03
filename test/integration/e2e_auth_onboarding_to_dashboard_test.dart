@@ -97,80 +97,83 @@ void main() {
       getDashboardFeedUseCase = GetDashboardFeedUseCase(mockDashboardRepo);
     });
 
-    test('Full Onboarding: Auth -> Calibration -> Community Hub -> Decay Curve',
-        () async {
-      // 1. User Registration
-      when(
-        () => mockAuthRepo.registerWithEmail(
-          email: 'scholar@satstem.edu',
-          password: 'Password123!',
-        ),
-      ).thenAnswer((_) async => const Right(tUser));
+    test(
+      'Full Onboarding: Auth -> Calibration -> Community Hub -> Decay Curve',
+      () async {
+        // 1. User Registration
+        when(
+          () => mockAuthRepo.registerWithEmail(
+            email: 'scholar@satstem.edu',
+            password: 'Password123!',
+          ),
+        ).thenAnswer((_) async => const Right(tUser));
 
-      final regResult = await registerUseCase(
-        const RegisterParams(
-          email: 'scholar@satstem.edu',
-          password: 'Password123!',
-        ),
-      );
-      expect(regResult.isRight, isTrue);
+        final regResult = await registerUseCase(
+          const RegisterParams(
+            email: 'scholar@satstem.edu',
+            password: 'Password123!',
+          ),
+        );
+        expect(regResult.isRight, isTrue);
 
-      // 2. Complete Onboarding Calibration
-      when(
-        () => mockAuthRepo.completeOnboarding(
+        // 2. Complete Onboarding Calibration
+        when(
+          () => mockAuthRepo.completeOnboarding(
+            track: 'SAT',
+            dailyTarget: 25,
+            retentionBenchmark: 0.88,
+          ),
+        ).thenAnswer((_) async => const Right(tProfile));
+
+        final onboardResult = await completeOnboardingUseCase(
           track: 'SAT',
           dailyTarget: 25,
           retentionBenchmark: 0.88,
-        ),
-      ).thenAnswer((_) async => const Right(tProfile));
+        );
+        expect(onboardResult.isRight, isTrue);
+        onboardResult.fold(
+          (l) => fail('Expected onboarding success'),
+          (p) => expect(p.targetTrack, equals('SAT')),
+        );
 
-      final onboardResult = await completeOnboardingUseCase(
-        track: 'SAT',
-        dailyTarget: 25,
-        retentionBenchmark: 0.88,
-      );
-      expect(onboardResult.isRight, isTrue);
-      onboardResult.fold(
-        (l) => fail('Expected onboarding success'),
-        (p) => expect(p.targetTrack, equals('SAT')),
-      );
+        // 3. Auto-Provision Dedicated Peer Community Hub
+        when(
+          () => mockCommunityRepo.autoProvisionCommunity(
+            courseCode: 'SAT',
+            title: 'SAT Secondary Core STEM Hub',
+          ),
+        ).thenAnswer((_) async => const Right(tCommunity));
 
-      // 3. Auto-Provision Dedicated Peer Community Hub
-      when(
-        () => mockCommunityRepo.autoProvisionCommunity(
+        final commResult = await autoCommunityUseCase(
           courseCode: 'SAT',
           title: 'SAT Secondary Core STEM Hub',
-        ),
-      ).thenAnswer((_) async => const Right(tCommunity));
+        );
+        expect(commResult.isRight, isTrue);
+        commResult.fold(
+          (l) => fail('Expected community success'),
+          (c) => expect(c.memberCount, equals(42)),
+        );
 
-      final commResult = await autoCommunityUseCase(
-        courseCode: 'SAT',
-        title: 'SAT Secondary Core STEM Hub',
-      );
-      expect(commResult.isRight, isTrue);
-      commResult.fold(
-        (l) => fail('Expected community success'),
-        (c) => expect(c.memberCount, equals(42)),
-      );
+        // 4. Fetch Dashboard Feed & Compute Adaptive Decay Curve
+        when(
+          () => mockDashboardRepo.getDashboardFeed(),
+        ).thenAnswer((_) async => Right(tFeed));
 
-      // 4. Fetch Dashboard Feed & Compute Adaptive Decay Curve
-      when(() => mockDashboardRepo.getDashboardFeed())
-          .thenAnswer((_) async => Right(tFeed));
+        final feedResult = await getDashboardFeedUseCase(const NoParams());
+        expect(feedResult.isRight, isTrue);
+        feedResult.fold(
+          (l) => fail('Expected feed success'),
+          (f) => expect(f.targetExamCountdown?.subjectTrack, equals('SAT')),
+        );
 
-      final feedResult = await getDashboardFeedUseCase(const NoParams());
-      expect(feedResult.isRight, isTrue);
-      feedResult.fold(
-        (l) => fail('Expected feed success'),
-        (f) => expect(f.targetExamCountdown?.subjectTrack, equals('SAT')),
-      );
-
-      // 5. Calculate Adaptive Retention Curve
-      final projection = decayCalculator.calculateSevenDayProjection(
-        cardStabilities: [2.4, 5.8, 1.2],
-      );
-      expect(projection.length, equals(7));
-      expect(projection.first.predictedRetention, equals(1.0));
-      expect(projection.last.predictedRetention, lessThan(1.0));
-    });
+        // 5. Calculate Adaptive Retention Curve
+        final projection = decayCalculator.calculateSevenDayProjection(
+          cardStabilities: [2.4, 5.8, 1.2],
+        );
+        expect(projection.length, equals(7));
+        expect(projection.first.predictedRetention, equals(1.0));
+        expect(projection.last.predictedRetention, lessThan(1.0));
+      },
+    );
   });
 }

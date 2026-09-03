@@ -69,9 +69,9 @@ class AppPreferencesPage extends HookWidget {
                         onTap: () {
                           AppFeedback.selection();
                           unawaited(
-                            context
-                                .read<ThemeCubit>()
-                                .setThemeMode(ThemeMode.system),
+                            context.read<ThemeCubit>().setThemeMode(
+                              ThemeMode.system,
+                            ),
                           );
                         },
                         colors: colors,
@@ -88,9 +88,9 @@ class AppPreferencesPage extends HookWidget {
                         onTap: () {
                           AppFeedback.selection();
                           unawaited(
-                            context
-                                .read<ThemeCubit>()
-                                .setThemeMode(ThemeMode.light),
+                            context.read<ThemeCubit>().setThemeMode(
+                              ThemeMode.light,
+                            ),
                           );
                         },
                         colors: colors,
@@ -107,9 +107,9 @@ class AppPreferencesPage extends HookWidget {
                         onTap: () {
                           AppFeedback.selection();
                           unawaited(
-                            context
-                                .read<ThemeCubit>()
-                                .setThemeMode(ThemeMode.dark),
+                            context.read<ThemeCubit>().setThemeMode(
+                              ThemeMode.dark,
+                            ),
                           );
                         },
                         colors: colors,

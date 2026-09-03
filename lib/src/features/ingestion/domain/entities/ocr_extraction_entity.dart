@@ -42,12 +42,12 @@ class OcrExtractionEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        documentId,
-        rawText,
-        latexContent,
-        imageUrl,
-        topic,
-        confidenceScore,
-      ];
+    id,
+    documentId,
+    rawText,
+    latexContent,
+    imageUrl,
+    topic,
+    confidenceScore,
+  ];
 }

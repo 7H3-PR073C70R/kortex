@@ -97,7 +97,8 @@ class TokenInterceptor extends QueuedInterceptor {
   ) async {
     if (_isJwtExpired(err)) {
       final path = err.requestOptions.path;
-      final isAuthEndpoint = path.contains('/auth/v1/token') ||
+      final isAuthEndpoint =
+          path.contains('/auth/v1/token') ||
           path.contains('/auth/v1/signup') ||
           path.contains('/auth/v1/recover');
 
@@ -108,18 +109,18 @@ class TokenInterceptor extends QueuedInterceptor {
             debugPrint(
               '[TokenInterceptor] JWT expired. Attempting token refresh...',
             );
-            final refreshResponse =
-                await _refreshDio.post<Map<String, dynamic>>(
-              '${AppApiEndpoint.baseUri}${AppApiEndpoint.refreshToken}',
-              data: {
-                'refresh_token': refreshToken,
-              },
-              options: Options(
-                headers: {
-                  'apikey': AppEnv.apiKey,
-                },
-              ),
-            );
+            final refreshResponse = await _refreshDio
+                .post<Map<String, dynamic>>(
+                  '${AppApiEndpoint.baseUri}${AppApiEndpoint.refreshToken}',
+                  data: {
+                    'refresh_token': refreshToken,
+                  },
+                  options: Options(
+                    headers: {
+                      'apikey': AppEnv.apiKey,
+                    },
+                  ),
+                );
 
             final data = refreshResponse.data;
             if (data != null && data.containsKey('access_token')) {

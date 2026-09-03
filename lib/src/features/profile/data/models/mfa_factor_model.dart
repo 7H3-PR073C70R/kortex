@@ -11,7 +11,8 @@ class MfaFactorModel extends MfaFactorEntity {
   factory MfaFactorModel.fromJson(Map<String, dynamic> json) {
     return MfaFactorModel(
       id: json['id'] as String? ?? '',
-      factorType: json['factor_type'] as String? ?? json['type'] as String? ?? '',
+      factorType:
+          json['factor_type'] as String? ?? json['type'] as String? ?? '',
       status: json['status'] as String? ?? '',
     );
   }

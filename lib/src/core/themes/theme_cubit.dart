@@ -1,15 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_state.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 
 /// Business logic component managing ThemeMode, Presets, and Custom Accents.
 class ThemeCubit extends Cubit<ThemeState> {
   ThemeCubit({required LocalStorageService storageService})
-      : _storageService = storageService,
-        super(const ThemeState()) {
+    : _storageService = storageService,
+      super(const ThemeState()) {
     _loadFromStorage();
   }
 
@@ -18,10 +18,12 @@ class ThemeCubit extends Cubit<ThemeState> {
   void _loadFromStorage() {
     try {
       final savedMode = _storageService.getPreference(key: PrefKeys.themeMode);
-      final savedPreset =
-          _storageService.getPreference(key: PrefKeys.themePreset);
-      final savedAccent =
-          _storageService.getPreference(key: PrefKeys.themeCustomAccent);
+      final savedPreset = _storageService.getPreference(
+        key: PrefKeys.themePreset,
+      );
+      final savedAccent = _storageService.getPreference(
+        key: PrefKeys.themeCustomAccent,
+      );
 
       var mode = ThemeMode.system;
       if (savedMode != null) {

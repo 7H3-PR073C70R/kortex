@@ -122,8 +122,8 @@ class _ToggleSegment extends StatelessWidget {
           color: isSelected
               ? null
               : isDark
-                  ? Colors.transparent
-                  : Colors.transparent,
+              ? Colors.transparent
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: isSelected
               ? [

@@ -28,8 +28,7 @@ class LocalLlmDownloadBar extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final percent = (progress.clamp(0.0, 1.0) * 100).toInt();
-    final downloadedMb =
-        (progress.clamp(0.0, 1.0) * 248.0).toStringAsFixed(1);
+    final downloadedMb = (progress.clamp(0.0, 1.0) * 248.0).toStringAsFixed(1);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),

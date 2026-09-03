@@ -59,8 +59,9 @@ void main() {
 
   setUp(() {
     mockRepository = MockCommunityRepository();
-    when(() => mockRepository.streamLeaderboards(track: any(named: 'track')))
-        .thenAnswer((_) => Stream.value([testLeaderboardEntry]));
+    when(
+      () => mockRepository.streamLeaderboards(track: any(named: 'track')),
+    ).thenAnswer((_) => Stream.value([testLeaderboardEntry]));
     bloc = CommunityHubBloc(repository: mockRepository);
   });
 
@@ -138,8 +139,9 @@ void main() {
           masteryRate: 0,
           category: 'STEM',
         );
-        when(() => mockRepository.cloneSharedDeck('deck_1'))
-            .thenAnswer((_) async => const Right(clonedDeck));
+        when(
+          () => mockRepository.cloneSharedDeck('deck_1'),
+        ).thenAnswer((_) async => const Right(clonedDeck));
         return bloc;
       },
       act: (bloc) => bloc.add(const CloneDeckEvent('deck_1')),

@@ -127,8 +127,7 @@ class QuizRepositoryImpl implements QuizRepository {
       ),
       const QuizQuestionModel(
         id: 'q-4',
-        prompt:
-            'What is the derivative of f(x) = e^{2x} with respect to x?',
+        prompt: 'What is the derivative of f(x) = e^{2x} with respect to x?',
         type: QuizQuestionType.multipleChoice,
         options: [
           '2e^{2x}',

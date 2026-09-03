@@ -75,7 +75,7 @@ class LmsAssignment {
       title: json['name'] as String? ?? 'Assignment',
       dueDate: json['due_at'] != null
           ? DateTime.tryParse(json['due_at'] as String) ??
-              DateTime.now().add(const Duration(days: 7))
+                DateTime.now().add(const Duration(days: 7))
           : DateTime.now().add(const Duration(days: 7)),
       maxPoints: (json['points_possible'] as num?)?.toDouble() ?? 100.0,
       description: json['description'] as String?,

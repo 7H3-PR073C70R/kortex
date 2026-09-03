@@ -1,5 +1,3 @@
-// ignore_for_file: one_member_abstracts, Data source contract
-
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_content/domain/entities/recommended_content_item.dart';
 
@@ -7,7 +5,7 @@ abstract class ContentRecommendationDataSource {
   List<RecommendedContentItem> generateRecommendations({
     required CalibrationProfile profile,
     required String Function(String key, Map<String, dynamic> params)
-        localizeHandler,
+    localizeHandler,
   });
 }
 
@@ -19,7 +17,7 @@ class ContentRecommendationDataSourceImpl
   List<RecommendedContentItem> generateRecommendations({
     required CalibrationProfile profile,
     required String Function(String key, Map<String, dynamic> params)
-        localizeHandler,
+    localizeHandler,
   }) {
     final isHigherEd = profile.focus == AcademicFocus.higherEducation;
 
@@ -56,8 +54,8 @@ class ContentRecommendationDataSourceImpl
     final fieldOfStudy = isHigherEd && profile.higherEdField != null
         ? profile.higherEdField!
         : (profile.highSchoolSubjects.isNotEmpty
-            ? profile.highSchoolSubjects.first
-            : 'Core Subject Concepts');
+              ? profile.highSchoolSubjects.first
+              : 'Core Subject Concepts');
 
     final flashcardsDesc = localizeHandler('flashcardsDesc', {
       'field': fieldOfStudy,

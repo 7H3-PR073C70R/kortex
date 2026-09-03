@@ -14,11 +14,11 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     required GetChatHistoryUseCase getChatHistoryUseCase,
     required GenerateDeckFromChatUseCase generateDeckUseCase,
     QueryDocumentContextUseCase? queryDocumentContextUseCase,
-  })  : _streamResponse = streamResponseUseCase,
-        _getChatHistory = getChatHistoryUseCase,
-        _generateDeck = generateDeckUseCase,
-        _queryDocumentContext = queryDocumentContextUseCase,
-        super(const SyllabotChatState()) {
+  }) : _streamResponse = streamResponseUseCase,
+       _getChatHistory = getChatHistoryUseCase,
+       _generateDeck = generateDeckUseCase,
+       _queryDocumentContext = queryDocumentContextUseCase,
+       super(const SyllabotChatState()) {
     on<SubmitPromptEvent>(_onSubmitPrompt);
     on<StreamTokenReceivedEvent>(_onStreamTokenReceived);
     on<StreamCompletedEvent>(_onStreamCompleted);
@@ -93,7 +93,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
               id: 'rag_${DateTime.now().millisecondsSinceEpoch}',
               sessionId: event.sessionId,
               sender: MessageSender.syllabot,
-              text: 'Use the following retrieved course material to answer '
+              text:
+                  'Use the following retrieved course material to answer '
                   "the student's question accurately:\n$snippets",
               timestamp: DateTime.now(),
               engineType: event.engineType,
@@ -239,8 +240,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         sessionId: event.sessionId,
       ),
     );
-    final result =
-        await _getChatHistory.getMessages(sessionId: event.sessionId);
+    final result = await _getChatHistory.getMessages(
+      sessionId: event.sessionId,
+    );
     result.fold(
       (failure) => emit(
         state.copyWith(

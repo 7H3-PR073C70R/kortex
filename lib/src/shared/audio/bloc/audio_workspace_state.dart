@@ -50,8 +50,7 @@ class AudioWorkspaceState extends Equatable {
       playbackStatus: playbackStatus ?? this.playbackStatus,
       transcribedText: transcribedText ?? this.transcribedText,
       liveSoundLevel: liveSoundLevel ?? this.liveSoundLevel,
-      currentlyReadingText:
-          currentlyReadingText ?? this.currentlyReadingText,
+      currentlyReadingText: currentlyReadingText ?? this.currentlyReadingText,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       errorMessage: errorMessage,
     );
@@ -59,12 +58,12 @@ class AudioWorkspaceState extends Equatable {
 
   @override
   List<Object?> get props => [
-        recordingStatus,
-        playbackStatus,
-        transcribedText,
-        liveSoundLevel,
-        currentlyReadingText,
-        playbackSpeed,
-        errorMessage,
-      ];
+    recordingStatus,
+    playbackStatus,
+    transcribedText,
+    liveSoundLevel,
+    currentlyReadingText,
+    playbackSpeed,
+    errorMessage,
+  ];
 }

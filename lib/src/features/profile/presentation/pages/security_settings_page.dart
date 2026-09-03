@@ -55,8 +55,7 @@ class SecuritySettingsPage extends HookWidget {
       biometricLockEnabled.value = savedBiometric;
 
       Future<void> loadMfa() async {
-        final result =
-            await locator<ListMfaFactorsUseCase>()(const NoParams());
+        final result = await locator<ListMfaFactorsUseCase>()(const NoParams());
         if (result.isRight) {
           final factors =
               (result as Right<Failure, List<MfaFactorEntity>>).value;
@@ -75,12 +74,14 @@ class SecuritySettingsPage extends HookWidget {
     final newPasswordText = useValueListenable(newPasswordController).text;
     final hasMinLength = newPasswordText.length >= 8;
     final hasNumber = newPasswordText.contains(RegExp('[0-9]'));
-    final hasSpecial =
-        newPasswordText.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    final hasSpecial = newPasswordText.contains(
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+    );
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        final email = state.userProfile?.email ??
+        final email =
+            state.userProfile?.email ??
             state.user?.email ??
             'scholar@kortexify.com';
 
@@ -172,10 +173,11 @@ class SecuritySettingsPage extends HookWidget {
                             Expanded(
                               child: ShrinkableButton(
                                 onTap: () async {
-                                  final newPass =
-                                      newPasswordController.text.trim();
-                                  final confirmPass =
-                                      confirmPasswordController.text.trim();
+                                  final newPass = newPasswordController.text
+                                      .trim();
+                                  final confirmPass = confirmPasswordController
+                                      .text
+                                      .trim();
 
                                   if (newPass.length < 8) {
                                     AppFeedback.heavy();
@@ -199,8 +201,8 @@ class SecuritySettingsPage extends HookWidget {
                                   isUpdatingPassword.value = true;
                                   final result =
                                       await locator<UpdatePasswordUseCase>()(
-                                    newPass,
-                                  );
+                                        newPass,
+                                      );
                                   isUpdatingPassword.value = false;
 
                                   if (result.isLeft) {
@@ -230,8 +232,9 @@ class SecuritySettingsPage extends HookWidget {
                                   }
                                 },
                                 child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: colors.primary,
                                     borderRadius: BorderRadius.circular(12),
@@ -250,9 +253,9 @@ class SecuritySettingsPage extends HookWidget {
                                             'Update Password',
                                             style: typography.caption.bold
                                                 .copyWith(
-                                              color: Colors.white,
-                                              fontSize: 13,
-                                            ),
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                ),
                                           ),
                                   ),
                                 ),
@@ -262,8 +265,10 @@ class SecuritySettingsPage extends HookWidget {
                             ShrinkableButton(
                               onTap: () async {
                                 AppFeedback.selection();
-                                final result = await locator<
-                                    SendPasswordResetEmailUseCase>()(email);
+                                final result =
+                                    await locator<
+                                      SendPasswordResetEmailUseCase
+                                    >()(email);
                                 if (result.isLeft) {
                                   final failure =
                                       (result as Left<Failure, void>).value;
@@ -352,8 +357,8 @@ class SecuritySettingsPage extends HookWidget {
                                 final biometricService =
                                     locator<BiometricAuthService>();
                                 if (val) {
-                                  final canAuth =
-                                      await biometricService.canAuthenticate();
+                                  final canAuth = await biometricService
+                                      .canAuthenticate();
                                   if (!canAuth) {
                                     if (context.mounted) {
                                       context.showSnackBar(
@@ -364,11 +369,11 @@ class SecuritySettingsPage extends HookWidget {
                                     }
                                     return;
                                   }
-                                  final authenticated =
-                                      await biometricService.authenticate(
-                                    localizedReason:
-                                        'Confirm biometrics to enable App Lock',
-                                  );
+                                  final authenticated = await biometricService
+                                      .authenticate(
+                                        localizedReason:
+                                            'Confirm biometrics to enable App Lock',
+                                      );
                                   if (!authenticated) {
                                     if (context.mounted) {
                                       context.showSnackBar(
@@ -398,7 +403,6 @@ class SecuritySettingsPage extends HookWidget {
                                   if (context.mounted) {
                                     context.showSnackBar(
                                       message: 'Biometric App Lock disabled.',
-                                      type: SnackBarType.info,
                                     );
                                   }
                                 }
@@ -509,11 +513,11 @@ class SecuritySettingsPage extends HookWidget {
                                     ),
                                     Text(
                                       'Active Now • Authorized Session',
-                                      style:
-                                          typography.caption.regular.copyWith(
-                                        color: const Color(0xFF10B981),
-                                        fontSize: 11,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: const Color(0xFF10B981),
+                                            fontSize: 11,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -527,15 +531,14 @@ class SecuritySettingsPage extends HookWidget {
                             AppFeedback.medium();
                             final result =
                                 await locator<SignOutOtherSessionsUseCase>()(
-                              const NoParams(),
-                            );
+                                  const NoParams(),
+                                );
                             if (result.isLeft) {
                               final failure =
                                   (result as Left<Failure, void>).value;
                               if (context.mounted) {
                                 context.showSnackBar(
-                                  message:
-                                      failure.message ?? 'Sign out failed',
+                                  message: failure.message ?? 'Sign out failed',
                                   type: SnackBarType.error,
                                 );
                               }
@@ -734,7 +737,8 @@ class SecuritySettingsPage extends HookWidget {
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
   ) async {
-    final email = context.read<AuthBloc>().state.userProfile?.email ??
+    final email =
+        context.read<AuthBloc>().state.userProfile?.email ??
         'scholar@kortexify.com';
     final success = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
@@ -760,8 +764,7 @@ class SecuritySettingsPage extends HookWidget {
         final failure = (result as Left<Failure, void>).value;
         if (context.mounted) {
           context.showSnackBar(
-            message:
-                'Could not disable 2FA: ${failure.message ?? "Error"}',
+            message: 'Could not disable 2FA: ${failure.message ?? "Error"}',
             type: SnackBarType.error,
           );
         }

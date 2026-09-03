@@ -17,8 +17,11 @@ class HighSchoolSubjectsStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedSubjects =
-        context.watch<CalibrationCubit>().state.profile.highSchoolSubjects;
+    final selectedSubjects = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .highSchoolSubjects;
 
     // ── Track groups ──────────────────────────────────────────────────────
     final coreSubjects = [
@@ -284,8 +287,8 @@ class HighSchoolSubjectsStep extends StatelessWidget {
               isSelected: selected.contains(s.$1),
               onTap: () =>
                   context.read<CalibrationCubit>().toggleHighSchoolSubject(
-                        s.$1,
-                      ),
+                    s.$1,
+                  ),
             ),
           ),
         )

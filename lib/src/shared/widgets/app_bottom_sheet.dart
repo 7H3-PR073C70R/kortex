@@ -167,7 +167,8 @@ class AppBottomSheet extends StatelessWidget {
               ],
               Flexible(
                 child: Padding(
-                  padding: padding ??
+                  padding:
+                      padding ??
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: child,
                 ),

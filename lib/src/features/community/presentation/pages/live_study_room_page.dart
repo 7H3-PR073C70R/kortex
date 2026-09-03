@@ -45,8 +45,9 @@ class _LiveStudyRoomView extends StatelessWidget {
     return BlocBuilder<LiveRoomCubit, LiveRoomState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor:
-              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -187,13 +188,10 @@ class _LiveStudyRoomView extends StatelessWidget {
                       Expanded(
                         child: ShrinkableButton(
                           onTap: () {
-                            context
-                                .read<LiveRoomCubit>()
-                                .toggleTimerPause();
+                            context.read<LiveRoomCubit>().toggleTimerPause();
                           },
                           child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
                               color: colors.surfaceSecondary,
                               borderRadius: BorderRadius.circular(16),
@@ -229,8 +227,7 @@ class _LiveStudyRoomView extends StatelessWidget {
                         child: ShrinkableButton(
                           onTap: () => unawaited(context.router.maybePop()),
                           child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
                               color: Colors.redAccent.withAlpha(30),
                               borderRadius: BorderRadius.circular(16),

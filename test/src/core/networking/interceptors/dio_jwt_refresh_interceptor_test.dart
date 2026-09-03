@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
-import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 
 class InMemoryLocalStorage implements LocalStorageService {
@@ -23,8 +23,7 @@ class InMemoryLocalStorage implements LocalStorageService {
   Future<void> savePreference({
     required String key,
     required String data,
-  }) async =>
-      _store[key] = data;
+  }) async => _store[key] = data;
 }
 
 class _MockErrorHandler extends ErrorInterceptorHandler {
@@ -80,77 +79,76 @@ void main() {
     });
 
     test(
-        'attempts token refresh when PGRST303 / JWT expired is returned and retries request',
-        () async {
-      await storageService.saveAuthTokens(
-        accessToken: 'expired_access_token',
-        refreshToken: 'valid_refresh_token',
-      );
+      'attempts token refresh when PGRST303 / JWT expired is returned and retries request',
+      () async {
+        await storageService.saveAuthTokens(
+          accessToken: 'expired_access_token',
+          refreshToken: 'valid_refresh_token',
+        );
 
-      final refreshDio = Dio();
-      refreshDio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            if (options.path.contains(AppApiEndpoint.refreshToken)) {
-              return handler.resolve(
-                Response(
-                  requestOptions: options,
-                  statusCode: 200,
-                  data: {
-                    'access_token': 'new_refreshed_access_token',
-                    'refresh_token': 'new_refreshed_refresh_token',
-                  },
-                ),
-              );
-            }
-            if (options.headers['Authorization'] ==
-                'Bearer new_refreshed_access_token') {
-              return handler.resolve(
-                Response(
-                  requestOptions: options,
-                  statusCode: 200,
-                  data: {'success': true},
-                ),
-              );
-            }
-            return handler.next(options);
-          },
-        ),
-      );
+        final refreshDio = Dio();
+        refreshDio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              if (options.path.contains(AppApiEndpoint.refreshToken)) {
+                return handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {
+                      'access_token': 'new_refreshed_access_token',
+                      'refresh_token': 'new_refreshed_refresh_token',
+                    },
+                  ),
+                );
+              }
+              if (options.headers['Authorization'] ==
+                  'Bearer new_refreshed_access_token') {
+                return handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {'success': true},
+                  ),
+                );
+              }
+              return handler.next(options);
+            },
+          ),
+        );
 
-      final interceptor = TokenInterceptor(
-        storageService: storageService,
-        sessionExpiredService: sessionExpiredService,
-        refreshDio: refreshDio,
-      );
+        final interceptor = TokenInterceptor(
+          storageService: storageService,
+          sessionExpiredService: sessionExpiredService,
+          refreshDio: refreshDio,
+        );
 
-      final requestOptions = RequestOptions(path: '/rest/v1/profiles');
-      final expiredException = DioException(
-        requestOptions: requestOptions,
-        response: Response(
+        final requestOptions = RequestOptions(path: '/rest/v1/profiles');
+        final expiredException = DioException(
           requestOptions: requestOptions,
-          statusCode: 401,
-          data: {
-            'code': 'PGRST303',
-            'message': 'JWT expired',
-          },
-        ),
-      );
+          response: Response(
+            requestOptions: requestOptions,
+            statusCode: 401,
+            data: {
+              'code': 'PGRST303',
+              'message': 'JWT expired',
+            },
+          ),
+        );
 
-      final handler = _MockErrorHandler();
+        final handler = _MockErrorHandler();
 
-      await interceptor.onError(expiredException, handler);
+        await interceptor.onError(expiredException, handler);
 
-      expect(handler.resolvedResponse, isNotNull);
-      expect(handler.resolvedResponse?.data, {'success': true});
-      expect(storageService.getToken(), 'new_refreshed_access_token');
-      expect(storageService.getRefreshToken(), 'new_refreshed_refresh_token');
-    });
+        expect(handler.resolvedResponse, isNotNull);
+        expect(handler.resolvedResponse?.data, {'success': true});
+        expect(storageService.getToken(), 'new_refreshed_access_token');
+        expect(storageService.getRefreshToken(), 'new_refreshed_refresh_token');
+      },
+    );
 
-    test(
-        'clears storage and triggers session expiration notification '
-        'when refresh fails',
-        () async {
+    test('clears storage and triggers session expiration notification '
+        'when refresh fails', () async {
       await storageService.saveAuthTokens(
         accessToken: 'expired_token',
         refreshToken: 'invalid_refresh_token',

@@ -14,8 +14,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     this._dio, {
     UserStorageService? userStorage,
     DocumentParserService parserService = const DocumentParserService(),
-  })  : _userStorage = userStorage,
-        _parserService = parserService;
+  }) : _userStorage = userStorage,
+       _parserService = parserService;
 
   final IngestionApiClient _client;
   final Dio _dio;
@@ -135,7 +135,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         final res = await _client.createDocumentRecord(payload);
         final list = res.data is List ? (res.data as List) : <dynamic>[];
         if (list.isNotEmpty) {
-          return DocumentUploadModel.fromJson(list.first as Map<String, dynamic>);
+          return DocumentUploadModel.fromJson(
+            list.first as Map<String, dynamic>,
+          );
         }
       } on Object catch (_) {
         // If RLS or DB rejects direct insert, attempt RPC or fallback
@@ -211,16 +213,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       );
 
       final token = _userStorage?.getToken();
-      final extractedImages =
-          _parserService.extractImagesFromPdfBytes(fileBytes);
+      final extractedImages = _parserService.extractImagesFromPdfBytes(
+        fileBytes,
+      );
       final uploadedImageUrls = <String>[];
 
       // Upload extracted diagrams to Supabase Storage `card-assets` bucket
       for (var i = 0; i < extractedImages.length; i++) {
         final img = extractedImages[i];
         final assetPath = '${documentId}_img_${i + 1}.${img.extension}';
-        final contentType =
-            img.extension == 'png' ? 'image/png' : 'image/jpeg';
+        final contentType = img.extension == 'png' ? 'image/png' : 'image/jpeg';
 
         if (token != null && token.isNotEmpty) {
           try {

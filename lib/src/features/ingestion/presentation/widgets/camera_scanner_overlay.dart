@@ -1,12 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CameraScannerOverlay extends HookWidget {

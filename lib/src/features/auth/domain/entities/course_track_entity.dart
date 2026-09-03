@@ -30,8 +30,7 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'JAMB',
       name: 'JAMB / UTME',
-      description:
-          'High-speed CBT drills, subject combinations & past papers',
+      description: 'High-speed CBT drills, subject combinations & past papers',
       iconName: 'timer',
       defaultDailyTarget: 25,
       examCountdownDays: 45,
@@ -39,16 +38,14 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'SAT',
       name: 'SAT',
-      description:
-          'Standardized Reading, Writing, Math & problem solving',
+      description: 'Standardized Reading, Writing, Math & problem solving',
       iconName: 'calculate',
       examCountdownDays: 90,
     ),
     CourseTrackEntity(
       id: 'TOEFL',
       name: 'TOEFL iBT',
-      description:
-          'Academic English Reading, Listening, Speaking & Writing',
+      description: 'Academic English Reading, Listening, Speaking & Writing',
       iconName: 'record_voice_over',
       examCountdownDays: 50,
     ),
@@ -90,8 +87,7 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'Business',
       name: 'Business & Economics',
-      description:
-          'Accounting, Finance, Economics, Marketing & Management',
+      description: 'Accounting, Finance, Economics, Marketing & Management',
       iconName: 'trending_up',
       defaultDailyTarget: 25,
       examCountdownDays: 40,
@@ -99,16 +95,14 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'Humanities',
       name: 'Arts & Humanities',
-      description:
-          'Literature, History, Philosophy, Linguistics & Mass Comm',
+      description: 'Literature, History, Philosophy, Linguistics & Mass Comm',
       iconName: 'menu_book',
       examCountdownDays: 45,
     ),
     CourseTrackEntity(
       id: 'ComputerScience',
       name: 'Computer Science & AI',
-      description:
-          'Algorithms, Data Structures, Operating Systems & Networks',
+      description: 'Algorithms, Data Structures, Operating Systems & Networks',
       iconName: 'terminal',
       defaultDailyTarget: 30,
       examCountdownDays: 30,
@@ -117,11 +111,11 @@ class CourseTrackEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        description,
-        iconName,
-        defaultDailyTarget,
-        examCountdownDays,
-      ];
+    id,
+    name,
+    description,
+    iconName,
+    defaultDailyTarget,
+    examCountdownDays,
+  ];
 }

@@ -28,11 +28,14 @@ class UserModel extends Equatable {
       return UserModel(
         id: userObj['id'] as String? ?? '',
         email: userObj['email'] as String? ?? '',
-        displayName: userMeta?['display_name'] as String? ??
+        displayName:
+            userMeta?['display_name'] as String? ??
             userObj['display_name'] as String?,
-        photoUrl: userMeta?['avatar_url'] as String? ??
+        photoUrl:
+            userMeta?['avatar_url'] as String? ??
             userObj['photo_url'] as String?,
-        academicInstitution: userMeta?['academic_institution'] as String? ??
+        academicInstitution:
+            userMeta?['academic_institution'] as String? ??
             userObj['academic_institution'] as String?,
         token: json['access_token'] as String? ?? json['token'] as String?,
         refreshToken: refreshToken,
@@ -41,10 +44,11 @@ class UserModel extends Equatable {
     return UserModel(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      displayName: json['displayName'] as String? ??
-          json['display_name'] as String?,
+      displayName:
+          json['displayName'] as String? ?? json['display_name'] as String?,
       photoUrl: json['photoUrl'] as String? ?? json['photo_url'] as String?,
-      academicInstitution: json['academicInstitution'] as String? ??
+      academicInstitution:
+          json['academicInstitution'] as String? ??
           json['academic_institution'] as String?,
       token: json['token'] as String? ?? json['access_token'] as String?,
       refreshToken: refreshToken ?? json['refreshToken'] as String?,
@@ -52,23 +56,23 @@ class UserModel extends Equatable {
   }
 
   UserEntity toEntity() => UserEntity(
-        id: id,
-        email: email,
-        displayName: displayName,
-        photoUrl: photoUrl,
-        academicInstitution: academicInstitution,
-        token: token,
-        refreshToken: refreshToken,
-      );
+    id: id,
+    email: email,
+    displayName: displayName,
+    photoUrl: photoUrl,
+    academicInstitution: academicInstitution,
+    token: token,
+    refreshToken: refreshToken,
+  );
 
   @override
   List<Object?> get props => [
-        id,
-        email,
-        displayName,
-        photoUrl,
-        academicInstitution,
-        token,
-        refreshToken,
-      ];
+    id,
+    email,
+    displayName,
+    photoUrl,
+    academicInstitution,
+    token,
+    refreshToken,
+  ];
 }

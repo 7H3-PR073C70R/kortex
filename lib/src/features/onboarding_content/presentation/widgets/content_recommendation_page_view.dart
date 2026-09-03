@@ -38,7 +38,10 @@ class _ContentRecommendationPageViewState
       duration: const Duration(seconds: 4),
     );
     final disableAnimations = WidgetsBinding
-        .instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
     if (!disableAnimations) {
       unawaited(_pulseController.repeat(reverse: true));
     }
@@ -103,7 +106,8 @@ class _RecommendationSlideItem extends StatelessWidget {
                 pageController.position.haveDimensions &&
                 pageController.position.hasContentDimensions) {
               try {
-                final currentPage = pageController.page ??
+                final currentPage =
+                    pageController.page ??
                     pageController.initialPage.toDouble();
                 pageOffset = index - currentPage;
               } on Object catch (_) {
@@ -122,8 +126,9 @@ class _RecommendationSlideItem extends StatelessWidget {
                 : (1.0 - (clampedOffset.abs() * 0.05)).clamp(0.95, 1.0);
 
             // Staggered text vertical transition
-            final textTranslateY =
-                disableAnimations ? 0.0 : (clampedOffset.abs() * 12.0);
+            final textTranslateY = disableAnimations
+                ? 0.0
+                : (clampedOffset.abs() * 12.0);
             final textOpacity = disableAnimations
                 ? 1.0
                 : (1.0 - (clampedOffset.abs() * 0.6)).clamp(0.0, 1.0);
@@ -154,8 +159,9 @@ class _RecommendationSlideItem extends StatelessWidget {
                                     : colors.surfacePrimary.withAlpha(200),
                                 border: Border.all(
                                   color: isDark
-                                      ? colors.surfaceBorderHighlight
-                                          .withAlpha(80)
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          80,
+                                        )
                                       : Colors.white.withAlpha(220),
                                 ),
                                 boxShadow: [
@@ -197,8 +203,10 @@ class _RecommendationSlideItem extends StatelessWidget {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(20),
                                   child: BackdropFilter(
-                                    filter:
-                                        ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 8,
+                                      sigmaY: 8,
+                                    ),
                                     child: AppBadge(
                                       label: item.badge,
                                     ),

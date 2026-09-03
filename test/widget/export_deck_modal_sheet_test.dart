@@ -37,8 +37,9 @@ void main() {
       ],
     );
 
-    testWidgets('renders all 3 export options (Anki, PDF, Notion)',
-        (tester) async {
+    testWidgets('renders all 3 export options (Anki, PDF, Notion)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const ExportDeckModalSheet(deck: tDeck),

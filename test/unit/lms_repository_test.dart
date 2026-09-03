@@ -67,21 +67,23 @@ void main() {
       repository = LmsRepositoryImpl(dataSource: FakeLmsImportDataSource());
     });
 
-    test('fetchGoogleClassroomCourses returns Right with course list',
-        () async {
-      final result = await repository.fetchGoogleClassroomCourses(
-        oauthToken: 'fake-token',
-      );
+    test(
+      'fetchGoogleClassroomCourses returns Right with course list',
+      () async {
+        final result = await repository.fetchGoogleClassroomCourses(
+          oauthToken: 'fake-token',
+        );
 
-      expect(result.isRight, isTrue);
-      result.fold(
-        (_) => fail('Expected Right'),
-        (courses) {
-          expect(courses.length, equals(1));
-          expect(courses.first.name, equals('Calculus I'));
-        },
-      );
-    });
+        expect(result.isRight, isTrue);
+        result.fold(
+          (_) => fail('Expected Right'),
+          (courses) {
+            expect(courses.length, equals(1));
+            expect(courses.first.name, equals('Calculus I'));
+          },
+        );
+      },
+    );
 
     test('fetchCanvasCourses returns Right with canvas courses', () async {
       final result = await repository.fetchCanvasCourses(

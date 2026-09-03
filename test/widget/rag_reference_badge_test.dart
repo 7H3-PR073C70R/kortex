@@ -31,8 +31,9 @@ void main() {
       );
     }
 
-    testWidgets('renders document title, page number, and similarity score',
-        (tester) async {
+    testWidgets('renders document title, page number, and similarity score', (
+      tester,
+    ) async {
       var tapped = false;
 
       await tester.pumpWidget(

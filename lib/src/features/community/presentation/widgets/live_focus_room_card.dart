@@ -21,7 +21,8 @@ class LiveFocusRoomCard extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final semanticsLabel = '${room.title}, ${room.subject}, '
+    final semanticsLabel =
+        '${room.title}, ${room.subject}, '
         '${l10n.activeParticipantsCount(room.activeParticipantsCount)}';
 
     return Semantics(
@@ -80,9 +81,7 @@ class LiveFocusRoomCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      room.isFocusing
-                          ? l10n.pomodoroFocus
-                          : l10n.pomodoroBreak,
+                      room.isFocusing ? l10n.pomodoroFocus : l10n.pomodoroBreak,
                       style: typography.caption.bold.copyWith(
                         color: room.isFocusing
                             ? colors.primary

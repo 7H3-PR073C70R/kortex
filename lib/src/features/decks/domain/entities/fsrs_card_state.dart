@@ -4,7 +4,8 @@ enum FsrsRating {
   again(1),
   hard(2),
   good(3),
-  easy(4);
+  easy(4)
+  ;
 
   const FsrsRating(this.value);
   final int value;
@@ -105,14 +106,14 @@ class FsrsCardState extends Equatable {
 
   @override
   List<Object?> get props => [
-        stability,
-        difficulty,
-        retrievability,
-        elapsedDays,
-        scheduledDays,
-        reps,
-        lapses,
-        lastReview,
-        nextDueDate,
-      ];
+    stability,
+    difficulty,
+    retrievability,
+    elapsedDays,
+    scheduledDays,
+    reps,
+    lapses,
+    lastReview,
+    nextDueDate,
+  ];
 }

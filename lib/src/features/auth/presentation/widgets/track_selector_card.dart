@@ -52,7 +52,8 @@ class TrackSelectorCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final semanticsLabel = '${track.name} Track. ${track.description}. '
+    final semanticsLabel =
+        '${track.name} Track. ${track.description}. '
         'Default target: ${track.defaultDailyTarget} cards per day. '
         '${isSelected ? "Selected" : "Not selected"}';
 
@@ -71,8 +72,8 @@ class TrackSelectorCard extends StatelessWidget {
             color: isSelected
                 ? colors.primary.withAlpha(isDark ? 35 : 18)
                 : isDark
-                    ? colors.surfaceSecondary
-                    : colors.surfacePrimary,
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected

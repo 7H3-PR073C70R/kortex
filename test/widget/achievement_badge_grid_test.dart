@@ -17,8 +17,9 @@ Widget createTestApp(Widget child) {
 
 void main() {
   group('AchievementBadgeGrid Widget Test Suite', () {
-    testWidgets('renders all achievement badges with title and status',
-        (tester) async {
+    testWidgets('renders all achievement badges with title and status', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const AchievementBadgeGrid(),

@@ -26,15 +26,15 @@ class ShimmerPlaceholder extends StatefulWidget {
     Color? highlightColor,
     String? semanticLabel,
   }) : this(
-          key: key,
-          width: width,
-          height: height,
-          borderRadius: borderRadius,
-          shape: BoxShape.rectangle,
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          semanticLabel: semanticLabel,
-        );
+         key: key,
+         width: width,
+         height: height,
+         borderRadius: borderRadius,
+         shape: BoxShape.rectangle,
+         baseColor: baseColor,
+         highlightColor: highlightColor,
+         semanticLabel: semanticLabel,
+       );
 
   /// Circular skeleton placeholder.
   const ShimmerPlaceholder.circular({
@@ -44,14 +44,14 @@ class ShimmerPlaceholder extends StatefulWidget {
     Color? highlightColor,
     String? semanticLabel,
   }) : this(
-          key: key,
-          width: radius * 2,
-          height: radius * 2,
-          shape: BoxShape.circle,
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          semanticLabel: semanticLabel,
-        );
+         key: key,
+         width: radius * 2,
+         height: radius * 2,
+         shape: BoxShape.circle,
+         baseColor: baseColor,
+         highlightColor: highlightColor,
+         semanticLabel: semanticLabel,
+       );
 
   final double? width;
   final double? height;
@@ -91,8 +91,7 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
     final l10n = context.l10n;
 
     final effectiveBase = widget.baseColor ?? colors.surfaceSecondary;
-    final effectiveHighlight =
-        widget.highlightColor ?? colors.surfaceTertiary;
+    final effectiveHighlight = widget.highlightColor ?? colors.surfaceTertiary;
     final defaultLabel = widget.shape == BoxShape.circle
         ? l10n.loadingProfileAvatar
         : l10n.loadingContent;

@@ -92,8 +92,9 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.greenAccent
-                            .withValues(alpha: _pulseAnimation.value),
+                        color: Colors.greenAccent.withValues(
+                          alpha: _pulseAnimation.value,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.greenAccent.withValues(

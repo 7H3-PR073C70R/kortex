@@ -41,8 +41,9 @@ class _DecksView extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        backgroundColor:
-            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        backgroundColor: isDark
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -91,8 +92,7 @@ class _DecksView extends HookWidget {
                       unawaited(
                         context.router.push(
                           SyllabotChatRoute(
-                            initialPrompt:
-                                context.l10n.decksAiPromptDefault,
+                            initialPrompt: context.l10n.decksAiPromptDefault,
                           ),
                         ),
                       );
@@ -199,7 +199,9 @@ class _DecksView extends HookWidget {
                             color: colors.primary,
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(isDark ? 90 : 60),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 90 : 60,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -266,9 +268,9 @@ class _DecksView extends HookWidget {
                               contentPadding: EdgeInsets.zero,
                             ),
                             onChanged: (query) {
-                              context
-                                  .read<DecksBloc>()
-                                  .add(DecksSearchQueryChanged(query));
+                              context.read<DecksBloc>().add(
+                                DecksSearchQueryChanged(query),
+                              );
                             },
                           ),
                         ),
@@ -276,9 +278,9 @@ class _DecksView extends HookWidget {
                           GestureDetector(
                             onTap: () {
                               searchController.clear();
-                              context
-                                  .read<DecksBloc>()
-                                  .add(const DecksSearchQueryChanged(''));
+                              context.read<DecksBloc>().add(
+                                const DecksSearchQueryChanged(''),
+                              );
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(4),
@@ -305,9 +307,9 @@ class _DecksView extends HookWidget {
                           count: state.allDecks.length,
                           isSelected: state.activeFilter == 'all',
                           onTap: () {
-                            context
-                                .read<DecksBloc>()
-                                .add(const DecksFilterChanged('all'));
+                            context.read<DecksBloc>().add(
+                              const DecksFilterChanged('all'),
+                            );
                           },
                         ),
                         const SizedBox(width: 8),
@@ -319,9 +321,9 @@ class _DecksView extends HookWidget {
                           isDueBadge: true,
                           isSelected: state.activeFilter == 'due',
                           onTap: () {
-                            context
-                                .read<DecksBloc>()
-                                .add(const DecksFilterChanged('due'));
+                            context.read<DecksBloc>().add(
+                              const DecksFilterChanged('due'),
+                            );
                           },
                         ),
                         const SizedBox(width: 8),
@@ -329,9 +331,9 @@ class _DecksView extends HookWidget {
                           label: l10n.decksFilterMastered,
                           isSelected: state.activeFilter == 'mastered',
                           onTap: () {
-                            context
-                                .read<DecksBloc>()
-                                .add(const DecksFilterChanged('mastered'));
+                            context.read<DecksBloc>().add(
+                              const DecksFilterChanged('mastered'),
+                            );
                           },
                         ),
                       ],
@@ -377,18 +379,18 @@ class _DecksView extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Header Shimmer
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   ShimmerPlaceholder(width: 140, height: 26, borderRadius: 8),
                   SizedBox(height: 6),
                   ShimmerPlaceholder(width: 220, height: 14, borderRadius: 6),
                 ],
               ),
-              const ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
+              ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
             ],
           ),
           const SizedBox(height: 20),
@@ -402,8 +404,8 @@ class _DecksView extends HookWidget {
           const SizedBox(height: 16),
 
           // 3. Filter Category Pills Shimmer
-          Row(
-            children: const [
+          const Row(
+            children: [
               ShimmerPlaceholder(width: 80, height: 32, borderRadius: 16),
               SizedBox(width: 8),
               ShimmerPlaceholder(width: 95, height: 32, borderRadius: 16),
@@ -418,8 +420,8 @@ class _DecksView extends HookWidget {
             child: ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (_, __) => const ShimmerPlaceholder(
+              separatorBuilder: (_, _) => const SizedBox(height: 14),
+              itemBuilder: (_, _) => const ShimmerPlaceholder(
                 width: double.infinity,
                 height: 120,
                 borderRadius: 20,
@@ -550,15 +552,15 @@ class _FilterChip extends StatelessWidget {
           color: isSelected
               ? colors.primary
               : (isDark
-                  ? colors.surfaceSecondary.withAlpha(150)
-                  : colors.surfacePrimary.withAlpha(200)),
+                    ? colors.surfaceSecondary.withAlpha(150)
+                    : colors.surfacePrimary.withAlpha(200)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? colors.primary
                 : (isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(70)
-                    : colors.surfaceBorder.withAlpha(120)),
+                      ? colors.surfaceBorderHighlight.withAlpha(70)
+                      : colors.surfaceBorder.withAlpha(120)),
           ),
         ),
         child: Row(
@@ -579,8 +581,8 @@ class _FilterChip extends StatelessWidget {
                   color: isDueBadge
                       ? const Color(0xFFEF4444)
                       : (isSelected
-                          ? Colors.white.withAlpha(40)
-                          : colors.primary.withAlpha(30)),
+                            ? Colors.white.withAlpha(40)
+                            : colors.primary.withAlpha(30)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -598,4 +600,3 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
-

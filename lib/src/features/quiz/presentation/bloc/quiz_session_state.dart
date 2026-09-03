@@ -32,8 +32,8 @@ class QuizSessionState extends Equatable {
 
   QuizQuestionEntity? get currentQuestion =>
       currentIndex >= 0 && currentIndex < questions.length
-          ? questions[currentIndex]
-          : null;
+      ? questions[currentIndex]
+      : null;
 
   bool get isLastQuestion =>
       questions.isNotEmpty && currentIndex == questions.length - 1;
@@ -70,12 +70,12 @@ class QuizSessionState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        quizTitle,
-        questions,
-        currentIndex,
-        elapsedSeconds,
-        result,
-        errorMessage,
-      ];
+    status,
+    quizTitle,
+    questions,
+    currentIndex,
+    elapsedSeconds,
+    result,
+    errorMessage,
+  ];
 }

@@ -78,10 +78,10 @@ class CalibrationState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        currentStepIndex,
-        profile,
-        errorMessage,
-        isForwardTrajectory,
-      ];
+    status,
+    currentStepIndex,
+    profile,
+    errorMessage,
+    isForwardTrajectory,
+  ];
 }

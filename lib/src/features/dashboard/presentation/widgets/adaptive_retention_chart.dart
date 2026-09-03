@@ -27,12 +27,12 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final selectedPoint = _selectedDayIndex != null &&
-            _selectedDayIndex! < widget.points.length
+    final selectedPoint =
+        _selectedDayIndex != null && _selectedDayIndex! < widget.points.length
         ? widget.points[_selectedDayIndex!]
         : widget.points.isNotEmpty
-            ? widget.points.first
-            : null;
+        ? widget.points.first
+        : null;
 
     final pointRetention = selectedPoint != null
         ? (selectedPoint.predictedRetention * 100).toInt()
@@ -42,7 +42,8 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
 
     return Semantics(
       container: true,
-      label: 'Adaptive Memory Retention Chart rendering 7-day predicted and '
+      label:
+          'Adaptive Memory Retention Chart rendering 7-day predicted and '
           'actual recall curves',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -204,7 +205,8 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                           count,
                           (index) => Semantics(
                             button: true,
-                            label: 'Day ${widget.points[index].day} '
+                            label:
+                                'Day ${widget.points[index].day} '
                                 'Retention Point',
                             child: InkWell(
                               onTap: () {
@@ -215,18 +217,21 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 width: itemWidth,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _selectedDayIndex == index
-                                      ? colors.primary
-                                          .withAlpha(isDark ? 60 : 30)
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 60 : 30,
+                                        )
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: _selectedDayIndex == index
-                                        ? colors.primary
-                                            .withAlpha(isDark ? 120 : 70)
+                                        ? colors.primary.withAlpha(
+                                            isDark ? 120 : 70,
+                                          )
                                         : Colors.transparent,
                                   ),
                                 ),

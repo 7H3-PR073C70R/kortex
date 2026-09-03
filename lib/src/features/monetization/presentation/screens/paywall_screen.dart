@@ -84,7 +84,8 @@ class _PaywallScreenState extends State<PaywallScreen>
       final offerings = await RevenueCatService.instance.fetchOfferings();
       if (mounted) {
         setState(() {
-          _selectedPackage = offerings?.current?.annual ??
+          _selectedPackage =
+              offerings?.current?.annual ??
               offerings?.current?.availablePackages.firstOrNull;
           _isLoading = false;
         });

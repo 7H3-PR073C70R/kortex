@@ -14,16 +14,19 @@ void main() {
     mockStorage = MockLocalStorageService();
     inMemoryPrefs = {};
 
-    when(() => mockStorage.getPreference(key: any(named: 'key')))
-        .thenAnswer((invocation) {
+    when(() => mockStorage.getPreference(key: any(named: 'key'))).thenAnswer((
+      invocation,
+    ) {
       final key = invocation.namedArguments[#key] as String;
       return inMemoryPrefs[key];
     });
 
-    when(() => mockStorage.savePreference(
-          key: any(named: 'key'),
-          data: any(named: 'data'),
-        )).thenAnswer((invocation) async {
+    when(
+      () => mockStorage.savePreference(
+        key: any(named: 'key'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer((invocation) async {
       final key = invocation.namedArguments[#key] as String;
       final data = invocation.namedArguments[#data] as String;
       inMemoryPrefs[key] = data;
@@ -71,28 +74,30 @@ void main() {
       expect(today.intensityLevel, greaterThan(0));
     });
 
-    test('multiple sessions aggregate retention, cards, and study volume',
-        () async {
-      await activityService.recordStudySession(
-        cardsReviewed: 10,
-        durationSeconds: 120, // 2 mins
-        retentionScore: 0.80,
-        masteredCards: 8,
-      );
+    test(
+      'multiple sessions aggregate retention, cards, and study volume',
+      () async {
+        await activityService.recordStudySession(
+          cardsReviewed: 10,
+          durationSeconds: 120, // 2 mins
+          retentionScore: 0.80,
+          masteredCards: 8,
+        );
 
-      await activityService.recordStudySession(
-        cardsReviewed: 15,
-        durationSeconds: 180, // 3 mins
-        retentionScore: 1,
-        masteredCards: 15,
-      );
+        await activityService.recordStudySession(
+          cardsReviewed: 15,
+          durationSeconds: 180, // 3 mins
+          retentionScore: 1,
+          masteredCards: 15,
+        );
 
-      expect(activityService.getTotalCardsMastered(), equals(23));
-      expect(activityService.getWeeklyMinutesStudied(), equals(5));
-      expect(activityService.getOverallRetentionRate(), closeTo(0.90, 0.01));
-      // Same day multiple sessions keep streak at 1
-      expect(activityService.getCurrentStreak(), equals(1));
-    });
+        expect(activityService.getTotalCardsMastered(), equals(23));
+        expect(activityService.getWeeklyMinutesStudied(), equals(5));
+        expect(activityService.getOverallRetentionRate(), closeTo(0.90, 0.01));
+        // Same day multiple sessions keep streak at 1
+        expect(activityService.getCurrentStreak(), equals(1));
+      },
+    );
 
     test('getAnalyticsSummary returns complete structured model', () async {
       await activityService.recordStudySession(

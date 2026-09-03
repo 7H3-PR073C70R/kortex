@@ -43,13 +43,13 @@ class GeneratedFlashcard {
   final List<String> tags;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'front': front,
-        'back': back,
-        'explanation': explanation,
-        'isLocalInference': isLocalInference,
-        'tags': tags,
-      };
+    'id': id,
+    'front': front,
+    'back': back,
+    'explanation': explanation,
+    'isLocalInference': isLocalInference,
+    'tags': tags,
+  };
 }
 
 class StudyPackResult {
@@ -74,10 +74,10 @@ class StudyEngineRouter {
     OfflineModelInstaller? modelInstaller,
     LocalInferenceIsolateManager? isolateManager,
     Dio? dio,
-  })  : _connectivity = connectivity ?? Connectivity(),
-        _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
-        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
-        _dio = dio ?? Dio();
+  }) : _connectivity = connectivity ?? Connectivity(),
+       _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
+       _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
+       _dio = dio ?? Dio();
 
   final Connectivity _connectivity;
   final OfflineModelInstaller _modelInstaller;
@@ -214,8 +214,9 @@ class StudyEngineRouter {
         final cardsList = data['cards'] as List<dynamic>?;
         if (cardsList != null && cardsList.isNotEmpty) {
           return cardsList
-              .map((c) =>
-                  GeneratedFlashcard.fromJson(c as Map<String, dynamic>))
+              .map(
+                (c) => GeneratedFlashcard.fromJson(c as Map<String, dynamic>),
+              )
               .toList();
         }
       }

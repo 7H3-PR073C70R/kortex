@@ -89,11 +89,15 @@ Cellular respiration generates ATP in the mitochondria.
 
     test('filters out PDF renderer metadata and watermark artifacts', () {
       expect(
-        LocalPdfParserService.isMetadataOrRendererArtifact('Producer: Skia/PDF m115'),
+        LocalPdfParserService.isMetadataOrRendererArtifact(
+          'Producer: Skia/PDF m115',
+        ),
         isTrue,
       );
       expect(
-        LocalPdfParserService.isMetadataOrRendererArtifact('CreationDate: D:20260902'),
+        LocalPdfParserService.isMetadataOrRendererArtifact(
+          'CreationDate: D:20260902',
+        ),
         isTrue,
       );
       expect(
@@ -131,17 +135,20 @@ Cellular respiration generates ATP in the mitochondria.
       },
     );
 
-    test('gracefully handles empty or corrupted PDF bytes returning empty list', () {
-      final emptyBytes = Uint8List(0);
-      final text = service.extractTextFromPdfBytes(emptyBytes);
-      expect(text, isEmpty);
+    test(
+      'gracefully handles empty or corrupted PDF bytes returning empty list',
+      () {
+        final emptyBytes = Uint8List(0);
+        final text = service.extractTextFromPdfBytes(emptyBytes);
+        expect(text, isEmpty);
 
-      final cards = service.parsePdfBytesToFlashcards(
-        documentId: 'doc_empty',
-        bytes: emptyBytes,
-        filename: 'empty.pdf',
-      );
-      expect(cards, isEmpty);
-    });
+        final cards = service.parsePdfBytesToFlashcards(
+          documentId: 'doc_empty',
+          bytes: emptyBytes,
+          filename: 'empty.pdf',
+        );
+        expect(cards, isEmpty);
+      },
+    );
   });
 }

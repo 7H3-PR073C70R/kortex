@@ -47,9 +47,9 @@ void main() {
     });
 
     AutoCommunityCubit buildCubit() => AutoCommunityCubit(
-          autoProvisionCommunityUseCase: mockAutoProvisionUseCase,
-          fetchCourseCommunityStatsUseCase: mockFetchStatsUseCase,
-        );
+      autoProvisionCommunityUseCase: mockAutoProvisionUseCase,
+      fetchCourseCommunityStatsUseCase: mockFetchStatsUseCase,
+    );
 
     test('initial state has initial status and banner not dismissed', () async {
       final cubit = buildCubit();

@@ -20,8 +20,9 @@ class RagReferenceBadge extends StatelessWidget {
     final scorePercent = (chunk.similarityScore * 100).toInt();
     final badgeText = l10n.retrievedContextBadge(scorePercent);
     final title = chunk.documentTitle ?? 'Course Material';
-    final pageInfo =
-        chunk.pageNumber != null ? ' (p. ${chunk.pageNumber})' : '';
+    final pageInfo = chunk.pageNumber != null
+        ? ' (p. ${chunk.pageNumber})'
+        : '';
 
     return Semantics(
       button: true,

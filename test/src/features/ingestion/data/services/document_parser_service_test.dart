@@ -120,7 +120,9 @@ Enter on M1 candle close outside rectangle.
     test('extracts embedded JPEG and PNG images from binary PDF stream', () {
       // Create mock PDF bytes with embedded JPEG SOI and EOI
       final mockPdfWithImage = <int>[
-        ...utf8.encode('%PDF-1.4\n1 0 obj\n<< /Type /XObject /Subtype /Image >>\nstream\n'),
+        ...utf8.encode(
+          '%PDF-1.4\n1 0 obj\n<< /Type /XObject /Subtype /Image >>\nstream\n',
+        ),
         0xFF, 0xD8, 0xFF, 0xE0, // JPEG SOI + APP0
         ...List.filled(100, 0x42), // Image payload
         0xFF, 0xD9, // JPEG EOI
@@ -184,31 +186,32 @@ Q: What is the primary function of ATP in cells? A: It acts as the universal ene
     test(
       'robustly parses narrative text without explicit structural markers',
       () {
-      const narrativeProse = '''
+        const narrativeProse = '''
 Photosynthesis is the biochemical process that converts light energy into chemical energy stored in glucose.
 Cellular respiration occurs in the mitochondria where ATP is produced for cellular work.
 Newton's second law states that force equals mass multiplied by acceleration in classical mechanics.
 ''';
 
-      final snippets = service.synthesizeSnippetsFromDocument(
-        documentId: 'doc_narrative_101',
-        fullText: narrativeProse,
-        filename: 'narrative_essay.txt',
-      );
+        final snippets = service.synthesizeSnippetsFromDocument(
+          documentId: 'doc_narrative_101',
+          fullText: narrativeProse,
+          filename: 'narrative_essay.txt',
+        );
 
-      expect(snippets.length, greaterThanOrEqualTo(3));
-      expect(
-        snippets.any((s) => s.topic.contains('Photosynthesis')),
-        isTrue,
-      );
-      expect(
-        snippets.any((s) => s.topic.contains('Cellular respiration')),
-        isTrue,
-      );
-      expect(
-        snippets.any((s) => s.topic.contains("Newton's second law")),
-        isTrue,
-      );
-    });
+        expect(snippets.length, greaterThanOrEqualTo(3));
+        expect(
+          snippets.any((s) => s.topic.contains('Photosynthesis')),
+          isTrue,
+        );
+        expect(
+          snippets.any((s) => s.topic.contains('Cellular respiration')),
+          isTrue,
+        );
+        expect(
+          snippets.any((s) => s.topic.contains("Newton's second law")),
+          isTrue,
+        );
+      },
+    );
   });
 }

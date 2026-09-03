@@ -46,11 +46,11 @@ class CramPlannerState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        activeExams,
-        selectedExam,
-        dynamicDailyTarget,
-        urgencyLevel,
-        errorMessage,
-      ];
+    status,
+    activeExams,
+    selectedExam,
+    dynamicDailyTarget,
+    urgencyLevel,
+    errorMessage,
+  ];
 }

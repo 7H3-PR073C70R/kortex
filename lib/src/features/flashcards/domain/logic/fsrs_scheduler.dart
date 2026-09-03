@@ -4,7 +4,8 @@ enum FsrsRating {
   again(1),
   hard(2),
   good(3),
-  easy(4);
+  easy(4)
+  ;
 
   const FsrsRating(this.value);
   final int value;
@@ -21,7 +22,8 @@ enum FsrsCardState {
   newCard(0),
   learning(1),
   review(2),
-  relearning(3);
+  relearning(3)
+  ;
 
   const FsrsCardState(this.value);
   final int value;
@@ -81,18 +83,18 @@ class FsrsCard {
   final int lastReviewedEpoch;
 
   Map<String, dynamic> toMap() => {
-        'card_id': cardId,
-        'due': due?.toIso8601String(),
-        'stability': stability,
-        'difficulty': difficulty,
-        'elapsed_days': elapsedDays,
-        'scheduled_days': scheduledDays,
-        'reps': reps,
-        'lapses': lapses,
-        'state': state.value,
-        'last_review': lastReview?.toIso8601String(),
-        'last_reviewed_epoch': lastReviewedEpoch,
-      };
+    'card_id': cardId,
+    'due': due?.toIso8601String(),
+    'stability': stability,
+    'difficulty': difficulty,
+    'elapsed_days': elapsedDays,
+    'scheduled_days': scheduledDays,
+    'reps': reps,
+    'lapses': lapses,
+    'state': state.value,
+    'last_review': lastReview?.toIso8601String(),
+    'last_reviewed_epoch': lastReviewedEpoch,
+  };
 
   FsrsCard copyWith({
     String? cardId,
@@ -144,7 +146,8 @@ class FsrsReviewLog {
   factory FsrsReviewLog.fromMap(Map<String, dynamic> map) {
     return FsrsReviewLog(
       id: map['id'] as String,
-      transactionUuid: map['transaction_uuid'] as String? ??
+      transactionUuid:
+          map['transaction_uuid'] as String? ??
           'tx_${DateTime.now().microsecondsSinceEpoch}',
       cardId: map['card_id'] as String,
       rating: FsrsRating.fromValue(map['rating'] as int),
@@ -153,9 +156,11 @@ class FsrsReviewLog {
       elapsedDays: map['elapsed_days'] as int? ?? 0,
       scheduledDays: map['scheduled_days'] as int? ?? 1,
       reviewedAtUtc: DateTime.parse(map['reviewed_at_utc'] as String),
-      reviewedAtEpoch: map['reviewed_at_epoch'] as int? ??
-          DateTime.parse(map['reviewed_at_utc'] as String)
-              .millisecondsSinceEpoch,
+      reviewedAtEpoch:
+          map['reviewed_at_epoch'] as int? ??
+          DateTime.parse(
+            map['reviewed_at_utc'] as String,
+          ).millisecondsSinceEpoch,
       state: FsrsCardState.fromValue(map['state'] as int? ?? 0),
       isSynced: (map['is_synced'] as int? ?? 0) == 1,
     );
@@ -175,32 +180,32 @@ class FsrsReviewLog {
   final bool isSynced;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'transaction_uuid': transactionUuid,
-        'card_id': cardId,
-        'rating': rating.value,
-        'stability': stability,
-        'difficulty': difficulty,
-        'elapsed_days': elapsedDays,
-        'scheduled_days': scheduledDays,
-        'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
-        'reviewed_at_epoch': reviewedAtEpoch,
-        'state': state.value,
-        'is_synced': isSynced ? 1 : 0,
-      };
+    'id': id,
+    'transaction_uuid': transactionUuid,
+    'card_id': cardId,
+    'rating': rating.value,
+    'stability': stability,
+    'difficulty': difficulty,
+    'elapsed_days': elapsedDays,
+    'scheduled_days': scheduledDays,
+    'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
+    'reviewed_at_epoch': reviewedAtEpoch,
+    'state': state.value,
+    'is_synced': isSynced ? 1 : 0,
+  };
 
   Map<String, dynamic> toSupabasePayload() => {
-        'transaction_uuid': transactionUuid,
-        'card_id': cardId,
-        'rating': rating.value,
-        'stability': stability,
-        'difficulty': difficulty,
-        'elapsed_days': elapsedDays,
-        'scheduled_days': scheduledDays,
-        'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
-        'reviewed_at_epoch': reviewedAtEpoch,
-        'state': state.value,
-      };
+    'transaction_uuid': transactionUuid,
+    'card_id': cardId,
+    'rating': rating.value,
+    'stability': stability,
+    'difficulty': difficulty,
+    'elapsed_days': elapsedDays,
+    'scheduled_days': scheduledDays,
+    'reviewed_at_utc': reviewedAtUtc.toIso8601String(),
+    'reviewed_at_epoch': reviewedAtEpoch,
+    'state': state.value,
+  };
 }
 
 /// Production implementation of Free Spaced Repetition Scheduler (FSRS v4.5).
@@ -217,17 +222,30 @@ class FsrsScheduler {
 
   /// Default 17 FSRS v4 parameter weights.
   static const List<double> defaultWeights = [
-    0.40255, 1.18385, 3.173, 15.69105,
-    7.1949, 0.5345, 1.4604, 0.0046,
-    1.54575, 0.1192, 1.01925, 1.9395,
-    0.11, 0.29605, 0.22695, 0.5698,
+    0.40255,
+    1.18385,
+    3.173,
+    15.69105,
+    7.1949,
+    0.5345,
+    1.4604,
+    0.0046,
+    1.54575,
+    0.1192,
+    1.01925,
+    1.9395,
+    0.11,
+    0.29605,
+    0.22695,
+    0.5698,
     2.0619,
   ];
 
   /// Calculates Retrievability R(t, S).
   double retrievability(double elapsedDays, double stability) {
     if (stability <= 0) return 0;
-    return math.pow(1.0 + (19.0 / 81.0) * (elapsedDays / stability), -0.5)
+    return math
+        .pow(1.0 + (19.0 / 81.0) * (elapsedDays / stability), -0.5)
         .toDouble();
   }
 
@@ -261,7 +279,8 @@ class FsrsScheduler {
   ) {
     final hardPenalty = rating == FsrsRating.hard ? w[15] : 1.0;
     final easyBonus = rating == FsrsRating.easy ? w[16] : 1.0;
-    final sNext = s *
+    final sNext =
+        s *
         (1.0 +
             math.exp(w[8]) *
                 (11.0 - d) *
@@ -274,7 +293,8 @@ class FsrsScheduler {
 
   /// Calculates next stability on recall failure (lapse) S'_f(D, S, R).
   double _nextForgetStability(double d, double s, double r) {
-    final sNext = w[11] *
+    final sNext =
+        w[11] *
         math.pow(d, -w[12]) *
         (math.pow(s + 1.0, w[13]) - 1.0) *
         math.exp((1.0 - r) * w[14]);
@@ -300,7 +320,8 @@ class FsrsScheduler {
   }) {
     final reviewTime = (now ?? DateTime.now()).toUtc();
     final reviewEpoch = reviewTime.millisecondsSinceEpoch;
-    final txUuid = transactionUuid ??
+    final txUuid =
+        transactionUuid ??
         'tx_${reviewEpoch}_${math.Random().nextInt(1000000)}';
 
     final elapsedDays = currentCard.lastReview == null

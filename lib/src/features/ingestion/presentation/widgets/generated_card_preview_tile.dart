@@ -50,8 +50,10 @@ class GeneratedCardPreviewTile extends HookWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(6),
@@ -147,107 +149,112 @@ class GeneratedCardPreviewTile extends HookWidget {
                     ],
                   )
                 : (isFlipped.value
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ANSWER / EXPLANATION',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            card.back,
-                            style: typography.body.regular.copyWith(
-                              color: colors.textPrimary,
-                              height: 1.4,
-                            ),
-                          ),
-                          if (card.backLatex != null &&
-                              card.backLatex!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Math.tex(
-                                card.backLatex!
-                                    .replaceAll(r'$$', '')
-                                    .replaceAll(r'$', '')
-                                    .trim(),
-                                textStyle: typography.body.bold.copyWith(
-                                  color: isDark
-                                      ? colors.syllabotAccent
-                                      : colors.primary,
-                                ),
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ANSWER / EXPLANATION',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
                               ),
                             ),
-                          ],
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PROMPT / CONCEPT',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 10,
+                            const SizedBox(height: 6),
+                            Text(
+                              card.back,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textPrimary,
+                                height: 1.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            card.front,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          if (card.imageUrl != null &&
-                              card.imageUrl!.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                constraints:
-                                    const BoxConstraints(maxHeight: 120),
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceSecondary,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(50),
+                            if (card.backLatex != null &&
+                                card.backLatex!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Math.tex(
+                                  card.backLatex!
+                                      .replaceAll(r'$$', '')
+                                      .replaceAll(r'$', '')
+                                      .trim(),
+                                  textStyle: typography.body.bold.copyWith(
+                                    color: isDark
+                                        ? colors.syllabotAccent
+                                        : colors.primary,
                                   ),
                                 ),
-                                child: Image.network(
-                                  card.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.insert_photo_outlined,
-                                          size: 16,
-                                          color: colors.primary,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          l10n.attachedDiagramLabel,
-                                          style: typography.caption.medium
-                                              .copyWith(
-                                            color: colors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
+                              ),
+                            ],
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'PROMPT / CONCEPT',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              card.front,
+                              style: typography.body.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            if (card.imageUrl != null &&
+                                card.imageUrl!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 120,
+                                  ),
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceSecondary,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(50),
                                     ),
                                   ),
+                                  child: Image.network(
+                                    card.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.insert_photo_outlined,
+                                                    size: 16,
+                                                    color: colors.primary,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    l10n.attachedDiagramLabel,
+                                                    style: typography
+                                                        .caption
+                                                        .medium
+                                                        .copyWith(
+                                                          color: colors
+                                                              .textSecondary,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
-                      )),
+                        )),
           ),
         ],
       ),

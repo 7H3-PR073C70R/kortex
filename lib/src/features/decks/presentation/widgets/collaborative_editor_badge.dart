@@ -76,9 +76,8 @@ class CollaborativeEditorBadge extends StatelessWidget {
                           child: Center(
                             child: Text(
                               displayEditors[i].displayName.isNotEmpty
-                                  ? displayEditors[i]
-                                      .displayName[0]
-                                      .toUpperCase()
+                                  ? displayEditors[i].displayName[0]
+                                        .toUpperCase()
                                   : 'S',
                               style: const TextStyle(
                                 fontSize: 10,

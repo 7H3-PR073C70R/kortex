@@ -29,30 +29,31 @@ void main() {
       repository = RagRepositoryImpl(mockRemoteDataSource);
     });
 
-    test('queryDocumentContext returns mapped entity list on success',
-        () async {
-      when(
-        () => mockRemoteDataSource.queryDocumentContext(
+    test(
+      'queryDocumentContext returns mapped entity list on success',
+      () async {
+        when(
+          () => mockRemoteDataSource.queryDocumentContext(
+            query: 'Fundamental Theorem of Calculus',
+            matchThreshold: 0.70,
+            matchCount: 3,
+          ),
+        ).thenAnswer((_) async => tChunkModels);
+
+        final result = await repository.queryDocumentContext(
           query: 'Fundamental Theorem of Calculus',
-          matchThreshold: 0.70,
-          matchCount: 3,
-        ),
-      ).thenAnswer((_) async => tChunkModels);
+        );
 
-      final result = await repository.queryDocumentContext(
-        query: 'Fundamental Theorem of Calculus',
-      );
+        expect(result.isRight, isTrue);
+        final list =
+            (result as Right<dynamic, List<DocumentChunkEntity>>).value;
+        expect(list.length, equals(1));
+        expect(list.first.id, equals('chk_101'));
+        expect(list.first.similarityScore, equals(0.95));
+      },
+    );
 
-      expect(result.isRight, isTrue);
-      final list =
-          (result as Right<dynamic, List<DocumentChunkEntity>>).value;
-      expect(list.length, equals(1));
-      expect(list.first.id, equals('chk_101'));
-      expect(list.first.similarityScore, equals(0.95));
-    });
-
-    test('generateDocumentEmbeddings returns chunk count on success',
-        () async {
+    test('generateDocumentEmbeddings returns chunk count on success', () async {
       when(
         () => mockRemoteDataSource.generateDocumentEmbeddings(
           documentId: 'doc_mit_calc',

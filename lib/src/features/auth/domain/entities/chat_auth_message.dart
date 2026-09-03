@@ -45,14 +45,14 @@ class ChatAuthMessage extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        sender,
-        text,
-        timestamp,
-        step,
-        isPasswordInput,
-        isError,
-        sensitiveValue,
-        onRetry != null,
-      ];
+    id,
+    sender,
+    text,
+    timestamp,
+    step,
+    isPasswordInput,
+    isError,
+    sensitiveValue,
+    onRetry != null,
+  ];
 }

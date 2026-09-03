@@ -22,10 +22,12 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
     List<ChatMessageEntity> contextHistory = const [],
   }) {
     final history = contextHistory
-        .map((m) => {
-              'sender': m.sender == MessageSender.user ? 'user' : 'syllabot',
-              'text': m.text,
-            })
+        .map(
+          (m) => {
+            'sender': m.sender == MessageSender.user ? 'user' : 'syllabot',
+            'text': m.text,
+          },
+        )
         .toList();
 
     return _dio.streamSyllabotResponse(
@@ -44,8 +46,9 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
     );
     final list = res.data is List ? (res.data as List) : <dynamic>[];
     return list
-        .map((e) =>
-            ConversationSessionModel.fromJson(e as Map<String, dynamic>))
+        .map(
+          (e) => ConversationSessionModel.fromJson(e as Map<String, dynamic>),
+        )
         .toList();
   }
 

@@ -70,8 +70,9 @@ class UserActivityServiceImpl implements UserActivityService {
 
   Future<void> _updateStreak(DateTime now) async {
     final todayKey = _toDateKey(now);
-    final lastDateStr =
-        _localStorageService.getPreference(key: _lastStudyDateKey);
+    final lastDateStr = _localStorageService.getPreference(
+      key: _lastStudyDateKey,
+    );
     var currentStreak = getCurrentStreak();
     var longestStreak = getLongestStreak();
 
@@ -116,8 +117,9 @@ class UserActivityServiceImpl implements UserActivityService {
     final streak = int.tryParse(raw) ?? 0;
 
     // Verify if streak was broken (e.g. user hasn't studied yesterday or today)
-    final lastDateStr =
-        _localStorageService.getPreference(key: _lastStudyDateKey);
+    final lastDateStr = _localStorageService.getPreference(
+      key: _lastStudyDateKey,
+    );
     if (lastDateStr != null && lastDateStr.isNotEmpty && streak > 0) {
       final todayKey = _toDateKey(DateTime.now());
       final lastDate = _parseDate(lastDateStr);
@@ -143,7 +145,8 @@ class UserActivityServiceImpl implements UserActivityService {
     final sessions = _getSessions();
     var total = 0;
     for (final s in sessions) {
-      total += (s['masteredCards'] as num?)?.toInt() ??
+      total +=
+          (s['masteredCards'] as num?)?.toInt() ??
           (s['cardsReviewed'] as num?)?.toInt() ??
           0;
     }
@@ -191,8 +194,8 @@ class UserActivityServiceImpl implements UserActivityService {
     var xp = 0;
     for (final s in sessions) {
       final cards = (s['cardsReviewed'] as num?)?.toInt() ?? 0;
-      final minutes =
-          (((s['durationSeconds'] as num?)?.toInt() ?? 0) / 60).round();
+      final minutes = (((s['durationSeconds'] as num?)?.toInt() ?? 0) / 60)
+          .round();
       xp += (cards * 10) + (minutes * 5) + 50;
     }
     final streak = getCurrentStreak();

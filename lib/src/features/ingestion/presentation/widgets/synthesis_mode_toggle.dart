@@ -96,14 +96,12 @@ class _ModeOptionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark
-                  ? colors.primary.withAlpha(40)
-                  : colors.primary.withAlpha(25))
+                    ? colors.primary.withAlpha(40)
+                    : colors.primary.withAlpha(25))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? colors.primary
-                : Colors.transparent,
+            color: isSelected ? colors.primary : Colors.transparent,
             width: 1.5,
           ),
         ),

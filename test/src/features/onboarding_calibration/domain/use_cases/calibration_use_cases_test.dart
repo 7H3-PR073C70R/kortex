@@ -8,8 +8,7 @@ import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/get_
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockCalibrationRepository extends Mock
-    implements CalibrationRepository {}
+class MockCalibrationRepository extends Mock implements CalibrationRepository {}
 
 void main() {
   late MockCalibrationRepository mockRepository;
@@ -31,20 +30,22 @@ void main() {
 
   group('Calibration UseCases Test Suite', () {
     test('SaveCalibrationProfileUseCase saves profile successfully', () async {
-      when(() => mockRepository.saveCalibrationProfile(testProfile))
-          .thenAnswer((_) async => const Right(null));
+      when(
+        () => mockRepository.saveCalibrationProfile(testProfile),
+      ).thenAnswer((_) async => const Right(null));
 
       final result = await saveUseCase(testProfile);
 
       expect(result.isRight, isTrue);
-      verify(() => mockRepository.saveCalibrationProfile(testProfile))
-          .called(1);
+      verify(
+        () => mockRepository.saveCalibrationProfile(testProfile),
+      ).called(1);
     });
 
     test('SaveCalibrationProfileUseCase returns Failure on error', () async {
-      when(() => mockRepository.saveCalibrationProfile(testProfile))
-          .thenAnswer((_) async =>
-              const Left(ServerFailure(message: 'Disk Error')));
+      when(() => mockRepository.saveCalibrationProfile(testProfile)).thenAnswer(
+        (_) async => const Left(ServerFailure(message: 'Disk Error')),
+      );
 
       final result = await saveUseCase(testProfile);
 
@@ -56,8 +57,9 @@ void main() {
     });
 
     test('GetCalibrationProfileUseCase returns profile successfully', () async {
-      when(() => mockRepository.getCalibrationProfile())
-          .thenAnswer((_) async => const Right(testProfile));
+      when(
+        () => mockRepository.getCalibrationProfile(),
+      ).thenAnswer((_) async => const Right(testProfile));
 
       final result = await getUseCase(const NoParams());
 

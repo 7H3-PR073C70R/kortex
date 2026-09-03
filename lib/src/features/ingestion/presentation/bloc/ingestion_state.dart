@@ -65,15 +65,15 @@ class IngestionState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        uploadProgress,
-        synthesisMode,
-        currentDocument,
-        snippets,
-        userDocuments,
-        generatedDeck,
-        errorMessage,
-        stageMessage,
-        wasDeduplicated,
-      ];
+    status,
+    uploadProgress,
+    synthesisMode,
+    currentDocument,
+    snippets,
+    userDocuments,
+    generatedDeck,
+    errorMessage,
+    stageMessage,
+    wasDeduplicated,
+  ];
 }

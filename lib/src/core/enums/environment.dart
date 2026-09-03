@@ -6,7 +6,8 @@ enum Environment {
   production(envFileName: '.env.production'),
 
   /// Staging environment
-  staging(envFileName: '.env.staging');
+  staging(envFileName: '.env.staging')
+  ;
 
   const Environment({required this.envFileName});
   final String envFileName;

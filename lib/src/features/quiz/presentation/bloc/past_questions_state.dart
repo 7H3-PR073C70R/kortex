@@ -50,8 +50,9 @@ class PastQuestionsState extends Equatable {
       questions: questions ?? this.questions,
       selectedExam: selectedExam ?? this.selectedExam,
       selectedSubject: selectedSubject ?? this.selectedSubject,
-      selectedYear:
-          clearSelectedYear ? null : (selectedYear ?? this.selectedYear),
+      selectedYear: clearSelectedYear
+          ? null
+          : (selectedYear ?? this.selectedYear),
       availableSubjects: availableSubjects ?? this.availableSubjects,
       availableYears: availableYears ?? this.availableYears,
       isInstantFeedbackMode:
@@ -63,15 +64,15 @@ class PastQuestionsState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        questions,
-        selectedExam,
-        selectedSubject,
-        selectedYear,
-        availableSubjects,
-        availableYears,
-        isInstantFeedbackMode,
-        searchQuery,
-        errorMessage,
-      ];
+    status,
+    questions,
+    selectedExam,
+    selectedSubject,
+    selectedYear,
+    availableSubjects,
+    availableYears,
+    isInstantFeedbackMode,
+    searchQuery,
+    errorMessage,
+  ];
 }

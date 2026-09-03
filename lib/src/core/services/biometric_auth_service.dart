@@ -14,7 +14,7 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
   BiometricAuthServiceImpl(
     this._localStorageService, {
     LocalAuthentication? auth,
-  })  : _auth = auth ?? LocalAuthentication();
+  }) : _auth = auth ?? LocalAuthentication();
 
   final LocalStorageService _localStorageService;
   final LocalAuthentication _auth;
@@ -53,7 +53,8 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
     _isPrompting = true;
     try {
       return await _auth.authenticate(
-        localizedReason: localizedReason ??
+        localizedReason:
+            localizedReason ??
             'Unlock Kortex to access your study notes and flashcards',
       );
     } on Object catch (_) {

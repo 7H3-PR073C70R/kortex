@@ -88,8 +88,9 @@ void main() {
     blocTest<CalibrationCubit, CalibrationState>(
       'finishCalibration calls useCase and transitions to completed',
       build: () {
-        when(() => mockSaveUseCase(any()))
-            .thenAnswer((_) async => const Right(null));
+        when(
+          () => mockSaveUseCase(any()),
+        ).thenAnswer((_) async => const Right(null));
         return CalibrationCubit(
           saveCalibrationProfileUseCase: mockSaveUseCase,
         );

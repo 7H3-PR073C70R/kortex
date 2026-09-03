@@ -35,8 +35,9 @@ class CourseModulePage extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -115,7 +116,8 @@ class CourseModulePage extends StatelessWidget {
                       unawaited(
                         context.router.push(
                           SyllabotChatRoute(
-                            initialPrompt: 'Explain step-by-step solutions for '
+                            initialPrompt:
+                                'Explain step-by-step solutions for '
                                 '$paper in $courseCode.',
                           ),
                         ),

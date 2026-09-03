@@ -1,11 +1,16 @@
 import 'package:intl/intl.dart';
 
 class AppFormatter {
-  static final formatCurrency =
-      NumberFormat.currency(locale: 'en_US', symbol: '₦');
+  static final formatCurrency = NumberFormat.currency(
+    locale: 'en_US',
+    symbol: '₦',
+  );
 
-  static final formatCurrencyNoDecimal =
-      NumberFormat.currency(locale: 'en_US', symbol: '₦', decimalDigits: 0);
+  static final formatCurrencyNoDecimal = NumberFormat.currency(
+    locale: 'en_US',
+    symbol: '₦',
+    decimalDigits: 0,
+  );
   static final formatNumber = NumberFormat.decimalPattern();
 
   static final dateFormatter = DateFormat('dd-MM-yyyy');

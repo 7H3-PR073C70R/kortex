@@ -40,9 +40,9 @@ class ContentRecommendationState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        currentIndex,
-        errorMessage,
-      ];
+    status,
+    items,
+    currentIndex,
+    errorMessage,
+  ];
 }

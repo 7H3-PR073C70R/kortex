@@ -37,7 +37,8 @@ class AnimatedPageIndicator extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
     final resolvedActive = activeColor ?? colors.primary;
-    final resolvedInactive = inactiveColor ??
+    final resolvedInactive =
+        inactiveColor ??
         (isDark
             ? colors.surfaceBorderHighlight.withAlpha(120)
             : colors.surfaceBorderHighlight);

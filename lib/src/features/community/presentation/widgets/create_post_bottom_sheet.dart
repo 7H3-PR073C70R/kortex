@@ -16,7 +16,8 @@ class CreatePostBottomSheet extends HookWidget {
     required String content,
     required String track,
     String? latexContent,
-  }) onSubmit;
+  })
+  onSubmit;
 
   @override
   Widget build(BuildContext context) {

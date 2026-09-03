@@ -76,16 +76,16 @@ class SyllabotChatState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        messages,
-        sessionId,
-        streamingText,
-        socraticMode,
-        engineType,
-        errorMessage,
-        generatedDeck,
-        lastPrompt,
-        lastEngine,
-        lastSocraticMode,
-      ];
+    status,
+    messages,
+    sessionId,
+    streamingText,
+    socraticMode,
+    engineType,
+    errorMessage,
+    generatedDeck,
+    lastPrompt,
+    lastEngine,
+    lastSocraticMode,
+  ];
 }

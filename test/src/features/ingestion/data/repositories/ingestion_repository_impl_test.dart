@@ -13,8 +13,7 @@ import 'package:mocktail/mocktail.dart';
 class MockIngestionRemoteDataSource extends Mock
     implements IngestionRemoteDataSource {}
 
-class MockDecksRemoteDataSource extends Mock
-    implements DecksRemoteDataSource {}
+class MockDecksRemoteDataSource extends Mock implements DecksRemoteDataSource {}
 
 void main() {
   late MockIngestionRemoteDataSource mockDataSource;
@@ -76,91 +75,94 @@ void main() {
 
   group('IngestionRepositoryImpl - Content-Addressable Deduplication', () {
     test(
-        'assigns instance/reference without storage upload when hash matches existing content',
-        () async {
-      when(
-        () => mockDataSource.findOrCreateDocumentReference(
-          contentHash: expectedHash,
+      'assigns instance/reference without storage upload when hash matches existing content',
+      () async {
+        when(
+          () => mockDataSource.findOrCreateDocumentReference(
+            contentHash: expectedHash,
+            filename: 'renamed_calc.pdf',
+            fileType: 'pdf',
+            fileSizeBytes: 4,
+          ),
+        ).thenAnswer((_) async => existingModel);
+
+        final result = await repository.uploadDocument(
           filename: 'renamed_calc.pdf',
           fileType: 'pdf',
-          fileSizeBytes: 4,
-        ),
-      ).thenAnswer((_) async => existingModel);
+          fileBytes: testBytes,
+        );
 
-      final result = await repository.uploadDocument(
-        filename: 'renamed_calc.pdf',
-        fileType: 'pdf',
-        fileBytes: testBytes,
-      );
+        expect(result.isRight, isTrue);
+        result.fold(
+          (l) => fail('Should not fail'),
+          (doc) {
+            expect(doc.id, 'doc_existing_123');
+            expect(doc.isDeduplicated, isTrue);
+            expect(doc.contentHash, expectedHash);
+          },
+        );
 
-      expect(result.isRight, isTrue);
-      result.fold(
-        (l) => fail('Should not fail'),
-        (doc) {
-          expect(doc.id, 'doc_existing_123');
-          expect(doc.isDeduplicated, isTrue);
-          expect(doc.contentHash, expectedHash);
-        },
-      );
+        // Verify uploadDocument on remote data source was NOT called
+        verifyNever(
+          () => mockDataSource.uploadDocument(
+            filename: any(named: 'filename'),
+            fileType: any(named: 'fileType'),
+            fileBytes: any(named: 'fileBytes'),
+            contentHash: any(named: 'contentHash'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      },
+    );
 
-      // Verify uploadDocument on remote data source was NOT called
-      verifyNever(
-        () => mockDataSource.uploadDocument(
-          filename: any(named: 'filename'),
-          fileType: any(named: 'fileType'),
-          fileBytes: any(named: 'fileBytes'),
-          contentHash: any(named: 'contentHash'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      );
-    });
+    test(
+      'uploads to storage when content hash is novel in the system',
+      () async {
+        when(
+          () => mockDataSource.findOrCreateDocumentReference(
+            contentHash: expectedHash,
+            filename: 'new_calc.pdf',
+            fileType: 'pdf',
+            fileSizeBytes: 4,
+          ),
+        ).thenAnswer((_) async => null);
 
-    test('uploads to storage when content hash is novel in the system',
-        () async {
-      when(
-        () => mockDataSource.findOrCreateDocumentReference(
-          contentHash: expectedHash,
-          filename: 'new_calc.pdf',
-          fileType: 'pdf',
-          fileSizeBytes: 4,
-        ),
-      ).thenAnswer((_) async => null);
+        when(
+          () => mockDataSource.uploadDocument(
+            filename: 'new_calc.pdf',
+            fileType: 'pdf',
+            fileBytes: testBytes,
+            contentHash: expectedHash,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async => newModel);
 
-      when(
-        () => mockDataSource.uploadDocument(
+        final result = await repository.uploadDocument(
           filename: 'new_calc.pdf',
           fileType: 'pdf',
           fileBytes: testBytes,
-          contentHash: expectedHash,
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenAnswer((_) async => newModel);
+        );
 
-      final result = await repository.uploadDocument(
-        filename: 'new_calc.pdf',
-        fileType: 'pdf',
-        fileBytes: testBytes,
-      );
+        expect(result.isRight, isTrue);
+        result.fold(
+          (l) => fail('Should not fail'),
+          (doc) {
+            expect(doc.id, 'doc_new_456');
+            expect(doc.isDeduplicated, isFalse);
+          },
+        );
 
-      expect(result.isRight, isTrue);
-      result.fold(
-        (l) => fail('Should not fail'),
-        (doc) {
-          expect(doc.id, 'doc_new_456');
-          expect(doc.isDeduplicated, isFalse);
-        },
-      );
-
-      verify(
-        () => mockDataSource.uploadDocument(
-          filename: 'new_calc.pdf',
-          fileType: 'pdf',
-          fileBytes: testBytes,
-          contentHash: expectedHash,
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).called(1);
-    });
+        verify(
+          () => mockDataSource.uploadDocument(
+            filename: 'new_calc.pdf',
+            fileType: 'pdf',
+            fileBytes: testBytes,
+            contentHash: expectedHash,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('generates DeckEntity with LaTeX flashcards correctly', () async {
       const snippets = [

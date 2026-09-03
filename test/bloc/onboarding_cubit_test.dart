@@ -26,18 +26,20 @@ void main() {
     });
 
     OnboardingCubit buildCubit() => OnboardingCubit(
-          completeOnboardingUseCase: mockCompleteOnboardingUseCase,
-        );
+      completeOnboardingUseCase: mockCompleteOnboardingUseCase,
+    );
 
-    test('initial state defaults to Chat mode, step 0, and WAEC track',
-        () async {
-      final cubit = buildCubit();
-      expect(cubit.state.activeMode, equals(OnboardingMode.chat));
-      expect(cubit.state.currentStep, equals(0));
-      expect(cubit.state.selectedTrack, equals('WAEC'));
-      expect(cubit.state.dailyTarget, equals(20));
-      await cubit.close();
-    });
+    test(
+      'initial state defaults to Chat mode, step 0, and WAEC track',
+      () async {
+        final cubit = buildCubit();
+        expect(cubit.state.activeMode, equals(OnboardingMode.chat));
+        expect(cubit.state.currentStep, equals(0));
+        expect(cubit.state.selectedTrack, equals('WAEC'));
+        expect(cubit.state.dailyTarget, equals(20));
+        await cubit.close();
+      },
+    );
 
     blocTest<OnboardingCubit, OnboardingState>(
       'toggleMode seamlessly switches from Chat to Form mode and back',

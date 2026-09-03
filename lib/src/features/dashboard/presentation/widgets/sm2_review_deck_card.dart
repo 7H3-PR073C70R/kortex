@@ -30,7 +30,8 @@ class Sm2ReviewDeckCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '${deck.title}. ${l10n.dashboardDueCount(deck.dueCards)}. '
+      label:
+          '${deck.title}. ${l10n.dashboardDueCount(deck.dueCards)}. '
           '${l10n.dashboardMemoryRetention}: $retentionPercent%.',
       child: ShrinkableButton(
         onTap: () {
@@ -47,17 +48,17 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 color: isHero
                     ? (isDark
-                        ? colors.surfaceSecondary.withAlpha(190)
-                        : colors.surfacePrimary.withAlpha(230))
+                          ? colors.surfaceSecondary.withAlpha(190)
+                          : colors.surfacePrimary.withAlpha(230))
                     : (isDark
-                        ? colors.surfaceSecondary.withAlpha(150)
-                        : colors.surfacePrimary.withAlpha(200)),
+                          ? colors.surfaceSecondary.withAlpha(150)
+                          : colors.surfacePrimary.withAlpha(200)),
                 border: Border.all(
                   color: isHero
                       ? colors.primary.withAlpha(isDark ? 130 : 90)
                       : (isDark
-                          ? colors.surfaceBorderHighlight.withAlpha(70)
-                          : colors.surfaceBorder.withAlpha(140)),
+                            ? colors.surfaceBorderHighlight.withAlpha(70)
+                            : colors.surfaceBorder.withAlpha(140)),
                   width: isHero ? 1.5 : 1.0,
                 ),
                 boxShadow: [

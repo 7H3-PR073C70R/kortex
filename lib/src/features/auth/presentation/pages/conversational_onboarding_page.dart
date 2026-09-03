@@ -44,8 +44,8 @@ class ConversationalOnboardingPage extends HookWidget {
                   horizontal: 20,
                   vertical: 16,
                 ),
-                itemCount: chatState.messages.length +
-                    (chatState.isThinking ? 1 : 0),
+                itemCount:
+                    chatState.messages.length + (chatState.isThinking ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == chatState.messages.length) {
                     // Thinking Bubble
@@ -91,8 +91,9 @@ class ConversationalOnboardingPage extends HookWidget {
                             ],
                             Flexible(
                               child: Container(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 480),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 480,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 12,
@@ -100,8 +101,8 @@ class ConversationalOnboardingPage extends HookWidget {
                                 decoration: BoxDecoration(
                                   color: isAi
                                       ? (isDark
-                                          ? colors.surfaceSecondary
-                                          : colors.surfacePrimary)
+                                            ? colors.surfaceSecondary
+                                            : colors.surfacePrimary)
                                       : colors.primary,
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(18),
@@ -111,14 +112,16 @@ class ConversationalOnboardingPage extends HookWidget {
                                   ),
                                   border: Border.all(
                                     color: isAi
-                                        ? colors.primary
-                                            .withAlpha(isDark ? 40 : 20)
+                                        ? colors.primary.withAlpha(
+                                            isDark ? 40 : 20,
+                                          )
                                         : Colors.transparent,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black
-                                          .withAlpha(isDark ? 30 : 10),
+                                      color: Colors.black.withAlpha(
+                                        isDark ? 30 : 10,
+                                      ),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -176,9 +179,9 @@ class ConversationalOnboardingPage extends HookWidget {
                         controller: textController,
                         onSubmitted: (val) {
                           if (val.trim().isNotEmpty) {
-                            context
-                                .read<ChatOnboardingBloc>()
-                                .add(ChatOnboardingUserMessageSent(val));
+                            context.read<ChatOnboardingBloc>().add(
+                              ChatOnboardingUserMessageSent(val),
+                            );
                             textController.clear();
                           }
                         },
@@ -207,9 +210,9 @@ class ConversationalOnboardingPage extends HookWidget {
                       onTap: () {
                         final text = textController.text.trim();
                         if (text.isNotEmpty) {
-                          context
-                              .read<ChatOnboardingBloc>()
-                              .add(ChatOnboardingUserMessageSent(text));
+                          context.read<ChatOnboardingBloc>().add(
+                            ChatOnboardingUserMessageSent(text),
+                          );
                           textController.clear();
                         }
                       },
@@ -253,9 +256,9 @@ class ConversationalOnboardingPage extends HookWidget {
           onTrackSelected: (track) {
             context.read<OnboardingCubit>().selectTrack(track.id);
             context.read<OnboardingCubit>().syncStep(1);
-            context
-                .read<ChatOnboardingBloc>()
-                .add(ChatOnboardingTrackChosen(track.name));
+            context.read<ChatOnboardingBloc>().add(
+              ChatOnboardingTrackChosen(track.name),
+            );
           },
         );
 
@@ -268,11 +271,11 @@ class ConversationalOnboardingPage extends HookWidget {
             context.read<OnboardingCubit>().updateRetentionBenchmark(retention);
             context.read<OnboardingCubit>().syncStep(2);
             context.read<ChatOnboardingBloc>().add(
-                  ChatOnboardingGoalChosen(
-                    dailyTarget: target,
-                    retentionPercent: (retention * 100).round(),
-                  ),
-                );
+              ChatOnboardingGoalChosen(
+                dailyTarget: target,
+                retentionPercent: (retention * 100).round(),
+              ),
+            );
           },
         );
 
@@ -324,9 +327,7 @@ class ConversationalOnboardingPage extends HookWidget {
                     ? null
                     : () {
                         unawaited(
-                          context
-                              .read<OnboardingCubit>()
-                              .completeOnboarding(),
+                          context.read<OnboardingCubit>().completeOnboarding(),
                         );
                       },
                 child: Container(

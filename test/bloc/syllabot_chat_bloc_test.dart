@@ -65,12 +65,13 @@ void main() {
     });
 
     SyllabotChatBloc buildBloc({bool withRag = false}) => SyllabotChatBloc(
-          streamResponseUseCase: mockStreamResponseUseCase,
-          getChatHistoryUseCase: mockGetChatHistoryUseCase,
-          generateDeckUseCase: mockGenerateDeckUseCase,
-          queryDocumentContextUseCase:
-              withRag ? mockQueryDocumentContextUseCase : null,
-        );
+      streamResponseUseCase: mockStreamResponseUseCase,
+      getChatHistoryUseCase: mockGetChatHistoryUseCase,
+      generateDeckUseCase: mockGenerateDeckUseCase,
+      queryDocumentContextUseCase: withRag
+          ? mockQueryDocumentContextUseCase
+          : null,
+    );
 
     test('initial state has idle status and default socraticMode', () async {
       final bloc = buildBloc();

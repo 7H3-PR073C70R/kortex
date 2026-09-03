@@ -92,8 +92,9 @@ class StreakShieldIndicator extends StatelessWidget {
                                 color: Colors.cyanAccent.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color:
-                                      Colors.cyanAccent.withValues(alpha: 0.5),
+                                  color: Colors.cyanAccent.withValues(
+                                    alpha: 0.5,
+                                  ),
                                 ),
                               ),
                               child: const Text(

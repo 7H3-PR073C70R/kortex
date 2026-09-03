@@ -15,8 +15,11 @@ class HigherEdFieldStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedField =
-        context.watch<CalibrationCubit>().state.profile.higherEdField;
+    final selectedField = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .higherEdField;
 
     final fields = [
       (

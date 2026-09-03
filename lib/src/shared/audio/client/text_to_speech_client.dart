@@ -64,8 +64,9 @@ class TextToSpeechClient {
     final spokenText = cleanLatexForSpeech(text);
     // Estimate reading duration based on word count and speech rate (~180 wpm)
     final wordCount = spokenText.split(' ').length;
-    final durationMs =
-        ((wordCount / (3.0 * rate)) * 1000).clamp(500, 30000).toInt();
+    final durationMs = ((wordCount / (3.0 * rate)) * 1000)
+        .clamp(500, 30000)
+        .toInt();
 
     _playbackTimer = Timer(Duration(milliseconds: durationMs), () {
       _isPlaying = false;

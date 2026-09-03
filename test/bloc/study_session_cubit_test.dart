@@ -66,10 +66,10 @@ void main() {
     });
 
     StudySessionCubit buildCubit() => StudySessionCubit(
-          getDeckCardsUseCase: mockGetDeckCardsUseCase,
-          processCardReviewUseCase: mockProcessCardReviewUseCase,
-          saveSessionResultsUseCase: mockSaveSessionResultsUseCase,
-        );
+      getDeckCardsUseCase: mockGetDeckCardsUseCase,
+      processCardReviewUseCase: mockProcessCardReviewUseCase,
+      saveSessionResultsUseCase: mockSaveSessionResultsUseCase,
+    );
 
     test('initial state has initial status with empty cards', () async {
       final cubit = buildCubit();
@@ -82,8 +82,9 @@ void main() {
     blocTest<StudySessionCubit, StudySessionState>(
       'startSession loads cards and transitions to studying',
       build: () {
-        when(() => mockGetDeckCardsUseCase('deck_100'))
-            .thenAnswer((_) async => const Right(tCards));
+        when(
+          () => mockGetDeckCardsUseCase('deck_100'),
+        ).thenAnswer((_) async => const Right(tCards));
         return buildCubit();
       },
       act: (cubit) => cubit.startSession('deck_100'),

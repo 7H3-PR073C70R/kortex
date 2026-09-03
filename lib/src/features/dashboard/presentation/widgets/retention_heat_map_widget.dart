@@ -33,14 +33,15 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final overallRetention =
-        (widget.analytics.overallRetentionRate * 100).toInt();
+    final overallRetention = (widget.analytics.overallRetentionRate * 100)
+        .toInt();
 
     const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return Semantics(
       container: true,
-      label: '${l10n.dashboardRetentionMatrix}. '
+      label:
+          '${l10n.dashboardRetentionMatrix}. '
           '${l10n.dashboardRetentionChip}: $overallRetention%. '
           '${l10n.dashboardMasteredChip}: '
           '${widget.analytics.totalCardsMastered}.',
@@ -219,17 +220,18 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                       color: isSelected
                                           ? colors.textPrimary
                                           : (day.intensityLevel > 0
-                                              ? colors.primary.withAlpha(
-                                                  isDark ? 90 : 50,
-                                                )
-                                              : Colors.transparent),
+                                                ? colors.primary.withAlpha(
+                                                    isDark ? 90 : 50,
+                                                  )
+                                                : Colors.transparent),
                                       width: isSelected ? 1.8 : 0.8,
                                     ),
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: colors.primary
-                                                  .withAlpha(100),
+                                              color: colors.primary.withAlpha(
+                                                100,
+                                              ),
                                               blurRadius: 6,
                                             ),
                                           ]
@@ -257,8 +259,8 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                     color: _selectedDay != null
                         ? colors.primary.withAlpha(isDark ? 35 : 15)
                         : (isDark
-                            ? colors.surfacePrimary.withAlpha(80)
-                            : colors.surfaceSecondary.withAlpha(90)),
+                              ? colors.surfacePrimary.withAlpha(80)
+                              : colors.surfaceSecondary.withAlpha(90)),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: _selectedDay != null

@@ -12,13 +12,13 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     CalculateDailyCramTargetUseCase? calculateTargetUseCase,
     CreateExamCountdownUseCase? createExamUseCase,
     CramWorkloadCalculator? calculator,
-  })  : _repository = plannerRepository,
-        _calculateTargetUseCase =
-            calculateTargetUseCase ?? const CalculateDailyCramTargetUseCase(),
-        _createExamUseCase =
-            createExamUseCase ?? CreateExamCountdownUseCase(plannerRepository),
-        _calculator = calculator ?? const CramWorkloadCalculator(),
-        super(const CramPlannerState());
+  }) : _repository = plannerRepository,
+       _calculateTargetUseCase =
+           calculateTargetUseCase ?? const CalculateDailyCramTargetUseCase(),
+       _createExamUseCase =
+           createExamUseCase ?? CreateExamCountdownUseCase(plannerRepository),
+       _calculator = calculator ?? const CramWorkloadCalculator(),
+       super(const CramPlannerState());
 
   final PlannerRepository _repository;
   final CalculateDailyCramTargetUseCase _calculateTargetUseCase;

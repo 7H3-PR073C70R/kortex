@@ -38,8 +38,7 @@ abstract class StudySessionState with _$StudySessionState {
   double get retentionScore {
     final totalReviewed = againCount + hardCount + goodCount + easyCount;
     if (totalReviewed == 0) return 1;
-    final weighted =
-        (hardCount * 0.7) + (goodCount * 1.0) + (easyCount * 1.0);
+    final weighted = (hardCount * 0.7) + (goodCount * 1.0) + (easyCount * 1.0);
     return (weighted / totalReviewed).clamp(0.0, 1.0);
   }
 

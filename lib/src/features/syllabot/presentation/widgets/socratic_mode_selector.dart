@@ -77,8 +77,8 @@ class SocraticModeSelector extends StatelessWidget {
                     color: isSelected
                         ? colors.primary.withAlpha(isDark ? 160 : 200)
                         : (isDark
-                            ? colors.surfaceSecondary.withAlpha(120)
-                            : colors.surfacePrimary.withAlpha(160)),
+                              ? colors.surfaceSecondary.withAlpha(120)
+                              : colors.surfacePrimary.withAlpha(160)),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
@@ -101,8 +101,9 @@ class SocraticModeSelector extends StatelessWidget {
                         style: typography.footnote.medium.copyWith(
                           color: isSelected ? Colors.white : colors.textPrimary,
                           fontSize: 12,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ],

@@ -12,8 +12,8 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
   LocalOcrRepositoryImpl({
     required OcrLocalDataSource localDataSource,
     required IngestionRemoteDataSource remoteDataSource,
-  })  : _local = localDataSource,
-        _remote = remoteDataSource;
+  }) : _local = localDataSource,
+       _remote = remoteDataSource;
 
   final OcrLocalDataSource _local;
   final IngestionRemoteDataSource _remote;

@@ -146,7 +146,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Stream<List<LeaderboardEntryEntity>> streamLeaderboards({String? track}) {
-    return _remoteDataSource.streamLeaderboards(track: track).map(
+    return _remoteDataSource
+        .streamLeaderboards(track: track)
+        .map(
           (models) => models.map((m) => m.toEntity()).toList(),
         );
   }

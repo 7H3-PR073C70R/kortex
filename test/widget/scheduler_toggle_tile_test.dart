@@ -22,35 +22,37 @@ void main() {
       );
     }
 
-    testWidgets('renders current SM-2 state and triggers switch to FSRS on tap',
-        (tester) async {
-      SpacedRepetitionAlgorithm? selected;
+    testWidgets(
+      'renders current SM-2 state and triggers switch to FSRS on tap',
+      (tester) async {
+        SpacedRepetitionAlgorithm? selected;
 
-      await tester.pumpWidget(
-        createTestApp(
-          SchedulerToggleTile(
-            currentAlgorithm: SpacedRepetitionAlgorithm.sm2,
-            onChanged: (alg) {
-              selected = alg;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            SchedulerToggleTile(
+              currentAlgorithm: SpacedRepetitionAlgorithm.sm2,
+              onChanged: (alg) {
+                selected = alg;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Spaced Repetition Scheduler'), findsOneWidget);
-      expect(find.text('SM-2'), findsOneWidget);
-      expect(find.text('FSRS-4.5'), findsOneWidget);
-      expect(
-        find.text('Classical SuperMemo-2 interval and ease factor spacing'),
-        findsOneWidget,
-      );
+        expect(find.text('Spaced Repetition Scheduler'), findsOneWidget);
+        expect(find.text('SM-2'), findsOneWidget);
+        expect(find.text('FSRS-4.5'), findsOneWidget);
+        expect(
+          find.text('Classical SuperMemo-2 interval and ease factor spacing'),
+          findsOneWidget,
+        );
 
-      await tester.tap(find.text('FSRS-4.5'));
-      await tester.pump();
+        await tester.tap(find.text('FSRS-4.5'));
+        await tester.pump();
 
-      expect(selected, equals(SpacedRepetitionAlgorithm.fsrs));
-    });
+        expect(selected, equals(SpacedRepetitionAlgorithm.fsrs));
+      },
+    );
   });
 }

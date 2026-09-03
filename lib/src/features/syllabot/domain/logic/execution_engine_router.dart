@@ -7,8 +7,8 @@ class ExecutionEngineRouter {
   const ExecutionEngineRouter({
     required DevicePerformanceBenchmark benchmark,
     required HardwareGuardFactory guardFactory,
-  })  : _benchmark = benchmark,
-        _guardFactory = guardFactory;
+  }) : _benchmark = benchmark,
+       _guardFactory = guardFactory;
 
   final DevicePerformanceBenchmark _benchmark;
   final HardwareGuardFactory _guardFactory;
@@ -32,12 +32,12 @@ class ExecutionEngineRouter {
     required bool isNetworkConnected,
   }) {
     return _benchmark.watchHardwareProfile().map(
-          (profile) => _guardFactory.evaluateHardware(
-            profile: profile,
-            userPrefersOfflineAi: userPrefersOfflineAi,
-            isNetworkConnected: isNetworkConnected,
-          ),
-        );
+      (profile) => _guardFactory.evaluateHardware(
+        profile: profile,
+        userPrefersOfflineAi: userPrefersOfflineAi,
+        isNetworkConnected: isNetworkConnected,
+      ),
+    );
   }
 
   /// Maps internal notice keys to localized UI string messages.

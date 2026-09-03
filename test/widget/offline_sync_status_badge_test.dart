@@ -21,8 +21,9 @@ void main() {
       );
     }
 
-    testWidgets('renders pending sync count and triggers sync on tap',
-        (tester) async {
+    testWidgets('renders pending sync count and triggers sync on tap', (
+      tester,
+    ) async {
       var syncTriggered = false;
 
       await tester.pumpWidget(
@@ -47,8 +48,9 @@ void main() {
       expect(syncTriggered, isTrue);
     });
 
-    testWidgets('renders progress indicator when syncing is active',
-        (tester) async {
+    testWidgets('renders progress indicator when syncing is active', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const OfflineSyncStatusBadge(

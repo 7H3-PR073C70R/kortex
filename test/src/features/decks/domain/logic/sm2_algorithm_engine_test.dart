@@ -19,31 +19,35 @@ void main() {
       expect(result.nextDueDate, fixedNow.add(const Duration(days: 1)));
     });
 
-    test('sets interval to 1 on first successful review (rep == 0, q >= 3)',
-        () {
-      final result = engine.calculate(
-        quality: 4, // Good
-        previousInterval: 0,
-        previousRepetitions: 0,
-        referenceDate: fixedNow,
-      );
+    test(
+      'sets interval to 1 on first successful review (rep == 0, q >= 3)',
+      () {
+        final result = engine.calculate(
+          quality: 4, // Good
+          previousInterval: 0,
+          previousRepetitions: 0,
+          referenceDate: fixedNow,
+        );
 
-      expect(result.newRepetitions, 1);
-      expect(result.nextInterval, 1);
-    });
+        expect(result.newRepetitions, 1);
+        expect(result.nextInterval, 1);
+      },
+    );
 
-    test('sets interval to 6 on second successful review (rep == 1, q >= 3)',
-        () {
-      final result = engine.calculate(
-        quality: 4, // Good
-        previousInterval: 1,
-        previousRepetitions: 1,
-        referenceDate: fixedNow,
-      );
+    test(
+      'sets interval to 6 on second successful review (rep == 1, q >= 3)',
+      () {
+        final result = engine.calculate(
+          quality: 4, // Good
+          previousInterval: 1,
+          previousRepetitions: 1,
+          referenceDate: fixedNow,
+        );
 
-      expect(result.newRepetitions, 2);
-      expect(result.nextInterval, 6);
-    });
+        expect(result.newRepetitions, 2);
+        expect(result.nextInterval, 6);
+      },
+    );
 
     test('scales interval by easeFactor on subsequent reviews (rep > 1)', () {
       final result = engine.calculate(

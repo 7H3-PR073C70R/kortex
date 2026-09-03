@@ -36,20 +36,18 @@ class HeaderProfileBar extends StatelessWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final authProfile = authState?.userProfile;
-    final effectiveName = userName ??
-        authProfile?.displayName ??
-        authState?.user?.displayName;
-    final effectivePhoto = userPhotoUrl ??
-        authProfile?.photoUrl ??
-        authState?.user?.photoUrl;
+    final effectiveName =
+        userName ?? authProfile?.displayName ?? authState?.user?.displayName;
+    final effectivePhoto =
+        userPhotoUrl ?? authProfile?.photoUrl ?? authState?.user?.photoUrl;
 
-    final displayName = (effectiveName != null &&
-            effectiveName.trim().isNotEmpty)
+    final displayName =
+        (effectiveName != null && effectiveName.trim().isNotEmpty)
         ? effectiveName.trim().split(' ').first
         : l10n.dashboardScholarFallback;
 
-    final effectiveStreak = (authProfile?.streakDays != null &&
-            authProfile!.streakDays > 0)
+    final effectiveStreak =
+        (authProfile?.streakDays != null && authProfile!.streakDays > 0)
         ? authProfile.streakDays
         : analytics.currentStreakDays;
 
@@ -83,14 +81,12 @@ class HeaderProfileBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: colors.primary
-                                .withAlpha(isDark ? 160 : 200),
+                            color: colors.primary.withAlpha(isDark ? 160 : 200),
                             width: 1.8,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary
-                                  .withAlpha(isDark ? 80 : 30),
+                              color: colors.primary.withAlpha(isDark ? 80 : 30),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),

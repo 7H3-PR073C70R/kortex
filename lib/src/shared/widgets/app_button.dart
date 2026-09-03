@@ -19,7 +19,8 @@ enum AppButtonVariant {
 enum AppButtonSize {
   small(height: 38, fontSize: 13, iconSize: 16, horizontalPadding: 14),
   medium(height: 48, fontSize: 15, iconSize: 18, horizontalPadding: 20),
-  large(height: 56, fontSize: 17, iconSize: 20, horizontalPadding: 24);
+  large(height: 56, fontSize: 17, iconSize: 20, horizontalPadding: 24)
+  ;
 
   const AppButtonSize({
     required this.height,
@@ -75,22 +76,22 @@ class AppButton extends StatefulWidget {
     FocusNode? focusNode,
     bool autofocus = false,
   }) : this(
-          key: key,
-          text: text,
-          onPressed: onPressed,
-          variant: AppButtonVariant.primary,
-          size: size,
-          isLoading: isLoading,
-          isEnabled: isEnabled,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          width: width,
-          borderRadius: borderRadius,
-          semanticLabel: semanticLabel,
-          semanticHint: semanticHint,
-          focusNode: focusNode,
-          autofocus: autofocus,
-        );
+         key: key,
+         text: text,
+         onPressed: onPressed,
+         variant: AppButtonVariant.primary,
+         size: size,
+         isLoading: isLoading,
+         isEnabled: isEnabled,
+         prefixIcon: prefixIcon,
+         suffixIcon: suffixIcon,
+         width: width,
+         borderRadius: borderRadius,
+         semanticLabel: semanticLabel,
+         semanticHint: semanticHint,
+         focusNode: focusNode,
+         autofocus: autofocus,
+       );
 
   /// Factory constructor for a secondary surface button.
   const AppButton.secondary({
@@ -109,22 +110,22 @@ class AppButton extends StatefulWidget {
     FocusNode? focusNode,
     bool autofocus = false,
   }) : this(
-          key: key,
-          text: text,
-          onPressed: onPressed,
-          variant: AppButtonVariant.secondary,
-          size: size,
-          isLoading: isLoading,
-          isEnabled: isEnabled,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          width: width,
-          borderRadius: borderRadius,
-          semanticLabel: semanticLabel,
-          semanticHint: semanticHint,
-          focusNode: focusNode,
-          autofocus: autofocus,
-        );
+         key: key,
+         text: text,
+         onPressed: onPressed,
+         variant: AppButtonVariant.secondary,
+         size: size,
+         isLoading: isLoading,
+         isEnabled: isEnabled,
+         prefixIcon: prefixIcon,
+         suffixIcon: suffixIcon,
+         width: width,
+         borderRadius: borderRadius,
+         semanticLabel: semanticLabel,
+         semanticHint: semanticHint,
+         focusNode: focusNode,
+         autofocus: autofocus,
+       );
 
   /// Factory constructor for an outline bordered button.
   const AppButton.outline({
@@ -143,22 +144,22 @@ class AppButton extends StatefulWidget {
     FocusNode? focusNode,
     bool autofocus = false,
   }) : this(
-          key: key,
-          text: text,
-          onPressed: onPressed,
-          variant: AppButtonVariant.outline,
-          size: size,
-          isLoading: isLoading,
-          isEnabled: isEnabled,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          width: width,
-          borderRadius: borderRadius,
-          semanticLabel: semanticLabel,
-          semanticHint: semanticHint,
-          focusNode: focusNode,
-          autofocus: autofocus,
-        );
+         key: key,
+         text: text,
+         onPressed: onPressed,
+         variant: AppButtonVariant.outline,
+         size: size,
+         isLoading: isLoading,
+         isEnabled: isEnabled,
+         prefixIcon: prefixIcon,
+         suffixIcon: suffixIcon,
+         width: width,
+         borderRadius: borderRadius,
+         semanticLabel: semanticLabel,
+         semanticHint: semanticHint,
+         focusNode: focusNode,
+         autofocus: autofocus,
+       );
 
   /// Factory constructor for a destructive warning button.
   const AppButton.destructive({
@@ -177,22 +178,22 @@ class AppButton extends StatefulWidget {
     FocusNode? focusNode,
     bool autofocus = false,
   }) : this(
-          key: key,
-          text: text,
-          onPressed: onPressed,
-          variant: AppButtonVariant.destructive,
-          size: size,
-          isLoading: isLoading,
-          isEnabled: isEnabled,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          width: width,
-          borderRadius: borderRadius,
-          semanticLabel: semanticLabel,
-          semanticHint: semanticHint,
-          focusNode: focusNode,
-          autofocus: autofocus,
-        );
+         key: key,
+         text: text,
+         onPressed: onPressed,
+         variant: AppButtonVariant.destructive,
+         size: size,
+         isLoading: isLoading,
+         isEnabled: isEnabled,
+         prefixIcon: prefixIcon,
+         suffixIcon: suffixIcon,
+         width: width,
+         borderRadius: borderRadius,
+         semanticLabel: semanticLabel,
+         semanticHint: semanticHint,
+         focusNode: focusNode,
+         autofocus: autofocus,
+       );
 
   final String text;
   final VoidCallback? onPressed;
@@ -279,11 +280,11 @@ class _AppButtonState extends State<AppButton> {
     final resolvedBg =
         widget.backgroundColor ?? _resolveBackgroundColor(colors);
     final resolvedFg = widget.textColor ?? _resolveForegroundColor(colors);
-    final resolvedBorder =
-        widget.borderColor ?? _resolveBorderColor(colors);
+    final resolvedBorder = widget.borderColor ?? _resolveBorderColor(colors);
     final effectiveRadius = widget.borderRadius ?? 12.0;
 
-    final effectiveTextStyle = widget.textStyle ??
+    final effectiveTextStyle =
+        widget.textStyle ??
         typography.subhead.semiBold.copyWith(
           fontSize: widget.size.fontSize,
           color: resolvedFg,

@@ -128,8 +128,10 @@ class _CalibrationView extends StatelessWidget {
                         children: [
                           BlocBuilder<CalibrationCubit, CalibrationState>(
                             builder: (ctx, state) {
-                              final isChatMode =
-                                  context.watch<AuthModeCubit>().state.isChat;
+                              final isChatMode = context
+                                  .watch<AuthModeCubit>()
+                                  .state
+                                  .isChat;
                               if (isChatMode) return const SizedBox.shrink();
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -161,9 +163,9 @@ class _CalibrationView extends StatelessWidget {
                                         l10n.calibrationSkip,
                                         style: typography.caption.semiBold
                                             .copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 12,
-                                        ),
+                                              color: colors.textSecondary,
+                                              fontSize: 12,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -173,8 +175,10 @@ class _CalibrationView extends StatelessWidget {
                             },
                           ),
                           ModeSwitchButton(
-                            isChatMode:
-                                context.watch<AuthModeCubit>().state.isChat,
+                            isChatMode: context
+                                .watch<AuthModeCubit>()
+                                .state
+                                .isChat,
                             onToggle: () {
                               context.read<AuthModeCubit>().toggleMode();
                             },
@@ -187,8 +191,10 @@ class _CalibrationView extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isChatMode =
-                          context.watch<AuthModeCubit>().state.isChat;
+                      final isChatMode = context
+                          .watch<AuthModeCubit>()
+                          .state
+                          .isChat;
 
                       if (constraints.maxWidth >= 1024) {
                         return _DesktopCalibrationSplitLayout(
@@ -271,8 +277,8 @@ class _MobileCalibrationLayout extends StatelessWidget {
                     );
                   },
                   transitionBuilder: (child, animation) {
-                    final isCurrentChild = child.key ==
-                        ValueKey<int>(state.currentStepIndex);
+                    final isCurrentChild =
+                        child.key == ValueKey<int>(state.currentStepIndex);
                     final offsetTween = isCurrentChild
                         ? Tween<Offset>(
                             begin: Offset(

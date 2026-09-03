@@ -191,15 +191,16 @@ void main() {
           (_) async => const Right<Failure, UserProfileEntity>(tProfile),
         );
 
-      final result = await updateCourseTrackUseCase(
-        track: 'JAMB',
-        dailyTarget: 25,
-      );
+        final result = await updateCourseTrackUseCase(
+          track: 'JAMB',
+          dailyTarget: 25,
+        );
 
-      expect(
-        result,
-        equals(const Right<Failure, UserProfileEntity>(tProfile)),
-      );
-    });
+        expect(
+          result,
+          equals(const Right<Failure, UserProfileEntity>(tProfile)),
+        );
+      },
+    );
   });
 }

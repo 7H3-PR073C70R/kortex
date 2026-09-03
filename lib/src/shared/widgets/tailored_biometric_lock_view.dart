@@ -34,13 +34,13 @@ class TailoredBiometricLockView extends StatelessWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userProfile = authState?.userProfile;
-    final displayName = customDisplayName ??
+    final displayName =
+        customDisplayName ??
         userProfile?.displayName ??
         authState?.user?.displayName ??
         'Scholar';
-    final photoUrl = customPhotoUrl ??
-        userProfile?.photoUrl ??
-        authState?.user?.photoUrl;
+    final photoUrl =
+        customPhotoUrl ?? userProfile?.photoUrl ?? authState?.user?.photoUrl;
 
     return Material(
       color: Colors.transparent,
@@ -113,8 +113,9 @@ class TailoredBiometricLockView extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.surfacePrimary
-                            .withAlpha(isDark ? 180 : 220),
+                        color: colors.surfacePrimary.withAlpha(
+                          isDark ? 180 : 220,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: colors.surfaceBorder.withAlpha(90),
@@ -157,8 +158,9 @@ class TailoredBiometricLockView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary
-                                  .withAlpha(isDark ? 120 : 60),
+                              color: colors.primary.withAlpha(
+                                isDark ? 120 : 60,
+                              ),
                               blurRadius: 18,
                               offset: const Offset(0, 6),
                             ),

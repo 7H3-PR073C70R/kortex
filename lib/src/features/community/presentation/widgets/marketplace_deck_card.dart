@@ -23,7 +23,8 @@ class MarketplaceDeckCard extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final semanticsLabel = 'Marketplace Deck: ${deck.title}, '
+    final semanticsLabel =
+        'Marketplace Deck: ${deck.title}, '
         'Subject: ${deck.subject}, Cards: ${deck.totalCards}';
 
     return Semantics(

@@ -2246,4 +2246,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preferencesReminderSubtitle =>
       'Alert 1 hour before streak reset (8:00 PM)';
+
+  @override
+  String get deleteStudyDeckTitle => 'Delete Study Deck';
+
+  @override
+  String deleteStudyDeckDesc(String title, int count) {
+    return 'Are you sure you want to delete \"$title\" and its $count cards? This action cannot be undone.';
+  }
+
+  @override
+  String get deleteDeckAction => 'Delete Deck';
 }

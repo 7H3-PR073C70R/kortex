@@ -186,9 +186,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   duration: const Duration(milliseconds: 260),
                                   transitionBuilder: (child, animation) =>
                                       ScaleTransition(
-                                    scale: animation,
-                                    child: child,
-                                  ),
+                                        scale: animation,
+                                        child: child,
+                                      ),
                                   child: Icon(
                                     isLastPage
                                         ? Icons.rocket_launch_outlined

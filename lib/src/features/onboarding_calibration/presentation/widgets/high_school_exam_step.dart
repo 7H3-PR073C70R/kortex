@@ -15,8 +15,11 @@ class HighSchoolExamStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedExam =
-        context.watch<CalibrationCubit>().state.profile.highSchoolExam;
+    final selectedExam = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .highSchoolExam;
 
     final exams = [
       (

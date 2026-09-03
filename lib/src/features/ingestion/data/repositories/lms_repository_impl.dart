@@ -6,7 +6,7 @@ import 'package:kortex/src/features/ingestion/domain/repositories/lms_repository
 
 class LmsRepositoryImpl implements LmsRepository {
   LmsRepositoryImpl({LmsImportDataSource? dataSource})
-      : _dataSource = dataSource ?? LmsImportDataSourceImpl();
+    : _dataSource = dataSource ?? LmsImportDataSourceImpl();
 
   final LmsImportDataSource _dataSource;
 

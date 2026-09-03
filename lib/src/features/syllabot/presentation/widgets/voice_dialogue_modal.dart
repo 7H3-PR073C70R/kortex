@@ -298,10 +298,10 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                     final orbColor = isListening
                         ? colors.error
                         : isSpeaking
-                            ? colors.syllabotAccent
-                            : isThinking
-                                ? colors.warning
-                                : colors.primary;
+                        ? colors.syllabotAccent
+                        : isThinking
+                        ? colors.warning
+                        : colors.primary;
 
                     return Stack(
                       alignment: Alignment.center,
@@ -352,10 +352,10 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                             isListening
                                 ? Icons.mic_rounded
                                 : isSpeaking
-                                    ? Icons.volume_up_rounded
-                                    : isThinking
-                                        ? Icons.auto_awesome_rounded
-                                        : Icons.mic_none_rounded,
+                                ? Icons.volume_up_rounded
+                                : isThinking
+                                ? Icons.auto_awesome_rounded
+                                : Icons.mic_none_rounded,
                             color: Colors.white,
                             size: 38,
                           ),
@@ -373,10 +373,10 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                 _state == DialogueState.listening
                     ? l10n.voiceDialogueListening
                     : _state == DialogueState.thinking
-                        ? l10n.voiceDialogueThinking
-                        : _state == DialogueState.speaking
-                            ? l10n.voiceDialogueSpeaking
-                            : l10n.voiceDialogueTapToSpeak,
+                    ? l10n.voiceDialogueThinking
+                    : _state == DialogueState.speaking
+                    ? l10n.voiceDialogueSpeaking
+                    : l10n.voiceDialogueTapToSpeak,
                 style: typography.title3.bold.copyWith(
                   color: colors.textPrimary,
                   fontSize: 18,
@@ -456,10 +456,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: (_state == DialogueState.listening
-                                  ? colors.error
-                                  : colors.primary)
-                              .withAlpha(90),
+                          color:
+                              (_state == DialogueState.listening
+                                      ? colors.error
+                                      : colors.primary)
+                                  .withAlpha(90),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),

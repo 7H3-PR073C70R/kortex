@@ -74,18 +74,18 @@ class FlashcardEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        deckId,
-        front,
-        back,
-        frontLatex,
-        backLatex,
-        imageUrl,
-        interval,
-        repetitions,
-        easeFactor,
-        lastReviewed,
-        nextDueDate,
-        sourceTopic,
-      ];
+    id,
+    deckId,
+    front,
+    back,
+    frontLatex,
+    backLatex,
+    imageUrl,
+    interval,
+    repetitions,
+    easeFactor,
+    lastReviewed,
+    nextDueDate,
+    sourceTopic,
+  ];
 }

@@ -23,8 +23,7 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with TickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final AnimationController _pulseController;
   late final Animation<double> _logoScaleAnimation;
@@ -124,7 +123,8 @@ class _SplashPageState extends State<SplashPage>
     }
 
     final storage = locator<LocalStorageService>();
-    final hasCompletedOnboarding = storage.getPreference(
+    final hasCompletedOnboarding =
+        storage.getPreference(
           key: PrefKeys.hasCompletedOnboarding,
         ) ==
         'true';
@@ -202,10 +202,12 @@ class _SplashPageState extends State<SplashPage>
                 _pulseController,
               ]),
               builder: (context, child) {
-                final scale =
-                    disableAnimations ? 1.0 : _logoScaleAnimation.value;
-                final opacity =
-                    disableAnimations ? 1.0 : _logoOpacityAnimation.value;
+                final scale = disableAnimations
+                    ? 1.0
+                    : _logoScaleAnimation.value;
+                final opacity = disableAnimations
+                    ? 1.0
+                    : _logoOpacityAnimation.value;
                 final glowExpand = disableAnimations
                     ? 1.0
                     : _glowExpansionAnimation.value.clamp(0.0, 1.0);
@@ -262,8 +264,9 @@ class _SplashPageState extends State<SplashPage>
             AnimatedBuilder(
               animation: _entranceController,
               builder: (context, child) {
-                final opacity =
-                    disableAnimations ? 1.0 : _textFadeAnimation.value;
+                final opacity = disableAnimations
+                    ? 1.0
+                    : _textFadeAnimation.value;
                 final translateY = disableAnimations
                     ? 0.0
                     : (1.0 - _textFadeAnimation.value) * 16.0;

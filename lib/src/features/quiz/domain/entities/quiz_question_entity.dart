@@ -63,16 +63,16 @@ class QuizQuestionEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        prompt,
-        type,
-        options,
-        correctAnswer,
-        explanation,
-        subTopic,
-        latexFormula,
-        userSelectedAnswer,
-        isAnswered,
-        isCorrect,
-      ];
+    id,
+    prompt,
+    type,
+    options,
+    correctAnswer,
+    explanation,
+    subTopic,
+    latexFormula,
+    userSelectedAnswer,
+    isAnswered,
+    isCorrect,
+  ];
 }

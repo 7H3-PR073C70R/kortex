@@ -23,8 +23,7 @@ void main() {
       expect(errorMessage, 'Backend error message');
     });
 
-    test(
-        'errorMessage should return DioException message if no'
+    test('errorMessage should return DioException message if no'
         ' backend message', () {
       //! Arrange
       final dioException = DioException(

@@ -32,8 +32,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
       SocraticMode.stepByStep:
           'Walk through this problem step-by-step with clarity.',
       SocraticMode.directAnswer: 'Provide a direct and comprehensive answer.',
-      SocraticMode.examSim:
-          'Simulate an exam scenario with marks breakdown.',
+      SocraticMode.examSim: 'Simulate an exam scenario with marks breakdown.',
       SocraticMode.deepResearch:
           'Provide a deep theoretical research overview.',
     };
@@ -49,12 +48,15 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   Future<List<ConversationSessionModel>> getCachedSessions() async {
     try {
       if (_storage != null) {
-        final raw = _storage!.getPreference(key: _sessionsKey);
+        final raw = _storage.getPreference(key: _sessionsKey);
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List<dynamic>;
           final parsed = list
-              .map((e) =>
-                  ConversationSessionModel.fromJson(e as Map<String, dynamic>))
+              .map(
+                (e) => ConversationSessionModel.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
               .toList();
           return parsed;
         }
@@ -78,7 +80,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
           ...existing.where((s) => s.id != session.id),
         ];
         final jsonStr = jsonEncode(updated.map((s) => s.toJson()).toList());
-        await _storage!.savePreference(key: _sessionsKey, data: jsonStr);
+        await _storage.savePreference(key: _sessionsKey, data: jsonStr);
       }
     } on Object catch (_) {}
   }
@@ -93,8 +95,8 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
         final existing = await getCachedSessions();
         final updated = existing.where((s) => s.id != sessionId).toList();
         final jsonStr = jsonEncode(updated.map((s) => s.toJson()).toList());
-        await _storage!.savePreference(key: _sessionsKey, data: jsonStr);
-        await _storage!.deletePreference(key: '$_messageKeyPrefix$sessionId');
+        await _storage.savePreference(key: _sessionsKey, data: jsonStr);
+        await _storage.deletePreference(key: '$_messageKeyPrefix$sessionId');
       }
     } on Object catch (_) {}
   }
@@ -105,7 +107,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   }) async {
     try {
       if (_storage != null) {
-        final raw = _storage!.getPreference(key: '$_messageKeyPrefix$sessionId');
+        final raw = _storage.getPreference(key: '$_messageKeyPrefix$sessionId');
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List<dynamic>;
           final parsed = list
@@ -129,7 +131,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
         final existing = await getCachedMessages(sessionId: message.sessionId);
         final updated = [...existing, model];
         final jsonStr = jsonEncode(updated.map((m) => m.toJson()).toList());
-        await _storage!.savePreference(
+        await _storage.savePreference(
           key: '$_messageKeyPrefix${message.sessionId}',
           data: jsonStr,
         );

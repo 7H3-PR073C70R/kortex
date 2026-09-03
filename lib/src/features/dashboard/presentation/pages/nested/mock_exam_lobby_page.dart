@@ -48,8 +48,9 @@ class MockExamLobbyPage extends HookWidget {
     ];
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -142,15 +143,16 @@ class MockExamLobbyPage extends HookWidget {
                           color: isSelected
                               ? colors.primary.withAlpha(isDark ? 50 : 25)
                               : (isDark
-                                  ? colors.surfaceSecondary.withAlpha(140)
-                                  : colors.surfacePrimary.withAlpha(200)),
+                                    ? colors.surfaceSecondary.withAlpha(140)
+                                    : colors.surfacePrimary.withAlpha(200)),
                           border: Border.all(
                             color: isSelected
                                 ? colors.primary
                                 : (isDark
-                                    ? colors.surfaceBorderHighlight
-                                        .withAlpha(60)
-                                    : colors.surfaceBorder.withAlpha(120)),
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          60,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(120)),
                             width: isSelected ? 1.5 : 1.0,
                           ),
                         ),
@@ -211,7 +213,8 @@ class MockExamLobbyPage extends HookWidget {
                   unawaited(
                     context.router.push(
                       SyllabotChatRoute(
-                        initialPrompt: 'Launch mock exam simulator for '
+                        initialPrompt:
+                            'Launch mock exam simulator for '
                             '$examName in $selectedMode mode.',
                       ),
                     ),

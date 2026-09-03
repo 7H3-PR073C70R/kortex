@@ -37,26 +37,28 @@ void main() {
       useCase = QueryDocumentContextUseCase(mockRagRepository);
     });
 
-    test('returns top relevant document chunks on successful vector match',
-        () async {
-      when(
-        () => mockRagRepository.queryDocumentContext(
+    test(
+      'returns top relevant document chunks on successful vector match',
+      () async {
+        when(
+          () => mockRagRepository.queryDocumentContext(
+            query: 'Explain second law of thermodynamics and Carnot efficiency',
+            matchThreshold: 0.65,
+          ),
+        ).thenAnswer((_) async => const Right(tChunks));
+
+        final result = await useCase(
           query: 'Explain second law of thermodynamics and Carnot efficiency',
-          matchThreshold: 0.65,
-        ),
-      ).thenAnswer((_) async => const Right(tChunks));
+        );
 
-      final result = await useCase(
-        query: 'Explain second law of thermodynamics and Carnot efficiency',
-      );
-
-      expect(result.isRight, isTrue);
-      final chunks =
-          (result as Right<dynamic, List<DocumentChunkEntity>>).value;
-      expect(chunks.length, equals(2));
-      expect(chunks.first.similarityScore, equals(0.92));
-      expect(chunks.first.content, contains('Entropy always increases'));
-    });
+        expect(result.isRight, isTrue);
+        final chunks =
+            (result as Right<dynamic, List<DocumentChunkEntity>>).value;
+        expect(chunks.length, equals(2));
+        expect(chunks.first.similarityScore, equals(0.92));
+        expect(chunks.first.content, contains('Entropy always increases'));
+      },
+    );
 
     test('propagates ServerFailure when vector RPC fails', () async {
       when(

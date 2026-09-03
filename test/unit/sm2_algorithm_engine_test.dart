@@ -54,26 +54,28 @@ void main() {
       );
     });
 
-    test('Failed recall (quality 0..2) resets repetition count and interval',
-        () {
-      for (final failedQuality in [0, 1, 2]) {
-        final result = engine.calculate(
-          quality: failedQuality,
-          previousInterval: 16,
-          previousRepetitions: 3,
-          previousEaseFactor: 2.6,
-          referenceDate: baseDate,
-        );
+    test(
+      'Failed recall (quality 0..2) resets repetition count and interval',
+      () {
+        for (final failedQuality in [0, 1, 2]) {
+          final result = engine.calculate(
+            quality: failedQuality,
+            previousInterval: 16,
+            previousRepetitions: 3,
+            previousEaseFactor: 2.6,
+            referenceDate: baseDate,
+          );
 
-        expect(result.nextInterval, equals(1));
-        expect(result.newRepetitions, equals(0));
-        expect(result.newEaseFactor, lessThan(2.6));
-        expect(
-          result.nextDueDate,
-          equals(baseDate.add(const Duration(days: 1))),
-        );
-      }
-    });
+          expect(result.nextInterval, equals(1));
+          expect(result.newRepetitions, equals(0));
+          expect(result.newEaseFactor, lessThan(2.6));
+          expect(
+            result.nextDueDate,
+            equals(baseDate.add(const Duration(days: 1))),
+          );
+        }
+      },
+    );
 
     test('Ease factor is strictly clamped to a minimum lower bound of 1.3', () {
       var easeFactor = 1.4;

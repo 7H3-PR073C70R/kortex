@@ -50,8 +50,9 @@ class LoginPage extends HookWidget {
       },
       builder: (context, state) {
         return Scaffold(
-          backgroundColor:
-              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
           body: Stack(
             children: [
               // Atmospheric campus backdrop
@@ -76,19 +77,22 @@ class LoginPage extends HookWidget {
                           child: Container(
                             padding: const EdgeInsets.all(28),
                             decoration: BoxDecoration(
-                              color: (isDark
-                                      ? colors.surfaceSecondary
-                                      : colors.surfacePrimary)
-                                  .withAlpha(isDark ? 230 : 245),
+                              color:
+                                  (isDark
+                                          ? colors.surfaceSecondary
+                                          : colors.surfacePrimary)
+                                      .withAlpha(isDark ? 230 : 245),
                               borderRadius: BorderRadius.circular(28),
                               border: Border.all(
-                                color: colors.primary
-                                    .withAlpha(isDark ? 50 : 25),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 50 : 25,
+                                ),
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black
-                                      .withAlpha(isDark ? 70 : 20),
+                                  color: Colors.black.withAlpha(
+                                    isDark ? 70 : 20,
+                                  ),
                                   blurRadius: 24,
                                   offset: const Offset(0, 8),
                                 ),
@@ -149,19 +153,19 @@ class LoginPage extends HookWidget {
                                     errorBuilder:
                                         (context, error, stackTrace) =>
                                             const Icon(
-                                      Icons.g_mobiledata_rounded,
-                                      size: 26,
-                                      color: Colors.redAccent,
-                                    ),
+                                              Icons.g_mobiledata_rounded,
+                                              size: 26,
+                                              color: Colors.redAccent,
+                                            ),
                                   ),
                                   isLoading: state.isLoading,
                                   onTap: () {
                                     context.read<AuthBloc>().add(
-                                          const AuthSocialLoginRequested(
-                                            provider: 'google',
-                                            idToken: 'demo_google_token',
-                                          ),
-                                        );
+                                      const AuthSocialLoginRequested(
+                                        provider: 'google',
+                                        idToken: 'demo_google_token',
+                                      ),
+                                    );
                                   },
                                 ),
                                 const SizedBox(height: 12),
@@ -177,11 +181,11 @@ class LoginPage extends HookWidget {
                                   isLoading: state.isLoading,
                                   onTap: () {
                                     context.read<AuthBloc>().add(
-                                          const AuthSocialLoginRequested(
-                                            provider: 'apple',
-                                            idToken: 'demo_apple_token',
-                                          ),
-                                        );
+                                      const AuthSocialLoginRequested(
+                                        provider: 'apple',
+                                        idToken: 'demo_apple_token',
+                                      ),
+                                    );
                                   },
                                 ),
                                 const SizedBox(height: 24),
@@ -191,8 +195,9 @@ class LoginPage extends HookWidget {
                                   children: [
                                     Expanded(
                                       child: Divider(
-                                        color:
-                                            colors.textSecondary.withAlpha(60),
+                                        color: colors.textSecondary.withAlpha(
+                                          60,
+                                        ),
                                       ),
                                     ),
                                     Padding(
@@ -203,14 +208,15 @@ class LoginPage extends HookWidget {
                                         'or email',
                                         style: typography.caption.medium
                                             .copyWith(
-                                          color: colors.textSecondary,
-                                        ),
+                                              color: colors.textSecondary,
+                                            ),
                                       ),
                                     ),
                                     Expanded(
                                       child: Divider(
-                                        color:
-                                            colors.textSecondary.withAlpha(60),
+                                        color: colors.textSecondary.withAlpha(
+                                          60,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -246,24 +252,24 @@ class LoginPage extends HookWidget {
                                   onPressed: state.isLoading
                                       ? null
                                       : () {
-                                          final email =
-                                              emailController.text.trim();
+                                          final email = emailController.text
+                                              .trim();
                                           if (email.isEmpty) return;
 
                                           if (isPasswordMode.value) {
                                             context.read<AuthBloc>().add(
-                                                  AuthLoginRequested(
-                                                    email: email,
-                                                    password:
-                                                        passwordController.text,
-                                                  ),
-                                                );
+                                              AuthLoginRequested(
+                                                email: email,
+                                                password:
+                                                    passwordController.text,
+                                              ),
+                                            );
                                           } else {
                                             context.read<AuthBloc>().add(
-                                                  AuthMagicLinkRequested(
-                                                    email: email,
-                                                  ),
-                                                );
+                                              AuthMagicLinkRequested(
+                                                email: email,
+                                              ),
+                                            );
                                           }
                                         },
                                 ),
@@ -280,8 +286,7 @@ class LoginPage extends HookWidget {
                                       isPasswordMode.value
                                           ? l10n.authUseMagicLinkInstead
                                           : l10n.authUsePasswordInstead,
-                                      style:
-                                          typography.footnote.bold.copyWith(
+                                      style: typography.footnote.bold.copyWith(
                                         color: colors.primary,
                                       ),
                                     ),

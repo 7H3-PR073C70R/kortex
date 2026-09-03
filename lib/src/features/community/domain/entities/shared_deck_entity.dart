@@ -63,17 +63,17 @@ class SharedDeckEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        ownerId,
-        ownerName,
-        title,
-        subject,
-        description,
-        category,
-        totalCards,
-        downloadsCount,
-        rating,
-        cards,
-        originalDeckId,
-      ];
+    id,
+    ownerId,
+    ownerName,
+    title,
+    subject,
+    description,
+    category,
+    totalCards,
+    downloadsCount,
+    rating,
+    cards,
+    originalDeckId,
+  ];
 }

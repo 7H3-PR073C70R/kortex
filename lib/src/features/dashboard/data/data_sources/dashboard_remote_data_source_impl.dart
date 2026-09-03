@@ -62,7 +62,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   DashboardFeedModel _generateFallbackFeedModel(
     AnalyticsSummaryModel? liveAnalytics,
   ) {
-    final analytics = liveAnalytics ??
+    final analytics =
+        liveAnalytics ??
         _userActivityService?.getAnalyticsSummary() ??
         AnalyticsSummaryModel(
           currentStreakDays: 0,

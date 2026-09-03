@@ -54,21 +54,23 @@ void main() {
       expect(questions.first.prompt, equals('Solve for x: 3x = 9'));
     });
 
-    test('getPastQuestions falls back to seed cache when client throws error',
-        () async {
-      when(
-        () => mockClient.fetchPastQuestions(any()),
-      ).thenThrow(Exception('Network error'));
+    test(
+      'getPastQuestions falls back to seed cache when client throws error',
+      () async {
+        when(
+          () => mockClient.fetchPastQuestions(any()),
+        ).thenThrow(Exception('Network error'));
 
-      final questions = await dataSource.getPastQuestions(
-        examCategory: ExamCategory.waec,
-      );
+        final questions = await dataSource.getPastQuestions(
+          examCategory: ExamCategory.waec,
+        );
 
-      expect(questions.isNotEmpty, isTrue);
-      for (final q in questions) {
-        expect(q.examType, equals(ExamCategory.waec));
-      }
-    });
+        expect(questions.isNotEmpty, isTrue);
+        for (final q in questions) {
+          expect(q.examType, equals(ExamCategory.waec));
+        }
+      },
+    );
 
     test('getAvailableSubjects returns sorted distinct subjects', () async {
       when(

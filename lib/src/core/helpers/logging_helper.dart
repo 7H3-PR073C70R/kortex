@@ -27,9 +27,11 @@ void logError(Object error, StackTrace? trace, {bool crashlytics = true}) {
   logger.e('An Error Occurred', error: error, stackTrace: trace);
 
   if (error is DioException) {
-    final sanitizedUri = error.response?.realUri.replace(
-      queryParameters: {},
-    ).toString();
+    final sanitizedUri = error.response?.realUri
+        .replace(
+          queryParameters: {},
+        )
+        .toString();
 
     logger.e({
       'type': 'Response<---',

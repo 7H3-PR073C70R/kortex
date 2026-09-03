@@ -151,21 +151,21 @@ class PastQuestionEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        examType,
-        subject,
-        year,
-        questionNumber,
-        prompt,
-        options,
-        correctOptionIndex,
-        correctOptionLabel,
-        explanation,
-        topic,
-        passage,
-        latexFormula,
-        difficulty,
-        userSelectedOptionIndex,
-        isBookmarked,
-      ];
+    id,
+    examType,
+    subject,
+    year,
+    questionNumber,
+    prompt,
+    options,
+    correctOptionIndex,
+    correctOptionLabel,
+    explanation,
+    topic,
+    passage,
+    latexFormula,
+    difficulty,
+    userSelectedOptionIndex,
+    isBookmarked,
+  ];
 }

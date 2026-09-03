@@ -37,8 +37,8 @@ class EbbinghausDecayCalculator {
     List<double>? empiricalRecallRates,
   }) {
     final points = <DailyRetentionPoint>[];
-    final defaultRates = empiricalRecallRates ??
-        [1.0, 0.94, 0.89, 0.84, 0.81, 0.77, 0.74];
+    final defaultRates =
+        empiricalRecallRates ?? [1.0, 0.94, 0.89, 0.84, 0.81, 0.77, 0.74];
 
     for (var day = 0; day < 7; day++) {
       double avgPredicted;

@@ -16,8 +16,7 @@ class AcademicFocusStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedFocus =
-        context.watch<CalibrationCubit>().state.profile.focus;
+    final selectedFocus = context.watch<CalibrationCubit>().state.profile.focus;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,27 +40,25 @@ class AcademicFocusStep extends StatelessWidget {
         const SizedBox(height: 24),
         CalibrationOptionChip(
           title: l10n.calibrationOptionUniversity,
-          subtitle:
-              'Higher research, thesis support & undergraduate degrees',
+          subtitle: 'Higher research, thesis support & undergraduate degrees',
           icon: Icons.account_balance_rounded,
           isSelected: selectedFocus == AcademicFocus.higherEducation,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setAcademicFocus(AcademicFocus.higherEducation);
+            context.read<CalibrationCubit>().setAcademicFocus(
+              AcademicFocus.higherEducation,
+            );
           },
         ),
         const SizedBox(height: 14),
         CalibrationOptionChip(
           title: l10n.calibrationOptionHighSchool,
-          subtitle:
-              'Standardized exams, syllabus revision & mock test drills',
+          subtitle: 'Standardized exams, syllabus revision & mock test drills',
           icon: Icons.school_rounded,
           isSelected: selectedFocus == AcademicFocus.highSchool,
           onTap: () {
-            context
-                .read<CalibrationCubit>()
-                .setAcademicFocus(AcademicFocus.highSchool);
+            context.read<CalibrationCubit>().setAcademicFocus(
+              AcademicFocus.highSchool,
+            );
           },
         ),
       ],

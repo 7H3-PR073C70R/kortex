@@ -23,15 +23,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required UpdateCourseTrackUseCase updateCourseTrackUseCase,
     required AuthVerifyOtpUseCase verifyOtpUseCase,
     required AuthRepository authRepository,
-  })  : _loginWithEmailUseCase = loginWithEmailUseCase,
-        _registerWithEmailUseCase = registerWithEmailUseCase,
-        _loginWithSocialUseCase = loginWithSocialUseCase,
-        _resetPasswordUseCase = resetPasswordUseCase,
-        _observeAuthStateUseCase = observeAuthStateUseCase,
-        _updateCourseTrackUseCase = updateCourseTrackUseCase,
-        _verifyOtpUseCase = verifyOtpUseCase,
-        _authRepository = authRepository,
-        super(const AuthState()) {
+  }) : _loginWithEmailUseCase = loginWithEmailUseCase,
+       _registerWithEmailUseCase = registerWithEmailUseCase,
+       _loginWithSocialUseCase = loginWithSocialUseCase,
+       _resetPasswordUseCase = resetPasswordUseCase,
+       _observeAuthStateUseCase = observeAuthStateUseCase,
+       _updateCourseTrackUseCase = updateCourseTrackUseCase,
+       _verifyOtpUseCase = verifyOtpUseCase,
+       _authRepository = authRepository,
+       super(const AuthState()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthStatusChanged>(_onAuthStatusChanged);
     on<AuthLoginRequested>(_onLoginRequested);
@@ -116,8 +116,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         status: event.status == AuthSessionStatus.authenticatedComplete
             ? AuthStatus.authenticated
             : event.status == AuthSessionStatus.authenticatedNeedsOnboarding
-                ? AuthStatus.needsOnboarding
-                : AuthStatus.unauthenticated,
+            ? AuthStatus.needsOnboarding
+            : AuthStatus.unauthenticated,
       ),
     );
   }
@@ -135,7 +135,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (failure) => emit(
           state.copyWith(
             status: AuthStatus.error,
-            errorMessage: failure.message ??
+            errorMessage:
+                failure.message ??
                 'Authentication failed. Please check credentials.',
           ),
         ),
@@ -235,7 +236,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (failure) => emit(
           state.copyWith(
             status: AuthStatus.error,
-            errorMessage: failure.message ??
+            errorMessage:
+                failure.message ??
                 'Invalid or expired verification code. Please try again.',
           ),
         ),
@@ -431,8 +433,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (state.userProfile != null) {
       emit(
         state.copyWith(
-          userProfile:
-              state.userProfile!.copyWith(displayName: event.displayName),
+          userProfile: state.userProfile!.copyWith(
+            displayName: event.displayName,
+          ),
         ),
       );
     }
@@ -448,8 +451,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           : state.userProfile!.streakDays + 1;
       emit(
         state.copyWith(
-          userProfile:
-              state.userProfile!.copyWith(streakDays: updatedStreak),
+          userProfile: state.userProfile!.copyWith(streakDays: updatedStreak),
         ),
       );
     }

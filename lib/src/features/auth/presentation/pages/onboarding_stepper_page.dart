@@ -58,8 +58,9 @@ class _OnboardingStepperView extends StatelessWidget {
         final cubit = context.read<OnboardingCubit>();
 
         return Scaffold(
-          backgroundColor:
-              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -244,16 +245,16 @@ class _OnboardingStepperView extends StatelessWidget {
                             gradient: LinearGradient(
                               colors: [
                                 colors.primary.withAlpha(isDark ? 50 : 30),
-                                colors.syllabotAccent
-                                    .withAlpha(isDark ? 40 : 20),
+                                colors.syllabotAccent.withAlpha(
+                                  isDark ? 40 : 20,
+                                ),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: colors.primary
-                                  .withAlpha(isDark ? 60 : 35),
+                              color: colors.primary.withAlpha(isDark ? 60 : 35),
                             ),
                           ),
                           child: Column(
@@ -265,8 +266,7 @@ class _OnboardingStepperView extends StatelessWidget {
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: colors.primary.withAlpha(40),
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
                                       Icons.verified_rounded,
@@ -284,15 +284,15 @@ class _OnboardingStepperView extends StatelessWidget {
                                           state.currentTrackEntity.name,
                                           style: typography.title3.bold
                                               .copyWith(
-                                            color: colors.textPrimary,
-                                          ),
+                                                color: colors.textPrimary,
+                                              ),
                                         ),
                                         Text(
                                           'Focus Track',
                                           style: typography.caption.medium
                                               .copyWith(
-                                            color: colors.textSecondary,
-                                          ),
+                                                color: colors.textSecondary,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -308,15 +308,13 @@ class _OnboardingStepperView extends StatelessWidget {
                                 children: [
                                   Text(
                                     'Daily Card Target',
-                                    style: typography.footnote.regular
-                                        .copyWith(
+                                    style: typography.footnote.regular.copyWith(
                                       color: colors.textSecondary,
                                     ),
                                   ),
                                   Text(
                                     '${state.dailyTarget} cards/day',
-                                    style: typography.footnote.bold
-                                        .copyWith(
+                                    style: typography.footnote.bold.copyWith(
                                       color: colors.textPrimary,
                                     ),
                                   ),
@@ -325,8 +323,8 @@ class _OnboardingStepperView extends StatelessWidget {
                               const SizedBox(height: 8),
                               Builder(
                                 builder: (context) {
-                                  final pct =
-                                      (state.retentionBenchmark * 100).round();
+                                  final pct = (state.retentionBenchmark * 100)
+                                      .round();
                                   return Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -335,15 +333,15 @@ class _OnboardingStepperView extends StatelessWidget {
                                         'Expected Retention Rate',
                                         style: typography.footnote.regular
                                             .copyWith(
-                                          color: colors.textSecondary,
-                                        ),
+                                              color: colors.textSecondary,
+                                            ),
                                       ),
                                       Text(
                                         '$pct%',
                                         style: typography.footnote.bold
                                             .copyWith(
-                                          color: colors.syllabotAccent,
-                                        ),
+                                              color: colors.syllabotAccent,
+                                            ),
                                       ),
                                     ],
                                   );

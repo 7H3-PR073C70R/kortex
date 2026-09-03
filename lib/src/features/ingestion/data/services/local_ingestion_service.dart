@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -11,7 +10,9 @@ import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_se
 
 /// Custom exceptions for local document ingestion
 class FileSizeExceededException implements Exception {
-  const FileSizeExceededException([this.message = 'File exceeds maximum 50MB limit']);
+  const FileSizeExceededException([
+    this.message = 'File exceeds maximum 50MB limit',
+  ]);
   final String message;
   @override
   String toString() => 'FileSizeExceededException: $message';
@@ -21,7 +22,8 @@ class UnsupportedFileTypeException implements Exception {
   const UnsupportedFileTypeException(this.extension);
   final String extension;
   @override
-  String toString() => 'UnsupportedFileTypeException: File type ".$extension" is not supported';
+  String toString() =>
+      'UnsupportedFileTypeException: File type ".$extension" is not supported';
 }
 
 class DocumentExtractionException implements Exception {
@@ -41,10 +43,10 @@ class LocalIngestionService {
     LocalPptxParserService? pptxParser,
     LocalImageOcrService? imageOcr,
     DocumentParserService? documentParser,
-  })  : _pdfParser = pdfParser ?? const LocalPdfParserService(),
-        _pptxParser = pptxParser ?? const LocalPptxParserService(),
-        _imageOcr = imageOcr ?? LocalImageOcrService(),
-        _documentParser = documentParser ?? const DocumentParserService();
+  }) : _pdfParser = pdfParser ?? const LocalPdfParserService(),
+       _pptxParser = pptxParser ?? const LocalPptxParserService(),
+       _imageOcr = imageOcr ?? LocalImageOcrService(),
+       _documentParser = documentParser ?? const DocumentParserService();
 
   final LocalPdfParserService _pdfParser;
   final LocalPptxParserService _pptxParser;
@@ -56,7 +58,7 @@ class LocalIngestionService {
 
   /// Ingests a file from disk, enforcing size limits and routing to its format extractor.
   Future<String> ingestFile(File file) async {
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       throw DocumentExtractionException('File does not exist: ${file.path}');
     }
 
@@ -96,28 +98,27 @@ class LocalIngestionService {
       switch (ext) {
         case 'pdf':
           rawExtractedText = await _pdfParser.extractText(bytes);
-          break;
 
         case 'pptx':
           rawExtractedText = await _pptxParser.extractText(bytes);
-          break;
 
         case 'png':
         case 'jpg':
         case 'jpeg':
         case 'webp':
-          if (filePath != null && await File(filePath).exists()) {
+          if (filePath != null && File(filePath).existsSync()) {
             rawExtractedText = await _imageOcr.extractTextFromPath(filePath);
           } else {
-            rawExtractedText = await _imageOcr.extractTextFromBytes(bytes, extension: ext);
+            rawExtractedText = await _imageOcr.extractTextFromBytes(
+              bytes,
+              extension: ext,
+            );
           }
-          break;
 
         case 'txt':
         case 'md':
         case 'markdown':
           rawExtractedText = utf8.decode(bytes, allowMalformed: true);
-          break;
 
         default:
           throw UnsupportedFileTypeException(ext);
@@ -141,7 +142,8 @@ class LocalIngestionService {
     String courseCode = 'GEN101',
     String filename = 'document.txt',
   }) {
-    final docId = documentId ?? 'doc_local_${DateTime.now().millisecondsSinceEpoch}';
+    final docId =
+        documentId ?? 'doc_local_${DateTime.now().millisecondsSinceEpoch}';
     final snippets = _documentParser.synthesizeSnippetsFromDocument(
       documentId: docId,
       fullText: normalizedText,
@@ -171,7 +173,7 @@ class LocalIngestionService {
       subject: courseCode,
       totalCards: cards.length,
       dueCards: cards.length,
-      masteryRate: 0.0,
+      masteryRate: 0,
       category: 'Document Ingestion',
       description: 'Auto-synthesized locally from document $docId',
       cards: cards,
@@ -183,13 +185,16 @@ class LocalIngestionService {
     if (rawText.trim().isEmpty) return '';
 
     // 1. Remove non-printable control characters (except newlines and tabs)
-    var cleaned = rawText.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'), '');
+    var cleaned = rawText.replaceAll(
+      RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'),
+      '',
+    );
 
     // 2. Normalize carriage returns
     cleaned = cleaned.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
     // 3. Remove repeating separator lines or underline clutter
-    cleaned = cleaned.replaceAll(RegExp(r'[-_=~*]{4,}'), '');
+    cleaned = cleaned.replaceAll(RegExp('[-_=~*]{4,}'), '');
 
     // 4. Strip excessive blank lines (more than 2 consecutive newlines)
     cleaned = cleaned.replaceAll(RegExp(r'\n{3,}'), '\n\n');
@@ -201,7 +206,10 @@ class LocalIngestionService {
     for (final line in lines) {
       final trimmed = line.trim();
       // Filter out isolated footer page numbers like "Page 1 of 12" or single standalone numbers
-      if (RegExp(r'^(page\s+\d+(\s+of\s+\d+)?|\d+)$', caseSensitive: false).hasMatch(trimmed)) {
+      if (RegExp(
+        r'^(page\s+\d+(\s+of\s+\d+)?|\d+)$',
+        caseSensitive: false,
+      ).hasMatch(trimmed)) {
         continue;
       }
       processedLines.add(trimmed);

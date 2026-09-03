@@ -18,7 +18,7 @@ class ContentRecommendationRepositoryImpl
   Future<Either<Failure, List<RecommendedContentItem>>> getRecommendations({
     required CalibrationProfile profile,
     required String Function(String key, Map<String, dynamic> params)
-        localizeHandler,
+    localizeHandler,
   }) {
     return Future<List<RecommendedContentItem>>.sync(() {
       return _dataSource.generateRecommendations(

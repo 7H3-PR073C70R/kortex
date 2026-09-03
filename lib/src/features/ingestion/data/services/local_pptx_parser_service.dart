@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:xml/xml.dart';
@@ -26,7 +25,9 @@ class LocalPptxParserService {
         if (file.isFile &&
             file.name.startsWith('ppt/slides/slide') &&
             file.name.endsWith('.xml')) {
-          final match = RegExp(r'ppt/slides/slide(\d+)\.xml').firstMatch(file.name);
+          final match = RegExp(
+            r'ppt/slides/slide(\d+)\.xml',
+          ).firstMatch(file.name);
           if (match != null) {
             final slideNumber = int.tryParse(match.group(1)!) ?? 0;
             slideEntries[slideNumber] = file;
@@ -39,7 +40,10 @@ class LocalPptxParserService {
 
       for (final slideNum in sortedSlideNumbers) {
         final file = slideEntries[slideNum]!;
-        final content = utf8.decode(file.content as List<int>, allowMalformed: true);
+        final content = utf8.decode(
+          file.content as List<int>,
+          allowMalformed: true,
+        );
         final slideText = _parseSlideXml(content, slideNum);
         if (slideText.trim().isNotEmpty) {
           if (buffer.isNotEmpty) buffer.writeln('\n');
@@ -89,18 +93,22 @@ class LocalPptxParserService {
       }
 
       // Fallback: If no explicit title shape found, check the first text element
-      if (slideTitle == null && paragraphs.isNotEmpty && paragraphs.first.length < 80) {
+      if (slideTitle == null &&
+          paragraphs.isNotEmpty &&
+          paragraphs.first.length < 80) {
         slideTitle = paragraphs.removeAt(0);
       }
 
-      final slideBuffer = StringBuffer();
-      slideBuffer.writeln('## Slide $slideNumber${slideTitle != null ? ': $slideTitle' : ''}');
+      final slideBuffer = StringBuffer()
+        ..writeln(
+          '## Slide $slideNumber${slideTitle != null ? ': $slideTitle' : ''}',
+        );
       for (final p in paragraphs) {
         slideBuffer.writeln('• $p');
       }
 
       return slideBuffer.toString().trim();
-    } catch (e) {
+    } on Object catch (_) {
       return '';
     }
   }

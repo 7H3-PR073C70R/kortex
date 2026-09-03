@@ -58,8 +58,9 @@ class TwoFactorSetupPage extends HookWidget {
       Future<void> enroll() async {
         isEnrolling.value = true;
         try {
-          final result =
-              await locator<EnrollMfaTotpUseCase>()(const NoParams());
+          final result = await locator<EnrollMfaTotpUseCase>()(
+            const NoParams(),
+          );
           if (result.isRight) {
             final enrollRes =
                 (result as Right<Failure, MfaEnrollResultEntity>).value;
@@ -267,8 +268,9 @@ class TwoFactorSetupPage extends HookWidget {
                               color: colors.surfacePrimary,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color:
-                                    colors.primary.withAlpha(isDark ? 80 : 50),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 80 : 50,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -324,9 +326,9 @@ class TwoFactorSetupPage extends HookWidget {
                                           'Copy',
                                           style: typography.caption.bold
                                               .copyWith(
-                                            color: colors.primary,
-                                            fontSize: 11.5,
-                                          ),
+                                                color: colors.primary,
+                                                fontSize: 11.5,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -420,11 +422,11 @@ class TwoFactorSetupPage extends HookWidget {
                                   factorIdState.value ?? 'local_totp_factor';
                               final result =
                                   await locator<VerifyMfaTotpUseCase>()(
-                                VerifyMfaTotpParams(
-                                  factorId: factorId,
-                                  code: code,
-                                ),
-                              );
+                                    VerifyMfaTotpParams(
+                                      factorId: factorId,
+                                      code: code,
+                                    ),
+                                  );
 
                               isVerifying.value = false;
 
@@ -442,9 +444,10 @@ class TwoFactorSetupPage extends HookWidget {
                                     (result as Left<Failure, void>).value;
                                 if (context.mounted) {
                                   context.showSnackBar(
-                                    message: failure.message ??
+                                    message:
+                                        failure.message ??
                                         'Invalid verification code. Please '
-                                        'check your authenticator clock.',
+                                            'check your authenticator clock.',
                                     type: SnackBarType.error,
                                   );
                                 }
@@ -479,7 +482,7 @@ class TwoFactorSetupPage extends HookWidget {
                                     strokeWidth: 2.2,
                                   ),
                                 )
-                               : Text(
+                              : Text(
                                   'Verify & Enable 2FA',
                                   style: typography.body.bold.copyWith(
                                     color: Colors.white,

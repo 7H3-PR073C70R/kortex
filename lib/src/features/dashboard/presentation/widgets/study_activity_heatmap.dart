@@ -111,8 +111,9 @@ class StudyActivityHeatmap extends StatelessWidget {
                 return Column(
                   children: weekDays.map((day) {
                     final cellColor = _getCellColor(context, day.reviewCount);
-                    final formattedDate =
-                        DateFormat('MMM d, yyyy').format(day.date);
+                    final formattedDate = DateFormat(
+                      'MMM d, yyyy',
+                    ).format(day.date);
                     final tooltipMessage = l10n.heatmapCardReviewsCount(
                       day.reviewCount,
                       formattedDate,

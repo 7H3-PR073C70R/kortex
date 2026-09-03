@@ -86,7 +86,11 @@ class LocalPdfParserService {
     final pageLinesList = <List<String>>[];
 
     for (final page in pages) {
-      final lines = page.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final lines = page
+          .split('\n')
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty)
+          .toList();
       final seenOnThisPage = <String>{};
 
       for (final line in lines) {
@@ -189,12 +193,17 @@ class LocalPdfParserService {
         final isHeader = headerRegex.hasMatch(current) || current.endsWith(':');
         final nextIsHeader = headerRegex.hasMatch(next) || next.endsWith(':');
 
-        final endsWithSentenceTerminator = current.endsWith('.') ||
+        final endsWithSentenceTerminator =
+            current.endsWith('.') ||
             current.endsWith('?') ||
             current.endsWith('!') ||
             current.endsWith(':');
 
-        if (isHeader || nextIsHeader || (endsWithSentenceTerminator && next.isNotEmpty && next[0].toUpperCase() == next[0])) {
+        if (isHeader ||
+            nextIsHeader ||
+            (endsWithSentenceTerminator &&
+                next.isNotEmpty &&
+                next[0].toUpperCase() == next[0])) {
           buffer.write('\n\n');
         } else {
           // Wrapped line mid-sentence -> join with single space

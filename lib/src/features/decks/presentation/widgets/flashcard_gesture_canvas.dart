@@ -90,8 +90,9 @@ class FlashcardGestureCanvas extends HookWidget {
           dragProgress = (dy.abs() / 100).clamp(0.0, 1.0);
         } else {
           routeColor = colors.recallAgain;
-          routeLabel =
-              l10n.studySessionRouteAgain(l10n.studyRatingAgainInterval);
+          routeLabel = l10n.studySessionRouteAgain(
+            l10n.studyRatingAgainInterval,
+          );
           routeIcon = Icons.replay_rounded;
           dragProgress = (dy / 100).clamp(0.0, 1.0);
         }

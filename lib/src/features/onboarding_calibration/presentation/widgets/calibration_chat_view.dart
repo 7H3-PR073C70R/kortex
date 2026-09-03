@@ -316,7 +316,8 @@ class CalibrationChatView extends HookWidget {
       VoidCallback action, {
       String? nextBotPrompt,
       String? customThinkingText,
-    }) handleOptionSelected,
+    })
+    handleOptionSelected,
   }) {
     if (state.currentStepIndex == 0) {
       return [
@@ -541,8 +542,7 @@ class CalibrationChatView extends HookWidget {
         }
 
         return subjects.map((s) {
-          final isSelected =
-              state.profile.highSchoolSubjects.contains(s.$1);
+          final isSelected = state.profile.highSchoolSubjects.contains(s.$1);
           return _QuickChip(
             icon: s.$2,
             label: s.$1,
@@ -607,7 +607,8 @@ class CalibrationChatView extends HookWidget {
               () {
                 cubit.setHighSchoolTimeline(t.$1);
               },
-              nextBotPrompt: 'Study schedule synchronized! '
+              nextBotPrompt:
+                  'Study schedule synchronized! '
                   'Ready to launch your workspace.',
               customThinkingText: 'Pacing schedule...',
             ),
@@ -767,14 +768,14 @@ class _QuickChip extends StatelessWidget {
               color: isSelected
                   ? colors.primary.withAlpha(isDark ? 80 : 35)
                   : (isDark
-                      ? colors.surfaceSecondary.withAlpha(140)
-                      : colors.surfacePrimary),
+                        ? colors.surfaceSecondary.withAlpha(140)
+                        : colors.surfacePrimary),
               border: Border.all(
                 color: isSelected
                     ? colors.primary
                     : (isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(70)
-                        : colors.surfaceBorder),
+                          ? colors.surfaceBorderHighlight.withAlpha(70)
+                          : colors.surfaceBorder),
                 width: isSelected ? 1.5 : 1.0,
               ),
               boxShadow: isSelected

@@ -60,14 +60,14 @@ class LiveRoomState extends Equatable {
 
   @override
   List<Object?> get props => [
-        room,
-        remainingSeconds,
-        isConnected,
-        participants,
-        ephemeralParticipants,
-        isHandRaised,
-        completedPomodoros,
-      ];
+    room,
+    remainingSeconds,
+    isConnected,
+    participants,
+    ephemeralParticipants,
+    isHandRaised,
+    completedPomodoros,
+  ];
 }
 
 class LiveRoomCubit extends Cubit<LiveRoomState> {
@@ -78,24 +78,24 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     String? currentUserId,
     String? currentUserName,
     String? currentUserAvatar,
-  })  : _repository = repository,
-        _ephemeralRepository = ephemeralRepository,
-        _currentUserId = currentUserId ?? 'user_local',
-        _currentUserName = currentUserName ?? 'Scholar',
-        _currentUserAvatar = currentUserAvatar ?? '',
-        super(
-          LiveRoomState(
-            room: initialRoom,
-            remainingSeconds: initialRoom.pomodoroDurationMinutes * 60,
-            participants: const [
-              'Adeola V.',
-              'Chukwudi O.',
-              'Elena R.',
-              'Tariq M.',
-              'Zainab B.',
-            ],
-          ),
-        ) {
+  }) : _repository = repository,
+       _ephemeralRepository = ephemeralRepository,
+       _currentUserId = currentUserId ?? 'user_local',
+       _currentUserName = currentUserName ?? 'Scholar',
+       _currentUserAvatar = currentUserAvatar ?? '',
+       super(
+         LiveRoomState(
+           room: initialRoom,
+           remainingSeconds: initialRoom.pomodoroDurationMinutes * 60,
+           participants: const [
+             'Adeola V.',
+             'Chukwudi O.',
+             'Elena R.',
+             'Tariq M.',
+             'Zainab B.',
+           ],
+         ),
+       ) {
     _startTimer();
     _subscribeToRoom(initialRoom.id);
     _initEphemeralPresence(initialRoom.id);
@@ -138,8 +138,9 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   Future<void> _handlePomodoroCompleted() async {
     final nextState = state.room.isFocusing ? 'break' : 'focusing';
-    final nextDuration =
-        nextState == 'break' ? 5 : state.room.pomodoroDurationMinutes;
+    final nextDuration = nextState == 'break'
+        ? 5
+        : state.room.pomodoroDurationMinutes;
 
     // Database Persistence Handshake: Record session upon block completion
     if (state.room.isFocusing && _ephemeralRepository != null) {
@@ -184,21 +185,23 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       ),
     );
 
-    _presenceSubscription =
-        _ephemeralRepository.watchParticipants(roomId).listen((participants) {
-      if (!isClosed) {
-        final names = participants.map((p) => p.displayName).toList();
-        emit(
-          state.copyWith(
-            ephemeralParticipants: participants,
-            participants: names.isNotEmpty ? names : state.participants,
-          ),
-        );
-      }
-    });
+    _presenceSubscription = _ephemeralRepository
+        .watchParticipants(roomId)
+        .listen((participants) {
+          if (!isClosed) {
+            final names = participants.map((p) => p.displayName).toList();
+            emit(
+              state.copyWith(
+                ephemeralParticipants: participants,
+                participants: names.isNotEmpty ? names : state.participants,
+              ),
+            );
+          }
+        });
 
-    _syncSubscription =
-        _ephemeralRepository.watchPomodoroSync(roomId).listen((syncEvent) {
+    _syncSubscription = _ephemeralRepository.watchPomodoroSync(roomId).listen((
+      syncEvent,
+    ) {
       if (!isClosed && syncEvent.senderId != _currentUserId) {
         // Correct clock drift if difference > 3 seconds
         if ((state.remainingSeconds - syncEvent.remainingSeconds).abs() > 3) {

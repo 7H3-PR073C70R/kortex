@@ -23,12 +23,12 @@ class DocumentChunkEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        documentId,
-        content,
-        similarityScore,
-        metadata,
-        documentTitle,
-        pageNumber,
-      ];
+    id,
+    documentId,
+    content,
+    similarityScore,
+    metadata,
+    documentTitle,
+    pageNumber,
+  ];
 }

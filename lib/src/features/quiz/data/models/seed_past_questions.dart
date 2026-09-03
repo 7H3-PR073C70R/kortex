@@ -108,8 +108,7 @@ class SeedPastQuestions {
       options: ['500 J', '1000 J', '1500 J', '2000 J'],
       correctOptionIndex: 1,
       correctOptionLabel: 'B',
-      explanation:
-          'Work done equals change in KE: W = 0.5 * 5 * 400 = 1000 J.',
+      explanation: 'Work done equals change in KE: W = 0.5 * 5 * 400 = 1000 J.',
       topic: 'Work, Energy & Power',
     ),
     PastQuestionModel(
@@ -158,8 +157,7 @@ class SeedPastQuestions {
       subject: 'Mathematics',
       year: 2024,
       questionNumber: 1,
-      prompt:
-          r'Find the derivative \frac{dy}{dx} of y = (3x^2 - 2x + 1)^4.',
+      prompt: r'Find the derivative \frac{dy}{dx} of y = (3x^2 - 2x + 1)^4.',
       latexFormula: 'y = (3x^2 - 2x + 1)^4',
       options: [
         '4(6x - 2)(3x^2 - 2x + 1)^3',
@@ -253,8 +251,7 @@ class SeedPastQuestions {
       ],
       correctOptionIndex: 2,
       correctOptionLabel: 'C',
-      explanation:
-          'The Vagus nerve (CN X) provides parasympathetic supply.',
+      explanation: 'The Vagus nerve (CN X) provides parasympathetic supply.',
       topic: 'Neuroanatomy & Cranial Nerves',
     ),
     // Law 2024

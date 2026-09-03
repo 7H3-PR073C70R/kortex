@@ -20,6 +20,7 @@ class CommunityState extends Equatable {
   });
 
   final CommunityStatus status;
+
   /// 0: Live Rooms, 1: Track Forum, 2: Deck Market, 3: Leaderboard
   final int selectedTabIndex;
   final String selectedTrack;
@@ -56,14 +57,14 @@ class CommunityState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        selectedTabIndex,
-        selectedTrack,
-        studyRooms,
-        forumPosts,
-        sharedDecks,
-        leaderboardEntries,
-        errorMessage,
-        lastClonedDeckId,
-      ];
+    status,
+    selectedTabIndex,
+    selectedTrack,
+    studyRooms,
+    forumPosts,
+    sharedDecks,
+    leaderboardEntries,
+    errorMessage,
+    lastClonedDeckId,
+  ];
 }

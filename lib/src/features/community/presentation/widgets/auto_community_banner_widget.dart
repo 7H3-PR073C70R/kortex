@@ -83,8 +83,9 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
 
         final community = state.community!;
         final titleText = l10n.autoCommunityCreatedTitle(community.courseCode);
-        final subtitleText =
-            l10n.autoCommunityJoinedSubtitle(community.memberCount);
+        final subtitleText = l10n.autoCommunityJoinedSubtitle(
+          community.memberCount,
+        );
 
         _announceIfReady(context, '$titleText $subtitleText');
 
@@ -110,23 +111,27 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                theme.colorScheme.primary
-                                    .withValues(alpha: 0.18),
-                                theme.colorScheme.secondary
-                                    .withValues(alpha: 0.10),
+                                theme.colorScheme.primary.withValues(
+                                  alpha: 0.18,
+                                ),
+                                theme.colorScheme.secondary.withValues(
+                                  alpha: 0.10,
+                                ),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: theme.colorScheme.primary
-                                  .withValues(alpha: 0.35),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.35,
+                              ),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary
-                                    .withValues(alpha: 0.12),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.12,
+                                ),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),

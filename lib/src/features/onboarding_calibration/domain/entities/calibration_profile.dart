@@ -59,13 +59,13 @@ class CalibrationProfile extends Equatable {
 
   @override
   List<Object?> get props => [
-        focus,
-        higherEdLevel,
-        higherEdField,
-        higherEdGoals,
-        highSchoolExam,
-        highSchoolSubjects,
-        highSchoolTimeline,
-        isCalibrated,
-      ];
+    focus,
+    higherEdLevel,
+    higherEdField,
+    higherEdGoals,
+    highSchoolExam,
+    highSchoolSubjects,
+    highSchoolTimeline,
+    isCalibrated,
+  ];
 }

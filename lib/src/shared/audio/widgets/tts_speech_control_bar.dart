@@ -77,9 +77,7 @@ class TtsSpeechControlBar extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isCurrentlySpeaking
-                                ? 'Stop'
-                                : l10n.readAloudLabel,
+                            isCurrentlySpeaking ? 'Stop' : l10n.readAloudLabel,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: isCurrentlySpeaking
                                   ? Colors.redAccent
@@ -105,9 +103,7 @@ class TtsSpeechControlBar extends StatelessWidget {
                 _SpeedMenuButton(
                   currentSpeed: state.playbackSpeed,
                   onSpeedSelected: (speed) {
-                    context
-                        .read<AudioWorkspaceCubit>()
-                        .setPlaybackSpeed(speed);
+                    context.read<AudioWorkspaceCubit>().setPlaybackSpeed(speed);
                   },
                 ),
               ],

@@ -68,17 +68,17 @@ class StudyRoomEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        subject,
-        description,
-        category,
-        createdBy,
-        pomodoroDurationMinutes,
-        pomodoroState,
-        pomodoroStartedAt,
-        activeParticipantsCount,
-        maxParticipants,
-        participantAvatars,
-      ];
+    id,
+    title,
+    subject,
+    description,
+    category,
+    createdBy,
+    pomodoroDurationMinutes,
+    pomodoroState,
+    pomodoroStartedAt,
+    activeParticipantsCount,
+    maxParticipants,
+    participantAvatars,
+  ];
 }

@@ -43,16 +43,16 @@ class ExamEventEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        examName,
-        targetDate,
-        subjectTrack,
-        totalCardsCount,
-        masteredCardsCount,
-        totalLapses,
-        dailyTarget,
-        targetScorePercent,
-        createdAt,
-      ];
+    id,
+    userId,
+    examName,
+    targetDate,
+    subjectTrack,
+    totalCardsCount,
+    masteredCardsCount,
+    totalLapses,
+    dailyTarget,
+    targetScorePercent,
+    createdAt,
+  ];
 }

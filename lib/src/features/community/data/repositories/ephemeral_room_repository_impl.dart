@@ -9,8 +9,8 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   EphemeralRoomRepositoryImpl({
     EphemeralPresenceClient? presenceClient,
     CommunityApiClient? communityClient,
-  })  : _presenceClient = presenceClient ?? EphemeralPresenceClientImpl(),
-        _communityClient = communityClient;
+  }) : _presenceClient = presenceClient ?? EphemeralPresenceClientImpl(),
+       _communityClient = communityClient;
 
   final EphemeralPresenceClient _presenceClient;
   final CommunityApiClient? _communityClient;

@@ -47,10 +47,14 @@ class PdfPrintableGenerator {
 
       // Page 2: Backs (mirrored columns for double-sided flip on long edge)
       final mirroredBackCards = <FlashcardEntity?>[
-        paddedCards[1], paddedCards[0],
-        paddedCards[3], paddedCards[2],
-        paddedCards[5], paddedCards[4],
-        paddedCards[7], paddedCards[6],
+        paddedCards[1],
+        paddedCards[0],
+        paddedCards[3],
+        paddedCards[2],
+        paddedCards[5],
+        paddedCards[4],
+        paddedCards[7],
+        paddedCards[6],
       ];
 
       pdf.addPage(
@@ -134,8 +138,9 @@ class PdfPrintableGenerator {
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(
                       fontSize: 10,
-                      fontWeight:
-                          isFront ? pw.FontWeight.bold : pw.FontWeight.normal,
+                      fontWeight: isFront
+                          ? pw.FontWeight.bold
+                          : pw.FontWeight.normal,
                     ),
                   ),
                 ),

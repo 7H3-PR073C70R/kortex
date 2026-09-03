@@ -173,14 +173,16 @@ class _OnboardingSlideItem extends StatelessWidget {
                 : math.sin(pulseAnimation.value * math.pi) * 4.0;
 
             // Bottom Content Staggered Slide & Fade
-            final titleTranslateY =
-                disableAnimations ? 0.0 : (clampedOffset.abs() * 26.0);
+            final titleTranslateY = disableAnimations
+                ? 0.0
+                : (clampedOffset.abs() * 26.0);
             final titleOpacity = disableAnimations
                 ? 1.0
                 : (1.0 - clampedOffset.abs() * 0.85).clamp(0.0, 1.0);
 
-            final bodyTranslateY =
-                disableAnimations ? 0.0 : (clampedOffset.abs() * 38.0);
+            final bodyTranslateY = disableAnimations
+                ? 0.0
+                : (clampedOffset.abs() * 38.0);
             final bodyOpacity = disableAnimations
                 ? 1.0
                 : (1.0 - clampedOffset.abs() * 0.92).clamp(0.0, 1.0);
@@ -201,185 +203,196 @@ class _OnboardingSlideItem extends StatelessWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                        // Ambient Radial Glow Backplate
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            gradient: RadialGradient(
-                              radius: 0.85,
-                              colors: [
-                                colors.primary.withAlpha(
-                                  (pulseAnimation.value * (isDark ? 45 : 22))
-                                      .round()
-                                      .clamp(0, 255),
-                                ),
-                                colors.syllabotAccent.withAlpha(
-                                  (pulseAnimation.value * (isDark ? 28 : 14))
-                                      .round()
-                                      .clamp(0, 255),
-                                ),
-                                Colors.transparent,
-                              ],
-                              stops: const [0.0, 0.6, 1.0],
-                            ),
-                          ),
-                        ),
-
-                        // Glowing Glassmorphism Card Wrapper
-                        Transform.translate(
-                          offset: Offset(
-                            graphicTranslateX,
-                            graphicTranslateY + floatOffset,
-                          ),
-                          child: Transform.scale(
-                            scale: graphicScale,
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
+                            // Ambient Radial Glow Backplate
+                            Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: isDark
-                                      ? [
-                                          colors.surfaceSecondary
-                                              .withAlpha(120),
-                                          colors.surfacePrimary.withAlpha(70),
-                                        ]
-                                      : [
-                                          colors.surfacePrimary.withAlpha(190),
-                                          colors.surfaceSecondary
-                                              .withAlpha(120),
-                                        ],
-                                ),
-                                border: Border.all(
-                                  color: isDark
-                                      ? colors.surfaceBorderHighlight
-                                          .withAlpha(80)
-                                      : Colors.white.withAlpha(200),
-                                  width: 1.2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 40 : 20,
+                                borderRadius: BorderRadius.circular(28),
+                                gradient: RadialGradient(
+                                  radius: 0.85,
+                                  colors: [
+                                    colors.primary.withAlpha(
+                                      (pulseAnimation.value *
+                                              (isDark ? 45 : 22))
+                                          .round()
+                                          .clamp(0, 255),
                                     ),
-                                    blurRadius: 28,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
+                                    colors.syllabotAccent.withAlpha(
+                                      (pulseAnimation.value *
+                                              (isDark ? 28 : 14))
+                                          .round()
+                                          .clamp(0, 255),
+                                    ),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.6, 1.0],
+                                ),
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(22),
-                                child: FittedBox(
-                                  child: SizedBox(
-                                    width: 360,
-                                    height: 280,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: data.illustrationBuilder(context),
+                            ),
+
+                            // Glowing Glassmorphism Card Wrapper
+                            Transform.translate(
+                              offset: Offset(
+                                graphicTranslateX,
+                                graphicTranslateY + floatOffset,
+                              ),
+                              child: Transform.scale(
+                                scale: graphicScale,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(24),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: isDark
+                                          ? [
+                                              colors.surfaceSecondary.withAlpha(
+                                                120,
+                                              ),
+                                              colors.surfacePrimary.withAlpha(
+                                                70,
+                                              ),
+                                            ]
+                                          : [
+                                              colors.surfacePrimary.withAlpha(
+                                                190,
+                                              ),
+                                              colors.surfaceSecondary.withAlpha(
+                                                120,
+                                              ),
+                                            ],
+                                    ),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceBorderHighlight
+                                                .withAlpha(80)
+                                          : Colors.white.withAlpha(200),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.primary.withAlpha(
+                                          isDark ? 40 : 20,
+                                        ),
+                                        blurRadius: 28,
+                                        offset: const Offset(0, 12),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(22),
+                                    child: FittedBox(
+                                      child: SizedBox(
+                                        width: 360,
+                                        height: 280,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: data.illustrationBuilder(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ==========================================
-              // 2. BOTTOM VIEWPORT: Content Dock Area
-              // ==========================================
-              Expanded(
-                child: RepaintBoundary(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 4),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Polished Glass Badge & Headline
-                          Transform.translate(
-                            offset: Offset(0, titleTranslateY),
-                            child: Opacity(
-                              opacity: titleOpacity,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 8,
-                                        sigmaY: 8,
-                                      ),
-                                      child: AppBadge(
-                                        label: data.badge,
-                                        variant: data.badgeVariant,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    data.tagline,
-                                    style: typography.title1.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      letterSpacing: -0.6,
-                                      fontSize: 24,
-                                      height: 1.15,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Body Text Delayed Entrance
-                          Transform.translate(
-                            offset: Offset(0, bodyTranslateY),
-                            child: Opacity(
-                              opacity: bodyOpacity,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 340,
-                                ),
-                                child: Text(
-                                  data.description,
-                                  style: typography.callout.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    height: 1.4,
-                                    fontSize: 14,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
-                ),
+
+                  // ==========================================
+                  // 2. BOTTOM VIEWPORT: Content Dock Area
+                  // ==========================================
+                  Expanded(
+                    child: RepaintBoundary(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(28, 0, 28, 4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Polished Glass Badge & Headline
+                              Transform.translate(
+                                offset: Offset(0, titleTranslateY),
+                                child: Opacity(
+                                  opacity: titleOpacity,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 8,
+                                            sigmaY: 8,
+                                          ),
+                                          child: AppBadge(
+                                            label: data.badge,
+                                            variant: data.badgeVariant,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        data.tagline,
+                                        style: typography.title1.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          letterSpacing: -0.6,
+                                          fontSize: 24,
+                                          height: 1.15,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Body Text Delayed Entrance
+                              Transform.translate(
+                                offset: Offset(0, bodyTranslateY),
+                                child: Opacity(
+                                  opacity: bodyOpacity,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 340,
+                                    ),
+                                    child: Text(
+                                      data.description,
+                                      style: typography.callout.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            height: 1.4,
+                                            fontSize: 14,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
-  },
-);
-}
+  }
 }

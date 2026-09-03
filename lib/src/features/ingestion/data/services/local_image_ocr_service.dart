@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,14 +6,14 @@ import 'package:path_provider/path_provider.dart';
 /// Service responsible for offline mobile image OCR directly from pixels.
 class LocalImageOcrService {
   LocalImageOcrService({TextRecognizer? recognizer})
-      : _recognizer = recognizer ?? TextRecognizer(script: TextRecognitionScript.latin);
+    : _recognizer = recognizer ?? TextRecognizer();
 
   final TextRecognizer _recognizer;
 
   /// Extracts text from an image file path offline.
   Future<String> extractTextFromPath(String filePath) async {
     final file = File(filePath);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       throw Exception('Image file not found at path: $filePath');
     }
 
@@ -22,7 +21,7 @@ class LocalImageOcrService {
       final inputImage = InputImage.fromFilePath(filePath);
       final recognizedText = await _recognizer.processImage(inputImage);
       return _normalizeRecognizedText(recognizedText);
-    } catch (e) {
+    } on Object catch (e) {
       if (kDebugMode) {
         print('[LocalImageOcrService] Error recognizing text from path: $e');
       }
@@ -31,29 +30,33 @@ class LocalImageOcrService {
   }
 
   /// Extracts text from image bytes offline by saving to a temporary buffer file.
-  Future<String> extractTextFromBytes(Uint8List bytes, {String extension = 'png'}) async {
+  Future<String> extractTextFromBytes(
+    Uint8List bytes, {
+    String extension = 'png',
+  }) async {
     if (bytes.isEmpty) return '';
 
     File? tempFile;
     try {
       final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}/ocr_temp_${DateTime.now().microsecondsSinceEpoch}.$extension';
+      final tempPath =
+          '${tempDir.path}/ocr_temp_${DateTime.now().microsecondsSinceEpoch}.$extension';
       tempFile = File(tempPath);
       await tempFile.writeAsBytes(bytes, flush: true);
 
       final result = await extractTextFromPath(tempPath);
       return result;
-    } catch (e) {
+    } on Object catch (e) {
       if (kDebugMode) {
         print('[LocalImageOcrService] Error recognizing text from bytes: $e');
       }
       // Return empty or throw based on severity
       return '';
     } finally {
-      if (tempFile != null && await tempFile.exists()) {
+      if (tempFile != null && tempFile.existsSync()) {
         try {
           await tempFile.delete();
-        } catch (_) {}
+        } on Object catch (_) {}
       }
     }
   }

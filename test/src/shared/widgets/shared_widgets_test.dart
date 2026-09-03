@@ -20,8 +20,9 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   group('Shared Widgets A11y & Behavior Test Suite', () {
-    testWidgets('AppButton renders with button semantics and responds to tap',
-        (tester) async {
+    testWidgets('AppButton renders with button semantics and responds to tap', (
+      tester,
+    ) async {
       var tapped = false;
       await tester.pumpWidget(
         _wrapWithTheme(
@@ -49,9 +50,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets(
-        'AppButton shows loader and announces when isLoading is true',
-        (tester) async {
+    testWidgets('AppButton shows loader and announces when isLoading is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(
           const AppButton(
@@ -66,45 +67,49 @@ void main() {
     });
 
     testWidgets(
-        'AppTextField renders accessible semantics and receives text input',
-        (tester) async {
-      final controller = TextEditingController();
-      await tester.pumpWidget(
-        _wrapWithTheme(
-          AppTextField(
-            controller: controller,
-            label: 'Email',
-            hintText: 'Enter your email',
+      'AppTextField renders accessible semantics and receives text input',
+      (tester) async {
+        final controller = TextEditingController();
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            AppTextField(
+              controller: controller,
+              label: 'Email',
+              hintText: 'Enter your email',
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Email'), findsOneWidget);
-      expect(find.text('Enter your email'), findsOneWidget);
+        expect(find.text('Email'), findsOneWidget);
+        expect(find.text('Enter your email'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextFormField), 'test@kortex.ai');
-      expect(controller.text, equals('test@kortex.ai'));
-    });
+        await tester.enterText(find.byType(TextFormField), 'test@kortex.ai');
+        expect(controller.text, equals('test@kortex.ai'));
+      },
+    );
 
-    testWidgets('AppTextField password toggle button has accessible semantics',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrapWithTheme(
-          const AppTextField(
-            isPassword: true,
-            hintText: 'Password',
+    testWidgets(
+      'AppTextField password toggle button has accessible semantics',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const AppTextField(
+              isPassword: true,
+              hintText: 'Password',
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.visibility_off_outlined));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+        await tester.pumpAndSettle();
+        expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      },
+    );
 
-    testWidgets('AppBadge renders contextual semantics label for counters',
-        (tester) async {
+    testWidgets('AppBadge renders contextual semantics label for counters', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(
           const Column(
@@ -121,27 +126,29 @@ void main() {
       expect(find.text('99+'), findsOneWidget);
     });
 
-    testWidgets('AppDivider renders horizontal, labeled, and vertical dividers',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrapWithTheme(
-          const Column(
-            children: [
-              AppDivider(),
-              AppDivider(label: 'OR'),
-              SizedBox(height: 20, child: AppDivider.vertical()),
-            ],
-          ),
-        ),
-      );
-
-      expect(find.text('OR'), findsOneWidget);
-      expect(find.byType(AppDivider), findsNWidgets(3));
-    });
-
     testWidgets(
-        'AppAvatar displays user initials with image semantics',
-        (tester) async {
+      'AppDivider renders horizontal, labeled, and vertical dividers',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const Column(
+              children: [
+                AppDivider(),
+                AppDivider(label: 'OR'),
+                SizedBox(height: 20, child: AppDivider.vertical()),
+              ],
+            ),
+          ),
+        );
+
+        expect(find.text('OR'), findsOneWidget);
+        expect(find.byType(AppDivider), findsNWidgets(3));
+      },
+    );
+
+    testWidgets('AppAvatar displays user initials with image semantics', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(
           const AppAvatar(
@@ -154,8 +161,9 @@ void main() {
       expect(find.text('AL'), findsOneWidget);
     });
 
-    testWidgets('ShimmerPlaceholder renders with loading container semantics',
-        (tester) async {
+    testWidgets('ShimmerPlaceholder renders with loading container semantics', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrapWithTheme(
           const Column(
@@ -172,36 +180,37 @@ void main() {
     });
 
     testWidgets(
-        'AppDialog shows with scoped route semantics and triggers action',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrapWithTheme(
-          Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => AppDialog.show<bool>(
-                context: context,
-                title: 'Delete Notebook',
-                description: 'Are you sure you want to delete?',
-                primaryActionText: 'Confirm',
-                secondaryActionText: 'Cancel',
+      'AppDialog shows with scoped route semantics and triggers action',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => AppDialog.show<bool>(
+                  context: context,
+                  title: 'Delete Notebook',
+                  description: 'Are you sure you want to delete?',
+                  primaryActionText: 'Confirm',
+                  secondaryActionText: 'Cancel',
+                ),
+                child: const Text('Open Dialog'),
               ),
-              child: const Text('Open Dialog'),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Delete Notebook'), findsOneWidget);
-      expect(find.text('Are you sure you want to delete?'), findsOneWidget);
-      expect(find.text('Confirm'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Delete Notebook'), findsOneWidget);
+        expect(find.text('Are you sure you want to delete?'), findsOneWidget);
+        expect(find.text('Confirm'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
 
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(find.text('Delete Notebook'), findsNothing);
-    });
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(find.text('Delete Notebook'), findsNothing);
+      },
+    );
   });
 }

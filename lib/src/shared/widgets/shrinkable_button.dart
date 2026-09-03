@@ -52,12 +52,13 @@ class _ShrinkableButtonState extends State<ShrinkableButton>
       vsync: this,
       duration: widget.duration,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: widget.shrinkScale,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: widget.shrinkScale,
+        ).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+        );
   }
 
   @override

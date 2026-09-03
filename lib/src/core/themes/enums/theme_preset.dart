@@ -16,7 +16,8 @@ enum ThemePreset {
   emeraldStem,
 
   /// Royal Amethyst / Syllabot AI electric violet theme.
-  royalAmethyst;
+  royalAmethyst
+  ;
 
   /// User-friendly label for settings UI.
   String get displayName {

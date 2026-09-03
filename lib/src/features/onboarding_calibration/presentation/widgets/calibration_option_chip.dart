@@ -54,14 +54,14 @@ class CalibrationOptionChip extends StatelessWidget {
             color: isSelected
                 ? colors.primary.withAlpha(isDark ? 60 : 30)
                 : (isDark
-                    ? colors.surfaceSecondary.withAlpha(120)
-                    : colors.surfacePrimary.withAlpha(200)),
+                      ? colors.surfaceSecondary.withAlpha(120)
+                      : colors.surfacePrimary.withAlpha(200)),
             border: Border.all(
               color: isSelected
                   ? colors.primary
                   : (isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                      : colors.surfaceBorder),
+                        ? colors.surfaceBorderHighlight.withAlpha(70)
+                        : colors.surfaceBorder),
               width: 1.5,
             ),
             boxShadow: isSelected
@@ -83,8 +83,8 @@ class CalibrationOptionChip extends StatelessWidget {
                     color: isSelected
                         ? colors.primary
                         : (isDark
-                            ? colors.surfacePrimary.withAlpha(150)
-                            : colors.surfaceSecondary),
+                              ? colors.surfacePrimary.withAlpha(150)
+                              : colors.surfaceSecondary),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -127,9 +127,7 @@ class CalibrationOptionChip extends StatelessWidget {
                 height: 22,
                 decoration: BoxDecoration(
                   shape: isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
-                  borderRadius: isMultiSelect
-                      ? BorderRadius.circular(6)
-                      : null,
+                  borderRadius: isMultiSelect ? BorderRadius.circular(6) : null,
                   color: isSelected ? colors.primary : Colors.transparent,
                   border: Border.all(
                     color: isSelected

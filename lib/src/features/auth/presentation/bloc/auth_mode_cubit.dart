@@ -59,8 +59,7 @@ class AuthModeCubit extends Cubit<AuthModeState> {
   void toggleFormType() {
     emit(
       state.copyWith(
-        formType:
-            state.isLogin ? AuthFormType.register : AuthFormType.login,
+        formType: state.isLogin ? AuthFormType.register : AuthFormType.login,
       ),
     );
   }

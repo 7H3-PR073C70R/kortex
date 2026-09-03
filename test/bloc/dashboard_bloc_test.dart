@@ -50,9 +50,9 @@ void main() {
     });
 
     DashboardBloc buildBloc() => DashboardBloc(
-          getDashboardFeedUseCase: mockGetDashboardFeedUseCase,
-          quickStartMockExamUseCase: mockQuickStartMockExamUseCase,
-        );
+      getDashboardFeedUseCase: mockGetDashboardFeedUseCase,
+      quickStartMockExamUseCase: mockQuickStartMockExamUseCase,
+    );
 
     test('initial state is initial status with null feed', () async {
       final bloc = buildBloc();
@@ -64,8 +64,9 @@ void main() {
     blocTest<DashboardBloc, DashboardState>(
       'DashboardStarted emits loaded status with HighSchool calibration feed',
       build: () {
-        when(() => mockGetDashboardFeedUseCase(const NoParams()))
-            .thenAnswer((_) async => const Right(tFeedHighSchool));
+        when(
+          () => mockGetDashboardFeedUseCase(const NoParams()),
+        ).thenAnswer((_) async => const Right(tFeedHighSchool));
         return buildBloc();
       },
       act: (bloc) => bloc.add(const DashboardStarted()),
@@ -102,8 +103,9 @@ void main() {
     blocTest<DashboardBloc, DashboardState>(
       'DashboardRefreshed updates feed without changing to loading state',
       build: () {
-        when(() => mockGetDashboardFeedUseCase(const NoParams()))
-            .thenAnswer((_) async => const Right(tFeedHighSchool));
+        when(
+          () => mockGetDashboardFeedUseCase(const NoParams()),
+        ).thenAnswer((_) async => const Right(tFeedHighSchool));
         return buildBloc();
       },
       seed: () => const DashboardState(

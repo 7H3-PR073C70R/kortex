@@ -9,21 +9,20 @@ class ContentRecommendationCubit extends Cubit<ContentRecommendationState> {
   ContentRecommendationCubit({
     required GetRecommendedContentUseCase getRecommendedContentUseCase,
     required GetCalibrationProfileUseCase getCalibrationProfileUseCase,
-  })  : _getRecommendedContentUseCase = getRecommendedContentUseCase,
-        _getCalibrationProfileUseCase = getCalibrationProfileUseCase,
-        super(const ContentRecommendationState());
+  }) : _getRecommendedContentUseCase = getRecommendedContentUseCase,
+       _getCalibrationProfileUseCase = getCalibrationProfileUseCase,
+       super(const ContentRecommendationState());
 
   final GetRecommendedContentUseCase _getRecommendedContentUseCase;
   final GetCalibrationProfileUseCase _getCalibrationProfileUseCase;
 
   Future<void> loadRecommendations({
     required String Function(String key, Map<String, dynamic> params)
-        localizeHandler,
+    localizeHandler,
   }) async {
     emit(state.copyWith(status: ContentRecommendationStatus.loading));
 
-    final profileResult =
-        await _getCalibrationProfileUseCase(const NoParams());
+    final profileResult = await _getCalibrationProfileUseCase(const NoParams());
     final profile = profileResult.fold(
       (_) => const CalibrationProfile(),
       (loaded) => loaded ?? const CalibrationProfile(),

@@ -333,20 +333,20 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
           Color.lerp(latexHighlight, other.latexHighlight, t) ?? latexHighlight,
       latexBackground:
           Color.lerp(latexBackground, other.latexBackground, t) ??
-              latexBackground,
+          latexBackground,
       recallEasy: Color.lerp(recallEasy, other.recallEasy, t) ?? recallEasy,
       recallGood: Color.lerp(recallGood, other.recallGood, t) ?? recallGood,
       recallHard: Color.lerp(recallHard, other.recallHard, t) ?? recallHard,
       recallAgain: Color.lerp(recallAgain, other.recallAgain, t) ?? recallAgain,
       flashcardMastered:
           Color.lerp(flashcardMastered, other.flashcardMastered, t) ??
-              flashcardMastered,
+          flashcardMastered,
       flashcardReview:
           Color.lerp(flashcardReview, other.flashcardReview, t) ??
-              flashcardReview,
+          flashcardReview,
       flashcardLearning:
           Color.lerp(flashcardLearning, other.flashcardLearning, t) ??
-              flashcardLearning,
+          flashcardLearning,
       confidenceHigh:
           Color.lerp(confidenceHigh, other.confidenceHigh, t) ?? confidenceHigh,
       confidenceMed:
@@ -355,28 +355,28 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
           Color.lerp(confidenceLow, other.confidenceLow, t) ?? confidenceLow,
       backgroundPrimary:
           Color.lerp(backgroundPrimary, other.backgroundPrimary, t) ??
-              backgroundPrimary,
+          backgroundPrimary,
       backgroundSecondary:
           Color.lerp(backgroundSecondary, other.backgroundSecondary, t) ??
-              backgroundSecondary,
+          backgroundSecondary,
       surfacePrimary:
           Color.lerp(surfacePrimary, other.surfacePrimary, t) ?? surfacePrimary,
       surfaceSecondary:
           Color.lerp(surfaceSecondary, other.surfaceSecondary, t) ??
-              surfaceSecondary,
+          surfaceSecondary,
       surfaceTertiary:
           Color.lerp(surfaceTertiary, other.surfaceTertiary, t) ??
-              surfaceTertiary,
+          surfaceTertiary,
       surfaceElevated:
           Color.lerp(surfaceElevated, other.surfaceElevated, t) ??
-              surfaceElevated,
+          surfaceElevated,
       cardBackground:
           Color.lerp(cardBackground, other.cardBackground, t) ?? cardBackground,
       surfaceBorder:
           Color.lerp(surfaceBorder, other.surfaceBorder, t) ?? surfaceBorder,
       surfaceBorderHighlight:
           Color.lerp(surfaceBorderHighlight, other.surfaceBorderHighlight, t) ??
-              surfaceBorderHighlight,
+          surfaceBorderHighlight,
       borderOutline:
           Color.lerp(borderOutline, other.borderOutline, t) ?? borderOutline,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t) ?? textPrimary,

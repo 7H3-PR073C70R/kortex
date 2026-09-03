@@ -186,8 +186,11 @@ void main() {
       ),
       act: (cubit) => cubit.submitQuiz(),
       expect: () => [
-        isA<QuizSessionState>()
-            .having((s) => s.status, 'status', QuizSessionStatus.loading),
+        isA<QuizSessionState>().having(
+          (s) => s.status,
+          'status',
+          QuizSessionStatus.loading,
+        ),
         isA<QuizSessionState>()
             .having((s) => s.status, 'status', QuizSessionStatus.completed)
             .having((s) => s.result?.correctAnswers, 'correctAnswers', 2),

@@ -14,8 +14,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required UserStorageService userStorageService,
-  })  : _remoteDataSource = remoteDataSource,
-        _userStorageService = userStorageService;
+  }) : _remoteDataSource = remoteDataSource,
+       _userStorageService = userStorageService;
 
   final AuthRemoteDataSource _remoteDataSource;
   final UserStorageService _userStorageService;
@@ -77,20 +77,21 @@ class AuthRepositoryImpl implements AuthRepository {
     return _remoteDataSource
         .login(LoginRequestModel(email: email, password: password))
         .then((model) async {
-      final entity = model.toEntity();
-      if (entity.token != null) {
-        if (entity.refreshToken != null) {
-          await _userStorageService.saveAuthTokens(
-            accessToken: entity.token!,
-            refreshToken: entity.refreshToken!,
-          );
-        } else {
-          await _userStorageService.saveToken(entity.token!);
-        }
-      }
-      _authStateController.add(AuthSessionStatus.authenticatedComplete);
-      return entity;
-    }).makeRequest();
+          final entity = model.toEntity();
+          if (entity.token != null) {
+            if (entity.refreshToken != null) {
+              await _userStorageService.saveAuthTokens(
+                accessToken: entity.token!,
+                refreshToken: entity.refreshToken!,
+              );
+            } else {
+              await _userStorageService.saveToken(entity.token!);
+            }
+          }
+          _authStateController.add(AuthSessionStatus.authenticatedComplete);
+          return entity;
+        })
+        .makeRequest();
   }
 
   @override
@@ -101,28 +102,30 @@ class AuthRepositoryImpl implements AuthRepository {
   }) {
     return _remoteDataSource
         .register(
-      RegisterRequestModel(
-        email: email,
-        password: password,
-        displayName: displayName,
-      ),
-    )
+          RegisterRequestModel(
+            email: email,
+            password: password,
+            displayName: displayName,
+          ),
+        )
         .then((model) async {
-      final entity = model.toEntity();
-      if (entity.token != null) {
-        if (entity.refreshToken != null) {
-          await _userStorageService.saveAuthTokens(
-            accessToken: entity.token!,
-            refreshToken: entity.refreshToken!,
+          final entity = model.toEntity();
+          if (entity.token != null) {
+            if (entity.refreshToken != null) {
+              await _userStorageService.saveAuthTokens(
+                accessToken: entity.token!,
+                refreshToken: entity.refreshToken!,
+              );
+            } else {
+              await _userStorageService.saveToken(entity.token!);
+            }
+          }
+          _authStateController.add(
+            AuthSessionStatus.authenticatedNeedsOnboarding,
           );
-        } else {
-          await _userStorageService.saveToken(entity.token!);
-        }
-      }
-      _authStateController
-          .add(AuthSessionStatus.authenticatedNeedsOnboarding);
-      return entity;
-    }).makeRequest();
+          return entity;
+        })
+        .makeRequest();
   }
 
   @override
@@ -133,27 +136,28 @@ class AuthRepositoryImpl implements AuthRepository {
   }) {
     return _remoteDataSource
         .loginWithSocial(
-      SocialAuthRequestModel(
-        provider: provider,
-        idToken: idToken,
-        rawNonce: rawNonce,
-      ),
-    )
+          SocialAuthRequestModel(
+            provider: provider,
+            idToken: idToken,
+            rawNonce: rawNonce,
+          ),
+        )
         .then((model) async {
-      final entity = model.toEntity();
-      if (entity.token != null) {
-        if (entity.refreshToken != null) {
-          await _userStorageService.saveAuthTokens(
-            accessToken: entity.token!,
-            refreshToken: entity.refreshToken!,
-          );
-        } else {
-          await _userStorageService.saveToken(entity.token!);
-        }
-      }
-      _authStateController.add(AuthSessionStatus.authenticatedComplete);
-      return entity;
-    }).makeRequest();
+          final entity = model.toEntity();
+          if (entity.token != null) {
+            if (entity.refreshToken != null) {
+              await _userStorageService.saveAuthTokens(
+                accessToken: entity.token!,
+                refreshToken: entity.refreshToken!,
+              );
+            } else {
+              await _userStorageService.saveToken(entity.token!);
+            }
+          }
+          _authStateController.add(AuthSessionStatus.authenticatedComplete);
+          return entity;
+        })
+        .makeRequest();
   }
 
   @override
@@ -181,20 +185,21 @@ class AuthRepositoryImpl implements AuthRepository {
     return _remoteDataSource
         .verifyOtp(email: email, token: token, type: type)
         .then((model) async {
-      final entity = model.toEntity();
-      if (entity.token != null) {
-        if (entity.refreshToken != null) {
-          await _userStorageService.saveAuthTokens(
-            accessToken: entity.token!,
-            refreshToken: entity.refreshToken!,
-          );
-        } else {
-          await _userStorageService.saveToken(entity.token!);
-        }
-      }
-      _authStateController.add(AuthSessionStatus.authenticatedComplete);
-      return entity;
-    }).makeRequest();
+          final entity = model.toEntity();
+          if (entity.token != null) {
+            if (entity.refreshToken != null) {
+              await _userStorageService.saveAuthTokens(
+                accessToken: entity.token!,
+                refreshToken: entity.refreshToken!,
+              );
+            } else {
+              await _userStorageService.saveToken(entity.token!);
+            }
+          }
+          _authStateController.add(AuthSessionStatus.authenticatedComplete);
+          return entity;
+        })
+        .makeRequest();
   }
 
   @override

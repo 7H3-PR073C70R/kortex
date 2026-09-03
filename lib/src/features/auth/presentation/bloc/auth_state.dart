@@ -69,12 +69,12 @@ class AuthState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        sessionStatus,
-        user,
-        userProfile,
-        errorMessage,
-        needsEmailVerification,
-        isMagicLinkSent,
-      ];
+    status,
+    sessionStatus,
+    user,
+    userProfile,
+    errorMessage,
+    needsEmailVerification,
+    isMagicLinkSent,
+  ];
 }

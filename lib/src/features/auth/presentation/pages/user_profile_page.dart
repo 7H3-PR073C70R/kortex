@@ -230,17 +230,14 @@ class UserProfilePage extends HookWidget {
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    final displayName = profile?.displayName ??
-        state.user?.displayName ??
-        'Kortexify Scholar';
-    final email = profile?.email ??
-        state.user?.email ??
-        'scholar@kortexify.com';
+    final displayName =
+        profile?.displayName ?? state.user?.displayName ?? 'Kortexify Scholar';
+    final email =
+        profile?.email ?? state.user?.email ?? 'scholar@kortexify.com';
 
     final streakDays = profile?.streakDays ?? 0;
     final level = profile?.level ?? 1;
-    final retentionPct =
-        ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
+    final retentionPct = ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
 
     final photoUrl = profile?.photoUrl;
 
@@ -1000,8 +997,9 @@ class UserProfilePage extends HookWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withAlpha(context.isDarkMode ? 40 : 15),
+                                color: Colors.black.withAlpha(
+                                  context.isDarkMode ? 40 : 15,
+                                ),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -1183,8 +1181,8 @@ class UserProfilePage extends HookWidget {
                 AppFeedback.light();
                 if (context.mounted) {
                   context.read<AuthBloc>().add(
-                        const AuthProfileFetchRequested(),
-                      );
+                    const AuthProfileFetchRequested(),
+                  );
                   context.showSnackBar(
                     message: 'Profile updated: $newName',
                     type: SnackBarType.success,

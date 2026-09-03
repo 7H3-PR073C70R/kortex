@@ -36,8 +36,9 @@ void main() {
       );
     }
 
-    testWidgets('renders listening banner, wave visualizer, and Done button',
-        (tester) async {
+    testWidgets('renders listening banner, wave visualizer, and Done button', (
+      tester,
+    ) async {
       var transcribedResult = '';
 
       await tester.pumpWidget(

@@ -32,7 +32,8 @@ class ChatMessageModel {
       sender: json['sender'] as String,
       text: json['text'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
-      latexSnippets: (json['latex_snippets'] as List<dynamic>?)
+      latexSnippets:
+          (json['latex_snippets'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

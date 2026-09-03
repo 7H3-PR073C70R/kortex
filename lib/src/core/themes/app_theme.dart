@@ -88,8 +88,8 @@ class AppTheme {
   }) {
     final colors = isDark
         ? (isOled
-            ? AppThemeColorsExtension.oled(primaryAccent: primaryAccent)
-            : AppThemeColorsExtension.dark(primaryAccent: primaryAccent))
+              ? AppThemeColorsExtension.oled(primaryAccent: primaryAccent)
+              : AppThemeColorsExtension.dark(primaryAccent: primaryAccent))
         : AppThemeColorsExtension.light(primaryAccent: primaryAccent);
     final typography = TypographyThemeExtension.standard();
 
@@ -97,8 +97,9 @@ class AppTheme {
       brightness: isDark ? Brightness.dark : Brightness.light,
       colors: colors,
       typography: typography,
-      overlayStyle:
-          isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      overlayStyle: isDark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
     );
   }
 

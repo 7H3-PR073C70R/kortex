@@ -15,8 +15,11 @@ class HigherEdGoalsStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedGoals =
-        context.watch<CalibrationCubit>().state.profile.higherEdGoals;
+    final selectedGoals = context
+        .watch<CalibrationCubit>()
+        .state
+        .profile
+        .higherEdGoals;
 
     final goals = [
       (

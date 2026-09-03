@@ -30,8 +30,7 @@ class MockLoginWithEmailUseCase extends Mock implements LoginWithEmailUseCase {}
 class MockRegisterWithEmailUseCase extends Mock
     implements RegisterWithEmailUseCase {}
 
-class MockAuthVerifyOtpUseCase extends Mock
-    implements AuthVerifyOtpUseCase {}
+class MockAuthVerifyOtpUseCase extends Mock implements AuthVerifyOtpUseCase {}
 
 class MockLoginWithSocialUseCase extends Mock
     implements LoginWithSocialUseCase {}

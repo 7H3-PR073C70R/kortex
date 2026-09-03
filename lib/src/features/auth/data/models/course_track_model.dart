@@ -17,10 +17,8 @@ class CourseTrackModel extends Equatable {
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       iconName: json['icon_name'] as String? ?? 'school',
-      defaultDailyTarget:
-          (json['default_daily_target'] as num?)?.toInt() ?? 20,
-      examCountdownDays:
-          (json['exam_countdown_days'] as num?)?.toInt() ?? 60,
+      defaultDailyTarget: (json['default_daily_target'] as num?)?.toInt() ?? 20,
+      examCountdownDays: (json['exam_countdown_days'] as num?)?.toInt() ?? 60,
     );
   }
 
@@ -55,11 +53,11 @@ class CourseTrackModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        description,
-        iconName,
-        defaultDailyTarget,
-        examCountdownDays,
-      ];
+    id,
+    name,
+    description,
+    iconName,
+    defaultDailyTarget,
+    examCountdownDays,
+  ];
 }

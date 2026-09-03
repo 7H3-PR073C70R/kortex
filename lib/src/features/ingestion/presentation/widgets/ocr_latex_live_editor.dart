@@ -23,8 +23,9 @@ class OcrLatexLiveEditor extends HookWidget {
     final isDark = context.isDarkMode;
 
     final rawTextController = useTextEditingController(text: snippet.rawText);
-    final latexController =
-        useTextEditingController(text: snippet.latexContent ?? '');
+    final latexController = useTextEditingController(
+      text: snippet.latexContent ?? '',
+    );
     final topicController = useTextEditingController(text: snippet.topic);
 
     void notifyUpdate() {
@@ -250,8 +251,9 @@ class OcrLatexLiveEditor extends HookWidget {
                         const SizedBox(width: 8),
                         Text(
                           l10n.visualDiagramLinkedLabel,
-                          style: typography.footnote.regular
-                              .copyWith(color: colors.textSecondary),
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
                         ),
                       ],
                     ),

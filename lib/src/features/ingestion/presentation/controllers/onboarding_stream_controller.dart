@@ -40,7 +40,8 @@ class OnboardingStreamState {
         id: 'skeleton_card_$index',
         front: 'Synthesizing card ${index + 1}...',
         back: r'$$\dots$$ Generating contextual derivation...',
-        explanation: 'Background edge stream active. '
+        explanation:
+            'Background edge stream active. '
             'Next card arriving shortly.',
         isLocalInference: false,
         tags: const ['StreamingBuffer'],
@@ -69,8 +70,7 @@ class OnboardingStreamState {
   }) {
     return OnboardingStreamState(
       cards: cards ?? this.cards,
-      isInitialReviewReady:
-          isInitialReviewReady ?? this.isInitialReviewReady,
+      isInitialReviewReady: isInitialReviewReady ?? this.isInitialReviewReady,
       isStreaming: isStreaming ?? this.isStreaming,
       isCompleted: isCompleted ?? this.isCompleted,
       isPartialDeckFallback:
@@ -180,66 +180,67 @@ class OnboardingStreamController {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-        (line) {
-          resetInactivityWatchdog();
+            (line) {
+              resetInactivityWatchdog();
 
-          if (line.startsWith('data: ')) {
-            final jsonPayload = line.substring(6).trim();
-            if (jsonPayload == '[DONE]') {
-              return;
-            }
-
-            try {
-              final dynamic decoded = jsonDecode(jsonPayload);
-              if (decoded is Map<String, dynamic>) {
-                if (decoded.containsKey('card')) {
-                  final card = GeneratedFlashcard.fromJson(
-                    decoded['card'] as Map<String, dynamic>,
-                  );
-                  accumulatedCards.add(card);
-                } else if (decoded.containsKey('cards') &&
-                    decoded['cards'] is List) {
-                  for (final item in decoded['cards'] as List<dynamic>) {
-                    accumulatedCards.add(
-                      GeneratedFlashcard.fromJson(
-                        item as Map<String, dynamic>,
-                      ),
-                    );
-                  }
+              if (line.startsWith('data: ')) {
+                final jsonPayload = line.substring(6).trim();
+                if (jsonPayload == '[DONE]') {
+                  return;
                 }
 
-                // Sub-3-Second Killer Loop SLA check (< 3s for first 3 cards)
-                if (accumulatedCards.length >= 3 && !initialBatchEmitted) {
-                  initialBatchEmitted = true;
-                  final elapsedMs = stopwatch.elapsedMilliseconds;
-                  debugPrint(
-                    '[OnboardingStreamController] Sub-3s SLA Met! '
-                    'First 3 cards ready in ${elapsedMs}ms.',
-                  );
+                try {
+                  final dynamic decoded = jsonDecode(jsonPayload);
+                  if (decoded is Map<String, dynamic>) {
+                    if (decoded.containsKey('card')) {
+                      final card = GeneratedFlashcard.fromJson(
+                        decoded['card'] as Map<String, dynamic>,
+                      );
+                      accumulatedCards.add(card);
+                    } else if (decoded.containsKey('cards') &&
+                        decoded['cards'] is List) {
+                      for (final item in decoded['cards'] as List<dynamic>) {
+                        accumulatedCards.add(
+                          GeneratedFlashcard.fromJson(
+                            item as Map<String, dynamic>,
+                          ),
+                        );
+                      }
+                    }
 
-                  _updateState(
-                    _currentState.copyWith(
-                      cards: List.unmodifiable(accumulatedCards),
-                      isInitialReviewReady: true,
-                      initialLatencyMs: elapsedMs,
-                    ),
-                  );
-                } else {
-                  _updateState(
-                    _currentState.copyWith(
-                      cards: List.unmodifiable(accumulatedCards),
-                    ),
+                    // Sub-3-Second Killer Loop SLA check (< 3s for first 3 cards)
+                    if (accumulatedCards.length >= 3 && !initialBatchEmitted) {
+                      initialBatchEmitted = true;
+                      final elapsedMs = stopwatch.elapsedMilliseconds;
+                      debugPrint(
+                        '[OnboardingStreamController] Sub-3s SLA Met! '
+                        'First 3 cards ready in ${elapsedMs}ms.',
+                      );
+
+                      _updateState(
+                        _currentState.copyWith(
+                          cards: List.unmodifiable(accumulatedCards),
+                          isInitialReviewReady: true,
+                          initialLatencyMs: elapsedMs,
+                        ),
+                      );
+                    } else {
+                      _updateState(
+                        _currentState.copyWith(
+                          cards: List.unmodifiable(accumulatedCards),
+                        ),
+                      );
+                    }
+                  }
+                } on Object catch (parseErr) {
+                  debugPrint(
+                    '[OnboardingStreamController] Delta parse note: $parseErr',
                   );
                 }
               }
-            } on Object catch (parseErr) {
-              debugPrint(
-                '[OnboardingStreamController] Delta parse note: $parseErr',
-              );
-            }
-          }
-        },
-      ).asFuture<void>();
+            },
+          )
+          .asFuture<void>();
 
       // Normal stream completion
       _inactivityTimer?.cancel();

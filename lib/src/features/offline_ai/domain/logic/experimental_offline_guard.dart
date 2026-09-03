@@ -66,8 +66,8 @@ class ExperimentalOfflineGuard {
   ExperimentalOfflineGuard({
     Connectivity? connectivity,
     int? overrideDeviceRamMb,
-  })  : _connectivity = connectivity ?? Connectivity(),
-        _deviceRamMb = overrideDeviceRamMb ?? _detectDeviceRamMb();
+  }) : _connectivity = connectivity ?? Connectivity(),
+       _deviceRamMb = overrideDeviceRamMb ?? _detectDeviceRamMb();
 
   final Connectivity _connectivity;
   final int _deviceRamMb;

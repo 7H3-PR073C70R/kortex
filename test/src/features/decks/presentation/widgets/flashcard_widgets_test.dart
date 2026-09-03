@@ -40,8 +40,9 @@ void main() {
       );
     });
 
-    testWidgets('StudyProgressTopBar renders card progress and timer',
-        (tester) async {
+    testWidgets('StudyProgressTopBar renders card progress and timer', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildTestApp(
           StudyProgressTopBar(
@@ -57,8 +58,9 @@ void main() {
       expect(find.text('01:45'), findsOneWidget);
     });
 
-    testWidgets('Sm2RatingActionBar invokes correct quality callback',
-        (tester) async {
+    testWidgets('Sm2RatingActionBar invokes correct quality callback', (
+      tester,
+    ) async {
       int? ratedQuality;
 
       await tester.pumpWidget(
@@ -80,8 +82,9 @@ void main() {
       expect(ratedQuality, 4);
     });
 
-    testWidgets('DeckListTileCard displays deck title and subject',
-        (tester) async {
+    testWidgets('DeckListTileCard displays deck title and subject', (
+      tester,
+    ) async {
       const deck = DeckEntity(
         id: 'd1',
         title: 'Maxwell Equations',

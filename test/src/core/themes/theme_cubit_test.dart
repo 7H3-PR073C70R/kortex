@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}
@@ -18,8 +18,9 @@ void main() {
 
   setUp(() {
     mockStorage = MockLocalStorageService();
-    when(() => mockStorage.getPreference(key: any(named: 'key')))
-        .thenReturn(null);
+    when(
+      () => mockStorage.getPreference(key: any(named: 'key')),
+    ).thenReturn(null);
     when(
       () => mockStorage.savePreference(
         key: any(named: 'key'),

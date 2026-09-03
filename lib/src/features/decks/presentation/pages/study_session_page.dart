@@ -62,8 +62,9 @@ class _StudySessionView extends HookWidget {
     );
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       body: SafeArea(
         child: BlocConsumer<StudySessionCubit, StudySessionState>(
           listener: (context, state) {

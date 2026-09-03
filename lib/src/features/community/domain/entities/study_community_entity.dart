@@ -62,17 +62,17 @@ class StudyCommunityEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        courseCode,
-        title,
-        department,
-        memberCount,
-        activeRoomsCount,
-        forumThreadsCount,
-        isUserMember,
-        isFoundingMember,
-        activeRoomId,
-        activeRoomTitle,
-        createdAt,
-      ];
+    id,
+    courseCode,
+    title,
+    department,
+    memberCount,
+    activeRoomsCount,
+    forumThreadsCount,
+    isUserMember,
+    isFoundingMember,
+    activeRoomId,
+    activeRoomTitle,
+    createdAt,
+  ];
 }

@@ -129,8 +129,9 @@ class _PermissionsView extends StatelessWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black
-                                        .withAlpha(isDark ? 30 : 12),
+                                    color: Colors.black.withAlpha(
+                                      isDark ? 30 : 12,
+                                    ),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -299,8 +300,8 @@ class _PermissionCard extends StatelessWidget {
               color: isGranted
                   ? colors.success
                   : (isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                      : colors.surfaceBorder),
+                        ? colors.surfaceBorderHighlight.withAlpha(70)
+                        : colors.surfaceBorder),
               width: isGranted ? 1.5 : 1.0,
             ),
             boxShadow: [
@@ -327,9 +328,7 @@ class _PermissionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   isGranted ? Icons.check_circle_rounded : icon,
-                  color: isGranted
-                      ? colors.success
-                      : colors.primary,
+                  color: isGranted ? colors.success : colors.primary,
                   size: 24,
                 ),
               ),
@@ -469,16 +468,14 @@ class _PermissionsFooter extends StatelessWidget {
       children: [
         AppButton(
           text: l10n.permissionsContinue,
-          onPressed: () =>
-              context.read<PermissionsCubit>().finishPermissions(),
+          onPressed: () => context.read<PermissionsCubit>().finishPermissions(),
         ),
         const SizedBox(height: 14),
         Semantics(
           button: true,
           label: l10n.permissionsSkipSemantics,
           child: ShrinkableButton(
-            onTap: () =>
-                context.read<PermissionsCubit>().skipPermissions(),
+            onTap: () => context.read<PermissionsCubit>().skipPermissions(),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,

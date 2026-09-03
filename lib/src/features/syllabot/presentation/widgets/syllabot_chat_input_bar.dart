@@ -77,8 +77,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         if (listening) {
           unawaited(_micPulseController.repeat(reverse: true));
         } else {
-          _micPulseController.stop();
-          _micPulseController.reset();
+          _micPulseController
+            ..stop()
+            ..reset();
         }
       },
       onError: (err) {
@@ -86,8 +87,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         setState(() {
           _isListening = false;
         });
-        _micPulseController.stop();
-        _micPulseController.reset();
+        _micPulseController
+          ..stop()
+          ..reset();
       },
     );
   }
@@ -140,109 +142,111 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.socraticModeSheetTitle,
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.socraticModeSheetSubtitle,
-                  style: typography.caption.medium.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ...SocraticMode.values.map((mode) {
-                  final isSelected = mode == widget.socraticMode;
-                  final (icon, title, desc) = _getModeDetails(mode, l10n);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ShrinkableButton(
-                      onTap: () {
-                        widget.onModeChanged(mode);
-                        Navigator.of(ctx).pop();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary.withAlpha(25)
-                              : colors.surfaceSecondary,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.surfaceBorder.withAlpha(80),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(icon, style: const TextStyle(fontSize: 20)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: typography.body.bold.copyWith(
-                                      color: isSelected
-                                          ? colors.primary
-                                          : colors.textPrimary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    desc,
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle_rounded,
-                                color: colors.primary,
-                                size: 20,
-                              ),
-                          ],
-                        ),
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(80),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  );
-                }),
-              ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.socraticModeSheetTitle,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.socraticModeSheetSubtitle,
+                    style: typography.caption.medium.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...SocraticMode.values.map((mode) {
+                    final isSelected = mode == widget.socraticMode;
+                    final (icon, title, desc) = _getModeDetails(mode, l10n);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ShrinkableButton(
+                        onTap: () {
+                          widget.onModeChanged(mode);
+                          Navigator.of(ctx).pop();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? colors.primary.withAlpha(25)
+                                : colors.surfaceSecondary,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.surfaceBorder.withAlpha(80),
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(icon, style: const TextStyle(fontSize: 20)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: typography.body.bold.copyWith(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      desc,
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: colors.primary,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    ));
+          );
+        },
+      ),
+    );
   }
 
   (String icon, String title, String desc) _getModeDetails(
@@ -251,25 +255,25 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
   ) {
     return switch (mode) {
       SocraticMode.stepByStep => (
-          '🪜',
-          l10n.socraticModeStepByStepLabel,
-          l10n.socraticModeStepByStepDesc,
-        ),
+        '🪜',
+        l10n.socraticModeStepByStepLabel,
+        l10n.socraticModeStepByStepDesc,
+      ),
       SocraticMode.directAnswer => (
-          '⚡',
-          l10n.socraticModeDirectAnswerLabel,
-          l10n.socraticModeDirectAnswerDesc,
-        ),
+        '⚡',
+        l10n.socraticModeDirectAnswerLabel,
+        l10n.socraticModeDirectAnswerDesc,
+      ),
       SocraticMode.examSim => (
-          '🎯',
-          l10n.socraticModeExamSimLabel,
-          l10n.socraticModeExamSimDesc,
-        ),
+        '🎯',
+        l10n.socraticModeExamSimLabel,
+        l10n.socraticModeExamSimDesc,
+      ),
       SocraticMode.deepResearch => (
-          '🔬',
-          l10n.socraticModeDeepResearchLabel,
-          l10n.socraticModeDeepResearchDesc,
-        ),
+        '🔬',
+        l10n.socraticModeDeepResearchLabel,
+        l10n.socraticModeDeepResearchDesc,
+      ),
     };
   }
 
@@ -412,8 +416,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       ),
                                     )
@@ -457,7 +461,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                             ? [
                                                 BoxShadow(
                                                   color: colors.error.withAlpha(
-                                                    (140 + (pulse * 100)).toInt().clamp(0, 255),
+                                                    (140 + (pulse * 100))
+                                                        .toInt()
+                                                        .clamp(0, 255),
                                                   ),
                                                   blurRadius: 10 + (pulse * 6),
                                                   spreadRadius: 1 + (pulse * 2),
@@ -467,7 +473,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                         border: Border.all(
                                           color: _isListening
                                               ? Colors.white.withAlpha(180)
-                                              : colors.surfaceBorder.withAlpha(80),
+                                              : colors.surfaceBorder.withAlpha(
+                                                  80,
+                                                ),
                                         ),
                                       ),
                                       child: Icon(

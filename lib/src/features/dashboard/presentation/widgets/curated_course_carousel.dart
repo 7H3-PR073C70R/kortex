@@ -100,7 +100,8 @@ class _CourseCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '${course.courseCode} ${course.title}. '
+      label:
+          '${course.courseCode} ${course.title}. '
           '${l10n.dashboardResourcesCount(course.totalMaterials)}.',
       child: ShrinkableButton(
         onTap: () {
@@ -221,8 +222,10 @@ class _CourseCard extends StatelessWidget {
                               ? colors.surfaceBorderHighlight.withAlpha(50)
                               : colors.surfaceBorder.withAlpha(100),
                           child: FractionallySizedBox(
-                            widthFactor:
-                                course.syllabusCoverage.clamp(0.1, 1.0),
+                            widthFactor: course.syllabusCoverage.clamp(
+                              0.1,
+                              1.0,
+                            ),
                             child: Container(
                               color: colors.primary,
                             ),

@@ -41,8 +41,9 @@ void main() {
     blocTest<CramPlannerCubit, CramPlannerState>(
       'emits [loading, loaded] when loadExams succeeds with exams',
       build: () {
-        when(() => mockRepository.getActiveExams())
-            .thenAnswer((_) async => Right([tExam]));
+        when(
+          () => mockRepository.getActiveExams(),
+        ).thenAnswer((_) async => Right([tExam]));
         return cubit;
       },
       act: (cubit) => cubit.loadExams(),

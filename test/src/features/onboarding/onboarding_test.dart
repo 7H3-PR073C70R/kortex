@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
@@ -10,7 +11,6 @@ import 'package:kortex/src/features/onboarding/presentation/pages/splash_page.da
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_illustrations.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}

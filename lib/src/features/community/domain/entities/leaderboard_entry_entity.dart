@@ -54,15 +54,15 @@ class LeaderboardEntryEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        userName,
-        avatarUrl,
-        track,
-        dailyXp,
-        weeklyXp,
-        streakDays,
-        rank,
-        isCurrentUser,
-      ];
+    id,
+    userId,
+    userName,
+    avatarUrl,
+    track,
+    dailyXp,
+    weeklyXp,
+    streakDays,
+    rank,
+    isCurrentUser,
+  ];
 }

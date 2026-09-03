@@ -45,10 +45,12 @@ class ConvertToDeckActionSheet extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final titleController =
-        useTextEditingController(text: initialTitle ?? 'Syllabot Study Notes');
-    final courseController =
-        useTextEditingController(text: initialCourseCode ?? 'GEN 101');
+    final titleController = useTextEditingController(
+      text: initialTitle ?? 'Syllabot Study Notes',
+    );
+    final courseController = useTextEditingController(
+      text: initialCourseCode ?? 'GEN 101',
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -64,8 +66,9 @@ class ConvertToDeckActionSheet extends HookWidget {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(240)
                   : colors.surfacePrimary.withAlpha(245),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 60 : 30),
               ),
