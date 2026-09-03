@@ -199,15 +199,33 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String storagePath,
     required String fileType,
   }) async {
-    // 1. Try remote Edge Function if active
-    try {
-      final res = await _client.triggerParseStemOcr(
-        {
-          'documentId': documentId,
-          'storagePath': storagePath,
-          'fileType': fileType,
-        },
+    // Pre-extract text from cache if available so Edge function gets it immediately
+    var fileBytes = _documentBytesCache[documentId];
+    final filename = _documentFilenamesCache[documentId] ?? 'Document';
+    var initialText = '';
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      final isPdf = fileType.toLowerCase().contains('pdf') ||
+          storagePath.toLowerCase().endsWith('.pdf') ||
+          filename.toLowerCase().endsWith('.pdf');
+      initialText = _parserService.extractTextFromBytes(
+        fileBytes,
+        fileType: isPdf ? 'pdf' : fileType,
+        filename: filename,
       );
+    }
+
+    // 1. Try remote Edge Function (AI Smart Synthesis)
+    try {
+      final payload = <String, dynamic>{
+        'documentId': documentId,
+        'storagePath': storagePath,
+        'fileType': fileType,
+      };
+      if (initialText.isNotEmpty) {
+        payload['extractedText'] = initialText;
+      }
+
+      final res = await _client.triggerParseStemOcr(payload);
 
       final result = res.data is Map<String, dynamic>
           ? (res.data as Map<String, dynamic>)
@@ -229,8 +247,6 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     } on Object catch (_) {}
 
     // 3. Document Parsing Engine: Extract text & images from uploaded document
-    var fileBytes = _documentBytesCache[documentId];
-    final filename = _documentFilenamesCache[documentId] ?? 'Document';
 
     // If bytes not in memory cache, attempt download from storage bucket
     if ((fileBytes == null || fileBytes.isEmpty) && storagePath.isNotEmpty) {

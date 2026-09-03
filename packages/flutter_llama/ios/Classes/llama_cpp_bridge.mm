@@ -145,23 +145,40 @@ bool llama_generate(
         return false;
     }
     
-    // Create batch
-    llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
+    // Clear KV cache before evaluating new sequence
+    llama_memory_t mem = llama_get_memory(g_context);
+    llama_memory_clear(mem, true);
     
-    // Decode prompt
-    if (llama_decode(g_context, batch) != 0) {
-        NSLog(@"[llama_cpp_bridge] Failed to decode prompt");
-        return false;
+    // Truncate prompt if it exceeds context limit
+    const uint32_t n_ctx = llama_n_ctx(g_context);
+    if (prompt_tokens.size() >= n_ctx) {
+        size_t keep = n_ctx > 128 ? (n_ctx - 128) : (n_ctx / 2);
+        prompt_tokens.erase(prompt_tokens.begin(), prompt_tokens.end() - keep);
+    }
+    
+    // Decode prompt in chunks of n_batch
+    const uint32_t n_batch = llama_n_batch(g_context);
+    for (size_t i = 0; i < prompt_tokens.size(); i += n_batch) {
+        const int32_t n_eval = (int32_t)std::min((size_t)n_batch, prompt_tokens.size() - i);
+        llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, n_eval);
+        if (llama_decode(g_context, batch) != 0) {
+            NSLog(@"[llama_cpp_bridge] Failed to decode prompt chunk at offset %zu", i);
+            return false;
+        }
     }
     
     // Update sampler with new parameters
-    llama_sampler_free(g_sampler);
+    if (g_sampler) {
+        llama_sampler_free(g_sampler);
+        g_sampler = nullptr;
+    }
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
     
     // Generate tokens
@@ -177,8 +194,9 @@ bool llama_generate(
             break;
         }
         
-        // Sample next token
+        // Sample next token and register in sampler
         llama_token new_token = llama_sampler_sample(g_sampler, g_context, -1);
+        llama_sampler_accept(g_sampler, new_token);
         
         // Check for EOS
         if (llama_vocab_is_eog(g_vocab, new_token)) {
@@ -195,7 +213,7 @@ bool llama_generate(
         }
         
         // Prepare for next iteration
-        batch = llama_batch_get_one(&new_token, 1);
+        llama_batch batch = llama_batch_get_one(&new_token, 1);
         n_pos++;
         
         if (llama_decode(g_context, batch) != 0) {
@@ -249,33 +267,50 @@ void llama_generate_stream_init(
         return;
     }
     
-    // Create batch
-    llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
+    // Clear KV cache before evaluating new sequence
+    llama_memory_t mem = llama_get_memory(g_context);
+    llama_memory_clear(mem, true);
     
-    // Decode prompt
-    if (llama_decode(g_context, batch) != 0) {
-        NSLog(@"[llama_cpp_bridge] Failed to decode prompt");
-        return;
+    // Truncate prompt if it exceeds context limit
+    const uint32_t n_ctx = llama_n_ctx(g_context);
+    if (prompt_tokens.size() >= n_ctx) {
+        size_t keep = n_ctx > 128 ? (n_ctx - 128) : (n_ctx / 2);
+        prompt_tokens.erase(prompt_tokens.begin(), prompt_tokens.end() - keep);
+    }
+    
+    // Decode prompt in chunks of n_batch
+    const uint32_t n_batch = llama_n_batch(g_context);
+    for (size_t i = 0; i < prompt_tokens.size(); i += n_batch) {
+        const int32_t n_eval = (int32_t)std::min((size_t)n_batch, prompt_tokens.size() - i);
+        llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, n_eval);
+        if (llama_decode(g_context, batch) != 0) {
+            NSLog(@"[llama_cpp_bridge] Failed to decode prompt chunk at offset %zu", i);
+            return;
+        }
     }
     
     // Update sampler
     if (g_sampler) {
         llama_sampler_free(g_sampler);
+        g_sampler = nullptr;
     }
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
     
     // Pre-generate tokens and convert to strings
-    int n_pos = prompt_tokens.size();
+    int n_pos = (int)prompt_tokens.size();
     for (int i = 0; i < max_tokens; i++) {
         if (g_should_stop) break;
+        if (n_pos >= (int)n_ctx) break;
         
         llama_token new_token = llama_sampler_sample(g_sampler, g_context, -1);
+        llama_sampler_accept(g_sampler, new_token);
         
         if (llama_vocab_is_eog(g_vocab, new_token)) {
             break;
@@ -286,10 +321,16 @@ void llama_generate_stream_init(
         int n = llama_token_to_piece(g_vocab, new_token, token_str, sizeof(token_str) - 1, 0, true);
         if (n > 0) {
             token_str[n] = '\0';
-            g_stream_tokens.push_back(std::string(token_str));
+            std::string piece(token_str);
+            if (piece.find("<|im_end|>") != std::string::npos ||
+                piece.find("<|endoftext|>") != std::string::npos ||
+                piece.find("<|im_start|>") != std::string::npos) {
+                break;
+            }
+            g_stream_tokens.push_back(piece);
         }
         
-        batch = llama_batch_get_one(&new_token, 1);
+        llama_batch batch = llama_batch_get_one(&new_token, 1);
         n_pos++;
         
         if (llama_decode(g_context, batch) != 0) {

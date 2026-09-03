@@ -4,21 +4,19 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
-import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
   late MockLocalStorageService mockStorage;
   late LocalLlmEngineClient client;
 
-  setUpAll(() {
+  setUpAll(() async {
     mockStorage = MockLocalStorageService();
     if (locator.isRegistered<LocalStorageService>()) {
-      locator.unregister<LocalStorageService>();
+      await locator.unregister<LocalStorageService>();
     }
     locator.registerSingleton<LocalStorageService>(mockStorage);
   });
@@ -41,11 +39,10 @@ void main() {
       final stream = client.generate(
         prompt: 'Explain interjection in dept',
         systemInstruction: 'Be helpful.',
-        socraticMode: SocraticMode.stepByStep,
       );
 
       final tokens = await stream.toList();
-      final fullText = tokens.join('');
+      final fullText = tokens.join();
 
       expect(fullText, contains('interjection'));
       expect(fullText, contains('Emotive'));
@@ -77,12 +74,11 @@ void main() {
       final stream = client.generate(
         prompt: 'Given me example of all 8 of them and explain In details',
         systemInstruction: 'Be helpful.',
-        socraticMode: SocraticMode.stepByStep,
         contextHistory: history,
       );
 
       final tokens = await stream.toList();
-      final fullText = tokens.join('');
+      final fullText = tokens.join();
 
       expect(fullText, contains('8 Parts of Speech'));
       expect(fullText, contains('Noun'));
@@ -102,7 +98,7 @@ void main() {
       );
 
       final tokens = await stream.toList();
-      final fullText = tokens.join('');
+      final fullText = tokens.join();
 
       expect(fullText, contains('pronoun'));
       expect(fullText, contains('Personal'));
@@ -116,7 +112,7 @@ void main() {
       );
 
       final tokens = await stream.toList();
-      final fullText = tokens.join('');
+      final fullText = tokens.join();
 
       expect(fullText, contains('conjunction'));
       expect(fullText, contains('FANBOYS'));

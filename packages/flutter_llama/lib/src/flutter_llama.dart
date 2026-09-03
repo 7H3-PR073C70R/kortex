@@ -124,18 +124,41 @@ class FlutterLlama {
         print('[FlutterLlama] Streaming generation with params: $params');
       }
 
-      // Set up event channel for streaming
-      final eventChannel = EventChannel('flutter_llama/stream');
+      // 1. Set up event channel for streaming and subscribe FIRST so onListen initializes eventSink
+      const eventChannel = EventChannel('flutter_llama/stream');
+      final controller = StreamController<String>();
       
-      // Send generation request
-      await _channel.invokeMethod('generateStream', params.toMap());
+      final subscription = eventChannel.receiveBroadcastStream().listen(
+        (token) {
+          if (token is String && !controller.isClosed) {
+            controller.add(token);
+          }
+        },
+        onError: (Object error) {
+          if (!controller.isClosed) {
+            controller.addError(error);
+          }
+        },
+        onDone: () {
+          if (!controller.isClosed) {
+            controller.close();
+          }
+        },
+      );
 
-      // Listen to token stream
-      await for (final token in eventChannel.receiveBroadcastStream()) {
-        if (token is String) {
-          yield token;
+      // 2. Send generation request now that event sink is verified active
+      try {
+        await _channel.invokeMethod('generateStream', params.toMap());
+      } catch (e) {
+        await subscription.cancel();
+        if (!controller.isClosed) {
+          await controller.close();
         }
+        rethrow;
       }
+
+      yield* controller.stream;
+      await subscription.cancel();
     } catch (e) {
       if (kDebugMode) {
         print('[FlutterLlama] Error in streaming generation: $e');

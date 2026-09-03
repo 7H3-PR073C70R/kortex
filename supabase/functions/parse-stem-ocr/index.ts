@@ -6,6 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
 interface OcrRequestPayload {
@@ -13,6 +14,14 @@ interface OcrRequestPayload {
   storagePath: string;
   fileType: string;
   courseCode?: string;
+  extractedText?: string;
+}
+
+interface FlashcardItem {
+  topic: string;
+  raw_text: string;
+  latex_content?: string | null;
+  confidence_score?: number;
 }
 
 serve(async (req) => {
@@ -29,7 +38,7 @@ serve(async (req) => {
 
     let userId: string | null = null;
     if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
+      const token = authHeader.replace(/^Bearer\s+/i, "");
       const {
         data: { user },
       } = await supabase.auth.getUser(token);
@@ -43,12 +52,8 @@ serve(async (req) => {
       });
     }
 
-    const {
-      documentId,
-      storagePath,
-      fileType,
-      courseCode,
-    }: OcrRequestPayload = await req.json();
+    const payload: OcrRequestPayload = await req.json().catch(() => ({}));
+    const { documentId, storagePath, fileType, courseCode, extractedText } = payload;
 
     if (!documentId) {
       return new Response(JSON.stringify({ error: "documentId is required" }), {
@@ -69,7 +74,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           document_id: documentId,
-          snippets_extracted: cacheResult.data.snippets.length,
+          snippets: cacheResult.data.snippets,
           cache_hit: true,
         }),
         {
@@ -89,64 +94,192 @@ serve(async (req) => {
       .update({ processing_status: "parsingOcr" })
       .eq("id", documentId);
 
-    // Synthesize STEM OCR extracted snippets (with LaTeX formulas & theorems)
-    const snippets = [
-      {
-        document_id: documentId,
-        user_id: userId,
-        raw_text:
-          "Theorem 4.2 (Stationary Action Principle): The true physical path of a dynamical system minimizes the action functional S = int L dt.",
-        latex_formula:
-          "\\delta S = \\delta \\int_{t_1}^{t_2} L(q, \\dot{q}, t) \\, dt = 0",
-        confidence_score: 0.98,
-        page_number: 1,
-        bounding_box: { x: 0.1, y: 0.2, width: 0.8, height: 0.15 },
-        is_stem_formula: true,
-      },
-      {
-        document_id: documentId,
-        user_id: userId,
-        raw_text:
-          "Lagrangian mechanics reformulation: L = T - V where T is kinetic energy and V is potential energy.",
-        latex_formula:
-          "\\frac{d}{dt}\\left(\\frac{\\partial L}{\\partial \\dot{q}_i}\\right) - \\frac{\\partial L}{\\partial q_i} = 0",
-        confidence_score: 0.96,
-        page_number: 1,
-        bounding_box: { x: 0.1, y: 0.4, width: 0.8, height: 0.2 },
-        is_stem_formula: true,
-      },
-      {
-        document_id: documentId,
-        user_id: userId,
-        raw_text:
-          "Thermodynamic identity relating entropy, enthalpy, and temperature.",
-        latex_formula: "dH = T \\, dS + V \\, dP",
-        confidence_score: 0.97,
-        page_number: 2,
-        bounding_box: { x: 0.15, y: 0.3, width: 0.7, height: 0.18 },
-        is_stem_formula: true,
-      },
-    ];
+    // 2. Obtain content (text or binary bytes)
+    let textContent = extractedText ?? "";
+    let base64Pdf: string | null = null;
 
-    const { error: snippetErr } = await supabase
-      .from("ocr_snippets")
-      .insert(snippets);
+    if (!textContent && storagePath) {
+      try {
+        const { data: fileBlob, error: downloadError } = await supabase.storage
+          .from("study-documents")
+          .download(storagePath);
 
-    if (snippetErr) {
-      throw snippetErr;
+        if (!downloadError && fileBlob) {
+          const arrayBuffer = await fileBlob.arrayBuffer();
+          const bytes = new Uint8List(arrayBuffer);
+          const ext = (fileType || "").toLowerCase();
+
+          if (ext.includes("pdf") || storagePath.toLowerCase().endsWith(".pdf")) {
+            // Encode as base64 for Gemini PDF vision/document understanding
+            let binary = "";
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            base64Pdf = btoa(binary);
+          } else {
+            textContent = new TextDecoder().decode(bytes);
+          }
+        }
+      } catch (dlErr) {
+        console.warn("[parse-stem-ocr] Storage download notice:", dlErr);
+      }
     }
 
-    // Update document status to ready
+    // 3. AI Smart Flashcard Synthesis using Gemini / LLM
+    const geminiApiKey =
+      Deno.env.get("GEMINI_API_KEY") ||
+      Deno.env.get("GOOGLE_AI_API_KEY") ||
+      "";
+
+    const flashcards: FlashcardItem[] = [];
+
+    if (geminiApiKey && (textContent.length > 50 || base64Pdf)) {
+      try {
+        const systemPrompt =
+          "You are an expert pedagogical AI specializing in synthesizing high-yield SM-2 spaced repetition flashcards from study documents.\n" +
+          "Your task is to thoroughly analyze this document and generate between 12 and 22 comprehensive, high-quality flashcards.\n\n" +
+          "RULES FOR CARDS:\n" +
+          "1. TOPIC: Must be a clear, specific question or concept prompt. NEVER output a vague phrase or single word (e.g. Do NOT output 'What is high-probability?'). Instead, ask: 'What are the timeframes used in this strategy and what is the role of each?' or 'How is the Rectangle defined in this trading plan?'.\n" +
+          "2. RAW_TEXT: Must be a complete, highly explanatory answer containing all rules, conditions, bullet points, or checklist steps. Never give a 1-word answer or echo the question.\n" +
+          "3. LATEX_CONTENT: If the card involves a mathematical formula, ratio, or calculation (e.g. Risk-to-Reward Ratio \\ge 3:1, Exponential Moving Average, calculus), provide valid LaTeX math notation. Otherwise set to null.\n" +
+          "4. CONFIDENCE_SCORE: Set to 0.98.\n" +
+          "5. Cover all key sections: Definitions, timeframes, indicators, entry triggers, execution steps, risk management (stop loss / take profit), and pre-trade checklist.\n\n" +
+          "Output format: Return ONLY a JSON array of card objects with keys: topic, raw_text, latex_content, confidence_score.";
+
+        const contents: any[] = [];
+        const parts: any[] = [{ text: systemPrompt }];
+
+        if (base64Pdf) {
+          parts.push({
+            inline_data: {
+              mime_type: "application/pdf",
+              data: base64Pdf,
+            },
+          });
+        } else {
+          parts.push({
+            text: `DOCUMENT CONTENT:\n${textContent.substring(0, 50000)}`,
+          });
+        }
+
+        contents.push({ role: "user", parts });
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+        const aiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              response_mime_type: "application/json",
+              temperature: 0.2,
+            },
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const aiJson = await aiResponse.json();
+          const candidateText =
+            aiJson?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+          if (candidateText) {
+            const parsed = JSON.parse(candidateText);
+            const cardArray = Array.isArray(parsed)
+              ? parsed
+              : Array.isArray(parsed.cards)
+              ? parsed.cards
+              : Array.isArray(parsed.flashcards)
+              ? parsed.flashcards
+              : [];
+
+            for (const item of cardArray) {
+              if (item.topic && item.raw_text && item.topic.length > 5 && item.raw_text.length > 10) {
+                flashcards.push({
+                  topic: item.topic.trim(),
+                  raw_text: item.raw_text.trim(),
+                  latex_content: item.latex_content ?? null,
+                  confidence_score: item.confidence_score ?? 0.98,
+                });
+              }
+            }
+          }
+        } else {
+          const errText = await aiResponse.text();
+          console.warn("[parse-stem-ocr] Gemini API returned non-OK:", errText);
+        }
+      } catch (aiErr) {
+        console.error("[parse-stem-ocr] Gemini generation exception:", aiErr);
+      }
+    }
+
+    // 4. Fallback if AI yielded zero cards or key missing
+    if (flashcards.length === 0) {
+      if (textContent.length > 0) {
+        // Generate heuristic cards from text sections
+        const lines = textContent.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+        let curTopic = "";
+        let curBody: string[] = [];
+
+        for (const line of lines) {
+          const isHeader = /^(?:(?:Part|Step|Rule|Section|\d+\.|\d+\.\d+|[A-Z]\.)\s+[A-Z]|\b[A-Z][a-zA-Z\s]{3,30}:)/.test(line);
+          if (isHeader) {
+            if (curTopic && curBody.length > 0) {
+              flashcards.push({
+                topic: curTopic,
+                raw_text: curBody.join(" "),
+                confidence_score: 0.95,
+              });
+              curBody = [];
+            }
+            curTopic = line.replace(/:$/, "").trim();
+          } else if (curTopic) {
+            curBody.push(line);
+          }
+        }
+
+        if (curTopic && curBody.length > 0) {
+          flashcards.push({
+            topic: curTopic,
+            raw_text: curBody.join(" "),
+            confidence_score: 0.95,
+          });
+        }
+      }
+    }
+
+    // 5. Insert synthesized snippets into `public.extracted_snippets` (correct schema table)
+    const snippetsToInsert = flashcards.map((c) => ({
+      id: crypto.randomUUID(),
+      document_id: documentId,
+      user_id: userId,
+      raw_text: c.raw_text,
+      latex_content: c.latex_content ?? null,
+      topic: c.topic,
+      confidence_score: c.confidence_score ?? 0.98,
+    }));
+
+    if (snippetsToInsert.length > 0) {
+      const { error: snippetErr } = await supabase
+        .from("extracted_snippets")
+        .insert(snippetsToInsert);
+
+      if (snippetErr) {
+        console.error("[parse-stem-ocr] Insert to extracted_snippets error:", snippetErr);
+      }
+    }
+
+    // Update document status to completed
     await supabase
       .from("documents")
-      .update({ processing_status: "ready" })
+      .update({ processing_status: "completed" })
       .eq("id", documentId);
 
     // Cache the OCR output
     await SemanticCacheProvider.setCachedResponse(
       supabase,
       `ocr_extract:${documentId}:${storagePath}`,
-      { snippets },
+      { snippets: snippetsToInsert },
       { courseCode }
     );
 
@@ -154,7 +287,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         document_id: documentId,
-        snippets_extracted: snippets.length,
+        snippets: snippetsToInsert,
+        snippets_extracted: snippetsToInsert.length,
         cache_hit: false,
       }),
       {

@@ -67,7 +67,7 @@ class LocalLlmEngineClient {
             );
           }
         }
-      } catch (e) {
+      } on Object catch (e) {
         if (kDebugMode) {
           print('[LocalLlmEngineClient] Native download error: $e');
         }
@@ -101,7 +101,7 @@ class LocalLlmEngineClient {
       final savedPath = storage.getPreference(key: _modelPathKey);
       if (savedPath != null && savedPath.isNotEmpty) {
         final file = File(savedPath);
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
         }
       }
@@ -128,9 +128,6 @@ class LocalLlmEngineClient {
         await FlutterLlama.instance.loadModel(
           LlamaConfig(
             modelPath: savedPath,
-            nThreads: 4,
-            contextSize: 2048,
-            useGpu: true,
           ),
         );
       }
@@ -169,8 +166,10 @@ class LocalLlmEngineClient {
         final stream = FlutterLlama.instance.generateStream(
           GenerationParams(
             prompt: formattedPrompt,
-            maxTokens: maxTokens,
-            temperature: temperature,
+            maxTokens: maxTokens > 512 ? 512 : maxTokens,
+            temperature: 0.35,
+            repeatPenalty: 1.25,
+            stopSequences: const ['<|im_end|>', '<|endoftext|>', '<|im_start|>'],
           ),
         );
         yield* stream;
@@ -204,25 +203,37 @@ class LocalLlmEngineClient {
     required SocraticMode mode,
     List<ChatMessageEntity> contextHistory = const [],
   }) {
-    final buffer = StringBuffer();
-    buffer.writeln('<|im_start|>system');
-    buffer.writeln(systemInstruction);
-    buffer.writeln('Socratic Pedagogical Mode: ${mode.nameString}');
+    final buffer = StringBuffer()
+      ..writeln('<|im_start|>system')
+      ..writeln('You are Syllabot, an expert educational tutor.')
+      ..writeln('Provide direct, accurate, and concise explanations with clear definitions and examples.')
+      ..writeln('Do not repeat yourself or loop.');
+    if (systemInstruction.trim().isNotEmpty) {
+      buffer.writeln(systemInstruction);
+    }
     buffer.writeln('<|im_end|>');
 
     final history =
         contextHistory.where((m) => m.text.trim().isNotEmpty).toList();
-    for (final msg in history.take(6)) {
+    // Take the last 4 most recent turns to keep edge model focused and within context budget
+    final recentHistory =
+        history.length > 4 ? history.sublist(history.length - 4) : history;
+    for (final msg in recentHistory) {
       final role = msg.sender == MessageSender.user ? 'user' : 'assistant';
-      buffer.writeln('<|im_start|>$role');
-      buffer.writeln(msg.text);
-      buffer.writeln('<|im_end|>');
+      final text = msg.text.length > 800
+          ? '${msg.text.substring(0, 800)}...'
+          : msg.text;
+      buffer
+        ..writeln('<|im_start|>$role')
+        ..writeln(text)
+        ..writeln('<|im_end|>');
     }
 
-    buffer.writeln('<|im_start|>user');
-    buffer.writeln(prompt);
-    buffer.writeln('<|im_end|>');
-    buffer.writeln('<|im_start|>assistant');
+    buffer
+      ..writeln('<|im_start|>user')
+      ..writeln(prompt)
+      ..writeln('<|im_end|>')
+      ..writeln('<|im_start|>assistant');
     return buffer.toString();
   }
 
@@ -450,7 +461,7 @@ class LocalLlmEngineClient {
           '• The exterior angle \\(\\angle BOQ = \\angle OPB + \\angle OBP = 2y\\).\n\n'
           '### Conclusion:\n'
           '\\[ \\angle AOB = \\angle AOQ + \\angle BOQ = 2x + 2y = 2(x + y) = 2\\angle APB \\]\n'
-          'Hence, the angle at the centre \\(\\angle AOB\\) is exactly **twice** the angle at the circumference \\(\\angle APB\\). Q.E.D.';
+          r'Hence, the angle at the centre \(\angle AOB\) is exactly **twice** the angle at the circumference \(\angle APB\). Q.E.D.';
     }
 
     // 11. Computing: whoami

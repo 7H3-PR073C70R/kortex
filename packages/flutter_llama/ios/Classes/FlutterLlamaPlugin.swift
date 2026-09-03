@@ -226,17 +226,26 @@ public class FlutterLlamaPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             return
         }
         
-        guard let eventSink = self.eventSink else {
-            result(FlutterError(
-                code: "NO_EVENT_SINK",
-                message: "Event channel not initialized",
-                details: nil
-            ))
-            return
-        }
-        
         queue.async { [weak self] in
             guard let self = self else { return }
+            
+            // Wait up to 1 second for eventSink to be attached by Flutter
+            var attempts = 0
+            while self.eventSink == nil && attempts < 20 {
+                usleep(50000) // 50ms
+                attempts += 1
+            }
+            
+            guard let eventSink = self.eventSink else {
+                DispatchQueue.main.async {
+                    result(FlutterError(
+                        code: "NO_EVENT_SINK",
+                        message: "Event channel not initialized",
+                        details: nil
+                    ))
+                }
+                return
+            }
             guard let args = call.arguments as? [String: Any],
                   let prompt = args["prompt"] as? String else {
                 DispatchQueue.main.async {

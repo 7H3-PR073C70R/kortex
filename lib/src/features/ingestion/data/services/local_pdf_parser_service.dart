@@ -82,7 +82,25 @@ class LocalPdfParserService {
       final pageTexts = <String>[];
 
       for (var i = 0; i < document.pages.count; i++) {
-        final pageText = extractor.extractText(startPageIndex: i);
+        var pageText = '';
+        try {
+          final textLines = extractor.extractTextLines(startPageIndex: i);
+          if (textLines.isNotEmpty) {
+            final pageBuffer = StringBuffer();
+            for (final line in textLines) {
+              final text = line.text.trim();
+              if (text.isNotEmpty) {
+                pageBuffer.writeln(text);
+              }
+            }
+            pageText = pageBuffer.toString();
+          }
+        } on Object catch (_) {}
+
+        if (pageText.trim().isEmpty) {
+          pageText = extractor.extractText(startPageIndex: i);
+        }
+
         if (pageText.trim().isNotEmpty) {
           pageTexts.add(pageText);
         }
@@ -129,7 +147,8 @@ class LocalPdfParserService {
 
       for (final line in lines) {
         final normalized = _normalizeLineForFrequency(line);
-        if (normalized.length >= 3 && !seenOnThisPage.contains(normalized)) {
+        final wordCount = normalized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+        if (normalized.length >= 8 && wordCount >= 2 && !seenOnThisPage.contains(normalized)) {
           seenOnThisPage.add(normalized);
           linePageCounts[normalized] = (linePageCounts[normalized] ?? 0) + 1;
         }
@@ -177,10 +196,9 @@ class LocalPdfParserService {
           continue;
         }
 
-        // Strip standalone URLs and bullet symbols
+        // Strip standalone URLs, web addresses, and domain watermarks
         final clean = trimmed
-            .replaceAll(RegExp(r'https?://\S+|www\.\S+'), '')
-            .replaceAll(RegExp(r'^(?:[•\-–—*#]+\s*)'), '')
+            .replaceAll(RegExp(r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-\.]+\.(?:com|net|org|io|edu|gov|co|ai)\b', caseSensitive: false), '')
             .trim();
 
         if (clean.isNotEmpty) {

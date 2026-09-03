@@ -23,7 +23,25 @@ class DocumentParserService {
         final buffer = StringBuffer();
 
         for (var i = 0; i < document.pages.count; i++) {
-          final pageText = extractor.extractText(startPageIndex: i);
+          var pageText = '';
+          try {
+            final textLines = extractor.extractTextLines(startPageIndex: i);
+            if (textLines.isNotEmpty) {
+              final pageBuffer = StringBuffer();
+              for (final line in textLines) {
+                final text = line.text.trim();
+                if (text.isNotEmpty) {
+                  pageBuffer.writeln(text);
+                }
+              }
+              pageText = pageBuffer.toString();
+            }
+          } on Object catch (_) {}
+
+          if (pageText.trim().isEmpty) {
+            pageText = extractor.extractText(startPageIndex: i);
+          }
+
           final lines = pageText.split('\n');
           for (final line in lines) {
             final trimmed = line.trim();
@@ -31,6 +49,7 @@ class DocumentParserService {
               buffer.writeln(trimmed);
             }
           }
+          buffer.writeln(); // Page separation
         }
         document.dispose();
 
@@ -542,7 +561,7 @@ class DocumentParserService {
     clean = clean
         .replaceAll(
           RegExp(
-            r'^(?:Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|(?:\d+\.)+\d*\s*|\b(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+\s*:?\s*|[•\-–—*#]+\s*)',
+            r'^(?:Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|(?:\d+\.)+\d*\s*|\b(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+\s*:?\s*|[A-Z]\.\s*|[•\-–—*#]+\s*)',
             caseSensitive: false,
           ),
           '',
@@ -580,7 +599,64 @@ class DocumentParserService {
       return _isGrammaticallySoundQuestion(q) ? q : null;
     }
 
-    // 3. Definitional Suffix: "[Subject] Defined", "[Subject] Definition", "[Subject] Overview"
+    // 3. Checklists, Criteria, Requirements
+    if (lower.contains('checklist') ||
+        lower.contains('criteria') ||
+        lower.contains('requirements')) {
+      return 'What are the key criteria and conditions specified for $clean?';
+    }
+
+    // 4. Rules, Guidelines, Principles, Protocols, Checks
+    if (lower.contains('rule') ||
+        lower.contains('guideline') ||
+        lower.contains('principle') ||
+        lower.contains('protocol') ||
+        lower.contains('policy') ||
+        lower.contains('check')) {
+      return 'What are the primary rules and principles of $clean?';
+    }
+
+    // 5. Procedural / Action Verbs (e.g. "Draw the Rectangle", "Calculate Eigenvalues", "Identify Structure")
+    final stepActionMatch = RegExp(
+      r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply|set|establish|verify|create|implement|configure|measure|select)\b\s*(.*)$',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (stepActionMatch != null) {
+      final rest = clean.substring(0, 1).toLowerCase() + clean.substring(1);
+      return 'How do you $rest?';
+    }
+
+    // 6. Topic / Subtopic Colon Pattern: "Indicators: Identifying Direction"
+    final colonMatch = RegExp(r'^([^:]+)\s*:\s*(.+)$').firstMatch(clean);
+    if (colonMatch != null) {
+      final lead = colonMatch.group(1)!.trim();
+      final sub = colonMatch.group(2)!.trim();
+      final subLower = sub.toLowerCase();
+
+      if (lead.toLowerCase().contains(' vs.') ||
+          lead.toLowerCase().contains(' versus ')) {
+        return 'How do you compare and contrast $clean?';
+      }
+      if (subLower.startsWith('identifying') ||
+          subLower.startsWith('calculating') ||
+          subLower.startsWith('determining') ||
+          subLower.startsWith('evaluating') ||
+          subLower.startsWith('measuring') ||
+          subLower.startsWith('analyzing') ||
+          subLower.startsWith('setting')) {
+        return 'How is $lead used in $subLower?';
+      }
+      return 'What is the role of $lead in $sub?';
+    }
+
+    // 7. Contrast / Comparison: "Strength vs. Weakness"
+    if (lower.contains(' vs.') ||
+        lower.contains(' versus ') ||
+        lower.contains(' and vs ')) {
+      return 'How do you compare and contrast $clean?';
+    }
+
+    // 8. Definitional Suffix: "[Subject] Defined", "[Subject] Definition", "[Subject] Overview"
     final definedMatch = RegExp(
       r'^(.*?)\s+(?:defined|definition|overview|explanation|concept)$',
       caseSensitive: false,
@@ -591,60 +667,10 @@ class DocumentParserService {
           .trim()
           .replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
       if (_isValidSubjectNoun(subject)) {
-        return 'How is the $subject defined in this context?';
+        return 'What is the definition and core concept of $subject?';
       }
     }
 
-    // 4. Procedural / Step Action: "Draw the Rectangle and Enter on the M1 Flip"
-    final stepActionMatch = RegExp(
-      r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply|set|establish|verify)\b\s*(.*)$',
-      caseSensitive: false,
-    ).firstMatch(clean);
-    if (stepActionMatch != null) {
-      final rest = clean.substring(0, 1).toLowerCase() + clean.substring(1);
-      return 'How do you $rest?';
-    }
-
-    // 5. Topic / Subtopic Colon Pattern: "Indicators: Identifying Direction"
-    final colonMatch = RegExp(r'^([^:]+)\s*:\s*(.+)$').firstMatch(clean);
-    if (colonMatch != null) {
-      final lead = colonMatch.group(1)!.trim();
-      final sub = colonMatch.group(2)!.trim();
-      final subLower = sub.toLowerCase();
-
-      if (lead.toLowerCase().contains(' vs.') ||
-          lead.toLowerCase().contains(' versus ')) {
-        return 'How do you analyze $clean?';
-      }
-      if (subLower.startsWith('identifying') ||
-          subLower.startsWith('calculating') ||
-          subLower.startsWith('determining') ||
-          subLower.startsWith('evaluating') ||
-          subLower.startsWith('measuring')) {
-        return 'How are $lead used in $subLower?';
-      }
-      if (subLower.contains('trigger') || subLower.contains('entry')) {
-        return 'How do $lead function as $sub?';
-      }
-      return 'What is the role of $lead in $sub?';
-    }
-
-    // 6. Contrast / Comparison: "Strength vs. Weakness: The Trigger"
-    if (lower.contains(' vs.') ||
-        lower.contains(' versus ') ||
-        lower.contains(' and vs ')) {
-      return 'How do you analyze $clean?';
-    }
-
-    // 7. Checklists, Rules, & Principles
-    if (lower.contains('checklist') || lower.contains('criteria')) {
-      return 'What is the $clean and what conditions must be met?';
-    }
-    if (lower.contains('rule') ||
-        lower.contains('guideline') ||
-        lower.contains('principle')) {
-      return 'What are the key rules governing $clean?';
-    }
 
     // 8. In-Text Declarative Subject Extraction: "Photosynthesis is the process..."
     final defMatch = RegExp(
@@ -841,7 +867,7 @@ class DocumentParserService {
       return true;
     }
 
-    // Watermark / signature patterns starting with em dash or bullet (e.g. "—Mulham EdgeSkool.Net")
+    // Watermark / signature patterns starting with em dash or bullet (e.g. author handle or domain)
     if (clean.startsWith('—') || clean.startsWith('-') || clean.startsWith('–')) {
       final withoutDash = clean.replaceAll(RegExp(r'^[—–\-•*#\s]+'), '').trim();
       if (withoutDash.split(RegExp(r'\s+')).length <= 3 &&
@@ -937,6 +963,13 @@ class DocumentParserService {
       return false;
     }
 
+    // 5. Reject question & answer echo loops (e.g. "What is high-probability? high-probability.")
+    final normQ = cleanQ.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+    final normA = cleanA.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+    if (normQ == normA || (normQ.contains(normA) && normA.length < 25)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -947,7 +980,7 @@ class DocumentParserService {
     final currentLines = <String>[];
 
     final structuralHeaderRegex = RegExp(
-      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*\s+[A-Z]|\b[IVXLCDM]+\.\s+[A-Z])\s*(.*)$',
+      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic|Tip|Checklist|Note|Caution|Warning|Procedure|Overview|Summary|Guidelines|Requirement|Principle|Law|Property|Mechanism|Strategy|Example)\b(?:\s+[A-Z0-9\.]+)?|(?:\d+\.)+\d*\s+[A-Z]|\b[IVXLCDM]+\.\s+[A-Z]|^[A-Z]\.\s+[A-Z])\s*(.*)$',
       caseSensitive: false,
     );
 
@@ -966,7 +999,10 @@ class DocumentParserService {
             .join(' ')
             .replaceAll(RegExp(r'\s+'), ' ')
             .trim();
-        if (joined.length >= 20) {
+        // Discard promotional marketing / discount pitches
+        final lower = joined.toLowerCase();
+        if (joined.length >= 20 &&
+            !RegExp(r'\b(?:\d+%\s+off|discount|\$\d+\s*(?:value|worth|price))\b', caseSensitive: false).hasMatch(lower)) {
           sections.add(
             _DocumentSection(
               title: currentTitle!,
@@ -1005,53 +1041,113 @@ class DocumentParserService {
         continue;
       }
 
-      // 2. Section Headers & Structural Markers
+      // 2. Check for Header: Description on the same line
+      final colonMatch = RegExp(
+        r'^((?:(?:Part\s+\d+|Step\s+\d+|\d+\.|\d+\.\d+|[A-Z]\.)\s+[^:]+|[A-Za-z\s\-/]{3,40})):\s+(.+)$',
+      ).firstMatch(line);
+      if (colonMatch != null &&
+          colonMatch.group(2)!.split(' ').length >= 3 &&
+          (structuralHeaderRegex.hasMatch(colonMatch.group(1)!) ||
+              colonMatch.group(1)!.split(' ').length <= 4)) {
+        commitCurrentSection();
+        currentTitle = colonMatch.group(1)!.trim();
+        currentLines.add(colonMatch.group(2)!.trim());
+        continue;
+      }
+
+      // 3. Section Headers & Structural Markers
       final isStructuralHeader = structuralHeaderRegex.hasMatch(line);
       final isColonHeader = line.length < 60 &&
           line.endsWith(':') &&
           !line.contains('http') &&
           !line.contains('.') &&
-          line.split(RegExp(r'\s+')).length >= 2;
+          line.split(RegExp(r'\s+')).length >= 2 &&
+          RegExp('^[A-Z0-9]').hasMatch(line);
       final isAllCapsHeader = line.length >= 6 &&
           line.length <= 50 &&
           line == line.toUpperCase() &&
           line.split(RegExp(r'\s+')).length >= 2 &&
           RegExp('[A-Z]').hasMatch(line);
+      final isBullet = RegExp(r'^[•●○\-–—*]').hasMatch(line);
+      final words = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final isTitleCase = !isBullet &&
+          words.length >= 2 &&
+          words.length <= 6 &&
+          line.length <= 50 &&
+          RegExp('^[A-Z]').hasMatch(line) &&
+          !line.endsWith('.') &&
+          !line.endsWith(',') &&
+          !line.endsWith(';') &&
+          !line.endsWith('?') &&
+          !line.endsWith('!') &&
+          words.every((w) =>
+              w.length <= 3 ||
+              RegExp('^[A-Z0-9]').hasMatch(w));
 
-      if (isStructuralHeader || isColonHeader || isAllCapsHeader) {
+      if (isStructuralHeader || isColonHeader || isAllCapsHeader || isTitleCase) {
         commitCurrentSection();
         currentTitle = line.replaceAll(':', '').trim();
         continue;
       }
 
-      // 3. Single-Line Term: Definition pattern
+      // 4. Single-Line Term: Definition pattern
       final termDefMatch = termDefRegex.firstMatch(line);
       if (termDefMatch != null &&
           termDefMatch.group(2)!.trim().split(' ').length >= 3 &&
           !line.startsWith('http')) {
         commitCurrentSection();
-        sections.add(
-          _DocumentSection(
-            title: termDefMatch.group(1)!.trim(),
-            content: termDefMatch.group(2)!.trim(),
-          ),
-        );
+        currentTitle = termDefMatch.group(1)!.trim();
+        currentLines.add(termDefMatch.group(2)!.trim());
         continue;
       }
 
-      // 4. Bullet Points and Numbered Items
+      // 5. Bullet Points and Numbered Items
       final bulletMatch =
-          RegExp(r'^[•\-–—*]\s*(.+)$|^\d+\.\s*(.+)$').firstMatch(line);
+          RegExp(r'^[•●○\-–—*]\s*(.+)$|^\d+\.\s*(.+)$').firstMatch(line);
       if (bulletMatch != null) {
         final itemContent =
             (bulletMatch.group(1) ?? bulletMatch.group(2) ?? '').trim();
-        if (itemContent.length >= 10 && isMeaningfulEducationalText(itemContent)) {
-          sections.add(
-            _DocumentSection(
-              title: currentTitle ?? itemContent,
-              content: itemContent,
-            ),
-          );
+        if (itemContent.length >= 8 && isMeaningfulEducationalText(itemContent)) {
+          if (currentTitle != null) {
+            // Keep bullet attached to current topic
+            currentLines.add('• $itemContent');
+            continue;
+          } else if (sections.isNotEmpty) {
+            // Attach bullet to the previous section rather than creating an isolated 1-word card
+            final prevSection = sections.removeLast();
+            sections.add(
+              _DocumentSection(
+                title: prevSection.title,
+                content: '${prevSection.content}\n• $itemContent',
+              ),
+            );
+            continue;
+          } else {
+            currentLines.add('• $itemContent');
+            continue;
+          }
+        }
+      }
+
+      // 6. Sentence line-wrapping continuation
+      if (currentLines.isNotEmpty) {
+        final prev = currentLines.last;
+        final prevEndsPunct = prev.endsWith('.') ||
+            prev.endsWith('!') ||
+            prev.endsWith('?') ||
+            prev.endsWith(':') ||
+            prev.endsWith(';');
+        final isCurrentBullet = line.startsWith('•') ||
+            line.startsWith('●') ||
+            line.startsWith('○') ||
+            line.startsWith('-');
+
+        if (!isCurrentBullet &&
+            (!prevEndsPunct ||
+                (line.isNotEmpty &&
+                    line[0].toLowerCase() == line[0] &&
+                    RegExp('[a-z]').hasMatch(line[0])))) {
+          currentLines[currentLines.length - 1] = '$prev $line';
           continue;
         }
       }
