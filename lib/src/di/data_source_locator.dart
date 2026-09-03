@@ -37,6 +37,7 @@ void _initDataSource() {
       () => SyllabotRemoteDataSourceImpl(
         locator<SyllabotApiClient>(),
         locator<Dio>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<SyllabotLocalDataSource>(

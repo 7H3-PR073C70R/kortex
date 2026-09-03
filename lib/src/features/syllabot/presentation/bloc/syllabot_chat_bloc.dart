@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/get_chat_history_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/query_document_context_use_case.dart';
@@ -45,9 +47,13 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   ) async {
     await _streamSubscription?.cancel();
 
+    final effectiveSessionId = event.sessionId.isNotEmpty
+        ? event.sessionId
+        : (state.sessionId.isNotEmpty ? state.sessionId : UuidUtils.generate());
+
     final userMessage = ChatMessageEntity(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      sessionId: event.sessionId,
+      sessionId: effectiveSessionId,
       sender: MessageSender.user,
       text: event.prompt,
       timestamp: DateTime.now(),
@@ -56,21 +62,29 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     final updatedMessages = [...state.messages, userMessage];
 
+    final isOffline = event.engineType == ExecutionEngineType.localOnDevice;
+
     // Automatically create and register conversation session if starting new dialogue
     if (state.messages.isEmpty) {
       unawaited(
         _getChatHistory.createSession(
           title: event.prompt,
           socraticMode: event.socraticMode,
+          id: effectiveSessionId,
+          isOffline: isOffline,
         ),
       );
+    }
+
+    if (isOffline) {
+      unawaited(_getChatHistory.cacheMessage(userMessage));
     }
 
     emit(
       state.copyWith(
         status: SyllabotStatus.streaming,
         messages: updatedMessages,
-        sessionId: event.sessionId,
+        sessionId: effectiveSessionId,
         socraticMode: event.socraticMode,
         engineType: event.engineType,
         lastPrompt: event.prompt,
@@ -80,7 +94,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     );
 
     var contextWithRag = updatedMessages;
-    if (_queryDocumentContext != null) {
+    if (_queryDocumentContext != null && !isOffline) {
       final ragRes = await _queryDocumentContext(
         query: event.prompt,
       );
@@ -91,7 +105,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
             final snippets = chunks.map((c) => c.content).join('\n---\n');
             final ragContextMsg = ChatMessageEntity(
               id: 'rag_${DateTime.now().millisecondsSinceEpoch}',
-              sessionId: event.sessionId,
+              sessionId: effectiveSessionId,
               sender: MessageSender.syllabot,
               text:
                   'Use the following retrieved course material to answer '
@@ -107,7 +121,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     final stream = _streamResponse(
       prompt: event.prompt,
-      sessionId: event.sessionId,
+      sessionId: effectiveSessionId,
       socraticMode: event.socraticMode,
       preferredEngine: event.engineType,
       contextHistory: contextWithRag,
@@ -149,6 +163,10 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       timestamp: DateTime.now(),
       engineType: state.engineType,
     );
+
+    if (state.engineType == ExecutionEngineType.localOnDevice) {
+      unawaited(_getChatHistory.cacheMessage(botMessage));
+    }
 
     emit(
       state.copyWith(

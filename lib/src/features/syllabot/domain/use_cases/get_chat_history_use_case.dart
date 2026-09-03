@@ -23,11 +23,19 @@ class GetChatHistoryUseCase {
   Future<Either<Failure, ConversationSessionEntity>> createSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
+    bool isOffline = false,
   }) {
     return _repository.createChatSession(
       title: title,
       socraticMode: socraticMode,
+      id: id,
+      isOffline: isOffline,
     );
+  }
+
+  Future<void> cacheMessage(ChatMessageEntity message) {
+    return _repository.cacheMessage(message);
   }
 
   Future<Either<Failure, void>> deleteSession({required String sessionId}) {

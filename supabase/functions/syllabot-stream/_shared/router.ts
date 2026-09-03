@@ -120,24 +120,27 @@ export function selectModelAndParams(
     };
   }
 
+  const nonSystemMessages = messages.filter((m) => m.role !== "system");
   const lastUserMessage =
     [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
   const fullContextText = messages.map((m) => m.content).join("\n");
+  const userContextText = nonSystemMessages.map((m) => m.content).join("\n");
   const lastLower = lastUserMessage.toLowerCase();
+  const userLower = userContextText.toLowerCase();
   const fullLower = fullContextText.toLowerCase();
 
   const matchedCriteria: string[] = [];
 
   // A. Check Math / LaTeX indicators
   for (const regex of LATEX_PATTERNS) {
-    if (regex.test(lastUserMessage) || regex.test(fullContextText)) {
+    if (regex.test(lastUserMessage) || regex.test(userContextText)) {
       matchedCriteria.push(`latex_pattern:${regex.source}`);
       break;
     }
   }
 
   for (const kw of STEM_KEYWORDS) {
-    if (lastLower.includes(kw) || fullLower.includes(kw)) {
+    if (lastLower.includes(kw) || userLower.includes(kw)) {
       matchedCriteria.push(`stem_keyword:${kw}`);
       break;
     }
@@ -208,6 +211,13 @@ export function normalizeModelForBaseUrl(model: string, baseUrl: string): string
       return "deepseek-r1-distill-llama-70b";
     }
     return "llama-3.3-70b-versatile";
+  }
+
+  if (lowerUrl.includes("generativelanguage.googleapis.com")) {
+    if (lowerModel.includes("pro")) {
+      return "gemini-2.5-pro";
+    }
+    return "gemini-2.5-flash";
   }
 
   return model;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
@@ -96,18 +97,26 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
   Future<Either<Failure, ConversationSessionEntity>> createChatSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
+    bool isOffline = false,
   }) {
     return Future<ConversationSessionEntity>.sync(() async {
+      final sessionId = (id != null && id.isNotEmpty && UuidUtils.isValidUuid(id))
+          ? id
+          : UuidUtils.generate();
       ConversationSessionModel? createdModel;
-      try {
-        createdModel = await _remote.createChatSession(
-          title: title,
-          socraticMode: socraticMode,
-        );
-      } on Object catch (_) {}
+      if (!isOffline) {
+        try {
+          createdModel = await _remote.createChatSession(
+            title: title,
+            socraticMode: socraticMode,
+            id: sessionId,
+          );
+        } on Object catch (_) {}
+      }
 
       createdModel ??= ConversationSessionModel(
-        id: 'sess_${DateTime.now().millisecondsSinceEpoch}',
+        id: sessionId,
         userId: '',
         title: title,
         socraticMode: socraticMode.nameString,
@@ -118,6 +127,11 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       await _local.saveSession(createdModel);
       return createdModel.toEntity();
     }).makeRequest();
+  }
+
+  @override
+  Future<void> cacheMessage(ChatMessageEntity message) async {
+    await _local.cacheMessage(message);
   }
 
   @override

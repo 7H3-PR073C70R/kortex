@@ -18,6 +18,7 @@ abstract class SyllabotRemoteDataSource {
   Future<ConversationSessionModel> createChatSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
   });
 
   Future<List<ChatMessageModel>> getSessionMessages({

@@ -137,37 +137,67 @@ serve(async (req: Request) => {
       Deno.env.get("FALLBACK_LLM_BASE_URL") ||
       Deno.env.get("OPENROUTER_BASE_URL") ||
       "https://openrouter.ai/api/v1/chat/completions";
-    const secondaryApiKey =
+    const openRouterApiKey =
       Deno.env.get("FALLBACK_LLM_API_KEY") ||
       Deno.env.get("OPENROUTER_API_KEY") ||
-      primaryApiKey;
+      "";
 
     const groqApiKey = Deno.env.get("GROQ_API_KEY") || "";
+    const geminiApiKey =
+      Deno.env.get("GEMINI_API_KEY") ||
+      Deno.env.get("GOOGLE_AI_API_KEY") ||
+      "";
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
 
     const providers: ProviderTarget[] = [
-      {
-        name: "Primary LLM Endpoint",
-        baseUrl: primaryBaseUrl,
-        apiKey: primaryApiKey,
-        model: normalizeModelForBaseUrl(selectedModel, primaryBaseUrl),
-      },
-      {
-        name: "Secondary OpenRouter Gateway",
-        baseUrl: secondaryBaseUrl,
-        apiKey: secondaryApiKey,
-        model: normalizeModelForBaseUrl(selectedModel, secondaryBaseUrl),
-        headers: {
-          "HTTP-Referer": "https://kortex.app",
-          "X-Title": "Kortex Academic Workspace",
-        },
-      },
+      ...(geminiApiKey
+        ? [
+            {
+              name: "Google Gemini",
+              baseUrl:
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+              apiKey: geminiApiKey,
+              model: normalizeModelForBaseUrl(selectedModel, "https://generativelanguage.googleapis.com"),
+            },
+          ]
+        : []),
       ...(groqApiKey
         ? [
             {
               name: "Groq Fast Inference",
               baseUrl: "https://api.groq.com/openai/v1/chat/completions",
               apiKey: groqApiKey,
-              model: "llama-3.3-70b-versatile",
+              model: normalizeModelForBaseUrl(selectedModel, "https://api.groq.com"),
+            },
+          ]
+        : []),
+      {
+        name: "Primary LLM Endpoint",
+        baseUrl: primaryBaseUrl,
+        apiKey: primaryApiKey,
+        model: normalizeModelForBaseUrl(selectedModel, primaryBaseUrl),
+      },
+      ...(openRouterApiKey
+        ? [
+            {
+              name: "Secondary OpenRouter Gateway",
+              baseUrl: secondaryBaseUrl,
+              apiKey: openRouterApiKey,
+              model: normalizeModelForBaseUrl(selectedModel, secondaryBaseUrl),
+              headers: {
+                "HTTP-Referer": "https://kortex.app",
+                "X-Title": "Kortex Academic Workspace",
+              },
+            },
+          ]
+        : []),
+      ...(openaiApiKey
+        ? [
+            {
+              name: "OpenAI",
+              baseUrl: "https://api.openai.com/v1/chat/completions",
+              apiKey: openaiApiKey,
+              model: "gpt-4o-mini",
             },
           ]
         : []),
@@ -197,6 +227,7 @@ serve(async (req: Request) => {
         let fullResponse = "";
         const recordedTokens: string[] = [];
         let providerSuccess = false;
+        const providerErrors: string[] = [];
 
         if (isCacheHit && cachedTokens) {
           // 1. Instant sub-15ms semantic cache serving
@@ -252,8 +283,9 @@ serve(async (req: Request) => {
               clearTimeout(timeoutId);
 
               if (!response.ok || !response.body) {
+                const errBody = await response.text().catch(() => "");
                 throw new Error(
-                  `${provider.name} returned HTTP error status ${response.status}`
+                  `${provider.name} returned HTTP error status ${response.status}: ${errBody || response.statusText}`
                 );
               }
 
@@ -307,8 +339,10 @@ serve(async (req: Request) => {
               }
             } catch (providerError: any) {
               clearTimeout(timeoutId);
+              const errMsg = providerError.message ?? String(providerError);
+              providerErrors.push(errMsg);
               console.warn(
-                `[Reliability Gateway] Provider ${provider.name} failed: ${providerError.message ?? providerError}. Failing over...`
+                `[Reliability Gateway] Provider ${provider.name} failed: ${errMsg}. Failing over...`
               );
             }
           }
@@ -318,18 +352,21 @@ serve(async (req: Request) => {
         if (!providerSuccess) {
           if (providers.length > 0) {
             console.error(
-              "[Reliability Gateway] All upstream providers failed or timed out. Emitting structured SSE error and engaging resilient STEM fallback."
+              "[Reliability Gateway] All upstream providers failed or timed out:",
+              providerErrors
             );
             sendEvent("error", {
               error: "UPSTREAM_TIMEOUT",
               message: "All upstream providers busy or unreachable. Engaging neural fallback.",
+              details: providerErrors,
             });
           }
 
           // Resilient Socratic STEM fallback token synthesis
           const fallbackTokens = getFallbackTokens(
             rawPrompt,
-            routing.reasoningDetected
+            routing.reasoningDetected,
+            body.contextHistory
           );
           for (const token of fallbackTokens) {
             fullResponse += token;
@@ -339,8 +376,8 @@ serve(async (req: Request) => {
           }
         }
 
-        // Asynchronously persist completion to semantic cache
-        if (!isCacheHit && recordedTokens.length > 0) {
+        // Asynchronously persist completion to semantic cache ONLY if real provider succeeded
+        if (!isCacheHit && recordedTokens.length > 0 && providerSuccess) {
           await SemanticCacheProvider.setCachedResponse(
             dbClient,
             cachePrompt,
@@ -355,8 +392,38 @@ serve(async (req: Request) => {
         }
 
         // Asynchronously record conversation turn in chat_messages table
-        if (userId && sessionId && fullResponse) {
+        const isUuid = (str?: string) =>
+          Boolean(
+            str &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              str
+            )
+          );
+
+        if (
+          userId &&
+          userId !== "anon-guest" &&
+          isUuid(userId) &&
+          sessionId &&
+          isUuid(sessionId) &&
+          fullResponse
+        ) {
           try {
+            // Ensure chat session exists before inserting messages
+            await dbClient.from("chat_sessions").upsert(
+              {
+                id: sessionId,
+                user_id: userId,
+                title:
+                  rawPrompt.length > 60
+                    ? rawPrompt.slice(0, 57) + "..."
+                    : rawPrompt,
+                socratic_mode: socraticMode,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "id", ignoreDuplicates: true }
+            );
+
             await dbClient.from("chat_messages").insert([
               {
                 session_id: sessionId,
@@ -437,17 +504,161 @@ function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): 
     return true;
   }
 
+  // If cached contains Noun definition but prompt is asking for Adverb, Adjective, Verb, etc.
+  if (
+    fullCached.includes("a **noun** is a fundamental part of speech") &&
+    (lowerPrompt.includes("adverb") ||
+      lowerPrompt.includes("adjective") ||
+      lowerPrompt.includes("verb") ||
+      lowerPrompt.includes("conjunction") ||
+      lowerPrompt.includes("preposition"))
+  ) {
+    return true;
+  }
+
+  // If cached contains the generic fallback template
+  if (
+    fullCached.includes("represents a foundational concept in its respective domain") ||
+    fullCached.includes("curiosity led the researcher to a breakthrough")
+  ) {
+    return true;
+  }
+
   return false;
 }
 
-function getFallbackTokens(prompt: string, isComplex: boolean): string[] {
+function getFallbackTokens(
+  prompt: string,
+  isComplex: boolean,
+  contextHistory?: Array<{ sender: string; text: string }>
+): string[] {
   const cleanPrompt = prompt.replace(/[?!.]+$/, "").trim();
   const lower = cleanPrompt.toLowerCase();
+  const previousText = (contextHistory ?? [])
+    .map((c) => c.text.toLowerCase())
+    .join(" ");
 
-  // 1. English / Grammar queries (e.g. "what is a noun")
-  if (lower.includes("noun") || lower.includes("verb") || lower.includes("grammar") || lower.includes("adjective") || lower.includes("part of speech")) {
+  // 1. Detailed 8 Parts of Speech with Examples
+  if (
+    lower.includes("all 8") ||
+    lower.includes("8 of them") ||
+    lower.includes("example of all 8") ||
+    lower.includes("8 parts of speech") ||
+    (lower.includes("examples") && lower.includes("parts of speech")) ||
+    ((lower.includes("example") || lower.includes("explain") || lower.includes("details")) &&
+      previousText.includes("parts of speech"))
+  ) {
     return [
-      `A **noun** is a fundamental part of speech that names a **person**, **place**, **thing**, or **idea**.`,
+      "Here is a comprehensive breakdown of all **8 Parts of Speech** with clear definitions, categories, and detailed sentence examples:",
+      "\n\n### 1. Noun (Naming Word)",
+      "\n• **Definition:** Names a person, place, thing, or abstract idea.",
+      '\n• **Example in context:** *"**Marie Curie** conducted pioneering **research** in a modest **laboratory** in **Paris**."*',
+      "\n• **Breakdown:** *Marie Curie* (Proper Noun), *research* (Abstract Noun), *laboratory* (Concrete Noun), *Paris* (Proper Noun).",
+      "\n\n### 2. Pronoun (Noun Substitute)",
+      "\n• **Definition:** Replaces a noun to avoid awkward repetition.",
+      '\n• **Example in context:** *"When the **engineer** finished the simulation, **she** verified that **it** converged without errors."*',
+      "\n• **Breakdown:** *she* refers back to *engineer*; *it* refers back to *simulation*.",
+      "\n\n### 3. Verb (Action or State)",
+      "\n• **Definition:** Expresses a physical action, a mental process, or a state of being.",
+      '\n• **Example in context:** *"The catalyst **accelerates** the chemical reaction while the temperature **remains** constant."*',
+      "\n• **Breakdown:** *accelerates* (Action Verb, Transitive), *remains* (Linking/State Verb).",
+      "\n\n### 4. Adjective (Noun Descriptor)",
+      "\n• **Definition:** Modifies, qualifies, or describes a noun or pronoun, specifying qualities, quantities, or degrees.",
+      '\n• **Example in context:** *"The **autonomous** rover captured **high-resolution** spectra across **three** distinct craters."*',
+      "\n• **Breakdown:** *autonomous* (Descriptive), *high-resolution* (Descriptive), *three* (Quantitative).",
+      "\n\n### 5. Adverb (Modifier of Verbs/Adjectives/Adverbs)",
+      "\n• **Definition:** Modifies a verb, an adjective, or another adverb by answering *How?*, *When?*, *Where?*, or *To what degree?*",
+      '\n• **Example in context:** *"The neural network converged **exceptionally** **rapidly** yesterday."*',
+      "\n• **Breakdown:** *rapidly* (Manner, modifies *converged*), *exceptionally* (Degree, modifies *rapidly*), *yesterday* (Time).",
+      "\n\n### 6. Preposition (Relational Word)",
+      "\n• **Definition:** Shows relationships of location, direction, time, or spatial orientation between nouns and other words.",
+      '\n• **Example in context:** *"The current traveled **through** the superconductor **at** sub-zero temperatures."*',
+      "\n• **Breakdown:** *through* (Spatial orientation), *at* (Condition/state).",
+      "\n\n### 7. Conjunction (Connector)",
+      "\n• **Definition:** Links words, phrases, or clauses together.",
+      '\n• **Example in context:** *"The hypothesis was bold, **yet** the empirical evidence was undeniable **because** every trial reproduced the same result."*',
+      "\n• **Breakdown:** *yet* (Coordinating conjunction), *because* (Subordinating conjunction).",
+      "\n\n### 8. Interjection (Exclamatory Word)",
+      "\n• **Definition:** Expresses sudden emotion, reaction, or exclamation; grammatically independent from the main clause.",
+      '\n• **Example in context:** *"**Eureka!** The crystallographic pattern finally aligned."*',
+      "\n• **Breakdown:** *Eureka!* (Expresses sudden discovery/triumph).",
+      "\n\n---\n*Socratic Practice:* Can you compose a single sentence that successfully incorporates at least **five** of these eight parts of speech?",
+    ];
+  }
+
+  // 2. Parts of speech overview
+  if (
+    lower.includes("parts of speech") ||
+    lower.includes("part of speech") ||
+    lower.includes("part of speach") ||
+    lower.includes("parts of speach")
+  ) {
+    return [
+      "The **parts of speech** are the primary grammatical categories of words based on their syntactic and semantic functions in a sentence.",
+      "\n\n### The 8 Essential Parts of Speech:",
+      "\n1. **Noun:** Names a person, place, thing, or concept (*laboratory*, *entropy*).",
+      "\n2. **Pronoun:** Replaces a noun (*it*, *they*, *who*).",
+      "\n3. **Verb:** Expresses an action or state of being (*synthesize*, *radiate*).",
+      "\n4. **Adjective:** Modifies or describes a noun (*conductive*, *dense*).",
+      "\n5. **Adverb:** Modifies a verb, adjective, or another adverb (*precisely*, *rapidly*).",
+      "\n6. **Preposition:** Indicates spatial or temporal relationships (*across*, *within*).",
+      "\n7. **Conjunction:** Connects clauses or words (*and*, *because*, *although*).",
+      "\n8. **Interjection:** Expresses emotion or exclamation (*eureka!*, *indeed*).",
+      "\n\n*Socratic Check:* Which specific part of speech would you like to explore deeper?",
+    ];
+  }
+
+  // 3. Adverbs (checked before verbs because 'adverb' contains 'verb')
+  if (lower.includes("adverb")) {
+    return [
+      "An **adverb** is a part of speech that modifies or qualifies a **verb**, an **adjective**, or **another adverb**.",
+      "\n\n### 1. Categories of Adverbs:",
+      "\n• **Manner (How?):** *accurately*, *smoothly*, *carefully*",
+      "\n• **Time (When?):** *yesterday*, *already*, *simultaneously*",
+      "\n• **Place (Where?):** *here*, *everywhere*, *downward*",
+      "\n• **Degree (To what extent?):** *extremely*, *sufficiently*, *very*",
+      "\n• **Frequency (How often?):** *frequently*, *periodically*, *never*",
+      "\n\n### 2. Sentence Structure Examples:",
+      '\n1. Modifying a verb: *"The algorithm executed **flawlessly**."*',
+      '\n2. Modifying an adjective: *"The solution was **remarkably** simple."*',
+      '\n3. Modifying another adverb: *"The particle moved **quite** rapidly."*',
+      '\n\n*Socratic Check:* Can you identify the adverb in: *"The researcher examined the specimen carefully"*?',
+    ];
+  }
+
+  // 3. Adjectives
+  if (lower.includes("adjective")) {
+    return [
+      "An **adjective** is a part of speech that modifies, describes, or quantifies a **noun** or **pronoun**.",
+      "\n\n### 1. Types of Adjectives:",
+      "\n• **Descriptive (Qualitative):** *efficient*, *turbulent*, *crystalline*",
+      "\n• **Quantitative:** *three*, *several*, *abundant*, *zero*",
+      "\n• **Demonstrative:** *this*, *that*, *these*, *those*",
+      "\n• **Comparative & Superlative:** *faster / fastest*, *more stable / most stable*",
+      "\n\n### 2. Syntactic Placement:",
+      '\n• **Attributive (Before the noun):** *"A **magnetic** field..."*',
+      '\n• **Predicative (After a linking verb):** *"The reaction is **exothermic**."*',
+      '\n\n*Socratic Check:* What are the adjectives in: *"Two innovative scientists discovered a rare isotope."*?',
+    ];
+  }
+
+  // 4. Verbs
+  if (/\b(verbs?|action words?)\b/i.test(lower)) {
+    return [
+      "A **verb** is the essential grammatical part of speech that expresses an **action**, an **occurrence**, or a **state of being**.",
+      "\n\n### 1. Primary Classifications:",
+      "\n• **Action Verbs:** *accelerate*, *synthesize*, *radiate*",
+      "\n• **Linking Verbs (State of Being):** *is*, *become*, *remain*, *seem*",
+      "\n• **Auxiliary (Helping) Verbs:** *have*, *can*, *will*, *must*",
+      '\n• **Transitive vs. Intransitive:** Transitive verbs take an object (*"She **proved** the theorem"*); intransitive verbs do not (*"The stars **glow**"*).',
+      '\n\n*Socratic Check:* What is the verb in: *"The enzyme accelerates the biochemical reaction"*, and is it transitive or intransitive?',
+    ];
+  }
+
+  // 5. Nouns
+  if (/\b(nouns?)\b/i.test(lower)) {
+    return [
+      "A **noun** is a fundamental part of speech that names a **person**, **place**, **thing**, or **idea**.",
       "\n\n### 1. Categories of Nouns:",
       "\n• **Common Nouns:** General names for things (e.g., *student*, *city*, *book*).",
       "\n• **Proper Nouns:** Specific names, always capitalized (e.g., *Ada Lovelace*, *London*, *Kortex*).",
@@ -456,10 +667,10 @@ function getFallbackTokens(prompt: string, isComplex: boolean): string[] {
       "\n• **Collective Nouns:** Groups of individuals or items (e.g., *team*, *flock*, *committee*).",
       "\n\n### 2. Syntactic Function in Sentences:",
       "\nIn a sentence, a noun typically functions as either:",
-      "\n1. **The Subject:** Who or what performs the action (*\"The **algorithm** converged quickly.\"*)",
-      "\n2. **The Direct Object:** The entity receiving the action (*\"The student solved the **equation**.\"*)",
-      "\n3. **The Object of a Preposition:** (*\"Inside the **laboratory**...\"*)",
-      "\n\n*Socratic Check:* Can you identify the nouns in this sentence: *\"Curiosity led the researcher to a breakthrough\"*?",
+      '\n1. **The Subject:** Who or what performs the action (*"The **algorithm** converged quickly."*)',
+      '\n2. **The Direct Object:** The entity receiving the action (*"The student solved the **equation**."*)',
+      '\n3. **The Object of a Preposition:** (*"Inside the **laboratory**..."*)',
+      '\n\n*Socratic Check:* Can you identify the nouns in this sentence: *"Curiosity led the researcher to a breakthrough"*?',
     ];
   }
 
@@ -492,7 +703,43 @@ function getFallbackTokens(prompt: string, isComplex: boolean): string[] {
     ];
   }
 
-  // 3. General Socratic Academic Reasoning tailored to the user's prompt
+  // 6. Computing & Shell Utilities: whoami
+  if (
+    lower === "whoami" ||
+    lower.includes("what is whoami") ||
+    lower.includes("whoami command")
+  ) {
+    return [
+      "In computing and POSIX-compliant operating systems (Linux, macOS, Unix), **`whoami`** is a standard core utility that prints the effective username associated with the current running process.",
+      "\n\n### 1. Underlying Mechanics:",
+      "\n• **Effective User ID (EUID):** Operating systems enforce file and process permissions based on the *effective user ID*. When you run `whoami`, the system invokes `geteuid()` and maps that numerical identifier to a username in `/etc/passwd` or the directory service.",
+      "\n• **Privilege Boundaries:** If an unprivileged user executes `whoami`, it outputs their username (e.g., `student`). When run via `sudo whoami`, it outputs `root` because the execution context has been elevated to superuser privileges.",
+      "\n\n### 2. Practical Applications:",
+      '\n1. **Shell Script Automation:** Checking runtime privileges before critical tasks (*e.g., `if [ "$(whoami)" != "root" ]; then echo "Requires root"; exit 1; fi`*).',
+      "\n2. **Remote SSH & Container Auditing:** Confirming the active user session in containerized (Docker/Kubernetes) or multi-tenant environments.",
+      "\n\n*Socratic Check:* If a binary has the **SUID (Set User ID)** permission enabled and is owned by `root`, what will `whoami` return when executed by an unprivileged user?",
+    ];
+  }
+
+  // 7. Identity / Assistant queries
+  if (
+    lower.includes("who are you") ||
+    lower.includes("what are you") ||
+    lower.includes("what is syllabot") ||
+    lower.includes("tell me about yourself")
+  ) {
+    return [
+      "I am **Syllabot**, your adaptive academic AI tutor and study copilot built directly into **Kortex**.",
+      "\n\n### How I Support Your Learning:",
+      "\n• **Socratic Problem Solving:** Guiding you through STEM derivations, proofs, and practice problems step-by-step.",
+      "\n• **Exam Simulation & Rubrics:** Testing your knowledge with exam-level analytical questions and scoring your conceptual reasoning.",
+      "\n• **Course-Integrated RAG:** Aligning explanations with your uploaded lecture notes, syllabus topics, and textbook chunks.",
+      "\n• **Private Hybrid Intelligence:** Running either fast cloud inference or private on-device LLMs whenever you are offline.",
+      "\n\n*What academic subject or exam topic would you like to master today?*",
+    ];
+  }
+
+  // 8. General Socratic Academic Reasoning tailored to the user's prompt
   return [
     `Let's break down **"${cleanPrompt}"** from first principles:`,
     "\n\n### 1. Definition & Core Meaning",

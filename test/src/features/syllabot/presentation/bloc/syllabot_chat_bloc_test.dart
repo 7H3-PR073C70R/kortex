@@ -42,6 +42,8 @@ class _FakeSyllabotRepository implements SyllabotRepository {
   Future<Either<Failure, ConversationSessionEntity>> createChatSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
+    bool isOffline = false,
   }) async {
     return Right(
       ConversationSessionEntity(
@@ -54,6 +56,9 @@ class _FakeSyllabotRepository implements SyllabotRepository {
       ),
     );
   }
+
+  @override
+  Future<void> cacheMessage(ChatMessageEntity message) async {}
 
   @override
   Future<Either<Failure, List<ChatMessageEntity>>> getSessionMessages({

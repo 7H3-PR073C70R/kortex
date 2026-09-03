@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -48,7 +49,7 @@ class SyllabotChatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = locator<SyllabotChatBloc>();
     if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
-      final sid = 'session_${DateTime.now().millisecondsSinceEpoch}';
+      final sid = UuidUtils.generate();
       bloc.add(
         SubmitPromptEvent(
           prompt: initialPrompt!.trim(),
@@ -212,10 +213,9 @@ class _SyllabotChatView extends HookWidget {
           ttsHandler: ttsHandler,
           initialMode: state.socraticMode,
           onSendPrompt: (voicePrompt) async {
-            final nowMs = DateTime.now().millisecondsSinceEpoch;
-            final sid = state.sessionId.isNotEmpty
+            final sid = UuidUtils.isValidUuid(state.sessionId)
                 ? state.sessionId
-                : 'session_$nowMs';
+                : UuidUtils.generate();
 
             dialogContext.read<SyllabotChatBloc>().add(
               SubmitPromptEvent(
@@ -648,11 +648,9 @@ class _SyllabotChatView extends HookWidget {
                             onEngineChanged: (engine) =>
                                 handleEngineSwitch(context, engine),
                             onSubmit: (prompt) {
-                              final nowMs =
-                                  DateTime.now().millisecondsSinceEpoch;
-                              final sid = state.sessionId.isNotEmpty
+                              final sid = UuidUtils.isValidUuid(state.sessionId)
                                   ? state.sessionId
-                                  : 'session_$nowMs';
+                                  : UuidUtils.generate();
 
                               context.read<SyllabotChatBloc>().add(
                                 SubmitPromptEvent(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -64,9 +65,9 @@ extension SyllabotStreamExtension on Dio {
 
     final buffer = StringBuffer();
 
-    await for (final chunk in stream) {
-      final raw = String.fromCharCodes(chunk);
-      buffer.write(raw);
+    await for (final textChunk
+        in stream.cast<List<int>>().transform(utf8.decoder)) {
+      buffer.write(textChunk);
 
       final lines = buffer.toString().split('\n');
       buffer.clear();

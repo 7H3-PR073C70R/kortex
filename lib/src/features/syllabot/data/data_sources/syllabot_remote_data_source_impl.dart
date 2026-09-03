@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/syllabot/data/client/syllabot_api_client.dart';
 import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_data_source.dart';
 import 'package:kortex/src/features/syllabot/data/models/chat_message_model.dart';
@@ -8,10 +10,15 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 
 class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
-  SyllabotRemoteDataSourceImpl(this._client, this._dio);
+  SyllabotRemoteDataSourceImpl(
+    this._client,
+    this._dio, {
+    UserStorageService? userStorage,
+  }) : _userStorage = userStorage;
 
   final SyllabotApiClient _client;
   final Dio _dio;
+  final UserStorageService? _userStorage;
 
   @override
   Stream<String> streamResponse({
@@ -56,10 +63,16 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
   Future<ConversationSessionModel> createChatSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
   }) async {
-    final res = await _client.createChatSession(
-      {'title': title, 'socratic_mode': socraticMode.nameString},
-    );
+    final userId = _userStorage?.getUserId() ?? '';
+    final payload = <String, dynamic>{
+      if (id != null && id.isNotEmpty && UuidUtils.isValidUuid(id)) 'id': id,
+      'title': title,
+      'socratic_mode': socraticMode.nameString,
+      if (userId.isNotEmpty) 'user_id': userId,
+    };
+    final res = await _client.createChatSession(payload);
     final list = res.data is List ? (res.data as List) : <dynamic>[];
     if (list.isEmpty) throw Exception('No session returned');
     return ConversationSessionModel.fromJson(

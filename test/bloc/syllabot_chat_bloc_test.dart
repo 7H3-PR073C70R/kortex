@@ -37,6 +37,15 @@ void main() {
     setUpAll(() {
       registerFallbackValue(SocraticMode.stepByStep);
       registerFallbackValue(ExecutionEngineType.cloudRemote);
+      registerFallbackValue(
+        ChatMessageEntity(
+          id: 'dummy',
+          sessionId: 'dummy',
+          sender: MessageSender.user,
+          text: 'dummy',
+          timestamp: DateTime.now(),
+        ),
+      );
     });
 
     setUp(() {
@@ -49,6 +58,8 @@ void main() {
         () => mockGetChatHistoryUseCase.createSession(
           title: any(named: 'title'),
           socraticMode: any(named: 'socraticMode'),
+          id: any(named: 'id'),
+          isOffline: any(named: 'isOffline'),
         ),
       ).thenAnswer(
         (_) async => Right(
@@ -62,6 +73,10 @@ void main() {
           ),
         ),
       );
+
+      when(
+        () => mockGetChatHistoryUseCase.cacheMessage(any()),
+      ).thenAnswer((_) async {});
     });
 
     SyllabotChatBloc buildBloc({bool withRag = false}) => SyllabotChatBloc(
@@ -201,6 +216,52 @@ void main() {
       expect: () => [
         const SyllabotChatState(engineType: ExecutionEngineType.localOnDevice),
       ],
+    );
+
+    blocTest<SyllabotChatBloc, SyllabotChatState>(
+      'SubmitPromptEvent with localOnDevice skips remote RAG and caches messages locally',
+      build: () {
+        when(
+          () => mockStreamResponseUseCase(
+            prompt: any(named: 'prompt'),
+            sessionId: any(named: 'sessionId'),
+            socraticMode: any(named: 'socraticMode'),
+            preferredEngine: ExecutionEngineType.localOnDevice,
+            contextHistory: any(named: 'contextHistory'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable(['Offline ', 'answer.']),
+        );
+        return buildBloc(withRag: true);
+      },
+      act: (bloc) => bloc.add(
+        const SubmitPromptEvent(
+          prompt: 'What is Math',
+          sessionId: 'session_offline_1',
+          socraticMode: SocraticMode.stepByStep,
+          engineType: ExecutionEngineType.localOnDevice,
+        ),
+      ),
+      wait: const Duration(milliseconds: 300),
+      verify: (bloc) {
+        // Must NOT call remote RAG document context
+        verifyNever(
+          () => mockQueryDocumentContextUseCase(query: any(named: 'query')),
+        );
+        // Must create session with isOffline: true
+        verify(
+          () => mockGetChatHistoryUseCase.createSession(
+            title: 'What is Math',
+            socraticMode: SocraticMode.stepByStep,
+            id: 'session_offline_1',
+            isOffline: true,
+          ),
+        ).called(1);
+        // Must cache user and bot messages locally
+        verify(
+          () => mockGetChatHistoryUseCase.cacheMessage(any()),
+        ).called(2);
+      },
     );
   });
 }

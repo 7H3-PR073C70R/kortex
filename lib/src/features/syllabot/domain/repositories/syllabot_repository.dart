@@ -24,7 +24,12 @@ abstract class SyllabotRepository {
   Future<Either<Failure, ConversationSessionEntity>> createChatSession({
     required String title,
     required SocraticMode socraticMode,
+    String? id,
+    bool isOffline = false,
   });
+
+  /// Persists a message to the local offline cache.
+  Future<void> cacheMessage(ChatMessageEntity message);
 
   /// Retrieves the message history for a specific session.
   Future<Either<Failure, List<ChatMessageEntity>>> getSessionMessages({
