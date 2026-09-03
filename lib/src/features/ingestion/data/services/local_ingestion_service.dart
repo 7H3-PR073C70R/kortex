@@ -33,6 +33,22 @@ class DocumentExtractionException implements Exception {
   String toString() => 'DocumentExtractionException: $message';
 }
 
+class _FlashcardSynthesisParams {
+  const _FlashcardSynthesisParams({
+    required this.normalizedText,
+    required this.title,
+    required this.documentId,
+    required this.courseCode,
+    required this.filename,
+  });
+
+  final String normalizedText;
+  final String title;
+  final String? documentId;
+  final String courseCode;
+  final String filename;
+}
+
 /// Central offline document ingestion and OCR routing service for Kortexify.
 ///
 /// Handles PDF, PPTX, PNG, JPG, and text files entirely offline in background
@@ -132,6 +148,38 @@ class LocalIngestionService {
 
     // Normalize and sanitize text buffer in background isolate
     return compute(normalizeTextBuffer, rawExtractedText);
+  }
+
+  /// Synthesizes structured flashcards in a background isolate to prevent UI thread blocking.
+  Future<DeckEntity> synthesizeFlashcardsLocallyAsync({
+    required String normalizedText,
+    required String title,
+    String? documentId,
+    String courseCode = 'GEN101',
+    String filename = 'document.txt',
+  }) async {
+    return compute(
+      _isolateSynthesizeFlashcards,
+      _FlashcardSynthesisParams(
+        normalizedText: normalizedText,
+        title: title,
+        documentId: documentId,
+        courseCode: courseCode,
+        filename: filename,
+      ),
+    );
+  }
+
+  static DeckEntity _isolateSynthesizeFlashcards(
+    _FlashcardSynthesisParams params,
+  ) {
+    return LocalIngestionService().synthesizeFlashcardsLocally(
+      normalizedText: params.normalizedText,
+      title: params.title,
+      documentId: params.documentId,
+      courseCode: params.courseCode,
+      filename: params.filename,
+    );
   }
 
   /// Synthesizes structured flashcards directly from ingested document text offline.

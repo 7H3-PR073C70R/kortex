@@ -1,8 +1,18 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 class AnkiExportService {
   const AnkiExportService();
+
+  /// Converts flashcards into standard Anki tab-delimited text format in a background isolate.
+  Future<String> generateAnkiCsvAsync(DeckEntity deck) async {
+    return compute(_isolateGenerateAnkiCsv, deck);
+  }
+
+  static String _isolateGenerateAnkiCsv(DeckEntity deck) {
+    return const AnkiExportService().generateAnkiCsv(deck);
+  }
 
   /// Converts flashcards into standard Anki tab-delimited text format with
   /// LaTeX tags.

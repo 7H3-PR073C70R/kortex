@@ -1,8 +1,18 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 class NotionCsvFormatter {
   const NotionCsvFormatter();
+
+  /// Converts a deck into Notion-compatible CSV formatted string in a background isolate.
+  Future<String> generateNotionCsvAsync(DeckEntity deck) async {
+    return compute(_isolateGenerateNotionCsv, deck);
+  }
+
+  static String _isolateGenerateNotionCsv(DeckEntity deck) {
+    return const NotionCsvFormatter().generateNotionCsv(deck);
+  }
 
   /// Converts a deck into Notion-compatible CSV formatted string.
   String generateNotionCsv(DeckEntity deck) {

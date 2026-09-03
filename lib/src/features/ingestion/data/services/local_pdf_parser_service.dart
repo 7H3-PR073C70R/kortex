@@ -1,9 +1,33 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+
+class _PdfExtractParams {
+  const _PdfExtractParams({
+    required this.bytes,
+    required this.filename,
+  });
+
+  final Uint8List bytes;
+  final String filename;
+}
+
+class _PdfFlashcardParseParams {
+  const _PdfFlashcardParseParams({
+    required this.documentId,
+    required this.bytes,
+    required this.filename,
+    required this.imageUrls,
+  });
+
+  final String documentId;
+  final Uint8List bytes;
+  final String filename;
+  final List<String> imageUrls;
+}
 
 /// Local deterministic PDF text and image extraction service powered by
 /// `syncfusion_flutter_pdf` and multi-tiered NLP heuristic chunking.
@@ -14,22 +38,32 @@ class LocalPdfParserService {
 
   final DocumentParserService _documentParserService;
 
-  /// Extracts raw text from PDF binary bytes.
+  /// Extracts raw text from PDF binary bytes in a background isolate.
   Future<String> extractText(
     Uint8List bytes, {
     String filename = 'document.pdf',
   }) async {
-    return extractTextFromPdfBytes(bytes, filename: filename);
+    if (bytes.isEmpty) return '';
+    return compute(
+      _isolateExtractPdfText,
+      _PdfExtractParams(bytes: bytes, filename: filename),
+    );
   }
 
-  /// Extracts raw text page-by-page from a local PDF [File] using
-  /// `PdfDocument` and `PdfTextExtractor`.
+  static String _isolateExtractPdfText(_PdfExtractParams params) {
+    return const LocalPdfParserService().extractTextFromPdfBytes(
+      params.bytes,
+      filename: params.filename,
+    );
+  }
+
+  /// Extracts raw text page-by-page from a local PDF [File] in a background isolate.
   Future<String> extractTextFromPdfFile(
     File file, {
     String filename = 'document.pdf',
   }) async {
     final bytes = await file.readAsBytes();
-    return extractTextFromPdfBytes(bytes, filename: filename);
+    return extractText(bytes, filename: filename);
   }
 
   /// Extracts raw text page-by-page from raw PDF [bytes] using Syncfusion,
@@ -330,7 +364,7 @@ class LocalPdfParserService {
     return _documentParserService.extractImagesFromPdfBytes(bytes);
   }
 
-  /// Parses a local PDF file and synthesizes structured flashcard snippets.
+  /// Parses a local PDF file and synthesizes structured flashcard snippets in a background isolate.
   Future<List<OcrExtractionModel>> parsePdfFileToFlashcards({
     required String documentId,
     required File file,
@@ -338,11 +372,25 @@ class LocalPdfParserService {
     List<String> imageUrls = const [],
   }) async {
     final bytes = await file.readAsBytes();
-    return parsePdfBytesToFlashcards(
-      documentId: documentId,
-      bytes: bytes,
-      filename: filename,
-      imageUrls: imageUrls,
+    return compute(
+      _isolateParsePdfToFlashcards,
+      _PdfFlashcardParseParams(
+        documentId: documentId,
+        bytes: bytes,
+        filename: filename,
+        imageUrls: imageUrls,
+      ),
+    );
+  }
+
+  static List<OcrExtractionModel> _isolateParsePdfToFlashcards(
+    _PdfFlashcardParseParams params,
+  ) {
+    return const LocalPdfParserService().parsePdfBytesToFlashcards(
+      documentId: params.documentId,
+      bytes: params.bytes,
+      filename: params.filename,
+      imageUrls: params.imageUrls,
     );
   }
 
