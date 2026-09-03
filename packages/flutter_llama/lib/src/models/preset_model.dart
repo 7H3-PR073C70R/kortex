@@ -69,7 +69,37 @@ class PresetModel {
 
 /// Список предустановленных моделей
 class PresetModels {
-  // HuggingFace модели
+  // HuggingFace GGUF models for on-device inference
+  static const smolLM2Q4K = PresetModel(
+    id: 'Segilmez06/SmolLM2-135M-Instruct-Q4_K_M-GGUF',
+    name: 'SmolLM2 135M Instruct (Q4_K_M)',
+    description: '⭐ Highly optimized on-device GGUF model for mobile and edge devices',
+    source: ModelSource.huggingFace,
+    files: ['smollm2-135m-instruct-q4_k_m.gguf'],
+    languages: ['🇬🇧 English'],
+    size: '100 MB',
+    contextSize: 2048,
+    metadata: {
+      'recommended': true,
+      'speed': 'fastest',
+    },
+  );
+
+  static const qwen25Q4K = PresetModel(
+    id: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF',
+    name: 'Qwen 2.5 0.5B Instruct (Q4_K_M)',
+    description: 'High performance small language model with rich reasoning',
+    source: ModelSource.huggingFace,
+    files: ['qwen2.5-0.5b-instruct-q4_k_m.gguf'],
+    languages: ['🇬🇧 English'],
+    size: '350 MB',
+    contextSize: 2048,
+    metadata: {
+      'recommended': false,
+      'speed': 'fast',
+    },
+  );
+
   static const shridharMultimodal = PresetModel(
     id: 'nativemind/shridhar_8k_multimodal',
     name: 'Shridhar 8K Multimodal',
@@ -167,6 +197,8 @@ class PresetModels {
   
   /// Все предустановленные модели
   static const List<PresetModel> all = [
+    smolLM2Q4K,
+    qwen25Q4K,
     shridharMultimodal,
     braindlerQ2K,
     braindlerQ4K,

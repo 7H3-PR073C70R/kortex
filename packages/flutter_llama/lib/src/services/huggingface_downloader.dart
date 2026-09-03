@@ -143,57 +143,55 @@ class HuggingFaceDownloader {
       
       onProgress?.call(const DownloadProgress(
         progress: 0.0,
-        status: 'Подключение к HuggingFace...',
+        status: 'Connecting to HuggingFace...',
       ));
       
-      // Создаем запрос
-      final request = http.Request('GET', Uri.parse(url));
-      final response = await request.send();
+      final client = HttpClient();
+      final uri = Uri.parse(url);
+      final request = await client.getUrl(uri);
+      final response = await request.close();
       
       if (response.statusCode != 200) {
-        throw Exception('Download failed: ${response.statusCode}');
+        client.close();
+        throw Exception('Download failed: HTTP ${response.statusCode}');
       }
       
-      // Получаем размер файла
-      final contentLength = response.contentLength ?? 0;
+      final contentLength = response.contentLength;
       var receivedBytes = 0;
-      
-      // Открываем файл для записи
       final sink = file.openWrite();
       
       try {
         onProgress?.call(DownloadProgress(
           progress: 0.0,
-          status: 'Скачивание...',
+          status: 'Downloading...',
           downloadedBytes: 0,
-          totalBytes: contentLength,
+          totalBytes: contentLength > 0 ? contentLength : null,
         ));
         
-        await for (var chunk in response.stream) {
+        await for (final chunk in response) {
           sink.add(chunk);
           receivedBytes += chunk.length;
           
-          // Обновляем прогресс
           if (contentLength > 0) {
             final progress = receivedBytes / contentLength;
-            
             onProgress?.call(DownloadProgress(
               progress: progress,
-              status: 'Скачивание...',
+              status: 'Downloading: ${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(contentLength / 1024 / 1024).toStringAsFixed(1)} MB',
               downloadedBytes: receivedBytes,
               totalBytes: contentLength,
             ));
-            
-            // Логируем каждые 10MB
-            if (kDebugMode && (receivedBytes ~/ (10 * 1024 * 1024)) > ((receivedBytes - chunk.length) ~/ (10 * 1024 * 1024))) {
-              final mb = receivedBytes / 1024 / 1024;
-              final totalMb = contentLength / 1024 / 1024;
-              print('[HuggingFaceDownloader] Downloaded: ${mb.toStringAsFixed(1)} / ${totalMb.toStringAsFixed(1)} MB');
-            }
+          } else {
+            onProgress?.call(DownloadProgress(
+              progress: 0.5,
+              status: 'Downloading: ${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB',
+              downloadedBytes: receivedBytes,
+            ));
           }
         }
       } finally {
+        await sink.flush();
         await sink.close();
+        client.close();
       }
       
       // Проверяем размер скачанного файла

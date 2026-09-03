@@ -27,6 +27,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   Stream<String> generateOfflineResponse({
     required String prompt,
     required SocraticMode socraticMode,
+    List<ChatMessageEntity> contextHistory = const [],
   }) {
     const systemMap = {
       SocraticMode.stepByStep:
@@ -41,6 +42,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
       prompt: prompt,
       systemInstruction: systemMap[socraticMode] ?? '',
       socraticMode: socraticMode,
+      contextHistory: contextHistory,
     );
   }
 

@@ -42,6 +42,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       return _local.generateOfflineResponse(
         prompt: prompt,
         socraticMode: socraticMode,
+        contextHistory: contextHistory,
       );
     }
 

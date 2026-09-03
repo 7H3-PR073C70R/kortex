@@ -9,6 +9,7 @@ abstract class SyllabotLocalDataSource {
   Stream<String> generateOfflineResponse({
     required String prompt,
     required SocraticMode socraticMode,
+    List<ChatMessageEntity> contextHistory = const [],
   });
 
   /// Retrieves cached sessions from local storage for offline viewing.
