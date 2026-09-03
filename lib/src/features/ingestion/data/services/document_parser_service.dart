@@ -358,7 +358,12 @@ class DocumentParserService {
     required String filename,
     List<String> imageUrls = const [],
   }) {
-    final lines = fullText
+    final cleanFullText = fullText.trim();
+    if (cleanFullText.isEmpty) {
+      return [];
+    }
+
+    final lines = cleanFullText
         .split('\n')
         .map((l) => l.trim())
         .where((l) => l.isNotEmpty && !l.startsWith('=='))
@@ -374,7 +379,7 @@ class DocumentParserService {
 
     // Step 2: Semantic Paragraph Fallback for prose documents lacking formal headers
     if (sections.isEmpty) {
-      sections = _extractSemanticParagraphSections(fullText);
+      sections = _extractSemanticParagraphSections(cleanFullText);
     }
 
     final snippets = <OcrExtractionModel>[];
@@ -413,6 +418,118 @@ class DocumentParserService {
       );
     }
 
+    // Guaranteed Adaptive Synthesizer: If standard heuristics yield 0 cards,
+    // generate high-yield conceptual flashcards from raw text chunks
+    if (snippets.isEmpty) {
+      return _generateAdaptiveGuaranteedSnippets(
+        documentId: documentId,
+        fullText: cleanFullText,
+        filename: filename,
+        imageUrls: imageUrls,
+      );
+    }
+
+    return snippets;
+  }
+
+  /// Adaptive guaranteed synthesizer that splits text into logical 2-4 sentence chunks
+  /// and derives academic flashcard prompts from context.
+  List<OcrExtractionModel> _generateAdaptiveGuaranteedSnippets({
+    required String documentId,
+    required String fullText,
+    required String filename,
+    List<String> imageUrls = const [],
+  }) {
+    final cleanDocName = filename
+        .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+        .replaceAll(RegExp(r'[_\-]+'), ' ')
+        .trim();
+
+    // 1. Split text into meaningful blocks
+    final rawBlocks = fullText
+        .split(RegExp(r'(?:\r?\n){2,}'))
+        .map((b) => b.trim())
+        .where((b) => b.length >= 20 && isMeaningfulEducationalText(b))
+        .toList();
+
+    final chunks = <String>[];
+    if (rawBlocks.length >= 2) {
+      chunks.addAll(rawBlocks);
+    } else {
+      // Split by sentence groups
+      final sentences = _splitIntoCompleteSentences(fullText);
+      if (sentences.isNotEmpty) {
+        var currentChunk = '';
+        for (var i = 0; i < sentences.length; i++) {
+          currentChunk = currentChunk.isEmpty
+              ? sentences[i]
+              : '$currentChunk ${sentences[i]}';
+          if (i % 3 == 2 || i == sentences.length - 1) {
+            chunks.add(currentChunk.trim());
+            currentChunk = '';
+          }
+        }
+      } else {
+        // Fallback: chunk by line groups
+        final lines = fullText
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty && isMeaningfulEducationalText(l))
+            .toList();
+        for (var i = 0; i < lines.length; i += 3) {
+          final group = lines.skip(i).take(3).join(' ');
+          if (group.length >= 20) {
+            chunks.add(group);
+          }
+        }
+      }
+    }
+
+    if (chunks.isEmpty && fullText.trim().length >= 10) {
+      chunks.add(fullText.trim());
+    }
+
+    final snippets = <OcrExtractionModel>[];
+    for (var i = 0; i < chunks.length; i++) {
+      final chunk = chunks[i];
+      final cleanBody = _extractCompleteParagraphAnswer(chunk);
+      if (cleanBody.length < 10) continue;
+
+      // Generate context-rich question
+      String question;
+      final firstLine = chunk.split('\n').first.trim();
+      if (firstLine.length >= 5 &&
+          firstLine.length <= 60 &&
+          !firstLine.contains('.')) {
+        question = _synthesizeContextualQuestion(firstLine, cleanBody) ??
+            'What are the key concepts of $firstLine?';
+      } else {
+        final words = cleanBody.split(RegExp(r'\s+')).take(6).join(' ');
+        question = 'What are the main principles explained in "$cleanDocName" regarding: $words...?';
+      }
+
+      if (!question.endsWith('?')) {
+        question = '$question?';
+      }
+
+      final latex = _extractOrGenerateFormula(question, cleanBody);
+      final attachedImage =
+          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
+          ? imageUrls[snippets.length]
+          : null;
+
+      snippets.add(
+        OcrExtractionModel(
+          id: 'ocr_${documentId}_${snippets.length + 1}',
+          documentId: documentId,
+          topic: question,
+          rawText: cleanBody,
+          latexContent: latex,
+          imageUrl: attachedImage,
+        ),
+      );
+    }
+
     return snippets;
   }
 
@@ -435,6 +552,16 @@ class DocumentParserService {
     // Reject unparseable noise or micro-fragments
     if (clean.length < 3 || _isCorruptedBinaryString(clean)) {
       return null;
+    }
+
+    // Handle longer narrative sentences as titles
+    if (clean.length > 70) {
+      final shortSubject = clean.split(RegExp('[:;,.]')).first.trim();
+      if (shortSubject.length >= 4 && shortSubject.length <= 50) {
+        clean = shortSubject;
+      } else {
+        return 'What are the key takeaways regarding: ${clean.substring(0, 45)}...?';
+      }
     }
 
     final lower = clean.toLowerCase();
@@ -605,7 +732,9 @@ class DocumentParserService {
       'they',
       'their',
       'in',
+      'out',
       'on',
+      'off',
       'at',
       'to',
       'for',
@@ -629,12 +758,99 @@ class DocumentParserService {
       'chapter',
       'section',
       'item',
+      'live',
+      'all',
+      'any',
+      'some',
+      'many',
+      'each',
+      'every',
+      'other',
+      'another',
+      'such',
+      'no',
+      'nor',
+      'not',
+      'only',
+      'own',
+      'same',
+      'than',
+      'too',
+      'very',
+      'can',
+      'will',
+      'just',
+      'should',
+      'now',
+      'here',
+      'there',
+      'why',
+      'how',
+      'what',
+      'where',
+      'who',
+      'which',
+      'whom',
+      'about',
+      'into',
+      'through',
+      'during',
+      'before',
+      'after',
+      'above',
+      'below',
+      'up',
+      'down',
+      'over',
+      'under',
+      'again',
+      'further',
+      'once',
     };
 
     if (invalidTokens.contains(lower)) return false;
     final words = lower.split(RegExp(r'\s+'));
-    if (words.length == 1 && invalidTokens.contains(words.first)) return false;
+    if (words.length == 1) {
+      if (invalidTokens.contains(words.first) || words.first.length < 4) {
+        return false;
+      }
+    }
     return true;
+  }
+
+  /// Identifies page footers, watermarks, domains, and non-educational UI artifacts.
+  static bool _isNoiseOrFooter(String text) {
+    final clean = text.trim();
+    if (clean.isEmpty) return true;
+    final lower = clean.toLowerCase();
+
+    // Check for web domains (e.g. .com, .net, .org, .io, .app)
+    if (RegExp(
+      r'\b[a-zA-Z0-9_\-]+\.(?:com|net|org|io|app|edu|co|gov|xyz|info|dev|biz|me)\b',
+      caseSensitive: false,
+    ).hasMatch(clean)) {
+      final words = clean.split(RegExp(r'\s+'));
+      if (words.length <= 5) return true;
+    }
+
+    // Page footers, copyright, slide numbers, standalone URLs
+    if (RegExp(
+      r'^(?:copyright|all rights reserved|page \d+(?: of \d+)?|slide \d+|http|\/\/|www\.)',
+      caseSensitive: false,
+    ).hasMatch(lower)) {
+      return true;
+    }
+
+    // Watermark / signature patterns starting with em dash or bullet (e.g. "—Mulham EdgeSkool.Net")
+    if (clean.startsWith('—') || clean.startsWith('-') || clean.startsWith('–')) {
+      final withoutDash = clean.replaceAll(RegExp(r'^[—–\-•*#\s]+'), '').trim();
+      if (withoutDash.split(RegExp(r'\s+')).length <= 3 &&
+          RegExp(r'\.[a-zA-Z]{2,4}\.?$').hasMatch(withoutDash)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Extracts the entire descriptive paragraph as a cohesive answer unit,
@@ -642,7 +858,7 @@ class DocumentParserService {
   String _extractCompleteParagraphAnswer(String rawBody) {
     var text = rawBody.trim();
 
-    // Strip leading A:, Answer:, bullets, numbers
+    // Strip leading A:, Answer:, bullets, dashes, numbers
     text = text
         .replaceAll(
           RegExp(
@@ -666,11 +882,28 @@ class DocumentParserService {
         .replaceAll(RegExp(r'\s{2,}'), ' ')
         .trim();
 
+    // Strip trailing commas, colons, hyphens, and duplicate punctuation
+    text = text.replaceAll(RegExp(r'[,;:–—\-]+$'), '').trim();
+    text = text.replaceAll(RegExp(r'[,;:]+\s*\.+'), '.').trim();
+    text = text.replaceAll(RegExp(r'\.{2,}'), '.').trim();
+
+    if (text.isNotEmpty &&
+        !text.endsWith('.') &&
+        !text.endsWith('!') &&
+        !text.endsWith('?') &&
+        !text.endsWith('"') &&
+        !text.endsWith("'") &&
+        !text.endsWith(')') &&
+        !text.endsWith(']') &&
+        !text.endsWith(r'$')) {
+      text = '$text.';
+    }
+
     return text;
   }
 
   /// Strict NLP Card Validation Filter:
-  /// Enforces minimum 10 words for answers, bans single isolated words,
+  /// Enforces minimum 3 words or 12 characters for answers, bans single isolated words,
   /// and drops any card ending with dangling transition words/conjunctions.
   bool _isValidCard(String? question, String? answer) {
     if (question == null || answer == null) return false;
@@ -679,71 +912,28 @@ class DocumentParserService {
     final cleanA = answer.trim();
 
     // 1. Question validation
-    if (cleanQ.length < 10 || !_isGrammaticallySoundQuestion(cleanQ)) {
+    if (cleanQ.length < 5 || !_isGrammaticallySoundQuestion(cleanQ)) {
       return false;
     }
 
-    // 2. Answer length validation: must contain at least 10 words
+    // 2. Answer length validation: must contain at least 3 words or 12 characters
     final words = cleanA
         .split(RegExp(r'\s+'))
         .where((w) => w.isNotEmpty && RegExp('[a-zA-Z0-9]').hasMatch(w))
         .toList();
 
-    if (words.length < 10) {
+    if (words.length < 3 && cleanA.length < 12) {
       return false;
     }
 
-    // 3. Meaningful educational text & binary noise checks
+    // 3. Noise, watermark & footer filter
+    if (_isNoiseOrFooter(cleanA) || _isNoiseOrFooter(cleanQ)) {
+      return false;
+    }
+
+    // 4. Meaningful educational text & binary noise checks
     if (!isMeaningfulEducationalText(cleanA) ||
         _isCorruptedBinaryString(cleanA)) {
-      return false;
-    }
-
-    // 4. Dangling transition words / conjunctions check
-    final lowerA = cleanA.toLowerCase();
-    const danglingEndings = [
-      'however,',
-      'however',
-      'and',
-      'or',
-      'but',
-      'because',
-      'such as',
-      'including',
-      'with',
-      'for',
-      'to',
-      'which',
-      'that',
-      'as well as',
-      'whereas',
-      'although',
-      'e.g.',
-      'i.e.',
-      'of',
-      'in',
-      'on',
-      'at',
-      'is',
-      'are',
-    ];
-
-    for (final dangling in danglingEndings) {
-      if (lowerA.endsWith(' $dangling') || lowerA == dangling) {
-        return false;
-      }
-    }
-
-    // 5. Must end with standard sentence punctuation or closing delimiter
-    final lastChar = cleanA[cleanA.length - 1];
-    if (lastChar != '.' &&
-        lastChar != '!' &&
-        lastChar != '?' &&
-        lastChar != '"' &&
-        lastChar != "'" &&
-        lastChar != ')' &&
-        lastChar != ']' &&
-        lastChar != r'$') {
       return false;
     }
 
@@ -756,8 +946,8 @@ class DocumentParserService {
     String? currentTitle;
     final currentLines = <String>[];
 
-    final headerRegex = RegExp(
-      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
+    final structuralHeaderRegex = RegExp(
+      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*\s+[A-Z]|\b[IVXLCDM]+\.\s+[A-Z])\s*(.*)$',
       caseSensitive: false,
     );
 
@@ -793,10 +983,11 @@ class DocumentParserService {
     }
 
     for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
+      final line = lines[i].trim();
 
-      // Ignore isolated digits and non-educational symbol lines
+      // Ignore isolated digits, footers, and non-educational symbol lines
       if (RegExp(r'^\d+$').hasMatch(line) ||
+          _isNoiseOrFooter(line) ||
           !isMeaningfulEducationalText(line)) {
         continue;
       }
@@ -814,12 +1005,20 @@ class DocumentParserService {
         continue;
       }
 
-      // 2. Section Headers & Structural Markers (Checked BEFORE single-line term-def)
-      if (headerRegex.hasMatch(line) ||
-          (line.length < 60 &&
-              line.endsWith(':') &&
-              !line.contains('http') &&
-              !line.contains('.'))) {
+      // 2. Section Headers & Structural Markers
+      final isStructuralHeader = structuralHeaderRegex.hasMatch(line);
+      final isColonHeader = line.length < 60 &&
+          line.endsWith(':') &&
+          !line.contains('http') &&
+          !line.contains('.') &&
+          line.split(RegExp(r'\s+')).length >= 2;
+      final isAllCapsHeader = line.length >= 6 &&
+          line.length <= 50 &&
+          line == line.toUpperCase() &&
+          line.split(RegExp(r'\s+')).length >= 2 &&
+          RegExp('[A-Z]').hasMatch(line);
+
+      if (isStructuralHeader || isColonHeader || isAllCapsHeader) {
         commitCurrentSection();
         currentTitle = line.replaceAll(':', '').trim();
         continue;
@@ -828,7 +1027,7 @@ class DocumentParserService {
       // 3. Single-Line Term: Definition pattern
       final termDefMatch = termDefRegex.firstMatch(line);
       if (termDefMatch != null &&
-          termDefMatch.group(2)!.trim().split(' ').length >= 8 &&
+          termDefMatch.group(2)!.trim().split(' ').length >= 3 &&
           !line.startsWith('http')) {
         commitCurrentSection();
         sections.add(
@@ -838,6 +1037,23 @@ class DocumentParserService {
           ),
         );
         continue;
+      }
+
+      // 4. Bullet Points and Numbered Items
+      final bulletMatch =
+          RegExp(r'^[•\-–—*]\s*(.+)$|^\d+\.\s*(.+)$').firstMatch(line);
+      if (bulletMatch != null) {
+        final itemContent =
+            (bulletMatch.group(1) ?? bulletMatch.group(2) ?? '').trim();
+        if (itemContent.length >= 10 && isMeaningfulEducationalText(itemContent)) {
+          sections.add(
+            _DocumentSection(
+              title: currentTitle ?? itemContent,
+              content: itemContent,
+            ),
+          );
+          continue;
+        }
       }
 
       currentLines.add(line);
@@ -853,22 +1069,25 @@ class DocumentParserService {
     final results = <_DocumentSection>[];
 
     final paragraphs = text
-        .split(RegExp(r'\n\s*\n'))
+        .split(RegExp(r'(?:\r?\n){1,}'))
         .map(
-          (p) => p.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim(),
+          (p) => p.replaceAll(RegExp(r'\s+'), ' ').trim(),
         )
-        .where((p) => p.length >= 25 && isMeaningfulEducationalText(p))
+        .where((p) => p.length >= 15 && isMeaningfulEducationalText(p))
         .toList();
 
     for (final para in paragraphs) {
       final sentences = _splitIntoCompleteSentences(para);
-      if (sentences.isEmpty) continue;
+      if (sentences.isEmpty) {
+        if (para.length >= 20) {
+          results.add(_DocumentSection(title: para, content: para));
+        }
+        continue;
+      }
 
       if (sentences.length == 1) {
         final sentence = sentences.first;
-        if (sentence.split(RegExp(r'\s+')).length >= 10) {
-          results.add(_DocumentSection(title: sentence, content: sentence));
-        }
+        results.add(_DocumentSection(title: sentence, content: sentence));
       } else {
         for (var i = 0; i < sentences.length; i++) {
           final sentence = sentences[i];
@@ -876,18 +1095,12 @@ class DocumentParserService {
               .split(RegExp(r'\s+'))
               .where((w) => w.isNotEmpty)
               .toList();
-          if (words.length >= 10) {
+          if (words.length >= 5) {
             results.add(_DocumentSection(title: sentence, content: sentence));
           } else if (i + 1 < sentences.length) {
             final combined = '$sentence ${sentences[i + 1]}';
-            if (combined
-                    .split(RegExp(r'\s+'))
-                    .where((w) => w.isNotEmpty)
-                    .length >=
-                10) {
-              results.add(_DocumentSection(title: sentence, content: combined));
-              i++;
-            }
+            results.add(_DocumentSection(title: sentence, content: combined));
+            i++;
           }
         }
       }

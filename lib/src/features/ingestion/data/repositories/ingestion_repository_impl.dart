@@ -42,6 +42,11 @@ class IngestionRepositoryImpl implements IngestionRepository {
       );
 
       if (existing != null) {
+        _remoteDataSource.cacheDocumentBytes(
+          existing.id,
+          fileBytes,
+          filename: filename,
+        );
         if (onProgress != null) onProgress(1);
         return existing.toEntity();
       }
@@ -53,6 +58,12 @@ class IngestionRepositoryImpl implements IngestionRepository {
         fileBytes: fileBytes,
         contentHash: hash,
         onProgress: onProgress,
+      );
+
+      _remoteDataSource.cacheDocumentBytes(
+        model.id,
+        fileBytes,
+        filename: filename,
       );
 
       return model.toEntity();

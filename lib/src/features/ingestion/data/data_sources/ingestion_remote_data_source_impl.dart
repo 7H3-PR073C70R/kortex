@@ -71,6 +71,21 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     return null;
   }
 
+  static final _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static bool isValidUuid(String str) {
+    return _uuidRegex.hasMatch(str);
+  }
+
+  static String generateUuid() {
+    final rand = DateTime.now().microsecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
+    final rand2 = DateTime.now().millisecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
+    final hex = '$rand$rand2'.substring(0, 32);
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}';
+  }
+
   @override
   Future<DocumentUploadModel> uploadDocument({
     required String filename,
@@ -79,7 +94,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String contentHash,
     void Function(double progress)? onProgress,
   }) async {
-    final docId = 'doc_${DateTime.now().millisecondsSinceEpoch}';
+    final docId = generateUuid();
     final ext = fileType.replaceAll('.', '');
     final storagePath = '$docId.$ext';
 
@@ -167,6 +182,18 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   }
 
   @override
+  void cacheDocumentBytes(
+    String documentId,
+    Uint8List fileBytes, {
+    String? filename,
+  }) {
+    _documentBytesCache[documentId] = fileBytes;
+    if (filename != null && filename.isNotEmpty) {
+      _documentFilenamesCache[documentId] = filename;
+    }
+  }
+
+  @override
   Future<List<OcrExtractionModel>> processStemOcr({
     required String documentId,
     required String storagePath,
@@ -202,15 +229,41 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     } on Object catch (_) {}
 
     // 3. Document Parsing Engine: Extract text & images from uploaded document
-    final fileBytes = _documentBytesCache[documentId];
+    var fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
 
+    // If bytes not in memory cache, attempt download from storage bucket
+    if ((fileBytes == null || fileBytes.isEmpty) && storagePath.isNotEmpty) {
+      try {
+        final res = await _dio.get<List<int>>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.storageBucket}/$storagePath',
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (res.data != null && res.data!.isNotEmpty) {
+          fileBytes = Uint8List.fromList(res.data!);
+          _documentBytesCache[documentId] = fileBytes;
+        }
+      } on Object catch (_) {}
+    }
+
     if (fileBytes != null && fileBytes.isNotEmpty) {
-      final text = _parserService.extractTextFromBytes(
-        fileBytes,
-        fileType: fileType,
-        filename: filename,
-      );
+      String text;
+      final isPdf = fileType.toLowerCase().contains('pdf') ||
+          storagePath.toLowerCase().endsWith('.pdf') ||
+          filename.toLowerCase().endsWith('.pdf');
+      if (isPdf) {
+        text = _parserService.extractTextFromBytes(
+          fileBytes,
+          fileType: 'pdf',
+          filename: filename,
+        );
+      } else {
+        text = _parserService.extractTextFromBytes(
+          fileBytes,
+          fileType: fileType,
+          filename: filename,
+        );
+      }
 
       final token = _userStorage?.getToken();
       final extractedImages = _parserService.extractImagesFromPdfBytes(
@@ -259,6 +312,10 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   Future<List<OcrExtractionModel>> fetchExtractedSnippets(
     String documentId,
   ) async {
+    if (!isValidUuid(documentId)) {
+      return [];
+    }
+
     try {
       final res = await _client.fetchExtractedSnippets(
         {
