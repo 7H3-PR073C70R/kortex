@@ -6,6 +6,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#include <TargetConditionals.h>
 #include <string>
 #include <vector>
 #include <mutex>
@@ -37,6 +38,17 @@ bool llama_init_model(
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
     
+    if (!model_path) {
+        NSLog(@"[llama_cpp_bridge] Error: model_path is null");
+        return false;
+    }
+
+#if TARGET_OS_SIMULATOR
+    // iOS Simulator cannot run Metal compute shaders for GGML reliably
+    use_gpu = false;
+    n_gpu_layers = 0;
+#endif
+
     NSLog(@"[llama_cpp_bridge] Initializing model: %s", model_path);
     NSLog(@"[llama_cpp_bridge] Threads: %d, GPU layers: %d, Context: %d", 
           n_threads, n_gpu_layers, context_size);
@@ -54,9 +66,6 @@ bool llama_init_model(
         llama_model_free(g_model);
         g_model = nullptr;
     }
-    
-    // Load dynamic backends
-    ggml_backend_load_all();
     
     // Set up model parameters
     llama_model_params model_params = llama_model_default_params();
