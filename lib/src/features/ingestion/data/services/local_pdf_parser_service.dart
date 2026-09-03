@@ -14,6 +14,14 @@ class LocalPdfParserService {
 
   final DocumentParserService _documentParserService;
 
+  /// Extracts raw text from PDF binary bytes.
+  Future<String> extractText(
+    Uint8List bytes, {
+    String filename = 'document.pdf',
+  }) async {
+    return extractTextFromPdfBytes(bytes, filename: filename);
+  }
+
   /// Extracts raw text page-by-page from a local PDF [File] using
   /// `PdfDocument` and `PdfTextExtractor`.
   Future<String> extractTextFromPdfFile(

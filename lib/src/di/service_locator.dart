@@ -88,5 +88,25 @@ void _initServices() {
       () => PastQuestionsBloc(
         repository: locator<PastQuestionsRepository>(),
       ),
+    )
+    ..registerLazySingleton<DocumentParserService>(
+      DocumentParserService.new,
+    )
+    ..registerLazySingleton<LocalPdfParserService>(
+      LocalPdfParserService.new,
+    )
+    ..registerLazySingleton<LocalPptxParserService>(
+      LocalPptxParserService.new,
+    )
+    ..registerLazySingleton<LocalImageOcrService>(
+      LocalImageOcrService.new,
+    )
+    ..registerLazySingleton<LocalIngestionService>(
+      () => LocalIngestionService(
+        pdfParser: locator<LocalPdfParserService>(),
+        pptxParser: locator<LocalPptxParserService>(),
+        imageOcr: locator<LocalImageOcrService>(),
+        documentParser: locator<DocumentParserService>(),
+      ),
     );
 }
