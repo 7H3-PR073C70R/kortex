@@ -1,14 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 
 /// Service responsible for offline mobile image OCR directly from pixels.
 class LocalImageOcrService {
-  LocalImageOcrService({TextRecognizer? recognizer})
-    : _recognizer = recognizer ?? TextRecognizer();
+  LocalImageOcrService({LocalMlkitOcrClient? ocrClient})
+    : _ocrClient = ocrClient ?? const LocalMlkitOcrClient();
 
-  final TextRecognizer _recognizer;
+  final LocalMlkitOcrClient _ocrClient;
 
   /// Extracts text from an image file path offline.
   Future<String> extractTextFromPath(String filePath) async {
@@ -18,9 +17,8 @@ class LocalImageOcrService {
     }
 
     try {
-      final inputImage = InputImage.fromFilePath(filePath);
-      final recognizedText = await _recognizer.processImage(inputImage);
-      return _normalizeRecognizedText(recognizedText);
+      final bytes = await file.readAsBytes();
+      return extractTextFromBytes(bytes);
     } on Object catch (e) {
       if (kDebugMode) {
         print('[LocalImageOcrService] Error recognizing text from path: $e');
@@ -29,49 +27,34 @@ class LocalImageOcrService {
     }
   }
 
-  /// Extracts text from image bytes offline by saving to a temporary buffer file.
+  /// Extracts text from image bytes offline using local on-device OCR.
   Future<String> extractTextFromBytes(
     Uint8List bytes, {
     String extension = 'png',
   }) async {
     if (bytes.isEmpty) return '';
 
-    File? tempFile;
     try {
-      final tempDir = await getTemporaryDirectory();
-      final tempPath =
-          '${tempDir.path}/ocr_temp_${DateTime.now().microsecondsSinceEpoch}.$extension';
-      tempFile = File(tempPath);
-      await tempFile.writeAsBytes(bytes, flush: true);
-
-      final result = await extractTextFromPath(tempPath);
-      return result;
+      final blocks = await _ocrClient.processImageBytes(bytes);
+      return _normalizeRecognizedBlocks(blocks);
     } on Object catch (e) {
       if (kDebugMode) {
         print('[LocalImageOcrService] Error recognizing text from bytes: $e');
       }
-      // Return empty or throw based on severity
       return '';
-    } finally {
-      if (tempFile != null && tempFile.existsSync()) {
-        try {
-          await tempFile.delete();
-        } on Object catch (_) {}
-      }
     }
   }
 
   /// Organizes recognized blocks in top-to-bottom reading order and formats paragraphs.
-  String _normalizeRecognizedText(RecognizedText recognizedText) {
-    final blocks = recognizedText.blocks;
+  String _normalizeRecognizedBlocks(List<RecognizedTextBlock> blocks) {
     if (blocks.isEmpty) return '';
 
     // Sort blocks top-to-bottom, left-to-right
-    final sortedBlocks = List<TextBlock>.from(blocks)
+    final sortedBlocks = List<RecognizedTextBlock>.from(blocks)
       ..sort((a, b) {
-        final topDiff = a.boundingBox.top.compareTo(b.boundingBox.top);
+        final topDiff = a.top.compareTo(b.top);
         if (topDiff.abs() > 20) return topDiff;
-        return a.boundingBox.left.compareTo(b.boundingBox.left);
+        return a.left.compareTo(b.left);
       });
 
     final buffer = StringBuffer();
@@ -86,8 +69,6 @@ class LocalImageOcrService {
     return buffer.toString().trim();
   }
 
-  /// Disposes the native ML Kit text recognizer resources.
-  Future<void> dispose() async {
-    await _recognizer.close();
-  }
+  /// Disposes resources.
+  Future<void> dispose() async {}
 }

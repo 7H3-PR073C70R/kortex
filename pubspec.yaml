@@ -50,8 +50,8 @@ dependencies:
   url_launcher: ^6.3.2
   qr_flutter: ^4.1.0
   local_auth: ^3.0.2
-  flutter_llama: ^1.1.2
-  google_mlkit_text_recognition: ^0.16.0
+  flutter_llama:
+    path: packages/flutter_llama
   xml: ^6.6.1
 
 dev_dependencies:
