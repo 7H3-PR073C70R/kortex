@@ -107,16 +107,14 @@ Enter on M1 candle close outside rectangle.
       expect(emaSnippet.latexContent, contains('EMA'));
     });
 
-    test('generates complete high-yield fallback if text is sparse', () {
+    test('gracefully handles empty text without fabricating dummy cards', () {
       final snippets = service.synthesizeSnippetsFromDocument(
         documentId: 'doc_empty',
         fullText: '',
         filename: 'trading_strategy.pdf',
       );
 
-      expect(snippets.length, 10);
-      expect(snippets.first.topic, contains('What is the Rectangle'));
-      expect(snippets.last.topic, contains('Pre-Trade Confirmation Checklist'));
+      expect(snippets, isEmpty);
     });
 
     test('extracts embedded JPEG and PNG images from binary PDF stream', () {
@@ -139,20 +137,26 @@ Enter on M1 candle close outside rectangle.
     });
 
     test('associates visual diagram URLs with generated flashcards', () {
+      const notes = '''
+Mitosis: The process where a single cell divides into two identical daughter cells.
+Meiosis: A type of cell division that reduces the number of chromosomes in the parent cell by half.
+Photosynthesis is the biochemical process that converts sunlight into chemical energy stored in glucose.
+''';
+
       final snippets = service.synthesizeSnippetsFromDocument(
         documentId: 'doc_visual',
-        fullText: '',
-        filename: 'trading_strategy.pdf',
+        fullText: notes,
+        filename: 'biology.pdf',
         imageUrls: [
-          'https://api.kortex.app/storage/v1/object/public/card-assets/ema_chart.jpg',
-          'https://api.kortex.app/storage/v1/object/public/card-assets/wick_rejection.jpg',
-          'https://api.kortex.app/storage/v1/object/public/card-assets/m1_flip.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/mitosis.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/meiosis.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/photosynthesis.jpg',
         ],
       );
 
       final visualCards = snippets.where((s) => s.imageUrl != null).toList();
-      expect(visualCards.length, greaterThanOrEqualTo(3));
-      expect(visualCards.first.imageUrl, contains('ema_chart.jpg'));
+      expect(visualCards.length, 3);
+      expect(visualCards.first.imageUrl, contains('mitosis.jpg'));
     });
 
     test('deterministically parses Term: Definition and Q&A pairs', () {

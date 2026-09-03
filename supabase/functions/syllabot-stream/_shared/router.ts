@@ -89,8 +89,8 @@ const CODE_KEYWORDS = [
 
 /**
  * Inspects conversation history and last user message to automatically
- * determine whether to route to deep reasoning models (`deepseek-v4-pro`)
- * or low-latency flash models (`deepseek-v4-flash`).
+ * determine whether to route to deep reasoning models (`deepseek-reasoner`)
+ * or fast conversational models (`deepseek-chat`).
  */
 export function selectModelAndParams(
   messages: Message[],
@@ -99,15 +99,16 @@ export function selectModelAndParams(
   const defaultModel =
     options?.defaultModel ||
     Deno.env.get("DEFAULT_MODEL") ||
-    "deepseek-v4-flash";
-  const proModel = options?.proModel || "deepseek-v4-pro";
+    "deepseek-chat";
+  const proModel = options?.proModel || "deepseek-reasoner";
 
   // 1. Check for manual/admin caller override
   if (options?.forceModel) {
+    const isPro = options.forceModel.includes("pro") || options.forceModel.includes("reasoner") || options.forceModel.includes("r1");
     return {
       model: options.forceModel,
-      reasoning_effort: options.forceModel.includes("pro") ? "high" : undefined,
-      reasoningDetected: options.forceModel.includes("pro"),
+      reasoning_effort: isPro ? "high" : undefined,
+      reasoningDetected: isPro,
       matchedCriteria: ["admin_forced_override"],
     };
   }
@@ -179,4 +180,35 @@ export function selectModelAndParams(
     model: defaultModel,
     reasoningDetected: false,
   };
+}
+
+export function normalizeModelForBaseUrl(model: string, baseUrl: string): string {
+  const lowerUrl = baseUrl.toLowerCase();
+  const lowerModel = model.toLowerCase();
+
+  if (lowerUrl.includes("api.deepseek.com")) {
+    if (lowerModel.includes("reasoner") || lowerModel.includes("r1") || lowerModel.includes("pro")) {
+      return "deepseek-reasoner";
+    }
+    return "deepseek-chat";
+  }
+
+  if (lowerUrl.includes("openrouter.ai")) {
+    if (lowerModel.includes("reasoner") || lowerModel.includes("r1") || lowerModel.includes("pro")) {
+      return "deepseek/deepseek-r1";
+    }
+    if (lowerModel.startsWith("deepseek/") || lowerModel.startsWith("google/") || lowerModel.startsWith("meta-llama/")) {
+      return model;
+    }
+    return "deepseek/deepseek-chat";
+  }
+
+  if (lowerUrl.includes("groq.com")) {
+    if (lowerModel.includes("reasoner") || lowerModel.includes("r1")) {
+      return "deepseek-r1-distill-llama-70b";
+    }
+    return "llama-3.3-70b-versatile";
+  }
+
+  return model;
 }

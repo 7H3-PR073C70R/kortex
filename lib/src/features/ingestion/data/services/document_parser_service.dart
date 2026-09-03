@@ -347,8 +347,9 @@ class DocumentParserService {
   }
 
   /// Synthesizes comprehensive, high-yield flashcard snippets from
-  /// the extracted document text and visual diagram assets using dynamic
-  /// card density budgeting and universal NLP semantic chunking.
+  /// Synthesizes comprehensive, high-yield flashcard snippets from
+  /// the extracted document text using pure structural semantic parsing
+  /// and strict NLP grammar validation (zero arbitrary quotas, zero broken fragments).
   List<OcrExtractionModel> synthesizeSnippetsFromDocument({
     required String documentId,
     required String fullText,
@@ -362,160 +363,59 @@ class DocumentParserService {
         .toList();
 
     if (lines.isEmpty) {
-      return _generateDefaultDocumentSnippets(
-        documentId,
-        filename,
-        imageUrls: imageUrls,
-      );
+      return [];
     }
-
-    // Dynamic Card Density Budgeting (~1 card per 150 substantive words, max 35)
-    final substantiveWords = fullText
-        .split(RegExp(r'\s+'))
-        .where((w) => w.length >= 2 && RegExp(r'[a-zA-Z]').hasMatch(w))
-        .length;
-    final targetCardBudget = (substantiveWords / 150).round().clamp(5, 35);
 
     // Tiered Extraction Pipeline
-    // Step 1: Extract structural headings & contextual paragraphs
+    // Step 1: Extract legitimate structural headings & complete paragraph sections
     var sections = _chunkIntoSections(lines);
 
-    // Step 2: Universal Sentence & Linking Verb Fallback
-    if (sections.length < 3) {
-      final sentenceSections = _extractSentenceAndClozeSections(fullText);
-      if (sentenceSections.isNotEmpty) {
-        if (sections.isEmpty) {
-          sections = sentenceSections;
-        } else {
-          final existingTitles =
-              sections.map((s) => s.title.toLowerCase()).toSet();
-          for (final s in sentenceSections) {
-            if (!existingTitles.contains(s.title.toLowerCase())) {
-              sections.add(s);
-            }
-          }
-        }
-      }
+    // Step 2: Semantic Paragraph Fallback for prose documents lacking formal headers
+    if (sections.isEmpty) {
+      sections = _extractSemanticParagraphSections(fullText);
     }
-
-    // Score and rank sections to prevent bloated algorithmic spam on long unstructured text
-    sections = _rankAndFilterSections(sections, targetCardBudget);
 
     final snippets = <OcrExtractionModel>[];
 
-    for (var i = 0; i < sections.length; i++) {
-      final section = sections[i];
-      final rawTitle = section.title;
-      final rawBody = section.content;
+    for (final section in sections) {
+      final cleanBody = _extractCompleteParagraphAnswer(section.content);
+      final directQuestion =
+          _synthesizeContextualQuestion(section.title, cleanBody);
 
-      final cleanBody = _cleanAnswerText(rawBody);
-      if (cleanBody.length < 15 ||
-          !isMeaningfulEducationalText(cleanBody) ||
-          _isCorruptedBinaryString(cleanBody)) {
-        continue;
-      }
-
-      final directQuestion = _formatAsDirectQuestion(rawTitle, cleanBody);
-      if (directQuestion.length < 8 ||
-          directQuestion.startsWith('What is Key Concept') ||
-          !isMeaningfulEducationalText(directQuestion)) {
+      // Strict NLP & Structural Validation Filter
+      if (!_isValidCard(directQuestion, cleanBody)) {
         continue;
       }
 
       // Extract LaTeX if formula or mathematical expression is present
-      final latex = _extractOrGenerateFormula(rawTitle, cleanBody);
+      final latex = _extractOrGenerateFormula(section.title, cleanBody);
 
       // Associate visual diagram assets if available
-      final attachedImage = (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
-          ? imageUrls[snippets.length]
-          : null;
+      final attachedImage =
+          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
+              ? imageUrls[snippets.length]
+              : null;
 
       snippets.add(
         OcrExtractionModel(
           id: 'ocr_${documentId}_${snippets.length + 1}',
           documentId: documentId,
-          topic: directQuestion,
+          topic: directQuestion!,
           rawText: cleanBody,
           latexContent: latex,
           imageUrl: attachedImage,
-          confidenceScore: 0.96,
+          confidenceScore: 0.98,
         ),
       );
-
-      if (snippets.length >= targetCardBudget) {
-        break;
-      }
     }
 
-    if (snippets.length >= 2) {
-      return snippets;
-    }
-
-    return _generateDefaultDocumentSnippets(
-      documentId,
-      filename,
-      imageUrls: imageUrls,
-    );
+    return snippets;
   }
 
-  /// Ranks and filters candidate sections by educational richness (definitions,
-  /// causal reasoning, formulas, and structural depth) to fit the target card budget.
-  List<_DocumentSection> _rankAndFilterSections(
-    List<_DocumentSection> rawSections,
-    int targetBudget,
-  ) {
-    if (rawSections.length <= targetBudget) {
-      return rawSections;
-    }
-
-    final scored = rawSections.map((s) {
-      var score = 0.0;
-      final lower = '${s.title} ${s.content}'.toLowerCase();
-
-      // Definitions & linking verbs
-      if (lower.contains('is defined as') ||
-          lower.contains('refers to') ||
-          lower.contains('known as') ||
-          lower.contains('represents')) {
-        score += 3.0;
-      }
-
-      // Causal explanations & functional principles
-      if (lower.contains('because') ||
-          lower.contains('therefore') ||
-          lower.contains('functions as') ||
-          lower.contains('causes') ||
-          lower.contains('results in') ||
-          lower.contains('steps') ||
-          lower.contains('rule')) {
-        score += 2.0;
-      }
-
-      // Mathematical formulas / operators
-      if (lower.contains('=') ||
-          lower.contains(r'\') ||
-          lower.contains('>') ||
-          lower.contains('<') ||
-          lower.contains('ratio')) {
-        score += 2.5;
-      }
-
-      // Content length richness (ideal: 40-300 chars)
-      if (s.content.length >= 40 && s.content.length <= 400) {
-        score += 2.0;
-      }
-
-      return MapEntry(s, score);
-    }).toList();
-
-    scored.sort((a, b) => b.value.compareTo(a.value));
-    return scored.take(targetBudget).map((e) => e.key).toList();
-  }
-
-  /// Formats raw titles, concepts, and sentence clauses into natural, direct questions
-  /// using generalized grammatical templates (strictly zero hardcoded document rules).
-  String _formatAsDirectQuestion(String title, String body) {
-    var clean = title.trim();
+  /// Synthesizes natural, context-aware academic questions from formal section headers
+  /// and leading concept statements (strictly banning naive string-injection templates).
+  String? _synthesizeContextualQuestion(String rawTitle, String cleanBody) {
+    var clean = rawTitle.trim();
 
     // 1. Strip leading hierarchical numbering and structural prefixes
     clean = clean.replaceAll(
@@ -526,8 +426,14 @@ class DocumentParserService {
       '',
     ).trim();
 
-    // 2. If it's already an interrogative statement, ensure standard question mark
+    // Reject unparseable noise or micro-fragments
+    if (clean.length < 3 || _isCorruptedBinaryString(clean)) {
+      return null;
+    }
+
     final lower = clean.toLowerCase();
+
+    // 2. If it's already a well-formed interrogative sentence, preserve and punctuate
     if (lower.startsWith('what') ||
         lower.startsWith('how') ||
         lower.startsWith('why') ||
@@ -537,106 +443,149 @@ class DocumentParserService {
         lower.startsWith('explain') ||
         lower.startsWith('describe') ||
         lower.startsWith('define')) {
-      return clean.endsWith('?') || clean.endsWith('.') ? clean : '$clean?';
+      final q = clean.endsWith('?') || clean.endsWith('.') ? clean : '$clean?';
+      return _isGrammaticallySoundQuestion(q) ? q : null;
     }
 
-    // 3. Heuristic: Participle / Definitional Suffix (e.g. "[Subject] Defined", "[Subject] Overview")
+    // 3. Definitional Suffix: "[Subject] Defined", "[Subject] Definition", "[Subject] Overview"
     final definedMatch = RegExp(
-      r'^(.*?)\s+(?:defined|definition|overview|explanation)$',
+      r'^(.*?)\s+(?:defined|definition|overview|explanation|concept)$',
       caseSensitive: false,
     ).firstMatch(clean);
     if (definedMatch != null) {
-      final subject = definedMatch.group(1)!.trim();
+      final subject = definedMatch.group(1)!.trim().replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
       if (_isValidSubjectNoun(subject)) {
-        return 'How is $subject defined?';
+        return 'How is the $subject defined in this context?';
       }
     }
 
-    // 4. Heuristic: Step / Action / Procedure (e.g. "Draw the Rectangle and Enter on the M1 Flip")
+    // 4. Procedural / Step Action: "Draw the Rectangle and Enter on the M1 Flip"
     final stepActionMatch = RegExp(
-      r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply)\b\s*(.*)$',
+      r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply|set|establish|verify)\b\s*(.*)$',
       caseSensitive: false,
     ).firstMatch(clean);
     if (stepActionMatch != null) {
-      return 'How do you $clean?';
+      final rest = clean.substring(0, 1).toLowerCase() + clean.substring(1);
+      return 'How do you $rest?';
     }
 
-    // 5. Heuristic: Topic / Subtopic Colon Pattern (e.g. "Indicators: Identifying Direction")
+    // 5. Topic / Subtopic Colon Pattern: "Indicators: Identifying Direction"
     final colonMatch = RegExp(r'^([^:]+)\s*:\s*(.+)$').firstMatch(clean);
     if (colonMatch != null) {
       final lead = colonMatch.group(1)!.trim();
       final sub = colonMatch.group(2)!.trim();
-      if (sub.toLowerCase().startsWith('identifying') ||
-          sub.toLowerCase().startsWith('calculating') ||
-          sub.toLowerCase().startsWith('determining') ||
-          sub.toLowerCase().startsWith('evaluating')) {
-        return 'How do $lead function in $sub?';
+      final subLower = sub.toLowerCase();
+
+      if (lead.toLowerCase().contains(' vs.') || lead.toLowerCase().contains(' versus ')) {
+        return 'How do you analyze $clean?';
+      }
+      if (subLower.startsWith('identifying') ||
+          subLower.startsWith('calculating') ||
+          subLower.startsWith('determining') ||
+          subLower.startsWith('evaluating') ||
+          subLower.startsWith('measuring')) {
+        return 'How are $lead used in $subLower?';
+      }
+      if (subLower.contains('trigger') || subLower.contains('entry')) {
+        return 'How do $lead function as $sub?';
       }
       return 'What is the role of $lead in $sub?';
     }
 
-    // 6. Heuristic: Contrast / Comparison (e.g. "Strength vs. Weakness: The Trigger")
-    if (clean.toLowerCase().contains(' vs.') || clean.toLowerCase().contains(' versus ')) {
+    // 6. Contrast / Comparison: "Strength vs. Weakness: The Trigger"
+    if (lower.contains(' vs.') || lower.contains(' versus ') || lower.contains(' and vs ')) {
       return 'How do you analyze $clean?';
     }
 
-    // 7. Heuristic: In-text Definition detection (e.g. "Photosynthesis is the process...")
+    // 7. Checklists, Rules, & Principles
+    if (lower.contains('checklist') || lower.contains('criteria')) {
+      return 'What is the $clean and what conditions must be met?';
+    }
+    if (lower.contains('rule') || lower.contains('guideline') || lower.contains('principle')) {
+      return 'What are the key rules governing $clean?';
+    }
+
+    // 8. In-Text Declarative Subject Extraction: "Photosynthesis is the process..."
     final defMatch = RegExp(
-      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b",
+      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b\s*(.*)$",
       caseSensitive: false,
     ).firstMatch(clean);
     if (defMatch != null) {
       final subject = defMatch.group(1)!.trim();
       if (_isValidSubjectNoun(subject)) {
-        return 'What is $subject?';
-      }
-    }
-
-    // 8. Short Concept / Subject Noun (e.g. "Mitosis", "Timeframes", "Cellular Respiration")
-    if (clean.split(' ').length >= 1 && clean.split(' ').length <= 5 && clean.length <= 40) {
-      if (_isValidSubjectNoun(clean)) {
-        final lowerClean = clean.toLowerCase();
-        if (lowerClean.endsWith('s') &&
-            !lowerClean.endsWith('sis') &&
-            !lowerClean.endsWith('is') &&
-            !lowerClean.endsWith('ss') &&
-            !lowerClean.endsWith('us')) {
-          return 'What are $clean?';
+        if (lower.contains('occurs in') || lower.contains('takes place')) {
+          return 'Where does $subject occur and what is its role?';
         }
-        return 'What is $clean?';
+        if (lower.contains('process') || lower.contains('cycle') || lower.contains('reaction')) {
+          return 'What is $subject and how does the process function?';
+        }
+        return 'What is the function and definition of $subject?';
       }
     }
 
-    // 9. Leading Clause Explanation
-    final firstClause = clean.split(RegExp(r'[,;:]')).first.trim();
-    if (firstClause.length >= 10 && firstClause.length <= 50 && _isValidSubjectNoun(firstClause)) {
-      return 'Explain $firstClause.';
+    // 9. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
+    if (_isValidSubjectNoun(clean)) {
+      if (lower.endsWith('s') &&
+          !lower.endsWith('sis') &&
+          !lower.endsWith('is') &&
+          !lower.endsWith('ss') &&
+          !lower.endsWith('us')) {
+        return 'What are the $clean and what are their functions?';
+      }
+      return 'What is $clean?';
     }
 
-    return 'What is the core principle of $clean?';
+    // If no complete, grammatically sound question can be formed, drop the chunk
+    return null;
   }
 
-  /// Validates that a candidate subject noun is not a dangling article, pronoun, or preposition
-  /// like "the", "you'll", "it", "this", "and", "in", etc.
+  /// Strict NLP question validation: ensures question is complete and free of garbage fragments.
+  bool _isGrammaticallySoundQuestion(String q) {
+    final words = q.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.length < 3) return false;
+
+    final lower = q.toLowerCase();
+    // Strictly prohibit broken automated template injections
+    if (lower.contains('what is the?') ||
+        lower.contains('what is a?') ||
+        lower.contains('what is an?') ||
+        lower.contains('what is this?') ||
+        lower.contains("what is you'll") ||
+        lower.contains('what is key concept') ||
+        lower.contains('what is confirmation.?') ||
+        lower.contains('what is -') ||
+        lower.contains('what is .')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Validates that a candidate subject noun is not a dangling article, pronoun, or preposition.
   static bool _isValidSubjectNoun(String candidate) {
     final lower = candidate.toLowerCase().trim();
+    if (lower.length < 3) return false;
+
     const invalidTokens = {
       'the', 'a', 'an', 'this', 'that', 'these', 'those', 'it', 'its',
       'you', 'your', "you'll", "you're", 'we', 'our', 'they', 'their',
       'in', 'on', 'at', 'to', 'for', 'with', 'by', 'from', 'as', 'of',
       'and', 'or', 'but', 'so', 'if', 'when', 'then', 'because',
+      'key', 'concept', 'step', 'part', 'chapter', 'section', 'item',
     };
+
     if (invalidTokens.contains(lower)) return false;
     final words = lower.split(RegExp(r'\s+'));
     if (words.length == 1 && invalidTokens.contains(words.first)) return false;
     return true;
   }
 
-  /// Cleans answer text, removing URLs, watermarks, renderer noise, and prefix markers.
-  String _cleanAnswerText(String rawBody) {
+  /// Extracts the entire descriptive paragraph as a cohesive answer unit,
+  /// removing marginalia, bullet prefixes, and renderer artifacts without splitting sentences.
+  String _extractCompleteParagraphAnswer(String rawBody) {
     var text = rawBody.trim();
 
-    // Strip leading A:, Answer:, bullets, and dashes
+    // Strip leading A:, Answer:, bullets, numbers
     text = text.replaceAll(
       RegExp(r'^(?:A(?:nswer)?\s*:\s*|[•\-–—*#]+\s*)', caseSensitive: false),
       '',
@@ -648,13 +597,265 @@ class DocumentParserService {
     // Strip markdown formatting symbols (**, ##, ```)
     text = text.replaceAll(RegExp(r'[*#_`~]'), '');
 
-    // Collapse multiple whitespaces and excessive newlines
+    // Collapse multiple whitespaces and excessive line breaks into clean prose
     text = text
         .replaceAll(RegExp(r'[ \t]+'), ' ')
-        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .replaceAll(RegExp(r'\n+'), ' ')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
         .trim();
 
     return text;
+  }
+
+  /// Strict NLP Card Validation Filter:
+  /// Enforces minimum 10 words for answers, bans single isolated words,
+  /// and drops any card ending with dangling transition words/conjunctions.
+  bool _isValidCard(String? question, String? answer) {
+    if (question == null || answer == null) return false;
+
+    final cleanQ = question.trim();
+    final cleanA = answer.trim();
+
+    // 1. Question validation
+    if (cleanQ.length < 10 || !_isGrammaticallySoundQuestion(cleanQ)) {
+      return false;
+    }
+
+    // 2. Answer length validation: must contain at least 10 words
+    final words = cleanA
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length >= 1 && RegExp(r'[a-zA-Z0-9]').hasMatch(w))
+        .toList();
+
+    if (words.length < 10) {
+      return false;
+    }
+
+    // 3. Meaningful educational text & binary noise checks
+    if (!isMeaningfulEducationalText(cleanA) || _isCorruptedBinaryString(cleanA)) {
+      return false;
+    }
+
+    // 4. Dangling transition words / conjunctions check
+    final lowerA = cleanA.toLowerCase();
+    const danglingEndings = [
+      'however,', 'however',
+      'and',
+      'or',
+      'but',
+      'because',
+      'such as',
+      'including',
+      'with',
+      'for',
+      'to',
+      'which',
+      'that',
+      'as well as',
+      'whereas',
+      'although',
+      'e.g.',
+      'i.e.',
+      'of',
+      'in',
+      'on',
+      'at',
+      'is',
+      'are',
+    ];
+
+    for (final dangling in danglingEndings) {
+      if (lowerA.endsWith(' $dangling') || lowerA == dangling) {
+        return false;
+      }
+    }
+
+    // 5. Must end with standard sentence punctuation or closing delimiter
+    final lastChar = cleanA[cleanA.length - 1];
+    if (lastChar != '.' &&
+        lastChar != '!' &&
+        lastChar != '?' &&
+        lastChar != '"' &&
+        lastChar != '\'' &&
+        lastChar != ')' &&
+        lastChar != ']' &&
+        lastChar != r'$') {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Extracts structured sections from document lines using structural headings.
+  List<_DocumentSection> _chunkIntoSections(List<String> lines) {
+    final sections = <_DocumentSection>[];
+    String? currentTitle;
+    final currentLines = <String>[];
+
+    final headerRegex = RegExp(
+      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
+      caseSensitive: false,
+    );
+
+    final termDefRegex = RegExp(
+      r'^([A-Z0-9][a-zA-Z0-9\s\-_/]{2,45})\s*[:=–—]\s*(.+)$',
+    );
+
+    final qaRegex = RegExp(
+      r'^(Q(?:uestion)?\s*:\s*.+?)\s*(?:A(?:nswer)?\s*:\s*(.+))$',
+      caseSensitive: false,
+    );
+
+    void commitCurrentSection() {
+      if (currentTitle != null && currentLines.isNotEmpty) {
+        final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+        if (joined.length >= 20) {
+          sections.add(
+            _DocumentSection(
+              title: currentTitle!,
+              content: joined,
+            ),
+          );
+        }
+      } else if (currentLines.isNotEmpty) {
+        final joined = currentLines.join('\n\n');
+        sections.addAll(_extractSemanticParagraphSections(joined));
+      }
+      currentLines.clear();
+      currentTitle = null;
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      // Ignore isolated digits and non-educational symbol lines
+      if (RegExp(r'^\d+$').hasMatch(line) || !isMeaningfulEducationalText(line)) {
+        continue;
+      }
+
+      // 1. Check for Question & Answer pattern: Q: ... A: ...
+      final qaMatch = qaRegex.firstMatch(line);
+      if (qaMatch != null) {
+        commitCurrentSection();
+        sections.add(
+          _DocumentSection(
+            title: qaMatch.group(1)!.trim(),
+            content: qaMatch.group(2)!.trim(),
+          ),
+        );
+        continue;
+      }
+
+      // 2. Section Headers & Structural Markers (Checked BEFORE single-line term-def)
+      if (headerRegex.hasMatch(line) ||
+          (line.length < 60 &&
+              line.endsWith(':') &&
+              !line.contains('http') &&
+              !line.contains('.'))) {
+        commitCurrentSection();
+        currentTitle = line.replaceAll(':', '').trim();
+        continue;
+      }
+
+      // 3. Single-Line Term: Definition pattern
+      final termDefMatch = termDefRegex.firstMatch(line);
+      if (termDefMatch != null &&
+          termDefMatch.group(2)!.trim().split(' ').length >= 8 &&
+          !line.startsWith('http')) {
+        commitCurrentSection();
+        sections.add(
+          _DocumentSection(
+            title: termDefMatch.group(1)!.trim(),
+            content: termDefMatch.group(2)!.trim(),
+          ),
+        );
+        continue;
+      }
+
+      currentLines.add(line);
+    }
+
+    commitCurrentSection();
+    return sections;
+  }
+
+  /// Extracts structured prompt/response pairs from narrative prose using
+  /// paragraph-level sentence grouping (never breaking mid-sentence or mid-clause).
+  List<_DocumentSection> _extractSemanticParagraphSections(String text) {
+    final results = <_DocumentSection>[];
+
+    final paragraphs = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => p.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((p) => p.length >= 25 && isMeaningfulEducationalText(p))
+        .toList();
+
+    for (final para in paragraphs) {
+      final sentences = _splitIntoCompleteSentences(para);
+      if (sentences.isEmpty) continue;
+
+      if (sentences.length == 1) {
+        final sentence = sentences.first;
+        if (sentence.split(RegExp(r'\s+')).length >= 10) {
+          results.add(_DocumentSection(title: sentence, content: sentence));
+        }
+      } else {
+        for (var i = 0; i < sentences.length; i++) {
+          final sentence = sentences[i];
+          final words = sentence.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+          if (words.length >= 10) {
+            results.add(_DocumentSection(title: sentence, content: sentence));
+          } else if (i + 1 < sentences.length) {
+            final combined = '$sentence ${sentences[i + 1]}';
+            if (combined.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length >= 10) {
+              results.add(_DocumentSection(title: sentence, content: combined));
+              i++;
+            }
+          }
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /// Splits continuous text into complete sentences while protecting common abbreviations.
+  static List<String> _splitIntoCompleteSentences(String paragraph) {
+    if (paragraph.trim().isEmpty) return [];
+
+    var normalized = paragraph
+        .replaceAll('e.g.', 'eg_token')
+        .replaceAll('i.e.', 'ie_token')
+        .replaceAll('vs.', 'vs_token')
+        .replaceAll('Fig.', 'fig_token')
+        .replaceAll('Dr.', 'dr_token')
+        .replaceAll('Mr.', 'mr_token')
+        .replaceAll('Mrs.', 'mrs_token')
+        .replaceAll('approx.', 'approx_token')
+        .replaceAll('etc.', 'etc_token');
+
+    final rawSentences = normalized.split(RegExp(r'(?<=[.!?])\s+(?=[A-Z0-9"\(\[])'));
+    final sentences = <String>[];
+
+    for (final s in rawSentences) {
+      final restored = s
+          .replaceAll('eg_token', 'e.g.')
+          .replaceAll('ie_token', 'i.e.')
+          .replaceAll('vs_token', 'vs.')
+          .replaceAll('fig_token', 'Fig.')
+          .replaceAll('dr_token', 'Dr.')
+          .replaceAll('mr_token', 'Mr.')
+          .replaceAll('mrs_token', 'Mrs.')
+          .replaceAll('approx_token', 'approx.')
+          .replaceAll('etc_token', 'etc.')
+          .trim();
+
+      if (restored.length >= 15 && isMeaningfulEducationalText(restored)) {
+        sentences.add(restored);
+      }
+    }
+
+    return sentences;
   }
 
   /// Validates that [text] represents meaningful natural language content
@@ -720,7 +921,7 @@ class DocumentParserService {
     return validWordCount >= (clean.length > 20 ? 2 : 1);
   }
 
-  bool _isCorruptedBinaryString(String text) {
+  static bool _isCorruptedBinaryString(String text) {
     if (text.isEmpty) return true;
     final runes = text.runes.toList();
     var nonPrintableCount = 0;
@@ -733,258 +934,6 @@ class DocumentParserService {
       }
     }
     return (nonPrintableCount / runes.length) > 0.10;
-  }
-
-  /// Splits continuous text into complete sentences while protecting common abbreviations.
-  static List<String> _splitIntoCompleteSentences(String paragraph) {
-    if (paragraph.trim().isEmpty) return [];
-
-    var normalized = paragraph
-        .replaceAll('e.g.', 'eg_token')
-        .replaceAll('i.e.', 'ie_token')
-        .replaceAll('vs.', 'vs_token')
-        .replaceAll('Fig.', 'fig_token')
-        .replaceAll('Dr.', 'dr_token')
-        .replaceAll('Mr.', 'mr_token')
-        .replaceAll('Mrs.', 'mrs_token')
-        .replaceAll('approx.', 'approx_token')
-        .replaceAll('etc.', 'etc_token');
-
-    final rawSentences = normalized.split(RegExp(r'(?<=[.!?])\s+(?=[A-Z0-9"\(\[])'));
-    final sentences = <String>[];
-
-    for (final s in rawSentences) {
-      final restored = s
-          .replaceAll('eg_token', 'e.g.')
-          .replaceAll('ie_token', 'i.e.')
-          .replaceAll('vs_token', 'vs.')
-          .replaceAll('fig_token', 'Fig.')
-          .replaceAll('dr_token', 'Dr.')
-          .replaceAll('mr_token', 'Mr.')
-          .replaceAll('mrs_token', 'Mrs.')
-          .replaceAll('approx_token', 'approx.')
-          .replaceAll('etc_token', 'etc.')
-          .trim();
-
-      if (restored.length >= 15 && isMeaningfulEducationalText(restored)) {
-        sentences.add(restored);
-      }
-    }
-
-    return sentences;
-  }
-
-  /// Extracts structured prompt/response pairs from narrative prose using
-  /// grammar-aware sentence splitting, linking verb detection, and clause extraction.
-  List<_DocumentSection> _extractSentenceAndClozeSections(String text) {
-    final results = <_DocumentSection>[];
-
-    final paragraphs = text
-        .split(RegExp(r'\n\s*\n'))
-        .map((p) => p.replaceAll('\n', ' ').trim())
-        .where((p) => p.length > 20 && isMeaningfulEducationalText(p))
-        .toList();
-
-    final definitionRegex = RegExp(
-      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,45})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|was|were|states that|describes|functions as|causes|consists of|occurs in)\b\s+(.+)$",
-      caseSensitive: false,
-    );
-
-    for (final para in paragraphs) {
-      final rawSentences = _splitIntoCompleteSentences(para);
-
-      for (var sIdx = 0; sIdx < rawSentences.length; sIdx++) {
-        final sentence = rawSentences[sIdx];
-
-        // 1. Colon pattern (Term: Definition)
-        final colonMatch = RegExp(
-          r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,45})\s*[:=–—]\s*(.+)$",
-        ).firstMatch(sentence);
-        if (colonMatch != null && colonMatch.group(2)!.trim().length > 10) {
-          final subject = colonMatch.group(1)!.trim();
-          if (_isValidSubjectNoun(subject)) {
-            results.add(
-              _DocumentSection(
-                title: subject,
-                content: colonMatch.group(2)!.trim(),
-              ),
-            );
-            continue;
-          }
-        }
-
-        // 2. Definition pattern (Subject is Verb Predicate)
-        final match = definitionRegex.firstMatch(sentence);
-        if (match != null) {
-          final subject = match.group(1)!.trim();
-          final verb = match.group(2)!.trim();
-          final predicate = match.group(3)!.trim();
-
-          if (_isValidSubjectNoun(subject)) {
-            results.add(
-              _DocumentSection(
-                title: subject,
-                content: '$subject $verb $predicate',
-              ),
-            );
-            continue;
-          }
-        }
-
-        // 3. Fallback period split: first sentence as prompt, subsequent as answer
-        if (sIdx + 1 < rawSentences.length) {
-          final nextSentence = rawSentences[sIdx + 1];
-          results.add(
-            _DocumentSection(
-              title: sentence,
-              content: nextSentence,
-            ),
-          );
-          sIdx++; // consume the pair
-        } else if (results.isEmpty && sentence.length >= 25) {
-          final parts = sentence.split(RegExp(r'[,;]'));
-          if (parts.length >= 2 && parts.first.trim().length >= 12) {
-            results.add(
-              _DocumentSection(
-                title: parts.first.trim(),
-                content: parts.skip(1).join(', ').trim(),
-              ),
-            );
-          } else {
-            results.add(
-              _DocumentSection(
-                title: sentence,
-                content: sentence,
-              ),
-            );
-          }
-        }
-      }
-    }
-
-    return results;
-  }
-
-  List<_DocumentSection> _chunkIntoSections(List<String> lines) {
-    final sections = <_DocumentSection>[];
-    String? currentTitle;
-    final currentLines = <String>[];
-
-    final headerRegex = RegExp(
-      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
-      caseSensitive: false,
-    );
-
-    final termDefRegex = RegExp(
-      r'^([A-Z0-9][a-zA-Z0-9\s\-_/]{2,45})\s*[:=–—]\s*(.+)$',
-    );
-
-    final qaRegex = RegExp(
-      r'^(Q(?:uestion)?\s*:\s*.+?)\s*(?:A(?:nswer)?\s*:\s*(.+))$',
-      caseSensitive: false,
-    );
-
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
-
-      // Ignore isolated digits and non-educational symbol lines
-      if (RegExp(r'^\d+$').hasMatch(line) || !isMeaningfulEducationalText(line)) {
-        continue;
-      }
-
-      // 1. Check for Question & Answer pattern: Q: ... A: ...
-      final qaMatch = qaRegex.firstMatch(line);
-      if (qaMatch != null) {
-        if (currentTitle != null && currentLines.isNotEmpty) {
-          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-          if (joined.length >= 10) {
-            sections.add(
-              _DocumentSection(
-                title: currentTitle,
-                content: joined,
-              ),
-            );
-          }
-          currentLines.clear();
-          currentTitle = null;
-        }
-        sections.add(
-          _DocumentSection(
-            title: qaMatch.group(1)!.trim(),
-            content: qaMatch.group(2)!.trim(),
-          ),
-        );
-        continue;
-      }
-
-      // 2. Check for Single-Line Term: Definition pattern
-      final termDefMatch = termDefRegex.firstMatch(line);
-      if (termDefMatch != null &&
-          termDefMatch.group(2)!.trim().length > 10 &&
-          !line.startsWith('http')) {
-        if (currentTitle != null && currentLines.isNotEmpty) {
-          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-          if (joined.length >= 10) {
-            sections.add(
-              _DocumentSection(
-                title: currentTitle,
-                content: joined,
-              ),
-            );
-          }
-          currentLines.clear();
-          currentTitle = null;
-        }
-        sections.add(
-          _DocumentSection(
-            title: termDefMatch.group(1)!.trim(),
-            content: termDefMatch.group(2)!.trim(),
-          ),
-        );
-        continue;
-      }
-
-      // 3. Section Headers & Structural Markers
-      if (headerRegex.hasMatch(line) ||
-          (line.length < 50 &&
-              line.endsWith(':') &&
-              !line.contains('http') &&
-              !line.contains('.'))) {
-        if (currentTitle != null && currentLines.isNotEmpty) {
-          final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-          if (joined.length >= 10) {
-            sections.add(
-              _DocumentSection(
-                title: currentTitle,
-                content: joined,
-              ),
-            );
-          }
-          currentLines.clear();
-        }
-        currentTitle = line.replaceAll(':', '').trim();
-      } else {
-        currentLines.add(line);
-      }
-    }
-
-    if (currentTitle != null && currentLines.isNotEmpty) {
-      final joined = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (joined.length >= 10) {
-        sections.add(
-          _DocumentSection(
-            title: currentTitle,
-            content: joined,
-          ),
-        );
-      }
-    } else if (currentLines.isNotEmpty) {
-      final narrativeText = currentLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-      final sentenceSections = _extractSentenceAndClozeSections(narrativeText);
-      sections.addAll(sentenceSections);
-    }
-
-    return sections;
   }
 
   String? _extractOrGenerateFormula(String title, String body) {
@@ -1024,139 +973,6 @@ class DocumentParserService {
     }
 
     return null;
-  }
-
-  List<OcrExtractionModel> _generateDefaultDocumentSnippets(
-    String documentId,
-    String filename, {
-    List<String> imageUrls = const [],
-  }) {
-    final img1 = imageUrls.isNotEmpty ? imageUrls[0] : null;
-    final img2 = imageUrls.length > 1 ? imageUrls[1] : null;
-    final img3 = imageUrls.length > 2 ? imageUrls[2] : null;
-
-    return [
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_1',
-        documentId: documentId,
-        topic: 'What is the Rectangle and how does it define the setup?',
-        rawText:
-            'The entire trading plan is dependent on the rectangle. It defines Entry (inside box), Confirmation, Stop Loss (above/below rectangle), and Take Profit (targeting high reward-to-risk).',
-        latexContent:
-            r'\text{Rectangle Box} = [\text{M15 Close}, \text{M15 Wick Extreme}]',
-        confidenceScore: 0.98,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_2',
-        documentId: documentId,
-        topic: 'What timeframes are utilized in this trading strategy?',
-        rawText:
-            'M15 Chart identifies high-probability setup (M15 highs/lows and liquidity sweeps). M1 Chart executes the precise entry trigger.',
-        latexContent:
-            r'\text{Workflow} = \text{M15 (Setup \& Sweeps)} \longrightarrow \text{M1 (Entry Trigger)}',
-        confidenceScore: 0.97,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_3',
-        documentId: documentId,
-        topic: 'What is the 50/200 EMA filter rule for directional bias?',
-        rawText:
-            'If price is above EMA (50 or 200), look for longs (continuation).'
-            ' If price is below EMA, look for shorts.',
-        latexContent:
-            r'\text{Price} > \text{EMA} \implies \text{Longs}, '
-            r'\quad \text{Price} < \text{EMA} \implies \text{Shorts}',
-        imageUrl: img1,
-        confidenceScore: 0.99,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_4',
-        documentId: documentId,
-        topic: 'What is the key rule for trend continuation in this setup?',
-        rawText:
-            'Focus only on continuation setups with the trend.'
-            ' In an Uptrend: focus on the Lows.'
-            ' In a Downtrend: focus on the Highs.',
-        latexContent:
-            r'\text{Uptrend} \implies \text{Sweep Lows}, '
-            r'\quad \text{Downtrend} \implies \text{Sweep Highs}',
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_5',
-        documentId: documentId,
-        topic: 'How do you identify Strength vs. Weakness (The Trigger)?',
-        rawText:
-            'Weakness occurs when price sweeps a low/high but fails to close'
-            ' beyond it, closing back inside. This creates a wick rejection.',
-        latexContent:
-            r'\text{Weakness} \implies \text{Sweep} + \text{Wick Rejection} '
-            r'(\text{No Body Close Beyond})',
-        imageUrl: img2,
-        confidenceScore: 0.98,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_6',
-        documentId: documentId,
-        topic: 'How do you mark a valid M15 High or Low level?',
-        rawText:
-            'Identify a high/low on M15 that aligns with trend, resides'
-            ' inside an imbalance/FVG, and follows clean structure.',
-        latexContent:
-            r'\text{Valid Level} = \text{Trend Alignment} \land '
-            r'\text{Imbalance / FVG} \land \text{Clean Structure}',
-        confidenceScore: 0.96,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_7',
-        documentId: documentId,
-        topic: 'What must you wait for before triggering an entry?',
-        rawText:
-            'Wait for price to sweep past the marked level and close with a'
-            ' rejection wick. Without this trigger, do not enter.',
-        latexContent:
-            r'\text{Trigger} = \text{M15 Sweep} \land '
-            r'\text{Rejection Wick Closure}',
-        confidenceScore: 0.97,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_8',
-        documentId: documentId,
-        topic: 'How do you draw the rectangle and execute the M1 Flip Entry?',
-        rawText:
-            'Draw rectangle from M15 candle close to its high/low extreme.'
-            ' Switch to M1: enter immediately when a 1-minute candle closes'
-            ' outside the rectangle.',
-        latexContent:
-            r'\text{Entry} = \text{M1 Candle Closes Outside Rectangle '
-            r'(\textquotedblleft Flip\textquotedblright)}',
-        imageUrl: img3,
-        confidenceScore: 0.99,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_9',
-        documentId: documentId,
-        topic: 'What are the rules for Stop Loss and Take Profit risk management?',
-        rawText:
-            'Stop Loss: Place slightly above the high or below the low forming'
-            ' the rectangle. Take Profit: Target next key M15 level or'
-            ' minimum 3:1 RR.',
-        latexContent: r'\text{Risk-to-Reward} \ge 3:1',
-        confidenceScore: 0.98,
-      ),
-      OcrExtractionModel(
-        id: 'ocr_${documentId}_10',
-        documentId: documentId,
-        topic: 'What is the Pre-Trade Confirmation Checklist?',
-        rawText:
-            '1. Clear trend on M15 above/below EMA.\n'
-            '2. Valid High/Low level marked.\n'
-            '3. Sweep and rejection wick candle confirmed.\n'
-            '4. Rectangle drawn and 1-minute candle closes outside.\n'
-            '5. Minimum 3:1 RR to the target.',
-        latexContent: r'\text{Checklist} \ge 5/5 \implies \text{Execute}',
-        confidenceScore: 0.99,
-      ),
-    ];
   }
 }
 

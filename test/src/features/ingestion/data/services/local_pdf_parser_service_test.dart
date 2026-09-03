@@ -22,9 +22,9 @@ void main() {
       page.graphics.drawString(
         line,
         PdfStandardFont(PdfFontFamily.helvetica, 12),
-        bounds: Rect.fromLTWH(10, y, 480, 20),
+        bounds: Rect.fromLTWH(10, y, 500, 60),
       );
-      y += 24;
+      y += 70;
     }
     final bytes = Uint8List.fromList(document.saveSync());
     document.dispose();
@@ -44,11 +44,9 @@ void main() {
       'parses PDF bytes into structured flashcards with multi-tiered heuristics',
       () {
         final bytes = createSamplePdfBytes([
-          'Q: What is Mitosis? A: Process of cell division producing two '
-              'daughter cells.',
-          'Meiosis: Cell division producing four gamete cells.',
-          'Photosynthesis is the process that converts sunlight into chemical '
-              'energy.',
+          'Q: What is Mitosis? A: Mitosis is the process of cell division producing two genetically identical daughter cells.',
+          'Meiosis: Meiosis is a specialized type of cell division that reduces chromosome count by half to produce gametes.',
+          'Photosynthesis is the biochemical process that converts sunlight and carbon dioxide into chemical energy stored in glucose.',
         ]);
 
         final cards = service.parsePdfBytesToFlashcards(
@@ -111,7 +109,7 @@ Cellular respiration generates ATP in the mitochondria.
     });
 
     test(
-      'rejects punctuation glyph soup and synthesizes clean high-yield educational cards',
+      'rejects punctuation glyph soup without fabricating dummy placeholder cards',
       () {
         const punctuationGlyphSoup =
             '(-,,-,.+++O..O//.--///O//.../../...--/---////...,,,...-,,...///O//O//.--,++,++O..0..O//,++..--O//.--.--/../..-.,/.././...../..O..,+';
@@ -126,17 +124,14 @@ Cellular respiration generates ATP in the mitochondria.
         final cards = service.parsePdfBytesToFlashcards(
           documentId: 'doc_glyph_soup',
           bytes: Uint8List.fromList(utf8.encode(punctuationGlyphSoup)),
-          filename: 'trading_presentation.pdf',
+          filename: 'corrupted.pdf',
         );
 
-        expect(cards.length, greaterThanOrEqualTo(5));
-        expect(cards.any((c) => c.topic.contains('What is Key Concept')), isFalse);
-        expect(cards.any((c) => c.rawText.contains('(-,,-,')), isFalse);
-        expect(cards.any((c) => c.topic.contains('Rectangle')), isTrue);
+        expect(cards, isEmpty);
       },
     );
 
-    test('gracefully handles empty or corrupted PDF bytes without failing', () {
+    test('gracefully handles empty or corrupted PDF bytes returning empty list', () {
       final emptyBytes = Uint8List(0);
       final text = service.extractTextFromPdfBytes(emptyBytes);
       expect(text, isEmpty);
@@ -146,7 +141,7 @@ Cellular respiration generates ATP in the mitochondria.
         bytes: emptyBytes,
         filename: 'empty.pdf',
       );
-      expect(cards, isNotEmpty);
+      expect(cards, isEmpty);
     });
   });
 }
