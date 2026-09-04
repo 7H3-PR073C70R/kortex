@@ -11,24 +11,45 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   final List<EphemeralParticipant> joinedParticipants = [];
   final List<PomodoroSyncEvent> broadcastedTicks = [];
   bool handRaised = false;
+  bool isMuted = true;
+  int recordedSessions = 0;
 
   @override
-  Future<void> joinRoomChannel({
+  Future<void> joinRoomPresence({
     required String roomId,
-    required EphemeralParticipant participant,
+    required String userId,
+    required String displayName,
+    required String avatarUrl,
   }) async {
+    final participant = EphemeralParticipant(
+      userId: userId,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+    );
     joinedParticipants.add(participant);
     _participantsController.add(joinedParticipants);
   }
 
   @override
-  Future<void> leaveRoomChannel(String roomId) async {
+  Future<void> leaveRoomPresence(String roomId) async {
     joinedParticipants.clear();
     _participantsController.add([]);
   }
 
   @override
-  Future<void> broadcastPomodoroTick(PomodoroSyncEvent event) async {
+  Future<void> broadcastPomodoroTick({
+    required String roomId,
+    required int remainingSeconds,
+    required String pomodoroState,
+    required String senderId,
+  }) async {
+    final event = PomodoroSyncEvent(
+      roomId: roomId,
+      remainingSeconds: remainingSeconds,
+      pomodoroState: pomodoroState,
+      senderId: senderId,
+      timestamp: DateTime.now(),
+    );
     broadcastedTicks.add(event);
     _pomodoroController.add(event);
   }
@@ -43,6 +64,15 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  }) async {
+    this.isMuted = isMuted;
+  }
+
+  @override
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId) {
     return _participantsController.stream;
   }
@@ -50,6 +80,16 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   @override
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId) {
     return _pomodoroController.stream;
+  }
+
+  @override
+  Future<void> recordCompletedPomodoroSession({
+    required String userId,
+    required String roomId,
+    required int durationMinutes,
+    required String subject,
+  }) async {
+    recordedSessions++;
   }
 
   Future<void> dispose() async {

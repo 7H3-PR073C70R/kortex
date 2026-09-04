@@ -9,6 +9,7 @@ class EphemeralParticipant {
     required this.displayName,
     required this.avatarUrl,
     this.isHandRaised = false,
+    this.isMuted = true,
     this.joinedAt,
   });
 
@@ -18,6 +19,7 @@ class EphemeralParticipant {
       displayName: json['displayName'] as String? ?? 'Scholar',
       avatarUrl: json['avatarUrl'] as String? ?? '',
       isHandRaised: json['isHandRaised'] as bool? ?? false,
+      isMuted: json['isMuted'] as bool? ?? true,
       joinedAt: json['joinedAt'] != null
           ? DateTime.tryParse(json['joinedAt'] as String)
           : null,
@@ -28,6 +30,7 @@ class EphemeralParticipant {
   final String displayName;
   final String avatarUrl;
   final bool isHandRaised;
+  final bool isMuted;
   final DateTime? joinedAt;
 
   Map<String, dynamic> toJson() {
@@ -36,6 +39,7 @@ class EphemeralParticipant {
       'displayName': displayName,
       'avatarUrl': avatarUrl,
       'isHandRaised': isHandRaised,
+      'isMuted': isMuted,
       'joinedAt': (joinedAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -45,6 +49,7 @@ class EphemeralParticipant {
     String? displayName,
     String? avatarUrl,
     bool? isHandRaised,
+    bool? isMuted,
     DateTime? joinedAt,
   }) {
     return EphemeralParticipant(
@@ -52,6 +57,7 @@ class EphemeralParticipant {
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       isHandRaised: isHandRaised ?? this.isHandRaised,
+      isMuted: isMuted ?? this.isMuted,
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
@@ -118,6 +124,12 @@ abstract class EphemeralPresenceClient {
     required bool isHandRaised,
   });
 
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  });
+
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId);
 
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
@@ -167,11 +179,11 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
         final payload = msg['payload'] as Map<String, dynamic>? ?? {};
 
         if (event == 'broadcast') {
-          final inner = payload['payload'] as Map<String, dynamic>? ?? {};
+          final inner = (payload['payload'] as Map<String, dynamic>?) ?? payload;
           final type = inner['type'] as String?;
 
           if (type == 'presence') {
-            final data = inner['data'] as Map<String, dynamic>? ?? {};
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final action = data['action'] as String?;
             final userId = data['userId'] as String?;
             if (userId == null) return;
@@ -185,7 +197,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             }
             _notifyParticipants(roomId);
           } else if (type == 'pomodoro_tick') {
-            final data = inner['data'] as Map<String, dynamic>? ?? {};
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final syncEvent = PomodoroSyncEvent.fromJson(data);
             _pomodoroControllers[roomId]?.add(syncEvent);
           }
@@ -246,6 +258,10 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
       avatarUrl: avatarUrl,
       joinedAt: DateTime.now(),
     );
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    _roomParticipants[roomId]![userId] = participant;
+    _notifyParticipants(roomId);
+
     _realtime.broadcastPresence(
       channelName: _channelName(roomId),
       payload: {
@@ -307,18 +323,46 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     required String userId,
     required bool isHandRaised,
   }) async {
-    final existing = _roomParticipants[roomId]?[userId];
-    if (existing != null) {
-      final updated = existing.copyWith(isHandRaised: isHandRaised);
-      _roomParticipants[roomId]![userId] = updated;
-      _notifyParticipants(roomId);
-      _realtime.broadcastPresence(
-        channelName: _channelName(roomId),
-        payload: {
-          'data': {'action': 'update', ...updated.toJson()},
-        },
-      );
-    }
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    final existing = _roomParticipants[roomId]?[userId] ??
+        EphemeralParticipant(
+          userId: userId,
+          displayName: 'Scholar',
+          avatarUrl: '',
+        );
+    final updated = existing.copyWith(isHandRaised: isHandRaised);
+    _roomParticipants[roomId]![userId] = updated;
+    _notifyParticipants(roomId);
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'data': {'action': 'update', ...updated.toJson()},
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  }) async {
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    final existing = _roomParticipants[roomId]?[userId] ??
+        EphemeralParticipant(
+          userId: userId,
+          displayName: 'Scholar',
+          avatarUrl: '',
+        );
+    final updated = existing.copyWith(isMuted: isMuted);
+    _roomParticipants[roomId]![userId] = updated;
+    _notifyParticipants(roomId);
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'data': {'action': 'update', ...updated.toJson()},
+      },
+    );
   }
 
   @override

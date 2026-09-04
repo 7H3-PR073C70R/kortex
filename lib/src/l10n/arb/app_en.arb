@@ -2143,6 +2143,176 @@
     "@upvoteAction": {
         "description": "Button label to upvote a thread"
     },
+    "liveIndicator": "LIVE",
+    "@liveIndicator": {
+        "description": "Label for live pulse badge"
+    },
+    "raiseHand": "Raise Hand",
+    "@raiseHand": {
+        "description": "Action to raise hand in live room"
+    },
+    "onStage": "On Stage",
+    "@onStage": {
+        "description": "Label when participant is on stage"
+    },
+    "audienceLabel": "Audience",
+    "@audienceLabel": {
+        "description": "Section header for audience in live room"
+    },
+    "inThisRoom": "{count} in this room",
+    "@inThisRoom": {
+        "description": "Participant count indicator in room",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "micMuted": "Muted",
+    "@micMuted": {
+        "description": "State when microphone is muted"
+    },
+    "micUnmuted": "Unmuted",
+    "@micUnmuted": {
+        "description": "State when microphone is unmuted"
+    },
+    "muteMicAction": "Mute",
+    "@muteMicAction": {
+        "description": "Action to mute microphone"
+    },
+    "unmuteMicAction": "Unmute",
+    "@unmuteMicAction": {
+        "description": "Action to unmute microphone"
+    },
+    "handRaisedNotice": "{name} raised their hand",
+    "@handRaisedNotice": {
+        "description": "Notification when a participant raises their hand",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alex"
+            }
+        }
+    },
+    "repliesHeader": "Replies",
+    "@repliesHeader": {
+        "description": "Header for replies section in forum thread"
+    },
+    "noRepliesYet": "No replies yet — be the first to help!",
+    "@noRepliesYet": {
+        "description": "Empty state text for forum replies"
+    },
+    "writeHelpfulReply": "Write a helpful reply...",
+    "@writeHelpfulReply": {
+        "description": "Placeholder for replying to forum post"
+    },
+    "sendReply": "Send Reply",
+    "@sendReply": {
+        "description": "Button to send reply"
+    },
+    "justNow": "just now",
+    "@justNow": {
+        "description": "Time ago text for immediate timestamps"
+    },
+    "minutesAgo": "{count}m ago",
+    "@minutesAgo": {
+        "description": "Time ago format in minutes",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "hoursAgo": "{count}h ago",
+    "@hoursAgo": {
+        "description": "Time ago format in hours",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "daysAgo": "{count}d ago",
+    "@daysAgo": {
+        "description": "Time ago format in days",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "formulaEquation": "FORMULA / EQUATION",
+    "@formulaEquation": {
+        "description": "Label for formula block in forum"
+    },
+    "yourPosition": "Your Ranking",
+    "@yourPosition": {
+        "description": "Leaderboard current user position highlight header"
+    },
+    "activeFocusRooms": "Active Focus Rooms ({count})",
+    "@activeFocusRooms": {
+        "description": "Header showing count of active focus rooms",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "newRoomAction": "New Room",
+    "@newRoomAction": {
+        "description": "Button to create a new study room"
+    },
+    "noActiveRooms": "No active study rooms right now",
+    "@noActiveRooms": {
+        "description": "Empty state title for rooms"
+    },
+    "launchFocusRoom": "Launch Focus Room",
+    "@launchFocusRoom": {
+        "description": "Button to launch a focus room"
+    },
+    "launchRoomSubtitle": "Launch a synchronized Pomodoro room for your study group.",
+    "@launchRoomSubtitle": {
+        "description": "Subtitle for empty rooms state"
+    },
+    "noForumDiscussions": "No forum discussions found",
+    "@noForumDiscussions": {
+        "description": "Empty state title for forum"
+    },
+    "startQuestionSubtitle": "Start a question, share notes, or discuss past paper solutions.",
+    "@startQuestionSubtitle": {
+        "description": "Empty state subtitle for forum"
+    },
+    "communitySharedDecks": "Community Shared Decks ({count})",
+    "@communitySharedDecks": {
+        "description": "Header showing count of shared decks",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "shareDeckAction": "Share Deck",
+    "@shareDeckAction": {
+        "description": "Button to share a deck"
+    },
+    "noDecksAvailable": "No community decks available yet",
+    "@noDecksAvailable": {
+        "description": "Empty state title for shared decks"
+    },
+    "publishDecksSubtitle": "Publish flashcard decks to help peers study and earn community XP.",
+    "@publishDecksSubtitle": {
+        "description": "Empty state subtitle for shared decks"
+    },
+    "shareFirstDeck": "Share First Deck",
+    "@shareFirstDeck": {
+        "description": "Button to share the first deck"
+    },
     "welcomeTitle": "Welcome to Kortexify",
     "@welcomeTitle": {
         "description": "Title on login / welcome screen"

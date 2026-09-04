@@ -23,6 +23,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
   // In-memory cache of replies per post, rebuilt from DB snapshots + WS events
   final Map<String, List<ForumReplyModel>> _replyCache = {};
+  final Map<String, StreamController<List<ForumReplyModel>>> _replyControllers = {};
 
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
@@ -147,15 +148,36 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to add reply');
     }
-    return ForumReplyModel.fromJson(rawList.first as Map<String, dynamic>);
+    final reply =
+        ForumReplyModel.fromJson(rawList.first as Map<String, dynamic>);
+    final cache = _replyCache.putIfAbsent(postId, () => []);
+    if (!cache.any((r) => r.id == reply.id)) {
+      cache.add(reply);
+    }
+    final controller = _replyControllers[postId];
+    if (controller != null && !controller.isClosed) {
+      controller.add(List.unmodifiable(cache));
+    }
+    return reply;
   }
 
   @override
   Stream<List<ForumReplyModel>> watchForumReplies(String postId) {
-    // Seed the cache with an initial REST fetch, then stream incremental inserts
-    final streamController = StreamController<List<ForumReplyModel>>.broadcast();
+    final streamController = _replyControllers.putIfAbsent(
+      postId,
+      StreamController<List<ForumReplyModel>>.broadcast,
+    );
 
-    // Initial fetch to seed cache
+    // If cache already has items, emit immediately
+    if (_replyCache.containsKey(postId) && _replyCache[postId]!.isNotEmpty) {
+      scheduleMicrotask(() {
+        if (!streamController.isClosed) {
+          streamController.add(List.unmodifiable(_replyCache[postId]!));
+        }
+      });
+    }
+
+    // Seed or refresh cache via REST
     _client
         .fetchForumPosts({
           'select': 'forum_replies(*)',
@@ -167,12 +189,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             final rawList = res.data is List ? (res.data as List) : <dynamic>[];
             if (rawList.isNotEmpty) {
               final postJson = rawList.first as Map<String, dynamic>;
-              final repliesRaw = postJson['forum_replies'] as List<dynamic>? ?? [];
-              _replyCache[postId] = repliesRaw
-                  .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
+              final repliesRaw =
+                  postJson['forum_replies'] as List<dynamic>? ?? [];
+              final fetchedReplies = repliesRaw
+                  .map((r) =>
+                      ForumReplyModel.fromJson(r as Map<String, dynamic>))
                   .toList();
+              final currentCache = _replyCache.putIfAbsent(postId, () => []);
+              for (final fetched in fetchedReplies) {
+                if (!currentCache.any((r) => r.id == fetched.id)) {
+                  currentCache.add(fetched);
+                }
+              }
               if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(_replyCache[postId]!));
+                streamController.add(List.unmodifiable(currentCache));
               }
             }
           } on Exception catch (_) {}
@@ -186,9 +216,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (event.type == RealtimeEventType.insert) {
             try {
               final reply = ForumReplyModel.fromJson(event.record);
-              _replyCache.putIfAbsent(postId, () => []).add(reply);
+              final cache = _replyCache.putIfAbsent(postId, () => []);
+              if (!cache.any((r) => r.id == reply.id)) {
+                cache.add(reply);
+              }
               if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(_replyCache[postId]!));
+                streamController.add(List.unmodifiable(cache));
               }
             } on Exception catch (_) {}
           }

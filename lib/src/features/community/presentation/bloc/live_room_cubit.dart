@@ -14,6 +14,7 @@ class LiveRoomState extends Equatable {
     this.participants = const [],
     this.ephemeralParticipants = const [],
     this.isHandRaised = false,
+    this.isMuted = true,
     this.completedPomodoros = 0,
   });
 
@@ -23,6 +24,7 @@ class LiveRoomState extends Equatable {
   final List<String> participants;
   final List<EphemeralParticipant> ephemeralParticipants;
   final bool isHandRaised;
+  final bool isMuted;
   final int completedPomodoros;
 
   String get formattedTimer {
@@ -44,6 +46,7 @@ class LiveRoomState extends Equatable {
     List<String>? participants,
     List<EphemeralParticipant>? ephemeralParticipants,
     bool? isHandRaised,
+    bool? isMuted,
     int? completedPomodoros,
   }) {
     return LiveRoomState(
@@ -54,6 +57,7 @@ class LiveRoomState extends Equatable {
       ephemeralParticipants:
           ephemeralParticipants ?? this.ephemeralParticipants,
       isHandRaised: isHandRaised ?? this.isHandRaised,
+      isMuted: isMuted ?? this.isMuted,
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
     );
   }
@@ -66,6 +70,7 @@ class LiveRoomState extends Equatable {
     participants,
     ephemeralParticipants,
     isHandRaised,
+    isMuted,
     completedPomodoros,
   ];
 }
@@ -212,7 +217,27 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   void toggleHandRaise() {
     final nextState = !state.isHandRaised;
-    emit(state.copyWith(isHandRaised: nextState));
+    final updatedList = state.ephemeralParticipants.map((p) {
+      if (p.userId == _currentUserId) {
+        return p.copyWith(isHandRaised: nextState);
+      }
+      return p;
+    }).toList();
+    if (!updatedList.any((p) => p.userId == _currentUserId)) {
+      updatedList.add(
+        EphemeralParticipant(
+          userId: _currentUserId,
+          displayName: _currentUserName,
+          avatarUrl: _currentUserAvatar,
+          isHandRaised: nextState,
+          isMuted: state.isMuted,
+        ),
+      );
+    }
+    emit(state.copyWith(
+      isHandRaised: nextState,
+      ephemeralParticipants: updatedList,
+    ));
 
     final repo = _ephemeralRepository;
     if (repo != null) {
@@ -221,6 +246,42 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           roomId: state.room.id,
           userId: _currentUserId,
           isHandRaised: nextState,
+        ),
+      );
+    }
+  }
+
+  void toggleMicMute() {
+    final nextMuted = !state.isMuted;
+    final updatedList = state.ephemeralParticipants.map((p) {
+      if (p.userId == _currentUserId) {
+        return p.copyWith(isMuted: nextMuted);
+      }
+      return p;
+    }).toList();
+    if (!updatedList.any((p) => p.userId == _currentUserId)) {
+      updatedList.add(
+        EphemeralParticipant(
+          userId: _currentUserId,
+          displayName: _currentUserName,
+          avatarUrl: _currentUserAvatar,
+          isHandRaised: state.isHandRaised,
+          isMuted: nextMuted,
+        ),
+      );
+    }
+    emit(state.copyWith(
+      isMuted: nextMuted,
+      ephemeralParticipants: updatedList,
+    ));
+
+    final repo = _ephemeralRepository;
+    if (repo != null) {
+      unawaited(
+        repo.broadcastMuteState(
+          roomId: state.room.id,
+          userId: _currentUserId,
+          isMuted: nextMuted,
         ),
       );
     }

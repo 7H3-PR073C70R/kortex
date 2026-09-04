@@ -39,7 +39,7 @@ class LiveFocusRoomCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 50 : 15),
+              color: colors.black.withAlpha(isDark ? 50 : 15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -74,9 +74,9 @@ class LiveFocusRoomCard extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.greenAccent,
+                        color: colors.recallEasy,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -85,7 +85,7 @@ class LiveFocusRoomCard extends StatelessWidget {
                       style: typography.caption.bold.copyWith(
                         color: room.isFocusing
                             ? colors.primary
-                            : Colors.orangeAccent,
+                            : colors.recallHard,
                       ),
                     ),
                   ],
@@ -151,7 +151,7 @@ class LiveFocusRoomCard extends StatelessWidget {
                     child: Text(
                       l10n.joinRoomButton,
                       style: typography.footnote.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ),

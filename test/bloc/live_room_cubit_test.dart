@@ -90,6 +90,10 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
+  Stream<List<ForumReplyEntity>> watchForumReplies(String postId) =>
+      Stream.value([]);
+
+  @override
   Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
     String courseCode,
   ) async => const Left(ServerFailure(message: 'Unimplemented'));
@@ -106,7 +110,17 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
 
   final List<EphemeralParticipant> participants = [];
   bool handRaised = false;
+  bool isMuted = true;
   int completedSessionsRecorded = 0;
+
+  @override
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  }) async {
+    this.isMuted = isMuted;
+  }
 
   @override
   Future<void> joinRoomPresence({

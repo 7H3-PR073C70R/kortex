@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -18,6 +19,32 @@ class CreatePostBottomSheet extends HookWidget {
     String? latexContent,
   })
   onSubmit;
+
+  static Future<void> show(
+    BuildContext context, {
+    required void Function({
+      required String title,
+      required String content,
+      required String track,
+      String? latexContent,
+    })
+    onSubmit,
+  }) {
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: colors.black.withAlpha(isDark ? 160 : 100),
+      builder: (sheetContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: CreatePostBottomSheet(onSubmit: onSubmit),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +77,12 @@ class CreatePostBottomSheet extends HookWidget {
       decoration: BoxDecoration(
         color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(
+          top: BorderSide(
+            color: colors.primary.withAlpha(isDark ? 80 : 40),
+            width: 1.2,
+          ),
+        ),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -160,7 +193,7 @@ class CreatePostBottomSheet extends HookWidget {
                   child: Text(
                     l10n.createPostButton,
                     style: typography.body.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ),

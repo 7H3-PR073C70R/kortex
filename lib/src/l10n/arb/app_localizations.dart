@@ -2732,6 +2732,198 @@ abstract class AppLocalizations {
   /// **'Upvote'**
   String get upvoteAction;
 
+  /// Label for live pulse badge
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE'**
+  String get liveIndicator;
+
+  /// Action to raise hand in live room
+  ///
+  /// In en, this message translates to:
+  /// **'Raise Hand'**
+  String get raiseHand;
+
+  /// Label when participant is on stage
+  ///
+  /// In en, this message translates to:
+  /// **'On Stage'**
+  String get onStage;
+
+  /// Section header for audience in live room
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get audienceLabel;
+
+  /// Participant count indicator in room
+  ///
+  /// In en, this message translates to:
+  /// **'{count} in this room'**
+  String inThisRoom(int count);
+
+  /// State when microphone is muted
+  ///
+  /// In en, this message translates to:
+  /// **'Muted'**
+  String get micMuted;
+
+  /// State when microphone is unmuted
+  ///
+  /// In en, this message translates to:
+  /// **'Unmuted'**
+  String get micUnmuted;
+
+  /// Action to mute microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get muteMicAction;
+
+  /// Action to unmute microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get unmuteMicAction;
+
+  /// Notification when a participant raises their hand
+  ///
+  /// In en, this message translates to:
+  /// **'{name} raised their hand'**
+  String handRaisedNotice(String name);
+
+  /// Header for replies section in forum thread
+  ///
+  /// In en, this message translates to:
+  /// **'Replies'**
+  String get repliesHeader;
+
+  /// Empty state text for forum replies
+  ///
+  /// In en, this message translates to:
+  /// **'No replies yet — be the first to help!'**
+  String get noRepliesYet;
+
+  /// Placeholder for replying to forum post
+  ///
+  /// In en, this message translates to:
+  /// **'Write a helpful reply...'**
+  String get writeHelpfulReply;
+
+  /// Button to send reply
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reply'**
+  String get sendReply;
+
+  /// Time ago text for immediate timestamps
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get justNow;
+
+  /// Time ago format in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String minutesAgo(int count);
+
+  /// Time ago format in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String hoursAgo(int count);
+
+  /// Time ago format in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String daysAgo(int count);
+
+  /// Label for formula block in forum
+  ///
+  /// In en, this message translates to:
+  /// **'FORMULA / EQUATION'**
+  String get formulaEquation;
+
+  /// Leaderboard current user position highlight header
+  ///
+  /// In en, this message translates to:
+  /// **'Your Ranking'**
+  String get yourPosition;
+
+  /// Header showing count of active focus rooms
+  ///
+  /// In en, this message translates to:
+  /// **'Active Focus Rooms ({count})'**
+  String activeFocusRooms(int count);
+
+  /// Button to create a new study room
+  ///
+  /// In en, this message translates to:
+  /// **'New Room'**
+  String get newRoomAction;
+
+  /// Empty state title for rooms
+  ///
+  /// In en, this message translates to:
+  /// **'No active study rooms right now'**
+  String get noActiveRooms;
+
+  /// Button to launch a focus room
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Focus Room'**
+  String get launchFocusRoom;
+
+  /// Subtitle for empty rooms state
+  ///
+  /// In en, this message translates to:
+  /// **'Launch a synchronized Pomodoro room for your study group.'**
+  String get launchRoomSubtitle;
+
+  /// Empty state title for forum
+  ///
+  /// In en, this message translates to:
+  /// **'No forum discussions found'**
+  String get noForumDiscussions;
+
+  /// Empty state subtitle for forum
+  ///
+  /// In en, this message translates to:
+  /// **'Start a question, share notes, or discuss past paper solutions.'**
+  String get startQuestionSubtitle;
+
+  /// Header showing count of shared decks
+  ///
+  /// In en, this message translates to:
+  /// **'Community Shared Decks ({count})'**
+  String communitySharedDecks(int count);
+
+  /// Button to share a deck
+  ///
+  /// In en, this message translates to:
+  /// **'Share Deck'**
+  String get shareDeckAction;
+
+  /// Empty state title for shared decks
+  ///
+  /// In en, this message translates to:
+  /// **'No community decks available yet'**
+  String get noDecksAvailable;
+
+  /// Empty state subtitle for shared decks
+  ///
+  /// In en, this message translates to:
+  /// **'Publish flashcard decks to help peers study and earn community XP.'**
+  String get publishDecksSubtitle;
+
+  /// Button to share the first deck
+  ///
+  /// In en, this message translates to:
+  /// **'Share First Deck'**
+  String get shareFirstDeck;
+
   /// Title on login / welcome screen
   ///
   /// In en, this message translates to:

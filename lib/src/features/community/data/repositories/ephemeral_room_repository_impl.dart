@@ -64,6 +64,19 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  }) async {
+    await _presenceClient.broadcastMuteState(
+      roomId: roomId,
+      userId: userId,
+      isMuted: isMuted,
+    );
+  }
+
+  @override
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId) {
     return _presenceClient.watchParticipants(roomId);
   }

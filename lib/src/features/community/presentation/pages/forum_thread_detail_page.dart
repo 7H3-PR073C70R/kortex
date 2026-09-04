@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -23,10 +24,12 @@ class ForumThreadDetailPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final replyController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
+    final localReplies = useState<List<ForumReplyEntity>>(post.replies);
 
     // Real-time replies stream — seeded with initial replies from the post
     final repo = locator<CommunityRepository>();
@@ -35,7 +38,15 @@ class ForumThreadDetailPage extends HookWidget {
       [post.id],
     );
     final repliesSnapshot = useStream(repliesStream, initialData: post.replies);
-    final replies = repliesSnapshot.data ?? post.replies;
+
+    useEffect(() {
+      if (repliesSnapshot.hasData && repliesSnapshot.data != null) {
+        localReplies.value = repliesSnapshot.data!;
+      }
+      return null;
+    }, [repliesSnapshot.data]);
+
+    final replies = localReplies.value;
 
     return Scaffold(
       backgroundColor: isDark
@@ -73,7 +84,7 @@ class ForumThreadDetailPage extends HookWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'LIVE',
+                  l10n.liveIndicator,
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
                     letterSpacing: 1.2,
@@ -111,7 +122,9 @@ class ForumThreadDetailPage extends HookWidget {
                                 radius: 20,
                                 backgroundColor: colors.primary.withAlpha(40),
                                 child: Text(
-                                  post.authorName[0].toUpperCase(),
+                                  post.authorName.isNotEmpty
+                                      ? post.authorName[0].toUpperCase()
+                                      : '?',
                                   style: typography.footnote.bold.copyWith(
                                     color: colors.primary,
                                   ),
@@ -128,7 +141,7 @@ class ForumThreadDetailPage extends HookWidget {
                                     ),
                                   ),
                                   Text(
-                                    _formatTime(post.createdAt),
+                                    _formatTime(post.createdAt, l10n),
                                     style: typography.caption.regular.copyWith(
                                       color: colors.textSecondary,
                                     ),
@@ -177,7 +190,7 @@ class ForumThreadDetailPage extends HookWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'FORMULA / EQUATION',
+                                    l10n.formulaEquation,
                                     style: typography.caption.bold.copyWith(
                                       color: colors.primary,
                                       letterSpacing: 1.1,
@@ -202,7 +215,7 @@ class ForumThreadDetailPage extends HookWidget {
                           Row(
                             children: [
                               Text(
-                                'Replies',
+                                l10n.repliesHeader,
                                 style: typography.footnote.bold.copyWith(
                                   color: colors.textPrimary,
                                 ),
@@ -253,7 +266,7 @@ class ForumThreadDetailPage extends HookWidget {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'No replies yet — be the first to help!',
+                              l10n.noRepliesYet,
                               style: typography.footnote.medium.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -288,7 +301,9 @@ class ForumThreadDetailPage extends HookWidget {
                                         backgroundColor:
                                             colors.primary.withAlpha(30),
                                         child: Text(
-                                          reply.authorName[0].toUpperCase(),
+                                          reply.authorName.isNotEmpty
+                                              ? reply.authorName[0].toUpperCase()
+                                              : '?',
                                           style: typography.caption.bold.copyWith(
                                             color: colors.primary,
                                             fontSize: 10,
@@ -305,7 +320,7 @@ class ForumThreadDetailPage extends HookWidget {
                                         ),
                                       ),
                                       Text(
-                                        _formatTime(reply.createdAt),
+                                        _formatTime(reply.createdAt, l10n),
                                         style: typography.caption.regular.copyWith(
                                           color: colors.textSecondary,
                                           fontSize: 10,
@@ -362,7 +377,7 @@ class ForumThreadDetailPage extends HookWidget {
                       controller: replyController,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: 'Write a helpful reply...',
+                        hintText: l10n.writeHelpfulReply,
                         hintStyle: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -399,14 +414,21 @@ class ForumThreadDetailPage extends HookWidget {
                                 if (context.mounted) {
                                   context.showSnackBar(
                                     message: failure.message ??
-                                        'Failed to send reply',
+                                        failure.toString(),
                                     type: SnackBarType.error,
                                   );
                                 }
                               },
-                              (_) {
-                                // Stream will automatically push the new reply
+                              (createdReply) {
                                 replyController.clear();
+                                if (!localReplies.value.any(
+                                  (r) => r.id == createdReply.id,
+                                )) {
+                                  localReplies.value = [
+                                    ...localReplies.value,
+                                    createdReply,
+                                  ];
+                                }
                               },
                             );
                           },
@@ -417,17 +439,17 @@ class ForumThreadDetailPage extends HookWidget {
                         color: colors.primary,
                       ),
                       child: isSubmitting.value
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: colors.white,
                               ),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.send_rounded,
-                              color: Colors.white,
+                              color: colors.white,
                               size: 18,
                             ),
                     ),
@@ -441,13 +463,13 @@ class ForumThreadDetailPage extends HookWidget {
     );
   }
 
-  String _formatTime(DateTime dt) {
+  String _formatTime(DateTime dt, AppLocalizations l10n) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) return l10n.justNow;
+    if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 }

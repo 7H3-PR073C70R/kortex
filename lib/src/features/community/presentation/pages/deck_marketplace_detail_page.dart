@@ -99,27 +99,27 @@ class DeckMarketplaceDetailPage extends HookWidget {
               ),
               child: Center(
                 child: isCloning.value
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                       )
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.copy_rounded,
-                            color: Colors.white,
+                            color: colors.white,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             l10n.cloneDeckButton,
                             style: typography.body.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                           ),
                         ],
@@ -176,10 +176,10 @@ class DeckMarketplaceDetailPage extends HookWidget {
                         ),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.star_rounded,
                               size: 18,
-                              color: Colors.amber,
+                              color: colors.warning,
                             ),
                             const SizedBox(width: 4),
                             Text(

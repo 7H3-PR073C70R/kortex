@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -29,22 +30,32 @@ class LiveStudyRoomPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userStorage = locator<UserStorageService>();
+    final currentUserId = userStorage.getUserId() ?? 'user_local';
     return BlocProvider<LiveRoomCubit>(
       create: (_) => LiveRoomCubit(
         initialRoom: room,
         repository: locator<CommunityRepository>(),
         ephemeralRepository: locator<EphemeralRoomRepository>(),
-        currentUserId: userStorage.getUserId(),
+        currentUserId: currentUserId,
         currentUserName: userStorage.getUserDisplayName() ?? 'You',
         currentUserAvatar: userStorage.getUserAvatarUrl() ?? '',
       ),
-      child: const _LiveStudyRoomView(),
+      child: _LiveStudyRoomView(currentUserId: currentUserId),
     );
   }
 }
 
-class _LiveStudyRoomView extends StatelessWidget {
-  const _LiveStudyRoomView();
+class _LiveStudyRoomView extends StatefulWidget {
+  const _LiveStudyRoomView({required this.currentUserId});
+
+  final String currentUserId;
+
+  @override
+  State<_LiveStudyRoomView> createState() => _LiveStudyRoomViewState();
+}
+
+class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
+  final Set<String> _announcedHandRaises = {};
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +64,21 @@ class _LiveStudyRoomView extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    return BlocBuilder<LiveRoomCubit, LiveRoomState>(
+    return BlocConsumer<LiveRoomCubit, LiveRoomState>(
+      listener: (context, state) {
+        for (final p in state.ephemeralParticipants) {
+          if (p.isHandRaised &&
+              p.userId != widget.currentUserId &&
+              !_announcedHandRaises.contains(p.userId)) {
+            _announcedHandRaises.add(p.userId);
+            context.showSnackBar(
+              message: l10n.handRaisedNotice(p.displayName),
+            );
+          } else if (!p.isHandRaised) {
+            _announcedHandRaises.remove(p.userId);
+          }
+        }
+      },
       builder: (context, state) {
         final onStage = state.ephemeralParticipants
             .where((p) => p.isHandRaised)
@@ -62,7 +87,6 @@ class _LiveStudyRoomView extends StatelessWidget {
             .where((p) => !p.isHandRaised)
             .toList();
 
-        // Fallback: use string list if no ephemeral participants yet
         final hasEphemeral = state.ephemeralParticipants.isNotEmpty;
 
         return Scaffold(
@@ -92,7 +116,6 @@ class _LiveStudyRoomView extends StatelessWidget {
               ],
             ),
             actions: [
-              // Live badge + timer mini pill
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Row(
@@ -109,7 +132,7 @@ class _LiveStudyRoomView extends StatelessWidget {
           body: SafeArea(
             child: Column(
               children: [
-                // Stage section — participants with hand raised
+                // Stage section — participants on stage
                 Expanded(
                   flex: 5,
                   child: _StageSection(
@@ -122,6 +145,7 @@ class _LiveStudyRoomView extends StatelessWidget {
                     participantCount: hasEphemeral
                         ? state.ephemeralParticipants.length
                         : state.participants.length,
+                    l10n: l10n,
                   ),
                 ),
 
@@ -137,10 +161,11 @@ class _LiveStudyRoomView extends StatelessWidget {
                       colors: colors,
                       typography: typography,
                       isDark: isDark,
+                      l10n: l10n,
                     ),
                   ),
 
-                // Bottom action bar
+                // Bottom action bar with Raise Hand & Mic Mute/Unmute
                 _BottomActionBar(
                   state: state,
                   colors: colors,
@@ -168,6 +193,7 @@ class _StageSection extends StatelessWidget {
     required this.isDark,
     required this.subject,
     required this.participantCount,
+    required this.l10n,
   });
 
   final List<EphemeralParticipant> onStage;
@@ -177,6 +203,7 @@ class _StageSection extends StatelessWidget {
   final bool isDark;
   final String subject;
   final int participantCount;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +252,7 @@ class _StageSection extends StatelessWidget {
           ),
           const Spacer(),
 
-          // Speakers row with glow rings
+          // Speakers row with glow rings and mic status
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 24,
@@ -256,9 +283,9 @@ class _StageSection extends StatelessWidget {
 
           const Spacer(),
 
-          // Participant count + join hint
+          // Participant count
           Text(
-            '$participantCount in this room',
+            l10n.inThisRoom(participantCount),
             style: cTypography.caption.regular.copyWith(
               color: cColors.textSecondary,
             ),
@@ -290,16 +317,42 @@ class _SpeakerTile extends StatelessWidget {
     final cColors = context.colors;
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
+
+    final isSpeaking = !participant.isMuted;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _GlowAvatar(
-          name: participant.displayName,
-          colors: cColors,
-          typography: cTypography,
-          size: 64,
-          isGlowing: true,
-          isDark: cIsDark,
+        Stack(
+          alignment: Alignment.topRight,
+          children: [
+            _GlowAvatar(
+              name: participant.displayName,
+              colors: cColors,
+              typography: cTypography,
+              size: 64,
+              isGlowing: isSpeaking,
+              isDark: cIsDark,
+            ),
+            if (participant.isHandRaised)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: cColors.warning,
+                  boxShadow: [
+                    BoxShadow(
+                      color: cColors.warning.withAlpha(120),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  '✋',
+                  style: TextStyle(fontSize: 10),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(
@@ -309,7 +362,24 @@ class _SpeakerTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
-        Icon(Icons.mic_rounded, size: 12, color: cColors.primary),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              participant.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+              size: 13,
+              color: participant.isMuted ? cColors.error : cColors.recallEasy,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              participant.isMuted ? 'Muted' : 'Speaking',
+              style: cTypography.caption.bold.copyWith(
+                color: participant.isMuted ? cColors.textMuted : cColors.recallEasy,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -324,6 +394,7 @@ class _AudienceSection extends StatelessWidget {
     required this.colors,
     required this.typography,
     required this.isDark,
+    required this.l10n,
   });
 
   final List<EphemeralParticipant> audience;
@@ -331,6 +402,7 @@ class _AudienceSection extends StatelessWidget {
   final dynamic colors;
   final dynamic typography;
   final bool isDark;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +426,7 @@ class _AudienceSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Audience',
+            l10n.audienceLabel,
             style: cTypography.caption.bold.copyWith(
               color: cColors.textSecondary,
               letterSpacing: 0.8,
@@ -375,11 +447,25 @@ class _AudienceSection extends StatelessWidget {
                 final p = listeners[i];
                 return Column(
                   children: [
-                    AppAvatar(
-                      customDimension: 36,
-                      name: p.displayName,
-                      backgroundColor: cColors.primary.withAlpha(40),
-                      foregroundColor: cColors.primary,
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        AppAvatar(
+                          customDimension: 36,
+                          name: p.displayName,
+                          backgroundColor: cColors.primary.withAlpha(40),
+                          foregroundColor: cColors.primary,
+                        ),
+                        if (p.isHandRaised)
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: cColors.warning,
+                            ),
+                            child: const Text('✋', style: TextStyle(fontSize: 8)),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -417,7 +503,7 @@ class _BottomActionBar extends StatelessWidget {
   final dynamic colors;
   final dynamic typography;
   final bool isDark;
-  final dynamic l10n;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -435,7 +521,7 @@ class _BottomActionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Raise Hand — primary CTA
+          // Raise Hand / On Stage button
           Expanded(
             flex: 3,
             child: ShrinkableButton(
@@ -459,14 +545,14 @@ class _BottomActionBar extends StatelessWidget {
                   children: [
                     Icon(
                       state.isHandRaised ? Icons.pan_tool_rounded : Icons.pan_tool_outlined,
-                      color: state.isHandRaised ? Colors.white : cColors.primary,
+                      color: state.isHandRaised ? cColors.white : cColors.primary,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      state.isHandRaised ? 'On Stage' : 'Raise Hand',
+                      state.isHandRaised ? l10n.onStage : l10n.raiseHand,
                       style: cTypography.footnote.bold.copyWith(
-                        color: state.isHandRaised ? Colors.white : cColors.primary,
+                        color: state.isHandRaised ? cColors.white : cColors.primary,
                       ),
                     ),
                   ],
@@ -474,7 +560,46 @@ class _BottomActionBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+
+          // Mic Mute / Unmute Toggle Button
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              context.read<LiveRoomCubit>().toggleMicMute();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: state.isMuted
+                    ? cColors.error.withAlpha(cIsDark ? 40 : 20)
+                    : cColors.recallEasy.withAlpha(cIsDark ? 50 : 30),
+                border: Border.all(
+                  color: state.isMuted
+                      ? cColors.error.withAlpha(cIsDark ? 100 : 70)
+                      : cColors.recallEasy.withAlpha(cIsDark ? 120 : 80),
+                  width: 1.5,
+                ),
+                boxShadow: !state.isMuted
+                    ? [
+                        BoxShadow(
+                          color: cColors.recallEasy.withAlpha(80),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                color: state.isMuted ? cColors.error : cColors.recallEasy,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
 
           // Pause/Resume timer
           ShrinkableButton(
@@ -502,12 +627,12 @@ class _BottomActionBar extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.redAccent.withAlpha(30),
-                border: Border.all(color: Colors.redAccent.withAlpha(80)),
+                color: cColors.error.withAlpha(25),
+                border: Border.all(color: cColors.error.withAlpha(80)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.call_end_rounded,
-                color: Colors.redAccent,
+                color: cColors.error,
                 size: 20,
               ),
             ),
@@ -642,7 +767,9 @@ class _LivePulseBadgeState extends State<_LivePulseBadge>
 
   @override
   Widget build(BuildContext context) {
+    final cColors = context.colors;
     final cTypography = context.typography;
+    final l10n = context.l10n;
     return AnimatedBuilder(
       animation: _fade,
       builder: (context, _) {
@@ -654,10 +781,10 @@ class _LivePulseBadgeState extends State<_LivePulseBadge>
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.redAccent.withValues(alpha: _fade.value),
+                color: cColors.error.withValues(alpha: _fade.value),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.redAccent.withAlpha((80 * _fade.value).round()),
+                    color: cColors.error.withAlpha((80 * _fade.value).round()),
                     blurRadius: 6,
                   ),
                 ],
@@ -665,9 +792,9 @@ class _LivePulseBadgeState extends State<_LivePulseBadge>
             ),
             const SizedBox(width: 5),
             Text(
-              'LIVE',
+              l10n.liveIndicator,
               style: cTypography.caption.bold.copyWith(
-                color: Colors.redAccent.withValues(alpha: _fade.value),
+                color: cColors.error.withValues(alpha: _fade.value),
                 letterSpacing: 1.2,
                 fontSize: 11,
               ),

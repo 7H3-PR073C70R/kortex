@@ -57,6 +57,8 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
     final semanticLabel =
         '${l10n.quickJoinStudyRoom}: ${widget.roomTitle}, $peerCountStr';
 
+    final colors = context.colors;
+
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -71,13 +73,13 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
               color: theme.colorScheme.surface.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: Colors.greenAccent.withValues(alpha: 0.4),
+                color: colors.recallEasy.withValues(alpha: 0.4),
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black26,
+                  color: colors.black.withValues(alpha: 0.26),
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -92,12 +94,12 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.greenAccent.withValues(
+                        color: colors.recallEasy.withValues(
                           alpha: _pulseAnimation.value,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.greenAccent.withValues(
+                            color: colors.recallEasy.withValues(
                               alpha: _pulseAnimation.value * 0.6,
                             ),
                             blurRadius: 6,
@@ -113,7 +115,7 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
                   widget.roomTitle,
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -123,13 +125,13 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: colors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${widget.activePeersCount}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.greenAccent,
+                      color: colors.recallEasy,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

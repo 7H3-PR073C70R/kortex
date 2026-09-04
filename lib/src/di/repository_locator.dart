@@ -48,6 +48,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<CommunityRepository>(
       () => CommunityRepositoryImpl(
         locator<CommunityRemoteDataSource>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<RagRepository>(

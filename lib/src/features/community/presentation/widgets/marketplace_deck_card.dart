@@ -41,7 +41,7 @@ class MarketplaceDeckCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 50 : 15),
+              color: colors.black.withAlpha(isDark ? 50 : 15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -72,10 +72,10 @@ class MarketplaceDeckCard extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.star_rounded,
                       size: 18,
-                      color: Colors.amber,
+                      color: colors.warning,
                     ),
                     const SizedBox(width: 4),
                     Text(

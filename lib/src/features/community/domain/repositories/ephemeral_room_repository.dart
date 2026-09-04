@@ -25,6 +25,12 @@ abstract class EphemeralRoomRepository {
     required bool isHandRaised,
   });
 
+  Future<void> broadcastMuteState({
+    required String roomId,
+    required String userId,
+    required bool isMuted,
+  });
+
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId);
 
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);

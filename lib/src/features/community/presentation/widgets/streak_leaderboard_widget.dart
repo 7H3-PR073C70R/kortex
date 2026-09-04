@@ -19,10 +19,117 @@ class StreakLeaderboardWidget extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final goldColor = colors.warning;
+    final silverColor = colors.gray;
+    final bronzeColor = colors.recallHard;
+
+    final currentUserEntry =
+        entries.where((e) => e.isCurrentUser).firstOrNull;
+
     return Semantics(
-      label: 'Leaderboard Rankings',
+      label: l10n.yourPosition,
       child: Column(
         children: [
+          // Current User Standing Highlight Card
+          if (currentUserEntry != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.primary,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '#${currentUserEntry.rank}',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                currentUserEntry.userName,
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(30),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                l10n.yourPosition,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.dailyStreakRank(
+                            currentUserEntry.rank,
+                            currentUserEntry.streakDays,
+                          ),
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.syllabotAccent.withAlpha(25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${currentUserEntry.weeklyXp} XP',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.syllabotAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Podium (Top 3) if available
           if (entries.length >= 3)
             Container(
@@ -50,21 +157,21 @@ class StreakLeaderboardWidget extends StatelessWidget {
                   _PodiumAvatar(
                     entry: entries[1],
                     place: 2,
-                    color: Colors.grey.shade400,
+                    color: silverColor,
                     height: 80,
                   ),
                   // Rank 1
                   _PodiumAvatar(
                     entry: entries[0],
                     place: 1,
-                    color: Colors.amber,
+                    color: goldColor,
                     height: 110,
                   ),
                   // Rank 3
                   _PodiumAvatar(
                     entry: entries[2],
                     place: 3,
-                    color: Colors.brown.shade300,
+                    color: bronzeColor,
                     height: 65,
                   ),
                 ],
@@ -109,10 +216,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: isTopThree
                             ? (index == 0
-                                  ? Colors.amber.withAlpha(50)
+                                  ? goldColor.withAlpha(50)
                                   : index == 1
-                                  ? Colors.grey.withAlpha(50)
-                                  : Colors.brown.withAlpha(50))
+                                  ? silverColor.withAlpha(50)
+                                  : bronzeColor.withAlpha(50))
                             : colors.surfaceSecondary.withAlpha(100),
                       ),
                       child: Center(
@@ -121,10 +228,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                           style: typography.caption.bold.copyWith(
                             color: isTopThree
                                 ? (index == 0
-                                      ? Colors.amber
+                                      ? goldColor
                                       : index == 1
-                                      ? Colors.grey.shade400
-                                      : Colors.brown.shade400)
+                                      ? silverColor
+                                      : bronzeColor)
                                 : colors.textSecondary,
                           ),
                         ),
@@ -222,10 +329,9 @@ class _PodiumAvatar extends StatelessWidget {
               ),
               child: Text(
                 '$place',
-                style: const TextStyle(
+                style: typography.caption.bold.copyWith(
                   fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
             ),

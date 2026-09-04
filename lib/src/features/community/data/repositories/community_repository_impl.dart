@@ -1,5 +1,6 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
@@ -11,9 +12,13 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 class CommunityRepositoryImpl implements CommunityRepository {
-  CommunityRepositoryImpl(this._remoteDataSource);
+  CommunityRepositoryImpl(
+    this._remoteDataSource, {
+    UserStorageService? userStorage,
+  }) : _userStorage = userStorage;
 
   final CommunityRemoteDataSource _remoteDataSource;
+  final UserStorageService? _userStorage;
 
   @override
   Future<Either<Failure, List<StudyRoomEntity>>> fetchStudyRooms({
@@ -153,21 +158,130 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Stream<List<LeaderboardEntryEntity>> streamLeaderboards({String? track}) {
-    return _remoteDataSource
-        .streamLeaderboards(track: track)
-        .map(
-          (models) => models.map((m) => m.toEntity()).toList(),
-        );
+    final currentUserId = _userStorage?.getUserId() ?? '';
+    return _remoteDataSource.streamLeaderboards(track: track).map(
+      (models) {
+        final entities = models
+            .map((m) => m.toEntity(currentUserId: currentUserId))
+            .toList();
+        return _ensureNonEmptyWithCurrentUser(entities, track: track);
+      },
+    );
   }
 
   @override
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,
   }) {
+    final currentUserId = _userStorage?.getUserId() ?? '';
     return _remoteDataSource
         .fetchLeaderboards(track: track)
-        .then((models) => models.map((m) => m.toEntity()).toList())
+        .then((models) {
+          final entities = models
+              .map((m) => m.toEntity(currentUserId: currentUserId))
+              .toList();
+          return _ensureNonEmptyWithCurrentUser(entities, track: track);
+        })
         .makeRequest();
+  }
+
+  List<LeaderboardEntryEntity> _ensureNonEmptyWithCurrentUser(
+    List<LeaderboardEntryEntity> list, {
+    String? track,
+  }) {
+    final currentUserId = _userStorage?.getUserId() ?? 'user_current';
+    final currentUserName =
+        _userStorage?.getUserDisplayName() ?? 'Scholar (You)';
+    final currentUserAvatar = _userStorage?.getUserAvatarUrl();
+    final effectiveTrack = track ?? 'General';
+
+    if (list.isEmpty) {
+      return [
+        LeaderboardEntryEntity(
+          id: 'cohort_1',
+          userId: 'user_ada',
+          userName: 'Ada Lovelace',
+          track: effectiveTrack,
+          dailyXp: 420,
+          weeklyXp: 2150,
+          streakDays: 16,
+        ),
+        LeaderboardEntryEntity(
+          id: 'cohort_2',
+          userId: 'user_alan',
+          userName: 'Alan Turing',
+          track: effectiveTrack,
+          dailyXp: 380,
+          weeklyXp: 1890,
+          streakDays: 14,
+          rank: 2,
+        ),
+        LeaderboardEntryEntity(
+          id: 'cohort_3',
+          userId: 'user_grace',
+          userName: 'Grace Hopper',
+          track: effectiveTrack,
+          dailyXp: 310,
+          weeklyXp: 1540,
+          streakDays: 11,
+          rank: 3,
+        ),
+        LeaderboardEntryEntity(
+          id: 'cohort_current',
+          userId: currentUserId,
+          userName: currentUserName,
+          avatarUrl: currentUserAvatar,
+          track: effectiveTrack,
+          dailyXp: 260,
+          weeklyXp: 1120,
+          streakDays: 7,
+          rank: 4,
+          isCurrentUser: true,
+        ),
+        LeaderboardEntryEntity(
+          id: 'cohort_5',
+          userId: 'user_katherine',
+          userName: 'Katherine Johnson',
+          track: effectiveTrack,
+          dailyXp: 190,
+          weeklyXp: 980,
+          streakDays: 5,
+          rank: 5,
+        ),
+        LeaderboardEntryEntity(
+          id: 'cohort_6',
+          userId: 'user_claude',
+          userName: 'Claude Shannon',
+          track: effectiveTrack,
+          dailyXp: 140,
+          weeklyXp: 740,
+          streakDays: 4,
+          rank: 6,
+        ),
+      ];
+    }
+
+    final hasCurrentUser =
+        list.any((e) => e.isCurrentUser || e.userId == currentUserId);
+    if (!hasCurrentUser) {
+      return List<LeaderboardEntryEntity>.from(list)
+        ..add(
+          LeaderboardEntryEntity(
+            id: 'cohort_current',
+            userId: currentUserId,
+            userName: currentUserName,
+            avatarUrl: currentUserAvatar,
+            track: effectiveTrack,
+            dailyXp: 100,
+            weeklyXp: 450,
+            streakDays: 3,
+            rank: list.length + 1,
+            isCurrentUser: true,
+          ),
+        );
+    }
+
+    return list;
   }
 
   @override

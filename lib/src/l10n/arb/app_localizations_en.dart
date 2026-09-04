@@ -1522,6 +1522,119 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upvoteAction => 'Upvote';
 
   @override
+  String get liveIndicator => 'LIVE';
+
+  @override
+  String get raiseHand => 'Raise Hand';
+
+  @override
+  String get onStage => 'On Stage';
+
+  @override
+  String get audienceLabel => 'Audience';
+
+  @override
+  String inThisRoom(int count) {
+    return '$count in this room';
+  }
+
+  @override
+  String get micMuted => 'Muted';
+
+  @override
+  String get micUnmuted => 'Unmuted';
+
+  @override
+  String get muteMicAction => 'Mute';
+
+  @override
+  String get unmuteMicAction => 'Unmute';
+
+  @override
+  String handRaisedNotice(String name) {
+    return '$name raised their hand';
+  }
+
+  @override
+  String get repliesHeader => 'Replies';
+
+  @override
+  String get noRepliesYet => 'No replies yet — be the first to help!';
+
+  @override
+  String get writeHelpfulReply => 'Write a helpful reply...';
+
+  @override
+  String get sendReply => 'Send Reply';
+
+  @override
+  String get justNow => 'just now';
+
+  @override
+  String minutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String hoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get formulaEquation => 'FORMULA / EQUATION';
+
+  @override
+  String get yourPosition => 'Your Ranking';
+
+  @override
+  String activeFocusRooms(int count) {
+    return 'Active Focus Rooms ($count)';
+  }
+
+  @override
+  String get newRoomAction => 'New Room';
+
+  @override
+  String get noActiveRooms => 'No active study rooms right now';
+
+  @override
+  String get launchFocusRoom => 'Launch Focus Room';
+
+  @override
+  String get launchRoomSubtitle =>
+      'Launch a synchronized Pomodoro room for your study group.';
+
+  @override
+  String get noForumDiscussions => 'No forum discussions found';
+
+  @override
+  String get startQuestionSubtitle =>
+      'Start a question, share notes, or discuss past paper solutions.';
+
+  @override
+  String communitySharedDecks(int count) {
+    return 'Community Shared Decks ($count)';
+  }
+
+  @override
+  String get shareDeckAction => 'Share Deck';
+
+  @override
+  String get noDecksAvailable => 'No community decks available yet';
+
+  @override
+  String get publishDecksSubtitle =>
+      'Publish flashcard decks to help peers study and earn community XP.';
+
+  @override
+  String get shareFirstDeck => 'Share First Deck';
+
+  @override
   String get welcomeTitle => 'Welcome to Kortexify';
 
   @override

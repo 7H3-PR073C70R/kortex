@@ -73,7 +73,8 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final theme = context.theme;
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
 
     return BlocBuilder<AutoCommunityCubit, AutoCommunityState>(
       builder: (context, state) {
@@ -110,28 +111,29 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [
-                                theme.colorScheme.primary.withValues(
-                                  alpha: 0.18,
-                                ),
-                                theme.colorScheme.secondary.withValues(
-                                  alpha: 0.10,
-                                ),
-                              ],
+                              colors: isDark
+                                  ? [
+                                      colors.primary.withAlpha(45),
+                                      colors.syllabotAccent.withAlpha(25),
+                                    ]
+                                  : [
+                                      colors.surfaceSecondary,
+                                      colors.surfacePrimary,
+                                    ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withValues(
-                                alpha: 0.35,
-                              ),
+                              color: isDark
+                                  ? colors.primary.withAlpha(80)
+                                  : colors.primary.withAlpha(45),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withValues(
-                                  alpha: 0.12,
-                                ),
+                                color: isDark
+                                    ? colors.primary.withAlpha(30)
+                                    : colors.black.withAlpha(15),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -169,8 +171,10 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
     String titleText,
     String subtitleText,
   ) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,12 +186,12 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                color: colors.primary.withAlpha(isDark ? 50 : 25),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.groups_rounded,
-                color: theme.colorScheme.primary,
+                color: colors.primary,
                 size: 24,
               ),
             ),
@@ -205,43 +209,41 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.2),
+                          color: colors.warning.withAlpha(isDark ? 50 : 25),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.amber.withValues(alpha: 0.6),
+                            color: colors.warning.withAlpha(isDark ? 140 : 90),
                           ),
                         ),
                         child: Text(
                           l10n.foundingMemberBadge,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.amber.shade300,
-                            fontWeight: FontWeight.bold,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
                           ),
                         ),
                       ),
                     ),
                   Text(
                     titleText,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    style: typography.subhead.bold.copyWith(
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitleText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white70,
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.close_rounded,
                 size: 20,
-                color: Colors.white54,
+                color: colors.textSecondary,
               ),
               tooltip: l10n.cancelAction,
               onPressed: () =>
@@ -256,8 +258,8 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
               child: ElevatedButton.icon(
                 key: const Key('open_hub_button'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -266,7 +268,9 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: Text(
                   l10n.openCommunityHub,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: typography.footnote.bold.copyWith(
+                    color: colors.white,
+                  ),
                 ),
                 onPressed: () {
                   widget.onTapOpenHub?.call(community);
@@ -278,9 +282,9 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
               OutlinedButton.icon(
                 key: const Key('join_room_button'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
+                  foregroundColor: colors.primary,
                   side: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: colors.primary.withAlpha(isDark ? 90 : 60),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -290,12 +294,17 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                     vertical: 10,
                   ),
                 ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.sensors_rounded,
                   size: 16,
-                  color: Colors.greenAccent,
+                  color: colors.recallEasy,
                 ),
-                label: Text(l10n.quickJoinStudyRoom),
+                label: Text(
+                  l10n.quickJoinStudyRoom,
+                  style: typography.footnote.medium.copyWith(
+                    color: colors.primary,
+                  ),
+                ),
                 onPressed: () {
                   widget.onTapJoinRoom?.call(community.activeRoomId!);
                 },
@@ -313,20 +322,22 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
     String titleText,
     String subtitleText,
   ) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            color: colors.primary.withAlpha(isDark ? 50 : 25),
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.groups_rounded,
-            color: theme.colorScheme.primary,
+            color: colors.primary,
             size: 28,
           ),
         ),
@@ -343,9 +354,8 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                 children: [
                   Text(
                     titleText,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
                     ),
                   ),
                   if (community.isFoundingMember)
@@ -355,17 +365,16 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.2),
+                        color: colors.warning.withAlpha(isDark ? 50 : 25),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.amber.withValues(alpha: 0.6),
+                          color: colors.warning.withAlpha(isDark ? 140 : 90),
                         ),
                       ),
                       child: Text(
                         l10n.foundingMemberBadge,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.amber.shade300,
-                          fontWeight: FontWeight.bold,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.warning,
                         ),
                       ),
                     ),
@@ -374,8 +383,8 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
               const SizedBox(height: 4),
               Text(
                 subtitleText,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
+                style: typography.footnote.regular.copyWith(
+                  color: colors.textSecondary,
                 ),
               ),
             ],
@@ -386,9 +395,9 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
           OutlinedButton.icon(
             key: const Key('join_room_button'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: colors.primary,
               side: BorderSide(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: colors.primary.withAlpha(isDark ? 90 : 60),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -398,12 +407,17 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                 vertical: 12,
               ),
             ),
-            icon: const Icon(
+            icon: Icon(
               Icons.sensors_rounded,
               size: 18,
-              color: Colors.greenAccent,
+              color: colors.recallEasy,
             ),
-            label: Text(l10n.quickJoinStudyRoom),
+            label: Text(
+              l10n.quickJoinStudyRoom,
+              style: typography.footnote.medium.copyWith(
+                color: colors.primary,
+              ),
+            ),
             onPressed: () {
               widget.onTapJoinRoom?.call(community.activeRoomId!);
             },
@@ -413,8 +427,8 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
         ElevatedButton.icon(
           key: const Key('open_hub_button'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: colors.primary,
+            foregroundColor: colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -423,7 +437,9 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
           icon: const Icon(Icons.forum_rounded, size: 18),
           label: Text(
             l10n.openCommunityHub,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: typography.footnote.bold.copyWith(
+              color: colors.white,
+            ),
           ),
           onPressed: () {
             widget.onTapOpenHub?.call(community);
@@ -431,10 +447,10 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
         ),
         const SizedBox(width: 8),
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.close_rounded,
             size: 20,
-            color: Colors.white54,
+            color: colors.textSecondary,
           ),
           tooltip: l10n.cancelAction,
           onPressed: () => context.read<AutoCommunityCubit>().dismissBanner(),

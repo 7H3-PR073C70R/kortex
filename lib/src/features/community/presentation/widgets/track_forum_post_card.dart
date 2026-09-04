@@ -39,7 +39,7 @@ class TrackForumPostCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 50 : 15),
+              color: colors.black.withAlpha(isDark ? 50 : 15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

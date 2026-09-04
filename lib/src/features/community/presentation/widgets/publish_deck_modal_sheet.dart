@@ -213,7 +213,7 @@ class PublishDeckModalSheet extends HookWidget {
                   child: Text(
                     l10n.shareDeckTitle,
                     style: typography.body.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ),

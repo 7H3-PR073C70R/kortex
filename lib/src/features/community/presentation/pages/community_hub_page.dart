@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -128,6 +129,12 @@ class _CommunityHubView extends HookWidget {
             children: [
               // Auto-Community Spinoff Banner (Appears when community is provisioned)
               AutoCommunityBannerWidget(
+                onTapOpenHub: (community) {
+                  tabController.animateTo(1);
+                  context.read<CommunityHubBloc>().add(
+                    ChangeTrackFilterEvent(community.courseCode),
+                  );
+                },
                 onTapJoinRoom: (roomId) {
                   final hubState = context.read<CommunityHubBloc>().state;
                   final room = hubState.studyRooms.firstWhere(
@@ -225,6 +232,10 @@ class _CommunityHubView extends HookWidget {
 
           // Morphing Expandable Floating Action Button
           ExpandableCreatePostFab(
+            bottomOffset: math.max(
+              152,
+              MediaQuery.paddingOf(context).bottom + 130,
+            ),
             onSubmit: ({
               required title,
               required content,
@@ -256,6 +267,7 @@ class _LiveRoomsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     return ListView(
@@ -268,7 +280,7 @@ class _LiveRoomsList extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Active Focus Rooms (${state.studyRooms.length})',
+                l10n.activeFocusRooms(state.studyRooms.length),
                 style: typography.footnote.bold.copyWith(
                   color: colors.textSecondary,
                   letterSpacing: 0.5,
@@ -319,7 +331,7 @@ class _LiveRoomsList extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'New Room',
+                        l10n.newRoomAction,
                         style: typography.caption.bold.copyWith(
                           color: colors.primary,
                         ),
@@ -352,14 +364,14 @@ class _LiveRoomsList extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'No active study rooms right now',
+                  l10n.noActiveRooms,
                   style: typography.headline.bold.copyWith(
                     color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Launch a synchronized Pomodoro room for your study group.',
+                  l10n.launchRoomSubtitle,
                   textAlign: TextAlign.center,
                   style: typography.footnote.regular.copyWith(
                     color: colors.textSecondary,
@@ -399,9 +411,9 @@ class _LiveRoomsList extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Launch Focus Room',
+                      l10n.launchFocusRoom,
                       style: typography.footnote.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ),
@@ -432,6 +444,7 @@ class _ForumPostsList extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     const filterTracks = [
@@ -498,14 +511,14 @@ class _ForumPostsList extends HookWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'No forum discussions found',
+                  l10n.noForumDiscussions,
                   style: typography.headline.bold.copyWith(
                     color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Start a question, share notes, or discuss past paper solutions.',
+                  l10n.startQuestionSubtitle,
                   textAlign: TextAlign.center,
                   style: typography.footnote.regular.copyWith(
                     color: colors.textSecondary,
@@ -537,6 +550,7 @@ class _MarketplaceDecksList extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     return ListView(
@@ -549,7 +563,7 @@ class _MarketplaceDecksList extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Community Shared Decks (${state.sharedDecks.length})',
+                l10n.communitySharedDecks(state.sharedDecks.length),
                 style: typography.footnote.bold.copyWith(
                   color: colors.textSecondary,
                   letterSpacing: 0.5,
@@ -600,7 +614,7 @@ class _MarketplaceDecksList extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Share Deck',
+                        l10n.shareDeckAction,
                         style: typography.caption.bold.copyWith(
                           color: colors.primary,
                         ),
@@ -633,14 +647,14 @@ class _MarketplaceDecksList extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'No community decks available yet',
+                  l10n.noDecksAvailable,
                   style: typography.headline.bold.copyWith(
                     color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Publish flashcard decks to help peers study and earn community XP.',
+                  l10n.publishDecksSubtitle,
                   textAlign: TextAlign.center,
                   style: typography.footnote.regular.copyWith(
                     color: colors.textSecondary,
@@ -680,9 +694,9 @@ class _MarketplaceDecksList extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Share First Deck',
+                      l10n.shareFirstDeck,
                       style: typography.footnote.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ),

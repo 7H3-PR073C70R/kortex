@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -43,6 +44,7 @@ class CreateStudyRoomSheet extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final titleController = useTextEditingController();
@@ -232,9 +234,9 @@ class CreateStudyRoomSheet extends HookWidget {
                 ),
                 child: Center(
                   child: Text(
-                    'Launch Focus Room',
+                    l10n.launchFocusRoom,
                     style: typography.body.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ),
