@@ -14,6 +14,7 @@ abstract class CommunityRemoteDataSource {
     required int pomodoroMinutes,
   });
 
+  /// Real-time stream of a study room via WebSocket.
   Stream<StudyRoomModel> watchStudyRoom(String roomId);
 
   Future<List<ForumPostModel>> fetchForumPosts({String? track});
@@ -31,6 +32,9 @@ abstract class CommunityRemoteDataSource {
     String? latexContent,
   });
 
+  /// Real-time stream of replies for a forum post via WebSocket.
+  Stream<List<ForumReplyModel>> watchForumReplies(String postId);
+
   Future<List<SharedDeckModel>> fetchSharedDecks({String? subject});
 
   Future<SharedDeckModel> publishDeck({
@@ -44,6 +48,7 @@ abstract class CommunityRemoteDataSource {
 
   Future<Map<String, dynamic>> cloneSharedDeck(String sharedDeckId);
 
+  /// Real-time stream of leaderboard entries via WebSocket.
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track});
 
   Future<List<LeaderboardEntryModel>> fetchLeaderboards({String? track});

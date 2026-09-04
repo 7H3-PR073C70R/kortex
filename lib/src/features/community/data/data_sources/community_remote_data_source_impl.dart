@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
@@ -12,10 +13,16 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   CommunityRemoteDataSourceImpl(
     this._client, {
     UserStorageService? userStorage,
-  }) : _userStorage = userStorage;
+    RealtimeClient? realtimeClient,
+  })  : _userStorage = userStorage,
+        _realtime = realtimeClient ?? RealtimeClient.instance;
 
   final CommunityApiClient _client;
   final UserStorageService? _userStorage;
+  final RealtimeClient _realtime;
+
+  // In-memory cache of replies per post, rebuilt from DB snapshots + WS events
+  final Map<String, List<ForumReplyModel>> _replyCache = {};
 
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
@@ -62,21 +69,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
-  Stream<StudyRoomModel> watchStudyRoom(String roomId) async* {
-    while (true) {
-      try {
-        final res = await _client.fetchStudyRooms({
-          'id': 'eq.$roomId',
-          'select': '*',
-          'limit': '1',
-        });
-        final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-        if (rawList.isNotEmpty) {
-          yield StudyRoomModel.fromJson(rawList.first as Map<String, dynamic>);
-        }
-      } on Object catch (_) {}
-      await Future<void>.delayed(const Duration(seconds: 4));
-    }
+  Stream<StudyRoomModel> watchStudyRoom(String roomId) {
+    // Subscribe to real-time DB changes for this specific room
+    return _realtime
+        .watchTable('study_rooms', filter: 'id=eq.$roomId')
+        .where((e) => e.type != RealtimeEventType.delete)
+        .map((e) => StudyRoomModel.fromJson(e.record));
   }
 
   @override
@@ -153,6 +151,55 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Stream<List<ForumReplyModel>> watchForumReplies(String postId) {
+    // Seed the cache with an initial REST fetch, then stream incremental inserts
+    final streamController = StreamController<List<ForumReplyModel>>.broadcast();
+
+    // Initial fetch to seed cache
+    _client
+        .fetchForumPosts({
+          'select': 'forum_replies(*)',
+          'id': 'eq.$postId',
+          'limit': '1',
+        })
+        .then((res) {
+          try {
+            final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+            if (rawList.isNotEmpty) {
+              final postJson = rawList.first as Map<String, dynamic>;
+              final repliesRaw = postJson['forum_replies'] as List<dynamic>? ?? [];
+              _replyCache[postId] = repliesRaw
+                  .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
+                  .toList();
+              if (!streamController.isClosed) {
+                streamController.add(List.unmodifiable(_replyCache[postId]!));
+              }
+            }
+          } on Exception catch (_) {}
+        })
+        .ignore();
+
+    // Listen for new inserts via WebSocket
+    final wsSub = _realtime
+        .watchTable('forum_replies', filter: 'post_id=eq.$postId')
+        .listen((event) {
+          if (event.type == RealtimeEventType.insert) {
+            try {
+              final reply = ForumReplyModel.fromJson(event.record);
+              _replyCache.putIfAbsent(postId, () => []).add(reply);
+              if (!streamController.isClosed) {
+                streamController.add(List.unmodifiable(_replyCache[postId]!));
+              }
+            } on Exception catch (_) {}
+          }
+        });
+
+    streamController.onCancel = () => wsSub.cancel().ignore();
+
+    return streamController.stream;
+  }
+
+  @override
   Future<List<SharedDeckModel>> fetchSharedDecks({String? subject}) async {
     final params = <String, dynamic>{
       'select': '*',
@@ -212,14 +259,51 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
-  Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track}) async* {
-    while (true) {
+  Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track}) {
+    // Accumulate leaderboard snapshot, then push updates for any change via WebSocket
+    final streamController = StreamController<List<LeaderboardEntryModel>>.broadcast();
+    final cache = <String, LeaderboardEntryModel>{};
+
+    // Initial fetch to seed the cache
+    fetchLeaderboards(track: track)
+        .then((entries) {
+          for (final e in entries) {
+            cache[e.userId] = e;
+          }
+          if (!streamController.isClosed) {
+            streamController.add(_sortedLeaderboard(cache));
+          }
+        })
+        .ignore();
+
+    // Stream any row changes in the leaderboards table
+    final wsSub = _realtime.watchTable('leaderboards').listen((event) {
       try {
-        final list = await fetchLeaderboards(track: track);
-        yield list;
-      } on Object catch (_) {}
-      await Future<void>.delayed(const Duration(seconds: 8));
-    }
+        if (event.type == RealtimeEventType.delete) {
+          final id = event.oldRecord?['user_id'] as String?;
+          if (id != null) cache.remove(id);
+        } else {
+          final entry = LeaderboardEntryModel.fromJson(event.record);
+          // Only include if track filter matches
+          if (track == null || track.isEmpty || track == 'All' ||
+              (event.record['track'] as String? ?? '') == track) {
+            cache[entry.userId] = entry;
+          }
+        }
+        if (!streamController.isClosed) {
+          streamController.add(_sortedLeaderboard(cache));
+        }
+      } on Exception catch (_) {}
+    });
+
+    streamController.onCancel = () => wsSub.cancel().ignore();
+    return streamController.stream;
+  }
+
+  List<LeaderboardEntryModel> _sortedLeaderboard(Map<String, LeaderboardEntryModel> cache) {
+    final list = cache.values.toList()
+      ..sort((a, b) => (b.weeklyXp).compareTo(a.weeklyXp));
+    return list;
   }
 
   @override

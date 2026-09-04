@@ -93,6 +93,13 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Stream<List<ForumReplyEntity>> watchForumReplies(String postId) {
+    return _remoteDataSource
+        .watchForumReplies(postId)
+        .map((models) => models.map((m) => m.toEntity()).toList());
+  }
+
+  @override
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
     String? subject,
   }) {

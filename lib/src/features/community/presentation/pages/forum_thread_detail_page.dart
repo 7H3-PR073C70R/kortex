@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -25,8 +26,16 @@ class ForumThreadDetailPage extends HookWidget {
     final isDark = context.isDarkMode;
 
     final replyController = useTextEditingController();
-    final replies = useState<List<ForumReplyEntity>>(post.replies);
     final isSubmitting = useState<bool>(false);
+
+    // Real-time replies stream — seeded with initial replies from the post
+    final repo = locator<CommunityRepository>();
+    final repliesStream = useMemoized(
+      () => repo.watchForumReplies(post.id),
+      [post.id],
+    );
+    final repliesSnapshot = useStream(repliesStream, initialData: post.replies);
+    final replies = repliesSnapshot.data ?? post.replies;
 
     return Scaffold(
       backgroundColor: isDark
@@ -41,6 +50,39 @@ class ForumThreadDetailPage extends HookWidget {
             color: colors.textPrimary,
           ),
         ),
+        actions: [
+          // Live indicator
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors.primary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(120),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'LIVE',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -53,181 +95,258 @@ class ForumThreadDetailPage extends HookWidget {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Author & Date
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: colors.primary.withAlpha(40),
-                          child: Text(
-                            post.authorName[0],
-                            style: typography.footnote.bold.copyWith(
-                              color: colors.primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              post.authorName,
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              'Posted today',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Thread Title
-                    Text(
-                      post.title,
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Thread Content
-                    Text(
-                      post.content,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-
-                    // LaTeX Math Block if present
-                    if (post.latexContent != null &&
-                        post.latexContent!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfaceSecondary.withAlpha(150),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(40),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'FORMULA / EQUATION',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              post.latexContent!,
-                              style: typography.body.bold.copyWith(
-                                color: colors.primary,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 28),
-
-                    // Replies Header
-                    Text(
-                      'Replies (${replies.value.length})',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Replies List
-                    if (replies.value.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          child: Text(
-                            'No replies yet. Be the first to share an answer!',
-                            style: typography.footnote.medium.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ...replies.value.map(
-                        (reply) => Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfaceSecondary.withAlpha(100),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              child: CustomScrollView(
+                slivers: [
+                  // Original Post
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Author row
+                          Row(
                             children: [
-                              Row(
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: colors.primary.withAlpha(40),
+                                child: Text(
+                                  post.authorName[0].toUpperCase(),
+                                  style: typography.footnote.bold.copyWith(
+                                    color: colors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 12,
-                                    backgroundColor: colors.primary.withAlpha(
-                                      30,
-                                    ),
-                                    child: Text(
-                                      reply.authorName[0],
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 10,
-                                      ),
+                                  Text(
+                                    post.authorName,
+                                    style: typography.footnote.bold.copyWith(
+                                      color: colors.textPrimary,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                   Text(
-                                    reply.authorName,
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textPrimary,
+                                    _formatTime(post.createdAt),
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Title
+                          Text(
+                            post.title,
+                            style: typography.title2.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Content
+                          Text(
+                            post.content,
+                            style: typography.body.regular.copyWith(
+                              color: colors.textSecondary,
+                              height: 1.6,
+                            ),
+                          ),
+
+                          // LaTeX block
+                          if (post.latexContent != null &&
+                              post.latexContent!.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfaceSecondary.withAlpha(150),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(40),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'FORMULA / EQUATION',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    post.latexContent!,
+                                    style: typography.body.bold.copyWith(
+                                      color: colors.primary,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 24),
+
+                          // Replies header
+                          Row(
+                            children: [
                               Text(
-                                reply.content,
-                                style: typography.footnote.regular.copyWith(
-                                  color: colors.textSecondary,
+                                'Replies',
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Container(
+                                  key: ValueKey(replies.length),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${replies.length}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 4),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Replies list
+                  if (replies.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 32,
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 40,
+                              color: colors.textSecondary.withAlpha(100),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No replies yet — be the first to help!',
+                              style: typography.footnote.medium.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final reply = replies[index];
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfaceSecondary.withAlpha(100),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor:
+                                            colors.primary.withAlpha(30),
+                                        child: Text(
+                                          reply.authorName[0].toUpperCase(),
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.primary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          reply.authorName,
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatTime(reply.createdAt),
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    reply.content,
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  if (reply.latexContent != null &&
+                                      reply.latexContent!.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      reply.latexContent!,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: replies.length,
+                      ),
+                    ),
+
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                ],
               ),
             ),
 
-            // Bottom Reply Bar
+            // Bottom reply input bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -241,6 +360,7 @@ class ForumThreadDetailPage extends HookWidget {
                   Expanded(
                     child: TextField(
                       controller: replyController,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
                         hintText: 'Write a helpful reply...',
                         hintStyle: typography.footnote.regular.copyWith(
@@ -269,7 +389,6 @@ class ForumThreadDetailPage extends HookWidget {
                             final text = replyController.text.trim();
                             if (text.isEmpty) return;
                             isSubmitting.value = true;
-                            final repo = locator<CommunityRepository>();
                             final res = await repo.replyToForumPost(
                               postId: post.id,
                               content: text,
@@ -285,8 +404,8 @@ class ForumThreadDetailPage extends HookWidget {
                                   );
                                 }
                               },
-                              (reply) {
-                                replies.value = [...replies.value, reply];
+                              (_) {
+                                // Stream will automatically push the new reply
                                 replyController.clear();
                               },
                             );
@@ -320,5 +439,15 @@ class ForumThreadDetailPage extends HookWidget {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }

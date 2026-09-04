@@ -9,8 +9,8 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   EphemeralRoomRepositoryImpl({
     EphemeralPresenceClient? presenceClient,
     CommunityApiClient? communityClient,
-  }) : _presenceClient = presenceClient ?? EphemeralPresenceClientImpl(),
-       _communityClient = communityClient;
+  })  : _presenceClient = presenceClient ?? EphemeralPresenceClientImpl(),
+        _communityClient = communityClient;
 
   final EphemeralPresenceClient _presenceClient;
   final CommunityApiClient? _communityClient;
@@ -22,21 +22,17 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     required String displayName,
     required String avatarUrl,
   }) async {
-    final participant = EphemeralParticipant(
+    await _presenceClient.joinRoomPresence(
+      roomId: roomId,
       userId: userId,
       displayName: displayName,
       avatarUrl: avatarUrl,
-      joinedAt: DateTime.now(),
-    );
-    await _presenceClient.joinRoomChannel(
-      roomId: roomId,
-      participant: participant,
     );
   }
 
   @override
   Future<void> leaveRoomPresence(String roomId) async {
-    await _presenceClient.leaveRoomChannel(roomId);
+    await _presenceClient.leaveRoomPresence(roomId);
   }
 
   @override
@@ -46,14 +42,12 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     required String pomodoroState,
     required String senderId,
   }) async {
-    final event = PomodoroSyncEvent(
+    await _presenceClient.broadcastPomodoroTick(
       roomId: roomId,
       remainingSeconds: remainingSeconds,
       pomodoroState: pomodoroState,
       senderId: senderId,
-      timestamp: DateTime.now(),
     );
-    await _presenceClient.broadcastPomodoroTick(event);
   }
 
   @override

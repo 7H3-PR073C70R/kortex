@@ -44,6 +44,9 @@ abstract class CommunityRepository {
     String? latexContent,
   });
 
+  /// Real-time stream of replies for a forum post via WebSocket.
+  Stream<List<ForumReplyEntity>> watchForumReplies(String postId);
+
   /// Fetches community marketplace decks.
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
     String? subject,
