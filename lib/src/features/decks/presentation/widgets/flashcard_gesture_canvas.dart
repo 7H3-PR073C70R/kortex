@@ -56,6 +56,13 @@ class FlashcardGestureCanvas extends HookWidget {
       [isFlipped],
     );
 
+    // Motion Animation Controller for fluid snap-back and swipe fly-off
+    final motionController = useAnimationController(
+      duration: const Duration(milliseconds: 260),
+    );
+    final snapStartOffset = useRef<Offset>(Offset.zero);
+    final snapTargetOffset = useRef<Offset>(Offset.zero);
+
     // 2D Swipe Offset State for drag gestures
     final dragOffset = useState<Offset>(Offset.zero);
     final isDragging = useState<bool>(false);
@@ -105,6 +112,9 @@ class FlashcardGestureCanvas extends HookWidget {
         onTapFlip();
       },
       onPanStart: (_) {
+        if (motionController.isAnimating) {
+          motionController.stop();
+        }
         isDragging.value = true;
       },
       onPanUpdate: (details) {
@@ -114,25 +124,82 @@ class FlashcardGestureCanvas extends HookWidget {
         isDragging.value = false;
         final currentDx = dragOffset.value.dx;
         final currentDy = dragOffset.value.dy;
+        final velocity = details.velocity.pixelsPerSecond;
+
+        // Velocity & threshold evaluation
+        final isFlickLeft = (velocity.dx < -450 && currentDx < -30) || currentDx < -90;
+        final isFlickRight = (velocity.dx > 450 && currentDx > 30) || currentDx > 90;
+        final isFlickUp = (velocity.dy < -450 && currentDy < -30) || currentDy < -80;
+        final isFlickDown = (velocity.dy > 450 && currentDy > 30) || currentDy > 80;
+
+        VoidCallback? swipeCallback;
+        var targetOffset = Offset.zero;
+
+        final screenSize = MediaQuery.of(context).size;
 
         if (currentDx.abs() >= currentDy.abs()) {
-          if (currentDx < -90) {
-            unawaited(HapticFeedback.mediumImpact());
-            onSwipeLeft();
-          } else if (currentDx > 90) {
-            unawaited(HapticFeedback.mediumImpact());
-            onSwipeRight();
+          if (isFlickLeft) {
+            swipeCallback = onSwipeLeft;
+            targetOffset = Offset(-screenSize.width * 1.3, currentDy * 1.2);
+          } else if (isFlickRight) {
+            swipeCallback = onSwipeRight;
+            targetOffset = Offset(screenSize.width * 1.3, currentDy * 1.2);
           }
         } else {
-          if (currentDy < -80) {
-            unawaited(HapticFeedback.mediumImpact());
-            (onSwipeUp ?? onSwipeRight)();
-          } else if (currentDy > 80) {
-            unawaited(HapticFeedback.mediumImpact());
-            (onSwipeDown ?? onSwipeLeft)();
+          if (isFlickUp) {
+            swipeCallback = onSwipeUp ?? onSwipeRight;
+            targetOffset = Offset(currentDx * 1.2, -screenSize.height * 1.1);
+          } else if (isFlickDown) {
+            swipeCallback = onSwipeDown ?? onSwipeLeft;
+            targetOffset = Offset(currentDx * 1.2, screenSize.height * 1.1);
           }
         }
-        dragOffset.value = Offset.zero;
+
+        if (swipeCallback != null) {
+          // Animate smoothly off-screen then fire swipe
+          unawaited(HapticFeedback.mediumImpact());
+          snapStartOffset.value = dragOffset.value;
+          snapTargetOffset.value = targetOffset;
+          motionController.reset();
+
+          void flyListener() {
+            final t = Curves.easeInCubic.transform(motionController.value);
+            dragOffset.value = Offset.lerp(
+              snapStartOffset.value,
+              snapTargetOffset.value,
+              t,
+            )!;
+            if (motionController.isCompleted) {
+              motionController.removeListener(flyListener);
+              dragOffset.value = Offset.zero;
+              swipeCallback!();
+            }
+          }
+
+          motionController.addListener(flyListener);
+          unawaited(motionController.forward());
+        } else {
+          // Swiped halfway or canceled: smoothly snap back to center with spring curve
+          snapStartOffset.value = dragOffset.value;
+          snapTargetOffset.value = Offset.zero;
+          motionController.reset();
+
+          void snapListener() {
+            final t = Curves.easeOutCubic.transform(motionController.value);
+            dragOffset.value = Offset.lerp(
+              snapStartOffset.value,
+              snapTargetOffset.value,
+              t,
+            )!;
+            if (motionController.isCompleted) {
+              motionController.removeListener(snapListener);
+              dragOffset.value = Offset.zero;
+            }
+          }
+
+          motionController.addListener(snapListener);
+          unawaited(motionController.forward());
+        }
       },
       child: AnimatedBuilder(
         animation: flipController,

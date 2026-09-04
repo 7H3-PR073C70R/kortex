@@ -383,9 +383,14 @@ class _SyllabotChatView extends HookWidget {
               },
             ),
 
-            // 2. Turn to Flashcard Deck Action
+            // 2. Turn to Flashcard Deck Action (hidden if already converted)
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
+                if (state.isConvertedToDeck ||
+                    state.status == SyllabotStatus.deckGenerated ||
+                    state.generatedDeck != null) {
+                  return const SizedBox.shrink();
+                }
                 return IconButton(
                   tooltip: l10n.convertToDeckTitle,
                   icon: Icon(

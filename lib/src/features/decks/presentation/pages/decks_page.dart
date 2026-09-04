@@ -218,81 +218,79 @@ class _DecksView extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // 2. Search Field
-                  Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(200)
-                          : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(90)
-                            : colors.surfaceBorder,
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isDark ? 30 : 10),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  // 2. Search Field - Unified full-width text field
+                  TextField(
+                    controller: searchController,
+                    style: typography.body.medium.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 14,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search_rounded,
-                          color: colors.textSecondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: searchController,
-                            style: typography.body.medium.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 14,
-                            ),
-                            cursorColor: colors.primary,
-                            decoration: InputDecoration(
-                              hintText: l10n.decksSearchHint,
-                              hintStyle: typography.body.regular.copyWith(
-                                color: colors.textMuted,
-                                fontSize: 13.5,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            onChanged: (query) {
-                              context.read<DecksBloc>().add(
-                                DecksSearchQueryChanged(query),
-                              );
-                            },
-                          ),
-                        ),
-                        if (searchController.text.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              searchController.clear();
-                              context.read<DecksBloc>().add(
-                                const DecksSearchQueryChanged(''),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
+                    cursorColor: colors.primary,
+                    decoration: InputDecoration(
+                      hintText: l10n.decksSearchHint,
+                      hintStyle: typography.body.regular.copyWith(
+                        color: colors.textMuted,
+                        fontSize: 13.5,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: colors.textSecondary,
+                        size: 20,
+                      ),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
                                 Icons.close_rounded,
                                 color: colors.textSecondary,
                                 size: 18,
                               ),
-                            ),
-                          ),
-                      ],
+                              onPressed: () {
+                                searchController.clear();
+                                context.read<DecksBloc>().add(
+                                  const DecksSearchQueryChanged(''),
+                                );
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: isDark
+                          ? colors.surfaceSecondary.withAlpha(200)
+                          : colors.surfacePrimary,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(90)
+                              : colors.surfaceBorder,
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(90)
+                              : colors.surfaceBorder,
+                          width: 1.2,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: colors.primary,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
+                    onChanged: (query) {
+                      context.read<DecksBloc>().add(
+                        DecksSearchQueryChanged(query),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 

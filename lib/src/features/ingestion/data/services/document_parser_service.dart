@@ -405,9 +405,17 @@ class DocumentParserService {
 
     for (final section in sections) {
       final cleanBody = _extractCompleteParagraphAnswer(section.content);
+
+      // Associate visual diagram assets if available
+      final attachedImage =
+          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
+          ? imageUrls[snippets.length]
+          : null;
+
       final directQuestion = _synthesizeContextualQuestion(
         section.title,
         cleanBody,
+        hasImage: attachedImage != null,
       );
 
       // Strict NLP & Structural Validation Filter
@@ -417,12 +425,6 @@ class DocumentParserService {
 
       // Extract LaTeX if formula or mathematical expression is present
       final latex = _extractOrGenerateFormula(section.title, cleanBody);
-
-      // Associate visual diagram assets if available
-      final attachedImage =
-          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
-          ? imageUrls[snippets.length]
-          : null;
 
       snippets.add(
         OcrExtractionModel(
@@ -552,9 +554,13 @@ class DocumentParserService {
     return snippets;
   }
 
-  /// Synthesizes natural, context-aware academic questions from formal section headers
-  /// and leading concept statements (strictly banning naive string-injection templates).
-  String? _synthesizeContextualQuestion(String rawTitle, String cleanBody) {
+  /// Synthesizes natural, context-aware academic questions from formal section headers,
+  /// deep paragraph content analysis, and attached visual diagrams.
+  String? _synthesizeContextualQuestion(
+    String rawTitle,
+    String cleanBody, {
+    bool hasImage = false,
+  }) {
     var clean = rawTitle.trim();
 
     // 1. Strip leading hierarchical numbering and structural prefixes
@@ -574,8 +580,69 @@ class DocumentParserService {
     }
 
     final lower = clean.toLowerCase();
+    final lowerBody = cleanBody.toLowerCase();
 
-    // Check definition sentence pattern first (e.g. "Photosynthesis is...", "Cellular respiration occurs in...", "Newton's second law states that...")
+    // 2. Visual Diagram / Chart Framing (Item 8)
+    if (hasImage) {
+      final subject = clean.replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
+      return 'Based on the illustrated diagram and chart for $subject, what key structure or setup is shown?';
+    }
+
+    // 3. Deep Paragraph Content Analysis:
+    // Probe deep into the body text sentences to identify the actual assertion, mechanism, or rule.
+    final sentences = _splitIntoCompleteSentences(cleanBody);
+
+    // 3a. Multiple Sub-roles / Timeframes / Chart Distinctive Mechanics
+    if ((lower.contains('timeframe') || lowerBody.contains('timeframe') || lowerBody.contains('chart')) &&
+        (lowerBody.contains('m15') || lowerBody.contains('15-minute') || lowerBody.contains('h1')) &&
+        (lowerBody.contains('m1') || lowerBody.contains('1-minute') || lowerBody.contains('m5'))) {
+      return 'What timeframes are utilized in this strategy, and what is the specific role of each chart?';
+    }
+
+    // 3b. Strategy Core Definition & Entry Rules
+    if (lower.contains('rectangle') || lowerBody.contains('rectangle')) {
+      if (lowerBody.contains('entry') || lowerBody.contains('trading plan')) {
+        return 'What is the role of the rectangle in this trading strategy, and how does it define entries?';
+      }
+      return 'How is the rectangle defined and applied in this strategy?';
+    }
+
+    // 3c. Execution Rules & Criteria (Stop loss, take profit, confirmation, risk-to-reward)
+    if (lowerBody.contains('entry:') ||
+        lowerBody.contains('entry trigger') ||
+        lowerBody.contains('take profit') ||
+        lowerBody.contains('stop loss') ||
+        lowerBody.contains('risk-to-reward') ||
+        lowerBody.contains('risk to reward')) {
+      final subject = clean.replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
+      return 'What are the specific entry criteria and risk management rules for $subject?';
+    }
+
+    // 3d. Core sentence mechanism: "utilizes X to Y" or "is used to Y"
+    for (final sent in sentences) {
+      final utilMatch = RegExp(
+        r'\b(?:utilizes|uses|relies on|is used to|serves to)\s+([^,\.]{5,55})\bto\s+([^,\.]{5,55})',
+        caseSensitive: false,
+      ).firstMatch(sent);
+      if (utilMatch != null) {
+        final tool = utilMatch.group(1)!.trim();
+        final purpose = utilMatch.group(2)!.trim();
+        if (tool.length >= 3 && purpose.length >= 5) {
+          return 'How is $tool used to $purpose?';
+        }
+      }
+
+      final depMatch = RegExp(
+        r'\b(?:is dependent on|depends on)\s+([^,\.]{3,45})',
+        caseSensitive: false,
+      ).firstMatch(sent);
+      if (depMatch != null) {
+        final factor = depMatch.group(1)!.trim();
+        return 'What makes $clean dependent on $factor and how does it function?';
+      }
+    }
+
+    // 4. Check definition sentence pattern first (e.g. "Photosynthesis is...", "Cellular respiration occurs in...", "Newton's second law states that...")
     final leadingDefMatch = RegExp(
       r"^([A-Z][a-zA-Z0-9\s']{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that)\b",
       caseSensitive: false,
@@ -608,7 +675,7 @@ class DocumentParserService {
       }
     }
 
-    // 2. If it's already a well-formed interrogative sentence, preserve and punctuate
+    // 5. If it's already a well-formed interrogative sentence, preserve and punctuate
     if (lower.startsWith('what') ||
         lower.startsWith('how') ||
         lower.startsWith('why') ||
@@ -622,14 +689,14 @@ class DocumentParserService {
       return _isGrammaticallySoundQuestion(q) ? q : null;
     }
 
-    // 3. Checklists, Criteria, Requirements
+    // 6. Checklists, Criteria, Requirements
     if (lower.contains('checklist') ||
         lower.contains('criteria') ||
         lower.contains('requirements')) {
       return 'What are the key criteria and conditions specified for $clean?';
     }
 
-    // 4. Rules, Guidelines, Principles, Protocols, Checks
+    // 7. Rules, Guidelines, Principles, Protocols, Checks
     if (lower.contains('rule') ||
         lower.contains('guideline') ||
         lower.contains('principle') ||
@@ -639,7 +706,7 @@ class DocumentParserService {
       return 'What are the primary rules and principles of $clean?';
     }
 
-    // 5. Procedural / Action Verbs (e.g. "Draw the Rectangle", "Calculate Eigenvalues", "Identify Structure")
+    // 8. Procedural / Action Verbs (e.g. "Draw the Rectangle", "Calculate Eigenvalues", "Identify Structure")
     final stepActionMatch = RegExp(
       r'^(?:draw|identify|mark|calculate|execute|analyze|derive|evaluate|determine|construct|apply|set|establish|verify|create|implement|configure|measure|select)\b\s*(.*)$',
       caseSensitive: false,
@@ -649,7 +716,7 @@ class DocumentParserService {
       return 'How do you $rest?';
     }
 
-    // 6. Topic / Subtopic Colon Pattern: "Indicators: Identifying Direction"
+    // 9. Topic / Subtopic Colon Pattern: "Indicators: Identifying Direction"
     final colonMatch = RegExp(r'^([^:]+)\s*:\s*(.+)$').firstMatch(clean);
     if (colonMatch != null) {
       final lead = colonMatch.group(1)!.trim();
@@ -672,14 +739,14 @@ class DocumentParserService {
       return 'What is the role of $lead in $sub?';
     }
 
-    // 7. Contrast / Comparison: "Strength vs. Weakness"
+    // 10. Contrast / Comparison: "Strength vs. Weakness"
     if (lower.contains(' vs.') ||
         lower.contains(' versus ') ||
         lower.contains(' and vs ')) {
       return 'How do you compare and contrast $clean?';
     }
 
-    // 8. Definitional Suffix: "[Subject] Defined", "[Subject] Definition", "[Subject] Overview"
+    // 11. Definitional Suffix: "[Subject] Defined", "[Subject] Definition", "[Subject] Overview"
     final definedMatch = RegExp(
       r'^(.*?)\s+(?:defined|definition|overview|explanation|concept)$',
       caseSensitive: false,
@@ -690,32 +757,11 @@ class DocumentParserService {
           .trim()
           .replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
       if (_isValidSubjectNoun(subject)) {
-        return 'What is the definition and core concept of $subject?';
+        return 'What is the definition and core role of $subject?';
       }
     }
 
-
-    // 8. In-Text Declarative Subject Extraction: "Photosynthesis is the process..."
-    final defMatch = RegExp(
-      r"^([A-Z0-9][a-zA-Z0-9\s\-_/']{2,40})\s+\b(is defined as|is known as|is called|refers to|represents|is the|is an|is a|is|are the|are|functions as|causes|consists of|occurs in|states that)\b\s*(.*)$",
-      caseSensitive: false,
-    ).firstMatch(clean);
-    if (defMatch != null) {
-      final subject = defMatch.group(1)!.trim();
-      if (_isValidSubjectNoun(subject)) {
-        if (lower.contains('occurs in') || lower.contains('takes place')) {
-          return 'Where does $subject occur and what is its role?';
-        }
-        if (lower.contains('process') ||
-            lower.contains('cycle') ||
-            lower.contains('reaction')) {
-          return 'What is $subject and how does the process function?';
-        }
-        return 'What is the function and definition of $subject?';
-      }
-    }
-
-    // 9. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
+    // 12. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
     if (_isValidSubjectNoun(clean)) {
       if (lower.endsWith('s') &&
           !lower.endsWith('sis') &&
@@ -727,8 +773,22 @@ class DocumentParserService {
       return 'What is $clean?';
     }
 
-    // If no complete, grammatically sound question can be formed, drop the chunk
-    return null;
+    // 13. Deep Paragraph Fallback: derive question from first sentence of body
+    if (sentences.isNotEmpty) {
+      final firstSentence = sentences.first.trim();
+      final defInFirst = RegExp(
+        r"^([A-Z][a-zA-Z0-9\s']{2,40})\s+(?:is|are|refers to|represents)\s+(.+)$",
+        caseSensitive: false,
+      ).firstMatch(firstSentence);
+      if (defInFirst != null) {
+        final subject = defInFirst.group(1)!.trim();
+        if (_isValidSubjectNoun(subject)) {
+          return 'What is $subject and what does it represent?';
+        }
+      }
+    }
+
+    return 'What are the key concepts and principles of $clean?';
   }
 
   /// Strict NLP question validation: ensures question is complete and free of garbage fragments.

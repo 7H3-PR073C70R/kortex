@@ -214,9 +214,31 @@ serve(async (req) => {
     }
 
     // 4. Fallback if AI yielded zero cards or key missing
-    if (flashcards.length === 0) {
-      if (textContent.length > 0) {
-        // Generate heuristic cards from text sections
+        // Deep contextual question formatter for fallback parsing
+        const formatContextualQuestion = (header: string, bodyText: string): string => {
+          let clean = header.replace(/^(?:(?:Part|Step|Rule|Section|\d+\.|\d+\.\d+|[A-Z]\.)\s*)+/i, "").replace(/:$/, "").trim();
+          const lower = clean.toLowerCase();
+          const lowerBody = bodyText.toLowerCase();
+
+          if ((lower.includes("timeframe") || lowerBody.includes("timeframe")) && (lowerBody.includes("m15") || lowerBody.includes("m1"))) {
+            return "What timeframes are utilized in this strategy, and what is the role of each chart?";
+          }
+          if (lower.includes("rectangle") || lowerBody.includes("rectangle")) {
+            return "What is the role of the rectangle in this trading strategy, and how does it define entries?";
+          }
+          if (lower.endsWith("defined") || lower.endsWith("definition")) {
+            const subject = clean.replace(/\s+(?:defined|definition)$/i, "").trim();
+            return `What is the definition and core concept of ${subject}?`;
+          }
+          if (lower.startsWith("what") || lower.startsWith("how") || lower.startsWith("why") || lower.startsWith("explain")) {
+            return clean.endsWith("?") ? clean : `${clean}?`;
+          }
+          if (clean.length > 0) {
+            return `What are the key rules and concepts regarding ${clean}?`;
+          }
+          return "What are the key principles explained in this section?";
+        };
+
         const lines = textContent.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
         let curTopic = "";
         let curBody: string[] = [];
@@ -225,9 +247,10 @@ serve(async (req) => {
           const isHeader = /^(?:(?:Part|Step|Rule|Section|\d+\.|\d+\.\d+|[A-Z]\.)\s+[A-Z]|\b[A-Z][a-zA-Z\s]{3,30}:)/.test(line);
           if (isHeader) {
             if (curTopic && curBody.length > 0) {
+              const bodyStr = curBody.join(" ");
               flashcards.push({
-                topic: curTopic,
-                raw_text: curBody.join(" "),
+                topic: formatContextualQuestion(curTopic, bodyStr),
+                raw_text: bodyStr,
                 confidence_score: 0.95,
               });
               curBody = [];
@@ -239,9 +262,10 @@ serve(async (req) => {
         }
 
         if (curTopic && curBody.length > 0) {
+          const bodyStr = curBody.join(" ");
           flashcards.push({
-            topic: curTopic,
-            raw_text: curBody.join(" "),
+            topic: formatContextualQuestion(curTopic, bodyStr),
+            raw_text: bodyStr,
             confidence_score: 0.95,
           });
         }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
@@ -16,10 +18,12 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     required GetChatHistoryUseCase getChatHistoryUseCase,
     required GenerateDeckFromChatUseCase generateDeckUseCase,
     QueryDocumentContextUseCase? queryDocumentContextUseCase,
+    LocalStorageService? localStorageService,
   }) : _streamResponse = streamResponseUseCase,
        _getChatHistory = getChatHistoryUseCase,
        _generateDeck = generateDeckUseCase,
        _queryDocumentContext = queryDocumentContextUseCase,
+       _localStorageService = localStorageService,
        super(const SyllabotChatState()) {
     on<SubmitPromptEvent>(_onSubmitPrompt);
     on<StreamTokenReceivedEvent>(_onStreamTokenReceived);
@@ -38,6 +42,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   final GetChatHistoryUseCase _getChatHistory;
   final GenerateDeckUseCase _generateDeck;
   final QueryDocumentContextUseCase? _queryDocumentContext;
+  final LocalStorageService? _localStorageService;
 
   StreamSubscription<String>? _streamSubscription;
 
@@ -252,10 +257,26 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     LoadChatMessagesEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
+    var isConverted = false;
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage != null) {
+        isConverted =
+            storage.getPreference(
+              key: 'syllabot_converted_${event.sessionId}',
+            ) !=
+            null;
+      }
+    } on Object catch (_) {}
+
     emit(
       state.copyWith(
         status: SyllabotStatus.loading,
         sessionId: event.sessionId,
+        isConvertedToDeck: isConverted,
       ),
     );
     final result = await _getChatHistory.getMessages(
@@ -287,6 +308,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         sessionId: 'session_${DateTime.now().millisecondsSinceEpoch}',
         messages: [],
         streamingText: '',
+        isConvertedToDeck: false,
       ),
     );
   }
@@ -317,12 +339,30 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
           errorMessage: failure.message,
         ),
       ),
-      (deck) => emit(
-        state.copyWith(
-          status: SyllabotStatus.deckGenerated,
-          generatedDeck: deck,
-        ),
-      ),
+      (deck) {
+        try {
+          final storage = _localStorageService ??
+              (locator.isRegistered<LocalStorageService>()
+                  ? locator<LocalStorageService>()
+                  : null);
+          if (storage != null) {
+            unawaited(
+              storage.savePreference(
+                key: 'syllabot_converted_${event.sessionId}',
+                data: deck.id,
+              ),
+            );
+          }
+        } on Object catch (_) {}
+
+        emit(
+          state.copyWith(
+            status: SyllabotStatus.deckGenerated,
+            generatedDeck: deck,
+            isConvertedToDeck: true,
+          ),
+        );
+      },
     );
   }
 

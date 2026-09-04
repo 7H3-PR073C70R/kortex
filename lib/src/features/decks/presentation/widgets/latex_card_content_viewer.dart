@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -17,6 +18,35 @@ class LatexCardContentViewer extends StatelessWidget {
   final String? latexFormula;
   final String? imageUrl;
   final bool isBackFace;
+
+  Widget _buildImage(
+    String url, {
+    required BoxFit fit,
+    double? width,
+    double? height,
+    Widget Function(BuildContext, Widget, ImageChunkEvent?)? loadingBuilder,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+  }) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: fit,
+        width: width,
+        height: height,
+        loadingBuilder: loadingBuilder,
+        errorBuilder: errorBuilder,
+      );
+    } else {
+      final cleanPath = url.replaceFirst(RegExp('^file://'), '');
+      return Image.file(
+        File(cleanPath),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: errorBuilder,
+      );
+    }
+  }
 
   void _showExpandedImage(BuildContext context, String url) {
     unawaited(
@@ -49,7 +79,7 @@ class LatexCardContentViewer extends StatelessWidget {
                     ),
                     child: InteractiveViewer(
                       maxScale: 4,
-                      child: Image.network(
+                      child: _buildImage(
                         url,
                         fit: BoxFit.contain,
                         loadingBuilder: (ctx, child, progress) {
@@ -165,7 +195,7 @@ class LatexCardContentViewer extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        Image.network(
+                        _buildImage(
                           imageUrl!,
                           width: double.infinity,
                           fit: BoxFit.cover,

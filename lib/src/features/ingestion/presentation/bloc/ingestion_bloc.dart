@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
@@ -195,6 +198,45 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         );
       },
       (deck) {
+        try {
+          final storage = locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null;
+          if (storage != null) {
+            final info = jsonEncode({
+              'deckId': deck.id,
+              'deckTitle': event.deckTitle,
+              'documentId': event.documentId,
+            });
+            // Record by base title
+            final baseName = event.deckTitle
+                .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                .toLowerCase()
+                .trim();
+            unawaited(
+              storage.savePreference(key: 'extracted_doc_$baseName', data: info),
+            );
+
+            // Record by documentId
+            unawaited(
+              storage.savePreference(
+                key: 'extracted_doc_${event.documentId}',
+                data: info,
+              ),
+            );
+
+            // Record by currentDocument contentHash if available
+            if (state.currentDocument?.contentHash != null) {
+              unawaited(
+                storage.savePreference(
+                  key: 'extracted_doc_${state.currentDocument!.contentHash}',
+                  data: info,
+                ),
+              );
+            }
+          }
+        } on Object catch (_) {}
+
         emit(
           state.copyWith(
             status: ProcessingStatus.completed,

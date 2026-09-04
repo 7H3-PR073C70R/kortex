@@ -23,6 +23,7 @@ class SyllabotChatState extends Equatable {
     this.engineType = ExecutionEngineType.cloudRemote,
     this.errorMessage,
     this.generatedDeck,
+    this.isConvertedToDeck = false,
     this.lastPrompt,
     this.lastEngine,
     this.lastSocraticMode,
@@ -36,6 +37,7 @@ class SyllabotChatState extends Equatable {
   final ExecutionEngineType engineType;
   final String? errorMessage;
   final DeckEntity? generatedDeck;
+  final bool isConvertedToDeck;
 
   // Retry support
   final String? lastPrompt;
@@ -55,6 +57,7 @@ class SyllabotChatState extends Equatable {
     ExecutionEngineType? engineType,
     String? errorMessage,
     DeckEntity? generatedDeck,
+    bool? isConvertedToDeck,
     String? lastPrompt,
     ExecutionEngineType? lastEngine,
     SocraticMode? lastSocraticMode,
@@ -68,6 +71,7 @@ class SyllabotChatState extends Equatable {
       engineType: engineType ?? this.engineType,
       errorMessage: errorMessage ?? this.errorMessage,
       generatedDeck: generatedDeck ?? this.generatedDeck,
+      isConvertedToDeck: isConvertedToDeck ?? this.isConvertedToDeck,
       lastPrompt: lastPrompt ?? this.lastPrompt,
       lastEngine: lastEngine ?? this.lastEngine,
       lastSocraticMode: lastSocraticMode ?? this.lastSocraticMode,
@@ -84,6 +88,7 @@ class SyllabotChatState extends Equatable {
     engineType,
     errorMessage,
     generatedDeck,
+    isConvertedToDeck,
     lastPrompt,
     lastEngine,
     lastSocraticMode,
