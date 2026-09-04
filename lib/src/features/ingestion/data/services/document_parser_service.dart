@@ -573,6 +573,31 @@ class DocumentParserService {
       return null;
     }
 
+    final lower = clean.toLowerCase();
+
+    // Check definition sentence pattern first (e.g. "Photosynthesis is...", "Cellular respiration occurs in...", "Newton's second law states that...")
+    final leadingDefMatch = RegExp(
+      r"^([A-Z][a-zA-Z0-9\s']{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that)\b",
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (leadingDefMatch != null) {
+      final subject = leadingDefMatch.group(1)!.trim();
+      if (_isValidSubjectNoun(subject)) {
+        if (lower.contains('states that')) {
+          return 'What does $subject state?';
+        }
+        if (lower.contains('occurs in') || lower.contains('takes place')) {
+          return 'Where does $subject occur and what is its role?';
+        }
+        if (lower.contains('process') ||
+            lower.contains('cycle') ||
+            lower.contains('reaction')) {
+          return 'What is $subject and how does the process function?';
+        }
+        return 'What is the function and definition of $subject?';
+      }
+    }
+
     // Handle longer narrative sentences as titles
     if (clean.length > 70) {
       final shortSubject = clean.split(RegExp('[:;,.]')).first.trim();
@@ -582,8 +607,6 @@ class DocumentParserService {
         return 'What are the key takeaways regarding: ${clean.substring(0, 45)}...?';
       }
     }
-
-    final lower = clean.toLowerCase();
 
     // 2. If it's already a well-formed interrogative sentence, preserve and punctuate
     if (lower.startsWith('what') ||
@@ -1098,6 +1121,19 @@ class DocumentParserService {
         commitCurrentSection();
         currentTitle = termDefMatch.group(1)!.trim();
         currentLines.add(termDefMatch.group(2)!.trim());
+        continue;
+      }
+
+      // 4b. Single-Line Prose Definition pattern: "Photosynthesis is...", "Cellular respiration occurs in...", "Newton's second law states that..."
+      final standaloneDefMatch = RegExp(
+        r"^([A-Z][a-zA-Z0-9\s']{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that)\b",
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (standaloneDefMatch != null &&
+          line.split(RegExp(r'\s+')).length >= 4) {
+        commitCurrentSection();
+        currentTitle = standaloneDefMatch.group(1)!.trim();
+        currentLines.add(line);
         continue;
       }
 

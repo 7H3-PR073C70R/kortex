@@ -36,7 +36,12 @@ abstract class DecksApiClient {
 
   @POST(AppApiEndpoint.sessionResults)
   Future<HttpResponse<dynamic>> saveSessionResults(
-    @Path('id') String deckId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @PATCH('/rest/v1/decks?id=eq.{id}')
+  Future<HttpResponse<dynamic>> updateDeckRecord(
+    @Path('id') String id,
     @Body() Map<String, dynamic> body,
   );
 

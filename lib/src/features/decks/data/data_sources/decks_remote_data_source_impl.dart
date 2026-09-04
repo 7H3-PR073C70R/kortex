@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -86,9 +87,22 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     try {
       final remoteDecks = await _client.getUserDecks();
       final remoteIds = remoteDecks.map((d) => d.id).toSet();
+      final updatedRemote = remoteDecks.map((remote) {
+        final localMatch =
+            _localCreatedDecks.where((d) => d.id == remote.id).firstOrNull;
+        if (localMatch != null && localMatch.masteryRate > remote.masteryRate) {
+          return remote.copyWith(
+            masteryRate: localMatch.masteryRate,
+            dueCards: localMatch.dueCards,
+            lastStudied: localMatch.lastStudied,
+          );
+        }
+        return remote;
+      }).toList();
+
       final merged = [
         ..._localCreatedDecks.where((d) => !remoteIds.contains(d.id)),
-        ...remoteDecks,
+        ...updatedRemote,
       ];
       return merged;
     } on Object catch (_) {
@@ -142,6 +156,16 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       }
     }
 
+    // Fire-and-forget sync to backend
+    try {
+      unawaited(
+        _client.processCardReview(cardId, {
+          'p_card_id': cardId,
+          'p_quality': quality,
+        }),
+      );
+    } on Object catch (_) {}
+
     return localResult;
   }
 
@@ -152,15 +176,60 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required int durationSeconds,
     required double retentionScore,
   }) async {
+    // 1. Calculate local deck mastery rate and due cards
+    final cards = _localDeckCards[deckId] ?? const <FlashcardModel>[];
+    final masteredCount = cards.where((c) => c.repetitions >= 1).length;
+    final totalCount = cards.isNotEmpty ? cards.length : cardsReviewed;
+    final masteryRate = totalCount > 0
+        ? (masteredCount > 0 ? masteredCount / totalCount : (retentionScore > 0 ? retentionScore : 1.0)).clamp(0.0, 1.0)
+        : 1.0;
+    final dueCards = cards.where((c) => c.isDueToday).length;
+    final now = DateTime.now();
+
+    // 2. Update local deck cache
+    final localIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
+    if (localIdx != -1) {
+      _localCreatedDecks[localIdx] = _localCreatedDecks[localIdx].copyWith(
+        masteryRate: masteryRate,
+        dueCards: dueCards,
+        lastStudied: now,
+      );
+    } else {
+      _localCreatedDecks.add(
+        DeckModel(
+          id: deckId,
+          title: 'Study Deck',
+          subject: 'General',
+          category: 'General',
+          totalCards: totalCount,
+          dueCards: dueCards,
+          masteryRate: masteryRate,
+          lastStudied: now,
+        ),
+      );
+    }
+
+    // 3. Sync to Supabase RPC record_study_session with correct parameter names
     try {
-      await _client.saveSessionResults(deckId, {
-        'cardsReviewed': cardsReviewed,
-        'durationSeconds': durationSeconds,
-        'retentionScore': retentionScore,
-        'completedAt': DateTime.now().toIso8601String(),
+      await _client.saveSessionResults({
+        'p_deck_id': deckId,
+        'p_cards_reviewed': cardsReviewed,
+        'p_duration_seconds': durationSeconds,
+        'p_retention_score': retentionScore,
       });
     } on Object catch (_) {
-      // Session results synced locally
+      // Offline/Local continues gracefully
+    }
+
+    // 4. Persist updated deck mastery and due status to Supabase decks table
+    try {
+      await _client.updateDeckRecord(deckId, {
+        'mastery_rate': masteryRate,
+        'due_cards': dueCards,
+        'last_studied': now.toIso8601String(),
+      });
+    } on Object catch (_) {
+      // Offline/Local continues gracefully
     }
   }
 

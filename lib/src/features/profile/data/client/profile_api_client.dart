@@ -15,10 +15,12 @@ class ProfileApiClient {
     required String userId,
     String? displayName,
     String? photoUrl,
+    int? streakDays,
   }) async {
     final data = <String, dynamic>{
       'display_name': ?displayName,
       'photo_url': ?photoUrl,
+      'streak_days': ?streakDays,
       'updated_at': DateTime.now().toIso8601String(),
     };
 

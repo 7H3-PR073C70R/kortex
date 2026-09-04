@@ -58,7 +58,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<QuickStartMockExamUseCase>(
       () => QuickStartMockExamUseCase(locator<DashboardRepository>()),
     )
-    ..registerFactory<DashboardBloc>(
+    ..registerLazySingleton<DashboardBloc>(
       () => DashboardBloc(
         getDashboardFeedUseCase: locator<GetDashboardFeedUseCase>(),
         quickStartMockExamUseCase: locator<QuickStartMockExamUseCase>(),
@@ -82,7 +82,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<CrdtDeckMerger>(
       CrdtDeckMerger.new,
     )
-    ..registerFactory<DecksBloc>(
+    ..registerLazySingleton<DecksBloc>(
       () => DecksBloc(
         getUserDecksUseCase: locator<GetUserDecksUseCase>(),
         deleteDeckUseCase: locator<DeleteDeckUseCase>(),

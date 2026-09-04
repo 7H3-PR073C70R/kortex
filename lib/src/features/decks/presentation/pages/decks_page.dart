@@ -23,8 +23,8 @@ class DecksPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<DecksBloc>(
-      create: (_) => locator<DecksBloc>()..add(const DecksStarted()),
+    return BlocProvider<DecksBloc>.value(
+      value: locator<DecksBloc>()..add(const DecksStarted()),
       child: const _DecksView(),
     );
   }

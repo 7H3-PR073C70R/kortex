@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -235,9 +237,26 @@ class UserProfilePage extends HookWidget {
     final email =
         profile?.email ?? state.user?.email ?? 'scholar@kortexify.com';
 
-    final streakDays = profile?.streakDays ?? 0;
-    final level = profile?.level ?? 1;
-    final retentionPct = ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
+    var streakDays = profile?.streakDays ?? 0;
+    var level = profile?.level ?? 1;
+    var retentionPct = ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
+
+    try {
+      final userActivity = locator<UserActivityService>();
+      final localStreak = userActivity.getCurrentStreak();
+      streakDays = math.max(streakDays, localStreak);
+
+      final liveRetention = userActivity.getOverallRetentionRate();
+      if (liveRetention > 0) {
+        retentionPct = (liveRetention * 100).toInt();
+      }
+
+      final xp = userActivity.getXpPoints();
+      if (xp > 0) {
+        final calcLevel = (xp / 300).floor() + 1;
+        level = math.max(level, calcLevel);
+      }
+    } on Object catch (_) {}
 
     final photoUrl = profile?.photoUrl;
 

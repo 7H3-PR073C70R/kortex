@@ -23,6 +23,7 @@ class DeckListTileCard extends StatelessWidget {
 
   void _confirmDelete(BuildContext context) {
     final l10n = context.l10n;
+    final decksBloc = context.read<DecksBloc>();
     unawaited(
       AppDialog.show<void>(
         context: context,
@@ -31,7 +32,7 @@ class DeckListTileCard extends StatelessWidget {
         primaryActionText: l10n.deleteDeckAction,
         isDestructive: true,
         onPrimaryAction: () {
-          context.read<DecksBloc>().add(DecksDeckDeleted(deck.id));
+          decksBloc.add(DecksDeckDeleted(deck.id));
         },
         secondaryActionText: l10n.cancelAction,
       ),

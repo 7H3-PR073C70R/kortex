@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -7,12 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -27,7 +30,7 @@ class AnalyticsDetailPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DashboardBloc>.value(
-      value: locator<DashboardBloc>(),
+      value: locator<DashboardBloc>()..add(const DashboardStarted()),
       child: const _AnalyticsDetailView(),
     );
   }
@@ -70,22 +73,27 @@ class _AnalyticsDetailView extends HookWidget {
           }
 
           final feed = state.feed;
-          final analytics = feed?.analyticsSummary ?? _buildEmptyAnalytics();
+          final analytics = _resolveAnalytics(feed?.analyticsSummary);
           final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
 
           final hasData =
               analytics.totalCardsMastered > 0 ||
-              analytics.weeklyMinutesStudied > 0;
+              analytics.weeklyMinutesStudied > 0 ||
+              analytics.overallRetentionRate > 0 ||
+              analytics.currentStreakDays > 0;
 
           var retentionPoints = const <DailyRetentionPoint>[];
           if (hasData) {
             const decayCalculator = EbbinghausDecayCalculator();
+            final effectiveRate = analytics.overallRetentionRate > 0
+                ? analytics.overallRetentionRate
+                : 0.85;
             retentionPoints = decayCalculator.calculateSevenDayProjection(
               cardStabilities: [4.5, 6.2, 5.0],
               empiricalRecallRates: [
                 1.0,
-                analytics.overallRetentionRate,
-                analytics.overallRetentionRate * 0.95,
+                effectiveRate,
+                effectiveRate * 0.95,
               ],
             );
           }
@@ -147,6 +155,64 @@ class _AnalyticsDetailView extends HookWidget {
           );
         },
       ),
+    );
+  }
+
+  static AnalyticsSummaryEntity _resolveAnalytics(
+    AnalyticsSummaryEntity? feedAnalytics,
+  ) {
+    AnalyticsSummaryEntity? live;
+    try {
+      final summary = locator<UserActivityService>().getAnalyticsSummary();
+      live = summary.toEntity();
+    } on Object catch (_) {}
+
+    if (feedAnalytics == null) {
+      return live ?? _buildEmptyAnalytics();
+    }
+
+    if (live == null) {
+      return feedAnalytics;
+    }
+
+    final effectiveStreak = math.max(
+      feedAnalytics.currentStreakDays,
+      live.currentStreakDays,
+    );
+    final effectiveLongest = math.max(
+      feedAnalytics.longestStreakDays,
+      live.longestStreakDays,
+    );
+    final effectiveMinutes = math.max(
+      feedAnalytics.weeklyMinutesStudied,
+      live.weeklyMinutesStudied,
+    );
+    final effectiveRetention = feedAnalytics.overallRetentionRate > 0
+        ? feedAnalytics.overallRetentionRate
+        : live.overallRetentionRate;
+    final effectiveMastered = math.max(
+      feedAnalytics.totalCardsMastered,
+      live.totalCardsMastered,
+    );
+    final effectiveXp = math.max(
+      feedAnalytics.xpPoints,
+      live.xpPoints,
+    );
+    final effectiveRank = live.academicRank != 'Neural Scholar I'
+        ? live.academicRank
+        : feedAnalytics.academicRank;
+
+    final hasLiveHeat = live.heatMapData.any((d) => d.intensityLevel > 0);
+
+    return AnalyticsSummaryEntity(
+      currentStreakDays: effectiveStreak,
+      longestStreakDays: effectiveLongest,
+      weeklyMinutesStudied: effectiveMinutes,
+      overallRetentionRate: effectiveRetention,
+      totalCardsMastered: effectiveMastered,
+      heatMapData: hasLiveHeat ? live.heatMapData : feedAnalytics.heatMapData,
+      xpPoints: effectiveXp,
+      academicRank: effectiveRank,
     );
   }
 

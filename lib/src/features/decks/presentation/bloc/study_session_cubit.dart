@@ -9,6 +9,8 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
 
 class StudySessionCubit extends Cubit<StudySessionState> {
@@ -141,24 +143,27 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         );
       } on Object catch (_) {}
 
-      // 2. Save session results to backend API
-      unawaited(
-        _saveSessionResultsUseCase(
+      // 2. Save session results to backend API & recalculate deck mastery
+      try {
+        await _saveSessionResultsUseCase(
           SaveSessionResultsParams(
             deckId: state.deckId,
             cardsReviewed: totalReviewed,
             durationSeconds: state.elapsedSeconds,
             retentionScore: finalRetention.clamp(0.0, 1.0),
           ),
-        ),
-      );
+        );
+      } on Object catch (_) {}
 
       // 3. Increment streak in AuthBloc
       try {
         locator<AuthBloc>().add(const AuthStreakIncremented());
       } on Object catch (_) {}
 
-      // 4. Trigger live refresh on DashboardBloc
+      // 4. Trigger live refresh on DecksBloc and DashboardBloc
+      try {
+        locator<DecksBloc>().add(const DecksRefreshed());
+      } on Object catch (_) {}
       try {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       } on Object catch (_) {}

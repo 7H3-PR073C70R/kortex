@@ -21,7 +21,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final feed = await _client.getDashboardFeed();
       if (liveAnalytics != null &&
           (liveAnalytics.currentStreakDays > 0 ||
-              liveAnalytics.totalCardsMastered > 0)) {
+              liveAnalytics.totalCardsMastered > 0 ||
+              liveAnalytics.weeklyMinutesStudied > 0 ||
+              liveAnalytics.overallRetentionRate > 0 ||
+              liveAnalytics.xpPoints > 0)) {
         return feed.copyWith(analyticsSummary: liveAnalytics);
       }
       return feed;

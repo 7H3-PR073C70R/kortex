@@ -167,7 +167,8 @@ class UserActivityServiceImpl implements UserActivityService {
       }
     }
 
-    return (totalSeconds / 60).round();
+    if (totalSeconds <= 0) return 0;
+    return math.max(1, (totalSeconds / 60).round());
   }
 
   @override
@@ -236,7 +237,8 @@ class UserActivityServiceImpl implements UserActivityService {
       final key = _toDateKey(day);
       final entry = map[key];
       final cards = entry?.cards ?? 0;
-      final minutes = ((entry?.seconds ?? 0) / 60).round();
+      final seconds = entry?.seconds ?? 0;
+      final minutes = seconds > 0 ? math.max(1, (seconds / 60).round()) : 0;
 
       var intensityLevel = 0;
       if (cards >= 30 || minutes >= 25) {
@@ -245,7 +247,7 @@ class UserActivityServiceImpl implements UserActivityService {
         intensityLevel = 3;
       } else if (cards >= 10 || minutes >= 8) {
         intensityLevel = 2;
-      } else if (cards > 0 || minutes > 0) {
+      } else if (cards > 0 || minutes > 0 || seconds > 0) {
         intensityLevel = 1;
       }
 

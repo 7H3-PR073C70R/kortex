@@ -32,9 +32,8 @@ class DashboardPage extends HookWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<DashboardBloc>(
-          create: (_) =>
-              locator<DashboardBloc>()..add(const DashboardStarted()),
+        BlocProvider<DashboardBloc>.value(
+          value: locator<DashboardBloc>()..add(const DashboardStarted()),
         ),
         BlocProvider<CramPlannerCubit>(
           create: (_) {

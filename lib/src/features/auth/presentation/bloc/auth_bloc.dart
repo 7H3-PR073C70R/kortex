@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
@@ -11,6 +13,7 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -365,10 +368,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     res.fold(
       (_) {},
       (profile) {
+        var mergedProfile = profile;
+        try {
+          final liveStreak = locator<UserActivityService>().getCurrentStreak();
+          if (liveStreak > profile.streakDays) {
+            mergedProfile = profile.copyWith(streakDays: liveStreak);
+          }
+        } on Object catch (_) {}
         emit(
           state.copyWith(
-            userProfile: profile,
-            sessionStatus: profile.isOnboarded
+            userProfile: mergedProfile,
+            sessionStatus: mergedProfile.isOnboarded
                 ? AuthSessionStatus.authenticatedComplete
                 : AuthSessionStatus.authenticatedNeedsOnboarding,
           ),
@@ -404,12 +414,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: failure.message ?? 'Failed to update track.',
         ),
       ),
-      (profile) => emit(
-        state.copyWith(
-          status: AuthStatus.authenticated,
-          userProfile: profile.id.isNotEmpty ? profile : state.userProfile,
-        ),
-      ),
+      (profile) {
+        var mergedProfile = profile;
+        try {
+          final liveStreak = locator<UserActivityService>().getCurrentStreak();
+          if (liveStreak > profile.streakDays) {
+            mergedProfile = profile.copyWith(streakDays: liveStreak);
+          }
+        } on Object catch (_) {}
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            userProfile: profile.id.isNotEmpty ? mergedProfile : state.userProfile,
+          ),
+        );
+      },
     );
   }
 
@@ -446,14 +465,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) {
     if (state.userProfile != null) {
-      final updatedStreak = (state.userProfile!.streakDays <= 0)
-          ? 1
-          : state.userProfile!.streakDays + 1;
+      var liveStreak = 0;
+      try {
+        liveStreak = locator<UserActivityService>().getCurrentStreak();
+      } on Object catch (_) {}
+
+      final updatedStreak = liveStreak > 0
+          ? liveStreak
+          : (state.userProfile!.streakDays <= 0
+              ? 1
+              : state.userProfile!.streakDays + 1);
+
       emit(
         state.copyWith(
           userProfile: state.userProfile!.copyWith(streakDays: updatedStreak),
         ),
       );
+
+      // Persist to Supabase profiles table
+      try {
+        unawaited(
+          locator<ProfileApiClient>().updateProfile(
+            userId: state.userProfile!.id,
+            streakDays: updatedStreak,
+          ),
+        );
+      } on Object catch (_) {}
     }
   }
 
