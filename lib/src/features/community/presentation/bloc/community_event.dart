@@ -102,3 +102,31 @@ class LeaderboardUpdatedEvent extends CommunityEvent {
   @override
   List<Object?> get props => [entries];
 }
+
+class PublishDeckEvent extends CommunityEvent {
+  const PublishDeckEvent({
+    required this.title,
+    required this.subject,
+    required this.description,
+    required this.category,
+    this.totalCards = 10,
+    this.cardsJson = const [],
+  });
+
+  final String title;
+  final String subject;
+  final String description;
+  final String category;
+  final int totalCards;
+  final List<Map<String, dynamic>> cardsJson;
+
+  @override
+  List<Object?> get props => [
+    title,
+    subject,
+    description,
+    category,
+    totalCards,
+    cardsJson,
+  ];
+}

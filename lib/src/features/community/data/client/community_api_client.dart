@@ -57,12 +57,12 @@ abstract class CommunityApiClient {
     @Queries() Map<String, dynamic> query,
   );
 
-  @POST('/rpc/auto_provision_community_rpc')
+  @POST(AppApiEndpoint.autoProvisionCommunityRpc)
   Future<HttpResponse<dynamic>> autoProvisionCommunity(
     @Body() Map<String, dynamic> body,
   );
 
-  @GET('/study_communities')
+  @GET(AppApiEndpoint.studyCommunities)
   Future<HttpResponse<dynamic>> fetchCourseCommunityStats(
     @Queries() Map<String, dynamic> query,
   );

@@ -76,6 +76,9 @@ class AppApiEndpoint {
   static const String sharedDecks = '/rest/v1/shared_decks';
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
+  static const String autoProvisionCommunityRpc =
+      '/rest/v1/rpc/auto_provision_community_rpc';
+  static const String studyCommunities = '/rest/v1/study_communities';
 
   // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';

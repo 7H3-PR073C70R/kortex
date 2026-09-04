@@ -1,11 +1,14 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -22,10 +25,15 @@ class LiveStudyRoomPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userStorage = locator<UserStorageService>();
     return BlocProvider<LiveRoomCubit>(
       create: (_) => LiveRoomCubit(
         initialRoom: room,
         repository: locator<CommunityRepository>(),
+        ephemeralRepository: locator<EphemeralRoomRepository>(),
+        currentUserId: userStorage.getUserId(),
+        currentUserName: userStorage.getUserDisplayName() ?? 'You',
+        currentUserAvatar: userStorage.getUserAvatarUrl() ?? '',
       ),
       child: const _LiveStudyRoomView(),
     );

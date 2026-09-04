@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -23,6 +26,7 @@ class ForumThreadDetailPage extends HookWidget {
 
     final replyController = useTextEditingController();
     final replies = useState<List<ForumReplyEntity>>(post.replies);
+    final isSubmitting = useState<bool>(false);
 
     return Scaffold(
       backgroundColor: isDark
@@ -259,31 +263,54 @@ class ForumThreadDetailPage extends HookWidget {
                   ),
                   const SizedBox(width: 10),
                   ShrinkableButton(
-                    onTap: () {
-                      final text = replyController.text.trim();
-                      if (text.isEmpty) return;
-                      final newReply = ForumReplyEntity(
-                        id: 'reply_${DateTime.now().millisecondsSinceEpoch}',
-                        postId: post.id,
-                        authorId: 'me',
-                        authorName: 'You',
-                        content: text,
-                        createdAt: DateTime.now(),
-                      );
-                      replies.value = [...replies.value, newReply];
-                      replyController.clear();
-                    },
+                    onTap: isSubmitting.value
+                        ? null
+                        : () async {
+                            final text = replyController.text.trim();
+                            if (text.isEmpty) return;
+                            isSubmitting.value = true;
+                            final repo = locator<CommunityRepository>();
+                            final res = await repo.replyToForumPost(
+                              postId: post.id,
+                              content: text,
+                            );
+                            isSubmitting.value = false;
+                            res.fold(
+                              (failure) {
+                                if (context.mounted) {
+                                  context.showSnackBar(
+                                    message: failure.message ??
+                                        'Failed to send reply',
+                                    type: SnackBarType.error,
+                                  );
+                                }
+                              },
+                              (reply) {
+                                replies.value = [...replies.value, reply];
+                                replyController.clear();
+                              },
+                            );
+                          },
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: colors.primary,
                       ),
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      child: isSubmitting.value
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                     ),
                   ),
                 ],

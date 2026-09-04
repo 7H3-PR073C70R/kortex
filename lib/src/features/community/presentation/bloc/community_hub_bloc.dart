@@ -16,6 +16,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CreateForumPostEvent>(_onCreateForumPost);
     on<ReplyToPostEvent>(_onReplyToPost);
     on<CloneDeckEvent>(_onCloneDeck);
+    on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
   }
 
@@ -193,6 +194,35 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       ),
       (clonedDeck) {
         emit(state.copyWith(lastClonedDeckId: clonedDeck.id));
+      },
+    );
+  }
+
+  Future<void> _onPublishDeck(
+    PublishDeckEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.publishDeckToMarketplace(
+      title: event.title,
+      subject: event.subject,
+      description: event.description,
+      category: event.category,
+      totalCards: event.totalCards,
+      cardsJson: event.cardsJson,
+    );
+    res.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CommunityStatus.failure,
+          errorMessage: failure.message,
+        ),
+      ),
+      (sharedDeck) {
+        emit(
+          state.copyWith(
+            sharedDecks: [sharedDeck, ...state.sharedDecks],
+          ),
+        );
       },
     );
   }

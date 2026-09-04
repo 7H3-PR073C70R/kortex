@@ -56,6 +56,7 @@ void _initDataSource() {
     ..registerLazySingleton<CommunityRemoteDataSource>(
       () => CommunityRemoteDataSourceImpl(
         locator<CommunityApiClient>(),
+        userStorage: locator<UserStorageService>(),
       ),
     )
     ..registerLazySingleton<RagRemoteDataSource>(

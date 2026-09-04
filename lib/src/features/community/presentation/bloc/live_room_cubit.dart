@@ -87,13 +87,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
          LiveRoomState(
            room: initialRoom,
            remainingSeconds: initialRoom.pomodoroDurationMinutes * 60,
-           participants: const [
-             'Adeola V.',
-             'Chukwudi O.',
-             'Elena R.',
-             'Tariq M.',
-             'Zainab B.',
-           ],
+           participants: [currentUserName ?? 'You'],
          ),
        ) {
     _startTimer();

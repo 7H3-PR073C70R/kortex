@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
@@ -92,6 +93,22 @@ class _DocumentIngestionView extends HookWidget {
                   message: l10n.contentAlreadyUploadedNotice,
                 );
               }
+
+              // Auto-spinoff course community per PRD
+              final doc = state.currentDocument!;
+              final rawSubject = doc.filename.split('.').first;
+              final cleanCode = rawSubject
+                  .replaceAll(RegExp(r'[^a-zA-Z0-9\s_-]'), '')
+                  .trim();
+              if (cleanCode.isNotEmpty) {
+                unawaited(
+                  locator<AutoCommunityCubit>().provisionForDocument(
+                    courseCode: cleanCode,
+                    title: '$cleanCode Study Hub',
+                  ),
+                );
+              }
+
               // Navigate to STEM OCR Live Preview & Editor
               unawaited(
                 context.router.push(

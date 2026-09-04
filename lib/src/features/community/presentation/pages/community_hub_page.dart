@@ -1,23 +1,31 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
+import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
-import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/auto_community_banner_widget.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_study_room_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/expandable_create_post_fab.dart';
 import 'package:kortex/src/features/community/presentation/widgets/live_focus_room_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/marketplace_deck_card.dart';
+import 'package:kortex/src/features/community/presentation/widgets/publish_deck_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
-import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class CommunityHubPage extends HookWidget {
@@ -25,9 +33,16 @@ class CommunityHubPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CommunityHubBloc>(
-      create: (_) =>
-          locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CommunityHubBloc>(
+          create: (_) =>
+              locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+        ),
+        BlocProvider<AutoCommunityCubit>(
+          create: (_) => locator<AutoCommunityCubit>(),
+        ),
+      ],
       child: const _CommunityHubView(),
     );
   }
@@ -45,6 +60,19 @@ class _CommunityHubView extends HookWidget {
 
     final tabController = useTabController(initialLength: 4);
     useListenable(tabController);
+
+    final authState = context.watch<AuthBloc?>()?.state;
+    final targetTrack = authState?.userProfile?.targetTrack;
+
+    // Auto provision / join community for user's academic track on launch
+    useEffect(() {
+      if (targetTrack != null && targetTrack.trim().isNotEmpty) {
+        unawaited(
+          context.read<AutoCommunityCubit>().provisionForTrack(targetTrack),
+        );
+      }
+      return null;
+    }, [targetTrack]);
 
     useEffect(() {
       void listener() {
@@ -94,120 +122,126 @@ class _CommunityHubView extends HookWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: colors.primary,
-        onPressed: () {
-          unawaited(
-            showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (ctx) => CreatePostBottomSheet(
-                onSubmit:
-                    ({
-                      required title,
-                      required content,
-                      required track,
-                      latexContent,
-                    }) {
-                      context.read<CommunityHubBloc>().add(
-                        CreateForumPostEvent(
-                          title: title,
-                          content: content,
-                          track: track,
-                          latexContent: latexContent,
-                        ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              // Auto-Community Spinoff Banner (Appears when community is provisioned)
+              AutoCommunityBannerWidget(
+                onTapJoinRoom: (roomId) {
+                  final hubState = context.read<CommunityHubBloc>().state;
+                  final room = hubState.studyRooms.firstWhere(
+                    (r) => r.id == roomId,
+                    orElse: () => StudyRoomEntity(
+                      id: roomId,
+                      title: 'Focus Room',
+                      subject: 'General Study',
+                    ),
+                  );
+                  unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+                },
+              ),
+
+              // Main Tab Content with Shimmer Skeleton
+              Expanded(
+                child: BlocConsumer<CommunityHubBloc, CommunityState>(
+                  listener: (context, state) {
+                    if (state.lastClonedDeckId != null) {
+                      context.showSnackBar(
+                        message: l10n.deckClonedSuccessNotice,
                       );
-                    },
-              ),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text(
-          l10n.createPostButton,
-          style: typography.footnote.bold.copyWith(color: Colors.white),
-        ),
-      ),
-      body: BlocConsumer<CommunityHubBloc, CommunityState>(
-        listener: (context, state) {
-          if (state.lastClonedDeckId != null) {
-            context.showSnackBar(
-              message: l10n.deckClonedSuccessNotice,
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state.status == CommunityStatus.loading &&
-              state.studyRooms.isEmpty &&
-              state.forumPosts.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(20),
-              child: ShimmerPlaceholder(
-                width: double.infinity,
-                height: 300,
-                borderRadius: 20,
-              ),
-            );
-          }
+                    }
+                  },
+                  builder: (context, state) {
+                    if (state.status == CommunityStatus.loading &&
+                        state.studyRooms.isEmpty &&
+                        state.forumPosts.isEmpty) {
+                      return CommunityHubShimmer(
+                        tabIndex: tabController.index,
+                      );
+                    }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 1024;
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isDesktop = constraints.maxWidth >= 1024;
 
-              if (isDesktop) {
-                // Desktop: 2-Panel Layout
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: TabBarView(
+                        if (isDesktop) {
+                          // Desktop: 2-Panel Layout
+                          return Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TabBarView(
+                                    controller: tabController,
+                                    children: [
+                                      _LiveRoomsList(state: state),
+                                      _ForumPostsList(state: state),
+                                      _MarketplaceDecksList(state: state),
+                                      StreakLeaderboardWidget(
+                                        entries: state.leaderboardEntries,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  flex: 2,
+                                  child: SingleChildScrollView(
+                                    child: StreakLeaderboardWidget(
+                                      entries: state.leaderboardEntries,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        // Mobile: Single-Column Tab View
+                        return TabBarView(
                           controller: tabController,
                           children: [
                             _LiveRoomsList(state: state),
                             _ForumPostsList(state: state),
                             _MarketplaceDecksList(state: state),
-                            StreakLeaderboardWidget(
-                              entries: state.leaderboardEntries,
+                            SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: StreakLeaderboardWidget(
+                                entries: state.leaderboardEntries,
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: SingleChildScrollView(
-                          child: StreakLeaderboardWidget(
-                            entries: state.leaderboardEntries,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
 
-              // Mobile: Single-Column Tab View
-              return TabBarView(
-                controller: tabController,
-                children: [
-                  _LiveRoomsList(state: state),
-                  _ForumPostsList(state: state),
-                  _MarketplaceDecksList(state: state),
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: StreakLeaderboardWidget(
-                      entries: state.leaderboardEntries,
-                    ),
-                  ),
-                ],
+          // Morphing Expandable Floating Action Button
+          ExpandableCreatePostFab(
+            onSubmit: ({
+              required title,
+              required content,
+              required track,
+              latexContent,
+            }) {
+              context.read<CommunityHubBloc>().add(
+                CreateForumPostEvent(
+                  title: title,
+                  content: content,
+                  track: track,
+                  latexContent: latexContent,
+                ),
               );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -220,63 +254,276 @@ class _LiveRoomsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.studyRooms.isEmpty) {
-      return Center(
-        child: Text(
-          'No active study rooms right now.',
-          style: context.typography.footnote.medium.copyWith(
-            color: context.colors.textSecondary,
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        // Action Header: Room Count + Launch Room Button
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Active Focus Rooms (${state.studyRooms.length})',
+                style: typography.footnote.bold.copyWith(
+                  color: colors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(
+                    CreateStudyRoomSheet.show(
+                      context,
+                      onSubmit: ({
+                        required title,
+                        required subject,
+                        required category,
+                        required pomodoroMinutes,
+                      }) {
+                        context.read<CommunityHubBloc>().add(
+                          CreateRoomEvent(
+                            title: title,
+                            subject: subject,
+                            category: category,
+                            pomodoroMinutes: pomodoroMinutes,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 50 : 30),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_rounded,
+                        color: colors.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'New Room',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.studyRooms.length,
-      itemBuilder: (context, index) {
-        final room = state.studyRooms[index];
-        return LiveFocusRoomCard(
-          room: room,
-          onJoinTap: () {
-            unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
-          },
-        );
-      },
+        // Room Cards or Empty State
+        if (state.studyRooms.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 30 : 20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.timer_outlined,
+                  size: 48,
+                  color: colors.primary.withAlpha(120),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'No active study rooms right now',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Launch a synchronized Pomodoro room for your study group.',
+                  textAlign: TextAlign.center,
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ShrinkableButton(
+                  onTap: () {
+                    unawaited(
+                      CreateStudyRoomSheet.show(
+                        context,
+                        onSubmit: ({
+                          required title,
+                          required subject,
+                          required category,
+                          required pomodoroMinutes,
+                        }) {
+                          context.read<CommunityHubBloc>().add(
+                            CreateRoomEvent(
+                              title: title,
+                              subject: subject,
+                              category: category,
+                              pomodoroMinutes: pomodoroMinutes,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Launch Focus Room',
+                      style: typography.footnote.bold.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...state.studyRooms.map((room) {
+            return LiveFocusRoomCard(
+              room: room,
+              onJoinTap: () {
+                unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+              },
+            );
+          }),
+      ],
     );
   }
 }
 
-class _ForumPostsList extends StatelessWidget {
+class _ForumPostsList extends HookWidget {
   const _ForumPostsList({required this.state});
 
   final CommunityState state;
 
   @override
   Widget build(BuildContext context) {
-    if (state.forumPosts.isEmpty) {
-      return Center(
-        child: Text(
-          'No forum posts found.',
-          style: context.typography.footnote.medium.copyWith(
-            color: context.colors.textSecondary,
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    const filterTracks = [
+      'All',
+      'WAEC',
+      'JAMB',
+      'SAT',
+      'Engineering',
+      'Medicine',
+      'General',
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        // Track Filter Chips Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filterTracks.map((track) {
+              final isSelected = state.selectedTrack == track ||
+                  (state.selectedTrack.isEmpty && track == 'All');
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(track),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) {
+                      unawaited(HapticFeedback.lightImpact());
+                      context.read<CommunityHubBloc>().add(
+                        ChangeTrackFilterEvent(track),
+                      );
+                    }
+                  },
+                  selectedColor: colors.primary.withAlpha(isDark ? 60 : 40),
+                  labelStyle: typography.caption.bold.copyWith(
+                    color: isSelected ? colors.primary : colors.textSecondary,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ),
-      );
-    }
+        const SizedBox(height: 14),
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.forumPosts.length,
-      itemBuilder: (context, index) {
-        final post = state.forumPosts[index];
-        return TrackForumPostCard(
-          post: post,
-          onTap: () {
-            unawaited(context.router.push(ForumThreadDetailRoute(post: post)));
-          },
-        );
-      },
+        // Forum Post Cards or Empty State
+        if (state.forumPosts.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 30 : 20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.forum_outlined,
+                  size: 48,
+                  color: colors.primary.withAlpha(120),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'No forum discussions found',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Start a question, share notes, or discuss past paper solutions.',
+                  textAlign: TextAlign.center,
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...state.forumPosts.map((post) {
+            return TrackForumPostCard(
+              post: post,
+              onTap: () {
+                unawaited(context.router.push(ForumThreadDetailRoute(post: post)));
+              },
+            );
+          }),
+      ],
     );
   }
 }
@@ -288,36 +535,178 @@ class _MarketplaceDecksList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.sharedDecks.isEmpty) {
-      return Center(
-        child: Text(
-          'No community decks available yet.',
-          style: context.typography.footnote.medium.copyWith(
-            color: context.colors.textSecondary,
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: [
+        // Action Header: Shared Decks count + Share Deck Button
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Community Shared Decks (${state.sharedDecks.length})',
+                style: typography.footnote.bold.copyWith(
+                  color: colors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(
+                    PublishDeckModalSheet.show(
+                      context,
+                      onSubmit: ({
+                        required title,
+                        required subject,
+                        required description,
+                        required category,
+                      }) {
+                        context.read<CommunityHubBloc>().add(
+                          PublishDeckEvent(
+                            title: title,
+                            subject: subject,
+                            description: description,
+                            category: category,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 50 : 30),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.share_rounded,
+                        color: colors.primary,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Share Deck',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.sharedDecks.length,
-      itemBuilder: (context, index) {
-        final deck = state.sharedDecks[index];
-        return MarketplaceDeckCard(
-          deck: deck,
-          onTap: () {
-            unawaited(
-              context.router.push(
-                DeckMarketplaceDetailRoute(deck: deck),
+        // Deck Cards or Empty State
+        if (state.sharedDecks.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 30 : 20),
               ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.style_outlined,
+                  size: 48,
+                  color: colors.primary.withAlpha(120),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'No community decks available yet',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Publish flashcard decks to help peers study and earn community XP.',
+                  textAlign: TextAlign.center,
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ShrinkableButton(
+                  onTap: () {
+                    unawaited(
+                      PublishDeckModalSheet.show(
+                        context,
+                        onSubmit: ({
+                          required title,
+                          required subject,
+                          required description,
+                          required category,
+                        }) {
+                          context.read<CommunityHubBloc>().add(
+                            PublishDeckEvent(
+                              title: title,
+                              subject: subject,
+                              description: description,
+                              category: category,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Share First Deck',
+                      style: typography.footnote.bold.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...state.sharedDecks.map((deck) {
+            return MarketplaceDeckCard(
+              deck: deck,
+              onTap: () {
+                unawaited(
+                  context.router.push(
+                    DeckMarketplaceDetailRoute(deck: deck),
+                  ),
+                );
+              },
+              onCloneTap: () {
+                context.read<CommunityHubBloc>().add(CloneDeckEvent(deck.id));
+              },
             );
-          },
-          onCloneTap: () {
-            context.read<CommunityHubBloc>().add(CloneDeckEvent(deck.id));
-          },
-        );
-      },
+          }),
+      ],
     );
   }
 }

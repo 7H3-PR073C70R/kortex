@@ -18,6 +18,10 @@ abstract class UserStorageService {
 
   String? getUserId();
 
+  String? getUserDisplayName();
+
+  String? getUserAvatarUrl();
+
   void clearStorage();
 }
 
@@ -46,8 +50,7 @@ class UserStorageServiceImpl implements UserStorageService {
     }
   }
 
-  @override
-  String? getUserId() {
+  Map<String, dynamic>? _decodeJwtPayload() {
     final token = getToken();
     if (token == null || !token.contains('.')) return null;
     try {
@@ -55,13 +58,44 @@ class UserStorageServiceImpl implements UserStorageService {
       if (parts.length >= 2) {
         final normalized = base64Url.normalize(parts[1]);
         final decoded = utf8.decode(base64Url.decode(normalized));
-        final map = jsonDecode(decoded) as Map<String, dynamic>;
-        return map['sub'] as String? ?? map['id'] as String?;
+        return jsonDecode(decoded) as Map<String, dynamic>;
       }
     } on Object {
       return null;
     }
     return null;
+  }
+
+  @override
+  String? getUserId() {
+    final map = _decodeJwtPayload();
+    return map?['sub'] as String? ?? map?['id'] as String?;
+  }
+
+  @override
+  String? getUserDisplayName() {
+    final map = _decodeJwtPayload();
+    if (map == null) return null;
+    final metadata = map['user_metadata'] as Map<String, dynamic>?;
+    final name = metadata?['display_name'] as String? ??
+        metadata?['full_name'] as String? ??
+        metadata?['name'] as String?;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
+    final email = map['email'] as String?;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first;
+    }
+    return null;
+  }
+
+  @override
+  String? getUserAvatarUrl() {
+    final map = _decodeJwtPayload();
+    if (map == null) return null;
+    final metadata = map['user_metadata'] as Map<String, dynamic>?;
+    return metadata?['avatar_url'] as String? ??
+        metadata?['picture'] as String? ??
+        metadata?['photo_url'] as String?;
   }
 
   @override
