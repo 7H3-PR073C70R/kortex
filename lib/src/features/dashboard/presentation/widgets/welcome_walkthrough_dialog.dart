@@ -130,7 +130,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
     final isLast = _currentIndex == slides.length - 1;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 440),

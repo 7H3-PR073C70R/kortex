@@ -37,13 +37,15 @@ class AchievementBadgeGrid extends StatelessWidget {
 
   List<AchievementBadgeItem> _getDefaultBadges(BuildContext context) {
     final l10n = context.l10n;
+    final colors = context.colors;
+
     return [
       AchievementBadgeItem(
         key: 'night_owl',
         title: l10n.badgeNightOwlTitle,
         description: l10n.badgeNightOwlDesc,
         icon: Icons.nightlight_round,
-        accentColor: Colors.deepPurpleAccent,
+        accentColor: colors.primary,
         progress: 5,
         target: 5,
         isUnlocked: true,
@@ -53,7 +55,7 @@ class AchievementBadgeGrid extends StatelessWidget {
         title: l10n.badgeCenturyClubTitle,
         description: l10n.badgeCenturyClubDesc,
         icon: Icons.military_tech_rounded,
-        accentColor: Colors.amberAccent,
+        accentColor: colors.warning,
         progress: 100,
         target: 100,
         isUnlocked: true,
@@ -63,7 +65,7 @@ class AchievementBadgeGrid extends StatelessWidget {
         title: l10n.badgeStreakMasterTitle,
         description: l10n.badgeStreakMasterDesc,
         icon: Icons.whatshot_rounded,
-        accentColor: Colors.orangeAccent,
+        accentColor: colors.syllabotAccent,
         progress: 9,
         target: 14,
         isUnlocked: false,
@@ -73,7 +75,7 @@ class AchievementBadgeGrid extends StatelessWidget {
         title: l10n.badgeStemAlchemistTitle,
         description: l10n.badgeStemAlchemistDesc,
         icon: Icons.functions_rounded,
-        accentColor: Colors.greenAccent,
+        accentColor: colors.success,
         progress: 32,
         target: 50,
         isUnlocked: false,
@@ -84,6 +86,7 @@ class AchievementBadgeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
     final badgeList = badges ?? _getDefaultBadges(context);
 
@@ -103,7 +106,7 @@ class AchievementBadgeGrid extends StatelessWidget {
             l10n.achievementsGridTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -138,11 +141,13 @@ class _BadgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
 
-    final badgeColor = badge.isUnlocked ? badge.accentColor : Colors.white38;
+    final badgeColor = badge.isUnlocked ? badge.accentColor : colors.textMuted;
     final bgColor = badge.isUnlocked
         ? badge.accentColor.withValues(alpha: 0.12)
-        : Colors.white.withValues(alpha: 0.04);
+        : colors.surface.withValues(alpha: 0.5);
 
     final statusText = badge.isUnlocked
         ? 'Unlocked'
@@ -158,7 +163,7 @@ class _BadgeCard extends StatelessWidget {
           border: Border.all(
             color: badge.isUnlocked
                 ? badge.accentColor.withValues(alpha: 0.4)
-                : Colors.white12,
+                : colors.surfaceBorder,
           ),
         ),
         child: Column(
@@ -177,15 +182,15 @@ class _BadgeCard extends StatelessWidget {
                   child: Icon(badge.icon, color: badgeColor, size: 22),
                 ),
                 if (badge.isUnlocked)
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
-                    color: Colors.greenAccent,
+                    color: colors.success,
                     size: 18,
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.lock_outline_rounded,
-                    color: Colors.white38,
+                    color: colors.textMuted,
                     size: 18,
                   ),
               ],
@@ -198,7 +203,7 @@ class _BadgeCard extends StatelessWidget {
                   badge.title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: badge.isUnlocked ? Colors.white : Colors.white60,
+                    color: badge.isUnlocked ? colors.textPrimary : colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -207,7 +212,7 @@ class _BadgeCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white54,
+                    color: colors.textSecondary,
                     fontSize: 10,
                     height: 1.2,
                   ),
@@ -220,7 +225,7 @@ class _BadgeCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: badge.progressRatio,
-                  backgroundColor: Colors.white10,
+                  backgroundColor: colors.surfaceBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(badge.accentColor),
                   minHeight: 4,
                 ),
@@ -228,19 +233,18 @@ class _BadgeCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '${badge.progress} / ${badge.target}',
-                style: const TextStyle(
+                style: typography.caption.regular.copyWith(
                   fontSize: 9,
-                  color: Colors.white38,
+                  color: colors.textMuted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ] else ...[
-              const Text(
+              Text(
                 'COMPLETED',
-                style: TextStyle(
+                style: typography.caption.bold.copyWith(
                   fontSize: 9,
-                  color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
+                  color: colors.success,
                   letterSpacing: 0.5,
                 ),
               ),

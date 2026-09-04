@@ -89,7 +89,7 @@ class ExamCountdownWidget extends StatelessWidget {
                       child: Text(
                         countdown.badgeTitle,
                         style: typography.caption.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 10.5,
                           letterSpacing: 0.8,
                         ),
@@ -255,9 +255,9 @@ class ExamCountdownWidget extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.play_arrow_rounded,
-                            color: Colors.white,
+                            color: colors.white,
                             size: 20,
                           ),
                           const SizedBox(width: 6),
@@ -267,7 +267,7 @@ class ExamCountdownWidget extends StatelessWidget {
                               countdown.totalMockPapersAvailable,
                             ),
                             style: typography.caption.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                               fontSize: 13,
                               letterSpacing: 0.2,
                             ),

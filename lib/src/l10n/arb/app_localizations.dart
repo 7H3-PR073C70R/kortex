@@ -4267,6 +4267,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip Walkthrough'**
   String get welcomeWalkthroughSkip;
+
+  /// Title for toggle to create forum for a deck
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Community Study Forum'**
+  String get deckCreateForumTitle;
+
+  /// Subtitle for toggle to create forum for a deck
+  ///
+  /// In en, this message translates to:
+  /// **'Create an open discussion forum for this deck'**
+  String get deckCreateForumSubtitle;
+
+  /// Consequence note discouraging forum generation alongside study deck
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Generating a campus forum makes this study deck discoverable to other students. As creator, you\'ll be responsible for answering peer queries and moderating discussions. For distraction-free solo mastery, keeping this disabled is recommended — but the option is yours!'**
+  String get deckCreateForumWarning;
+
+  /// Notice that a deck was already generated from current chat
+  ///
+  /// In en, this message translates to:
+  /// **'A study deck has already been synthesized from this conversation.'**
+  String get deckAlreadyGeneratedFromChat;
+
+  /// Action prompt on deck created snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open study deck'**
+  String get deckTapToView;
+
+  /// Title for LMS import tile
+  ///
+  /// In en, this message translates to:
+  /// **'Import from LMS'**
+  String get decksImportLmsTitle;
+
+  /// Subtitle for LMS import tile
+  ///
+  /// In en, this message translates to:
+  /// **'Sync course syllabi & assignments from Google Classroom or Canvas.'**
+  String get decksImportLmsSubtitle;
+
+  /// Illusion status 1 during deduplication
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing document structure...'**
+  String get dedupSynthesisAnalyzing;
+
+  /// Illusion status 2 during deduplication
+  ///
+  /// In en, this message translates to:
+  /// **'Synthesizing formulas and definitions...'**
+  String get dedupSynthesisExtracting;
+
+  /// Illusion status 3 during deduplication
+  ///
+  /// In en, this message translates to:
+  /// **'Finalizing active-recall flashcards...'**
+  String get dedupSynthesisCompiling;
+
+  /// Success note when assigning deduplicated deck
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned existing verified deck to your workspace'**
+  String get dedupExistingDeckAssigned;
+
+  /// Rocket launch sequence ignited
+  ///
+  /// In en, this message translates to:
+  /// **'Ignition sequence started!'**
+  String get launchSequenceIgnited;
+
+  /// Warp drive engaged status banner
+  ///
+  /// In en, this message translates to:
+  /// **'WARP DRIVE ENGAGED'**
+  String get warpDriveEngaged;
+
+  /// Hint for interactive flight control
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to steer • Tap for turbo boost'**
+  String get launchSteerHint;
+
+  /// Orbit reached notification
+  ///
+  /// In en, this message translates to:
+  /// **'Orbit Reached!'**
+  String get launchOrbitReached;
+
+  /// Turbo boost trigger banner
+  ///
+  /// In en, this message translates to:
+  /// **'TURBO BOOST!'**
+  String get launchTurboBoost;
+
+  /// Mach speed counter
+  ///
+  /// In en, this message translates to:
+  /// **'Mach {speed}'**
+  String launchMachSpeed(String speed);
+
+  /// Transition to workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Entering Kortexify Workspace...'**
+  String get launchEnteringWorkspace;
+
+  /// Google Classroom OAuth CTA
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google Classroom'**
+  String get lmsConnectWithGoogleClassroom;
+
+  /// Canvas OAuth CTA
+  ///
+  /// In en, this message translates to:
+  /// **'Connect with Canvas LMS'**
+  String get lmsConnectWithCanvas;
+
+  /// OAuth 2.0 PKCE security notice
+  ///
+  /// In en, this message translates to:
+  /// **'Secured with OAuth 2.0 PKCE. Your campus credentials and passwords are never stored.'**
+  String get lmsOAuthSecureNotice;
+
+  /// Connected student profile
+  ///
+  /// In en, this message translates to:
+  /// **'Connected as {email}'**
+  String lmsConnectedAsStudent(String email);
+
+  /// Authorize button for LMS OAuth
+  ///
+  /// In en, this message translates to:
+  /// **'Authorize & Connect'**
+  String get lmsAuthorizeAndConnect;
+
+  /// Cancel button for LMS OAuth
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get lmsCancel;
+
+  /// Disconnect account button
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get lmsDisconnect;
+
+  /// Select institution header
+  ///
+  /// In en, this message translates to:
+  /// **'Select Institution'**
+  String get lmsSelectInstitution;
+
+  /// Custom Canvas URL label
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Canvas URL'**
+  String get lmsCustomDomain;
+
+  /// Permissions notice for LMS
+  ///
+  /// In en, this message translates to:
+  /// **'Kortexify will request read-only access to view your enrolled courses, modules, syllabi, and upcoming assignments to synthesize flashcards.'**
+  String get lmsPermissionsNotice;
+
+  /// Connecting OAuth status
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizing with {provider}...'**
+  String lmsOAuthConnecting(String provider);
+
+  /// OAuth success message
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully authenticated! Loading enrolled courses...'**
+  String get lmsOAuthSuccess;
 }
 
 class _AppLocalizationsDelegate

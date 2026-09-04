@@ -24,26 +24,27 @@ class McqOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
 
-    var borderColor = Colors.white24;
+    var borderColor = colors.surfaceBorder;
     var bgColor = theme.colorScheme.surface.withValues(alpha: 0.6);
     Widget? trailingIcon;
 
     if (isAnswered) {
       if (isCorrect) {
-        borderColor = Colors.greenAccent;
-        bgColor = Colors.greenAccent.withValues(alpha: 0.15);
-        trailingIcon = const Icon(
+        borderColor = colors.success;
+        bgColor = colors.success.withValues(alpha: 0.15);
+        trailingIcon = Icon(
           Icons.check_circle_rounded,
-          color: Colors.greenAccent,
+          color: colors.success,
           size: 20,
         );
       } else if (isSelected) {
-        borderColor = Colors.redAccent;
-        bgColor = Colors.redAccent.withValues(alpha: 0.15);
-        trailingIcon = const Icon(
+        borderColor = colors.error;
+        bgColor = colors.error.withValues(alpha: 0.15);
+        trailingIcon = Icon(
           Icons.cancel_rounded,
-          color: Colors.redAccent,
+          color: colors.error,
           size: 20,
         );
       }
@@ -82,16 +83,15 @@ class McqOptionCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected || (isAnswered && isCorrect)
                         ? borderColor.withValues(alpha: 0.2)
-                        : Colors.white10,
+                        : colors.surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     _letterPrefix,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: context.typography.footnote.bold.copyWith(
                       color: isSelected || (isAnswered && isCorrect)
                           ? borderColor
-                          : Colors.white70,
+                          : colors.textSecondary,
                     ),
                   ),
                 ),
@@ -100,7 +100,7 @@ class McqOptionCard extends StatelessWidget {
                   child: Text(
                     optionText,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

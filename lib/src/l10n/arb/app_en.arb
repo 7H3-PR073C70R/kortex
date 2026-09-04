@@ -3382,5 +3382,140 @@
     "welcomeWalkthroughSkip": "Skip Walkthrough",
     "@welcomeWalkthroughSkip": {
         "description": "Skip button in walkthrough"
+    },
+    "deckCreateForumTitle": "Generate Community Study Forum",
+    "@deckCreateForumTitle": {
+        "description": "Title for toggle to create forum for a deck"
+    },
+    "deckCreateForumSubtitle": "Create an open discussion forum for this deck",
+    "@deckCreateForumSubtitle": {
+        "description": "Subtitle for toggle to create forum for a deck"
+    },
+    "deckCreateForumWarning": "Note: Generating a campus forum makes this study deck discoverable to other students. As creator, you'll be responsible for answering peer queries and moderating discussions. For distraction-free solo mastery, keeping this disabled is recommended — but the option is yours!",
+    "@deckCreateForumWarning": {
+        "description": "Consequence note discouraging forum generation alongside study deck"
+    },
+    "deckAlreadyGeneratedFromChat": "A study deck has already been synthesized from this conversation.",
+    "@deckAlreadyGeneratedFromChat": {
+        "description": "Notice that a deck was already generated from current chat"
+    },
+    "deckTapToView": "Tap to open study deck",
+    "@deckTapToView": {
+        "description": "Action prompt on deck created snackbar"
+    },
+    "decksImportLmsTitle": "Import from LMS",
+    "@decksImportLmsTitle": {
+        "description": "Title for LMS import tile"
+    },
+    "decksImportLmsSubtitle": "Sync course syllabi & assignments from Google Classroom or Canvas.",
+    "@decksImportLmsSubtitle": {
+        "description": "Subtitle for LMS import tile"
+    },
+    "dedupSynthesisAnalyzing": "Analyzing document structure...",
+    "@dedupSynthesisAnalyzing": {
+        "description": "Illusion status 1 during deduplication"
+    },
+    "dedupSynthesisExtracting": "Synthesizing formulas and definitions...",
+    "@dedupSynthesisExtracting": {
+        "description": "Illusion status 2 during deduplication"
+    },
+    "dedupSynthesisCompiling": "Finalizing active-recall flashcards...",
+    "@dedupSynthesisCompiling": {
+        "description": "Illusion status 3 during deduplication"
+    },
+    "dedupExistingDeckAssigned": "Assigned existing verified deck to your workspace",
+    "@dedupExistingDeckAssigned": {
+        "description": "Success note when assigning deduplicated deck"
+    },
+    "launchSequenceIgnited": "Ignition sequence started!",
+    "@launchSequenceIgnited": {
+        "description": "Rocket launch sequence ignited"
+    },
+    "warpDriveEngaged": "WARP DRIVE ENGAGED",
+    "@warpDriveEngaged": {
+        "description": "Warp drive engaged status banner"
+    },
+    "launchSteerHint": "Drag to steer • Tap for turbo boost",
+    "@launchSteerHint": {
+        "description": "Hint for interactive flight control"
+    },
+    "launchOrbitReached": "Orbit Reached!",
+    "@launchOrbitReached": {
+        "description": "Orbit reached notification"
+    },
+    "launchTurboBoost": "TURBO BOOST!",
+    "@launchTurboBoost": {
+        "description": "Turbo boost trigger banner"
+    },
+    "launchMachSpeed": "Mach {speed}",
+    "@launchMachSpeed": {
+        "description": "Mach speed counter",
+        "placeholders": {
+            "speed": {
+                "type": "String"
+            }
+        }
+    },
+    "launchEnteringWorkspace": "Entering Kortexify Workspace...",
+    "@launchEnteringWorkspace": {
+        "description": "Transition to workspace"
+    },
+    "lmsConnectWithGoogleClassroom": "Sign in with Google Classroom",
+    "@lmsConnectWithGoogleClassroom": {
+        "description": "Google Classroom OAuth CTA"
+    },
+    "lmsConnectWithCanvas": "Connect with Canvas LMS",
+    "@lmsConnectWithCanvas": {
+        "description": "Canvas OAuth CTA"
+    },
+    "lmsOAuthSecureNotice": "Secured with OAuth 2.0 PKCE. Your campus credentials and passwords are never stored.",
+    "@lmsOAuthSecureNotice": {
+        "description": "OAuth 2.0 PKCE security notice"
+    },
+    "lmsConnectedAsStudent": "Connected as {email}",
+    "@lmsConnectedAsStudent": {
+        "description": "Connected student profile",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "lmsAuthorizeAndConnect": "Authorize & Connect",
+    "@lmsAuthorizeAndConnect": {
+        "description": "Authorize button for LMS OAuth"
+    },
+    "lmsCancel": "Cancel",
+    "@lmsCancel": {
+        "description": "Cancel button for LMS OAuth"
+    },
+    "lmsDisconnect": "Disconnect",
+    "@lmsDisconnect": {
+        "description": "Disconnect account button"
+    },
+    "lmsSelectInstitution": "Select Institution",
+    "@lmsSelectInstitution": {
+        "description": "Select institution header"
+    },
+    "lmsCustomDomain": "Custom Canvas URL",
+    "@lmsCustomDomain": {
+        "description": "Custom Canvas URL label"
+    },
+    "lmsPermissionsNotice": "Kortexify will request read-only access to view your enrolled courses, modules, syllabi, and upcoming assignments to synthesize flashcards.",
+    "@lmsPermissionsNotice": {
+        "description": "Permissions notice for LMS"
+    },
+    "lmsOAuthConnecting": "Authorizing with {provider}...",
+    "@lmsOAuthConnecting": {
+        "description": "Connecting OAuth status",
+        "placeholders": {
+            "provider": {
+                "type": "String"
+            }
+        }
+    },
+    "lmsOAuthSuccess": "Successfully authenticated! Loading enrolled courses...",
+    "@lmsOAuthSuccess": {
+        "description": "OAuth success message"
     }
 }

@@ -62,7 +62,7 @@ class _OnboardingStepperView extends StatelessWidget {
               ? colors.backgroundPrimary
               : colors.surfacePrimary,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             elevation: 0,
             leading: state.currentStep > 0
                 ? IconButton(
@@ -111,12 +111,12 @@ class _OnboardingStepperView extends StatelessWidget {
                       ),
                       child: Center(
                         child: state.isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: colors.white,
                                 ),
                               )
                             : Row(
@@ -127,14 +127,14 @@ class _OnboardingStepperView extends StatelessWidget {
                                         ? l10n.completeOnboardingButton
                                         : l10n.continueButton,
                                     style: typography.body.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(
+                                  Icon(
                                     Icons.arrow_forward_rounded,
                                     size: 18,
-                                    color: Colors.white,
+                                    color: colors.white,
                                   ),
                                 ],
                               ),

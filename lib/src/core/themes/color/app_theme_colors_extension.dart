@@ -40,6 +40,7 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     required this.gray,
     required this.white,
     required this.black,
+    this.transparent = const Color(0x00000000),
   });
 
   /// Light theme color configuration
@@ -238,6 +239,13 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   final MaterialColor gray;
   final Color white;
   final Color black;
+  final Color transparent;
+
+  /// Semantic surface alias
+  Color get surface => surfacePrimary;
+
+  /// Secondary accent alias
+  Color get secondary => syllabotAccent;
 
   @override
   AppThemeColorsExtension copyWith({
@@ -276,6 +284,7 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     MaterialColor? gray,
     Color? white,
     Color? black,
+    Color? transparent,
   }) {
     return AppThemeColorsExtension(
       primary: primary ?? this.primary,
@@ -314,6 +323,7 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       gray: gray ?? this.gray,
       white: white ?? this.white,
       black: black ?? this.black,
+      transparent: transparent ?? this.transparent,
     );
   }
 
@@ -390,6 +400,7 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       gray: _lerpMaterialColor(gray, other.gray, t),
       white: Color.lerp(white, other.white, t) ?? white,
       black: Color.lerp(black, other.black, t) ?? black,
+      transparent: Color.lerp(transparent, other.transparent, t) ?? transparent,
     );
   }
 

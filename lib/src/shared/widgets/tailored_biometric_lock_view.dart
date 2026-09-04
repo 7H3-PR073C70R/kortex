@@ -43,7 +43,7 @@ class TailoredBiometricLockView extends StatelessWidget {
         customPhotoUrl ?? userProfile?.photoUrl ?? authState?.user?.photoUrl;
 
     return Material(
-      color: Colors.transparent,
+      color: colors.transparent,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -81,7 +81,7 @@ class TailoredBiometricLockView extends StatelessWidget {
                         customDimension: 86,
                         imageUrl: photoUrl,
                         name: displayName,
-                        borderColor: Colors.transparent,
+                        borderColor: colors.transparent,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -169,16 +169,16 @@ class TailoredBiometricLockView extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.fingerprint_rounded,
                               size: 22,
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                             const SizedBox(width: 10),
                             Text(
                               'Unlock with Face ID / Touch ID',
                               style: typography.body.bold.copyWith(
-                                color: Colors.white,
+                                color: colors.white,
                                 fontSize: 14.5,
                               ),
                             ),

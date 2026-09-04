@@ -18,6 +18,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
 
     return Semantics(
@@ -50,10 +51,10 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
+                  color: colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: colors.white.withValues(alpha: 0.15),
                   ),
                 ),
                 child: Row(
@@ -68,7 +69,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                       child: Text(
                         l10n.alignCameraTextHint,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -97,7 +98,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white,
+                        color: colors.white,
                         width: 4,
                       ),
                     ),
@@ -105,25 +106,25 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isProcessing
-                            ? Colors.grey
+                            ? colors.gray
                             : theme.colorScheme.primary,
                       ),
                       child: isProcessing
-                          ? const Center(
+                          ? Center(
                               child: SizedBox(
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                                    colors.white,
                                   ),
                                 ),
                               ),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.camera_alt_rounded,
-                              color: Colors.white,
+                              color: colors.white,
                               size: 32,
                             ),
                     ),

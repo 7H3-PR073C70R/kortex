@@ -98,10 +98,10 @@ class _ModeOptionCard extends StatelessWidget {
               ? (isDark
                     ? colors.primary.withAlpha(40)
                     : colors.primary.withAlpha(25))
-              : Colors.transparent,
+              : colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? colors.primary : Colors.transparent,
+            color: isSelected ? colors.primary : colors.transparent,
             width: 1.5,
           ),
         ),
@@ -137,7 +137,7 @@ class _ModeOptionCard extends StatelessWidget {
                 badge,
                 style: typography.caption.bold.copyWith(
                   fontSize: 9,
-                  color: isSelected ? Colors.white : colors.textSecondary,
+                  color: isSelected ? colors.white : colors.textSecondary,
                 ),
               ),
             ),

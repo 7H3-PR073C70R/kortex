@@ -52,13 +52,13 @@ class LatexCardContentViewer extends StatelessWidget {
     unawaited(
       showDialog<void>(
         context: context,
-        barrierColor: Colors.black.withAlpha(220),
+        barrierColor: context.colors.black.withAlpha(220),
         builder: (dialogCtx) {
           final colors = dialogCtx.colors;
           final l10n = dialogCtx.l10n;
 
           return Dialog(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             insetPadding: const EdgeInsets.all(16),
             child: Stack(
               alignment: Alignment.center,
@@ -121,9 +121,9 @@ class LatexCardContentViewer extends StatelessWidget {
                   right: 8,
                   child: IconButton(
                     onPressed: () => Navigator.of(dialogCtx).pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: colors.white),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withAlpha(160),
+                      backgroundColor: colors.black.withAlpha(160),
                     ),
                   ),
                 ),
@@ -245,24 +245,23 @@ class LatexCardContentViewer extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(160),
+                            color: colors.black.withAlpha(160),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.zoom_in_rounded,
                                 size: 14,
-                                color: Colors.white,
+                                color: colors.white,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 l10n.tapToEnlargeDiagramHint,
-                                style: const TextStyle(
+                                style: context.typography.caption.bold.copyWith(
                                   fontSize: 10.5,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                  color: colors.white,
                                 ),
                               ),
                             ],

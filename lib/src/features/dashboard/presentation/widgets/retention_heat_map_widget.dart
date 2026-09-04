@@ -64,7 +64,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isDark ? 40 : 10),
+                  color: colors.black.withAlpha(isDark ? 40 : 10),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -223,7 +223,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                                 ? colors.primary.withAlpha(
                                                     isDark ? 90 : 50,
                                                   )
-                                                : Colors.transparent),
+                                                : colors.transparent),
                                       width: isSelected ? 1.8 : 0.8,
                                     ),
                                     boxShadow: isSelected

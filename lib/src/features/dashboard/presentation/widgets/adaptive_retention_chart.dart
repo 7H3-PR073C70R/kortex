@@ -64,7 +64,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isDark ? 40 : 10),
+                  color: colors.black.withAlpha(isDark ? 40 : 10),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -225,14 +225,14 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                                       ? colors.primary.withAlpha(
                                           isDark ? 60 : 30,
                                         )
-                                      : Colors.transparent,
+                                      : colors.transparent,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: _selectedDayIndex == index
                                         ? colors.primary.withAlpha(
                                             isDark ? 120 : 70,
                                           )
-                                        : Colors.transparent,
+                                        : colors.transparent,
                                   ),
                                 ),
                                 child: Text(

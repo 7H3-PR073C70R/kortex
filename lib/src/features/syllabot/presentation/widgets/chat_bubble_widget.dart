@@ -103,7 +103,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
           child: Text(
             widget.message.text,
             style: typography.body.medium.copyWith(
-              color: Colors.white,
+              color: colors.white,
               height: 1.4,
             ),
           ),
@@ -338,7 +338,7 @@ class _FormattedMessageBody extends StatelessWidget {
         fontSize: 12.5,
       ),
       codeblockDecoration: BoxDecoration(
-        color: isDark ? Colors.black45 : colors.surfaceSecondary,
+        color: isDark ? colors.black.withAlpha(115) : colors.surfaceSecondary,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(80),
@@ -382,7 +382,7 @@ class _FormattedMessageBody extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.black.withAlpha(80)
+                  ? colors.black.withAlpha(80)
                   : colors.primary.withAlpha(15),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(

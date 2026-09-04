@@ -118,7 +118,7 @@ class SyllabotQuickPromptBar extends HookWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(isDark ? 40 : 10),
+                      color: colors.black.withAlpha(isDark ? 40 : 10),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -180,7 +180,7 @@ class SyllabotQuickPromptBar extends HookWidget {
                             Icons.arrow_upward_rounded,
                             size: 18,
                             color: hasText.value
-                                ? Colors.white
+                                ? colors.white
                                 : colors.textMuted.withAlpha(140),
                           ),
                         ),

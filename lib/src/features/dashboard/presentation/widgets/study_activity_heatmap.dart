@@ -25,7 +25,7 @@ class StudyActivityHeatmap extends StatelessWidget {
 
   Color _getCellColor(BuildContext context, int count) {
     final primary = context.theme.colorScheme.primary;
-    if (count == 0) return Colors.white10;
+    if (count == 0) return context.colors.surfaceBorder;
     if (count < 5) return primary.withValues(alpha: 0.3);
     if (count < 10) return primary.withValues(alpha: 0.55);
     if (count < 20) return primary.withValues(alpha: 0.8);
@@ -35,6 +35,7 @@ class StudyActivityHeatmap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
 
     // Generate 52 weeks (364 days) ending today
@@ -76,7 +77,7 @@ class StudyActivityHeatmap extends StatelessWidget {
                 title ?? l10n.studyActivityHeatmapTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: colors.textPrimary,
                 ),
               ),
               Container(
@@ -148,7 +149,7 @@ class StudyActivityHeatmap extends StatelessWidget {
               Text(
                 'Less',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white54,
+                  color: colors.textSecondary,
                   fontSize: 11,
                 ),
               ),
@@ -168,7 +169,7 @@ class StudyActivityHeatmap extends StatelessWidget {
               Text(
                 'More',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white54,
+                  color: colors.textSecondary,
                   fontSize: 11,
                 ),
               ),

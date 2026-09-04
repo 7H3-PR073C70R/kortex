@@ -113,7 +113,7 @@ class TrackSelectorCard extends StatelessWidget {
                 ),
                 child: Icon(
                   _getIconData(track.iconName),
-                  color: isSelected ? Colors.white : colors.primary,
+                  color: isSelected ? colors.white : colors.primary,
                   size: 20,
                 ),
               ),
@@ -184,7 +184,7 @@ class TrackSelectorCard extends StatelessWidget {
                 height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected ? colors.primary : Colors.transparent,
+                  color: isSelected ? colors.primary : colors.transparent,
                   border: Border.all(
                     color: isSelected
                         ? colors.primary
@@ -193,10 +193,10 @@ class TrackSelectorCard extends StatelessWidget {
                   ),
                 ),
                 child: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
                         size: 14,
-                        color: Colors.white,
+                        color: colors.white,
                       )
                     : null,
               ),

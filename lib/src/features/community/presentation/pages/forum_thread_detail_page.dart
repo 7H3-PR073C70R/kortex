@@ -53,7 +53,7 @@ class ForumThreadDetailPage extends HookWidget {
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         title: Text(
           post.track,

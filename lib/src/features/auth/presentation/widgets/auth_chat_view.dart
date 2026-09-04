@@ -1130,7 +1130,7 @@ class AuthChatView extends HookWidget {
                                           child: Icon(
                                             Icons.arrow_upward_rounded,
                                             color: hasInputText.value
-                                                ? Colors.white
+                                                ? colors.white
                                                 : colors.textMuted.withAlpha(
                                                     140,
                                                   ),
@@ -1213,9 +1213,7 @@ class _BotMessageBubble extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isError
-                          ? (isDark
-                                ? const Color(0xFF450A0A).withAlpha(220)
-                                : const Color(0xFFFFF1F2).withAlpha(245))
+                          ? colors.error.withAlpha(isDark ? 55 : 30)
                           : (isDark
                                 ? colors.surfaceSecondary.withAlpha(170)
                                 : colors.surfacePrimary.withAlpha(220)),
@@ -1227,7 +1225,7 @@ class _BotMessageBubble extends StatelessWidget {
                       ),
                       border: Border.all(
                         color: isError
-                            ? const Color(0xFFEF4444)
+                            ? colors.error
                             : (isDark
                                   ? colors.surfaceBorderHighlight.withAlpha(70)
                                   : colors.surfaceBorder.withAlpha(140)),
@@ -1236,10 +1234,8 @@ class _BotMessageBubble extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: isError
-                              ? const Color(
-                                  0xFFEF4444,
-                                ).withAlpha(isDark ? 60 : 30)
-                              : Colors.black.withAlpha(isDark ? 40 : 10),
+                              ? colors.error.withAlpha(isDark ? 60 : 30)
+                              : colors.black.withAlpha(isDark ? 40 : 10),
                           blurRadius: isError ? 14 : 8,
                           offset: const Offset(0, 3),
                         ),
@@ -1255,22 +1251,22 @@ class _BotMessageBubble extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444),
+                              color: colors.error,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.error_outline_rounded,
                                   size: 13,
-                                  color: Colors.white,
+                                  color: colors.white,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Syllabot Alert',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.5,
@@ -1288,9 +1284,7 @@ class _BotMessageBubble extends StatelessWidget {
                           onComplete: onStreamingComplete,
                           style: typography.callout.regular.copyWith(
                             color: isError
-                                ? (isDark
-                                      ? const Color(0xFFFCA5A5)
-                                      : const Color(0xFF991B1B))
+                                ? colors.error
                                 : colors.textPrimary,
                             fontWeight: isError
                                 ? FontWeight.w600
@@ -1316,7 +1310,7 @@ class _BotMessageBubble extends StatelessWidget {
                             button: true,
                             label: 'Retry last request',
                             child: Material(
-                              color: Colors.transparent,
+                              color: colors.transparent,
                               child: InkWell(
                                 onTap: message.onRetry,
                                 borderRadius: BorderRadius.circular(8),
@@ -1326,12 +1320,12 @@ class _BotMessageBubble extends StatelessWidget {
                                     vertical: 7,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444).withAlpha(
+                                    color: colors.error.withAlpha(
                                       isDark ? 60 : 30,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFFEF4444).withAlpha(
+                                      color: colors.error.withAlpha(
                                         140,
                                       ),
                                     ),
@@ -1339,18 +1333,16 @@ class _BotMessageBubble extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.refresh_rounded,
                                         size: 15,
-                                        color: Color(0xFFEF4444),
+                                        color: colors.error,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'Retry Request',
                                         style: typography.caption.bold.copyWith(
-                                          color: isDark
-                                              ? const Color(0xFFFCA5A5)
-                                              : const Color(0xFFB91C1C),
+                                          color: colors.error,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -1429,7 +1421,7 @@ class _UserMessageBubble extends HookWidget {
                       child: Text(
                         displayText,
                         style: typography.callout.regular.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 14,
                           height: 1.35,
                         ),
@@ -1452,7 +1444,7 @@ class _UserMessageBubble extends HookWidget {
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
                             size: 16,
-                            color: Colors.white.withAlpha(200),
+                            color: colors.white.withAlpha(200),
                           ),
                         ),
                       ),
@@ -1533,7 +1525,7 @@ class _ThinkingBubble extends HookWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(isDark ? 40 : 8),
+                      color: colors.black.withAlpha(isDark ? 40 : 8),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1650,7 +1642,7 @@ class _ActionChipButton extends StatelessWidget {
                   BoxShadow(
                     color: isPrimary
                         ? colors.primary.withAlpha(40)
-                        : Colors.black.withAlpha(isDark ? 50 : 10),
+                        : colors.black.withAlpha(isDark ? 50 : 10),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -1663,7 +1655,7 @@ class _ActionChipButton extends StatelessWidget {
                     Icon(
                       icon,
                       size: 16,
-                      color: isPrimary ? Colors.white : colors.primary,
+                      color: isPrimary ? colors.white : colors.primary,
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1673,7 +1665,7 @@ class _ActionChipButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: typography.caption.semiBold.copyWith(
-                        color: isPrimary ? Colors.white : colors.textPrimary,
+                        color: isPrimary ? colors.white : colors.textPrimary,
                         fontSize: 13.5,
                       ),
                     ),
@@ -1780,7 +1772,7 @@ class _PasswordRequirementItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const successColor = Color(0xFF10B981);
+    final successColor = colors.success;
     final textColor = isMet ? successColor : colors.textMuted;
 
     return AnimatedContainer(
@@ -1796,7 +1788,7 @@ class _PasswordRequirementItem extends StatelessWidget {
             height: 16,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isMet ? successColor : Colors.transparent,
+              color: isMet ? successColor : colors.transparent,
               border: Border.all(
                 color: isMet ? successColor : colors.surfaceBorderHighlight,
                 width: 1.4,
@@ -1812,11 +1804,11 @@ class _PasswordRequirementItem extends StatelessWidget {
                   : null,
             ),
             child: isMet
-                ? const Center(
+                ? Center(
                     child: Icon(
                       Icons.check,
                       size: 10,
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   )
                 : null,

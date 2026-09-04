@@ -345,11 +345,11 @@ class _DesktopNavRailItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             color: isSelected
                 ? colors.primary.withAlpha(isDark ? 45 : 25)
-                : Colors.transparent,
+                : colors.transparent,
             border: Border.all(
               color: isSelected
                   ? colors.primary.withAlpha(isDark ? 100 : 70)
-                  : Colors.transparent,
+                  : colors.transparent,
               width: 1.2,
             ),
           ),
@@ -540,7 +540,7 @@ class _AndroidMaterial3NavBar extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 60 : 15),
+              color: colors.black.withAlpha(isDark ? 60 : 15),
               blurRadius: 12,
               offset: const Offset(0, -2),
             ),
@@ -637,7 +637,7 @@ class _AndroidNavBarItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? colors.primary.withAlpha(isDark ? 55 : 30)
-                      : Colors.transparent,
+                      : colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(

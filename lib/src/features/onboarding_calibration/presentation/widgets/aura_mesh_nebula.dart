@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 
 /// A deep, slow-pulsing Aura Mesh Nebula combining Indigo, Violet,
@@ -71,8 +72,7 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
                 return CustomPaint(
                   painter: _NebulaMeshPainter(
                     progress: _controller.value,
-                    primary: colors.primary,
-                    accent: colors.syllabotAccent,
+                    themeColors: colors,
                     isDark: isDark,
                   ),
                 );
@@ -82,8 +82,7 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
             CustomPaint(
               painter: _NebulaMeshPainter(
                 progress: 0.5,
-                primary: colors.primary,
-                accent: colors.syllabotAccent,
+                themeColors: colors,
                 isDark: isDark,
               ),
             ),
@@ -99,14 +98,12 @@ class _AuraMeshNebulaState extends State<AuraMeshNebula>
 class _NebulaMeshPainter extends CustomPainter {
   _NebulaMeshPainter({
     required this.progress,
-    required this.primary,
-    required this.accent,
+    required this.themeColors,
     required this.isDark,
   });
 
   final double progress;
-  final Color primary;
-  final Color accent;
+  final AppThemeColorsExtension themeColors;
   final bool isDark;
 
   @override
@@ -131,9 +128,9 @@ class _NebulaMeshPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              primary.withAlpha(isDark ? 85 : 45),
-              primary.withAlpha(isDark ? 30 : 15),
-              Colors.transparent,
+              themeColors.primary.withAlpha(isDark ? 85 : 45),
+              themeColors.primary.withAlpha(isDark ? 30 : 15),
+              themeColors.transparent,
             ],
             stops: const [0.0, 0.55, 1.0],
           ).createShader(
@@ -146,9 +143,9 @@ class _NebulaMeshPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              accent.withAlpha(isDark ? 70 : 35),
-              accent.withAlpha(isDark ? 25 : 10),
-              Colors.transparent,
+              themeColors.syllabotAccent.withAlpha(isDark ? 70 : 35),
+              themeColors.syllabotAccent.withAlpha(isDark ? 25 : 10),
+              themeColors.transparent,
             ],
             stops: const [0.0, 0.5, 1.0],
           ).createShader(
@@ -161,8 +158,8 @@ class _NebulaMeshPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              const Color(0xFF6366F1).withAlpha(isDark ? 60 : 30),
-              Colors.transparent,
+              themeColors.secondary.withAlpha(isDark ? 60 : 30),
+              themeColors.transparent,
             ],
             stops: const [0.0, 1.0],
           ).createShader(
@@ -174,8 +171,7 @@ class _NebulaMeshPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _NebulaMeshPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.primary != primary ||
-        oldDelegate.accent != accent ||
-        oldDelegate.isDark != isDark;
+        oldDelegate.isDark != isDark ||
+        oldDelegate.themeColors != themeColors;
   }
 }

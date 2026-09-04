@@ -103,7 +103,7 @@ class AudioInputWaveformButton extends HookWidget {
                             width: 2.5,
                             height: h,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: colors.white,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           );

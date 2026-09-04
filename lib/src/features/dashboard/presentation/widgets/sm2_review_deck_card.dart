@@ -65,7 +65,7 @@ class Sm2ReviewDeckCard extends StatelessWidget {
                   BoxShadow(
                     color: isHero
                         ? colors.primary.withAlpha(isDark ? 50 : 25)
-                        : Colors.black.withAlpha(isDark ? 40 : 10),
+                        : colors.black.withAlpha(isDark ? 40 : 10),
                     blurRadius: isHero ? 16 : 8,
                     offset: const Offset(0, 4),
                   ),

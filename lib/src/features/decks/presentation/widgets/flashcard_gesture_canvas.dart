@@ -282,12 +282,12 @@ class FlashcardGestureCanvas extends HookWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(routeIcon, color: Colors.white, size: 18),
+                            Icon(routeIcon, color: colors.white, size: 18),
                             const SizedBox(width: 8),
                             Text(
                               routeLabel,
                               style: typography.caption.bold.copyWith(
-                                color: Colors.white,
+                                color: colors.white,
                                 fontSize: 13,
                               ),
                             ),

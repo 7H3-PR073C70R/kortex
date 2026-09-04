@@ -19,6 +19,8 @@ class StreakShieldIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     final freezeLabel = hasStreakFreeze
@@ -26,8 +28,8 @@ class StreakShieldIndicator extends StatelessWidget {
         : l10n.streakFreezeActiveDesc;
 
     final topGradientColor = hasStreakFreeze
-        ? Colors.cyanAccent.withValues(alpha: 0.15)
-        : Colors.orangeAccent.withValues(alpha: 0.15);
+        ? colors.info.withValues(alpha: 0.15)
+        : colors.warning.withValues(alpha: 0.15);
 
     return Semantics(
       container: true,
@@ -46,8 +48,8 @@ class StreakShieldIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: hasStreakFreeze
-                ? Colors.cyanAccent.withValues(alpha: 0.4)
-                : Colors.orangeAccent.withValues(alpha: 0.3),
+                ? colors.info.withValues(alpha: 0.4)
+                : colors.warning.withValues(alpha: 0.3),
           ),
         ),
         child: Column(
@@ -58,12 +60,12 @@ class StreakShieldIndicator extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent.withValues(alpha: 0.2),
+                    color: colors.warning.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.local_fire_department_rounded,
-                    color: Colors.orangeAccent,
+                    color: colors.warning,
                     size: 32,
                   ),
                 ),
@@ -78,7 +80,7 @@ class StreakShieldIndicator extends StatelessWidget {
                             '$streakDays Days Streak',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: colors.textPrimary,
                             ),
                           ),
                           if (hasStreakFreeze) ...[
@@ -89,20 +91,19 @@ class StreakShieldIndicator extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.cyanAccent.withValues(alpha: 0.2),
+                                color: colors.info.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: Colors.cyanAccent.withValues(
+                                  color: colors.info.withValues(
                                     alpha: 0.5,
                                   ),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'SHIELD ACTIVE',
-                                style: TextStyle(
+                                style: typography.caption.bold.copyWith(
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.cyanAccent,
+                                  color: colors.info,
                                 ),
                               ),
                             ),
@@ -115,7 +116,7 @@ class StreakShieldIndicator extends StatelessWidget {
                             ? l10n.streakFreezeActiveDesc
                             : 'Study daily to build momentum and earn XP!',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
@@ -125,26 +126,25 @@ class StreakShieldIndicator extends StatelessWidget {
             ),
             if (!hasStreakFreeze && onPurchaseFreeze != null) ...[
               const SizedBox(height: 14),
-              const Divider(height: 1, color: Colors.white12),
+              Divider(height: 1, color: colors.surfaceBorder),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.shield_rounded,
-                    color: Colors.cyanAccent,
+                    color: colors.info,
                     size: 18,
                   ),
                   label: Text(
                     l10n.buyStreakFreezeButton,
-                    style: const TextStyle(
-                      color: Colors.cyanAccent,
-                      fontWeight: FontWeight.bold,
+                    style: typography.body.bold.copyWith(
+                      color: colors.info,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: Colors.cyanAccent.withValues(alpha: 0.5),
+                      color: colors.info.withValues(alpha: 0.5),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),

@@ -61,9 +61,9 @@ class OcrPreviewPage extends HookWidget {
 
     return AuraMeshNebula(
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: Icon(
@@ -162,16 +162,16 @@ class OcrPreviewPage extends HookWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.style_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       l10n.generateCardsAction,
                       style: typography.body.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ],

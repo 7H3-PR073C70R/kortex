@@ -49,7 +49,7 @@ class AuthSocialButton extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 40 : 10),
+                color: colors.black.withAlpha(isDark ? 40 : 10),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),

@@ -17,6 +17,8 @@ class CollaborativeEditorBadge extends StatelessWidget {
     if (editors.isEmpty) return const SizedBox.shrink();
 
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final displayEditors = editors.take(3).toList();
     final overflowCount = editors.length - displayEditors.length;
     final stackWidth =
@@ -34,7 +36,7 @@ class CollaborativeEditorBadge extends StatelessWidget {
             color: theme.colorScheme.surface.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.greenAccent.withValues(alpha: 0.4),
+              color: colors.success.withValues(alpha: 0.4),
             ),
           ),
           child: Row(
@@ -44,8 +46,8 @@ class CollaborativeEditorBadge extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.greenAccent,
+                decoration: BoxDecoration(
+                  color: colors.success,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -69,8 +71,8 @@ class CollaborativeEditorBadge extends StatelessWidget {
                               color: theme.colorScheme.surface,
                               width: 1.5,
                             ),
-                            gradient: const LinearGradient(
-                              colors: [Colors.deepPurple, Colors.indigo],
+                            gradient: LinearGradient(
+                              colors: [colors.primary, colors.secondary],
                             ),
                           ),
                           child: Center(
@@ -79,10 +81,9 @@ class CollaborativeEditorBadge extends StatelessWidget {
                                   ? displayEditors[i].displayName[0]
                                         .toUpperCase()
                                   : 'S',
-                              style: const TextStyle(
+                              style: typography.caption.bold.copyWith(
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: colors.white,
                               ),
                             ),
                           ),
@@ -96,7 +97,7 @@ class CollaborativeEditorBadge extends StatelessWidget {
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white24,
+                            color: colors.surfaceBorder,
                             border: Border.all(
                               color: theme.colorScheme.surface,
                               width: 1.5,
@@ -105,10 +106,9 @@ class CollaborativeEditorBadge extends StatelessWidget {
                           child: Center(
                             child: Text(
                               '+$overflowCount',
-                              style: const TextStyle(
+                              style: typography.caption.bold.copyWith(
                                 fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: colors.white,
                               ),
                             ),
                           ),
@@ -121,7 +121,7 @@ class CollaborativeEditorBadge extends StatelessWidget {
               Text(
                 'Live Editing',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.greenAccent,
+                  color: colors.success,
                   fontWeight: FontWeight.bold,
                 ),
               ),

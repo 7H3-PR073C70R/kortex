@@ -182,7 +182,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
@@ -277,16 +277,16 @@ class _PaywallScreenState extends State<PaywallScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.auto_awesome_rounded,
-                    color: Color(0xFFF59E0B),
+                    color: colors.warning,
                     size: 16,
                   ),
                   SizedBox(width: 6.w),
                   Text(
                     'KORTEXIFY PRO SCHOLAR',
                     style: typography.caption.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                       fontSize: 11,
                       letterSpacing: 1.2,
                     ),
@@ -403,9 +403,9 @@ class _PaywallScreenState extends State<PaywallScreen>
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.check_circle_rounded,
-                      color: Color(0xFF10B981),
+                      color: colors.success,
                       size: 18,
                     ),
                   ],
@@ -482,15 +482,14 @@ class _PaywallScreenState extends State<PaywallScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
+                              color: colors.success,
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text(
+                            child: Text(
                               'SAVE 45%',
-                              style: TextStyle(
-                                color: Colors.white,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.white,
                                 fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -642,18 +641,18 @@ class _PaywallScreenState extends State<PaywallScreen>
             ),
             child: Center(
               child: _isProcessing
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     )
                   : Text(
                       'Unlock Kortexify Pro Access',
                       style: typography.body.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                         fontSize: 15.sp,
                         letterSpacing: 0.5,
                       ),

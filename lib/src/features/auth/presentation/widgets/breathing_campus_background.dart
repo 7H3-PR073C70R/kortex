@@ -73,7 +73,7 @@ class BreathingCampusBackground extends HookWidget {
                   stops: const [0.0, 0.45, 1.0],
                   colors: [
                     if (isDark) ...[
-                      Colors.black.withAlpha(120),
+                      colors.black.withAlpha(120),
                       colors.surfacePrimary.withAlpha(180),
                       colors.surfacePrimary.withAlpha(235),
                     ] else ...[

@@ -14,7 +14,7 @@ extension PumpApp on WidgetTester {
           builder: (context, _) => MaterialApp(
             theme: AppTheme.lightTheme,
             debugShowCheckedModeBanner: false,
-            title: 'Kortex',
+            title: 'Kortexify',
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: widget,

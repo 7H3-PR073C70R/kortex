@@ -24,12 +24,13 @@ class RagReferenceBadge extends StatelessWidget {
         ? ' (p. ${chunk.pageNumber})'
         : '';
 
+    final colors = context.colors;
     return Semantics(
       button: true,
       label: '$badgeText: $title$pageInfo',
       hint: 'Tap to inspect source reference snippet',
       child: Material(
-        color: Colors.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
@@ -54,7 +55,7 @@ class RagReferenceBadge extends StatelessWidget {
                 Text(
                   '$title$pageInfo',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.white,
+                    color: colors.white,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -65,13 +66,13 @@ class RagReferenceBadge extends StatelessWidget {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.2),
+                    color: colors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '$scorePercent%',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.greenAccent,
+                      color: colors.success,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),

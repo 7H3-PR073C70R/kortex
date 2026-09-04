@@ -141,7 +141,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                               offset: const Offset(0, 4),
                             ),
                             BoxShadow(
-                              color: Colors.black.withAlpha(isDark ? 80 : 15),
+                              color: colors.black.withAlpha(isDark ? 80 : 15),
                               blurRadius: 12,
                               offset: const Offset(0, 3),
                             ),

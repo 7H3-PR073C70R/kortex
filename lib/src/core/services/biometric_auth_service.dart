@@ -55,7 +55,7 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
       return await _auth.authenticate(
         localizedReason:
             localizedReason ??
-            'Unlock Kortex to access your study notes and flashcards',
+            'Unlock Kortexify to access your study notes and flashcards',
       );
     } on Object catch (_) {
       return false;

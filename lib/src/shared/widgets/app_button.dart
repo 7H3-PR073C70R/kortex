@@ -371,7 +371,7 @@ class _AppButtonState extends State<AppButton> {
             border: Border.all(
               color: _isFocused
                   ? colors.primary
-                  : (resolvedBorder ?? Colors.transparent),
+                  : (resolvedBorder ?? colors.transparent),
               width: _isFocused ? 2.0 : 1.0,
             ),
           ),
@@ -390,7 +390,7 @@ class _AppButtonState extends State<AppButton> {
         return colors.surfaceSecondary;
       case AppButtonVariant.outline:
       case AppButtonVariant.ghost:
-        return Colors.transparent;
+        return colors.transparent;
       case AppButtonVariant.destructive:
         return colors.error;
     }

@@ -491,7 +491,7 @@ class _ContentBottomDock extends StatelessWidget {
                           ? l10n.contentGetStartedButton
                           : l10n.contentNextButton,
                       style: typography.callout.semiBold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -499,7 +499,7 @@ class _ContentBottomDock extends StatelessWidget {
                       isLastPage
                           ? Icons.rocket_launch_rounded
                           : Icons.arrow_forward_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 18,
                     ),
                   ],

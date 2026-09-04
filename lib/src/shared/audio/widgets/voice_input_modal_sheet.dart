@@ -21,7 +21,7 @@ class VoiceInputModalSheet extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => VoiceInputModalSheet(onTranscribed: onTranscribed),
     );
   }
@@ -45,6 +45,8 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return BlocConsumer<AudioWorkspaceCubit, AudioWorkspaceState>(
@@ -71,7 +73,7 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                 top: Radius.circular(32),
               ),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: colors.white.withValues(alpha: 0.15),
               ),
             ),
             child: Column(
@@ -82,7 +84,7 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white38,
+                    color: colors.white.withAlpha(97),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -92,9 +94,8 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                 Text(
                   l10n.listeningVoiceInput,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.white,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -123,20 +124,20 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                   constraints: const BoxConstraints(minHeight: 60),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   child: Text(
                     state.transcribedText.isEmpty
                         ? l10n.tapToSpeakHint
                         : state.transcribedText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: typography.body.regular.copyWith(
                       color: state.transcribedText.isEmpty
-                          ? Colors.white38
-                          : Colors.white,
+                          ? colors.white.withAlpha(97)
+                          : colors.white,
                       fontStyle: state.transcribedText.isEmpty
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -162,13 +163,15 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                           );
                           Navigator.of(context).pop();
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
-                          color: Colors.white60,
+                          color: colors.white.withAlpha(153),
                         ),
-                        label: const Text(
+                        label: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: typography.callout.regular.copyWith(
+                            color: colors.white.withAlpha(153),
+                          ),
                         ),
                       ),
                     ),
@@ -183,7 +186,7 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: Colors.black,
+                          foregroundColor: colors.black,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 12,
@@ -193,9 +196,9 @@ class _VoiceInputModalSheetState extends State<VoiceInputModalSheet> {
                           ),
                         ),
                         icon: const Icon(Icons.check_rounded),
-                        label: const Text(
+                        label: Text(
                           'Done',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: typography.callout.bold,
                         ),
                       ),
                     ),

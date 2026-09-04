@@ -28,10 +28,11 @@ class SyllabotHistorySheet extends StatefulWidget {
     BuildContext context, {
     required String currentSessionId,
   }) {
+    final colors = context.colors;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       builder: (_) => SyllabotHistorySheet(
         currentSessionId: currentSessionId,
       ),

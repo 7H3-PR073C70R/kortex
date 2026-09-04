@@ -54,7 +54,7 @@ class _AnalyticsDetailView extends HookWidget {
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
@@ -428,7 +428,7 @@ class _KpiMetricCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 30 : 8),
+                color: colors.black.withAlpha(isDark ? 30 : 8),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -810,7 +810,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                                             ? colors.primary.withAlpha(
                                                 isDark ? 90 : 50,
                                               )
-                                            : Colors.transparent),
+                                            : colors.transparent),
                                   width: isSelected ? 1.8 : 0.8,
                                 ),
                                 boxShadow: isSelected

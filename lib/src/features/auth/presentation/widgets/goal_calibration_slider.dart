@@ -35,7 +35,7 @@ class GoalCalibrationSlider extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 15),
+            color: colors.black.withAlpha(isDark ? 40 : 15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -71,7 +71,7 @@ class GoalCalibrationSlider extends StatelessWidget {
                 child: Text(
                   l10n.cardsPerDay(dailyTarget),
                   style: typography.footnote.bold.copyWith(
-                    color: Colors.white,
+                    color: colors.white,
                   ),
                 ),
               ),

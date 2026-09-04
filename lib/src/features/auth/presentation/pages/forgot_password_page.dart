@@ -43,7 +43,7 @@ class ForgotPasswordPage extends HookWidget {
       child: Scaffold(
         backgroundColor: colors.surfacePrimary,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),

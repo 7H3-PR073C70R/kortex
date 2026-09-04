@@ -63,7 +63,7 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
       button: true,
       label: semanticLabel,
       child: Material(
-        color: Colors.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: widget.onTap,
           borderRadius: BorderRadius.circular(24),

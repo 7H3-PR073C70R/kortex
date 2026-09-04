@@ -71,7 +71,7 @@ class AppLiquidGlassTabBar extends StatelessWidget {
         useOwnLayer: true,
         indicatorColor: colors.primary,
         selectedTextStyle: typography.caption.bold.copyWith(
-          color: Colors.white,
+          color: colors.white,
           fontSize: fontSize,
         ),
         unselectedTextStyle: typography.caption.medium.copyWith(
@@ -124,7 +124,7 @@ class AppLiquidGlassTabBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(isDark ? 45 : 18),
+                        color: colors.black.withAlpha(isDark ? 45 : 18),
                         blurRadius: 5,
                         offset: const Offset(0, 1.5),
                       ),
@@ -156,7 +156,7 @@ class AppLiquidGlassTabBar extends StatelessWidget {
                             style: isSelected
                                 ? typography.caption.bold.copyWith(
                                     color: isDark
-                                        ? Colors.white
+                                        ? colors.white
                                         : colors.primary,
                                     fontSize: isCompact ? 11.5 : 12.5,
                                   )

@@ -37,11 +37,12 @@ class VoiceDialogueModal extends StatefulWidget {
     required TextToSpeechHandler ttsHandler,
     SocraticMode initialMode = SocraticMode.stepByStep,
   }) {
+    final colors = context.colors;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       builder: (context) => VoiceDialogueModal(
         onSendPrompt: onSendPrompt,
         ttsHandler: ttsHandler,
@@ -356,7 +357,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                                 : isThinking
                                 ? Icons.auto_awesome_rounded
                                 : Icons.mic_none_rounded,
-                            color: Colors.white,
+                            color: colors.white,
                             size: 38,
                           ),
                         ),
@@ -473,7 +474,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                           _state == DialogueState.listening
                               ? Icons.stop_rounded
                               : Icons.mic_rounded,
-                          color: Colors.white,
+                          color: colors.white,
                           size: 22,
                         ),
                         const SizedBox(width: 8),
@@ -482,7 +483,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                               ? l10n.voiceDialogueDoneSpeaking
                               : l10n.voiceDialogueTapToSpeak,
                           style: typography.body.bold.copyWith(
-                            color: Colors.white,
+                            color: colors.white,
                             fontSize: 15,
                           ),
                         ),

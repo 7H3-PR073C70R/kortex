@@ -81,10 +81,10 @@ class ConversationalOnboardingPage extends HookWidget {
                                   ),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.auto_awesome_rounded,
                                   size: 18,
-                                  color: Colors.white,
+                                  color: colors.white,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -115,11 +115,11 @@ class ConversationalOnboardingPage extends HookWidget {
                                         ? colors.primary.withAlpha(
                                             isDark ? 40 : 20,
                                           )
-                                        : Colors.transparent,
+                                        : colors.transparent,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withAlpha(
+                                      color: colors.black.withAlpha(
                                         isDark ? 30 : 10,
                                       ),
                                       blurRadius: 6,
@@ -132,7 +132,7 @@ class ConversationalOnboardingPage extends HookWidget {
                                   style: typography.body.regular.copyWith(
                                     color: isAi
                                         ? colors.textPrimary
-                                        : Colors.white,
+                                        : colors.white,
                                     height: 1.4,
                                   ),
                                 ),
@@ -222,10 +222,10 @@ class ConversationalOnboardingPage extends HookWidget {
                           shape: BoxShape.circle,
                           color: colors.primary,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_upward_rounded,
                           size: 20,
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                       ),
                     ),
@@ -344,18 +344,18 @@ class ConversationalOnboardingPage extends HookWidget {
                   ),
                   child: Center(
                     child: onboardingState.isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                           )
                         : Text(
                             l10n.completeAndGoToDashboard,
                             style: typography.footnote.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                           ),
                   ),
@@ -395,10 +395,10 @@ class _ThinkingIndicatorBubble extends StatelessWidget {
               ),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome_rounded,
               size: 18,
-              color: Colors.white,
+              color: colors.white,
             ),
           ),
           const SizedBox(width: 10),

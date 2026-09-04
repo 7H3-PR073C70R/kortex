@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 
 /// A charming, animated illustration of a lonely/unhappy teddy bear.
 ///
@@ -69,7 +70,7 @@ class _LonelyTeddyBearWidgetState extends State<LonelyTeddyBearWidget>
                     colors: [
                       (isDark ? colors.syllabotAccent : colors.primary)
                           .withAlpha(isDark ? 35 : 20),
-                      Colors.transparent,
+                      colors.transparent,
                     ],
                   ),
                 ),
@@ -84,8 +85,7 @@ class _LonelyTeddyBearWidgetState extends State<LonelyTeddyBearWidget>
                     breath: breath,
                     earDroop: earDroop,
                     isDark: isDark,
-                    primaryColor: colors.primary,
-                    accentColor: colors.syllabotAccent,
+                    themeColors: colors,
                   ),
                 ),
               ),
@@ -102,15 +102,13 @@ class _TeddyBearPainter extends CustomPainter {
     required this.breath,
     required this.earDroop,
     required this.isDark,
-    required this.primaryColor,
-    required this.accentColor,
+    required this.themeColors,
   });
 
   final double breath;
   final double earDroop;
   final bool isDark;
-  final Color primaryColor;
-  final Color accentColor;
+  final AppThemeColorsExtension themeColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -164,49 +162,51 @@ class _TeddyBearPainter extends CustomPainter {
       ..drawCircle(rightEarCenter, earRadius, bearPaint)
       ..drawCircle(rightEarCenter, earRadius * 0.58, innerEarPaint);
 
-    // B. Head Shape
-    final headRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(center.dx, center.dy + h * 0.04),
-        width: w * 0.72,
-        height: h * 0.68,
-      ),
-      Radius.circular(w * 0.34),
-    );
-    canvas.drawRRect(headRect, bearPaint);
+    // B. Head
+    final headCenter = Offset(center.dx, center.dy * 0.95);
+    final headRadius = w * 0.38 * (1.0 + (breath * 0.015));
+    canvas.drawCircle(headCenter, headRadius, bearPaint);
 
-    // C. Soft Muzzle / Snout
+    // C. Muzzle
+    final muzzleCenter = Offset(headCenter.dx, headCenter.dy + (w * 0.1));
     final muzzleRect = Rect.fromCenter(
-      center: Offset(center.dx, center.dy + h * 0.14),
-      width: w * 0.38,
-      height: h * 0.28,
+      center: muzzleCenter,
+      width: w * 0.36,
+      height: h * 0.25,
     );
     canvas.drawOval(muzzleRect, muzzlePaint);
 
-    // D. Cute Triangular Sad Nose
+    // D. Soft Sad Nose
+    final noseCenter = Offset(muzzleCenter.dx, muzzleCenter.dy - (h * 0.03));
     final nosePath = Path()
-      ..moveTo(center.dx - w * 0.05, center.dy + h * 0.07)
-      ..lineTo(center.dx + w * 0.05, center.dy + h * 0.07)
+      ..moveTo(noseCenter.dx - (w * 0.042), noseCenter.dy - (h * 0.02))
       ..quadraticBezierTo(
-        center.dx,
-        center.dy + h * 0.13,
-        center.dx - w * 0.05,
-        center.dy + h * 0.07,
+        noseCenter.dx,
+        noseCenter.dy - (h * 0.03),
+        noseCenter.dx + (w * 0.042),
+        noseCenter.dy - (h * 0.02),
+      )
+      ..quadraticBezierTo(
+        noseCenter.dx,
+        noseCenter.dy + (h * 0.035),
+        noseCenter.dx - (w * 0.042),
+        noseCenter.dy - (h * 0.02),
       );
     canvas.drawPath(nosePath, detailPaint);
 
-    // E. Unhappy / Downturned Little Mouth
+    // E. Sad Little Mouth
+    final mouthCenter = Offset(noseCenter.dx, noseCenter.dy + (h * 0.045));
     final mouthPath = Path()
-      ..moveTo(center.dx - w * 0.06, center.dy + h * 0.20)
+      ..moveTo(mouthCenter.dx - (w * 0.04), mouthCenter.dy + (h * 0.02))
       ..quadraticBezierTo(
-        center.dx,
-        center.dy + h * 0.15,
-        center.dx + w * 0.06,
-        center.dy + h * 0.20,
+        mouthCenter.dx,
+        mouthCenter.dy - (h * 0.01),
+        mouthCenter.dx + (w * 0.04),
+        mouthCenter.dy + (h * 0.02),
       );
     canvas.drawPath(mouthPath, strokeDetailPaint);
 
-    // F. Lonely Melancholic Eyes with Sad Angled Eyebrows
+    // F. Twinkling Melancholy Eyes
     final leftEyeCenter = Offset(w * 0.36, h * 0.39);
     final rightEyeCenter = Offset(w * 0.64, h * 0.39);
     final eyeRadius = w * 0.045;
@@ -217,7 +217,7 @@ class _TeddyBearPainter extends CustomPainter {
       ..drawCircle(rightEyeCenter, eyeRadius, detailPaint);
 
     // Eye Twinkles
-    final twinklePaint = Paint()..color = Colors.white;
+    final twinklePaint = Paint()..color = themeColors.white;
     canvas
       ..drawCircle(
         leftEyeCenter + Offset(-eyeRadius * 0.3, -eyeRadius * 0.3),

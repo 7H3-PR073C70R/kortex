@@ -45,7 +45,7 @@ class TwoFactorSetupPage extends HookWidget {
     final factorIdState = useState<String?>(initialFactorId);
     final totpUriState = useState<String>(
       initialTotpUri ??
-          'otpauth://totp/Kortex:$email?secret=${secretState.value}&issuer=Kortex',
+          'otpauth://totp/Kortexify:$email?secret=${secretState.value}&issuer=Kortexify',
     );
     final isEnrolling = useState<bool>(false);
     final isVerifying = useState<bool>(false);
@@ -69,7 +69,7 @@ class TwoFactorSetupPage extends HookWidget {
             final uri = enrollRes.uri;
             totpUriState.value = (uri != null && uri.isNotEmpty)
                 ? uri
-                : 'otpauth://totp/Kortex:$email?secret=${enrollRes.secret}&issuer=Kortex';
+                : 'otpauth://totp/Kortexify:$email?secret=${enrollRes.secret}&issuer=Kortexify';
           }
         } on Object catch (_) {
           // Fallback to offline standard secret key
@@ -113,7 +113,7 @@ class TwoFactorSetupPage extends HookWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Protect your Kortex scholar account and study notes '
+                      'Protect your Kortexify scholar account and study notes '
                       'by enabling two-factor authentication (TOTP).',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
@@ -149,7 +149,7 @@ class TwoFactorSetupPage extends HookWidget {
                                   child: Text(
                                     '1',
                                     style: typography.caption.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -171,11 +171,11 @@ class TwoFactorSetupPage extends HookWidget {
                           Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: colors.white,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(20),
+                                  color: colors.black.withAlpha(20),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -240,7 +240,7 @@ class TwoFactorSetupPage extends HookWidget {
                                   child: Text(
                                     '2',
                                     style: typography.caption.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -369,7 +369,7 @@ class TwoFactorSetupPage extends HookWidget {
                                   child: Text(
                                     '3',
                                     style: typography.caption.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -474,18 +474,18 @@ class TwoFactorSetupPage extends HookWidget {
                         ),
                         child: Center(
                           child: isVerifying.value
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     strokeWidth: 2.2,
                                   ),
                                 )
                               : Text(
                                   'Verify & Enable 2FA',
                                   style: typography.body.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 15,
                                   ),
                                 ),

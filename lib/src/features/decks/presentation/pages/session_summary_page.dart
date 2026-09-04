@@ -67,9 +67,9 @@ class SessionSummaryPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_rounded,
-                  color: Colors.white,
+                  color: colors.white,
                   size: 48,
                 ),
               ),

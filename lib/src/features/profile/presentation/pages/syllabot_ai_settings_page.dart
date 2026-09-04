@@ -244,7 +244,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   : 'Not Downloaded',
                               style: typography.body.bold.copyWith(
                                 color: offlineModelDownloaded.value
-                                    ? const Color(0xFF10B981)
+                                    ? colors.success
                                     : colors.textPrimary,
                                 fontSize: 13.5,
                               ),
@@ -358,7 +358,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                     child: Text(
                       'Apply Preferences',
                       style: typography.body.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                         fontSize: 15,
                       ),
                     ),

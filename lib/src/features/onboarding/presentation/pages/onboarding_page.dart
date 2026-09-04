@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/interactive_rocket_launch_overlay.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -25,6 +26,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   late final PageController _pageController;
   late final OnboardingLocalDataSource _dataSource;
   int _currentIndex = 0;
+  bool _isLaunching = false;
 
   @override
   void initState() {
@@ -73,7 +75,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       );
     } else {
-      unawaited(_completeOnboarding());
+      setState(() {
+        _isLaunching = true;
+      });
     }
   }
 
@@ -90,6 +94,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLaunching) {
+      return InteractiveRocketLaunchOverlay(
+        onLaunchComplete: () => unawaited(_completeOnboarding()),
+      );
+    }
+
     final colors = context.colors;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
@@ -194,7 +204,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                         ? Icons.rocket_launch_outlined
                                         : Icons.arrow_forward_rounded,
                                     key: ValueKey<bool>(isLastPage),
-                                    color: Colors.white,
+                                    color: colors.white,
                                     size: 22,
                                   ),
                                 ),

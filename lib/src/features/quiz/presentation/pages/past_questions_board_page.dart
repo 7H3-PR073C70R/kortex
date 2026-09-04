@@ -64,7 +64,7 @@ class _PastQuestionsBoardView extends HookWidget {
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         title: Text(
           l10n.pastQuestionsBankTitle,
@@ -268,7 +268,7 @@ class _ExamCategoryBar extends StatelessWidget {
                     child: Text(
                       exam.displayName,
                       style: typography.caption.bold.copyWith(
-                        color: isSelected ? Colors.white : colors.textPrimary,
+                        color: isSelected ? colors.white : colors.textPrimary,
                       ),
                     ),
                   ),
@@ -410,7 +410,7 @@ class _PastQuestionCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 8),
+            color: colors.black.withAlpha(isDark ? 40 : 8),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -534,13 +534,13 @@ class _PastQuestionCard extends StatelessWidget {
 
             if (question.isAnswered && isInstantFeedback) {
               if (isCorrect) {
-                optionBgColor = Colors.green.withAlpha(isDark ? 50 : 25);
-                optionBorderColor = Colors.green.withAlpha(180);
-                optionTextColor = Colors.green;
+                optionBgColor = colors.success.withAlpha(isDark ? 50 : 25);
+                optionBorderColor = colors.success.withAlpha(180);
+                optionTextColor = colors.success;
               } else if (isSelected) {
-                optionBgColor = Colors.red.withAlpha(isDark ? 50 : 25);
-                optionBorderColor = Colors.red.withAlpha(180);
-                optionTextColor = Colors.red;
+                optionBgColor = colors.error.withAlpha(isDark ? 50 : 25);
+                optionBorderColor = colors.error.withAlpha(180);
+                optionTextColor = colors.error;
               }
             } else if (isSelected) {
               optionBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
@@ -587,7 +587,7 @@ class _PastQuestionCard extends StatelessWidget {
                             letter,
                             style: typography.caption.bold.copyWith(
                               color: isSelected
-                                  ? Colors.white
+                                  ? colors.white
                                   : colors.textSecondary,
                               fontSize: 11,
                             ),
@@ -605,15 +605,15 @@ class _PastQuestionCard extends StatelessWidget {
                       ),
                       if (question.isAnswered && isInstantFeedback) ...[
                         if (isCorrect)
-                          const Icon(
+                          Icon(
                             Icons.check_circle_rounded,
-                            color: Colors.green,
+                            color: colors.success,
                             size: 20,
                           )
                         else if (isSelected)
-                          const Icon(
+                          Icon(
                             Icons.cancel_rounded,
-                            color: Colors.red,
+                            color: colors.error,
                             size: 20,
                           ),
                       ],

@@ -191,10 +191,10 @@ class HeaderProfileBar extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.local_fire_department_rounded,
                                 size: 18,
-                                color: Color(0xFFF97316),
+                                color: colors.warning,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -332,7 +332,7 @@ class HeaderProfileBar extends StatelessWidget {
                           child: Text(
                             l10n.dashboardCalibrateButton,
                             style: typography.caption.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                               fontSize: 12,
                             ),
                           ),

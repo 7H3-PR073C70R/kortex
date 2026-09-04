@@ -37,7 +37,7 @@ class CreatePostBottomSheet extends HookWidget {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       barrierColor: colors.black.withAlpha(isDark ? 160 : 100),
       builder: (sheetContext) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),

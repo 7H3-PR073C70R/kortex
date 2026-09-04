@@ -82,7 +82,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     final streak = analytics.currentStreakDays;
     final insight = streak > 0
         ? 'Great momentum! You are on a $streak-day study streak. Keep up the active recall!'
-        : 'Welcome to Kortex! Start your first study session to activate your neural memory retention tracking.';
+        : 'Welcome to Kortexify! Start your first study session to activate your neural memory retention tracking.';
 
     return DashboardFeedModel(
       analyticsSummary: analytics,

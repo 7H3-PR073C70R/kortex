@@ -314,7 +314,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 80 : 15),
+                color: colors.black.withAlpha(isDark ? 80 : 15),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -408,7 +408,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                 ],
                               ),
                               child: widget.isLoading
-                                  ? const Center(
+                                  ? Center(
                                       child: SizedBox(
                                         width: 16,
                                         height: 16,
@@ -416,14 +416,14 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
+                                                colors.white,
                                               ),
                                         ),
                                       ),
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       Icons.arrow_upward_rounded,
-                                      color: Colors.white,
+                                      color: colors.white,
                                       size: 20,
                                     ),
                             ),
@@ -472,7 +472,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                             : null,
                                         border: Border.all(
                                           color: _isListening
-                                              ? Colors.white.withAlpha(180)
+                                              ? colors.white.withAlpha(180)
                                               : colors.surfaceBorder.withAlpha(
                                                   80,
                                                 ),
@@ -483,7 +483,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                             ? Icons.mic_rounded
                                             : Icons.mic_none_rounded,
                                         color: _isListening
-                                            ? Colors.white
+                                            ? colors.white
                                             : colors.textSecondary,
                                         size: 20,
                                       ),
@@ -576,8 +576,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isCloud
-                                  ? const Color(0xFF10B981)
-                                  : const Color(0xFFF59E0B),
+                                  ? colors.success
+                                  : colors.warning,
                             ),
                           ),
                           const SizedBox(width: 6),

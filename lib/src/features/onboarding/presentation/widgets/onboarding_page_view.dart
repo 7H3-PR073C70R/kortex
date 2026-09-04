@@ -222,7 +222,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                           .round()
                                           .clamp(0, 255),
                                     ),
-                                    Colors.transparent,
+                                    colors.transparent,
                                   ],
                                   stops: const [0.0, 0.6, 1.0],
                                 ),
@@ -267,7 +267,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                       color: isDark
                                           ? colors.surfaceBorderHighlight
                                                 .withAlpha(80)
-                                          : Colors.white.withAlpha(200),
+                                          : colors.white.withAlpha(200),
                                       width: 1.2,
                                     ),
                                     boxShadow: [

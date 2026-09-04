@@ -85,7 +85,7 @@ class ContentIllustrationCanvas extends StatelessWidget {
           icon: Icons.assignment_turned_in_rounded,
           gradientColors: [
             colors.primary,
-            const Color(0xFF818CF8),
+            colors.primary.withAlpha(200),
           ],
           title: 'VERIFIED EXAM Q-BANK',
           badgeText: 'Instant Past Papers',
@@ -96,7 +96,7 @@ class ContentIllustrationCanvas extends StatelessWidget {
           icon: Icons.style_rounded,
           gradientColors: [
             colors.syllabotAccent,
-            const Color(0xFF38BDF8),
+            colors.syllabotAccent.withAlpha(200),
           ],
           title: 'SM-2 SPACED REPETITION',
           badgeText: 'Curated Topic Decks',
@@ -105,9 +105,9 @@ class ContentIllustrationCanvas extends StatelessWidget {
       case RecommendationType.socraticAi:
         return _HeroGraphicContainer(
           icon: Icons.psychology_rounded,
-          gradientColors: const [
-            Color(0xFF8B5CF6),
-            Color(0xFFEC4899),
+          gradientColors: [
+            colors.secondary,
+            colors.syllabotAccent,
           ],
           title: 'SOCRATIC AI ENGINE',
           badgeText: 'Personalized Tutoring',
@@ -134,6 +134,7 @@ class _HeroGraphicContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       width: 170,
       height: 170,
@@ -143,7 +144,7 @@ class _HeroGraphicContainer extends StatelessWidget {
           colors: [
             gradientColors[0].withAlpha(isDark ? 100 : 60),
             gradientColors[1].withAlpha(isDark ? 40 : 20),
-            Colors.transparent,
+            colors.transparent,
           ],
           stops: const [0.0, 0.65, 1.0],
         ),
@@ -170,7 +171,7 @@ class _HeroGraphicContainer extends StatelessWidget {
           child: Icon(
             icon,
             size: 52,
-            color: Colors.white,
+            color: colors.white,
           ),
         ),
       ),

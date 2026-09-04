@@ -292,22 +292,22 @@ class AccountSecurityPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withAlpha(25),
+              color: colors.success.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle_rounded,
-                  color: Color(0xFF10B981),
+                  color: colors.success,
                   size: 13,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   actionLabel,
                   style: typography.caption.bold.copyWith(
-                    color: const Color(0xFF10B981),
+                    color: colors.success,
                     fontSize: 11,
                   ),
                 ),

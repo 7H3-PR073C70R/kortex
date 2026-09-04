@@ -16,20 +16,21 @@ class ConvertToDeckActionSheet extends HookWidget {
     super.key,
   });
 
-  final void Function(String title, String courseCode) onGenerateDeck;
+  final void Function(String title, String courseCode, {bool createForum}) onGenerateDeck;
   final String? initialTitle;
   final String? initialCourseCode;
 
   static Future<void> show(
     BuildContext context, {
-    required void Function(String title, String courseCode) onGenerateDeck,
+    required void Function(String title, String courseCode, {bool createForum}) onGenerateDeck,
     String? initialTitle,
     String? initialCourseCode,
   }) {
+    final colors = context.colors;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       builder: (context) => ConvertToDeckActionSheet(
         onGenerateDeck: onGenerateDeck,
         initialTitle: initialTitle,
@@ -51,6 +52,7 @@ class ConvertToDeckActionSheet extends HookWidget {
     final courseController = useTextEditingController(
       text: initialCourseCode ?? 'GEN 101',
     );
+    final createForum = useState<bool>(false);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -144,14 +146,102 @@ class ConvertToDeckActionSheet extends HookWidget {
                   label: 'Course Code / Tag',
                   hintText: 'e.g. PHYS 301',
                 ),
+                const SizedBox(height: 16),
+
+                // Optional Community Forum Generation Toggle
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceTertiary.withAlpha(isDark ? 50 : 80),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.deckCreateForumTitle,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.deckCreateForumSubtitle,
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: createForum.value,
+                            activeTrackColor: colors.primary,
+                            onChanged: (val) {
+                              unawaited(HapticFeedback.lightImpact());
+                              createForum.value = val;
+                            },
+                          ),
+                        ],
+                      ),
+                      if (createForum.value) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(isDark ? 25 : 18),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colors.warning.withAlpha(isDark ? 70 : 90),
+                              width: 0.9,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                color: colors.warning,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.deckCreateForumWarning,
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11.5,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // Action Button
                 AppButton(
                   text: l10n.createDeckAction,
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.auto_awesome,
-                    color: Colors.white,
+                    color: colors.white,
                     size: 18,
                   ),
                   onPressed: () {
@@ -160,6 +250,7 @@ class ConvertToDeckActionSheet extends HookWidget {
                     onGenerateDeck(
                       titleController.text.trim(),
                       courseController.text.trim(),
+                      createForum: createForum.value,
                     );
                   },
                 ),

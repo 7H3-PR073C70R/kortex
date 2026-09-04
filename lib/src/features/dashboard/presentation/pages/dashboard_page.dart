@@ -109,7 +109,7 @@ class _DashboardView extends HookWidget {
     }, const []);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -163,7 +163,7 @@ class _DashboardView extends HookWidget {
                           child: Text(
                             l10n.dashboardRetry,
                             style: typography.caption.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                           ),
                         ),

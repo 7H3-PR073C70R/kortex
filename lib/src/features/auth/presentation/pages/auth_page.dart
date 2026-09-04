@@ -309,7 +309,7 @@ class _DesktopSplitLayout extends StatelessWidget {
                           l10n.appName,
                           style: typography.headline.bold.copyWith(
                             letterSpacing: 2,
-                            color: Colors.white,
+                            color: colors.white,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -323,7 +323,7 @@ class _DesktopSplitLayout extends StatelessWidget {
                         Text(
                           l10n.authDesktopHeroTitle,
                           style: typography.largeTitle.bold.copyWith(
-                            color: Colors.white,
+                            color: colors.white,
                             fontSize: 36,
                             height: 1.2,
                           ),
@@ -332,7 +332,7 @@ class _DesktopSplitLayout extends StatelessWidget {
                         Text(
                           l10n.authDesktopHeroSubtitle,
                           style: typography.body.regular.copyWith(
-                            color: Colors.white.withAlpha(220),
+                            color: colors.white.withAlpha(220),
                             fontSize: 16,
                             height: 1.5,
                           ),
@@ -361,7 +361,7 @@ class _DesktopSplitLayout extends StatelessWidget {
                     Text(
                       l10n.engineSubtitle,
                       style: typography.caption.semiBold.copyWith(
-                        color: Colors.white.withAlpha(160),
+                        color: colors.white.withAlpha(160),
                         letterSpacing: 1.4,
                       ),
                     ),
@@ -492,24 +492,24 @@ class _FeatureBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(35),
+            color: colors.white.withAlpha(35),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 18, color: Colors.white),
+          child: Icon(icon, size: 18, color: colors.white),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              color: Colors.white,
+            style: context.typography.callout.medium.copyWith(
+              color: colors.white,
               fontSize: 14.5,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ),

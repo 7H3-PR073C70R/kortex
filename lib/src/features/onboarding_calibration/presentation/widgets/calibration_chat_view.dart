@@ -203,7 +203,7 @@ class CalibrationChatView extends HookWidget {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withAlpha(
+                                        color: colors.black.withAlpha(
                                           isDark ? 40 : 8,
                                         ),
                                         blurRadius: 8,
@@ -231,7 +231,7 @@ class CalibrationChatView extends HookWidget {
                                           msg.text,
                                           style: typography.callout.regular
                                               .copyWith(
-                                                color: Colors.white,
+                                                color: colors.white,
                                                 fontSize: 14,
                                                 height: 1.35,
                                               ),
@@ -675,7 +675,7 @@ class _ThinkingBubble extends HookWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isDark ? 40 : 8),
+                  color: colors.black.withAlpha(isDark ? 40 : 8),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

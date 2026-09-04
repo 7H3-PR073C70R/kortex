@@ -211,7 +211,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                         child: Text(
                           l10n.saveChangesButton,
                           style: typography.body.bold.copyWith(
-                            color: Colors.white,
+                            color: colors.white,
                             fontSize: 15,
                           ),
                         ),
@@ -280,7 +280,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                   ),
                   child: Icon(
                     _getIconData(track.iconName),
-                    color: Colors.white,
+                    color: colors.white,
                     size: 22,
                   ),
                 ),
@@ -395,7 +395,7 @@ class AcademicTrackSettingsPage extends HookWidget {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         builder: (ctx) {
           const tracks = CourseTrackEntity.defaultTracks;
           return Container(

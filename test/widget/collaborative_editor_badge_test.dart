@@ -3,16 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/collaborative_editor_badge.dart';
 
+import '../helpers/pump_app.dart';
+
 void main() {
   group('CollaborativeEditorBadge Widget Test Suite', () {
     testWidgets('renders empty space when editors list is empty', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CollaborativeEditorBadge(editors: []),
-          ),
+      await tester.pumpApp(
+        const Scaffold(
+          body: CollaborativeEditorBadge(editors: []),
         ),
       );
 
@@ -46,11 +46,9 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: CollaborativeEditorBadge(editors: editors),
-            ),
+        await tester.pumpApp(
+          Scaffold(
+            body: CollaborativeEditorBadge(editors: editors),
           ),
         );
 

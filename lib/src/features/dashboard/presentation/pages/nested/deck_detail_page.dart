@@ -47,10 +47,10 @@ class DeckDetailPage extends HookWidget {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF090D16)
-          : const Color(0xFFF8FAFC),
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         leading: Semantics(
           button: true,

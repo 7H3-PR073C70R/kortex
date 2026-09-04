@@ -41,7 +41,7 @@ class InlineGoalSliderBubble extends HookWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 15),
+            color: colors.black.withAlpha(isDark ? 40 : 15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -94,7 +94,7 @@ class InlineGoalSliderBubble extends HookWidget {
                           ? Icons.check_circle_rounded
                           : Icons.tune_rounded,
                       size: 18,
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -102,7 +102,7 @@ class InlineGoalSliderBubble extends HookWidget {
                           ? 'Goal Calibrated'
                           : 'Confirm Daily Target (${targetState.value} cards)',
                       style: typography.footnote.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ],

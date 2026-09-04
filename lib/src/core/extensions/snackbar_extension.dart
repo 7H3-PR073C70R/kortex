@@ -15,12 +15,14 @@ extension BuildContextExtension on BuildContext {
     required String message,
     SnackBarType type = SnackBarType.info,
     Duration duration = const Duration(milliseconds: 4500),
+    VoidCallback? onTap,
   }) {
     showTopSnackBar(
       Overlay.of(this),
       _ThemedDistinctSnackBar(
         message: message,
         type: type,
+        onTap: onTap,
       ),
       displayDuration: duration,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -34,10 +36,12 @@ class _ThemedDistinctSnackBar extends StatefulWidget {
   const _ThemedDistinctSnackBar({
     required this.message,
     required this.type,
+    this.onTap,
   });
 
   final String message;
   final SnackBarType type;
+  final VoidCallback? onTap;
 
   @override
   State<_ThemedDistinctSnackBar> createState() =>
@@ -83,23 +87,23 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
       String title,
     ) = switch (widget.type) {
       SnackBarType.error => (
-        const Color(0xFFEF4444),
-        const Color(0xFFEF4444).withAlpha(isDark ? 55 : 35),
-        const Color(0xFFEF4444).withAlpha(isDark ? 160 : 120),
+        colors.error,
+        colors.error.withAlpha(isDark ? 55 : 35),
+        colors.error.withAlpha(isDark ? 160 : 120),
         Icons.error_outline_rounded,
         'Notice',
       ),
       SnackBarType.success => (
-        const Color(0xFF10B981),
-        const Color(0xFF10B981).withAlpha(isDark ? 50 : 30),
-        const Color(0xFF10B981).withAlpha(isDark ? 150 : 110),
+        colors.success,
+        colors.success.withAlpha(isDark ? 50 : 30),
+        colors.success.withAlpha(isDark ? 150 : 110),
         Icons.check_circle_rounded,
         'Success',
       ),
       SnackBarType.info => (
-        const Color(0xFF6366F1),
-        const Color(0xFF6366F1).withAlpha(isDark ? 50 : 30),
-        const Color(0xFF6366F1).withAlpha(isDark ? 150 : 110),
+        colors.info,
+        colors.info.withAlpha(isDark ? 50 : 30),
+        colors.info.withAlpha(isDark ? 150 : 110),
         Icons.info_outline_rounded,
         'Info',
       ),
@@ -107,7 +111,7 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
 
     return Center(
       child: Material(
-        color: Colors.transparent,
+        color: colors.transparent,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
@@ -136,13 +140,16 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                     offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 90 : 20),
+                    color: colors.black.withAlpha(isDark ? 90 : 20),
                     blurRadius: 12,
                     offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Row(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onTap,
+                child: Row(
                 children: [
                   // Prominent Status Icon Badge
                   ScaleTransition(
@@ -194,6 +201,7 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           ),

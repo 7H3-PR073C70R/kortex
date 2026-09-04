@@ -63,9 +63,9 @@ class _DocumentIngestionView extends HookWidget {
 
     return AuraMeshNebula(
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: Icon(
@@ -90,7 +90,8 @@ class _DocumentIngestionView extends HookWidget {
                 state.currentDocument != null) {
               if (state.wasDeduplicated) {
                 context.showSnackBar(
-                  message: l10n.contentAlreadyUploadedNotice,
+                  message: l10n.dedupExistingDeckAssigned,
+                  type: SnackBarType.success,
                 );
               }
 

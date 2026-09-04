@@ -325,6 +325,26 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     ConvertToDeckEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
+    final storage = _localStorageService ??
+        (locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null);
+    final isAlreadyConverted = state.isConvertedToDeck ||
+        (storage?.getPreference(
+              key: 'syllabot_converted_${event.sessionId}',
+            ) !=
+            null);
+    if (isAlreadyConverted) {
+      emit(
+        state.copyWith(
+          status: SyllabotStatus.error,
+          errorMessage:
+              'A study deck has already been synthesized from this conversation.',
+        ),
+      );
+      return;
+    }
+
     emit(state.copyWith(status: SyllabotStatus.generatingDeck));
     final result = await _generateDeck(
       sessionId: event.sessionId,

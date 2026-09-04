@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/offline_sync_status_badge.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -8,6 +9,7 @@ void main() {
   group('OfflineSyncStatusBadge Widget Test Suite', () {
     Widget createTestApp(Widget child) {
       return MaterialApp(
+        theme: AppTheme.lightTheme,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

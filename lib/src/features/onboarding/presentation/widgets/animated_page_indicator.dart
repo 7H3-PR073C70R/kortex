@@ -52,7 +52,7 @@ class AnimatedPageIndicator extends StatelessWidget {
           final targetColor = isSelected ? resolvedActive : resolvedInactive;
           final shadowColor = isSelected
               ? resolvedActive.withAlpha(isDark ? 100 : 70)
-              : Colors.transparent;
+              : context.colors.transparent;
 
           final label = semanticLabelBuilder != null
               ? semanticLabelBuilder!(index + 1, count)

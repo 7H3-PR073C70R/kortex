@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/camera_live_ocr_overlay.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -19,6 +20,7 @@ void main() {
 
     Widget createTestApp(Widget child) {
       return MaterialApp(
+        theme: AppTheme.lightTheme,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

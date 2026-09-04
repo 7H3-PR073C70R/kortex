@@ -162,7 +162,7 @@ class _RecommendationSlideItem extends StatelessWidget {
                                       ? colors.surfaceBorderHighlight.withAlpha(
                                           80,
                                         )
-                                      : Colors.white.withAlpha(220),
+                                      : colors.white.withAlpha(220),
                                 ),
                                 boxShadow: [
                                   BoxShadow(

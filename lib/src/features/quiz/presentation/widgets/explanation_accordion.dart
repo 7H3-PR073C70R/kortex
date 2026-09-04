@@ -22,6 +22,7 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
 
     return Container(
@@ -73,7 +74,7 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
             ),
           ),
           if (_isExpanded) ...[
-            const Divider(height: 1, color: Colors.white12),
+            Divider(height: 1, color: colors.surfaceBorder),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -86,14 +87,13 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black26,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         widget.latexFormula!,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          color: Colors.greenAccent,
+                        style: context.typography.code.regular.copyWith(
+                          color: colors.success,
                           fontSize: 14,
                         ),
                       ),
@@ -103,7 +103,7 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
                   Text(
                     widget.explanation,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
+                      color: colors.textSecondary,
                       height: 1.4,
                     ),
                   ),

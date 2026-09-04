@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 
 /// Modular live SVG illustration builders with real-time ambient
@@ -126,8 +127,7 @@ class _LiveIngestionSceneState extends State<_LiveIngestionScene>
                 return CustomPaint(
                   painter: _IngestionLivePainter(
                     progress: _controller.value,
-                    primaryColor: colors.primary,
-                    accentColor: colors.syllabotAccent,
+                    themeColors: colors,
                   ),
                 );
               },
@@ -141,13 +141,11 @@ class _LiveIngestionSceneState extends State<_LiveIngestionScene>
 class _IngestionLivePainter extends CustomPainter {
   _IngestionLivePainter({
     required this.progress,
-    required this.primaryColor,
-    required this.accentColor,
+    required this.themeColors,
   });
 
   final double progress;
-  final Color primaryColor;
-  final Color accentColor;
+  final AppThemeColorsExtension themeColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -159,11 +157,11 @@ class _IngestionLivePainter extends CustomPainter {
     final scanPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          Colors.transparent,
-          accentColor.withAlpha(200),
-          Colors.white.withAlpha(240),
-          accentColor.withAlpha(200),
-          Colors.transparent,
+          themeColors.transparent,
+          themeColors.syllabotAccent.withAlpha(200),
+          themeColors.white.withAlpha(240),
+          themeColors.syllabotAccent.withAlpha(200),
+          themeColors.transparent,
         ],
         stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
       ).createShader(Rect.fromLTWH(w * 0.08, scanY - 3, w * 0.32, 6))
@@ -180,7 +178,7 @@ class _IngestionLivePainter extends CustomPainter {
     // 2. Glowing pulse aura around center cortex core
     final corePulse = math.sin(progress * 2 * math.pi) * 0.5 + 0.5;
     final coreGlowPaint = Paint()
-      ..color = primaryColor.withAlpha((corePulse * 70).toInt().clamp(0, 255))
+      ..color = themeColors.primary.withAlpha((corePulse * 70).toInt().clamp(0, 255))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
     canvas.drawCircle(
       Offset(w * 0.49, h * 0.49),
@@ -193,7 +191,7 @@ class _IngestionLivePainter extends CustomPainter {
     final p1X = (w * 0.55) + (particle1T * (w * 0.22));
     final p1Y = (h * 0.48) - (math.sin(particle1T * math.pi) * (h * 0.18));
     final particlePaint = Paint()
-      ..color = Colors.cyanAccent.withAlpha(((1.0 - particle1T) * 220).toInt())
+      ..color = themeColors.syllabotAccent.withAlpha(((1.0 - particle1T) * 220).toInt())
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(p1X, p1Y), 3.5, particlePaint);
 
@@ -201,7 +199,7 @@ class _IngestionLivePainter extends CustomPainter {
     final p2X = (w * 0.55) + (particle2T * (w * 0.22));
     final p2Y = (h * 0.52) + (math.sin(particle2T * math.pi) * (h * 0.18));
     final particle2Paint = Paint()
-      ..color = Colors.purpleAccent.withAlpha(
+      ..color = themeColors.primary.withAlpha(
         ((1.0 - particle2T) * 220).toInt(),
       )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
@@ -273,8 +271,7 @@ class _LiveOcrSceneState extends State<_LiveOcrScene>
                 return CustomPaint(
                   painter: _OcrLivePainter(
                     progress: _controller.value,
-                    primaryColor: colors.primary,
-                    accentColor: colors.syllabotAccent,
+                    themeColors: colors,
                   ),
                 );
               },
@@ -288,13 +285,11 @@ class _LiveOcrSceneState extends State<_LiveOcrScene>
 class _OcrLivePainter extends CustomPainter {
   _OcrLivePainter({
     required this.progress,
-    required this.primaryColor,
-    required this.accentColor,
+    required this.themeColors,
   });
 
   final double progress;
-  final Color primaryColor;
-  final Color accentColor;
+  final AppThemeColorsExtension themeColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -311,9 +306,9 @@ class _OcrLivePainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.transparent,
-              accentColor.withAlpha(90),
-              Colors.white.withAlpha(220),
+              themeColors.transparent,
+              themeColors.syllabotAccent.withAlpha(90),
+              themeColors.white.withAlpha(220),
             ],
             stops: const [0.0, 0.7, 1.0],
           ).createShader(
@@ -326,7 +321,7 @@ class _OcrLivePainter extends CustomPainter {
     );
 
     final linePaint = Paint()
-      ..color = Colors.cyanAccent
+      ..color = themeColors.syllabotAccent
       ..strokeWidth = 2.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
@@ -339,7 +334,7 @@ class _OcrLivePainter extends CustomPainter {
     // Accuracy Radar Ping
     final pingPulse = math.sin(progress * 2 * math.pi) * 0.5 + 0.5;
     final radarPaint = Paint()
-      ..color = Colors.greenAccent.withAlpha((pingPulse * 80).toInt())
+      ..color = themeColors.success.withAlpha((pingPulse * 80).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawCircle(
@@ -414,7 +409,7 @@ class _LiveRetentionSceneState extends State<_LiveRetentionScene>
                 return CustomPaint(
                   painter: _RetentionLivePainter(
                     progress: _controller.value,
-                    primaryColor: colors.primary,
+                    themeColors: colors,
                   ),
                 );
               },
@@ -428,11 +423,11 @@ class _LiveRetentionSceneState extends State<_LiveRetentionScene>
 class _RetentionLivePainter extends CustomPainter {
   _RetentionLivePainter({
     required this.progress,
-    required this.primaryColor,
+    required this.themeColors,
   });
 
   final double progress;
-  final Color primaryColor;
+  final AppThemeColorsExtension themeColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -443,7 +438,7 @@ class _RetentionLivePainter extends CustomPainter {
     final pulse1 = progress * 2 * math.pi;
     final r1 = 8.0 + (math.sin(pulse1) * 4.0);
     final ripple1Paint = Paint()
-      ..color = Colors.greenAccent.withAlpha(
+      ..color = themeColors.success.withAlpha(
         (140 - (math.sin(pulse1) * 60)).toInt().clamp(0, 255),
       )
       ..style = PaintingStyle.stroke
@@ -455,7 +450,7 @@ class _RetentionLivePainter extends CustomPainter {
     final pulse2 = (progress + 0.5) * 2 * math.pi;
     final r2 = 8.0 + (math.sin(pulse2) * 4.0);
     final ripple2Paint = Paint()
-      ..color = Colors.greenAccent.withAlpha(
+      ..color = themeColors.success.withAlpha(
         (140 - (math.sin(pulse2) * 60)).toInt().clamp(0, 255),
       )
       ..style = PaintingStyle.stroke
@@ -468,7 +463,7 @@ class _RetentionLivePainter extends CustomPainter {
     final sparkX = (w * 0.49) + (t * (w * 0.35));
     final sparkY = (h * 0.38) + (math.sin(t * math.pi) * (h * 0.08));
     final sparkPaint = Paint()
-      ..color = Colors.white
+      ..color = themeColors.white
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     canvas.drawCircle(Offset(sparkX, sparkY), 3, sparkPaint);
   }
@@ -538,8 +533,7 @@ class _LiveSocraticSceneState extends State<_LiveSocraticScene>
                 return CustomPaint(
                   painter: _SocraticLivePainter(
                     progress: _controller.value,
-                    primaryColor: colors.primary,
-                    accentColor: colors.syllabotAccent,
+                    themeColors: colors,
                   ),
                 );
               },
@@ -553,13 +547,11 @@ class _LiveSocraticSceneState extends State<_LiveSocraticScene>
 class _SocraticLivePainter extends CustomPainter {
   _SocraticLivePainter({
     required this.progress,
-    required this.primaryColor,
-    required this.accentColor,
+    required this.themeColors,
   });
 
   final double progress;
-  final Color primaryColor;
-  final Color accentColor;
+  final AppThemeColorsExtension themeColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -569,7 +561,7 @@ class _SocraticLivePainter extends CustomPainter {
     // AI avatar glowing halo
     final haloGlow = (progress * 80).toInt().clamp(0, 255);
     final haloPaint = Paint()
-      ..color = Colors.amberAccent.withAlpha(haloGlow)
+      ..color = themeColors.warning.withAlpha(haloGlow)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(
       Offset(w * 0.12, h * 0.22),
@@ -580,7 +572,7 @@ class _SocraticLivePainter extends CustomPainter {
     // Mastery Dial live breathing arc glow
     final dialPulse = (progress * 100).toInt().clamp(0, 255);
     final dialPaint = Paint()
-      ..color = accentColor.withAlpha(dialPulse)
+      ..color = themeColors.syllabotAccent.withAlpha(dialPulse)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
     canvas.drawCircle(
       Offset(w * 0.76, h * 0.38),

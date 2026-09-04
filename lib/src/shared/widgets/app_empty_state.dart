@@ -98,16 +98,16 @@ class AppEmptyState extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.add_rounded,
-                        color: Colors.white,
+                        color: colors.white,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         primaryActionLabel!,
                         style: typography.callout.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 14,
                         ),
                       ),

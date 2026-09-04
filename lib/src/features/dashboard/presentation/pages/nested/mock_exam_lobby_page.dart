@@ -52,7 +52,7 @@ class MockExamLobbyPage extends HookWidget {
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
@@ -238,7 +238,7 @@ class MockExamLobbyPage extends HookWidget {
                   child: Text(
                     l10n.mockExamBeginButton,
                     style: typography.callout.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ),

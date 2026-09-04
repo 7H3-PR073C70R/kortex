@@ -129,7 +129,7 @@ class _PermissionsView extends StatelessWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withAlpha(
+                                    color: colors.black.withAlpha(
                                       isDark ? 30 : 12,
                                     ),
                                     blurRadius: 8,
@@ -224,9 +224,9 @@ class _PermissionsHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.lock_open_rounded,
-            color: Colors.white,
+            color: colors.white,
             size: 36,
           ),
         ),
@@ -308,7 +308,7 @@ class _PermissionCard extends StatelessWidget {
               BoxShadow(
                 color: isGranted
                     ? colors.success.withAlpha(isDark ? 30 : 20)
-                    : Colors.black.withAlpha(isDark ? 30 : 10),
+                    : colors.black.withAlpha(isDark ? 30 : 10),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

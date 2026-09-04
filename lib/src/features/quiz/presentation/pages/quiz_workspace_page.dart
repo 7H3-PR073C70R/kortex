@@ -24,6 +24,8 @@ class QuizWorkspacePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return BlocConsumer<QuizSessionCubit, QuizSessionState>(
@@ -41,9 +43,9 @@ class QuizWorkspacePage extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.status == QuizSessionStatus.loading) {
-          return const Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Center(
+          return Scaffold(
+            backgroundColor: colors.transparent,
+            body: const Center(
               child: CircularProgressIndicator(),
             ),
           );
@@ -51,9 +53,9 @@ class QuizWorkspacePage extends StatelessWidget {
 
         if (state.status == QuizSessionStatus.error) {
           return Scaffold(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             appBar: AppBar(
-              backgroundColor: Colors.transparent,
+              backgroundColor: colors.transparent,
               elevation: 0,
             ),
             body: Center(
@@ -62,17 +64,17 @@ class QuizWorkspacePage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline_rounded,
-                      color: Colors.redAccent,
+                      color: colors.error,
                       size: 48,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       state.errorMessage ?? l10n.quizFailedToLoad,
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: Colors.white70,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -85,7 +87,14 @@ class QuizWorkspacePage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Text(l10n.quizRetryButton),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                      ),
+                      child: Text(
+                        l10n.retryAction,
+                        style: typography.body.bold.copyWith(color: colors.white),
+                      ),
                     ),
                   ],
                 ),
@@ -96,9 +105,9 @@ class QuizWorkspacePage extends StatelessWidget {
 
         final current = state.currentQuestion;
         if (current == null) {
-          return const Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SizedBox.shrink(),
+          return Scaffold(
+            backgroundColor: colors.transparent,
+            body: const SizedBox.shrink(),
           );
         }
 
@@ -107,19 +116,18 @@ class QuizWorkspacePage extends StatelessWidget {
             : (state.currentIndex + 1) / state.totalQuestions;
 
         return Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: colors.transparent,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.close_rounded, color: Colors.white70),
+              icon: Icon(Icons.close_rounded, color: colors.textSecondary),
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
               state.quizTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              style: typography.title3.bold.copyWith(
+                color: colors.textPrimary,
               ),
             ),
             actions: [
@@ -131,23 +139,22 @@ class QuizWorkspacePage extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white10,
+                  color: colors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: colors.surfaceBorder),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.timer_outlined,
                       size: 16,
-                      color: Colors.greenAccent,
+                      color: colors.success,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       state.formattedTimer,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.greenAccent,
+                      style: typography.caption.bold.copyWith(
+                        color: colors.success,
                       ),
                     ),
                   ],
@@ -160,9 +167,9 @@ class QuizWorkspacePage extends StatelessWidget {
               // Progress Bar
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Colors.white10,
+                backgroundColor: colors.surfaceBorder,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  theme.colorScheme.primary,
+                  colors.primary,
                 ),
               ),
               Expanded(
@@ -179,9 +186,8 @@ class QuizWorkspacePage extends StatelessWidget {
                             state.currentIndex + 1,
                             state.totalQuestions,
                           ),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w600,
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textSecondary,
                           ),
                         ),
                         Container(
@@ -190,17 +196,15 @@ class QuizWorkspacePage extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(
+                            color: colors.primary.withValues(
                               alpha: 0.15,
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             current.subTopic,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
                             ),
                           ),
                         ),
@@ -213,10 +217,10 @@ class QuizWorkspacePage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                        color: colors.surfacePrimary.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withValues(
+                          color: colors.primary.withValues(
                             alpha: 0.2,
                           ),
                         ),
@@ -226,9 +230,8 @@ class QuizWorkspacePage extends StatelessWidget {
                         children: [
                           Text(
                             current.prompt,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
                               height: 1.4,
                             ),
                           ),
@@ -237,14 +240,13 @@ class QuizWorkspacePage extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.black38,
+                                color: colors.black.withAlpha(97),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 current.latexFormula!,
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  color: Colors.greenAccent,
+                                style: typography.code.regular.copyWith(
+                                  color: colors.success,
                                   fontSize: 15,
                                 ),
                               ),
@@ -305,8 +307,8 @@ class QuizWorkspacePage extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.black,
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -315,10 +317,7 @@ class QuizWorkspacePage extends StatelessWidget {
                         state.isLastQuestion
                             ? l10n.submitQuizButton
                             : l10n.nextQuestionButton,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: typography.body.bold.copyWith(color: colors.white),
                       ),
                     ),
                   ),

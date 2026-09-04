@@ -130,7 +130,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     _isAuthenticating = true;
     try {
       final success = await locator<BiometricAuthService>().authenticate(
-        localizedReason: 'Unlock Kortex to access your workspace',
+        localizedReason: 'Unlock Kortexify to access your workspace',
       );
       if (success && mounted) {
         await _proceedToApp();

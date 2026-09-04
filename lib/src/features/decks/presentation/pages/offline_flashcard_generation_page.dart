@@ -158,7 +158,7 @@ class _OfflineFlashcardGenerationPageState
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         title: Text(
           'Offline AI Study Cards',
@@ -306,7 +306,7 @@ class _OfflineFlashcardGenerationPageState
                     'Download',
                     style: typography.caption.bold.copyWith(
                       fontSize: 12.sp,
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ),

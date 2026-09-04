@@ -2420,4 +2420,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeWalkthroughSkip => 'Skip Walkthrough';
+
+  @override
+  String get deckCreateForumTitle => 'Generate Community Study Forum';
+
+  @override
+  String get deckCreateForumSubtitle =>
+      'Create an open discussion forum for this deck';
+
+  @override
+  String get deckCreateForumWarning =>
+      'Note: Generating a campus forum makes this study deck discoverable to other students. As creator, you\'ll be responsible for answering peer queries and moderating discussions. For distraction-free solo mastery, keeping this disabled is recommended — but the option is yours!';
+
+  @override
+  String get deckAlreadyGeneratedFromChat =>
+      'A study deck has already been synthesized from this conversation.';
+
+  @override
+  String get deckTapToView => 'Tap to open study deck';
+
+  @override
+  String get decksImportLmsTitle => 'Import from LMS';
+
+  @override
+  String get decksImportLmsSubtitle =>
+      'Sync course syllabi & assignments from Google Classroom or Canvas.';
+
+  @override
+  String get dedupSynthesisAnalyzing => 'Analyzing document structure...';
+
+  @override
+  String get dedupSynthesisExtracting =>
+      'Synthesizing formulas and definitions...';
+
+  @override
+  String get dedupSynthesisCompiling =>
+      'Finalizing active-recall flashcards...';
+
+  @override
+  String get dedupExistingDeckAssigned =>
+      'Assigned existing verified deck to your workspace';
+
+  @override
+  String get launchSequenceIgnited => 'Ignition sequence started!';
+
+  @override
+  String get warpDriveEngaged => 'WARP DRIVE ENGAGED';
+
+  @override
+  String get launchSteerHint => 'Drag to steer • Tap for turbo boost';
+
+  @override
+  String get launchOrbitReached => 'Orbit Reached!';
+
+  @override
+  String get launchTurboBoost => 'TURBO BOOST!';
+
+  @override
+  String launchMachSpeed(String speed) {
+    return 'Mach $speed';
+  }
+
+  @override
+  String get launchEnteringWorkspace => 'Entering Kortexify Workspace...';
+
+  @override
+  String get lmsConnectWithGoogleClassroom => 'Sign in with Google Classroom';
+
+  @override
+  String get lmsConnectWithCanvas => 'Connect with Canvas LMS';
+
+  @override
+  String get lmsOAuthSecureNotice =>
+      'Secured with OAuth 2.0 PKCE. Your campus credentials and passwords are never stored.';
+
+  @override
+  String lmsConnectedAsStudent(String email) {
+    return 'Connected as $email';
+  }
+
+  @override
+  String get lmsAuthorizeAndConnect => 'Authorize & Connect';
+
+  @override
+  String get lmsCancel => 'Cancel';
+
+  @override
+  String get lmsDisconnect => 'Disconnect';
+
+  @override
+  String get lmsSelectInstitution => 'Select Institution';
+
+  @override
+  String get lmsCustomDomain => 'Custom Canvas URL';
+
+  @override
+  String get lmsPermissionsNotice =>
+      'Kortexify will request read-only access to view your enrolled courses, modules, syllabi, and upcoming assignments to synthesize flashcards.';
+
+  @override
+  String lmsOAuthConnecting(String provider) {
+    return 'Authorizing with $provider...';
+  }
+
+  @override
+  String get lmsOAuthSuccess =>
+      'Successfully authenticated! Loading enrolled courses...';
 }

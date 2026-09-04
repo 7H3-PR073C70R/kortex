@@ -16,7 +16,8 @@ class TtsSpeechControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return BlocBuilder<AudioWorkspaceCubit, AudioWorkspaceState>(
@@ -31,12 +32,12 @@ class TtsSpeechControlBar extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: colors.black.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isCurrentlySpeaking
-                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.08),
+                    ? colors.primary.withValues(alpha: 0.5)
+                    : colors.white.withValues(alpha: 0.08),
               ),
             ),
             child: Row(
@@ -72,17 +73,16 @@ class TtsSpeechControlBar extends StatelessWidget {
                                 : Icons.volume_up_rounded,
                             size: 16,
                             color: isCurrentlySpeaking
-                                ? Colors.redAccent
-                                : theme.colorScheme.primary,
+                                ? colors.error
+                                : colors.primary,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             isCurrentlySpeaking ? 'Stop' : l10n.readAloudLabel,
-                            style: theme.textTheme.labelSmall?.copyWith(
+                            style: typography.caption.semiBold.copyWith(
                               color: isCurrentlySpeaking
-                                  ? Colors.redAccent
-                                  : Colors.white,
-                              fontWeight: FontWeight.w600,
+                                  ? colors.error
+                                  : colors.white,
                             ),
                           ),
                         ],
@@ -95,7 +95,7 @@ class TtsSpeechControlBar extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 14,
-                  color: Colors.white24,
+                  color: colors.white.withAlpha(61),
                 ),
                 const SizedBox(width: 8),
 
@@ -126,14 +126,16 @@ class _SpeedMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return PopupMenuButton<double>(
       onSelected: onSpeedSelected,
-      color: const Color(0xFF1E293B),
+      color: colors.surfaceSecondary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.white12),
+        side: BorderSide(color: colors.white.withAlpha(30)),
       ),
       child: Semantics(
         button: true,
@@ -145,16 +147,15 @@ class _SpeedMenuButton extends StatelessWidget {
             children: [
               Text(
                 '${currentSpeed}x',
-                style: const TextStyle(
+                style: typography.caption.bold.copyWith(
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white70,
+                  color: colors.white.withAlpha(178),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_drop_down_rounded,
                 size: 16,
-                color: Colors.white70,
+                color: colors.white.withAlpha(178),
               ),
             ],
           ),
@@ -167,8 +168,10 @@ class _SpeedMenuButton extends StatelessWidget {
               height: 36,
               child: Text(
                 '${s}x',
-                style: TextStyle(
-                  color: s == currentSpeed ? Colors.cyanAccent : Colors.white,
+                style: typography.caption.regular.copyWith(
+                  color: s == currentSpeed
+                      ? colors.syllabotAccent
+                      : colors.white,
                   fontWeight: s == currentSpeed
                       ? FontWeight.bold
                       : FontWeight.normal,

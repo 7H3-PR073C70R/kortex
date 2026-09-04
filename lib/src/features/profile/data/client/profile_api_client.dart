@@ -74,7 +74,7 @@ class ProfileApiClient {
       '${AppApiEndpoint.baseUri}/auth/v1/factors',
       data: {
         'factor_type': 'totp',
-        'friendly_name': 'Kortex Authenticator',
+        'friendly_name': 'Kortexify Authenticator',
       },
     );
 

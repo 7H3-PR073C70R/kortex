@@ -120,9 +120,9 @@ class _DecksView extends HookWidget {
                   // Option 3: Import from LMS
                   _ActionOptionTile(
                     icon: Icons.school_rounded,
-                    iconColor: Colors.amber.shade700,
-                    title: 'Import from LMS',
-                    subtitle: 'Sync course syllabi & assignments from Google Classroom or Canvas.',
+                    iconColor: colors.warning,
+                    title: context.l10n.decksImportLmsTitle,
+                    subtitle: context.l10n.decksImportLmsSubtitle,
                     onTap: () {
                       Navigator.pop(bottomSheetContext);
                       unawaited(
@@ -151,8 +151,25 @@ class _DecksView extends HookWidget {
 
     final searchController = useTextEditingController();
 
+    useEffect(() {
+      context.read<DecksBloc>().add(const DecksRefreshed());
+      try {
+        final tabsRouter = AutoTabsRouter.of(context);
+        void onTabChange() {
+          if (tabsRouter.activeIndex == 1) {
+            context.read<DecksBloc>().add(const DecksRefreshed());
+          }
+        }
+
+        tabsRouter.addListener(onTabChange);
+        return () => tabsRouter.removeListener(onTabChange);
+      } on Object catch (_) {
+        return null;
+      }
+    }, const []);
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<DecksBloc, DecksState>(
@@ -224,9 +241,9 @@ class _DecksView extends HookWidget {
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.add_rounded,
-                            color: Colors.white,
+                            color: colors.white,
                             size: 22,
                           ),
                         ),
@@ -584,7 +601,7 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: typography.caption.bold.copyWith(
-                color: isSelected ? Colors.white : colors.textPrimary,
+                color: isSelected ? colors.white : colors.textPrimary,
                 fontSize: 12,
               ),
             ),
@@ -594,16 +611,16 @@ class _FilterChip extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isDueBadge
-                      ? const Color(0xFFEF4444)
+                      ? colors.error
                       : (isSelected
-                            ? Colors.white.withAlpha(40)
+                            ? colors.white.withAlpha(40)
                             : colors.primary.withAlpha(30)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   '$count',
                   style: typography.footnote.bold.copyWith(
-                    color: Colors.white,
+                    color: colors.white,
                     fontSize: 10.5,
                   ),
                 ),

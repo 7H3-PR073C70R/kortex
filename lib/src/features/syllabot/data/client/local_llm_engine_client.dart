@@ -483,7 +483,7 @@ class LocalLlmEngineClient {
         lower.contains('what are you') ||
         lower.contains('what is syllabot') ||
         lower.contains('tell me about yourself')) {
-      return 'I am **Syllabot**, your adaptive academic AI tutor and study copilot in **Kortex**.\n\n'
+      return 'I am **Syllabot**, your adaptive academic AI tutor and study copilot in **Kortexify**.\n\n'
           '### How I Support Your Learning:\n'
           '• **Socratic Problem Solving:** Step-by-step guidance for STEM derivations and complex problem sets.\n'
           '• **Exam Simulation & Rubrics:** Testing your analytical knowledge against realistic exam criteria.\n'

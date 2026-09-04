@@ -128,7 +128,7 @@ class Sm2RatingActionBar extends StatelessWidget {
                                 b.label,
                                 style: typography.body.bold.copyWith(
                                   color: isDark
-                                      ? Colors.white
+                                      ? colors.white
                                       : colors.textPrimary,
                                   fontSize: 13.5,
                                 ),

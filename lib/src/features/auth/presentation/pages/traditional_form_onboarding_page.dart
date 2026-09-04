@@ -242,12 +242,12 @@ class TraditionalFormOnboardingPage extends StatelessWidget {
                           ),
                           child: Center(
                             child: state.isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: colors.white,
                                     ),
                                   )
                                 : Text(
@@ -255,7 +255,7 @@ class TraditionalFormOnboardingPage extends StatelessWidget {
                                         ? l10n.completeAndGoToDashboard
                                         : l10n.continueButton,
                                     style: typography.body.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                     ),
                                   ),
                           ),

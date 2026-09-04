@@ -185,7 +185,7 @@ class OcrLatexLiveEditor extends HookWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withAlpha(80)
+                    ? colors.black.withAlpha(80)
                     : colors.primary.withAlpha(15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(

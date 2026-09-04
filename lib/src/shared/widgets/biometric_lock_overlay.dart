@@ -71,7 +71,7 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay>
     _isAuthenticating = true;
     try {
       final success = await _biometricService.authenticate(
-        localizedReason: 'Unlock Kortex to access your workspace',
+        localizedReason: 'Unlock Kortexify to access your workspace',
       );
       if (success && mounted) {
         AppFeedback.light();

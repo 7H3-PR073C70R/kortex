@@ -90,7 +90,7 @@ class CalibrationOptionChip extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 18,
-                    color: isSelected ? Colors.white : colors.primary,
+                    color: isSelected ? colors.white : colors.primary,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -128,7 +128,7 @@ class CalibrationOptionChip extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
                   borderRadius: isMultiSelect ? BorderRadius.circular(6) : null,
-                  color: isSelected ? colors.primary : Colors.transparent,
+                  color: isSelected ? colors.primary : colors.transparent,
                   border: Border.all(
                     color: isSelected
                         ? colors.primary
@@ -138,10 +138,10 @@ class CalibrationOptionChip extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
                         size: 14,
-                        color: Colors.white,
+                        color: colors.white,
                       )
                     : null,
               ),

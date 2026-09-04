@@ -21,6 +21,7 @@ class OfflineSyncStatusBadge extends StatelessWidget {
     }
 
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
     final statusText = isSyncing
         ? 'Syncing offline notes...'
@@ -31,37 +32,37 @@ class OfflineSyncStatusBadge extends StatelessWidget {
       label: 'Offline OCR Sync Status: $statusText',
       hint: 'Tap to trigger immediate synchronization with cloud LaTeX AI',
       child: Material(
-        color: Colors.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: isSyncing ? null : onSyncNow,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.15),
+              color: colors.warning.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.amber.withValues(alpha: 0.4),
+                color: colors.warning.withValues(alpha: 0.4),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isSyncing)
-                  const SizedBox(
+                  SizedBox(
                     width: 12,
                     height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.warning),
                     ),
                   )
                 else
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.amber,
+                    decoration: BoxDecoration(
+                      color: colors.warning,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -69,7 +70,7 @@ class OfflineSyncStatusBadge extends StatelessWidget {
                 Text(
                   statusText,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.amber.shade200,
+                    color: colors.warning,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -78,7 +79,7 @@ class OfflineSyncStatusBadge extends StatelessWidget {
                   Icon(
                     Icons.sync_rounded,
                     size: 14,
-                    color: Colors.amber.shade200,
+                    color: colors.warning,
                   ),
                 ],
               ],

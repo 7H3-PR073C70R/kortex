@@ -93,13 +93,13 @@ class SocraticModeSelector extends StatelessWidget {
                       Icon(
                         icon,
                         size: 14,
-                        color: isSelected ? Colors.white : colors.textSecondary,
+                        color: isSelected ? colors.white : colors.textSecondary,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         title,
                         style: typography.footnote.medium.copyWith(
-                          color: isSelected ? Colors.white : colors.textPrimary,
+                          color: isSelected ? colors.white : colors.textPrimary,
                           fontSize: 12,
                           fontWeight: isSelected
                               ? FontWeight.w600

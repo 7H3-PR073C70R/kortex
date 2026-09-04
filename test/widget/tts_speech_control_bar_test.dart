@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/audio/bloc/audio_workspace_cubit.dart';
 import 'package:kortex/src/shared/audio/widgets/tts_speech_control_bar.dart';
@@ -21,6 +22,7 @@ void main() {
 
     Widget createTestApp(Widget child) {
       return MaterialApp(
+        theme: AppTheme.lightTheme,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

@@ -35,7 +35,7 @@ class CalibrationGlassCard extends StatelessWidget {
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(90)
-                  : Colors.white.withAlpha(220),
+                  : colors.white.withAlpha(220),
               width: 1.2,
             ),
             boxShadow: [

@@ -242,11 +242,11 @@ class SecuritySettingsPage extends HookWidget {
                                   ),
                                   child: Center(
                                     child: isUpdatingPassword.value
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 18,
                                             height: 18,
                                             child: CircularProgressIndicator(
-                                              color: Colors.white,
+                                              color: colors.white,
                                               strokeWidth: 2,
                                             ),
                                           )
@@ -254,7 +254,7 @@ class SecuritySettingsPage extends HookWidget {
                                             'Update Password',
                                             style: typography.caption.bold
                                                 .copyWith(
-                                                  color: Colors.white,
+                                                  color: colors.white,
                                                   fontSize: 13,
                                                 ),
                                           ),
@@ -391,7 +391,7 @@ class SecuritySettingsPage extends HookWidget {
                                   if (context.mounted) {
                                     context.showSnackBar(
                                       message:
-                                          'Biometric App Lock enabled! Kortex '
+                                          'Biometric App Lock enabled! Kortexify '
                                           'will require authentication on '
                                           'launch.',
                                       type: SnackBarType.success,
@@ -431,7 +431,7 @@ class SecuritySettingsPage extends HookWidget {
                                       : 'Require 6-digit TOTP code on login',
                                   style: typography.caption.regular.copyWith(
                                     color: twoFactorEnabled.value
-                                        ? const Color(0xFF10B981)
+                                        ? colors.success
                                         : colors.textSecondary,
                                     fontSize: 11,
                                   ),
@@ -491,12 +491,12 @@ class SecuritySettingsPage extends HookWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withAlpha(25),
+                                  color: colors.success.withAlpha(25),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.phone_iphone_rounded,
-                                  color: Color(0xFF10B981),
+                                  color: colors.success,
                                   size: 18,
                                 ),
                               ),
@@ -516,7 +516,7 @@ class SecuritySettingsPage extends HookWidget {
                                       'Active Now • Authorized Session',
                                       style: typography.caption.regular
                                           .copyWith(
-                                            color: const Color(0xFF10B981),
+                                            color: colors.success,
                                             fontSize: 11,
                                           ),
                                     ),
@@ -627,7 +627,7 @@ class SecuritySettingsPage extends HookWidget {
                               child: Text(
                                 'Delete Account & Purge Data',
                                 style: typography.caption.bold.copyWith(
-                                  color: Colors.white,
+                                  color: colors.white,
                                   fontSize: 12.5,
                                 ),
                               ),
@@ -697,12 +697,12 @@ class SecuritySettingsPage extends HookWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isValid
-            ? const Color(0xFF10B981).withAlpha(25)
+            ? colors.success.withAlpha(25)
             : colors.surfacePrimary,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isValid
-              ? const Color(0xFF10B981).withAlpha(90)
+              ? colors.success.withAlpha(90)
               : colors.surfaceBorder.withAlpha(80),
         ),
       ),
@@ -715,14 +715,14 @@ class SecuritySettingsPage extends HookWidget {
                 : Icons.radio_button_unchecked_rounded,
             size: 13,
             color: isValid
-                ? const Color(0xFF10B981)
+                ? colors.success
                 : colors.textSecondary.withAlpha(120),
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: typography.caption.bold.copyWith(
-              color: isValid ? const Color(0xFF10B981) : colors.textSecondary,
+              color: isValid ? colors.success : colors.textSecondary,
               fontSize: 10.5,
             ),
           ),

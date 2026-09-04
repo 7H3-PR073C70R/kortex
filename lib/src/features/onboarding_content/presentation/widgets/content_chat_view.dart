@@ -200,7 +200,7 @@ class ContentChatView extends HookWidget {
                                 child: Text(
                                   msg.text,
                                   style: typography.callout.regular.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 14,
                                   ),
                                 ),

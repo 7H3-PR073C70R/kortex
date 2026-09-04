@@ -40,7 +40,7 @@ class OnboardingModeToggleBar extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 30 : 10),
+              color: colors.black.withAlpha(isDark ? 30 : 10),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -102,7 +102,6 @@ class _ToggleSegment extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
 
     return ShrinkableButton(
       onTap: onTap,
@@ -121,9 +120,7 @@ class _ToggleSegment extends StatelessWidget {
               : null,
           color: isSelected
               ? null
-              : isDark
-              ? Colors.transparent
-              : Colors.transparent,
+              : colors.transparent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: isSelected
               ? [
@@ -141,13 +138,13 @@ class _ToggleSegment extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : colors.textSecondary,
+              color: isSelected ? colors.white : colors.textSecondary,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: typography.footnote.bold.copyWith(
-                color: isSelected ? Colors.white : colors.textSecondary,
+                color: isSelected ? colors.white : colors.textSecondary,
               ),
             ),
           ],

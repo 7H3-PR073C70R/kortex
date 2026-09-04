@@ -1,15 +1,19 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
@@ -249,6 +253,17 @@ class _SyllabotChatView extends HookWidget {
         return;
       }
 
+      final storage = locator<LocalStorageService>();
+      final isAlreadyConverted = state.isConvertedToDeck ||
+          storage.getPreference(key: 'syllabot_converted_${state.sessionId}') !=
+              null;
+      if (isAlreadyConverted) {
+        sheetContext.showSnackBar(
+          message: l10n.deckAlreadyGeneratedFromChat,
+        );
+        return;
+      }
+
       final userPrompts = state.messages
           .where((m) => m.sender == MessageSender.user)
           .map((m) => m.text.trim())
@@ -296,7 +311,7 @@ class _SyllabotChatView extends HookWidget {
           sheetContext,
           initialTitle: derivedTitle,
           initialCourseCode: derivedCourseCode,
-          onGenerateDeck: (title, courseCode) {
+          onGenerateDeck: (title, courseCode, {createForum = false}) {
             sheetContext.read<SyllabotChatBloc>().add(
               ConvertToDeckEvent(
                 sessionId: state.sessionId,
@@ -304,6 +319,16 @@ class _SyllabotChatView extends HookWidget {
                 courseCode: courseCode,
               ),
             );
+            if (createForum) {
+              unawaited(
+                locator<CommunityRepository>().createForumPost(
+                  title: 'Study Forum: $title ($courseCode)',
+                  content:
+                      'Official campus discussion and question forum for study deck: $title.',
+                  track: courseCode.isNotEmpty ? courseCode : 'General',
+                ),
+              );
+            }
           },
         ),
       );
@@ -319,11 +344,20 @@ class _SyllabotChatView extends HookWidget {
           final deck = state.generatedDeck!;
           locator<DecksBloc>().add(const DecksRefreshed());
           context.showSnackBar(
-            message: l10n.deckCreatedFromSyllabot(
-              deck.title,
-              deck.totalCards,
-            ),
+            message:
+                '${l10n.deckCreatedFromSyllabot(deck.title, deck.totalCards)}\n${l10n.deckTapToView}',
             type: SnackBarType.success,
+            onTap: () {
+              onCollapse?.call();
+              if (context.router.canPop()) {
+                unawaited(context.router.maybePop());
+              }
+              unawaited(
+                context.router.root.navigate(
+                  const MainRoute(children: [DecksRoute()]),
+                ),
+              );
+            },
           );
         }
       },
@@ -602,16 +636,16 @@ class _SyllabotChatView extends HookWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.refresh_rounded,
-                                        color: Colors.white,
+                                        color: colors.white,
                                         size: 13,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         l10n.retryAction,
                                         style: typography.caption.bold.copyWith(
-                                          color: Colors.white,
+                                          color: colors.white,
                                           fontSize: 11.5,
                                         ),
                                       ),

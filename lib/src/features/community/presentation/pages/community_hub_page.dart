@@ -90,7 +90,7 @@ class _CommunityHubView extends HookWidget {
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         centerTitle: false,
         title: Text(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -30,7 +31,7 @@ class ExportDeckModalSheet extends StatefulWidget {
   }) {
     return showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       isScrollControlled: true,
       builder: (_) => ExportDeckModalSheet(deck: deck),
     );
@@ -62,56 +63,62 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
         await SharePlus.instance.share(
           ShareParams(
             files: [XFile(file.path)],
-            subject: 'Anki Export: ${widget.deck.title}',
+            subject: '${widget.deck.title} - Anki Deck',
           ),
         );
       }
-    } finally {
+    } on Exception catch (e) {
       if (mounted) {
-        setState(() {
-          _isExporting = false;
-        });
+        context.showSnackBar(
+          message: 'Failed to export to Anki: $e',
+          type: SnackBarType.error,
+        );
+        Navigator.of(context).pop();
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
   Future<void> _exportPdf() async {
     setState(() {
       _isExporting = true;
-      _exportMessage = 'Rendering printable A4 sheet...';
+      _exportMessage = 'Rendering printable flashcards PDF...';
     });
 
     try {
-      final pdfBytes = await widget.pdfGenerator.generatePrintableDeckPdf(
-        widget.deck,
-      );
+      final bytes = await widget.pdfGenerator.generatePrintableDeckPdf(widget.deck);
       final tempDir = await getTemporaryDirectory();
       final sanitizedTitle = widget.deck.title.replaceAll(RegExp(r'\W+'), '_');
       final file = File('${tempDir.path}/${sanitizedTitle}_cards.pdf');
-      await file.writeAsBytes(pdfBytes);
+      await file.writeAsBytes(bytes);
 
       if (mounted) {
         Navigator.of(context).pop();
         await SharePlus.instance.share(
           ShareParams(
             files: [XFile(file.path)],
-            subject: 'Printable Flashcards: ${widget.deck.title}',
+            subject: '${widget.deck.title} - PDF Cards',
           ),
         );
       }
-    } finally {
+    } on Exception catch (e) {
       if (mounted) {
-        setState(() {
-          _isExporting = false;
-        });
+        context.showSnackBar(
+          message: 'Failed to generate PDF: $e',
+          type: SnackBarType.error,
+        );
+        Navigator.of(context).pop();
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
   Future<void> _exportNotion() async {
     setState(() {
       _isExporting = true;
-      _exportMessage = 'Formatting Notion database CSV...';
+      _exportMessage = 'Building Notion-compatible table...';
     });
 
     try {
@@ -126,26 +133,32 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
         await SharePlus.instance.share(
           ShareParams(
             files: [XFile(file.path)],
-            subject: 'Notion Database CSV: ${widget.deck.title}',
+            subject: '${widget.deck.title} - Notion Table',
           ),
         );
       }
-    } finally {
+    } on Exception catch (e) {
       if (mounted) {
-        setState(() {
-          _isExporting = false;
-        });
+        context.showSnackBar(
+          message: 'Failed to export Notion CSV: $e',
+          type: SnackBarType.error,
+        );
+        Navigator.of(context).pop();
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -162,13 +175,15 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
             children: [
               Text(
                 l10n.exportDeckTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                style: typography.title3.bold.copyWith(
+                  color: colors.white,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: colors.white.withAlpha(138),
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -184,8 +199,8 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
                   const SizedBox(height: 16),
                   Text(
                     _exportMessage ?? l10n.exportingFile,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
+                    style: typography.body.regular.copyWith(
+                      color: colors.white.withAlpha(178),
                     ),
                   ),
                 ],
@@ -194,7 +209,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
           ] else ...[
             _ExportOptionTile(
               icon: Icons.flash_on_rounded,
-              iconColor: Colors.blueAccent,
+              iconColor: colors.info,
               title: l10n.exportAnkiTitle,
               subtitle: l10n.exportAnkiSubtitle,
               onTap: () {
@@ -204,7 +219,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
             const SizedBox(height: 12),
             _ExportOptionTile(
               icon: Icons.print_rounded,
-              iconColor: Colors.greenAccent,
+              iconColor: colors.success,
               title: l10n.exportPdfTitle,
               subtitle: l10n.exportPdfSubtitle,
               onTap: () {
@@ -214,7 +229,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
             const SizedBox(height: 12),
             _ExportOptionTile(
               icon: Icons.view_headline_rounded,
-              iconColor: Colors.amberAccent,
+              iconColor: colors.warning,
               title: l10n.exportNotionTitle,
               subtitle: l10n.exportNotionSubtitle,
               onTap: () {
@@ -246,6 +261,8 @@ class _ExportOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
 
     return InkWell(
       onTap: onTap,
@@ -255,7 +272,7 @@ class _ExportOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: colors.white.withAlpha(30)),
         ),
         child: Row(
           children: [
@@ -274,25 +291,24 @@ class _ExportOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    style: typography.callout.bold.copyWith(
+                      color: colors.white,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white60,
+                    style: typography.caption.regular.copyWith(
+                      color: colors.white.withAlpha(153),
                       height: 1.3,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Colors.white38,
+              color: colors.white.withAlpha(97),
               size: 20,
             ),
           ],

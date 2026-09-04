@@ -16,6 +16,7 @@ class SchedulerToggleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
     final l10n = context.l10n;
     final isFsrs = currentAlgorithm == SpacedRepetitionAlgorithm.fsrs;
 
@@ -31,7 +32,7 @@ class SchedulerToggleTile extends StatelessWidget {
           color: theme.colorScheme.surface.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: colors.surfaceBorder,
           ),
         ),
         child: Column(
@@ -52,7 +53,7 @@ class SchedulerToggleTile extends StatelessWidget {
                       l10n.schedulerAlgorithmTitle,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: colors.textPrimary,
                       ),
                     ),
                   ],
@@ -64,7 +65,7 @@ class SchedulerToggleTile extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -88,7 +89,7 @@ class SchedulerToggleTile extends StatelessWidget {
             Text(
               isFsrs ? l10n.fsrsModeDescription : l10n.sm2ModeDescription,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white70,
+                color: colors.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -113,6 +114,7 @@ class _AlgorithmOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final colors = context.colors;
 
     return Semantics(
       button: true,
@@ -124,16 +126,20 @@ class _AlgorithmOptionButton extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+            color: isSelected ? theme.colorScheme.primary : colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? Colors.black : Colors.white60,
-            ),
+            style: isSelected
+                ? context.typography.caption.bold.copyWith(
+                    fontSize: 11,
+                    color: colors.white,
+                  )
+                : context.typography.caption.medium.copyWith(
+                    fontSize: 11,
+                    color: colors.textSecondary,
+                  ),
           ),
         ),
       ),

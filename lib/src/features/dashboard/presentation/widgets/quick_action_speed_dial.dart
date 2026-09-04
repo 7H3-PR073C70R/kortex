@@ -40,7 +40,7 @@ class QuickActionSpeedDial extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isDark ? 50 : 12),
+                  color: colors.black.withAlpha(isDark ? 50 : 12),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -65,7 +65,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                   _ActionItem(
                     icon: Icons.quiz_rounded,
                     label: l10n.dashboardQBankAction,
-                    color: const Color(0xFFF59E0B),
+                    color: colors.warning,
                     onTap: () {
                       AppFeedback.light();
                       unawaited(
@@ -77,7 +77,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                   _ActionItem(
                     icon: Icons.add_to_photos_rounded,
                     label: l10n.dashboardNewDeck,
-                    color: const Color(0xFF8B5CF6),
+                    color: colors.secondary,
                     onTap: () {
                       AppFeedback.light();
                       unawaited(
@@ -116,7 +116,7 @@ class QuickActionSpeedDial extends StatelessWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         isScrollControlled: true,
         builder: (context) {
           return ClipRRect(

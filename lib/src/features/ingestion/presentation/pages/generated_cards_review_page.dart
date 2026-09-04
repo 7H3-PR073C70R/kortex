@@ -105,9 +105,9 @@ class _GeneratedCardsReviewView extends HookWidget {
 
     return AuraMeshNebula(
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: Icon(
@@ -232,16 +232,16 @@ class _GeneratedCardsReviewView extends HookWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.play_arrow_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 22,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       l10n.confirmAndStudyAction,
                       style: typography.body.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ],

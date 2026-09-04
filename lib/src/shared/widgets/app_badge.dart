@@ -181,7 +181,7 @@ class AppBadge extends StatelessWidget {
       case AppBadgeVariant.error:
         return colors.error.withAlpha(35);
       case AppBadgeVariant.outline:
-        return Colors.transparent;
+        return colors.transparent;
       case AppBadgeVariant.syllabot:
         return colors.syllabotAccent.withAlpha(35);
     }

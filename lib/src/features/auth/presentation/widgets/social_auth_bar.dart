@@ -61,7 +61,7 @@ class SocialAuthBar extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(isDark ? 60 : 15),
+                          color: colors.black.withAlpha(isDark ? 60 : 15),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -70,10 +70,10 @@ class SocialAuthBar extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.g_mobiledata_rounded,
                           size: 24,
-                          color: Colors.blueAccent,
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -125,7 +125,7 @@ class SocialAuthBar extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(isDark ? 60 : 15),
+                          color: colors.black.withAlpha(isDark ? 60 : 15),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),

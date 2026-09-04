@@ -90,7 +90,7 @@ class LoginPage extends HookWidget {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(
+                                  color: colors.black.withAlpha(
                                     isDark ? 70 : 20,
                                   ),
                                   blurRadius: 24,
@@ -152,10 +152,10 @@ class LoginPage extends HookWidget {
                                     height: 22,
                                     errorBuilder:
                                         (context, error, stackTrace) =>
-                                            const Icon(
+                                            Icon(
                                               Icons.g_mobiledata_rounded,
                                               size: 26,
-                                              color: Colors.redAccent,
+                                              color: colors.error,
                                             ),
                                   ),
                                   isLoading: state.isLoading,

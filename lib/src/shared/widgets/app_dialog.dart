@@ -55,7 +55,7 @@ class AppDialog extends StatelessWidget {
       context: context,
       barrierDismissible: barrierDismissible,
       barrierLabel: l10n.dismissDialog,
-      barrierColor: Colors.black.withAlpha(160),
+      barrierColor: context.colors.black.withAlpha(160),
       pageBuilder: (context, anim1, anim2) {
         return AppDialog(
           title: title,
@@ -95,7 +95,7 @@ class AppDialog extends StatelessWidget {
       label: semanticLabel ?? title ?? l10n.defaultDialogTitle,
       child: Dialog(
         backgroundColor: colors.surfacePrimary,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: colors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(
           horizontal: 24,

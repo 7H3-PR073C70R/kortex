@@ -91,7 +91,7 @@ class ModeSwitchButton extends StatelessWidget {
                           : Icons.auto_awesome_rounded,
                       key: ValueKey<bool>(isChatMode),
                       size: 15,
-                      color: isChatMode ? colors.primary : Colors.amberAccent,
+                      color: isChatMode ? colors.primary : colors.warning,
                     ),
                   ),
                   const SizedBox(width: 6),

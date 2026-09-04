@@ -195,44 +195,53 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     return Future<DeckEntity>.sync(() async {
       final cards = <FlashcardEntity>[];
       final flashcardModels = <FlashcardModel>[];
+      final seenQuestions = <String>{};
       var cardIndex = 0;
 
-      // 1. Build cohesive dialogue transcript incorporating whole-chat context
-      final transcriptBuffer = StringBuffer();
-      final userPrompts = <String>[];
-      for (final msg in messages) {
-        final role = msg.sender == MessageSender.user ? 'User' : 'Assistant';
-        final text = msg.text.trim();
-        if (text.isNotEmpty) {
-          if (msg.sender == MessageSender.user) {
-            userPrompts.add(text);
-          }
-          transcriptBuffer.writeln('$role: $text\n');
-        }
-      }
-      final fullTranscript = transcriptBuffer.toString().trim();
+      // 1. Scan entire chat and collect strictly AI assistant responses (exclude user prompts)
+      final aiResponses = messages
+          .where((m) => m.sender == MessageSender.syllabot)
+          .map((m) => m.text.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
 
-      // 2. AI Synthesis: Route whole-chat context through StudyEngineRouter (Cloud or Local GGUF)
-      if (fullTranscript.isNotEmpty) {
+      final aiTranscript = aiResponses.join('\n\n---\n\n');
+
+      // 2. AI Synthesis: Route AI explanations through StudyEngineRouter (Cloud or Local GGUF)
+      if (aiTranscript.isNotEmpty) {
         try {
           final router = _studyEngineRouter ?? StudyEngineRouter();
           final studyPack = await router.generateStudyPack(
             topic: deckTitle,
             count: 10,
-            sourceText: fullTranscript,
+            sourceText: 'AI Study Explanations for "$deckTitle":\n\n$aiTranscript\n\n'
+                'Synthesize unique, concept-specific flashcards from the above AI explanations. '
+                'Formulate distinct questions and in-depth answers. Do not duplicate questions.',
           );
 
           if (studyPack.cards.isNotEmpty) {
             for (final genCard in studyPack.cards) {
               final frontText = genCard.front.trim();
               final backText = genCard.back.trim();
-              if (frontText.isNotEmpty && backText.isNotEmpty && !frontText.contains('Concept Rule')) {
+
+              final isGenericMock = frontText.contains('Concept Rule') ||
+                  frontText.startsWith('Cloud Concept') ||
+                  frontText.startsWith('On-Device Concept') ||
+                  backText.contains(r'\int_{-\infty}^{\infty}') ||
+                  backText.contains(r'\nabla^2 \psi');
+
+              final normQ = frontText.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+              if (frontText.isNotEmpty &&
+                  backText.isNotEmpty &&
+                  !isGenericMock &&
+                  !seenQuestions.contains(normQ)) {
+                seenQuestions.add(normQ);
                 final cardId = 'card_${sessionId}_${cardIndex++}';
                 final cardEntity = FlashcardEntity(
                   id: cardId,
                   deckId: 'deck_$sessionId',
                   front: frontText.endsWith('?') ? frontText : '$frontText?',
-                  back: genCard.explanation.isNotEmpty
+                  back: genCard.explanation.isNotEmpty && !backText.contains(genCard.explanation)
                       ? '$backText\n\n${genCard.explanation}'
                       : backText,
                   sourceTopic: deckTitle,
@@ -244,128 +253,155 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             }
           }
         } on Object catch (_) {
-          // If network / offline isolate fails, continue to deep academic heuristic parsing
+          // Fall back to semantic AI response extraction
         }
       }
 
-      // 3. Deep Academic Extraction: Parse whole transcript into structured concept questions
-      if (cards.isEmpty && messages.isNotEmpty) {
-        final syllabotMessages = messages
-            .where((m) => m.sender == MessageSender.syllabot)
-            .map((m) => m.text.trim())
-            .toList();
-
-        // 3a. Primary User Topic Question
-        if (userPrompts.isNotEmpty && syllabotMessages.isNotEmpty) {
-          final mainPrompt = userPrompts.first;
-          final mainResponse = syllabotMessages.first;
-
-          String mainQuestion;
-          if (mainPrompt.toLowerCase().startsWith('what') ||
-              mainPrompt.toLowerCase().startsWith('how') ||
-              mainPrompt.toLowerCase().startsWith('why') ||
-              mainPrompt.toLowerCase().startsWith('prove')) {
-            mainQuestion = mainPrompt.endsWith('?') ? mainPrompt : '$mainPrompt?';
-          } else {
-            mainQuestion = 'How do you explain and apply $mainPrompt?';
-          }
-
-          final mainCardId = 'card_${sessionId}_${cardIndex++}';
-          final mainCard = FlashcardEntity(
-            id: mainCardId,
-            deckId: 'deck_$sessionId',
-            front: mainQuestion,
-            back: mainResponse.length > 350
-                ? '${mainResponse.substring(0, 350)}...'
-                : mainResponse,
-            sourceTopic: deckTitle,
-            nextDueDate: DateTime.now().add(const Duration(days: 1)),
-          );
-          cards.add(mainCard);
-          flashcardModels.add(FlashcardModel.fromEntity(mainCard));
-        }
-
-        // 3b. Deep Section & Formula Extraction from Assistant Responses
-        for (final resp in syllabotMessages) {
-          // Section header detection (e.g. "Theorem Statement", "Proof Steps", "Historical Context")
-          final sectionRegex = RegExp(
-            r'^(?:#{1,3}\s+|\*\*)?([A-Z][a-zA-Z0-9\s]{2,40})(?:\*\*)?:?\s*$',
+      // 3. In-depth Semantic AI Extraction: Parse unique conceptual Q&As strictly from AI content
+      if (cards.length < 5 && aiResponses.isNotEmpty) {
+        for (final resp in aiResponses) {
+          // 3a. Bullet points with bold concepts: - **Concept**: Explanation
+          final bulletRegex = RegExp(
+            r'^\s*[-*•]\s+\*\*([^*:\n]{2,60})\*\*\s*[:\-–]?\s*(.+)$',
             multiLine: true,
           );
-          final matches = sectionRegex.allMatches(resp).toList();
+          for (final match in bulletRegex.allMatches(resp)) {
+            if (cards.length >= 15) break;
+            final concept = match.group(1)!.trim();
+            final detail = match.group(2)!.trim();
+            if (detail.length < 15) continue;
 
-          for (var i = 0; i < matches.length; i++) {
-            if (cards.length >= 12) break;
-            final sectionTitle = matches[i].group(1)!.trim();
-            final startPos = matches[i].end;
-            final endPos = (i + 1 < matches.length) ? matches[i + 1].start : resp.length;
-            final sectionContent = resp.substring(startPos, endPos).trim();
-
-            if (sectionContent.length < 25) continue;
-
-            String question;
-            final lowerTitle = sectionTitle.toLowerCase();
-            if (lowerTitle.contains('theorem') || lowerTitle.contains('statement')) {
-              question = 'What is the formal theorem statement for $deckTitle?';
-            } else if (lowerTitle.contains('proof') || lowerTitle.contains('step') || lowerTitle.contains('derivation')) {
-              question = 'What are the essential steps to prove or derive $deckTitle?';
-            } else if (lowerTitle.contains('history') || lowerTitle.contains('context') || lowerTitle.contains('background')) {
-              question = 'What is the historical context and significance of $deckTitle?';
-            } else if (lowerTitle.contains('formula') || lowerTitle.contains('mathematical') || lowerTitle.contains('equation')) {
-              question = 'What is the mathematical formulation of $deckTitle?';
-            } else if (lowerTitle.contains('condition') || lowerTitle.contains('rule') || lowerTitle.contains('property')) {
-              question = 'What are the key conditions and properties associated with $sectionTitle?';
-            } else {
-              question = 'Regarding $deckTitle, how is $sectionTitle explained?';
+            final question = 'What is the definition and role of "$concept" in $deckTitle?';
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+            if (!seenQuestions.contains(normQ)) {
+              seenQuestions.add(normQ);
+              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final card = FlashcardEntity(
+                id: cardId,
+                deckId: 'deck_$sessionId',
+                front: question,
+                back: detail,
+                sourceTopic: deckTitle,
+                nextDueDate: DateTime.now().add(const Duration(days: 1)),
+              );
+              cards.add(card);
+              flashcardModels.add(FlashcardModel.fromEntity(card));
             }
-
-            final cardId = 'card_${sessionId}_${cardIndex++}';
-            final card = FlashcardEntity(
-              id: cardId,
-              deckId: 'deck_$sessionId',
-              front: question,
-              back: sectionContent.length > 400
-                  ? '${sectionContent.substring(0, 400)}...'
-                  : sectionContent,
-              sourceTopic: deckTitle,
-              nextDueDate: DateTime.now().add(const Duration(days: 1)),
-            );
-            cards.add(card);
-            flashcardModels.add(FlashcardModel.fromEntity(card));
           }
 
-          // Mathematical formula block extraction
+          // 3b. Numbered lists with bold concepts: 1. **Step/Concept**: Explanation
+          final numberedRegex = RegExp(
+            r'^\s*\d+[\.\)]\s+\*\*([^*:\n]{2,60})\*\*\s*[:\-–]?\s*(.+)$',
+            multiLine: true,
+          );
+          for (final match in numberedRegex.allMatches(resp)) {
+            if (cards.length >= 15) break;
+            final concept = match.group(1)!.trim();
+            final detail = match.group(2)!.trim();
+            if (detail.length < 15) continue;
+
+            final question = 'How does "$concept" apply to the study of $deckTitle?';
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+            if (!seenQuestions.contains(normQ)) {
+              seenQuestions.add(normQ);
+              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final card = FlashcardEntity(
+                id: cardId,
+                deckId: 'deck_$sessionId',
+                front: question,
+                back: detail,
+                sourceTopic: deckTitle,
+                nextDueDate: DateTime.now().add(const Duration(days: 1)),
+              );
+              cards.add(card);
+              flashcardModels.add(FlashcardModel.fromEntity(card));
+            }
+          }
+
+          // 3c. Section headers with descriptive paragraphs
+          final sectionRegex = RegExp(
+            r'^(?:#{1,4}\s+|\*\*)([A-Z][a-zA-Z0-9\s,\-]{3,50})(?:\*\*)?:?\s*$',
+            multiLine: true,
+          );
+          final sectionMatches = sectionRegex.allMatches(resp).toList();
+          for (var i = 0; i < sectionMatches.length; i++) {
+            if (cards.length >= 15) break;
+            final sectionTitle = sectionMatches[i].group(1)!.trim();
+            final start = sectionMatches[i].end;
+            final end = (i + 1 < sectionMatches.length) ? sectionMatches[i + 1].start : resp.length;
+            final sectionBody = resp.substring(start, end).trim();
+
+            if (sectionBody.length < 30) continue;
+
+            final lowerTitle = sectionTitle.toLowerCase();
+            String question;
+            if (lowerTitle.contains('theorem') || lowerTitle.contains('law')) {
+              question = 'State and explain the "$sectionTitle" for $deckTitle:';
+            } else if (lowerTitle.contains('proof') || lowerTitle.contains('derivation')) {
+              question = 'What are the key steps in the derivation for "$sectionTitle"?';
+            } else if (lowerTitle.contains('formula') || lowerTitle.contains('equation')) {
+              question = 'What mathematical formulation defines "$sectionTitle"?';
+            } else if (lowerTitle.contains('summary') || lowerTitle.contains('conclusion')) {
+              question = 'What are the core conclusions reached regarding "$sectionTitle"?';
+            } else {
+              question = 'In $deckTitle, how is "$sectionTitle" structured and explained?';
+            }
+
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+            if (!seenQuestions.contains(normQ)) {
+              seenQuestions.add(normQ);
+              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final card = FlashcardEntity(
+                id: cardId,
+                deckId: 'deck_$sessionId',
+                front: question,
+                back: sectionBody.length > 500 ? '${sectionBody.substring(0, 500)}...' : sectionBody,
+                sourceTopic: deckTitle,
+                nextDueDate: DateTime.now().add(const Duration(days: 1)),
+              );
+              cards.add(card);
+              flashcardModels.add(FlashcardModel.fromEntity(card));
+            }
+          }
+
+          // 3d. Mathematical formulas with context
           final formulaRegex = RegExp(r'(\$\$.*?\$\$|\\\[.*?\\\])', dotAll: true);
           final formulaMatches = formulaRegex.allMatches(resp);
           for (final fMatch in formulaMatches) {
-            if (cards.length >= 12) break;
+            if (cards.length >= 15) break;
             final formula = fMatch.group(1)!.trim();
             final cardId = 'card_${sessionId}_${cardIndex++}';
-            final card = FlashcardEntity(
-              id: cardId,
-              deckId: 'deck_$sessionId',
-              front: 'What is the governing equation and formula for $deckTitle?',
-              back: formula,
-              backLatex: formula.replaceAll(RegExp(r'^\$\$|\$\$$|^\\\[|\\\]$'), '').trim(),
-              sourceTopic: deckTitle,
-              nextDueDate: DateTime.now().add(const Duration(days: 1)),
-            );
-            cards.add(card);
-            flashcardModels.add(FlashcardModel.fromEntity(card));
+            final question = 'What is the governing equation for "$deckTitle" in this context?';
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+            if (!seenQuestions.contains(normQ)) {
+              seenQuestions.add(normQ);
+              final card = FlashcardEntity(
+                id: cardId,
+                deckId: 'deck_$sessionId',
+                front: question,
+                back: formula,
+                backLatex: formula.replaceAll(RegExp(r'^\$\$|\$\$$|^\\\[|\\\]$'), '').trim(),
+                sourceTopic: deckTitle,
+                nextDueDate: DateTime.now().add(const Duration(days: 1)),
+              );
+              cards.add(card);
+              flashcardModels.add(FlashcardModel.fromEntity(card));
+            }
           }
         }
       }
 
-      // 4. Fallback if still empty
+      // 4. Fallback if still empty (use AI response summary, never user prompt)
       if (cards.isEmpty) {
+        final fallbackBack = aiResponses.isNotEmpty
+            ? aiResponses.first
+            : 'Study deck generated from Syllabot AI responses on $deckTitle';
         final cardId = 'card_${sessionId}_0';
         final cardEntity = FlashcardEntity(
           id: cardId,
           deckId: 'deck_$sessionId',
-          front: 'What are the core insights and takeaways regarding $deckTitle?',
-          back: messages.isNotEmpty
-              ? messages.last.text
-              : 'Comprehensive study material for $deckTitle',
+          front: 'What are the principal insights explained for $deckTitle?',
+          back: fallbackBack.length > 400 ? '${fallbackBack.substring(0, 400)}...' : fallbackBack,
           sourceTopic: deckTitle,
           nextDueDate: DateTime.now().add(const Duration(days: 1)),
         );

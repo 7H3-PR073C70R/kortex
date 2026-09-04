@@ -68,7 +68,7 @@ class _OnboardingWrapperView extends StatelessWidget {
               ? colors.backgroundPrimary
               : colors.surfacePrimary,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             elevation: 0,
             title: Text(context.l10n.onboardingAppBarTitle),
             centerTitle: true,

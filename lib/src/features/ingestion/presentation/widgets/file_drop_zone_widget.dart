@@ -115,7 +115,7 @@ class FileDropZoneWidget extends HookWidget {
           ],
         ),
         content: Text(
-          'The selected file "$filename" is $sizeMb MB, which exceeds the 50MB free tier limit.\n\nUpgrade to Kortex Pro to upload documents up to 200MB with unlimited AI flashcard synthesis.',
+          'The selected file "$filename" is $sizeMb MB, which exceeds the 50MB free tier limit.\n\nUpgrade to Kortexify Pro to upload documents up to 200MB with unlimited AI flashcard synthesis.',
           style: typography.callout.regular.copyWith(color: colors.textSecondary),
         ),
         actions: [
@@ -408,16 +408,16 @@ class FileDropZoneWidget extends HookWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.folder_open_rounded,
-                            color: Colors.white,
+                            color: colors.white,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             l10n.browseFilesButton,
                             style: typography.footnote.bold.copyWith(
-                              color: Colors.white,
+                              color: colors.white,
                             ),
                           ),
                         ],

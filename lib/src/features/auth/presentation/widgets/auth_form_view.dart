@@ -135,7 +135,7 @@ class AuthFormView extends HookWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(isDark ? 60 : 20),
+                          color: colors.black.withAlpha(isDark ? 60 : 20),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),

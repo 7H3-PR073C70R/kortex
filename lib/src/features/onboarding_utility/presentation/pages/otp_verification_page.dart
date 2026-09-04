@@ -172,25 +172,26 @@ class _OtpView extends HookWidget {
 class _EnvelopeIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       width: 80,
       height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        gradient: LinearGradient(
+          colors: [colors.primary, colors.syllabotAccent],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withAlpha(100),
+            color: colors.primary.withAlpha(100),
             blurRadius: 28,
             spreadRadius: 4,
           ),
         ],
       ),
-      child: const Icon(
+      child: Icon(
         Icons.mark_email_read_rounded,
-        color: Colors.white,
+        color: colors.white,
         size: 38,
       ),
     );
@@ -228,7 +229,7 @@ class _OtpGlassCard extends StatelessWidget {
             color: colors.surfacePrimary.withAlpha(60),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Colors.white.withAlpha(40),
+              color: colors.white.withAlpha(40),
             ),
           ),
           child: Column(
@@ -263,26 +264,26 @@ class _OtpGlassCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: state.isLoading ? null : submitOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6366F1),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 0,
                         ),
                         child: state.isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  color: Colors.white,
+                                  color: colors.white,
                                 ),
                               )
                             : Text(
                                 l10n.otpVerifyButton,
                                 style: typography.callout.semiBold.copyWith(
-                                  color: Colors.white,
+                                  color: colors.white,
                                   fontSize: 16,
                                 ),
                               ),
@@ -329,7 +330,7 @@ class _ResendSection extends StatelessWidget {
               child: Text(
                 state.isResending ? l10n.otpResending : l10n.otpResendCode,
                 style: typography.callout.semiBold.copyWith(
-                  color: const Color(0xFF6366F1),
+                  color: colors.primary,
                 ),
               ),
             ),
@@ -379,14 +380,14 @@ class _PinBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: focusNode.hasFocus
-              ? const Color(0xFF6366F1)
-              : Colors.white.withAlpha(40),
+              ? colors.primary
+              : colors.white.withAlpha(40),
           width: focusNode.hasFocus ? 2 : 1,
         ),
         boxShadow: focusNode.hasFocus
             ? [
                 BoxShadow(
-                  color: const Color(0xFF6366F1).withAlpha(60),
+                  color: colors.primary.withAlpha(60),
                   blurRadius: 12,
                 ),
               ]

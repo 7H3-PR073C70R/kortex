@@ -57,7 +57,7 @@ class CameraScannerOverlay extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.black,
       body: Stack(
         children: [
           // Simulated Camera Preview Area
@@ -78,7 +78,7 @@ class CameraScannerOverlay extends HookWidget {
                   child: Stack(
                     children: [
                       // Viewfinder Dark background
-                      Container(color: Colors.black.withAlpha(150)),
+                      Container(color: colors.black.withAlpha(150)),
 
                       // Animated Laser Scan Line
                       AnimatedBuilder(
@@ -94,11 +94,11 @@ class CameraScannerOverlay extends HookWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.transparent,
+                                    colors.transparent,
                                     colors.syllabotAccent,
-                                    Colors.white,
+                                    colors.white,
                                     colors.syllabotAccent,
-                                    Colors.transparent,
+                                    colors.transparent,
                                   ],
                                 ),
                                 boxShadow: [
@@ -158,9 +158,9 @@ class CameraScannerOverlay extends HookWidget {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 26,
                     ),
                     onPressed: onClose,
@@ -169,7 +169,7 @@ class CameraScannerOverlay extends HookWidget {
                   Text(
                     l10n.cameraScanTitle,
                     style: typography.title3.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ],
@@ -188,7 +188,7 @@ class CameraScannerOverlay extends HookWidget {
                   l10n.cameraCaptureHint,
                   textAlign: TextAlign.center,
                   style: typography.footnote.medium.copyWith(
-                    color: Colors.white.withAlpha(200),
+                    color: colors.white.withAlpha(200),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -201,7 +201,7 @@ class CameraScannerOverlay extends HookWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white,
+                        color: colors.white,
                         width: 4,
                       ),
                     ),
@@ -210,10 +210,10 @@ class CameraScannerOverlay extends HookWidget {
                         shape: BoxShape.circle,
                         color: colors.primary,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.camera_alt_rounded,
-                          color: Colors.white,
+                          color: colors.white,
                           size: 30,
                         ),
                       ),

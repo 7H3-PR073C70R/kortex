@@ -15,27 +15,27 @@ class QuizResultsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     final score = result.scorePercent;
     final isPassed = score >= 70;
-    final gradeColor = isPassed ? Colors.greenAccent : Colors.amberAccent;
+    final gradeColor = isPassed ? colors.success : colors.warning;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           result.quizTitle,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+          style: typography.title3.bold.copyWith(
+            color: colors.white,
           ),
         ),
       ),
@@ -50,7 +50,7 @@ class QuizResultsPage extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   gradeColor.withValues(alpha: 0.2),
-                  theme.colorScheme.surface.withValues(alpha: 0.8),
+                  colors.surfacePrimary.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -72,17 +72,16 @@ class QuizResultsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   l10n.quizScoreLabel(score),
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: typography.largeTitle.bold.copyWith(
+                    color: colors.white,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${result.correctAnswers} of ${result.totalQuestions} '
                   'questions correct',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
+                  style: typography.body.regular.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -94,9 +93,8 @@ class QuizResultsPage extends StatelessWidget {
           // 2. Weakness Breakdown Section Header
           Text(
             l10n.quizTopicWeakness,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+            style: typography.title3.bold.copyWith(
+              color: colors.white,
             ),
           ),
           const SizedBox(height: 12),
@@ -107,8 +105,8 @@ class QuizResultsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Comprehensive mastery across all topics!',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.greenAccent,
+                style: typography.body.regular.copyWith(
+                  color: colors.success,
                 ),
               ),
             )
@@ -116,7 +114,7 @@ class QuizResultsPage extends StatelessWidget {
             ...result.weaknesses.map((weakness) {
               final acc = (weakness.accuracy * 100).toInt();
               final isWeak = weakness.isWeak;
-              final badgeColor = isWeak ? Colors.redAccent : Colors.greenAccent;
+              final badgeColor = isWeak ? colors.error : colors.success;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
@@ -125,12 +123,12 @@ class QuizResultsPage extends StatelessWidget {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                  color: colors.surfacePrimary.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isWeak
-                        ? Colors.redAccent.withValues(alpha: 0.3)
-                        : Colors.white12,
+                        ? colors.error.withValues(alpha: 0.3)
+                        : colors.surfaceBorder,
                   ),
                 ),
                 child: Row(
@@ -142,16 +140,15 @@ class QuizResultsPage extends StatelessWidget {
                         children: [
                           Text(
                             weakness.subTopic,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            style: typography.body.bold.copyWith(
+                              color: colors.white,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${weakness.correctCount} / ${weakness.totalQuestions} Correct',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white54,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textMuted,
                             ),
                           ),
                         ],
@@ -171,8 +168,7 @@ class QuizResultsPage extends StatelessWidget {
                       ),
                       child: Text(
                         '$acc%',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                        style: typography.caption.bold.copyWith(
                           color: badgeColor,
                           fontSize: 13,
                         ),
@@ -186,18 +182,21 @@ class QuizResultsPage extends StatelessWidget {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(16),
-        color: theme.colorScheme.surface,
+        color: colors.surfacePrimary,
         child: SafeArea(
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.style_rounded, size: 20),
-            label: Text(l10n.practiceWeakCards),
+            icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
+            label: Text(
+              l10n.practiceWeakCards,
+              style: typography.body.bold.copyWith(color: colors.white),
+            ),
             onPressed: () {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.black,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),

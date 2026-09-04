@@ -97,8 +97,8 @@ class UserProfilePage extends HookWidget {
                     gradient: LinearGradient(
                       colors: profile?.isPro == true
                           ? [
-                              const Color(0xFFF59E0B),
-                              const Color(0xFFD97706),
+                              colors.warning,
+                              colors.warning.withAlpha(200),
                             ]
                           : [
                               colors.primary,
@@ -114,14 +114,14 @@ class UserProfilePage extends HookWidget {
                         profile?.isPro == true
                             ? Icons.verified_rounded
                             : Icons.auto_awesome_rounded,
-                        color: Colors.white,
+                        color: colors.white,
                         size: 13,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         profile?.isPro == true ? 'Pro Active' : 'Go Pro',
                         style: typography.caption.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 12,
                         ),
                       ),
@@ -309,6 +309,7 @@ class UserProfilePage extends HookWidget {
                           child: _buildAvatarContent(
                             photoUrl: photoUrl,
                             displayName: displayName,
+                            colors: colors,
                             typography: typography,
                           ),
                         ),
@@ -362,7 +363,7 @@ class UserProfilePage extends HookWidget {
                             ),
                             decoration: BoxDecoration(
                               color: profile?.isPro == true
-                                  ? const Color(0xFFF59E0B).withAlpha(35)
+                                  ? colors.warning.withAlpha(35)
                                   : colors.primary.withAlpha(25),
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -370,7 +371,7 @@ class UserProfilePage extends HookWidget {
                               profile?.isPro == true ? 'PRO' : 'Free Tier',
                               style: typography.caption.bold.copyWith(
                                 color: profile?.isPro == true
-                                    ? const Color(0xFFF59E0B)
+                                    ? colors.warning
                                     : colors.primary,
                                 fontSize: 10,
                               ),
@@ -510,7 +511,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.school_rounded,
-            iconColor: Colors.blueAccent,
+            iconColor: colors.primary,
             title: 'Academic Track & Study Goals',
             subtitle: '$targetTrack • $dailyTarget cards/day target',
             onTap: () {
@@ -531,7 +532,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.psychology_rounded,
-            iconColor: Colors.purpleAccent,
+            iconColor: colors.syllabotAccent,
             title: 'Syllabot AI & Neural Engine',
             subtitle: 'Socratic mode, voice persona & offline weights',
             onTap: () {
@@ -552,7 +553,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.lock_outline_rounded,
-            iconColor: Colors.redAccent,
+            iconColor: colors.error,
             title: 'Security & Access Control',
             subtitle: 'Password change, active sessions & biometric lock',
             onTap: () {
@@ -573,7 +574,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.workspace_premium_rounded,
-            iconColor: Colors.amberAccent,
+            iconColor: colors.warning,
             title: 'Membership & Pro Tier',
             subtitle: 'Unlimited Syllabot AI, cloud sync & OCR',
             onTap: () {
@@ -594,7 +595,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.tune_rounded,
-            iconColor: Colors.tealAccent,
+            iconColor: colors.info,
             title: 'App & Sensory Preferences',
             subtitle: 'Dark mode, haptic feedback & notifications',
             onTap: () {
@@ -615,7 +616,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.shield_outlined,
-            iconColor: Colors.greenAccent,
+            iconColor: colors.success,
             title: 'Account, Data & Export',
             subtitle: 'Export decks to Anki/PDF, manage storage cache',
             onTap: () {
@@ -636,7 +637,7 @@ class UserProfilePage extends HookWidget {
           _buildNavTile(
             context: context,
             icon: Icons.info_outline_rounded,
-            iconColor: Colors.indigoAccent,
+            iconColor: colors.secondary,
             title: 'About, Support & Discord',
             subtitle: 'Help center, documentation & version info',
             onTap: () {
@@ -734,6 +735,7 @@ class UserProfilePage extends HookWidget {
   Widget _buildAvatarContent({
     required String? photoUrl,
     required String displayName,
+    required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
     if (photoUrl != null && photoUrl.isNotEmpty) {
@@ -757,7 +759,7 @@ class UserProfilePage extends HookWidget {
               errorBuilder: (context, error, stackTrace) => Text(
                 displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
                 style: typography.title3.bold.copyWith(
-                  color: Colors.white,
+                  color: colors.white,
                   fontSize: 20,
                 ),
               ),
@@ -775,7 +777,7 @@ class UserProfilePage extends HookWidget {
             errorBuilder: (context, error, stackTrace) => Text(
               displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
               style: typography.title3.bold.copyWith(
-                color: Colors.white,
+                color: colors.white,
                 fontSize: 20,
               ),
             ),
@@ -787,7 +789,7 @@ class UserProfilePage extends HookWidget {
     return Text(
       displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
       style: typography.title3.bold.copyWith(
-        color: Colors.white,
+        color: colors.white,
         fontSize: 20,
       ),
     );
@@ -817,7 +819,7 @@ class UserProfilePage extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         isScrollControlled: true,
         builder: (ctx) => Container(
           padding: EdgeInsets.only(
@@ -911,16 +913,16 @@ class UserProfilePage extends HookWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.photo_library_rounded,
-                              color: Colors.white,
+                              color: colors.white,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Choose Photo',
                               style: typography.caption.bold.copyWith(
-                                color: Colors.white,
+                                color: colors.white,
                                 fontSize: 13,
                               ),
                             ),
@@ -1018,7 +1020,7 @@ class UserProfilePage extends HookWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withAlpha(
+                                color: colors.black.withAlpha(
                                   context.isDarkMode ? 40 : 15,
                                 ),
                                 blurRadius: 6,
@@ -1094,7 +1096,7 @@ class UserProfilePage extends HookWidget {
                       child: Text(
                         'Apply',
                         style: typography.caption.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 12.5,
                         ),
                       ),
@@ -1232,7 +1234,7 @@ class UserProfilePage extends HookWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
-            'Sign Out of Kortex?',
+            'Sign Out of Kortexify?',
             style: typography.title3.bold.copyWith(
               color: colors.textPrimary,
             ),
