@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
@@ -41,6 +42,49 @@ class AuthPage extends HookWidget {
       ],
       child: const _AuthView(),
     );
+  }
+}
+
+Future<void> _handleGoogleSignIn(BuildContext context) async {
+  try {
+    final result = await locator<SocialAuthService>().signInWithGoogle();
+    if (result != null && context.mounted) {
+      context.read<AuthBloc>().add(
+            AuthSocialLoginRequested(
+              provider: result.provider,
+              idToken: result.idToken,
+            ),
+          );
+    }
+  } on Object catch (e) {
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'Google Sign-In failed: $e',
+        type: SnackBarType.error,
+      );
+    }
+  }
+}
+
+Future<void> _handleAppleSignIn(BuildContext context) async {
+  try {
+    final result = await locator<SocialAuthService>().signInWithApple();
+    if (result != null && context.mounted) {
+      context.read<AuthBloc>().add(
+            AuthSocialLoginRequested(
+              provider: result.provider,
+              idToken: result.idToken,
+              rawNonce: result.rawNonce,
+            ),
+          );
+    }
+  } on Object catch (e) {
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'Apple Sign-In failed: $e',
+        type: SnackBarType.error,
+      );
+    }
   }
 }
 
@@ -188,14 +232,10 @@ class _AuthView extends HookWidget {
                               children: [
                                 AuthChatView(
                                   key: const ValueKey<String>('auth_chat_view'),
-                                  onGooglePressed: () {
-                                    context.read<AuthBloc>().add(
-                                      const AuthSocialLoginRequested(
-                                        provider: 'google',
-                                        idToken: 'demo_google_token',
-                                      ),
-                                    );
-                                  },
+                                  onGooglePressed: () =>
+                                      _handleGoogleSignIn(context),
+                                  onApplePressed: () =>
+                                      _handleAppleSignIn(context),
                                   onForgotPassword: () {
                                     unawaited(
                                       context.router.push(
@@ -229,22 +269,10 @@ class _AuthView extends HookWidget {
                                     .watch<AuthBloc>()
                                     .state
                                     .isLoading,
-                                onGooglePressed: () {
-                                  context.read<AuthBloc>().add(
-                                    const AuthSocialLoginRequested(
-                                      provider: 'google',
-                                      idToken: 'demo_google_token',
-                                    ),
-                                  );
-                                },
-                                onApplePressed: () {
-                                  context.read<AuthBloc>().add(
-                                    const AuthSocialLoginRequested(
-                                      provider: 'apple',
-                                      idToken: 'demo_apple_token',
-                                    ),
-                                  );
-                                },
+                                onGooglePressed: () =>
+                                    _handleGoogleSignIn(context),
+                                onApplePressed: () =>
+                                    _handleAppleSignIn(context),
                               ),
                             ),
                         ],
@@ -418,14 +446,8 @@ class _DesktopSplitLayout extends StatelessWidget {
                         children: [
                           AuthChatView(
                             key: const ValueKey<String>('chat_desktop'),
-                            onGooglePressed: () {
-                              context.read<AuthBloc>().add(
-                                const AuthSocialLoginRequested(
-                                  provider: 'google',
-                                  idToken: 'demo_google_token',
-                                ),
-                              );
-                            },
+                            onGooglePressed: () => _handleGoogleSignIn(context),
+                            onApplePressed: () => _handleAppleSignIn(context),
                             onForgotPassword: () {
                               unawaited(
                                 context.router.push(
@@ -453,22 +475,8 @@ class _DesktopSplitLayout extends StatelessWidget {
                     // Social Auth Dock
                     SocialAuthBar(
                       isLoading: context.watch<AuthBloc>().state.isLoading,
-                      onGooglePressed: () {
-                        context.read<AuthBloc>().add(
-                          const AuthSocialLoginRequested(
-                            provider: 'google',
-                            idToken: 'demo_google_token',
-                          ),
-                        );
-                      },
-                      onApplePressed: () {
-                        context.read<AuthBloc>().add(
-                          const AuthSocialLoginRequested(
-                            provider: 'apple',
-                            idToken: 'demo_apple_token',
-                          ),
-                        );
-                      },
+                      onGooglePressed: () => _handleGoogleSignIn(context),
+                      onApplePressed: () => _handleAppleSignIn(context),
                     ),
                   ],
                 ),

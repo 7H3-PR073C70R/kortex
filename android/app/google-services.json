@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1073532728398",
+    "project_id": "kortex-study-app-2026",
+    "storage_bucket": "kortex-study-app-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1073532728398:android:369b70aab8c09b90897f1f",
+        "android_client_info": {
+          "package_name": "com.kortexify.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLsd8f8GLCK8oSp5IXVlCxY9RPxjNXxoE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

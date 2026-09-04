@@ -2,6 +2,21 @@ part of 'locator.dart';
 
 void _initServices() {
   locator
+    ..registerLazySingleton<CrashlyticsService>(
+      CrashlyticsService.new,
+    )
+    ..registerLazySingleton<AnalyticsService>(
+      AnalyticsService.new,
+    )
+    ..registerLazySingleton<PerformanceService>(
+      PerformanceService.new,
+    )
+    ..registerLazySingleton<NotificationService>(
+      NotificationService.new,
+    )
+    ..registerLazySingleton<SocialAuthService>(
+      SocialAuthService.new,
+    )
     ..registerLazySingleton<SessionExpiredService>(
       SessionExpiredService.new,
     )

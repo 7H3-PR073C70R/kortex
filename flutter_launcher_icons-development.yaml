@@ -1,6 +1,6 @@
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: "AppIcon-dev"
   macos:
     generate: true
     image_path: "assets/icons/app_icon_development.png"

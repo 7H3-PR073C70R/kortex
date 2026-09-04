@@ -6,6 +6,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/social_auth_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
@@ -159,13 +161,26 @@ class LoginPage extends HookWidget {
                                             ),
                                   ),
                                   isLoading: state.isLoading,
-                                  onTap: () {
-                                    context.read<AuthBloc>().add(
-                                      const AuthSocialLoginRequested(
-                                        provider: 'google',
-                                        idToken: 'demo_google_token',
-                                      ),
-                                    );
+                                  onTap: () async {
+                                    try {
+                                      final result = await locator<
+                                          SocialAuthService>().signInWithGoogle();
+                                      if (result != null && context.mounted) {
+                                        context.read<AuthBloc>().add(
+                                              AuthSocialLoginRequested(
+                                                provider: result.provider,
+                                                idToken: result.idToken,
+                                              ),
+                                            );
+                                      }
+                                    } on Object catch (e) {
+                                      if (context.mounted) {
+                                        context.showSnackBar(
+                                          message: 'Google Sign-In failed: $e',
+                                          type: SnackBarType.error,
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                                 const SizedBox(height: 12),
@@ -179,13 +194,27 @@ class LoginPage extends HookWidget {
                                     color: colors.textPrimary,
                                   ),
                                   isLoading: state.isLoading,
-                                  onTap: () {
-                                    context.read<AuthBloc>().add(
-                                      const AuthSocialLoginRequested(
-                                        provider: 'apple',
-                                        idToken: 'demo_apple_token',
-                                      ),
-                                    );
+                                  onTap: () async {
+                                    try {
+                                      final result = await locator<
+                                          SocialAuthService>().signInWithApple();
+                                      if (result != null && context.mounted) {
+                                        context.read<AuthBloc>().add(
+                                              AuthSocialLoginRequested(
+                                                provider: result.provider,
+                                                idToken: result.idToken,
+                                                rawNonce: result.rawNonce,
+                                              ),
+                                            );
+                                      }
+                                    } on Object catch (e) {
+                                      if (context.mounted) {
+                                        context.showSnackBar(
+                                          message: 'Apple Sign-In failed: $e',
+                                          type: SnackBarType.error,
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                                 const SizedBox(height: 24),

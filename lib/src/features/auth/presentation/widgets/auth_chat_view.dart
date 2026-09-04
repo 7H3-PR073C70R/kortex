@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -100,11 +101,13 @@ class AuthChatView extends HookWidget {
   const AuthChatView({
     required this.onGooglePressed,
     required this.onForgotPassword,
+    this.onApplePressed,
     super.key,
   });
 
   final VoidCallback onGooglePressed;
   final VoidCallback onForgotPassword;
+  final VoidCallback? onApplePressed;
 
   static final RegExp _emailRegex = RegExp(
     r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
@@ -859,14 +862,22 @@ class AuthChatView extends HookWidget {
                             SocialAuthBar(
                               isLoading: authState.isLoading,
                               onGooglePressed: onGooglePressed,
-                              onApplePressed: () {
-                                context.read<AuthBloc>().add(
-                                  const AuthSocialLoginRequested(
-                                    provider: 'apple',
-                                    idToken: 'demo_apple_token',
-                                  ),
-                                );
-                              },
+                              onApplePressed: onApplePressed ??
+                                  () async {
+                                    try {
+                                      final result = await locator<
+                                          SocialAuthService>().signInWithApple();
+                                      if (result != null && context.mounted) {
+                                        context.read<AuthBloc>().add(
+                                              AuthSocialLoginRequested(
+                                                provider: result.provider,
+                                                idToken: result.idToken,
+                                                rawNonce: result.rawNonce,
+                                              ),
+                                            );
+                                      }
+                                    } on Object catch (_) {}
+                                  },
                             ),
                             const SizedBox(height: 4),
                           ] else if (currentFlow.value ==
