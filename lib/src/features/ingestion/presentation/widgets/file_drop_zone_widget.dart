@@ -19,6 +19,7 @@ class FileDropZoneWidget extends HookWidget {
   const FileDropZoneWidget({
     required this.onFilePicked,
     this.onCameraScanTap,
+    this.onLmsImportTap,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class FileDropZoneWidget extends HookWidget {
   onFilePicked;
 
   final VoidCallback? onCameraScanTap;
+  final VoidCallback? onLmsImportTap;
 
   Map<String, String>? _checkExistingExtractedDeck(
     String filename,
@@ -452,6 +454,42 @@ class FileDropZoneWidget extends HookWidget {
                             const SizedBox(width: 8),
                             Text(
                               l10n.cameraCaptureButton,
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (onLmsImportTap != null)
+                    ShrinkableButton(
+                      onTap: onLmsImportTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 90 : 60),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.school_outlined,
+                              color: colors.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Import LMS',
                               style: typography.footnote.bold.copyWith(
                                 color: colors.primary,
                               ),

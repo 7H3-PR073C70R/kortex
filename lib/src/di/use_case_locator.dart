@@ -133,12 +133,24 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<ProcessLocalCameraOcrUseCase>(
       () => ProcessLocalCameraOcrUseCase(locator<LocalOcrRepository>()),
     )
+    ..registerLazySingleton<FetchLmsCoursesUseCase>(
+      () => FetchLmsCoursesUseCase(locator<LmsRepository>()),
+    )
+    ..registerLazySingleton<ImportLmsCourseUseCase>(
+      () => ImportLmsCourseUseCase(
+        locator<LmsRepository>(),
+        locator<DocumentParserService>(),
+      ),
+    )
     ..registerFactory<IngestionBloc>(
       () => IngestionBloc(
         uploadUseCase: locator<UploadStudyDocumentUseCase>(),
         processOcrUseCase: locator<ProcessStemOcrUseCase>(),
         generateDeckUseCase: locator<GenerateFlashcardsFromDocUseCase>(),
         fetchUserDocsUseCase: locator<FetchUserDocumentsUseCase>(),
+        processCameraOcrUseCase: locator<ProcessLocalCameraOcrUseCase>(),
+        fetchLmsCoursesUseCase: locator<FetchLmsCoursesUseCase>(),
+        importLmsCourseUseCase: locator<ImportLmsCourseUseCase>(),
       ),
     )
     ..registerLazySingleton<JoinLiveStudyRoomUseCase>(

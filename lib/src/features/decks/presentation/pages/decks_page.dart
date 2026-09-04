@@ -116,6 +116,23 @@ class _DecksView extends HookWidget {
                     },
                   ),
                   const SizedBox(height: 12),
+
+                  // Option 3: Import from LMS
+                  _ActionOptionTile(
+                    icon: Icons.school_rounded,
+                    iconColor: Colors.amber.shade700,
+                    title: 'Import from LMS',
+                    subtitle: 'Sync course syllabi & assignments from Google Classroom or Canvas.',
+                    onTap: () {
+                      Navigator.pop(bottomSheetContext);
+                      unawaited(
+                        context.router.push(
+                          const DocumentIngestionRoute(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),

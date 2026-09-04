@@ -84,3 +84,46 @@ final class SetSynthesisModeEvent extends IngestionEvent {
 final class ResetIngestionStateEvent extends IngestionEvent {
   const ResetIngestionStateEvent();
 }
+
+/// Process captured camera image directly via on-device ML Kit OCR.
+final class ProcessCameraImageEvent extends IngestionEvent {
+  const ProcessCameraImageEvent({
+    required this.filename,
+    required this.imageBytes,
+    this.imagePath,
+    this.isOnline = true,
+  });
+
+  final String filename;
+  final Uint8List imageBytes;
+  final String? imagePath;
+  final bool isOnline;
+}
+
+/// Fetch list of enrolled courses from Google Classroom or Canvas.
+final class FetchLmsCoursesEvent extends IngestionEvent {
+  const FetchLmsCoursesEvent({
+    required this.platform,
+    required this.authToken,
+    this.canvasDomain,
+  });
+
+  final String platform;
+  final String authToken;
+  final String? canvasDomain;
+}
+
+/// Import course bundle (syllabus & assignments) into reviewable study snippets.
+final class ImportLmsCourseEvent extends IngestionEvent {
+  const ImportLmsCourseEvent({
+    required this.platform,
+    required this.courseId,
+    required this.authToken,
+    this.canvasDomain,
+  });
+
+  final String platform;
+  final String courseId;
+  final String authToken;
+  final String? canvasDomain;
+}

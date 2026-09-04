@@ -13,6 +13,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanner_overlay.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_modal_sheet.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/synthesis_mode_toggle.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
@@ -49,10 +50,9 @@ class _DocumentIngestionView extends HookWidget {
         onImageCaptured: (filename, bytes) {
           isScanningCamera.value = false;
           context.read<IngestionBloc>().add(
-            PickAndUploadFileEvent(
+            ProcessCameraImageEvent(
               filename: filename,
-              fileType: 'jpg',
-              fileBytes: bytes,
+              imageBytes: bytes,
             ),
           );
         },
@@ -140,6 +140,8 @@ class _DocumentIngestionView extends HookWidget {
                             );
                           },
                       onCameraScanTap: () => isScanningCamera.value = true,
+                      onLmsImportTap: () =>
+                          unawaited(LmsImportModalSheet.show(context)),
                     ),
                     const SizedBox(height: 20),
 

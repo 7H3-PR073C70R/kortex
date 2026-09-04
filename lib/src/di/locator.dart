@@ -89,8 +89,10 @@ import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_se
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/lms_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/local_ocr_repository.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/import_lms_course_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_local_camera_ocr_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';

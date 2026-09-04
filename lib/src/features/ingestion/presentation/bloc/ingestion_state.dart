@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/ingestion/data/data_sources/lms_import_data_source.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
@@ -17,6 +18,8 @@ class IngestionState extends Equatable {
     this.errorMessage,
     this.stageMessage,
     this.wasDeduplicated = false,
+    this.lmsCourses = const [],
+    this.selectedCourse,
   });
 
   final ProcessingStatus status;
@@ -29,6 +32,8 @@ class IngestionState extends Equatable {
   final String? errorMessage;
   final String? stageMessage;
   final bool wasDeduplicated;
+  final List<LmsCourse> lmsCourses;
+  final LmsCourse? selectedCourse;
 
   bool get isUploading => status == ProcessingStatus.uploading;
   bool get isParsingOcr => status == ProcessingStatus.parsingOcr;
@@ -48,6 +53,8 @@ class IngestionState extends Equatable {
     String? errorMessage,
     String? stageMessage,
     bool? wasDeduplicated,
+    List<LmsCourse>? lmsCourses,
+    LmsCourse? selectedCourse,
   }) {
     return IngestionState(
       status: status ?? this.status,
@@ -60,6 +67,8 @@ class IngestionState extends Equatable {
       errorMessage: errorMessage ?? this.errorMessage,
       stageMessage: stageMessage ?? this.stageMessage,
       wasDeduplicated: wasDeduplicated ?? this.wasDeduplicated,
+      lmsCourses: lmsCourses ?? this.lmsCourses,
+      selectedCourse: selectedCourse ?? this.selectedCourse,
     );
   }
 
@@ -75,5 +84,7 @@ class IngestionState extends Equatable {
     errorMessage,
     stageMessage,
     wasDeduplicated,
+    lmsCourses,
+    selectedCourse,
   ];
 }

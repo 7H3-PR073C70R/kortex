@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/import_lms_course_use_case.dart';
+import 'package:kortex/src/features/ingestion/domain/use_cases/process_local_camera_ocr_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
@@ -18,10 +22,16 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     required ProcessStemOcrUseCase processOcrUseCase,
     required GenerateFlashcardsFromDocUseCase generateDeckUseCase,
     required FetchUserDocumentsUseCase fetchUserDocsUseCase,
+    ProcessLocalCameraOcrUseCase? processCameraOcrUseCase,
+    FetchLmsCoursesUseCase? fetchLmsCoursesUseCase,
+    ImportLmsCourseUseCase? importLmsCourseUseCase,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
        _fetchUserDocs = fetchUserDocsUseCase,
+       _processCameraOcr = processCameraOcrUseCase,
+       _fetchLmsCourses = fetchLmsCoursesUseCase,
+       _importLmsCourse = importLmsCourseUseCase,
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -31,12 +41,18 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     on<GenerateFlashcardsFromSnippetsEvent>(_onGenerateFlashcards);
     on<FetchUserDocumentsEvent>(_onFetchUserDocuments);
     on<ResetIngestionStateEvent>(_onResetIngestionState);
+    on<ProcessCameraImageEvent>(_onProcessCameraImage);
+    on<FetchLmsCoursesEvent>(_onFetchLmsCourses);
+    on<ImportLmsCourseEvent>(_onImportLmsCourse);
   }
 
   final UploadStudyDocumentUseCase _upload;
   final ProcessStemOcrUseCase _processOcr;
   final GenerateFlashcardsFromDocUseCase _generateDeck;
   final FetchUserDocumentsUseCase _fetchUserDocs;
+  final ProcessLocalCameraOcrUseCase? _processCameraOcr;
+  final FetchLmsCoursesUseCase? _fetchLmsCourses;
+  final ImportLmsCourseUseCase? _importLmsCourse;
 
   void _onSetSynthesisMode(
     SetSynthesisModeEvent event,
@@ -256,6 +272,185 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     result.fold(
       (failure) => null,
       (docs) => emit(state.copyWith(userDocuments: docs)),
+    );
+  }
+
+  Future<void> _onProcessCameraImage(
+    ProcessCameraImageEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final docId = 'cam_${DateTime.now().millisecondsSinceEpoch}';
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage: 'Scanning camera image with on-device ML Kit...',
+        currentDocument: DocumentUploadEntity(
+          id: docId,
+          userId: 'local_user',
+          filename: event.filename,
+          fileType: 'jpg',
+          fileSizeBytes: event.imageBytes.length,
+          storagePath: event.imagePath ?? '',
+          contentHash: 'cam_${event.imageBytes.length}_$docId',
+          status: ProcessingStatus.parsingOcr,
+          createdAt: DateTime.now(),
+        ),
+      ),
+    );
+
+    final useCase = _processCameraOcr ??
+        (locator.isRegistered<ProcessLocalCameraOcrUseCase>()
+            ? locator<ProcessLocalCameraOcrUseCase>()
+            : null);
+
+    if (useCase == null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: 'Camera OCR processing engine unavailable.',
+        ),
+      );
+      return;
+    }
+
+    final result = await useCase(
+      imageBytes: event.imageBytes,
+      documentId: docId,
+      imagePath: event.imagePath,
+      isOnline: event.isOnline,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: failure.message,
+        ),
+      ),
+      (snippets) => emit(
+        state.copyWith(
+          status: ProcessingStatus.completed,
+          stageMessage: 'Extracted ${snippets.length} cards from camera capture',
+          snippets: snippets,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onFetchLmsCourses(
+    FetchLmsCoursesEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final useCase = _fetchLmsCourses ??
+        (locator.isRegistered<FetchLmsCoursesUseCase>()
+            ? locator<FetchLmsCoursesUseCase>()
+            : null);
+
+    if (useCase == null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: 'LMS service unavailable.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage:
+            'Fetching courses from ${event.platform == 'canvas' ? 'Canvas' : 'Google Classroom'}...',
+      ),
+    );
+
+    final result = await useCase(
+      platform: event.platform,
+      authToken: event.authToken,
+      canvasDomain: event.canvasDomain,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: failure.message,
+        ),
+      ),
+      (courses) => emit(
+        state.copyWith(
+          status: ProcessingStatus.idle,
+          lmsCourses: courses,
+          stageMessage: 'Loaded ${courses.length} courses',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onImportLmsCourse(
+    ImportLmsCourseEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final useCase = _importLmsCourse ??
+        (locator.isRegistered<ImportLmsCourseUseCase>()
+            ? locator<ImportLmsCourseUseCase>()
+            : null);
+
+    if (useCase == null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: 'LMS import service unavailable.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage: 'Importing course materials & generating flashcards...',
+      ),
+    );
+
+    final result = await useCase(
+      platform: event.platform,
+      courseId: event.courseId,
+      authToken: event.authToken,
+      canvasDomain: event.canvasDomain,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: failure.message,
+        ),
+      ),
+      (importResult) {
+        final doc = DocumentUploadEntity(
+          id: 'lms_${importResult.bundle.course.platform}_${importResult.bundle.course.id}',
+          userId: 'local_user',
+          filename: '${importResult.bundle.course.name} Course Pack',
+          fileType: 'lms',
+          fileSizeBytes: importResult.bundle.syllabusContent.length,
+          storagePath: '',
+          contentHash: 'lms_${importResult.bundle.course.id}',
+          status: ProcessingStatus.completed,
+          createdAt: DateTime.now(),
+        );
+
+        emit(
+          state.copyWith(
+            status: ProcessingStatus.completed,
+            currentDocument: doc,
+            selectedCourse: importResult.bundle.course,
+            snippets: importResult.snippets,
+            stageMessage:
+                'Synthesized ${importResult.snippets.length} flashcards from course',
+          ),
+        );
+      },
     );
   }
 
