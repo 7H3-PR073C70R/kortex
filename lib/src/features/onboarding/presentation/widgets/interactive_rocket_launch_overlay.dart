@@ -124,7 +124,7 @@ class _InteractiveRocketLaunchOverlayState
 
     _warpController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 600),
     );
 
     // Generate initial starfield
@@ -137,8 +137,8 @@ class _InteractiveRocketLaunchOverlayState
       );
     }
 
-    // Schedule warp transition after 4.2 seconds
-    _warpTimer = Timer(const Duration(milliseconds: 4200), _triggerWarpSequence);
+    // Schedule warp transition after 1.7 seconds for a punchy, snappy launch
+    _warpTimer = Timer(const Duration(milliseconds: 1700), _triggerWarpSequence);
 
     // Initial blast haptic
     unawaited(HapticFeedback.heavyImpact());
@@ -201,25 +201,25 @@ class _InteractiveRocketLaunchOverlayState
     // Smooth spring interpolation toward target
     final dx = _targetRocketX - _rocketX;
     final dy = _targetRocketY - _rocketY;
-    _rocketX += dx * 0.14;
-    _rocketY += dy * 0.14;
+    _rocketX += dx * 0.22;
+    _rocketY += dy * 0.22;
 
     // Target tilt based on horizontal velocity
     final targetTilt = (dx / 40.0).clamp(-0.45, 0.45);
-    _tiltAngle += (targetTilt - _tiltAngle) * 0.2;
+    _tiltAngle += (targetTilt - _tiltAngle) * 0.25;
 
-    // Speed progression
+    // Fast speed progression for snappy launch
     if (!_isWarping) {
-      _machSpeed = math.min(32, _machSpeed + 0.08);
+      _machSpeed = math.min(35, _machSpeed + 0.35);
     } else {
-      _machSpeed += 1.5;
+      _machSpeed += 2.5;
     }
 
     // Emit thruster exhaust particles
-    final particleCount = _isWarping ? 5 : 3;
+    final particleCount = _isWarping ? 6 : 4;
     for (var i = 0; i < particleCount; i++) {
       final spread = (_random.nextDouble() - 0.5) * 14;
-      final speedFactor = _isWarping ? 18.0 : 10.0;
+      final speedFactor = _isWarping ? 20.0 : 12.0;
       final pColor = _random.nextBool()
           ? colors.warning
           : (_random.nextBool() ? colors.syllabotAccent : colors.primary);
@@ -232,7 +232,7 @@ class _InteractiveRocketLaunchOverlayState
           vy: speedFactor + (_random.nextDouble() * 8),
           radius: 3.0 + (_random.nextDouble() * 4),
           color: pColor,
-          maxLife: 24,
+          maxLife: 20,
         ),
       );
     }
@@ -246,8 +246,8 @@ class _InteractiveRocketLaunchOverlayState
     }
     _particles.removeWhere((p) => p.isDead);
 
-    // Update knowledge orbs
-    final orbSpeed = 4.0 + (_machSpeed * 0.4);
+    // Update knowledge orbs with faster drift
+    final orbSpeed = 8.0 + (_machSpeed * 0.5);
     for (final orb in _orbs) {
       orb.y += orbSpeed;
 
@@ -640,7 +640,7 @@ class _InteractiveRocketLaunchOverlayState
                         (_warpController.value * 255).clamp(0, 255).toInt(),
                       ),
                       alignment: Alignment.center,
-                      child: _warpController.value > 0.4
+                      child: _warpController.value > 0.25
                           ? Text(
                               l10n.launchEnteringWorkspace,
                               style: typography.title2.bold.copyWith(
