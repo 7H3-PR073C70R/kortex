@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,8 +16,8 @@ import 'package:kortex/src/features/community/presentation/bloc/community_hub_bl
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
 import 'package:kortex/src/features/community/presentation/widgets/auto_community_banner_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_study_room_sheet.dart';
-import 'package:kortex/src/features/community/presentation/widgets/expandable_create_post_fab.dart';
 import 'package:kortex/src/features/community/presentation/widgets/live_focus_room_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/marketplace_deck_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/publish_deck_modal_sheet.dart';
@@ -100,6 +99,76 @@ class _CommunityHubView extends HookWidget {
             color: colors.textPrimary,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                unawaited(
+                  CreatePostBottomSheet.show(
+                    context,
+                    onSubmit: ({
+                      required title,
+                      required content,
+                      required track,
+                      latexContent,
+                    }) {
+                      context.read<CommunityHubBloc>().add(
+                        CreateForumPostEvent(
+                          title: title,
+                          content: content,
+                          track: track,
+                          latexContent: latexContent,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary,
+                      colors.primary.withAlpha(220),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      color: colors.white,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.createPostButton,
+                      style: typography.caption.bold.copyWith(
+                        color: colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50),
           child: Padding(
@@ -123,10 +192,8 @@ class _CommunityHubView extends HookWidget {
           ),
         ),
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
               // Auto-Community Spinoff Banner (Appears when community is provisioned)
               AutoCommunityBannerWidget(
                 onTapOpenHub: (community) {
@@ -229,31 +296,6 @@ class _CommunityHubView extends HookWidget {
               ),
             ],
           ),
-
-          // Morphing Expandable Floating Action Button
-          ExpandableCreatePostFab(
-            bottomOffset: math.max(
-              152,
-              MediaQuery.paddingOf(context).bottom + 130,
-            ),
-            onSubmit: ({
-              required title,
-              required content,
-              required track,
-              latexContent,
-            }) {
-              context.read<CommunityHubBloc>().add(
-                CreateForumPostEvent(
-                  title: title,
-                  content: content,
-                  track: track,
-                  latexContent: latexContent,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 }
