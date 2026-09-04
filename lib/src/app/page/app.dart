@@ -11,6 +11,7 @@ import 'package:kortex/src/core/themes/theme_state.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/biometric_lock_overlay.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
@@ -37,7 +38,8 @@ class _AppState extends State<App> {
   }
 
   void _handleSessionExpired(String message) {
-    unawaited(_appRouter.replaceAll([const LoginRoute()]));
+    locator<AuthModeCubit>().resetToAiChat();
+    unawaited(_appRouter.replaceAll([const AuthRoute()]));
     locator<AuthBloc>().add(const AuthSignOutRequested());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

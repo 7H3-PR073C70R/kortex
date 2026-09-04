@@ -2,14 +2,13 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -122,20 +121,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       return;
     }
 
-    final storage = locator<LocalStorageService>();
-    final hasCompletedOnboarding =
-        storage.getPreference(
-          key: PrefKeys.hasCompletedOnboarding,
-        ) ==
-        'true';
-
     if (!mounted) return;
-
-    if (hasCompletedOnboarding) {
-      await context.router.replaceAll([const LoginRoute()]);
-    } else {
-      await context.router.replace(const OnboardingRoute());
-    }
+    await context.router.replaceAll([const OnboardingRoute()]);
   }
 
   Future<void> _triggerBiometricAuth() async {
@@ -178,7 +165,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         onAlternativeAction: () async {
           locator<UserStorageService>().clearStorage();
           locator<AuthBloc>().add(const AuthSignOutRequested());
-          await context.router.replaceAll([const LoginRoute()]);
+          locator<AuthModeCubit>().resetToAiChat();
+          await context.router.replaceAll([const AuthRoute()]);
         },
         alternativeActionLabel: 'Sign In with Password',
       );

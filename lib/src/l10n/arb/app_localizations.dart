@@ -4183,6 +4183,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete Deck'**
   String get deleteDeckAction;
+
+  /// Title for the welcome walkthrough dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kortexify!'**
+  String get welcomeWalkthroughTitle;
+
+  /// Subtitle for the welcome walkthrough dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI-augmented academic workspace is ready'**
+  String get welcomeWalkthroughSubtitle;
+
+  /// Title for slide 1 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Instant Ingestion & Active Recall'**
+  String get welcomeWalkthroughSlide1Title;
+
+  /// Description for slide 1 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Drop any syllabus, lecture slide, textbook PDF, or past questions to instantly generate high-yield active-recall cards.'**
+  String get welcomeWalkthroughSlide1Desc;
+
+  /// Title for slide 2 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot AI Contextual Tutor'**
+  String get welcomeWalkthroughSlide2Title;
+
+  /// Description for slide 2 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Chat directly with your course materials. Syllabot breaks down complex STEM proofs, equations, and key test topics.'**
+  String get welcomeWalkthroughSlide2Desc;
+
+  /// Title for slide 3 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive Spaced Repetition (SM-2)'**
+  String get welcomeWalkthroughSlide3Title;
+
+  /// Description for slide 3 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Keep retention high with daily reviews, custom cram schedules, and smart retention heatmaps calibrated to your target track.'**
+  String get welcomeWalkthroughSlide3Desc;
+
+  /// Title for slide 4 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborative Study Hub & Live Rooms'**
+  String get welcomeWalkthroughSlide4Title;
+
+  /// Description for slide 4 of welcome walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Join live study rooms, speak with peers, ask questions in community forums, and climb academic leaderboards together.'**
+  String get welcomeWalkthroughSlide4Desc;
+
+  /// Next button in walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get welcomeWalkthroughNext;
+
+  /// Previous button in walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get welcomeWalkthroughPrevious;
+
+  /// Get started / finish button in walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Workspace'**
+  String get welcomeWalkthroughGetStarted;
+
+  /// Skip button in walkthrough
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Walkthrough'**
+  String get welcomeWalkthroughSkip;
 }
 
 class _AppLocalizationsDelegate

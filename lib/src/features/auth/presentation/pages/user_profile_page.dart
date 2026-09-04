@@ -17,6 +17,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
@@ -51,7 +52,8 @@ class UserProfilePage extends HookWidget {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (!state.isAuthenticated) {
-          unawaited(context.router.root.replaceAll([const LoginRoute()]));
+          locator<AuthModeCubit>().resetToAiChat();
+          unawaited(context.router.root.replaceAll([const AuthRoute()]));
         }
       },
       builder: (context, state) {
@@ -1255,9 +1257,10 @@ class UserProfilePage extends HookWidget {
               onPressed: () {
                 AppFeedback.medium();
                 Navigator.of(ctx).pop();
+                locator<AuthModeCubit>().resetToAiChat();
                 context.read<AuthBloc>().add(const AuthSignOutRequested());
                 unawaited(
-                  context.router.root.replaceAll([const LoginRoute()]),
+                  context.router.root.replaceAll([const AuthRoute()]),
                 );
               },
               child: Text(

@@ -2370,4 +2370,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteDeckAction => 'Delete Deck';
+
+  @override
+  String get welcomeWalkthroughTitle => 'Welcome to Kortexify!';
+
+  @override
+  String get welcomeWalkthroughSubtitle =>
+      'Your AI-augmented academic workspace is ready';
+
+  @override
+  String get welcomeWalkthroughSlide1Title =>
+      'Instant Ingestion & Active Recall';
+
+  @override
+  String get welcomeWalkthroughSlide1Desc =>
+      'Drop any syllabus, lecture slide, textbook PDF, or past questions to instantly generate high-yield active-recall cards.';
+
+  @override
+  String get welcomeWalkthroughSlide2Title => 'Syllabot AI Contextual Tutor';
+
+  @override
+  String get welcomeWalkthroughSlide2Desc =>
+      'Chat directly with your course materials. Syllabot breaks down complex STEM proofs, equations, and key test topics.';
+
+  @override
+  String get welcomeWalkthroughSlide3Title =>
+      'Adaptive Spaced Repetition (SM-2)';
+
+  @override
+  String get welcomeWalkthroughSlide3Desc =>
+      'Keep retention high with daily reviews, custom cram schedules, and smart retention heatmaps calibrated to your target track.';
+
+  @override
+  String get welcomeWalkthroughSlide4Title =>
+      'Collaborative Study Hub & Live Rooms';
+
+  @override
+  String get welcomeWalkthroughSlide4Desc =>
+      'Join live study rooms, speak with peers, ask questions in community forums, and climb academic leaderboards together.';
+
+  @override
+  String get welcomeWalkthroughNext => 'Next';
+
+  @override
+  String get welcomeWalkthroughPrevious => 'Previous';
+
+  @override
+  String get welcomeWalkthroughGetStarted => 'Enter Workspace';
+
+  @override
+  String get welcomeWalkthroughSkip => 'Skip Walkthrough';
 }

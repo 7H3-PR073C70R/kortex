@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
@@ -17,6 +20,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -63,11 +67,55 @@ class _DashboardView extends HookWidget {
     final userPhotoUrl =
         authState?.userProfile?.photoUrl ?? authState?.user?.photoUrl;
 
+    final confettiController = useMemoized(
+      () => ConfettiController(duration: const Duration(seconds: 4)),
+    );
+    useEffect(() => confettiController.dispose, [confettiController]);
+
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final storage = locator<LocalStorageService>();
+        final isNewlyRegistered =
+            storage.getPreference(key: PrefKeys.isNewlyRegistered) == 'true';
+        final hasSeenWelcome =
+            storage.getPreference(key: PrefKeys.hasSeenWelcomeWalkthrough) ==
+            'true';
+
+        if (isNewlyRegistered && !hasSeenWelcome && context.mounted) {
+          confettiController.play();
+          unawaited(
+            showDialog<void>(
+              context: context,
+              builder: (_) => WelcomeWalkthroughDialog(
+                onDismissed: () {
+                  unawaited(
+                    storage.savePreference(
+                      key: PrefKeys.hasSeenWelcomeWalkthrough,
+                      data: 'true',
+                    ),
+                  );
+                  unawaited(
+                    storage.deletePreference(
+                      key: PrefKeys.isNewlyRegistered,
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      });
+      return null;
+    }, const []);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: BlocBuilder<DashboardBloc, DashboardState>(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          SafeArea(
+            bottom: false,
+            child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             if (state.isLoading) {
               return const _DashboardShimmerLoading();
@@ -165,6 +213,28 @@ class _DashboardView extends HookWidget {
             );
           },
         ),
+      ),
+          // Confetti celebration overlay
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              numberOfParticles: 45,
+              emissionFrequency: 0.05,
+              maxBlastForce: 25,
+              minBlastForce: 10,
+              gravity: 0.25,
+              colors: [
+                colors.primary,
+                colors.syllabotAccent,
+                colors.warning,
+                colors.success,
+                colors.surfaceBorderHighlight,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

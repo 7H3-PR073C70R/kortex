@@ -3326,5 +3326,61 @@
     "cancelAction": "Cancel",
     "@cancelAction": {
         "description": "Button label to cancel action"
+    },
+    "welcomeWalkthroughTitle": "Welcome to Kortexify!",
+    "@welcomeWalkthroughTitle": {
+        "description": "Title for the welcome walkthrough dialog"
+    },
+    "welcomeWalkthroughSubtitle": "Your AI-augmented academic workspace is ready",
+    "@welcomeWalkthroughSubtitle": {
+        "description": "Subtitle for the welcome walkthrough dialog"
+    },
+    "welcomeWalkthroughSlide1Title": "Instant Ingestion & Active Recall",
+    "@welcomeWalkthroughSlide1Title": {
+        "description": "Title for slide 1 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide1Desc": "Drop any syllabus, lecture slide, textbook PDF, or past questions to instantly generate high-yield active-recall cards.",
+    "@welcomeWalkthroughSlide1Desc": {
+        "description": "Description for slide 1 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide2Title": "Syllabot AI Contextual Tutor",
+    "@welcomeWalkthroughSlide2Title": {
+        "description": "Title for slide 2 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide2Desc": "Chat directly with your course materials. Syllabot breaks down complex STEM proofs, equations, and key test topics.",
+    "@welcomeWalkthroughSlide2Desc": {
+        "description": "Description for slide 2 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide3Title": "Adaptive Spaced Repetition (SM-2)",
+    "@welcomeWalkthroughSlide3Title": {
+        "description": "Title for slide 3 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide3Desc": "Keep retention high with daily reviews, custom cram schedules, and smart retention heatmaps calibrated to your target track.",
+    "@welcomeWalkthroughSlide3Desc": {
+        "description": "Description for slide 3 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide4Title": "Collaborative Study Hub & Live Rooms",
+    "@welcomeWalkthroughSlide4Title": {
+        "description": "Title for slide 4 of welcome walkthrough"
+    },
+    "welcomeWalkthroughSlide4Desc": "Join live study rooms, speak with peers, ask questions in community forums, and climb academic leaderboards together.",
+    "@welcomeWalkthroughSlide4Desc": {
+        "description": "Description for slide 4 of welcome walkthrough"
+    },
+    "welcomeWalkthroughNext": "Next",
+    "@welcomeWalkthroughNext": {
+        "description": "Next button in walkthrough"
+    },
+    "welcomeWalkthroughPrevious": "Previous",
+    "@welcomeWalkthroughPrevious": {
+        "description": "Previous button in walkthrough"
+    },
+    "welcomeWalkthroughGetStarted": "Enter Workspace",
+    "@welcomeWalkthroughGetStarted": {
+        "description": "Get started / finish button in walkthrough"
+    },
+    "welcomeWalkthroughSkip": "Skip Walkthrough",
+    "@welcomeWalkthroughSkip": {
+        "description": "Skip button in walkthrough"
     }
 }

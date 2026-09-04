@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -190,6 +192,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final hasActiveSession =
               user.token != null && user.token!.trim().isNotEmpty;
           if (hasActiveSession) {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.isNewlyRegistered,
+                data: 'true',
+              ),
+            );
             emit(
               state.copyWith(
                 status: AuthStatus.needsOnboarding,
@@ -245,6 +253,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          unawaited(
+            locator<LocalStorageService>().savePreference(
+              key: PrefKeys.isNewlyRegistered,
+              data: 'true',
+            ),
+          );
           emit(
             state.copyWith(
               status: AuthStatus.needsOnboarding,

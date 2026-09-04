@@ -54,6 +54,7 @@ dependencies:
   flutter_llama:
     path: packages/flutter_llama
   xml: ^6.6.1
+  confetti: ^0.8.0
 
 dev_dependencies:
   auto_route_generator: ^10.5.0

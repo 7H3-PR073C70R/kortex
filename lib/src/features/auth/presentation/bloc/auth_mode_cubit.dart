@@ -67,4 +67,8 @@ class AuthModeCubit extends Cubit<AuthModeState> {
   void setFormType(AuthFormType formType) {
     emit(state.copyWith(formType: formType));
   }
+
+  void resetToAiChat() {
+    emit(const AuthModeState());
+  }
 }
