@@ -3,9 +3,13 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
@@ -28,6 +32,8 @@ class GeneratedCardsReviewPage extends StatelessWidget {
     required this.subject,
     required this.initialCards,
     required this.rawSnippets,
+    this.courseId,
+    this.courseCode,
     super.key,
   });
 
@@ -36,6 +42,8 @@ class GeneratedCardsReviewPage extends StatelessWidget {
   final String subject;
   final List<GeneratedCardPreviewItem> initialCards;
   final List<OcrExtractionEntity> rawSnippets;
+  final String? courseId;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +55,8 @@ class GeneratedCardsReviewPage extends StatelessWidget {
         subject: subject,
         initialCards: initialCards,
         rawSnippets: rawSnippets,
+        courseId: courseId,
+        courseCode: courseCode,
       ),
     );
   }
@@ -59,6 +69,8 @@ class _GeneratedCardsReviewView extends HookWidget {
     required this.subject,
     required this.initialCards,
     required this.rawSnippets,
+    this.courseId,
+    this.courseCode,
   });
 
   final String documentId;
@@ -66,6 +78,8 @@ class _GeneratedCardsReviewView extends HookWidget {
   final String subject;
   final List<GeneratedCardPreviewItem> initialCards;
   final List<OcrExtractionEntity> rawSnippets;
+  final String? courseId;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +113,8 @@ class _GeneratedCardsReviewView extends HookWidget {
           deckTitle: titleController.text.trim(),
           subject: subjectController.text.trim(),
           snippets: updatedSnippets,
+          courseId: courseId,
+          courseCode: courseCode,
         ),
       );
     }
@@ -132,14 +148,40 @@ class _GeneratedCardsReviewView extends HookWidget {
               if (locator.isRegistered<DecksBloc>()) {
                 locator<DecksBloc>().add(const DecksRefreshed());
               }
+              if (locator.isRegistered<DashboardBloc>()) {
+                locator<DashboardBloc>().add(const DashboardRefreshed());
+              }
 
-              // Navigate directly into study session
+              final generatedDeckId = state.generatedDeck!.id;
+
+              // 1. Navigate directly into study session (first action is to open it)
               unawaited(
                 context.router.replaceAll([
                   const MainRoute(),
-                  StudySessionRoute(deckId: state.generatedDeck!.id),
+                  StudySessionRoute(deckId: generatedDeckId),
                 ]),
               );
+
+              // 2. Show interactive success snackbar (tapping goes to Study Decks list)
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final navContext =
+                    locator<AppRouter>().navigatorKey.currentContext;
+                if (navContext != null && navContext.mounted) {
+                  navContext.showSnackBar(
+                    message:
+                        'Study Deck created successfully! Tap to view all decks.',
+                    type: SnackBarType.success,
+                    duration: const Duration(seconds: 5),
+                    onTap: () {
+                      unawaited(
+                        locator<AppRouter>().navigate(
+                          const MainRoute(children: [DecksRoute()]),
+                        ),
+                      );
+                    },
+                  );
+                }
+              });
             }
           },
           builder: (context, state) {

@@ -195,7 +195,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                             description:
                                 'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
                                 'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
-                            primaryActionText: 'Switch & Reset Workspace',
+                            primaryActionText: 'Switch & Reset',
                             isDestructive: true,
                             onPrimaryAction: () async {
                               AppFeedback.heavy();

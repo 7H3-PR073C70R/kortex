@@ -33,5 +33,7 @@ abstract class IngestionRepository {
     required String deckTitle,
     required String subject,
     required List<OcrExtractionEntity> snippets,
+    String? courseId,
+    String? courseCode,
   });
 }

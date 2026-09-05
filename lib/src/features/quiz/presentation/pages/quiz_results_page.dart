@@ -1,6 +1,17 @@
+import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -8,16 +19,19 @@ import 'package:kortex/src/l10n/l10n.dart';
 class QuizResultsPage extends StatelessWidget {
   const QuizResultsPage({
     required this.result,
+    this.questions = const [],
     super.key,
   });
 
   final QuizResultEntity result;
+  final List<QuizQuestionEntity> questions;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     final score = result.scorePercent;
     final isPassed = score >= 70;
@@ -180,30 +194,135 @@ class QuizResultsPage extends StatelessWidget {
             }),
         ],
       ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        color: colors.surfacePrimary,
-        child: SafeArea(
-          child: ElevatedButton.icon(
-            icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
-            label: Text(
-              l10n.practiceWeakCards,
-              style: typography.body.bold.copyWith(color: colors.white),
+      bottomNavigationBar: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
+          border: Border(
+            top: BorderSide(
+              color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
             ),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: colors.primary,
-              foregroundColor: colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
+              label: Text(
+                l10n.practiceWeakCards,
+                style: typography.callout.bold.copyWith(color: colors.white),
+              ),
+              onPressed: () => _handlePracticeWeakFlashcards(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handlePracticeWeakFlashcards(BuildContext context) async {
+    unawaited(HapticFeedback.lightImpact());
+
+    // Prioritize questions that were answered incorrectly; fallback to all questions
+    final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
+    final questionsToUse = incorrectQuestions.isNotEmpty ? incorrectQuestions : questions;
+
+    if (questionsToUse.isEmpty && result.weaknesses.isEmpty) {
+      context.showSnackBar(
+        message: 'No questions available to generate flashcards.',
+      );
+      return;
+    }
+
+    final deckId = 'quiz_deck_${DateTime.now().millisecondsSinceEpoch}';
+    final deckTitle = '${result.quizTitle} - Practice Deck';
+    final subject = result.weaknesses.isNotEmpty
+        ? result.weaknesses.first.subTopic
+        : 'Quiz Review';
+
+    final cards = <FlashcardModel>[];
+
+    if (questionsToUse.isNotEmpty) {
+      for (var i = 0; i < questionsToUse.length; i++) {
+        final q = questionsToUse[i];
+        final explanationPart =
+            q.explanation.isNotEmpty ? '\n\n💡 Explanation:\n${q.explanation}' : '';
+
+        cards.add(
+          FlashcardModel(
+            id: 'card_${deckId}_$i',
+            deckId: deckId,
+            front: q.prompt,
+            back: '${q.correctAnswer}$explanationPart',
+            sourceTopic: q.subTopic,
+            nextDueDate: DateTime.now().add(const Duration(days: 1)),
+          ),
+        );
+      }
+    } else {
+      // Fallback from weaknesses
+      for (var i = 0; i < result.weaknesses.length; i++) {
+        final w = result.weaknesses[i];
+        cards.add(
+          FlashcardModel(
+            id: 'card_${deckId}_$i',
+            deckId: deckId,
+            front: 'Key Focus: ${w.subTopic}',
+            back: 'Target accuracy: ${(w.accuracy * 100).toInt()}% (${w.correctCount}/${w.totalQuestions} correct). Review core concepts and formulas for this topic.',
+            sourceTopic: w.subTopic,
+            nextDueDate: DateTime.now().add(const Duration(days: 1)),
+          ),
+        );
+      }
+    }
+
+    final deck = DeckModel(
+      id: deckId,
+      title: deckTitle,
+      subject: subject,
+      totalCards: cards.length,
+      dueCards: cards.length,
+      masteryRate: 0,
+      category: 'Quiz Review',
+      description: 'Practice flashcards generated from CBT test session.',
+      cards: cards,
+    );
+
+    // Save to DecksRemoteDataSource
+    if (locator.isRegistered<DecksRemoteDataSource>()) {
+      await locator<DecksRemoteDataSource>().saveGeneratedDeck(
+        deck: deck,
+        cards: cards,
+      );
+    }
+
+    // Refresh DecksBloc
+    if (locator.isRegistered<DecksBloc>()) {
+      locator<DecksBloc>().add(const DecksRefreshed());
+    }
+
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'Generated ${cards.length} practice flashcards!',
+        type: SnackBarType.success,
+      );
+      unawaited(
+        context.router.replace(
+          StudySessionRoute(deckId: deckId),
+        ),
+      );
+    }
   }
 }

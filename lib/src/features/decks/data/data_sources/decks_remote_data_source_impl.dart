@@ -399,6 +399,32 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   }
 
   @override
+  Future<void> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  }) async {
+    final index = _localCreatedDecks.indexWhere((d) => d.id == deckId);
+    if (index != -1) {
+      final old = _localCreatedDecks[index];
+      _localCreatedDecks[index] = old.copyWith(
+        courseId: courseId,
+        courseCode: courseCode ?? old.courseCode,
+        subject: subject ?? old.subject,
+      );
+      unawaited(_persistDecksToStorage());
+    }
+
+    try {
+      await _client.updateDeckRecord(deckId, {
+        'course_id': courseId,
+        'course_code': ?courseCode,
+      });
+    } on Object catch (_) {}
+  }
+
+  @override
   Future<void> deleteAllDecks() async {
     final allIds = _localCreatedDecks.map((d) => d.id).toList();
     _localDeckCards.clear();

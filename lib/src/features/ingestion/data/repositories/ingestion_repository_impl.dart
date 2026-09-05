@@ -100,6 +100,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String deckTitle,
     required String subject,
     required List<OcrExtractionEntity> snippets,
+    String? courseId,
+    String? courseCode,
   }) {
     return Future<DeckEntity>.sync(() async {
       final prefix = documentId.substring(
@@ -137,6 +139,8 @@ class IngestionRepositoryImpl implements IngestionRepository {
         category: 'Document Ingestion',
         description: 'Auto-synthesized from document $documentId',
         cards: cards,
+        courseId: courseId,
+        courseCode: courseCode,
       );
 
       await _decksRemoteDataSource?.saveGeneratedDeck(

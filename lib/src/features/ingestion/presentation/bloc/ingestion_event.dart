@@ -61,12 +61,16 @@ final class GenerateFlashcardsFromSnippetsEvent extends IngestionEvent {
     required this.deckTitle,
     required this.subject,
     required this.snippets,
+    this.courseId,
+    this.courseCode,
   });
 
   final String documentId;
   final String deckTitle;
   final String subject;
   final List<OcrExtractionEntity> snippets;
+  final String? courseId;
+  final String? courseCode;
 }
 
 /// Fetch list of previously uploaded documents.

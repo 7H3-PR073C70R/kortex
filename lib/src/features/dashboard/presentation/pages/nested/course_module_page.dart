@@ -123,7 +123,7 @@ class _CourseModuleView extends StatelessWidget {
             );
           }
           if (context.mounted) {
-            context.read<DashboardBloc>().add(const DashboardRefreshed());
+            locator<DashboardBloc>().add(const DashboardRefreshed());
             context.router.pop();
           }
         },
@@ -444,7 +444,15 @@ class _CourseModuleView extends StatelessWidget {
         ShrinkableButton(
           onTap: () {
             AppFeedback.medium();
-            unawaited(context.router.push(const DocumentIngestionRoute()));
+            unawaited(
+              context.router.push(
+                DocumentIngestionRoute(
+                  courseId: courseId,
+                  courseCode: courseCode,
+                  courseTitle: courseTitle,
+                ),
+              ),
+            );
           },
           child: Container(
             padding: const EdgeInsets.all(18),
@@ -528,7 +536,15 @@ class _CourseModuleView extends StatelessWidget {
             ShrinkableButton(
               onTap: () {
                 AppFeedback.light();
-                unawaited(context.router.push(const DocumentIngestionRoute()));
+                unawaited(
+                  context.router.push(
+                    DocumentIngestionRoute(
+                      courseId: courseId,
+                      courseCode: courseCode,
+                      courseTitle: courseTitle,
+                    ),
+                  ),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

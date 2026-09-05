@@ -34,8 +34,10 @@ class AllCuratedCoursesPage extends HookWidget {
     final selectedFilter = useState<String>('All');
     final searchController = useTextEditingController();
 
-    return BlocBuilder<DashboardBloc, DashboardState>(
-      builder: (context, dashState) {
+    return BlocProvider<DashboardBloc>.value(
+      value: locator<DashboardBloc>(),
+      child: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, dashState) {
         final feed = dashState.feed;
         final allCourses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
 
@@ -109,7 +111,7 @@ class AllCuratedCoursesPage extends HookWidget {
                     ),
                   );
                   if (result == true && context.mounted) {
-                    context.read<DashboardBloc>().add(const DashboardRefreshed());
+                    locator<DashboardBloc>().add(const DashboardRefreshed());
                   }
                 },
               ),
@@ -125,21 +127,19 @@ class AllCuratedCoursesPage extends HookWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
                           color: isDark
-                              ? colors.surfaceSecondary.withAlpha(150)
-                              : colors.surfacePrimary.withAlpha(200),
+                              ? colors.surfaceSecondary.withAlpha(140)
+                              : colors.surfacePrimary.withAlpha(210),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(70)
-                                : colors.surfaceBorder.withAlpha(140),
+                                ? colors.surfaceBorderHighlight.withAlpha(60)
+                                : colors.surfaceBorder.withAlpha(130),
+                            width: 1.1,
                           ),
                         ),
                         child: Row(
@@ -155,26 +155,28 @@ class AllCuratedCoursesPage extends HookWidget {
                             Container(
                               height: 30,
                               width: 1,
-                              color: colors.surfaceBorder.withAlpha(80),
+                              color: isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(60)
+                                  : colors.surfaceBorder.withAlpha(120),
                             ),
                             _buildStatItem(
-                              label: 'Linked Decks',
+                              label: 'Study Decks',
                               value: '$totalDecksCount',
-                              icon: Icons.layers_rounded,
+                              icon: Icons.style_rounded,
                               colors: colors,
                               typography: typography,
                             ),
                             Container(
                               height: 30,
                               width: 1,
-                              color: colors.surfaceBorder.withAlpha(80),
+                              color: isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(60)
+                                  : colors.surfaceBorder.withAlpha(120),
                             ),
                             _buildStatItem(
-                              label: 'Avg Progress',
-                              value: allCourses.isEmpty
-                                  ? '0%'
-                                  : '${(allCourses.fold<double>(0, (s, c) => s + c.syllabusCoverage) / allCourses.length * 100).toInt()}%',
-                              icon: Icons.trending_up_rounded,
+                              label: 'Available',
+                              value: '${allCourses.where((c) => c.hasActivePastPapers).length} Q-Banks',
+                              icon: Icons.verified_rounded,
                               colors: colors,
                               typography: typography,
                             ),
@@ -185,120 +187,142 @@ class AllCuratedCoursesPage extends HookWidget {
                   ),
                 ),
 
-                // Search Bar
+                // Search & Filter Bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(120)
-                          : colors.surfacePrimary.withAlpha(180),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                            : colors.surfaceBorder.withAlpha(120),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: searchController,
-                      onChanged: (val) => searchQuery.value = val,
-                      style: typography.callout.regular.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Search course code or title...',
-                        hintStyle: typography.callout.regular.copyWith(
-                          color: colors.textMuted,
-                          fontSize: 13.5,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          color: colors.textMuted,
-                          size: 18,
-                        ),
-                        suffixIcon: searchQuery.value.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear_rounded,
-                                  color: colors.textMuted,
-                                  size: 16,
-                                ),
-                                onPressed: () {
-                                  searchController.clear();
-                                  searchQuery.value = '';
-                                },
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Department / Stream Filters
-                if (departments.length > 2) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 34,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: departments.map((dept) {
-                        final isSelected = selectedFilter.value == dept;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ShrinkableButton(
-                            onTap: () {
-                              AppFeedback.selection();
-                              selectedFilter.value = dept;
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 6,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: TextField(
+                              controller: searchController,
+                              style: typography.callout.regular.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
                               ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? colors.primary
-                                    : (isDark
-                                        ? colors.surfaceSecondary.withAlpha(100)
-                                        : colors.surfacePrimary),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? colors.primary
-                                      : (isDark
-                                          ? colors.surfaceBorderHighlight.withAlpha(50)
-                                          : colors.surfaceBorder.withAlpha(100)),
+                              onChanged: (val) => searchQuery.value = val,
+                              decoration: InputDecoration(
+                                hintText: 'Search enrolled courses or codes...',
+                                hintStyle: typography.callout.regular.copyWith(
+                                  color: colors.textSecondary.withAlpha(140),
+                                  fontSize: 13,
                                 ),
-                              ),
-                              child: Text(
-                                dept,
-                                style: typography.caption.bold.copyWith(
-                                  color: isSelected
-                                      ? colors.white
-                                      : colors.textSecondary,
-                                  fontSize: 11.5,
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: colors.textSecondary,
+                                  size: 18,
+                                ),
+                                suffixIcon: searchQuery.value.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.clear_rounded,
+                                          color: colors.textSecondary,
+                                          size: 16,
+                                        ),
+                                        onPressed: () {
+                                          searchController.clear();
+                                          searchQuery.value = '';
+                                        },
+                                      )
+                                    : null,
+                                filled: true,
+                                fillColor: isDark
+                                    ? colors.surfaceSecondary.withAlpha(120)
+                                    : colors.surfacePrimary.withAlpha(180),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 14,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: isDark
+                                        ? colors.surfaceBorderHighlight.withAlpha(50)
+                                        : colors.surfaceBorder.withAlpha(120),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: isDark
+                                        ? colors.surfaceBorderHighlight.withAlpha(50)
+                                        : colors.surfaceBorder.withAlpha(120),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: colors.primary,
+                                    width: 1.4,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Department Filter Horizontal List
+                if (departments.length > 1)
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: departments.length,
+                      separatorBuilder: (_, index) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final dept = departments.elementAt(index);
+                        final isSelected = selectedFilter.value == dept;
+                        return ShrinkableButton(
+                          onTap: () {
+                            AppFeedback.selection();
+                            selectedFilter.value = dept;
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? colors.primary
+                                  : (isDark
+                                      ? colors.surfaceSecondary.withAlpha(100)
+                                      : colors.surfacePrimary.withAlpha(160)),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected
+                                    ? colors.primary
+                                    : (isDark
+                                        ? colors.surfaceBorderHighlight.withAlpha(50)
+                                        : colors.surfaceBorder.withAlpha(120)),
+                              ),
+                            ),
+                            child: Text(
+                              dept,
+                              style: typography.caption.bold.copyWith(
+                                color: isSelected
+                                    ? colors.white
+                                    : colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ),
                         );
-                      }).toList(),
+                      },
                     ),
                   ),
-                ],
+                const SizedBox(height: 12),
 
-                const SizedBox(height: 14),
-
-                // Course List
+                // Course List or Empty State
                 Expanded(
                   child: filteredCourses.isEmpty
                       ? Center(
@@ -306,22 +330,15 @@ class AllCuratedCoursesPage extends HookWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.menu_book_outlined,
+                                Icons.search_off_rounded,
                                 size: 48,
-                                color: colors.textMuted,
+                                color: colors.textSecondary.withAlpha(100),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'No courses match your search',
-                                style: typography.body.bold.copyWith(
+                                'No courses match your filter',
+                                style: typography.callout.bold.copyWith(
                                   color: colors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Try a different keyword or department tab',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
                                 ),
                               ),
                             ],
@@ -360,7 +377,7 @@ class AllCuratedCoursesPage extends HookWidget {
             ),
           ),
         );
-      },
+      }),
     );
   }
 
@@ -422,7 +439,7 @@ class AllCuratedCoursesPage extends HookWidget {
             );
           }
           if (context.mounted) {
-            context.read<DashboardBloc>().add(const DashboardRefreshed());
+            locator<DashboardBloc>().add(const DashboardRefreshed());
           }
         },
         secondaryActionText: 'Cancel',
@@ -450,7 +467,11 @@ class _CourseDetailedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coveragePercent = (course.syllabusCoverage * 100).toInt();
+    final hasDecks = decks.isNotEmpty;
+    final realCoverage = hasDecks
+        ? (decks.fold<double>(0, (s, d) => s + d.masteryRate) / decks.length).clamp(0.0, 1.0)
+        : 0.0;
+    final coveragePercent = (realCoverage * 100).toInt();
     final totalCards = decks.fold<int>(0, (s, d) => s + d.totalCards);
 
     return ClipRRect(
@@ -553,8 +574,8 @@ class _CourseDetailedCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _buildMetaPill(
-                    icon: Icons.description_outlined,
-                    label: '${course.totalMaterials} Topics',
+                    icon: Icons.access_time_rounded,
+                    label: '${decks.where((d) => d.dueCards > 0).length} Due',
                     colors: colors,
                     typography: typography,
                     isDark: isDark,
@@ -592,7 +613,7 @@ class _CourseDetailedCard extends StatelessWidget {
                       ? colors.surfaceBorderHighlight.withAlpha(50)
                       : colors.surfaceBorder.withAlpha(100),
                   child: FractionallySizedBox(
-                    widthFactor: course.syllabusCoverage.clamp(0.05, 1.0),
+                    widthFactor: realCoverage.clamp(0.0, 1.0),
                     child: Container(color: colors.primary),
                   ),
                 ),

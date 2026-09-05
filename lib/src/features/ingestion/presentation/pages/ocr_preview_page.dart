@@ -17,12 +17,18 @@ class OcrPreviewPage extends HookWidget {
     required this.documentId,
     required this.filename,
     required this.snippets,
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
     super.key,
   });
 
   final String documentId;
   final String filename;
   final List<OcrExtractionEntity> snippets;
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -46,14 +52,21 @@ class OcrPreviewPage extends HookWidget {
         );
       }).toList();
 
+      final resolvedSubject = courseTitle ??
+          (courseCode != null && courseCode!.isNotEmpty
+              ? '$courseCode Review'
+              : 'Study Review');
+
       unawaited(
         context.router.push(
           GeneratedCardsReviewRoute(
             documentId: documentId,
             deckTitle: filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
-            subject: 'Study Review',
+            subject: resolvedSubject,
             initialCards: previewCards,
             rawSnippets: currentSnippets.value,
+            courseId: courseId,
+            courseCode: courseCode,
           ),
         ),
       );

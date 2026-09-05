@@ -268,9 +268,6 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
-    final l10n = context.l10n;
-    final coveragePercent = (course.syllabusCoverage * 100).toInt();
-
     // Query matching decks from DecksBloc if registered
     final allDecks = locator.isRegistered<DecksBloc>()
         ? locator<DecksBloc>().state.allDecks
@@ -282,12 +279,19 @@ class _CourseCard extends StatelessWidget {
         d.subject.toLowerCase() == course.title.toLowerCase()).toList();
 
     final totalCards = matchingDecks.fold<int>(0, (s, d) => s + d.totalCards);
+    final hasDecks = matchingDecks.isNotEmpty;
+    final realCoverage = hasDecks
+        ? (matchingDecks.fold<double>(0, (s, d) => s + d.masteryRate) / matchingDecks.length).clamp(0.0, 1.0)
+        : 0.0;
+    final coveragePercent = (realCoverage * 100).toInt();
+    final deckCountText = hasDecks
+        ? '${matchingDecks.length} ${matchingDecks.length == 1 ? 'Deck' : 'Decks'} • $totalCards Cards'
+        : 'No study decks yet';
 
     return Semantics(
       button: true,
       label:
-          '${course.courseCode} ${course.title}. '
-          '${l10n.dashboardResourcesCount(course.totalMaterials)}.',
+          '${course.courseCode} ${course.title}. $deckCountText.',
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
@@ -401,9 +405,7 @@ class _CourseCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            matchingDecks.isNotEmpty
-                                ? '${matchingDecks.length} Decks • $totalCards Cards'
-                                : l10n.dashboardResourcesCount(course.totalMaterials),
+                            deckCountText,
                             style: typography.footnote.medium.copyWith(
                               color: isDark
                                   ? colors.textSecondary
@@ -429,8 +431,8 @@ class _CourseCard extends StatelessWidget {
                               ? colors.surfaceBorderHighlight.withAlpha(50)
                               : colors.surfaceBorder.withAlpha(100),
                           child: FractionallySizedBox(
-                            widthFactor: course.syllabusCoverage.clamp(
-                              0.1,
+                            widthFactor: realCoverage.clamp(
+                              0.0,
                               1.0,
                             ),
                             child: Container(

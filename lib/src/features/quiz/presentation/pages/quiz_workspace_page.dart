@@ -80,10 +80,10 @@ class _QuizWorkspaceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return BlocConsumer<QuizSessionCubit, QuizSessionState>(
       listener: (context, state) {
@@ -91,7 +91,10 @@ class _QuizWorkspaceView extends StatelessWidget {
             state.result != null) {
           unawaited(
             context.router.replace(
-              QuizResultsRoute(result: state.result!),
+              QuizResultsRoute(
+                result: state.result!,
+                questions: state.questions,
+              ),
             ),
           );
         }
@@ -345,34 +348,47 @@ class _QuizWorkspaceView extends StatelessWidget {
               ),
             ],
           ),
-          bottomSheet: current.isAnswered
+          bottomNavigationBar: current.isAnswered
               ? Container(
-                  padding: const EdgeInsets.all(16),
-                  color: theme.colorScheme.surface,
-                  child: SafeArea(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (state.isLastQuestion) {
-                          unawaited(
-                            context.read<QuizSessionCubit>().submitQuiz(),
-                          );
-                        } else {
-                          context.read<QuizSessionCubit>().nextQuestion();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary,
+                    border: Border(
+                      top: BorderSide(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
                       ),
-                      child: Text(
-                        state.isLastQuestion
-                            ? l10n.submitQuizButton
-                            : l10n.nextQuestionButton,
-                        style: typography.body.bold.copyWith(color: colors.white),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (state.isLastQuestion) {
+                            unawaited(
+                              context.read<QuizSessionCubit>().submitQuiz(),
+                            );
+                          } else {
+                            context.read<QuizSessionCubit>().nextQuestion();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          state.isLastQuestion
+                              ? l10n.submitQuizButton
+                              : l10n.nextQuestionButton,
+                          style: typography.callout.bold.copyWith(color: colors.white),
+                        ),
                       ),
                     ),
                   ),

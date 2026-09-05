@@ -319,11 +319,14 @@ class _AppButtonState extends State<AppButton> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                Text(
-                  widget.text,
-                  style: effectiveTextStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Flexible(
+                  child: Text(
+                    widget.text,
+                    style: effectiveTextStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 if (widget.suffixIcon != null) ...[
                   const SizedBox(width: 8),

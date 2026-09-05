@@ -35,5 +35,12 @@ abstract class DecksRemoteDataSource {
     String? subject,
   });
 
+  Future<void> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  });
+
   Future<void> deleteAllDecks();
 }

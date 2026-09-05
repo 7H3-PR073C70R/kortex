@@ -231,6 +231,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       deckTitle: event.deckTitle,
       subject: event.subject,
       snippets: event.snippets,
+      courseId: event.courseId,
+      courseCode: event.courseCode,
     );
 
     deckResult.fold(

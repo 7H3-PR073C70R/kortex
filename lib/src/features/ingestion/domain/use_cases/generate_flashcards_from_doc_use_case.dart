@@ -14,12 +14,16 @@ class GenerateFlashcardsFromDocUseCase {
     required String deckTitle,
     required String subject,
     required List<OcrExtractionEntity> snippets,
+    String? courseId,
+    String? courseCode,
   }) {
     return _repository.generateFlashcardsFromDoc(
       documentId: documentId,
       deckTitle: deckTitle,
       subject: subject,
       snippets: snippets,
+      courseId: courseId,
+      courseCode: courseCode,
     );
   }
 }

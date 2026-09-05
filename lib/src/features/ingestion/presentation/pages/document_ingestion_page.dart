@@ -22,20 +22,41 @@ import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
 class DocumentIngestionPage extends StatelessWidget {
-  const DocumentIngestionPage({super.key});
+  const DocumentIngestionPage({
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
+    super.key,
+  });
+
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<IngestionBloc>(
       create: (_) =>
           locator<IngestionBloc>()..add(const FetchUserDocumentsEvent()),
-      child: const _DocumentIngestionView(),
+      child: _DocumentIngestionView(
+        courseId: courseId,
+        courseCode: courseCode,
+        courseTitle: courseTitle,
+      ),
     );
   }
 }
 
 class _DocumentIngestionView extends HookWidget {
-  const _DocumentIngestionView();
+  const _DocumentIngestionView({
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
+  });
+
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +138,9 @@ class _DocumentIngestionView extends HookWidget {
                     documentId: state.currentDocument!.id,
                     filename: state.currentDocument!.filename,
                     snippets: state.snippets,
+                    courseId: courseId,
+                    courseCode: courseCode,
+                    courseTitle: courseTitle,
                   ),
                 ),
               );
@@ -143,6 +167,9 @@ class _DocumentIngestionView extends HookWidget {
 
                     // File drop zone
                     FileDropZoneWidget(
+                      courseId: courseId,
+                      courseCode: courseCode,
+                      courseTitle: courseTitle,
                       onFilePicked:
                           ({
                             required filename,

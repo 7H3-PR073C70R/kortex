@@ -196,7 +196,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                               Navigator.of(context).pop();
                               unawaited(
                                 context.router.push(
-                                  const DocumentIngestionRoute(),
+                                  DocumentIngestionRoute(),
                                 ),
                               );
                             },
@@ -212,7 +212,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                               Navigator.of(context).pop();
                               unawaited(
                                 context.router.push(
-                                  const DocumentIngestionRoute(),
+                                  DocumentIngestionRoute(),
                                 ),
                               );
                             },

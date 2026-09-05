@@ -8,9 +8,15 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -19,6 +25,9 @@ class FileDropZoneWidget extends HookWidget {
     required this.onFilePicked,
     this.onCameraScanTap,
     this.onLmsImportTap,
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
     super.key,
   });
 
@@ -31,6 +40,9 @@ class FileDropZoneWidget extends HookWidget {
 
   final VoidCallback? onCameraScanTap;
   final VoidCallback? onLmsImportTap;
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 
   Map<String, String>? _checkExistingExtractedDeck(
     String filename,
@@ -187,7 +199,9 @@ class FileDropZoneWidget extends HookWidget {
           ],
         ),
         content: Text(
-          'We previously extracted this document as "$deckTitle".\n\nWould you like to open the existing study deck or re-extract it from scratch?',
+          courseId != null
+              ? 'We previously extracted this document as "$deckTitle".\n\nWould you like to link it to ${courseCode ?? "this course"}, open the existing deck, or re-extract it from scratch?'
+              : 'We previously extracted this document as "$deckTitle".\n\nWould you like to open the existing study deck or re-extract it from scratch?',
           style: typography.callout.regular.copyWith(color: colors.textSecondary),
         ),
         actions: [
@@ -211,21 +225,60 @@ class FileDropZoneWidget extends HookWidget {
             },
             child: const Text('Re-extract'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          if (courseId != null)
+            FilledButton.icon(
+              icon: const Icon(Icons.link_rounded, size: 16),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.success,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+              onPressed: () async {
+                Navigator.of(dialogCtx).pop();
+                AppFeedback.medium();
+                if (locator.isRegistered<DecksRemoteDataSource>()) {
+                  await locator<DecksRemoteDataSource>().linkDeckToCourse(
+                    deckId: deckId,
+                    courseId: courseId!,
+                    courseCode: courseCode,
+                    subject: courseTitle,
+                  );
+                }
+                if (locator.isRegistered<DecksBloc>()) {
+                  locator<DecksBloc>().add(const DecksRefreshed());
+                }
+                if (locator.isRegistered<DashboardBloc>()) {
+                  locator<DashboardBloc>().add(const DashboardRefreshed());
+                }
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message: 'Linked "$deckTitle" to ${courseCode ?? "Course"}!',
+                    type: SnackBarType.success,
+                  );
+                  unawaited(
+                    context.router.push(StudySessionRoute(deckId: deckId)),
+                  );
+                }
+              },
+              label: Text('Link to ${courseCode ?? "Course"} & Open'),
+            )
+          else
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                unawaited(
+                  context.router.push(StudySessionRoute(deckId: deckId)),
+                );
+              },
+              child: Text('Open "$deckTitle"'),
             ),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              unawaited(
-                context.router.push(StudySessionRoute(deckId: deckId)),
-              );
-            },
-            child: Text('Open "$deckTitle"'),
-          ),
         ],
       ),
     );

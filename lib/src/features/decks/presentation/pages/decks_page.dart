@@ -110,7 +110,7 @@ class _DecksView extends HookWidget {
                       Navigator.pop(bottomSheetContext);
                       unawaited(
                         context.router.push(
-                          const DocumentIngestionRoute(),
+                          DocumentIngestionRoute(),
                         ),
                       );
                     },
@@ -127,7 +127,7 @@ class _DecksView extends HookWidget {
                       Navigator.pop(bottomSheetContext);
                       unawaited(
                         context.router.push(
-                          const DocumentIngestionRoute(),
+                          DocumentIngestionRoute(),
                         ),
                       );
                     },
@@ -382,7 +382,7 @@ class _DecksView extends HookWidget {
                       onPrimaryAction: () => _showDeckCreationSheet(context),
                       secondaryActionLabel: l10n.decksUploadDocTitle,
                       onSecondaryAction: () => unawaited(
-                        context.router.push(const DocumentIngestionRoute()),
+                        context.router.push(DocumentIngestionRoute()),
                       ),
                     )
                   else
