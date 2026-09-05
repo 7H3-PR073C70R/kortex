@@ -42,11 +42,13 @@ import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 class SyllabotChatPage extends StatelessWidget {
   const SyllabotChatPage({
     this.initialPrompt,
+    this.initialMode,
     this.onCollapse,
     super.key,
   });
 
   final String? initialPrompt;
+  final SocraticMode? initialMode;
   final VoidCallback? onCollapse;
 
   @override
@@ -58,7 +60,7 @@ class SyllabotChatPage extends StatelessWidget {
         SubmitPromptEvent(
           prompt: initialPrompt!.trim(),
           sessionId: sid,
-          socraticMode: SocraticMode.stepByStep,
+          socraticMode: initialMode ?? SocraticMode.stepByStep,
           engineType: ExecutionEngineType.cloudRemote,
         ),
       );

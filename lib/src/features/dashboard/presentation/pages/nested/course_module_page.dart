@@ -21,6 +21,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -37,6 +38,10 @@ class CourseModulePage extends StatelessWidget {
   final String courseCode;
   final String courseTitle;
 
+  static String cleanCode(String code) {
+    return code.replaceFirst(RegExp('^[WJN]-', caseSensitive: false), '').trim();
+  }
+
   ExamCategory _getExamCategory(String? track) {
     final t = (track ?? '').toUpperCase();
     if (t.contains('JAMB') || t.contains('UTME')) return ExamCategory.jamb;
@@ -50,7 +55,7 @@ class CourseModulePage extends StatelessWidget {
   }
 
   String _mapCourseToSubject(String title, String code) {
-    final c = code.trim().toUpperCase();
+    final c = cleanCode(code).toUpperCase();
     final lower = '$title $code'.toLowerCase();
     if (c == 'LIT' || lower.contains('literature')) return 'Literature in English';
     if (c == 'FMTH' || lower.contains('further math')) return 'Further Mathematics';
@@ -77,7 +82,8 @@ class CourseModulePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentProfile = context.read<AuthBloc>().state.userProfile;
     final examCategory = _getExamCategory(currentProfile?.targetTrack);
-    final mappedSubject = _mapCourseToSubject(courseTitle, courseCode);
+    final sanitizedCode = cleanCode(courseCode);
+    final mappedSubject = _mapCourseToSubject(courseTitle, sanitizedCode);
 
     return BlocProvider<PastQuestionsBloc>(
       create: (_) => locator<PastQuestionsBloc>()
@@ -89,7 +95,7 @@ class CourseModulePage extends StatelessWidget {
         ),
       child: _CourseModuleView(
         courseId: courseId,
-        courseCode: courseCode,
+        courseCode: sanitizedCode,
         courseTitle: courseTitle,
         mappedSubject: mappedSubject,
         examCategory: examCategory,
@@ -842,69 +848,166 @@ class _CourseModuleView extends StatelessWidget {
             ] else ...[
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24,
-                  horizontal: 16,
-                ),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(100)
-                      : colors.surfacePrimary.withAlpha(180),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(100),
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary.withAlpha(isDark ? 40 : 18),
+                      colors.surfaceSecondary.withAlpha(isDark ? 160 : 210),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 70 : 40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(isDark ? 25 : 10),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.quiz_outlined,
-                      size: 32,
-                      color: colors.textMuted,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 50 : 25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_rounded, size: 12, color: colors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${examCategory.displayName} • $mappedSubject',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.menu_book_rounded,
+                          size: 20,
+                          color: colors.primary.withAlpha(160),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'No past papers loaded for $mappedSubject',
-                      style: typography.caption.bold.copyWith(
+                      'Official $mappedSubject Q-Bank',
+                      style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
-                        fontSize: 13,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Explore other past questions in the Q-Bank tab.',
-                      textAlign: TextAlign.center,
+                      'Practice verified past questions, drill by specific year, or simulate a timed CBT exam.',
                       style: typography.footnote.regular.copyWith(
                         color: colors.textSecondary,
-                        fontSize: 11.5,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    ShrinkableButton(
-                      onTap: () {
-                        AppFeedback.light();
-                        unawaited(context.router.push(PastQuestionsBoardRoute()));
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(50),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.light();
+                              unawaited(
+                                context.router.push(
+                                  PastQuestionsBoardRoute(
+                                    initialExamCode: examCategory.code,
+                                    initialSubject: mappedSubject,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(80),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.play_circle_filled_rounded, size: 16, color: colors.white),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Launch Q-Bank & CBT',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'Open Q-Bank Board',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 11.5,
+                        const SizedBox(width: 10),
+                        ShrinkableButton(
+                          onTap: () {
+                            AppFeedback.light();
+                            unawaited(
+                              context.router.push(
+                                SyllabotChatRoute(
+                                  initialPrompt:
+                                      'Please generate 5 official-style ${examCategory.displayName} practice questions for $mappedSubject right now. '
+                                      'For each question, provide 4 options labeled A, B, C, and D, clearly indicate the correct answer, and explain the step-by-step solution.',
+                                  initialMode: SocraticMode.examSim,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 42,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.auto_awesome_rounded, size: 15, color: colors.syllabotAccent),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'AI Drill',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.syllabotAccent,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

@@ -102,6 +102,21 @@ class PastQuestionsRemoteDataSourceImpl
 
     final local = SeedPastQuestions.filter(examCategory: category);
     final set = local.map((q) => q.subject).toSet().toList()..sort();
+    if (set.isEmpty) {
+      return const [
+        'English Language',
+        'Mathematics',
+        'Biology',
+        'Chemistry',
+        'Physics',
+        'Economics',
+        'Government',
+        'Literature in English',
+        'Commerce',
+        'Agricultural Science',
+        'Civic Education',
+      ];
+    }
     return set;
   }
 
@@ -121,8 +136,10 @@ class PastQuestionsRemoteDataSourceImpl
             }
           }
         }
-        final list = set.toList()..sort((a, b) => b.compareTo(a));
-        return list;
+        if (set.isNotEmpty) {
+          final list = set.toList()..sort((a, b) => b.compareTo(a));
+          return list;
+        }
       }
     } on Object {
       // Fallback
@@ -131,6 +148,9 @@ class PastQuestionsRemoteDataSourceImpl
     final local = SeedPastQuestions.filter(examCategory: category);
     final set = local.map((q) => q.year).toSet().toList()
       ..sort((a, b) => b.compareTo(a));
+    if (set.isEmpty) {
+      return const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
+    }
     return set;
   }
 }

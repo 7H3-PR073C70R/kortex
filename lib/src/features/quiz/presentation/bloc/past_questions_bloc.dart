@@ -48,6 +48,11 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
         ),
       ),
       (questions) {
+        final availSubjects =
+            subjectsRes.fold<List<String>>((_) => [], List.from);
+        if (subject != 'All' && !availSubjects.contains(subject)) {
+          availSubjects.insert(0, subject);
+        }
         emit(
           state.copyWith(
             status: PastQuestionsStatus.loaded,
@@ -55,7 +60,7 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
             selectedExam: exam,
             selectedSubject: subject,
             selectedYear: year,
-            availableSubjects: subjectsRes.fold((_) => [], (list) => list),
+            availableSubjects: availSubjects,
             availableYears: yearsRes.fold((_) => [], (list) => list),
           ),
         );

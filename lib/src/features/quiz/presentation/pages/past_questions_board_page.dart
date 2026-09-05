@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -14,8 +15,8 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -24,10 +25,12 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class PastQuestionsBoardPage extends StatelessWidget {
   const PastQuestionsBoardPage({
     @queryParam this.initialExamCode,
+    @queryParam this.initialSubject,
     super.key,
   });
 
   final String? initialExamCode;
+  final String? initialSubject;
 
   static ExamCategory resolveExamCategory(String? code, String? userTrack) {
     final target = (code != null && code.isNotEmpty)
@@ -39,6 +42,9 @@ class PastQuestionsBoardPage extends StatelessWidget {
     }
     if (upper.contains('JAMB') || upper.contains('UTME')) {
       return ExamCategory.jamb;
+    }
+    if (upper.contains('NECO') || upper.contains('SSCE')) {
+      return ExamCategory.neco;
     }
     if (upper.contains('SAT')) return ExamCategory.sat;
     if (upper.contains('TOEFL')) return ExamCategory.toefl;
@@ -62,16 +68,28 @@ class PastQuestionsBoardPage extends StatelessWidget {
 
     return BlocProvider<PastQuestionsBloc>(
       create: (_) => locator<PastQuestionsBloc>()
-        ..add(LoadPastQuestionsEvent(examCategory: initialExam)),
-      child: _PastQuestionsBoardView(userTrack: userTrack ?? 'WAEC'),
+        ..add(
+          LoadPastQuestionsEvent(
+            examCategory: initialExam,
+            subject: initialSubject,
+          ),
+        ),
+      child: _PastQuestionsBoardView(
+        userTrack: userTrack ?? 'WAEC',
+        initialSubject: initialSubject,
+      ),
     );
   }
 }
 
 class _PastQuestionsBoardView extends HookWidget {
-  const _PastQuestionsBoardView({required this.userTrack});
+  const _PastQuestionsBoardView({
+    required this.userTrack,
+    this.initialSubject,
+  });
 
   final String userTrack;
+  final String? initialSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -86,14 +104,16 @@ class _PastQuestionsBoardView extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Q-Bank & CBT Drills',
-          style: typography.title2.bold.copyWith(color: colors.textPrimary),
+          style: typography.title2.bold.copyWith(color: colors.textPrimary, fontSize: 18),
         ),
+        centerTitle: true,
         actions: [
           BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
             builder: (context, state) {
@@ -133,86 +153,176 @@ class _PastQuestionsBoardView extends HookWidget {
           children: [
             Column(
               children: [
-                // 1. Hero Track & Practice Card
+                // 1. Hero Practice Card (Context-Aware, No Redundant Track Switcher)
                 _HeroTrackBanner(userTrack: userTrack),
 
-                // 2. Tailored Exam Category Filter
-                _TailoredExamCategoryBar(userTrack: userTrack),
-
-                // 3. Search & Subject Filter Row
+                // 2. Search Field with Year Filter Button
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-                  child: AppTextField(
-                    controller: searchController,
-                    hintText: 'Search topic, keyword or formula...',
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: colors.textSecondary,
-                      size: 20,
-                    ),
-                    onChanged: (query) {
-                      context.read<PastQuestionsBloc>().add(
-                            LoadPastQuestionsEvent(searchQuery: query),
-                          );
-                    },
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: searchController,
+                          hintText: 'Search questions, topics...',
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.textSecondary,
+                            size: 19,
+                          ),
+                          onChanged: (query) {
+                            context.read<PastQuestionsBloc>().add(
+                                  LoadPastQuestionsEvent(searchQuery: query),
+                                );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const _YearFilterButton(),
+                    ],
                   ),
                 ),
 
-                // 4. Subject & Year Pills
-                const _SubjectAndYearFilterRow(),
-                const SizedBox(height: 6),
+                // 3. Subject Selector Bar
+                const _SubjectFilterBar(),
+                const SizedBox(height: 8),
 
-                // 5. Questions Feed
+                // 4. Questions Feed
                 Expanded(
                   child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
                     builder: (context, state) {
+                      // Only Shimmer Loading (No Double Loader)
                       if (state.status == PastQuestionsStatus.loading) {
                         return ListView(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                           children: const [
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24),
-                                child: AppLogoLoader(
-                                  size: 56,
-                                  message: 'Loading official past questions...',
-                                ),
-                              ),
-                            ),
-                            ShimmerPlaceholder(height: 160, borderRadius: 20),
-                            SizedBox(height: 14),
-                            ShimmerPlaceholder(height: 160, borderRadius: 20),
+                            ShimmerPlaceholder(height: 150, borderRadius: 18),
+                            SizedBox(height: 12),
+                            ShimmerPlaceholder(height: 150, borderRadius: 18),
+                            SizedBox(height: 12),
+                            ShimmerPlaceholder(height: 150, borderRadius: 18),
                           ],
                         );
                       }
 
                       if (state.questions.isEmpty) {
+                        final isSpecificYear = state.selectedYear != null;
+                        final targetSubject = state.selectedSubject != 'All'
+                            ? state.selectedSubject
+                            : (state.availableSubjects.isNotEmpty
+                                ? state.availableSubjects.first
+                                : 'Mathematics');
+
+                        final syllabotPrompt =
+                            'Please generate 5 official-style ${state.selectedExam.displayName} practice questions for $targetSubject right now. '
+                            'For each question, provide 4 options labeled A, B, C, and D, clearly indicate the correct answer, and explain the step-by-step solution.';
+
                         return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.menu_book_rounded,
-                                  size: 48,
-                                  color: colors.textSecondary.withAlpha(120),
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(isDark ? 35 : 18),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.auto_stories_outlined,
+                                    size: 38,
+                                    color: colors.primary,
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Text(
-                                  'No Past Questions Found',
+                                  isSpecificYear
+                                      ? 'No ${state.selectedYear} Past Questions Found'
+                                      : 'No Past Questions for $targetSubject',
+                                  textAlign: TextAlign.center,
                                   style: typography.title3.bold.copyWith(
                                     color: colors.textPrimary,
+                                    fontSize: 16.5,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Try selecting a different subject or clearing your search filters.',
+                                  isSpecificYear
+                                      ? 'Official ${state.selectedYear} past papers for $targetSubject are currently syncing. You can generate practice questions with Syllabot AI or select all years.'
+                                      : 'Verified exam questions for $targetSubject are being loaded. Practice immediately with Syllabot AI or explore other subjects.',
                                   textAlign: TextAlign.center,
                                   style: typography.footnote.regular.copyWith(
                                     color: colors.textSecondary,
+                                    fontSize: 12.5,
+                                    height: 1.4,
                                   ),
                                 ),
+                                const SizedBox(height: 22),
+                                ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.light();
+                                    unawaited(
+                                      context.router.push(
+                                        SyllabotChatRoute(
+                                          initialPrompt: syllabotPrompt,
+                                          initialMode: SocraticMode.examSim,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(80),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.auto_awesome_rounded,
+                                          size: 16,
+                                          color: colors.white,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Generate AI Practice Questions',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (isSpecificYear) ...[
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      AppFeedback.selection();
+                                      context.read<PastQuestionsBloc>().add(
+                                            const ChangeYearEvent(null),
+                                          );
+                                    },
+                                    child: Text(
+                                      'Switch to Random / All Years',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -265,9 +375,10 @@ class _HeroTrackBanner extends StatelessWidget {
     return BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
       builder: (context, state) {
         final exam = state.selectedExam;
+        final hasSubject = state.selectedSubject != 'All';
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -318,7 +429,9 @@ class _HeroTrackBanner extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              exam.displayName,
+                              hasSubject
+                                  ? '${exam.displayName} • ${state.selectedSubject}'
+                                  : exam.displayName,
                               style: typography.caption.bold.copyWith(
                                 color: colors.primary,
                                 fontSize: 11,
@@ -338,31 +451,34 @@ class _HeroTrackBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${exam.displayName} Official Question Bank',
+                    hasSubject
+                        ? '${state.selectedSubject} Question Bank'
+                        : '${exam.displayName} Official Question Bank',
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                       letterSpacing: -0.2,
+                      fontSize: 17,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
-                    'Practice real exam questions or simulate high-pressure CBT tests with instant analytics.',
+                    'Practice real exam questions, drill by specific year, or simulate timed CBT tests.',
                     style: typography.caption.regular.copyWith(
                       color: colors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 11.5,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: ShrinkableButton(
                           onTap: () => _showTestConfigSheet(context, state),
                           child: Container(
-                            height: 44,
+                            height: 42,
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(13),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(90),
@@ -384,7 +500,7 @@ class _HeroTrackBanner extends StatelessWidget {
                                   'Take CBT Practice Test',
                                   style: typography.callout.bold.copyWith(
                                     color: colors.white,
-                                    fontSize: 13.5,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],
@@ -402,179 +518,272 @@ class _HeroTrackBanner extends StatelessWidget {
       },
     );
   }
+}
 
-  void _showTestConfigSheet(BuildContext context, PastQuestionsState state) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
+void _showTestConfigSheet(BuildContext context, PastQuestionsState state) {
+  final colors = context.colors;
+  final typography = context.typography;
+  final isDark = context.isDarkMode;
 
-    var selectedCount = state.questions.length > 10 ? 10 : state.questions.length;
-    var isTimedMode = true;
+  final defaultYears = state.availableYears.isNotEmpty
+      ? state.availableYears
+      : const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
 
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        builder: (bottomSheetContext) {
+  var isRandomSelection = state.selectedYear == null;
+  var selectedYear = state.selectedYear ?? (defaultYears.isNotEmpty ? defaultYears.first : 2024);
+  var selectedCount = state.questions.length > 10 ? 10 : (state.questions.isEmpty ? 10 : state.questions.length);
+  var isTimedMode = true;
+
+  unawaited(
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final availableTotal = state.questions.length;
-
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 38,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.surfaceBorder,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Configure ${state.selectedExam.displayName} Test',
-                      style: typography.title3.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Select question count and test mode for this session.',
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Mode Selection
-                    Text(
-                      'Test Simulation Mode',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ModeOptionCard(
-                            title: 'Timed CBT Exam',
-                            subtitle: 'Strict timer & scoring',
-                            icon: Icons.timer_outlined,
-                            isSelected: isTimedMode,
-                            onTap: () => setSheetState(() => isTimedMode = true),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 38,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceBorder,
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ModeOptionCard(
-                            title: 'Self-Paced Drill',
-                            subtitle: 'Instant explanations',
-                            icon: Icons.school_outlined,
-                            isSelected: !isTimedMode,
-                            onTap: () => setSheetState(() => isTimedMode = false),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Question Count Pills
-                    Text(
-                      'Question Count',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [5, 10, 20, availableTotal].map((count) {
-                        if (count > availableTotal && count != availableTotal) {
-                          return const SizedBox.shrink();
-                        }
-                        final label = count == availableTotal ? 'All ($count)' : '$count Qs';
-                        final isSelected = selectedCount == count;
+                      const SizedBox(height: 14),
+                      Text(
+                        'Configure ${state.selectedExam.displayName} Test',
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 17,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Practice a specific past paper year or generate a randomized mock test.',
+                        style: typography.footnote.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(label),
-                            selected: isSelected,
-                            onSelected: (_) => setSheetState(() => selectedCount = count),
-                            selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
-                            backgroundColor: colors.surfaceSecondary.withAlpha(100),
-                            labelStyle: typography.caption.bold.copyWith(
-                              color: isSelected ? colors.primary : colors.textSecondary,
+                      // 1. Question Source: Random vs Exam Year
+                      Text(
+                        'Question Selection Mode',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ModeOptionCard(
+                              title: 'Random Mock',
+                              subtitle: 'Shuffle across all years',
+                              icon: Icons.shuffle_rounded,
+                              isSelected: isRandomSelection,
+                              onTap: () => setSheetState(() => isRandomSelection = true),
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ModeOptionCard(
+                              title: 'Specific Year',
+                              subtitle: 'Target an official paper',
+                              icon: Icons.calendar_today_rounded,
+                              isSelected: !isRandomSelection,
+                              onTap: () => setSheetState(() => isRandomSelection = false),
+                            ),
+                          ),
+                        ],
+                      ),
 
-                    // Launch CTA
-                    ShrinkableButton(
-                      onTap: availableTotal == 0
-                          ? null
-                          : () {
-                              Navigator.pop(bottomSheetContext);
-                              final testQuestions = state.questions
-                                  .take(selectedCount)
-                                  .map(QuizQuestionEntity.fromPastQuestion)
-                                  .toList();
-
-                              unawaited(
-                                context.router.push(
-                                  QuizWorkspaceRoute(
-                                    deckId: 'cbt_${state.selectedExam.code}',
-                                    deckTitle:
-                                        '${state.selectedExam.displayName} (${state.selectedSubject == 'All' ? 'General' : state.selectedSubject})',
-                                    subject: state.selectedSubject == 'All'
-                                        ? state.selectedExam.displayName
-                                        : state.selectedSubject,
-                                    durationMinutes: isTimedMode
-                                        ? (selectedCount * 1.5).round().clamp(5, 60)
-                                        : null,
-                                    initialQuestions: testQuestions,
+                      // If specific year selected, show year pills
+                      if (!isRandomSelection) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Select Exam Year',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: defaultYears.map((yr) {
+                              final isSelected = selectedYear == yr;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text('$yr'),
+                                  selected: isSelected,
+                                  onSelected: (_) => setSheetState(() => selectedYear = yr),
+                                  selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
+                                  backgroundColor: colors.surfaceSecondary.withAlpha(100),
+                                  labelStyle: typography.caption.bold.copyWith(
+                                    color: isSelected ? colors.primary : colors.textSecondary,
+                                    fontSize: 12,
                                   ),
                                 ),
                               );
-                            },
-                      child: Container(
-                        width: double.infinity,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(90),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                            }).toList(),
+                          ),
                         ),
-                        child: Center(
-                          child: Text(
-                            'Start Test ($selectedCount Questions)',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.white,
+                      ],
+
+                      const SizedBox(height: 16),
+
+                      // 2. Simulation Mode
+                      Text(
+                        'Test Simulation Mode',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ModeOptionCard(
+                              title: 'Timed CBT Exam',
+                              subtitle: 'Strict countdown & score',
+                              icon: Icons.timer_outlined,
+                              isSelected: isTimedMode,
+                              onTap: () => setSheetState(() => isTimedMode = true),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ModeOptionCard(
+                              title: 'Self-Paced Drill',
+                              subtitle: 'Instant answer reveal',
+                              icon: Icons.school_outlined,
+                              isSelected: !isTimedMode,
+                              onTap: () => setSheetState(() => isTimedMode = false),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3. Question Count Pills
+                      Text(
+                        'Question Count',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [5, 10, 20, 40].map((count) {
+                          final isSelected = selectedCount == count;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text('$count Qs'),
+                              selected: isSelected,
+                              onSelected: (_) => setSheetState(() => selectedCount = count),
+                              selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
+                              backgroundColor: colors.surfaceSecondary.withAlpha(100),
+                              labelStyle: typography.caption.bold.copyWith(
+                                color: isSelected ? colors.primary : colors.textSecondary,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // 4. Launch CTA
+                      ShrinkableButton(
+                        onTap: () {
+                          Navigator.pop(bottomSheetContext);
+
+                          // Pool questions
+                          var pool = List<PastQuestionEntity>.from(state.questions);
+                          if (!isRandomSelection) {
+                            final filtered = pool.where((q) => q.year == selectedYear).toList();
+                            if (filtered.isNotEmpty) {
+                              pool = filtered;
+                            }
+                          } else {
+                            pool.shuffle();
+                          }
+
+                          final count = selectedCount > pool.length && pool.isNotEmpty
+                              ? pool.length
+                              : selectedCount;
+
+                          final testQuestions = pool
+                              .take(count)
+                              .map(QuizQuestionEntity.fromPastQuestion)
+                              .toList();
+
+                          final testTitle = isRandomSelection
+                              ? '${state.selectedExam.displayName} Random CBT Mock'
+                              : '${state.selectedExam.displayName} $selectedYear Past Paper';
+
+                          unawaited(
+                            context.router.push(
+                              QuizWorkspaceRoute(
+                                deckId: 'cbt_${state.selectedExam.code}_${isRandomSelection ? "random" : selectedYear}',
+                                deckTitle: testTitle,
+                                subject: state.selectedSubject == 'All'
+                                    ? state.selectedExam.displayName
+                                    : state.selectedSubject,
+                                durationMinutes: isTimedMode
+                                    ? (count * 1.5).round().clamp(5, 90)
+                                    : null,
+                                initialQuestions: testQuestions,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withAlpha(90),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              isRandomSelection
+                                  ? 'Start Random CBT ($selectedCount Questions)'
+                                  : 'Start $selectedYear Past Paper ($selectedCount Qs)',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -583,7 +792,6 @@ class _HeroTrackBanner extends StatelessWidget {
       },
     ),
   );
-}
 }
 
 class _ModeOptionCard extends StatelessWidget {
@@ -658,154 +866,8 @@ class _ModeOptionCard extends StatelessWidget {
   }
 }
 
-class _TailoredExamCategoryBar extends StatelessWidget {
-  const _TailoredExamCategoryBar({required this.userTrack});
-
-  final String userTrack;
-
-  List<ExamCategory> _getTailoredCategories(String track) {
-    final upper = track.toUpperCase();
-    if (upper.contains('WAEC') || upper.contains('WASSCE')) {
-      return const [ExamCategory.waec, ExamCategory.jamb];
-    }
-    if (upper.contains('JAMB') || upper.contains('UTME')) {
-      return const [ExamCategory.jamb, ExamCategory.waec];
-    }
-    if (upper.contains('SAT')) {
-      return const [ExamCategory.sat, ExamCategory.toefl, ExamCategory.ielts];
-    }
-    return const [
-      ExamCategory.computerScience,
-      ExamCategory.medicine,
-      ExamCategory.law,
-      ExamCategory.engineering,
-      ExamCategory.business,
-      ExamCategory.waec,
-      ExamCategory.jamb,
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final tailored = _getTailoredCategories(userTrack);
-
-    return BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-      builder: (context, state) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          child: Row(
-            children: [
-              ...tailored.map((exam) {
-                final isSelected = state.selectedExam == exam;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<PastQuestionsBloc>().add(
-                            ChangeExamCategoryEvent(exam),
-                          );
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colors.primary
-                            : (isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfaceSecondary.withAlpha(90)),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected
-                              ? colors.primary
-                              : colors.surfaceBorder.withAlpha(100),
-                        ),
-                      ),
-                      child: Text(
-                        exam.displayName,
-                        style: typography.caption.bold.copyWith(
-                          color: isSelected ? colors.white : colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-
-              // Switch category popup / dropdown
-              PopupMenuButton<ExamCategory>(
-                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                onSelected: (cat) {
-                  context.read<PastQuestionsBloc>().add(
-                        ChangeExamCategoryEvent(cat),
-                      );
-                },
-                itemBuilder: (context) {
-                  return ExamCategory.values.map((cat) {
-                    return PopupMenuItem(
-                      value: cat,
-                      child: Text(
-                        cat.displayName,
-                        style: typography.callout.regular.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    );
-                  }).toList();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSecondary.withAlpha(80),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(80),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 14,
-                        color: colors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Other Tracks',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SubjectAndYearFilterRow extends StatelessWidget {
-  const _SubjectAndYearFilterRow();
+class _SubjectFilterBar extends StatelessWidget {
+  const _SubjectFilterBar();
 
   @override
   Widget build(BuildContext context) {
@@ -821,77 +883,160 @@ class _SubjectAndYearFilterRow extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           child: Row(
-            children: [
-              ...subjects.map((subj) {
-                final isSelected = state.selectedSubject == subj;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: FilterChip(
-                    label: Text(subj),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      context.read<PastQuestionsBloc>().add(
-                            ChangeSubjectEvent(subj),
-                          );
-                    },
-                    selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
-                    backgroundColor: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfaceSecondary.withAlpha(60),
-                    labelStyle: typography.caption.bold.copyWith(
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                      fontSize: 11.5,
-                    ),
-                    side: BorderSide(
-                      color: isSelected
-                          ? colors.primary
-                          : colors.surfaceBorder.withAlpha(80),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            children: subjects.map((subj) {
+              final isSelected = state.selectedSubject == subj;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: FilterChip(
+                  showCheckmark: false,
+                  label: Text(subj),
+                  selected: isSelected,
+                  onSelected: (_) {
+                    unawaited(HapticFeedback.selectionClick());
+                    context.read<PastQuestionsBloc>().add(
+                          ChangeSubjectEvent(subj),
+                        );
+                  },
+                  selectedColor: colors.primary,
+                  backgroundColor: isDark
+                      ? colors.surfaceSecondary.withAlpha(100)
+                      : colors.surfaceSecondary.withAlpha(60),
+                  labelStyle: typography.caption.bold.copyWith(
+                    color: isSelected ? colors.white : colors.textSecondary,
+                    fontSize: 12,
                   ),
-                );
-              }),
-              if (state.availableYears.isNotEmpty) ...[
-                Container(
-                  width: 1,
-                  height: 20,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: colors.surfaceBorder.withAlpha(120),
+                  side: BorderSide(
+                    color: isSelected
+                        ? colors.primary
+                        : colors.surfaceBorder.withAlpha(80),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                ...state.availableYears.map((yr) {
-                  final isSelected = state.selectedYear == yr;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: FilterChip(
-                      label: Text('$yr'),
-                      selected: isSelected,
-                      onSelected: (val) {
-                        context.read<PastQuestionsBloc>().add(
-                              ChangeYearEvent(val ? yr : null),
-                            );
-                      },
-                      selectedColor: colors.syllabotAccent.withAlpha(
-                        isDark ? 60 : 35,
-                      ),
-                      backgroundColor: isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfaceSecondary.withAlpha(60),
-                      labelStyle: typography.caption.bold.copyWith(
-                        color: isSelected
-                            ? colors.syllabotAccent
-                            : colors.textSecondary,
-                        fontSize: 11.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _YearFilterButton extends StatelessWidget {
+  const _YearFilterButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+      builder: (context, state) {
+        final defaultYears = state.availableYears.isNotEmpty
+            ? state.availableYears
+            : const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
+        final isSpecific = state.selectedYear != null;
+
+        return PopupMenuButton<int?>(
+          color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+            ),
+          ),
+          onSelected: (yr) {
+            unawaited(HapticFeedback.selectionClick());
+            context.read<PastQuestionsBloc>().add(ChangeYearEvent(yr));
+          },
+          itemBuilder: (context) {
+            return [
+              const PopupMenuItem<int?>(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.shuffle_rounded,
+                      size: 16,
                     ),
-                  );
-                }),
+                    SizedBox(width: 8),
+                    Text('All Years (Random)'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              ...defaultYears.map(
+                (yr) => PopupMenuItem<int?>(
+                  value: yr,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: state.selectedYear == yr
+                            ? colors.primary
+                            : colors.textSecondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$yr Exam Paper',
+                        style: typography.callout.medium.copyWith(
+                          color: state.selectedYear == yr
+                              ? colors.primary
+                              : colors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ];
+          },
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: isSpecific
+                  ? colors.primary.withAlpha(isDark ? 45 : 20)
+                  : (isDark
+                      ? colors.surfaceSecondary.withAlpha(120)
+                      : colors.surfacePrimary),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSpecific
+                    ? colors.primary
+                    : colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                width: isSpecific ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isSpecific
+                      ? Icons.calendar_today_rounded
+                      : Icons.tune_rounded,
+                  size: 15,
+                  color: isSpecific ? colors.primary : colors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isSpecific ? '${state.selectedYear}' : 'Year: All',
+                  style: typography.caption.bold.copyWith(
+                    color: isSpecific ? colors.primary : colors.textPrimary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: isSpecific ? colors.primary : colors.textSecondary,
+                ),
               ],
-            ],
+            ),
           ),
         );
       },
@@ -1327,27 +1472,7 @@ class _FloatingTestDock extends StatelessWidget {
                     ),
                   ),
                   ShrinkableButton(
-                    onTap: () {
-                      final testQuestions = state.questions
-                          .take(10)
-                          .map(QuizQuestionEntity.fromPastQuestion)
-                          .toList();
-
-                      unawaited(
-                        context.router.push(
-                          QuizWorkspaceRoute(
-                            deckId: 'cbt_${state.selectedExam.code}',
-                            deckTitle:
-                                '${state.selectedExam.displayName} CBT Test',
-                            subject: state.selectedSubject == 'All'
-                                ? state.selectedExam.displayName
-                                : state.selectedSubject,
-                            durationMinutes: 15,
-                            initialQuestions: testQuestions,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => _showTestConfigSheet(context, state),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
