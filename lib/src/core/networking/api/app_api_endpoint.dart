@@ -82,4 +82,14 @@ class AppApiEndpoint {
 
   // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';
+
+  // Push Notifications & Device Tokens
+  static const String registerDeviceTokenRpc =
+      '/rest/v1/rpc/register_device_token';
+  static const String notificationPreferences =
+      '/rest/v1/notification_preferences';
+  static const String notificationsInbox =
+      '/rest/v1/notifications?order=created_at.desc';
+  static const String triggerNotifications =
+      '/functions/v1/trigger-notifications';
 }

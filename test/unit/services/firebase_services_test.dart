@@ -152,6 +152,25 @@ void main() {
       final settings = await notificationService.requestPermission();
       expect(settings, isNull);
     });
+
+    test('syncDeviceTokenWithBackend returns false gracefully when no token or offline', () async {
+      final synced = await notificationService.syncDeviceTokenWithBackend(
+        userId: 'test-user-uuid',
+      );
+      expect(synced, isFalse);
+    });
+
+    test('scheduleDailyStudyReminder executes safely in test environment', () async {
+      await expectLater(
+        notificationService.scheduleDailyStudyReminder(
+          id: 101,
+          title: 'Daily Review',
+          body: 'Time to study!',
+          payload: '/study-session',
+        ),
+        completes,
+      );
+    });
   });
 
   group('SocialAuthService Tests', () {

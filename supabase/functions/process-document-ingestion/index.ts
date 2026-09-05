@@ -157,6 +157,31 @@ serve(async (req: Request) => {
       console.warn("[IngestionWorker] Realtime broadcast error:", wsErr);
     }
 
+    // 6. Trigger Push Notification to User's Phone
+    try {
+      const pushUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
+      await fetch(pushUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseServiceKey || supabaseAnonKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          title: "✨ Your flashcards are ready!",
+          body: `Syllabot synthesized ${chunks.length} sections into study cards. Tap to start learning!`,
+          category: "ai_ingestion",
+          data: {
+            documentId,
+            courseCode: courseCode ?? "",
+            route: "/deck-detail",
+          },
+        }),
+      });
+    } catch (pushErr) {
+      console.warn("[IngestionWorker] Push notification dispatch note:", pushErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

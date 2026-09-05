@@ -4,9 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -21,8 +25,18 @@ class AppPreferencesPage extends HookWidget {
     final l10n = context.l10n;
     final themeMode = context.watch<ThemeCubit>().state.themeMode;
 
+    LocalStorageService? localStorage;
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        localStorage = locator<LocalStorageService>();
+      }
+    } on Object catch (_) {}
+
+    final initialReminders =
+        localStorage?.getPreference(key: 'study_reminders_enabled') != 'false';
+
     final haptics = useState<bool>(AppFeedback.isHapticsEnabled);
-    final notifications = useState<bool>(true);
+    final notifications = useState<bool>(initialReminders);
     final soundEffects = useState<bool>(true);
 
     return Scaffold(
@@ -242,6 +256,31 @@ class AppPreferencesPage extends HookWidget {
                       onChanged: (val) {
                         AppFeedback.selection();
                         notifications.value = val;
+                        if (localStorage != null) {
+                          unawaited(
+                            localStorage.savePreference(
+                              key: 'study_reminders_enabled',
+                              data: val.toString(),
+                            ),
+                          );
+                        }
+                        try {
+                          if (locator.isRegistered<ProfileApiClient>()) {
+                            final authState = context.read<AuthBloc>().state;
+                            final userId =
+                                authState.user?.id ?? authState.userProfile?.id;
+                            if (authState.isAuthenticated && userId != null) {
+                              unawaited(
+                                locator<ProfileApiClient>()
+                                    .updateNotificationPreferences(
+                                  userId: userId,
+                                  studyReminders: val,
+                                  streakAlerts: val,
+                                ),
+                              );
+                            }
+                          }
+                        } on Object catch (_) {}
                       },
                     ),
                   ],

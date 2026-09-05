@@ -84,8 +84,17 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
     }
   }
 
+  bool _isDismissReported = false;
+
+  void _notifyDismissed() {
+    if (!_isDismissReported) {
+      _isDismissReported = true;
+      widget.onDismissed?.call();
+    }
+  }
+
   void _close() {
-    widget.onDismissed?.call();
+    _notifyDismissed();
     Navigator.of(context).pop();
   }
 
@@ -129,10 +138,16 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
 
     final isLast = _currentIndex == slides.length - 1;
 
-    return Dialog(
-      backgroundColor: colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          _notifyDismissed();
+        }
+      },
+      child: Dialog(
+        backgroundColor: colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Container(
         constraints: const BoxConstraints(maxWidth: 440),
         decoration: BoxDecoration(
           color: colors.surfacePrimary,
@@ -387,6 +402,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

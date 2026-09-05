@@ -153,4 +153,49 @@ class ProfileApiClient {
       );
     }
   }
+
+  /// Updates user push notification preferences in Supabase.
+  Future<void> updateNotificationPreferences({
+    required String userId,
+    bool? studyReminders,
+    bool? streakAlerts,
+    bool? examAlerts,
+    bool? socialAlerts,
+    bool? aiIngestionAlerts,
+  }) async {
+    final data = <String, dynamic>{
+      'study_reminders': ?studyReminders,
+      'streak_alerts': ?streakAlerts,
+      'exam_alerts': ?examAlerts,
+      'social_alerts': ?socialAlerts,
+      'ai_ingestion_alerts': ?aiIngestionAlerts,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (userId.isNotEmpty && data.isNotEmpty) {
+      await _dio.patch<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.notificationPreferences}?user_id=eq.$userId',
+        data: data,
+      );
+    }
+  }
+
+  /// Fetches current notification preferences for user.
+  Future<Map<String, dynamic>?> getNotificationPreferences({
+    required String userId,
+  }) async {
+    if (userId.isEmpty) return null;
+    try {
+      final res = await _dio.get<List<dynamic>>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.notificationPreferences}?user_id=eq.$userId&select=*',
+      );
+      final list = res.data;
+      if (list != null && list.isNotEmpty) {
+        return list.first as Map<String, dynamic>;
+      }
+      return null;
+    } on Object {
+      return null;
+    }
+  }
 }

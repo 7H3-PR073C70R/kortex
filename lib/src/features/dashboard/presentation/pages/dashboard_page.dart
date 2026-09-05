@@ -75,13 +75,11 @@ class _DashboardView extends HookWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final storage = locator<LocalStorageService>();
-        final isNewlyRegistered =
-            storage.getPreference(key: PrefKeys.isNewlyRegistered) == 'true';
         final hasSeenWelcome =
             storage.getPreference(key: PrefKeys.hasSeenWelcomeWalkthrough) ==
             'true';
 
-        if (isNewlyRegistered && !hasSeenWelcome && context.mounted) {
+        if (!hasSeenWelcome && context.mounted) {
           confettiController.play();
           unawaited(
             showDialog<void>(
@@ -92,11 +90,6 @@ class _DashboardView extends HookWidget {
                     storage.savePreference(
                       key: PrefKeys.hasSeenWelcomeWalkthrough,
                       data: 'true',
-                    ),
-                  );
-                  unawaited(
-                    storage.deletePreference(
-                      key: PrefKeys.isNewlyRegistered,
                     ),
                   );
                 },

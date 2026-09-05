@@ -8,6 +8,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -206,6 +207,47 @@ class HeaderProfileBar extends StatelessWidget {
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Walkthrough Tour Shortcut
+                Semantics(
+                  button: true,
+                  label: 'Feature Walkthrough',
+                  child: Tooltip(
+                    message: 'Feature Walkthrough',
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        unawaited(
+                          showDialog<void>(
+                            context: context,
+                            builder: (_) => const WelcomeWalkthroughDialog(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(160)
+                              : colors.surfacePrimary.withAlpha(210),
+                          border: Border.all(
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(70)
+                                : colors.surfaceBorder.withAlpha(130),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.explore_rounded,
+                          size: 18,
+                          color: colors.syllabotAccent,
                         ),
                       ),
                     ),

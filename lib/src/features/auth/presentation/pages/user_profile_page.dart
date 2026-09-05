@@ -19,6 +19,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
@@ -633,7 +634,27 @@ class UserProfilePage extends HookWidget {
             showDivider: true,
           ),
 
-          // 7. About, Support & Community
+          // 7. Interactive Feature Walkthrough
+          _buildNavTile(
+            context: context,
+            icon: Icons.explore_rounded,
+            iconColor: colors.syllabotAccent,
+            title: 'Feature Walkthrough & Guide',
+            subtitle: 'Replay the 4-step interactive onboarding tour',
+            onTap: () {
+              unawaited(
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => const WelcomeWalkthroughDialog(),
+                ),
+              );
+            },
+            colors: colors,
+            typography: typography,
+            showDivider: true,
+          ),
+
+          // 8. About, Support & Community
           _buildNavTile(
             context: context,
             icon: Icons.info_outline_rounded,

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -159,6 +161,22 @@ class AboutSupportPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Resources & Community Links
+            _buildLinkCard(
+              icon: Icons.explore_rounded,
+              title: 'Feature Walkthrough & Guide',
+              subtitle: 'Replay the 4-step interactive onboarding tour',
+              onTap: () {
+                unawaited(
+                  showDialog<void>(
+                    context: context,
+                    builder: (_) => const WelcomeWalkthroughDialog(),
+                  ),
+                );
+              },
+              colors: colors,
+              typography: typography,
+            ),
+            const SizedBox(height: 12),
             _buildLinkCard(
               icon: Icons.forum_rounded,
               title: 'Community Discord & Study Rooms',

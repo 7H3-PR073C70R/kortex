@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -198,6 +199,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: 'true',
               ),
             );
+            unawaited(
+              locator<LocalStorageService>().deletePreference(
+                key: PrefKeys.hasSeenWelcomeWalkthrough,
+              ),
+            );
             emit(
               state.copyWith(
                 status: AuthStatus.needsOnboarding,
@@ -257,6 +263,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             locator<LocalStorageService>().savePreference(
               key: PrefKeys.isNewlyRegistered,
               data: 'true',
+            ),
+          );
+          unawaited(
+            locator<LocalStorageService>().deletePreference(
+              key: PrefKeys.hasSeenWelcomeWalkthrough,
             ),
           );
           emit(
@@ -397,6 +408,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 : AuthSessionStatus.authenticatedNeedsOnboarding,
           ),
         );
+        try {
+          unawaited(
+            locator<NotificationService>()
+                .syncDeviceTokenWithBackend(userId: profile.id),
+          );
+        } on Object catch (_) {}
       },
     );
   }
@@ -512,6 +529,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    try {
+      await locator<LocalStorageService>().deletePreference(
+        key: PrefKeys.hasSeenWelcomeWalkthrough,
+      );
+      await locator<LocalStorageService>().deletePreference(
+        key: PrefKeys.isNewlyRegistered,
+      );
+    } on Object catch (_) {}
     await _authRepository.signOut();
     emit(
       const AuthState(
