@@ -66,6 +66,7 @@ void _initServices() {
       () => CalibrationCubit(
         saveCalibrationProfileUseCase: locator<SaveCalibrationProfileUseCase>(),
         autoCurateExamCoursesUseCase: locator<AutoCurateExamCoursesUseCase>(),
+        curriculumRepository: locator<CurriculumRepository>(),
       ),
     )
     ..registerFactory<ContentRecommendationCubit>(

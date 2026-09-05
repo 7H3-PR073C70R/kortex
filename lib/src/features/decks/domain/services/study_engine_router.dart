@@ -6,6 +6,7 @@ import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/decks/data/services/local_inference_isolate_manager.dart';
 import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
+import 'package:kortex/src/features/offline_ai/domain/logic/experimental_offline_guard.dart';
 
 enum StudyEngineExecutionMode {
   cloudRemote,
@@ -73,15 +74,19 @@ class StudyEngineRouter {
     Connectivity? connectivity,
     OfflineModelInstaller? modelInstaller,
     LocalInferenceIsolateManager? isolateManager,
+    ExperimentalOfflineGuard? offlineGuard,
     Dio? dio,
   }) : _connectivity = connectivity ?? Connectivity(),
        _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
+       _offlineGuard = offlineGuard ??
+           ExperimentalOfflineGuard(connectivity: connectivity),
        _dio = dio ?? Dio();
 
   final Connectivity _connectivity;
   final OfflineModelInstaller _modelInstaller;
   final LocalInferenceIsolateManager _isolateManager;
+  final ExperimentalOfflineGuard _offlineGuard;
   final Dio _dio;
 
   static const String offlineModelMissingPrompt =
@@ -139,22 +144,37 @@ class StudyEngineRouter {
         'Fllama Isolate...',
       );
       final modelPath = await _modelInstaller.getModelPath();
-      final rawCards = await _isolateManager.executeChunkedInference(
-        modelPath: modelPath,
-        topic: topic,
-        sourceText: sourceText,
-      );
 
-      final cards = rawCards
-          .map(GeneratedFlashcard.fromJson)
-          .take(count)
-          .toList();
+      return _offlineGuard.guardAction<StudyPackResult>(
+        action: () async {
+          final rawCards = await _isolateManager.executeChunkedInference(
+            modelPath: modelPath,
+            topic: topic,
+            sourceText: sourceText,
+          );
 
-      return StudyPackResult(
-        cards: cards.isNotEmpty
-            ? cards
-            : _createSyntheticLocalCards(topic, count),
-        executionMode: StudyEngineExecutionMode.offlineOnDevice,
+          final cards = rawCards
+              .map(GeneratedFlashcard.fromJson)
+              .take(count)
+              .toList();
+
+          return StudyPackResult(
+            cards: cards.isNotEmpty
+                ? cards
+                : _createSyntheticLocalCards(topic, count),
+            executionMode: StudyEngineExecutionMode.offlineOnDevice,
+          );
+        },
+        onFallback: (fallbackReason) {
+          debugPrint(
+            '[StudyEngineRouter] Heavy offline task guarded: $fallbackReason',
+          );
+          return StudyPackResult(
+            cards: _createSyntheticLocalCards(topic, count),
+            executionMode: StudyEngineExecutionMode.offlineOnDevice,
+            userMessage: fallbackReason,
+          );
+        },
       );
     }
 

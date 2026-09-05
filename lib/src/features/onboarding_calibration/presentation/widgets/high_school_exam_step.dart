@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_option_chip.dart';
+import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/curriculum_icon_resolver.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 /// Question B2: Target standardized examination.
@@ -15,44 +16,50 @@ class HighSchoolExamStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedExam = context
-        .watch<CalibrationCubit>()
-        .state
-        .profile
-        .highSchoolExam;
+    final state = context.watch<CalibrationCubit>().state;
+    final selectedExam = state.profile.highSchoolExam;
+    final backendExams = state.standardizedExams;
 
-    final exams = [
-      (
-        l10n.calibrationExamJAMB,
-        'Unified Tertiary Matriculation Examination',
-        Icons.quiz_rounded,
-      ),
-      (
-        l10n.calibrationExamWAEC,
-        'West African Senior School Certificate Examination',
-        Icons.school_rounded,
-      ),
-      (
-        l10n.calibrationExamNECO,
-        'National Examination Council Senior School Certificate',
-        Icons.assignment_turned_in_rounded,
-      ),
-      (
-        l10n.calibrationExamSAT,
-        'College Board SAT Reasoning & Subject Tests',
-        Icons.public_rounded,
-      ),
-      (
-        l10n.calibrationExamIGCSE,
-        'Cambridge IGCSE, AS & A-Levels Syllabus',
-        Icons.military_tech_rounded,
-      ),
-      (
-        l10n.calibrationExamIELTS,
-        'English Language Proficiency Certification',
-        Icons.translate_rounded,
-      ),
-    ];
+    final exams = backendExams.isNotEmpty
+        ? backendExams.map((e) {
+            return (
+              e.displayName,
+              e.subtitle,
+              resolveCurriculumIcon(e.iconName, Icons.quiz_rounded),
+            );
+          }).toList()
+        : [
+            (
+              l10n.calibrationExamJAMB,
+              'Unified Tertiary Matriculation Examination',
+              Icons.quiz_rounded,
+            ),
+            (
+              l10n.calibrationExamWAEC,
+              'West African Senior School Certificate Examination',
+              Icons.school_rounded,
+            ),
+            (
+              l10n.calibrationExamNECO,
+              'National Examination Council Senior School Certificate',
+              Icons.assignment_turned_in_rounded,
+            ),
+            (
+              l10n.calibrationExamSAT,
+              'College Board SAT Reasoning & Subject Tests',
+              Icons.public_rounded,
+            ),
+            (
+              l10n.calibrationExamIGCSE,
+              'Cambridge IGCSE, AS & A-Levels Syllabus',
+              Icons.military_tech_rounded,
+            ),
+            (
+              l10n.calibrationExamIELTS,
+              'English Language Proficiency Certification',
+              Icons.translate_rounded,
+            ),
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

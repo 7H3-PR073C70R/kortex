@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
-import 'package:kortex/src/features/quiz/presentation/pages/quiz_results_page.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accordion.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -15,7 +16,47 @@ class QuizWorkspacePage extends StatelessWidget {
   const QuizWorkspacePage({
     @PathParam('deckId') this.deckId = 'deck-default',
     @QueryParam('title') this.deckTitle,
+    this.subject,
+    this.durationMinutes,
     super.key,
+  });
+
+  final String deckId;
+  final String? deckTitle;
+  final String? subject;
+  final int? durationMinutes;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget view = _QuizWorkspaceView(
+      deckId: deckId,
+      deckTitle: deckTitle ?? subject,
+    );
+    try {
+      context.read<QuizSessionCubit>();
+    } on Object {
+      view = BlocProvider<QuizSessionCubit>(
+        create: (_) {
+          final cubit = locator<QuizSessionCubit>();
+          unawaited(
+            cubit.startQuizFromDeck(
+              deckId: deckId,
+              deckTitle: deckTitle ?? subject ?? 'Practice Quiz',
+            ),
+          );
+          return cubit;
+        },
+        child: view,
+      );
+    }
+    return view;
+  }
+}
+
+class _QuizWorkspaceView extends StatelessWidget {
+  const _QuizWorkspaceView({
+    required this.deckId,
+    this.deckTitle,
   });
 
   final String deckId;
@@ -33,10 +74,8 @@ class QuizWorkspacePage extends StatelessWidget {
         if (state.status == QuizSessionStatus.completed &&
             state.result != null) {
           unawaited(
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute<void>(
-                builder: (_) => QuizResultsPage(result: state.result!),
-              ),
+            context.router.replace(
+              QuizResultsRoute(result: state.result!),
             ),
           );
         }

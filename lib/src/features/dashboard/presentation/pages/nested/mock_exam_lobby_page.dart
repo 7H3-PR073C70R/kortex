@@ -209,13 +209,17 @@ class MockExamLobbyPage extends HookWidget {
                 onTap: () {
                   unawaited(HapticFeedback.lightImpact());
                   final selectedMode =
-                      simulationModes[selectedModeIndex.value].title;
+                      simulationModes[selectedModeIndex.value];
+                  final duration = selectedModeIndex.value == 0
+                      ? 45
+                      : (selectedModeIndex.value == 1 ? 30 : 15);
                   unawaited(
                     context.router.push(
-                      SyllabotChatRoute(
-                        initialPrompt:
-                            'Launch mock exam simulator for '
-                            '$examName in $selectedMode mode.',
+                      QuizWorkspaceRoute(
+                        deckId: examId,
+                        deckTitle: '$examName (${selectedMode.title})',
+                        subject: examName,
+                        durationMinutes: duration,
                       ),
                     ),
                   );

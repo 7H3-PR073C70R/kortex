@@ -23,7 +23,6 @@ import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.da
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
-import 'package:kortex/src/features/profile/presentation/pages/two_factor_setup_page.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -741,10 +740,8 @@ class SecuritySettingsPage extends HookWidget {
     final email =
         context.read<AuthBloc>().state.userProfile?.email ??
         'scholar@kortexify.com';
-    final success = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => TwoFactorSetupPage(email: email),
-      ),
+    final success = await context.router.push<bool>(
+      TwoFactorSetupRoute(email: email),
     );
     if (success == true) {
       twoFactorEnabled.value = true;

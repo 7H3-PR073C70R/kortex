@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/entities/curriculum_metadata_entity.dart';
 
 enum CalibrationStatus {
   initial,
@@ -17,6 +18,7 @@ class CalibrationState extends Equatable {
     this.profile = const CalibrationProfile(),
     this.errorMessage,
     this.isForwardTrajectory = true,
+    this.curriculumMetadata = const {},
   });
 
   final CalibrationStatus status;
@@ -24,6 +26,22 @@ class CalibrationState extends Equatable {
   final CalibrationProfile profile;
   final String? errorMessage;
   final bool isForwardTrajectory;
+  final Map<String, List<CurriculumMetadataEntity>> curriculumMetadata;
+
+  List<CurriculumMetadataEntity> get standardizedExams =>
+      curriculumMetadata['standardized_exam'] ?? const [];
+
+  List<CurriculumMetadataEntity> get facultyTracks =>
+      curriculumMetadata['faculty_track'] ?? const [];
+
+  List<CurriculumMetadataEntity> get higherEdLevels =>
+      curriculumMetadata['higher_ed_level'] ?? const [];
+
+  List<CurriculumMetadataEntity> get studyGoals =>
+      curriculumMetadata['study_goal'] ?? const [];
+
+  List<CurriculumMetadataEntity> get highSchoolSubjects =>
+      curriculumMetadata['high_school_subject'] ?? const [];
 
   int get totalSteps => 4;
 
@@ -66,6 +84,7 @@ class CalibrationState extends Equatable {
     CalibrationProfile? profile,
     String? errorMessage,
     bool? isForwardTrajectory,
+    Map<String, List<CurriculumMetadataEntity>>? curriculumMetadata,
   }) {
     return CalibrationState(
       status: status ?? this.status,
@@ -73,6 +92,7 @@ class CalibrationState extends Equatable {
       profile: profile ?? this.profile,
       errorMessage: errorMessage,
       isForwardTrajectory: isForwardTrajectory ?? this.isForwardTrajectory,
+      curriculumMetadata: curriculumMetadata ?? this.curriculumMetadata,
     );
   }
 
@@ -83,5 +103,6 @@ class CalibrationState extends Equatable {
     profile,
     errorMessage,
     isForwardTrajectory,
+    curriculumMetadata,
   ];
 }

@@ -85,5 +85,10 @@ void _initDataSource() {
         profileApiClient: locator<ProfileApiClient>(),
         userStorage: locator<UserStorageService>(),
       ),
+    )
+    ..registerLazySingleton<CurriculumRemoteDataSource>(
+      () => CurriculumRemoteDataSourceImpl(
+        locator<Dio>(),
+      ),
     );
 }

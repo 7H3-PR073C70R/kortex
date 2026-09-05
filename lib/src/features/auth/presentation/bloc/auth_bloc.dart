@@ -16,6 +16,7 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
@@ -108,6 +109,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             userProfile: profile,
           ),
         );
+        if (profile.id.isNotEmpty) {
+          try {
+            unawaited(RevenueCatService.instance.init(profile.id));
+          } on Object catch (_) {}
+        }
       },
     );
   }
@@ -154,6 +160,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               user: user,
             ),
           );
+          if (user.id.isNotEmpty) {
+            try {
+              unawaited(RevenueCatService.instance.init(user.id));
+            } on Object catch (_) {}
+          }
           add(const AuthProfileFetchRequested());
         },
       );
@@ -320,6 +331,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               user: user,
             ),
           );
+          if (user.id.isNotEmpty) {
+            try {
+              unawaited(RevenueCatService.instance.init(user.id));
+            } on Object catch (_) {}
+          }
           add(const AuthProfileFetchRequested());
         },
       );
@@ -414,6 +430,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 .syncDeviceTokenWithBackend(userId: profile.id),
           );
         } on Object catch (_) {}
+        if (profile.id.isNotEmpty) {
+          try {
+            unawaited(RevenueCatService.instance.init(profile.id));
+          } on Object catch (_) {}
+        }
       },
     );
   }

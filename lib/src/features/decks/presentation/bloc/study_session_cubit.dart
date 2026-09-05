@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -166,6 +168,26 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       } on Object catch (_) {}
       try {
         locator<DashboardBloc>().add(const DashboardRefreshed());
+      } on Object catch (_) {}
+
+      // 5. Telemetry: Performance trace and Crashlytics completion metrics
+      try {
+        final crashlytics = locator<CrashlyticsService>();
+        unawaited(
+          crashlytics.log(
+            'Study session completed: deckId=${state.deckId}, cards=$totalReviewed, '
+            'duration=${state.elapsedSeconds}s, retention=$finalRetention',
+          ),
+        );
+        unawaited(crashlytics.setCustomKey('last_study_deck', state.deckId));
+        unawaited(crashlytics.setCustomKey('last_study_cards', totalReviewed));
+
+        final performance = locator<PerformanceService>();
+        final trace = performance.newTrace('study_session_completion')
+          ..putAttribute('deck_id', state.deckId)
+          ..setMetric('cards_reviewed', totalReviewed)
+          ..setMetric('duration_seconds', state.elapsedSeconds);
+        unawaited(trace.start().then((_) => trace.stop()));
       } on Object catch (_) {}
 
       emit(

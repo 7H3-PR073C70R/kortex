@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/auto_curate_exam_courses_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/curriculum_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
 
@@ -10,12 +11,27 @@ class CalibrationCubit extends Cubit<CalibrationState> {
   CalibrationCubit({
     required SaveCalibrationProfileUseCase saveCalibrationProfileUseCase,
     AutoCurateExamCoursesUseCase? autoCurateExamCoursesUseCase,
+    CurriculumRepository? curriculumRepository,
   }) : _saveCalibrationProfileUseCase = saveCalibrationProfileUseCase,
        _autoCurateExamCoursesUseCase = autoCurateExamCoursesUseCase,
-       super(const CalibrationState());
+       _curriculumRepository = curriculumRepository,
+       super(const CalibrationState()) {
+    unawaited(loadCurriculumMetadata());
+  }
 
   final SaveCalibrationProfileUseCase _saveCalibrationProfileUseCase;
   final AutoCurateExamCoursesUseCase? _autoCurateExamCoursesUseCase;
+  final CurriculumRepository? _curriculumRepository;
+
+  Future<void> loadCurriculumMetadata() async {
+    final repo = _curriculumRepository;
+    if (repo == null) return;
+    final result = await repo.getAllMetadata();
+    result.fold(
+      (_) {},
+      (metadata) => emit(state.copyWith(curriculumMetadata: metadata)),
+    );
+  }
 
   void setAcademicFocus(AcademicFocus focus) {
     emit(

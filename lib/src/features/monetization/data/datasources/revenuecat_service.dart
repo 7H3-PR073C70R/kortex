@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Multi-Platform RevenueCat In-App Purchase Service for Kortex.
@@ -20,7 +21,19 @@ class RevenueCatService {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  static bool _isPlaceholderKey(String key) {
+    if (key.trim().isEmpty) return true;
+    final lower = key.toLowerCase();
+    return lower.contains('your_') ||
+        lower.contains('placeholder') ||
+        lower.contains('todo') ||
+        lower == 'rcb_your_revenuecat_web_stripe_key' ||
+        lower == 'goog_your_play_console_key' ||
+        lower == 'appl_your_app_store_key';
+  }
+
   /// Initializes RevenueCat with the platform-specific API key and user ID.
+  /// Gracefully handles missing or placeholder API keys in development/tests.
   Future<void> init(String userId) async {
     if (_isInitialized) {
       // Log in the user if the ID changed
@@ -37,9 +50,10 @@ class RevenueCatService {
     }
 
     final apiKey = _resolveApiKey();
-    if (apiKey.isEmpty) {
+    if (_isPlaceholderKey(apiKey)) {
       debugPrint(
-        '[RevenueCatService] No API Key resolved for current platform',
+        '[RevenueCatService] Missing or placeholder API key ("$apiKey"). '
+        'Skipping Purchases configuration safely.',
       );
       return;
     }
@@ -59,14 +73,23 @@ class RevenueCatService {
 
   String _resolveApiKey() {
     if (kIsWeb) {
-      return _webApiKey;
+      final envKey = dotenv.isInitialized
+          ? dotenv.env['REVENUECAT_WEB_API_KEY']
+          : null;
+      return (envKey != null && envKey.isNotEmpty) ? envKey : _webApiKey;
     }
 
     try {
       if (Platform.isAndroid) {
-        return _androidApiKey;
+        final envKey = dotenv.isInitialized
+            ? dotenv.env['REVENUECAT_GOOGLE_API_KEY']
+            : null;
+        return (envKey != null && envKey.isNotEmpty) ? envKey : _androidApiKey;
       } else if (Platform.isIOS || Platform.isMacOS) {
-        return _appleApiKey;
+        final envKey = dotenv.isInitialized
+            ? dotenv.env['REVENUECAT_APPLE_API_KEY']
+            : null;
+        return (envKey != null && envKey.isNotEmpty) ? envKey : _appleApiKey;
       }
     } on Object {
       // Fallback for non-supported or desktop targets

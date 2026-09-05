@@ -20,7 +20,6 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
-import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/presentation/pages/about_support_page.dart';
@@ -81,11 +80,7 @@ class UserProfilePage extends HookWidget {
                 onTap: () {
                   AppFeedback.selection();
                   unawaited(
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PaywallScreen(),
-                      ),
-                    ),
+                    context.router.push(PaywallRoute()),
                   );
                 },
                 child: Container(
@@ -580,11 +575,7 @@ class UserProfilePage extends HookWidget {
             subtitle: 'Unlimited Syllabot AI, cloud sync & OCR',
             onTap: () {
               unawaited(
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PaywallScreen(),
-                  ),
-                ),
+                context.router.push(PaywallRoute()),
               );
             },
             colors: colors,

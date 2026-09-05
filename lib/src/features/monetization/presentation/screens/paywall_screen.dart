@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,6 +31,7 @@ class _ProFeatureItem {
 
 /// Full-Screen Membership & Kortexify Pro Tier Screen.
 /// Delivers an ultra-premium experience aligned with Kortex's dark aesthetic.
+@RoutePage(name: 'PaywallRoute')
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({
     super.key,

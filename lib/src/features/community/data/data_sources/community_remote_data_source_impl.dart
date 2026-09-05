@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
@@ -21,25 +23,46 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   final UserStorageService? _userStorage;
   final RealtimeClient _realtime;
 
+  CrashlyticsService? get _crashlyticsService {
+    try {
+      return locator<CrashlyticsService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
   // In-memory cache of replies per post, rebuilt from DB snapshots + WS events
   final Map<String, List<ForumReplyModel>> _replyCache = {};
   final Map<String, StreamController<List<ForumReplyModel>>> _replyControllers = {};
 
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
-    final params = <String, dynamic>{
-      'select': '*',
-      'order': 'created_at.desc',
-    };
-    if (category != null && category.isNotEmpty && category != 'All') {
-      params['category'] = 'eq.$category';
-    }
+    try {
+      final params = <String, dynamic>{
+        'select': '*',
+        'order': 'created_at.desc',
+      };
+      if (category != null && category.isNotEmpty && category != 'All') {
+        params['category'] = 'eq.$category';
+      }
 
-    final res = await _client.fetchStudyRooms(params);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-    return rawList
-        .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+      final res = await _client.fetchStudyRooms(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      return rawList
+          .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.fetchStudyRooms failed',
+          ),
+        );
+      }
+      rethrow;
+    }
   }
 
   @override

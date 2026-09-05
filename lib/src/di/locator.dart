@@ -108,8 +108,12 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_docu
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
+import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source.dart';
+import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source_impl.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/repositories/calibration_repository_impl.dart';
+import 'package:kortex/src/features/onboarding_calibration/data/repositories/curriculum_repository_impl.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/curriculum_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/get_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';

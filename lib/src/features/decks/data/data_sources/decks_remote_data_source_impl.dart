@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
@@ -19,6 +21,14 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   final UserStorageService? _userStorage;
   final Map<String, List<FlashcardModel>> _localDeckCards = {};
   final List<DeckModel> _localCreatedDecks = [];
+
+  CrashlyticsService? get _crashlyticsService {
+    try {
+      return locator<CrashlyticsService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
 
   @override
   Future<void> saveGeneratedDeck({
@@ -49,8 +59,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (userId.isNotEmpty) 'user_id': userId,
       };
       await _client.createDeckRecord(deckPayload);
-    } on Object catch (_) {
-      // Offline/Local continues gracefully
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason:
+                'DecksRemoteDataSource.createDeckRecord failed, proceeding offline',
+          ),
+        );
+      }
     }
 
     // Bulk Insert Associated Flashcards
@@ -77,8 +96,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       if (cardsPayload.isNotEmpty) {
         await _client.bulkInsertCards(cardsPayload);
       }
-    } on Object catch (_) {
-      // Offline/Local continues gracefully
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason:
+                'DecksRemoteDataSource.bulkInsertCards failed, proceeding offline',
+          ),
+        );
+      }
     }
   }
 
@@ -105,7 +133,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         ...updatedRemote,
       ];
       return merged;
-    } on Object catch (_) {
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason:
+                'DecksRemoteDataSource.getUserDecks failed, returning local cache',
+          ),
+        );
+      }
       return _localCreatedDecks;
     }
   }
@@ -122,7 +160,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         _localDeckCards[deckId] = cards;
         return cards;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'DecksRemoteDataSource.getDeckCards failed',
+          ),
+        );
+      }
+    }
     return _localDeckCards[deckId] ?? const [];
   }
 
@@ -164,7 +212,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           'p_quality': quality,
         }),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'DecksRemoteDataSource.processCardReview sync failed',
+          ),
+        );
+      }
+    }
 
     return localResult;
   }

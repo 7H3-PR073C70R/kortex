@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
@@ -21,6 +25,22 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   final Dio _dio;
   final UserStorageService? _userStorage;
   final DocumentParserService _parserService;
+
+  PerformanceService? get _performanceService {
+    try {
+      return locator<PerformanceService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  CrashlyticsService? get _crashlyticsService {
+    try {
+      return locator<CrashlyticsService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
 
   final Map<String, Uint8List> _documentBytesCache = {};
   final Map<String, String> _documentFilenamesCache = {};
@@ -94,6 +114,39 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String contentHash,
     void Function(double progress)? onProgress,
   }) async {
+    final performance = _performanceService;
+    if (performance != null) {
+      return performance.traceAction('document_upload', (trace) async {
+        trace
+          ..putAttribute('filename', filename)
+          ..putAttribute('file_type', fileType)
+          ..setMetric('file_size_bytes', fileBytes.lengthInBytes);
+        return _performUploadDocument(
+          filename: filename,
+          fileType: fileType,
+          fileBytes: fileBytes,
+          contentHash: contentHash,
+          onProgress: onProgress,
+        );
+      });
+    }
+
+    return _performUploadDocument(
+      filename: filename,
+      fileType: fileType,
+      fileBytes: fileBytes,
+      contentHash: contentHash,
+      onProgress: onProgress,
+    );
+  }
+
+  Future<DocumentUploadModel> _performUploadDocument({
+    required String filename,
+    required String fileType,
+    required Uint8List fileBytes,
+    required String contentHash,
+    void Function(double progress)? onProgress,
+  }) async {
     final docId = generateUuid();
     final ext = fileType.replaceAll('.', '');
     final storagePath = '$docId.$ext';
@@ -129,8 +182,18 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             }
           },
         );
-      } on Object catch (_) {
-        // Offline/Local deterministic storage continues smoothly
+      } on Object catch (e, stack) {
+        final crashlytics = _crashlyticsService;
+        if (crashlytics != null) {
+          unawaited(
+            crashlytics.recordError(
+              e,
+              stack,
+              reason:
+                  'Document storage upload error, proceeding with local cache',
+            ),
+          );
+        }
       }
     }
 
@@ -154,7 +217,17 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             list.first as Map<String, dynamic>,
           );
         }
-      } on Object catch (_) {
+      } on Object catch (e, stack) {
+        final crashlytics = _crashlyticsService;
+        if (crashlytics != null) {
+          unawaited(
+            crashlytics.recordError(
+              e,
+              stack,
+              reason: 'Document record insert error, attempting RPC reference',
+            ),
+          );
+        }
         // If RLS or DB rejects direct insert, attempt RPC or fallback
         try {
           final rpcResult = await findOrCreateDocumentReference(
@@ -199,6 +272,32 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String storagePath,
     required String fileType,
   }) async {
+    final performance = _performanceService;
+    if (performance != null) {
+      return performance.traceAction('document_ingestion_ocr', (trace) async {
+        trace
+          ..putAttribute('document_id', documentId)
+          ..putAttribute('file_type', fileType);
+        return _performProcessStemOcr(
+          documentId: documentId,
+          storagePath: storagePath,
+          fileType: fileType,
+        );
+      });
+    }
+
+    return _performProcessStemOcr(
+      documentId: documentId,
+      storagePath: storagePath,
+      fileType: fileType,
+    );
+  }
+
+  Future<List<OcrExtractionModel>> _performProcessStemOcr({
+    required String documentId,
+    required String storagePath,
+    required String fileType,
+  }) async {
     // Pre-extract text from cache if available so Edge function gets it immediately
     var fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
@@ -236,15 +335,37 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-    } on Object catch (_) {
-      // Remote function unavailable, parse directly from document bytes
+    } on Object catch (e, stack) {
+      final crashlytics = _crashlyticsService;
+      if (crashlytics != null) {
+        unawaited(
+          crashlytics.recordError(
+            e,
+            stack,
+            reason:
+                'Remote OCR Edge Function unavailable, fallback to local parsing',
+          ),
+        );
+      }
     }
 
     // 2. Try fetch from DB directly if available
     try {
       final snippets = await fetchExtractedSnippets(documentId);
       if (snippets.isNotEmpty) return snippets;
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      final crashlytics = _crashlyticsService;
+      if (crashlytics != null) {
+        unawaited(
+          crashlytics.recordError(
+            e,
+            stack,
+            reason:
+                'Fetching extracted snippets from DB failed, fallback to local parsing',
+          ),
+        );
+      }
+    }
 
     // 3. Document Parsing Engine: Extract text & images from uploaded document
 

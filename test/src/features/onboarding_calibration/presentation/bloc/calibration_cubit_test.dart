@@ -2,6 +2,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/entities/curriculum_metadata_entity.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/repositories/curriculum_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
@@ -106,5 +108,32 @@ void main() {
         ),
       ],
     );
+
+    test('loadCurriculumMetadata populates state with curriculum items', () async {
+      final mockRepo = MockCurriculumRepository();
+      const entity = CurriculumMetadataEntity(
+        id: 'exam-1',
+        category: 'standardized_exam',
+        key: 'jamb',
+        displayName: 'JAMB / UTME',
+      );
+      when(mockRepo.getAllMetadata).thenAnswer(
+        (_) async => const Right({
+          'standardized_exam': [entity],
+        }),
+      );
+
+      final cubit = CalibrationCubit(
+        saveCalibrationProfileUseCase: mockSaveUseCase,
+        curriculumRepository: mockRepo,
+      );
+
+      await cubit.loadCurriculumMetadata();
+
+      expect(cubit.state.standardizedExams.length, equals(1));
+      expect(cubit.state.standardizedExams.first.key, equals('jamb'));
+    });
   });
 }
+
+class MockCurriculumRepository extends Mock implements CurriculumRepository {}

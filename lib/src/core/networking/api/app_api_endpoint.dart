@@ -47,6 +47,8 @@ class AppApiEndpoint {
       '/rest/v1/rpc/sync_or_create_user_courses';
   static const String autoCurateExamRpc =
       '/rest/v1/rpc/auto_curate_exam_courses';
+  static const String curriculumMetadata =
+      '/rest/v1/app_curriculum_metadata?select=*&is_active=eq.true';
 
   // Decks & Flashcards Endpoints
   static const String decks = '/rest/v1/decks?select=*';

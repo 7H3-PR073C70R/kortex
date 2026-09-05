@@ -4,6 +4,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_option_chip.dart';
+import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/curriculum_icon_resolver.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 /// Question B3: Grouped subject checklist covering Science, Commercial,
@@ -17,89 +18,126 @@ class HighSchoolSubjectsStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedSubjects = context
-        .watch<CalibrationCubit>()
-        .state
-        .profile
-        .highSchoolSubjects;
+    final state = context.watch<CalibrationCubit>().state;
+    final selectedSubjects = state.profile.highSchoolSubjects;
+    final backendSubjects = state.highSchoolSubjects;
 
-    // ── Track groups ──────────────────────────────────────────────────────
-    final coreSubjects = [
-      (
-        l10n.calibrationSubjectCoreMath,
-        'Algebra, Geometry, Trigonometry, Statistics',
-        Icons.calculate_rounded,
-      ),
-      (
-        l10n.calibrationSubjectEnglish,
-        'Comprehension, Grammar, Essay Writing, Oral English',
-        Icons.spellcheck_rounded,
-      ),
-    ];
+    final List<(String, String, IconData)> coreSubjects;
+    final List<(String, String, IconData)> scienceSubjects;
+    final List<(String, String, IconData)> commercialSubjects;
+    final List<(String, String, IconData)> artsSubjects;
 
-    final scienceSubjects = [
-      (
-        l10n.calibrationSubjectPhysics,
-        'Mechanics, Optics, Waves, Electromagnetism, Modern Physics',
-        Icons.flash_on_rounded,
-      ),
-      (
-        l10n.calibrationSubjectChemistry,
-        'Inorganic, Organic Reactions, Stoichiometry, Electrolysis',
-        Icons.science_rounded,
-      ),
-      (
-        l10n.calibrationSubjectBiology,
-        'Cell Structure, Genetics, Ecology, Human Physiology',
-        Icons.biotech_rounded,
-      ),
-      (
-        l10n.calibrationSubjectFurtherMath,
-        'Calculus, Vectors, Matrices, Complex Numbers',
-        Icons.functions_rounded,
-      ),
-    ];
+    if (backendSubjects.isNotEmpty) {
+      coreSubjects = backendSubjects
+          .where((s) => s.track == 'core')
+          .map((s) => (
+                s.displayName,
+                s.subtitle,
+                resolveCurriculumIcon(s.iconName, Icons.calculate_rounded),
+              ))
+          .toList();
+      scienceSubjects = backendSubjects
+          .where((s) => s.track == 'science')
+          .map((s) => (
+                s.displayName,
+                s.subtitle,
+                resolveCurriculumIcon(s.iconName, Icons.science_rounded),
+              ))
+          .toList();
+      commercialSubjects = backendSubjects
+          .where((s) => s.track == 'commercial')
+          .map((s) => (
+                s.displayName,
+                s.subtitle,
+                resolveCurriculumIcon(s.iconName, Icons.store_rounded),
+              ))
+          .toList();
+      artsSubjects = backendSubjects
+          .where((s) => s.track == 'arts')
+          .map((s) => (
+                s.displayName,
+                s.subtitle,
+                resolveCurriculumIcon(s.iconName, Icons.menu_book_rounded),
+              ))
+          .toList();
+    } else {
+      coreSubjects = [
+        (
+          l10n.calibrationSubjectCoreMath,
+          'Algebra, Geometry, Trigonometry, Statistics',
+          Icons.calculate_rounded,
+        ),
+        (
+          l10n.calibrationSubjectEnglish,
+          'Comprehension, Grammar, Essay Writing, Oral English',
+          Icons.spellcheck_rounded,
+        ),
+      ];
 
-    final commercialSubjects = [
-      (
-        l10n.calibrationSubjectAccounting,
-        'Final Accounts, Ledgers, Trial Balance, Ratio Analysis',
-        Icons.account_balance_rounded,
-      ),
-      (
-        l10n.calibrationSubjectEconomics,
-        'Micro & Macro Economics, Demand & Supply, Trade Theory',
-        Icons.trending_up_rounded,
-      ),
-      (
-        l10n.calibrationSubjectCommerce,
-        'Trade, Banking, Insurance, Transport, Warehousing',
-        Icons.store_rounded,
-      ),
-    ];
+      scienceSubjects = [
+        (
+          l10n.calibrationSubjectPhysics,
+          'Mechanics, Optics, Waves, Electromagnetism, Modern Physics',
+          Icons.flash_on_rounded,
+        ),
+        (
+          l10n.calibrationSubjectChemistry,
+          'Inorganic, Organic Reactions, Stoichiometry, Electrolysis',
+          Icons.science_rounded,
+        ),
+        (
+          l10n.calibrationSubjectBiology,
+          'Cell Structure, Genetics, Ecology, Human Physiology',
+          Icons.biotech_rounded,
+        ),
+        (
+          l10n.calibrationSubjectFurtherMath,
+          'Calculus, Vectors, Matrices, Complex Numbers',
+          Icons.functions_rounded,
+        ),
+      ];
 
-    final artsSubjects = [
-      (
-        l10n.calibrationSubjectLiterature,
-        'Prose, Poetry, Drama — Set Texts & Critical Analysis',
-        Icons.menu_book_rounded,
-      ),
-      (
-        l10n.calibrationSubjectGovernment,
-        'Constitutions, Political Systems, Electoral Processes',
-        Icons.account_balance_wallet_rounded,
-      ),
-      (
-        l10n.calibrationSubjectHistory,
-        'West African, Nigerian & World History, Colonialism',
-        Icons.history_edu_rounded,
-      ),
-      (
-        l10n.calibrationSubjectCRK,
-        'Old & New Testament Studies, Christian Ethics, Church History',
-        Icons.church_rounded,
-      ),
-    ];
+      commercialSubjects = [
+        (
+          l10n.calibrationSubjectAccounting,
+          'Final Accounts, Ledgers, Trial Balance, Ratio Analysis',
+          Icons.account_balance_rounded,
+        ),
+        (
+          l10n.calibrationSubjectEconomics,
+          'Micro & Macro Economics, Demand & Supply, Trade Theory',
+          Icons.trending_up_rounded,
+        ),
+        (
+          l10n.calibrationSubjectCommerce,
+          'Trade, Banking, Insurance, Transport, Warehousing',
+          Icons.store_rounded,
+        ),
+      ];
+
+      artsSubjects = [
+        (
+          l10n.calibrationSubjectLiterature,
+          'Prose, Poetry, Drama — Set Texts & Critical Analysis',
+          Icons.menu_book_rounded,
+        ),
+        (
+          l10n.calibrationSubjectGovernment,
+          'Constitutions, Political Systems, Electoral Processes',
+          Icons.account_balance_wallet_rounded,
+        ),
+        (
+          l10n.calibrationSubjectHistory,
+          'West African, Nigerian & World History, Colonialism',
+          Icons.history_edu_rounded,
+        ),
+        (
+          l10n.calibrationSubjectCRK,
+          'Old & New Testament Studies, Christian Ethics, Church History',
+          Icons.church_rounded,
+        ),
+      ];
+    }
 
     final exam =
         context.watch<CalibrationCubit>().state.profile.highSchoolExam ?? '';

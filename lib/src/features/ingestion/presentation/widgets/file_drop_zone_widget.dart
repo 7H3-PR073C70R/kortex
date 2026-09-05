@@ -11,7 +11,6 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -138,11 +137,7 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               unawaited(
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PaywallScreen(),
-                  ),
-                ),
+                context.router.push(PaywallRoute()),
               );
             },
           ),

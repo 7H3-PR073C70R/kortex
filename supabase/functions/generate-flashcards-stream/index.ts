@@ -18,6 +18,14 @@ interface GenerateFlashcardsRequest {
   difficulty?: "beginner" | "intermediate" | "advanced";
 }
 
+interface ParsedCard {
+  front: string;
+  back: string;
+  tags?: string[];
+  hints?: string;
+  explanation?: string;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -72,11 +80,12 @@ serve(async (req: Request) => {
 
     const body: GenerateFlashcardsRequest = await req.json().catch(() => ({}));
     const topic = body.topic || "Advanced Calculus & Linear Algebra";
-    const totalCount = Math.min(body.count ?? 20, 30);
+    const totalCount = Math.min(Math.max(body.count ?? 10, 3), 30);
     const deckId = body.deckId || `deck_${Date.now()}`;
     const difficulty = body.difficulty || "intermediate";
+    const sourceText = body.sourceText;
 
-    // 3. Sub-10-Second Time-to-Value SSE Streaming Pipeline
+    // 3. Genuine LLM Streaming Server-Sent Events (SSE) Pipeline
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -95,12 +104,12 @@ serve(async (req: Request) => {
           immediateThreshold: 3,
         });
 
-        // Generate synthetic or LLM-driven flashcards
         const generatedCards: Record<string, unknown>[] = [];
 
-        // PHASE 1: Immediate First 3 Flashcards (< 3 seconds time-to-value)
+        // PHASE 1: Immediate First 3 Seed Flashcards (< 3 seconds time-to-value killer loop)
         const initialCards = getSeedFlashcards(topic, difficulty);
-        for (let i = 0; i < Math.min(3, initialCards.length); i++) {
+        const seedCount = Math.min(3, totalCount, initialCards.length);
+        for (let i = 0; i < seedCount; i++) {
           const card = {
             id: `card_${deckId}_${i + 1}`,
             deckId,
@@ -108,6 +117,7 @@ serve(async (req: Request) => {
             front: initialCards[i].front,
             back: initialCards[i].back,
             explanation: initialCards[i].explanation,
+            hints: initialCards[i].explanation,
             tags: [topic, difficulty],
             createdAt: new Date().toISOString(),
             isImmediate: true,
@@ -121,35 +131,285 @@ serve(async (req: Request) => {
             targetCount: totalCount,
           });
 
-          // Small stagger for smooth rendering
-          await new Promise((r) => setTimeout(r, 80));
+          await new Promise((r) => setTimeout(r, 60));
         }
 
-        // PHASE 2: Background Streaming of Remaining Flashcards (up to totalCount)
-        for (let i = 3; i < totalCount; i++) {
-          await new Promise((r) => setTimeout(r, 120)); // Simulates stream generation cadence
+        // PHASE 2: Genuine LLM Streaming for Remaining Cards
+        const remainingCount = totalCount - generatedCards.length;
+        if (remainingCount > 0) {
+          const groqApiKey = Deno.env.get("GROQ_API_KEY") || "";
+          const geminiApiKey =
+            Deno.env.get("GEMINI_API_KEY") ||
+            Deno.env.get("GOOGLE_AI_API_KEY") ||
+            "";
+          const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
 
-          const card = {
-            id: `card_${deckId}_${i + 1}`,
-            deckId,
-            index: i + 1,
-            front: `Concept ${i + 1}: ${topic} - Application of Theorem ${i + 1}`,
-            back: `Detailed mathematical derivation: $$\\nabla \\cdot \\mathbf{F} = \\rho / \\varepsilon_0$$. Key insight: Conserved quantity in state space.`,
-            explanation: `Step ${i + 1}: Evaluate boundary conditions and solve for eigenvalues across the spectrum.`,
-            tags: [topic, difficulty],
-            createdAt: new Date().toISOString(),
-            isImmediate: false,
-          };
-          generatedCards.push(card);
+          let streamSuccess = false;
 
-          sendEvent("card", {
-            card,
-            isInitialBatch: false,
-            currentCount: generatedCards.length,
-            targetCount: totalCount,
-          });
+          const systemPrompt = `You are a world-class academic tutor and flashcard specialist.
+Generate high-quality, rigorous flashcards for the student.
+Topic: "${topic}"
+Difficulty: ${difficulty}
+${sourceText ? `Source Material: ${sourceText.slice(0, 3000)}` : ""}
+
+CRITICAL OUTPUT INSTRUCTIONS:
+- You must output exactly ${remainingCount} unique academic flashcards.
+- Output each flashcard on its OWN line as a standalone valid JSON object (Newline-Delimited JSON / NDJSON format).
+- Do NOT wrap the output in markdown codeblocks (no \`\`\` or \`\`\`json).
+- Do NOT output an outer array or commas between lines.
+- Each line MUST be a complete, parsable JSON object with the following schema:
+{"front": "Concept or Question", "back": "Mathematical definition or answer with LaTeX $$...$$", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
+
+          // Provider candidates
+          const providers = [
+            ...(groqApiKey
+              ? [
+                  {
+                    name: "Groq",
+                    url: "https://api.groq.com/openai/v1/chat/completions",
+                    key: groqApiKey,
+                    model: "llama-3.3-70b-versatile",
+                  },
+                ]
+              : []),
+            ...(geminiApiKey
+              ? [
+                  {
+                    name: "Gemini",
+                    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                    key: geminiApiKey,
+                    model: "gemini-1.5-flash",
+                  },
+                ]
+              : []),
+            ...(openaiApiKey
+              ? [
+                  {
+                    name: "OpenAI",
+                    url: "https://api.openai.com/v1/chat/completions",
+                    key: openaiApiKey,
+                    model: "gpt-4o-mini",
+                  },
+                ]
+              : []),
+          ];
+
+          for (const provider of providers) {
+            try {
+              console.log(`[generate-flashcards-stream] Streaming from ${provider.name} (${provider.model})...`);
+              const response = await fetch(provider.url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${provider.key}`,
+                },
+                body: JSON.stringify({
+                  model: provider.model,
+                  messages: [
+                    { role: "system", content: systemPrompt },
+                    {
+                      role: "user",
+                      content: `Generate ${remainingCount} flashcards in NDJSON format now.`,
+                    },
+                  ],
+                  stream: true,
+                  temperature: 0.3,
+                }),
+              });
+
+              if (!response.ok || !response.body) {
+                console.warn(
+                  `[generate-flashcards-stream] ${provider.name} responded with status ${response.status}`
+                );
+                continue;
+              }
+
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let sseBuffer = "";
+              let cardJsonBuffer = "";
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                sseBuffer += decoder.decode(value, { stream: true });
+                const lines = sseBuffer.split("\n");
+                sseBuffer = lines.pop() ?? "";
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed || trimmed.startsWith(":")) continue;
+                  if (trimmed === "data: [DONE]") break;
+
+                  if (trimmed.startsWith("data:")) {
+                    const jsonStr = trimmed.replace(/^data:\s*/, "");
+                    try {
+                      const parsed = JSON.parse(jsonStr);
+                      const deltaText =
+                        parsed.choices?.[0]?.delta?.content ??
+                        parsed.choices?.[0]?.delta?.text ??
+                        "";
+
+                      if (deltaText) {
+                        cardJsonBuffer += deltaText;
+
+                        // Process any complete lines in cardJsonBuffer
+                        while (cardJsonBuffer.includes("\n")) {
+                          const newlineIdx = cardJsonBuffer.indexOf("\n");
+                          const rawLine = cardJsonBuffer.slice(0, newlineIdx).trim();
+                          cardJsonBuffer = cardJsonBuffer.slice(newlineIdx + 1);
+
+                          if (!rawLine) continue;
+
+                          const cleanedLine = rawLine
+                            .replace(/^```json\s*/i, "")
+                            .replace(/^```\s*/, "")
+                            .replace(/```$/, "")
+                            .replace(/^,\s*/, "")
+                            .trim();
+
+                          if (!cleanedLine.startsWith("{")) continue;
+
+                          try {
+                            const parsedCard: ParsedCard = JSON.parse(cleanedLine);
+                            if (parsedCard.front && parsedCard.back) {
+                              const cardIndex = generatedCards.length + 1;
+                              const card = {
+                                id: `card_${deckId}_${cardIndex}`,
+                                deckId,
+                                index: cardIndex,
+                                front: parsedCard.front,
+                                back: parsedCard.back,
+                                explanation:
+                                  parsedCard.hints || parsedCard.explanation || "",
+                                hints:
+                                  parsedCard.hints || parsedCard.explanation || "",
+                                tags:
+                                  Array.isArray(parsedCard.tags) &&
+                                  parsedCard.tags.length > 0
+                                    ? parsedCard.tags
+                                    : [topic, difficulty],
+                                createdAt: new Date().toISOString(),
+                                isImmediate: false,
+                              };
+                              generatedCards.push(card);
+
+                              sendEvent("card", {
+                                card,
+                                isInitialBatch: false,
+                                currentCount: generatedCards.length,
+                                targetCount: totalCount,
+                              });
+
+                              if (generatedCards.length >= totalCount) {
+                                break;
+                              }
+                            }
+                          } catch {
+                            // Non-parsable line chunk, continue
+                          }
+                        }
+                      }
+                    } catch {
+                      // Non-json ping chunk
+                    }
+                  }
+                }
+
+                if (generatedCards.length >= totalCount) {
+                  break;
+                }
+              }
+
+              // Parse any trailing JSON block left in cardJsonBuffer
+              if (cardJsonBuffer.trim() && generatedCards.length < totalCount) {
+                const cleanedTrailing = cardJsonBuffer
+                  .trim()
+                  .replace(/^```json\s*/i, "")
+                  .replace(/^```\s*/, "")
+                  .replace(/```$/, "")
+                  .trim();
+                try {
+                  const parsedCard: ParsedCard = JSON.parse(cleanedTrailing);
+                  if (parsedCard.front && parsedCard.back) {
+                    const cardIndex = generatedCards.length + 1;
+                    const card = {
+                      id: `card_${deckId}_${cardIndex}`,
+                      deckId,
+                      index: cardIndex,
+                      front: parsedCard.front,
+                      back: parsedCard.back,
+                      explanation:
+                        parsedCard.hints || parsedCard.explanation || "",
+                      hints:
+                        parsedCard.hints || parsedCard.explanation || "",
+                      tags:
+                        Array.isArray(parsedCard.tags) && parsedCard.tags.length > 0
+                          ? parsedCard.tags
+                          : [topic, difficulty],
+                      createdAt: new Date().toISOString(),
+                      isImmediate: false,
+                    };
+                    generatedCards.push(card);
+
+                    sendEvent("card", {
+                      card,
+                      isInitialBatch: false,
+                      currentCount: generatedCards.length,
+                      targetCount: totalCount,
+                    });
+                  }
+                } catch {
+                  // Trailing snippet wasn't complete JSON
+                }
+              }
+
+              if (generatedCards.length >= seedCount + 1) {
+                streamSuccess = true;
+                break;
+              }
+            } catch (err) {
+              console.warn(`[generate-flashcards-stream] ${provider.name} stream error:`, err);
+            }
+          }
+
+          // Dev/Offline Fallback: If LLM failed or no keys configured, synthesize topic-aligned cards
+          if (!streamSuccess && generatedCards.length < totalCount) {
+            console.log("[generate-flashcards-stream] Using topic-aligned fallback cards for remaining stream.");
+            const fallbackRemainder = getTopicFallbacks(topic, difficulty);
+            let fIdx = 0;
+            while (generatedCards.length < totalCount) {
+              const item = fallbackRemainder[fIdx % fallbackRemainder.length];
+              fIdx++;
+              const cardIndex = generatedCards.length + 1;
+              const card = {
+                id: `card_${deckId}_${cardIndex}`,
+                deckId,
+                index: cardIndex,
+                front: `${item.front} (${cardIndex})`,
+                back: item.back,
+                explanation: item.explanation,
+                hints: item.explanation,
+                tags: [topic, difficulty],
+                createdAt: new Date().toISOString(),
+                isImmediate: false,
+              };
+              generatedCards.push(card);
+
+              sendEvent("card", {
+                card,
+                isInitialBatch: false,
+                currentCount: generatedCards.length,
+                targetCount: totalCount,
+              });
+
+              await new Promise((r) => setTimeout(r, 60));
+            }
+          }
         }
 
+        // Emit final completion event
         sendEvent("done", {
           status: "completed",
           deckId,
@@ -170,6 +430,7 @@ serve(async (req: Request) => {
       },
     });
   } catch (error: any) {
+    console.error("[generate-flashcards-stream] Handler error:", error);
     return new Response(
       JSON.stringify({ error: error.message ?? "Flashcard generation error" }),
       {
@@ -196,6 +457,31 @@ function getSeedFlashcards(topic: string, difficulty: string) {
       front: `State the condition for eigenvalues and eigenvectors in this system.`,
       back: `For matrix $$A$$, vector $$v \\neq 0$$ satisfies $$Av = \\lambda v$$, requiring $$\\det(A - \\lambda I) = 0$$.`,
       explanation: `Characteristic polynomial roots determine the principal vibrational modes and invariant axes.`,
+    },
+  ];
+}
+
+function getTopicFallbacks(topic: string, difficulty: string) {
+  return [
+    {
+      front: `Cauchy-Schwarz Inequality in ${topic}`,
+      back: `For all vectors $$u$$ and $$v$$ in an inner product space: $$|\\langle u, v \\rangle|^2 \\le \\langle u, u \\rangle \\cdot \\langle v, v \\rangle$$.`,
+      explanation: `Provides essential bounds for inner product spaces and functional analysis.`,
+    },
+    {
+      front: `Divergence Theorem Representation in ${topic}`,
+      back: `Relates the flux of a vector field through a closed surface to volume divergence: $$\\iiint_V (\\nabla \\cdot \\mathbf{F}) \\, dV = \\iint_S (\\mathbf{F} \\cdot \\hat{n}) \\, dS$$.`,
+      explanation: `Fundamental in electromagnetism and continuum mechanics for flux conservation.`,
+    },
+    {
+      front: `Stokes' Theorem Formulation`,
+      back: `Equates the surface integral of the curl of a vector field to line integral around boundary: $$\\iint_S (\\nabla \\times \\mathbf{F}) \\cdot d\\mathbf{S} = \\oint_C \\mathbf{F} \\cdot d\\mathbf{r}$$.`,
+      explanation: `Circulation around boundary equals macroscopic vortex density flux.`,
+    },
+    {
+      front: `Taylor Series Expansion Order in ${topic}`,
+      back: `Represents infinitely differentiable functions near point $$a$$: $$f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(a)}{n!} (x - a)^n$$.`,
+      explanation: `Enables polynomial approximations around local analytical points.`,
     },
   ];
 }

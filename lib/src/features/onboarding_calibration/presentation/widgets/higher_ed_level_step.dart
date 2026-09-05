@@ -4,11 +4,29 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_option_chip.dart';
+import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/curriculum_icon_resolver.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 /// Question A2: Academic degree level for higher institution users.
 class HigherEdLevelStep extends StatelessWidget {
   const HigherEdLevelStep({super.key});
+
+  HigherEdLevel? _parseHigherEdLevel(String code) {
+    switch (code.toLowerCase()) {
+      case 'bsc':
+        return HigherEdLevel.bsc;
+      case 'msc':
+        return HigherEdLevel.msc;
+      case 'phd':
+        return HigherEdLevel.phd;
+      case 'ond':
+        return HigherEdLevel.ond;
+      case 'hnd':
+        return HigherEdLevel.hnd;
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,11 +34,32 @@ class HigherEdLevelStep extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    final selectedLevel = context
-        .watch<CalibrationCubit>()
-        .state
-        .profile
-        .higherEdLevel;
+    final state = context.watch<CalibrationCubit>().state;
+    final selectedLevel = state.profile.higherEdLevel;
+    final backendLevels = state.higherEdLevels;
+
+    final levelItems = backendLevels.isNotEmpty
+        ? backendLevels
+            .map((e) {
+              final level = _parseHigherEdLevel(
+                (e.metadata['code'] as String?) ?? e.key,
+              );
+              if (level == null) return null;
+              return (
+                e.displayName,
+                resolveCurriculumIcon(e.iconName, Icons.history_edu_rounded),
+                level,
+              );
+            })
+            .whereType<(String, IconData, HigherEdLevel)>()
+            .toList()
+        : [
+            (l10n.calibrationOptionBSc, Icons.history_edu_rounded, HigherEdLevel.bsc),
+            (l10n.calibrationOptionMSc, Icons.workspace_premium_rounded, HigherEdLevel.msc),
+            (l10n.calibrationOptionPhD, Icons.psychology_alt_rounded, HigherEdLevel.phd),
+            (l10n.calibrationOptionOND, Icons.menu_book_rounded, HigherEdLevel.ond),
+            (l10n.calibrationOptionHND, Icons.auto_stories_rounded, HigherEdLevel.hnd),
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,60 +81,19 @@ class HigherEdLevelStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        CalibrationOptionChip(
-          title: l10n.calibrationOptionBSc,
-          icon: Icons.history_edu_rounded,
-          isSelected: selectedLevel == HigherEdLevel.bsc,
-          onTap: () {
-            context.read<CalibrationCubit>().setHigherEdLevel(
-              HigherEdLevel.bsc,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        CalibrationOptionChip(
-          title: l10n.calibrationOptionMSc,
-          icon: Icons.workspace_premium_rounded,
-          isSelected: selectedLevel == HigherEdLevel.msc,
-          onTap: () {
-            context.read<CalibrationCubit>().setHigherEdLevel(
-              HigherEdLevel.msc,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        CalibrationOptionChip(
-          title: l10n.calibrationOptionPhD,
-          icon: Icons.psychology_alt_rounded,
-          isSelected: selectedLevel == HigherEdLevel.phd,
-          onTap: () {
-            context.read<CalibrationCubit>().setHigherEdLevel(
-              HigherEdLevel.phd,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        CalibrationOptionChip(
-          title: l10n.calibrationOptionOND,
-          icon: Icons.menu_book_rounded,
-          isSelected: selectedLevel == HigherEdLevel.ond,
-          onTap: () {
-            context.read<CalibrationCubit>().setHigherEdLevel(
-              HigherEdLevel.ond,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        CalibrationOptionChip(
-          title: l10n.calibrationOptionHND,
-          icon: Icons.auto_stories_rounded,
-          isSelected: selectedLevel == HigherEdLevel.hnd,
-          onTap: () {
-            context.read<CalibrationCubit>().setHigherEdLevel(
-              HigherEdLevel.hnd,
-            );
-          },
-        ),
+        ...levelItems.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: CalibrationOptionChip(
+              title: item.$1,
+              icon: item.$2,
+              isSelected: selectedLevel == item.$3,
+              onTap: () {
+                context.read<CalibrationCubit>().setHigherEdLevel(item.$3);
+              },
+            ),
+          );
+        }),
       ],
     );
   }

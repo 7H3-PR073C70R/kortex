@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/performance_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
@@ -126,6 +129,38 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         ),
       ),
       (quizResult) {
+        // Telemetry: Mock exam score submission trace & Crashlytics metrics
+        try {
+          final crashlytics = locator<CrashlyticsService>();
+          unawaited(
+            crashlytics.log(
+              'Mock exam / Quiz submitted: "${quizResult.quizTitle}", '
+              'score=${quizResult.correctAnswers}/${quizResult.totalQuestions}, '
+              'percentage=${quizResult.scorePercent}%',
+            ),
+          );
+          unawaited(
+            crashlytics.setCustomKey(
+              'last_quiz_title',
+              quizResult.quizTitle,
+            ),
+          );
+          unawaited(
+            crashlytics.setCustomKey(
+              'last_quiz_score',
+              quizResult.scorePercent,
+            ),
+          );
+
+          final performance = locator<PerformanceService>();
+          final trace = performance.newTrace('mock_exam_submission')
+            ..putAttribute('quiz_title', quizResult.quizTitle)
+            ..setMetric('total_questions', quizResult.totalQuestions)
+            ..setMetric('correct_answers', quizResult.correctAnswers)
+            ..setMetric('duration_seconds', quizResult.durationSeconds);
+          unawaited(trace.start().then((_) => trace.stop()));
+        } on Object catch (_) {}
+
         emit(
           state.copyWith(
             status: QuizSessionStatus.completed,

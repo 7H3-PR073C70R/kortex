@@ -105,6 +105,53 @@ class ExperimentalOfflineGuard {
     }
   }
 
+  /// Safely wraps a heavy local processing task with pre-flight hardware and
+  /// feature toggle checks, returning a fallback response if conditions fail.
+  Future<T> guardAction<T>({
+    required Future<T> Function() action,
+    required FutureOr<T> Function(String fallbackReason) onFallback,
+    OfflineAiUserSettings? userSettings,
+  }) async {
+    try {
+      await preflightCheck(
+        userSettings: userSettings ??
+            const OfflineAiUserSettings(enableExperimentalOfflineAI: true),
+      );
+      return await action();
+    } on LowMemoryDeviceException catch (_) {
+      return await onFallback(resourceFallbackMessage);
+    } on OfflineAiDisabledException catch (e) {
+      return await onFallback(e.message);
+    } on Object catch (_) {
+      return await onFallback(resourceFallbackMessage);
+    }
+  }
+
+  /// Static convenience check to determine if heavy local processing is safe.
+  static Future<String?> checkHardwareFallback({
+    OfflineAiUserSettings? settings,
+    int? overrideDeviceRamMb,
+    Connectivity? connectivity,
+  }) async {
+    final guard = ExperimentalOfflineGuard(
+      connectivity: connectivity,
+      overrideDeviceRamMb: overrideDeviceRamMb,
+    );
+    try {
+      await guard.preflightCheck(
+        userSettings: settings ??
+            const OfflineAiUserSettings(enableExperimentalOfflineAI: true),
+      );
+      return null;
+    } on LowMemoryDeviceException catch (_) {
+      return resourceFallbackMessage;
+    } on OfflineAiDisabledException catch (e) {
+      return e.message;
+    } on Object catch (_) {
+      return resourceFallbackMessage;
+    }
+  }
+
   /// Executes native inference inside a sandboxed background Isolate with a
   /// strict 30-second wall-clock timeout and graceful fallback on
   /// memory exhaustion.
