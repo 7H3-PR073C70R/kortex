@@ -11,6 +11,7 @@ import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_u
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 
 class _FakeDecksRepository implements DecksRepository {
   List<FlashcardEntity> cardsToReturn = [
@@ -77,6 +78,8 @@ class _FakeDecksRepository implements DecksRepository {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('StudySessionCubit', () {
     late _FakeDecksRepository fakeRepo;
     late StudySessionCubit cubit;
@@ -136,5 +139,23 @@ void main() {
       expect(cubit.state.easyCount, 1);
       expect(cubit.state.retentionScore, 1.0);
     });
+
+    test(
+      'rateCard with FsrsRating computes intervals and enqueues to CardSyncQueue',
+      () async {
+        await cubit.startSession('d1');
+
+        // Rate card 1 using FsrsRating.hard
+        await cubit.rateCard(FsrsRating.hard);
+        expect(cubit.state.currentIndex, 1);
+        expect(cubit.state.hardCount, 1);
+        expect(cubit.cardSyncQueue.getPendingCount(), greaterThanOrEqualTo(1));
+
+        // Rate card 2 using FsrsRating.good
+        await cubit.rateCard(FsrsRating.good);
+        expect(cubit.state.status, StudySessionStatus.finished);
+        expect(cubit.state.goodCount, 1);
+      },
+    );
   });
 }

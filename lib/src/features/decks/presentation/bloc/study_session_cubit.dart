@@ -14,20 +14,34 @@ import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
+import 'package:kortex/src/features/flashcards/data/datasources/card_sync_queue.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 
 class StudySessionCubit extends Cubit<StudySessionState> {
   StudySessionCubit({
     required GetDeckCardsUseCase getDeckCardsUseCase,
-    required ProcessCardReviewUseCase processCardReviewUseCase,
     required SaveSessionResultsUseCase saveSessionResultsUseCase,
+    FsrsScheduler? fsrsScheduler,
+    CardSyncQueue? cardSyncQueue,
+    ProcessCardReviewUseCase? processCardReviewUseCase,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
-       _processCardReviewUseCase = processCardReviewUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
+       _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
+       _cardSyncQueue = cardSyncQueue ?? CardSyncQueue(),
+       _processCardReviewUseCase = processCardReviewUseCase,
        super(const StudySessionState());
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
-  final ProcessCardReviewUseCase _processCardReviewUseCase;
   final SaveSessionResultsUseCase _saveSessionResultsUseCase;
+  final FsrsScheduler _fsrsScheduler;
+  final CardSyncQueue _cardSyncQueue;
+  final ProcessCardReviewUseCase? _processCardReviewUseCase;
+
+  /// Exposes active FsrsScheduler for testing and metrics.
+  FsrsScheduler get fsrsScheduler => _fsrsScheduler;
+
+  /// Exposes active CardSyncQueue for offline sync monitoring.
+  CardSyncQueue get cardSyncQueue => _cardSyncQueue;
 
   Timer? _timer;
 
@@ -88,44 +102,117 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     emit(state.copyWith(isFlipped: isFlipped));
   }
 
-  Future<void> rateCard(int quality) async {
+  Future<void> rateCard(dynamic rating) async {
     if (state.status != StudySessionStatus.studying) return;
 
     final currentCard = state.currentCard;
     if (currentCard == null) return;
 
-    // Track ratings statistics
+    // 1. Map input rating/quality directly to FsrsRating
+    final FsrsRating fsrsRating;
+    final int quality;
+    if (rating is FsrsRating) {
+      fsrsRating = rating;
+      quality = switch (rating) {
+        FsrsRating.again => 0,
+        FsrsRating.hard => 3,
+        FsrsRating.good => 4,
+        FsrsRating.easy => 5,
+      };
+    } else if (rating is int) {
+      quality = rating;
+      if (quality < 3) {
+        fsrsRating = FsrsRating.again;
+      } else if (quality == 3) {
+        fsrsRating = FsrsRating.hard;
+      } else if (quality == 4) {
+        fsrsRating = FsrsRating.good;
+      } else {
+        fsrsRating = FsrsRating.easy;
+      }
+    } else {
+      fsrsRating = FsrsRating.good;
+      quality = 4;
+    }
+
+    // 2. Track ratings statistics
     var newAgain = state.againCount;
     var newHard = state.hardCount;
     var newGood = state.goodCount;
     var newEasy = state.easyCount;
     var newCorrect = state.correctCount;
 
-    if (quality < 3) {
-      newAgain++;
-    } else {
-      newCorrect++;
-      if (quality == 3) {
+    switch (fsrsRating) {
+      case FsrsRating.again:
+        newAgain++;
+      case FsrsRating.hard:
+        newCorrect++;
         newHard++;
-      } else if (quality == 4) {
+      case FsrsRating.good:
+        newCorrect++;
         newGood++;
-      } else if (quality == 5) {
+      case FsrsRating.easy:
+        newCorrect++;
         newEasy++;
-      }
     }
 
-    // Process SM-2 async
-    unawaited(
-      _processCardReviewUseCase(
-        ProcessCardReviewParams(
-          cardId: currentCard.id,
-          quality: quality,
-          previousInterval: currentCard.interval,
-          previousRepetitions: currentCard.repetitions,
-          previousEaseFactor: currentCard.easeFactor,
-        ),
-      ),
+    // 3. FSRS v6 Transition with SM-2 Backward Compatibility & UTC Timestamps
+    final nowUtc = DateTime.now().toUtc();
+    final lastReviewUtc = currentCard.lastReviewed?.toUtc();
+    final elapsedDays = lastReviewUtc == null
+        ? 0
+        : nowUtc.difference(lastReviewUtc).inDays.clamp(0, 36500);
+
+    final isNewCard =
+        currentCard.repetitions == 0 && currentCard.lastReviewed == null;
+    final initialStability =
+        currentCard.interval > 0 ? currentCard.interval.toDouble() : 0.0;
+    final initialDifficulty =
+        ((3.0 - currentCard.easeFactor) * 5.0).clamp(1.0, 10.0);
+
+    final fsrsCard = FsrsCard(
+      cardId: currentCard.id,
+      due: currentCard.nextDueDate?.toUtc(),
+      stability: initialStability,
+      difficulty: initialDifficulty,
+      elapsedDays: elapsedDays,
+      scheduledDays: currentCard.interval,
+      reps: currentCard.repetitions,
+      state: isNewCard ? FsrsCardState.newCard : FsrsCardState.review,
+      lastReview: lastReviewUtc,
+      lastReviewedEpoch: lastReviewUtc?.millisecondsSinceEpoch ?? 0,
     );
+
+    final reviewResult = _fsrsScheduler.reviewCard(
+      currentCard: fsrsCard,
+      rating: fsrsRating,
+      now: nowUtc,
+    );
+
+    // Retrievability score calculation
+    // ignore: unused_local_variable
+    final retrievabilityScore = _fsrsScheduler.retrievability(
+      reviewResult.card.elapsedDays.toDouble(),
+      reviewResult.card.stability,
+    );
+
+    // 4. Enqueue into CardSyncQueue for robust offline persistence & automatic flush
+    unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));
+
+    // 5. Invoke legacy ProcessCardReviewUseCase if supplied for backward compatibility
+    if (_processCardReviewUseCase != null) {
+      unawaited(
+        _processCardReviewUseCase(
+          ProcessCardReviewParams(
+            cardId: currentCard.id,
+            quality: quality,
+            previousInterval: currentCard.interval,
+            previousRepetitions: currentCard.repetitions,
+            previousEaseFactor: currentCard.easeFactor,
+          ),
+        ),
+      );
+    }
 
     if (state.isLastCard) {
       _timer?.cancel();
@@ -189,6 +276,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           ..setMetric('duration_seconds', state.elapsedSeconds);
         unawaited(trace.start().then((_) => trace.stop()));
       } on Object catch (_) {}
+
+      // 6. Trigger flush of queued card reviews upon session completion
+      unawaited(_cardSyncQueue.flushPendingLogs());
 
       emit(
         state.copyWith(

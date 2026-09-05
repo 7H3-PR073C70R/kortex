@@ -669,49 +669,63 @@ class _CourseModuleView extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                deck.title,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13.5,
+                          child: InkWell(
+                            onTap: () {
+                              AppFeedback.light();
+                              unawaited(
+                                context.router.push(
+                                  DeckDetailRoute(deckId: deck.id),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${deck.totalCards} cards',
-                                    style: typography.footnote.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11.5,
+                                    deck.title,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 13.5,
                                     ),
                                   ),
-                                  if (deck.dueCards > 0) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colors.error.withAlpha(30),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        '${deck.dueCards} due',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.error,
-                                          fontSize: 10,
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${deck.totalCards} cards',
+                                        style: typography.footnote.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 11.5,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      if (deck.dueCards > 0) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.error.withAlpha(30),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            '${deck.dueCards} due',
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.error,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                         ShrinkableButton(

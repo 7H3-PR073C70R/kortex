@@ -66,7 +66,7 @@ class DeckListTileCard extends StatelessWidget {
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
           unawaited(
-            context.router.push(StudySessionRoute(deckId: deck.id)),
+            context.router.push(DeckDetailRoute(deckId: deck.id)),
           );
         },
         child: ClipRRect(
@@ -253,22 +253,39 @@ class DeckListTileCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            l10n.decksStartSession,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 12.5,
+                      InkWell(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          unawaited(
+                            context.router.push(
+                              StudySessionRoute(deckId: deck.id),
                             ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: colors.primary,
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.decksStartSession,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                                color: colors.primary,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

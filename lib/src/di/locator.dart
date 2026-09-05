@@ -81,6 +81,8 @@ import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_u
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
+import 'package:kortex/src/features/flashcards/data/datasources/card_sync_queue.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';

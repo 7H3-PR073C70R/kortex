@@ -150,6 +150,23 @@ class _DecksView extends HookWidget {
                     },
                   ),
                   const SizedBox(height: 12),
+
+                  // Option 4: Offline On-Device Generator
+                  _ActionOptionTile(
+                    icon: Icons.offline_bolt_rounded,
+                    iconColor: colors.success,
+                    title: 'Offline Flashcard Generator',
+                    subtitle: 'Synthesize flashcards locally using on-device models',
+                    onTap: () {
+                      Navigator.pop(bottomSheetContext);
+                      unawaited(
+                        context.router.push(
+                          OfflineFlashcardGenerationRoute(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),

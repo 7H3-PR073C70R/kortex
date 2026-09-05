@@ -1,5 +1,5 @@
 {
-  "total_synced": 1390,
+  "total_synced": 1740,
   "progress": {
     "waec": {
       "mathematics": 3,
@@ -45,14 +45,14 @@
       "agricultural-science": 12,
       "islamic-religious-knowledge-irk": 12,
       "history": 12,
-      "fine-arts": 8,
-      "music": 2,
-      "french": 2,
-      "yoruba": 2,
-      "igbo": 2,
-      "arabic": 2,
-      "home-economics": 2,
-      "hausa": 2,
+      "fine-arts": 12,
+      "music": 12,
+      "french": 12,
+      "yoruba": 12,
+      "igbo": 12,
+      "arabic": 12,
+      "home-economics": 12,
+      "hausa": 8,
       "computer-studies": 2,
       "physical-education": 2
     },
@@ -68,5 +68,5 @@
       "computer-studies": 2
     }
   },
-  "last_updated": "2026-09-05T18:58:41Z"
+  "last_updated": "2026-09-05T19:56:08Z"
 }

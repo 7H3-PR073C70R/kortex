@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -331,6 +333,73 @@ class SyllabotAiSettingsPage extends HookWidget {
                             ),
                           ),
                       ],
+                    ),
+                    const SizedBox(height: 14),
+                    Divider(
+                      height: 1,
+                      thickness: 0.8,
+                      color: colors.surfaceBorder.withAlpha(50),
+                    ),
+                    const SizedBox(height: 12),
+                    ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        unawaited(
+                          context.router.push(
+                            OfflineFlashcardGenerationRoute(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(60),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.offline_bolt_rounded,
+                              size: 18,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Launch Offline Card Generator',
+                                    style: typography.body.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    'Synthesize flashcards using local on-device LLM',
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 12,
+                              color: colors.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

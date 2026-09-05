@@ -19,6 +19,8 @@ class MockSaveSessionResultsUseCase extends Mock
     implements SaveSessionResultsUseCase {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('StudySessionCubit Card Flipping & Rating Test Suite', () {
     late MockGetDeckCardsUseCase mockGetDeckCardsUseCase;
     late MockProcessCardReviewUseCase mockProcessCardReviewUseCase;

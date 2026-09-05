@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
@@ -94,7 +96,14 @@ class ExamCountdownBanner extends StatelessWidget {
           label: bannerLabel,
           child: InkWell(
             onTap: () {
-              unawaited(ManageExamModalSheet.show(context));
+              unawaited(
+                context.router.push(
+                  MockExamLobbyRoute(
+                    examId: exam.id,
+                    examName: exam.examName,
+                  ),
+                ),
+              );
             },
             borderRadius: BorderRadius.circular(22),
             child: Container(
@@ -156,37 +165,43 @@ class ExamCountdownBanner extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfacePrimary.withAlpha(150)
-                                  : colors.surfaceSecondary.withAlpha(150),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: colors.surfaceBorder.withAlpha(90),
+                          InkWell(
+                            onTap: () {
+                              unawaited(ManageExamModalSheet.show(context));
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3.5,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.tune_rounded,
-                                  size: 12,
-                                  color: colors.textSecondary,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfacePrimary.withAlpha(150)
+                                    : colors.surfaceSecondary.withAlpha(150),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withAlpha(90),
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Manage',
-                                  style: typography.caption.medium.copyWith(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.tune_rounded,
+                                    size: 12,
                                     color: colors.textSecondary,
-                                    fontSize: 11,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Manage',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),

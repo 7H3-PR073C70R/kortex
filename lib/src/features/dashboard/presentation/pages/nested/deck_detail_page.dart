@@ -4,7 +4,11 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -26,22 +30,33 @@ class DeckDetailPage extends HookWidget {
 
     final currentCardIndex = useState<int>(0);
 
-    final mockCards = [
-      (
-        front:
-            'What is the definition of Laplace Transform of a function f(t)?',
-        back: 'L{f(t)} = F(s) = ∫[0 to ∞] e^(-st) f(t) dt for s > 0',
-      ),
-      (
-        front: 'State the Fourier Transform inversion theorem.',
-        back: 'f(t) = (1/2π) ∫[-∞ to ∞] F(ω) e^(iωt) dω',
-      ),
-      (
-        front:
-            'What does the Convolution Theorem state for Laplace Transforms?',
-        back: 'L{f(t) * g(t)} = F(s) · G(s)',
-      ),
-    ];
+    final allDecks = locator<DecksBloc>().state.allDecks;
+    DeckEntity? deck;
+    for (final d in allDecks) {
+      if (d.id == deckId) {
+        deck = d;
+        break;
+      }
+    }
+
+    final dynamicCards = (deck != null && deck.cards.isNotEmpty)
+        ? deck.cards.map((c) => (front: c.front, back: c.back)).toList()
+        : const [
+            (
+              front:
+                  'What is the definition of Laplace Transform of a function f(t)?',
+              back: 'L{f(t)} = F(s) = ∫[0 to ∞] e^(-st) f(t) dt for s > 0',
+            ),
+            (
+              front: 'State the Fourier Transform inversion theorem.',
+              back: 'f(t) = (1/2π) ∫[-∞ to ∞] F(ω) e^(iωt) dω',
+            ),
+            (
+              front:
+                  'What does the Convolution Theorem state for Laplace Transforms?',
+              back: 'L{f(t) * g(t)} = F(s) · G(s)',
+            ),
+          ];
 
     final isFlipped = useState<bool>(false);
 
@@ -61,10 +76,50 @@ class DeckDetailPage extends HookWidget {
           ),
         ),
         title: Text(
-          l10n.deckDetailTitle,
+          deck?.title ?? l10n.deckDetailTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                unawaited(
+                  context.router.push(StudySessionRoute(deckId: deckId)),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.play_arrow_rounded,
+                      size: 16,
+                      color: colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Study',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -78,7 +133,7 @@ class DeckDetailPage extends HookWidget {
                   Text(
                     l10n.deckDetailCardProgress(
                       currentCardIndex.value + 1,
-                      mockCards.length,
+                      dynamicCards.length,
                     ),
                     style: typography.footnote.bold.copyWith(
                       color: colors.textSecondary,
@@ -109,8 +164,8 @@ class DeckDetailPage extends HookWidget {
                 child: Semantics(
                   button: true,
                   label: isFlipped.value
-                      ? mockCards[currentCardIndex.value].back
-                      : mockCards[currentCardIndex.value].front,
+                      ? dynamicCards[currentCardIndex.value].back
+                      : dynamicCards[currentCardIndex.value].front,
                   child: InkWell(
                     onTap: () {
                       unawaited(HapticFeedback.lightImpact());
@@ -179,8 +234,8 @@ class DeckDetailPage extends HookWidget {
                               const SizedBox(height: 24),
                               Text(
                                 isFlipped.value
-                                    ? mockCards[currentCardIndex.value].back
-                                    : mockCards[currentCardIndex.value].front,
+                                    ? dynamicCards[currentCardIndex.value].back
+                                    : dynamicCards[currentCardIndex.value].front,
                                 textAlign: TextAlign.center,
                                 style: typography.title2.bold.copyWith(
                                   color: colors.textPrimary,
@@ -216,7 +271,7 @@ class DeckDetailPage extends HookWidget {
                         interval: '1d',
                         color: colors.error,
                         onTap: () {
-                          if (currentCardIndex.value < mockCards.length - 1) {
+                          if (currentCardIndex.value < dynamicCards.length - 1) {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {
@@ -232,7 +287,7 @@ class DeckDetailPage extends HookWidget {
                         interval: '3d',
                         color: colors.primary,
                         onTap: () {
-                          if (currentCardIndex.value < mockCards.length - 1) {
+                          if (currentCardIndex.value < dynamicCards.length - 1) {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {
@@ -248,7 +303,7 @@ class DeckDetailPage extends HookWidget {
                         interval: '7d',
                         color: colors.success,
                         onTap: () {
-                          if (currentCardIndex.value < mockCards.length - 1) {
+                          if (currentCardIndex.value < dynamicCards.length - 1) {
                             currentCardIndex.value++;
                             isFlipped.value = false;
                           } else {

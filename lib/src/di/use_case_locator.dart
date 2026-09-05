@@ -108,11 +108,21 @@ void _initUseCaseLocator() {
         deleteDeckUseCase: locator<DeleteDeckUseCase>(),
       ),
     )
+    ..registerLazySingleton<FsrsScheduler>(
+      FsrsScheduler.new,
+    )
+    ..registerLazySingleton<CardSyncQueue>(
+      () => CardSyncQueue(
+        dio: locator<Dio>(),
+      ),
+    )
     ..registerFactory<StudySessionCubit>(
       () => StudySessionCubit(
         getDeckCardsUseCase: locator<GetDeckCardsUseCase>(),
-        processCardReviewUseCase: locator<ProcessCardReviewUseCase>(),
         saveSessionResultsUseCase: locator<SaveSessionResultsUseCase>(),
+        fsrsScheduler: locator<FsrsScheduler>(),
+        cardSyncQueue: locator<CardSyncQueue>(),
+        processCardReviewUseCase: locator<ProcessCardReviewUseCase>(),
       ),
     )
     ..registerLazySingleton<StreamSyllabotResponseUseCase>(

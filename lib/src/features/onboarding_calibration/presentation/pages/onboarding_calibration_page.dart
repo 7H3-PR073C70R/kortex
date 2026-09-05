@@ -63,7 +63,7 @@ class _CalibrationView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == CalibrationStatus.completed) {
           unawaited(
-            context.router.replaceAll([const PermissionsRoute()]),
+            context.router.replaceAll([const OnboardingContentRoute()]),
           );
         } else if (state.status == CalibrationStatus.error &&
             state.errorMessage != null) {

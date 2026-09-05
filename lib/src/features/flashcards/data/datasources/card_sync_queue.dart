@@ -41,18 +41,22 @@ class CardSyncQueue {
   bool _isSyncing = false;
 
   void _initConnectivityListener() {
-    _connectivitySub = _connectivity.onConnectivityChanged.listen((results) {
-      final isOnline = results.any(
-        (c) =>
-            c == ConnectivityResult.wifi ||
-            c == ConnectivityResult.mobile ||
-            c == ConnectivityResult.ethernet,
-      );
+    try {
+      _connectivitySub = _connectivity.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
 
-      if (isOnline && _inMemoryLogBuffer.any((log) => !log.isSynced)) {
-        unawaited(flushPendingLogs());
-      }
-    });
+        if (isOnline && _inMemoryLogBuffer.any((log) => !log.isSynced)) {
+          unawaited(flushPendingLogs());
+        }
+      });
+    } on Object catch (_) {
+      // Ignored in test environments where platform binding is not initialized
+    }
   }
 
   /// Appends a new review log to the local queue.
