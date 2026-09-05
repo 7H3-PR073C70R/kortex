@@ -208,5 +208,71 @@ void main() {
         verify(() => mockSyncUseCase(any())).called(1);
       },
     );
+
+    test('activeTrack strictly filters courses to target track and excludes other exam tracks', () {
+      final mixedCatalog = [
+        const CuratedCourseEntity(
+          id: 'waec_mth',
+          courseCode: 'W-MATH',
+          title: 'General Mathematics',
+          department: 'WAEC - Core',
+          totalMaterials: 20,
+          hasActivePastPapers: true,
+          iconName: 'calculate',
+          colorHex: '#6366F1',
+        ),
+        const CuratedCourseEntity(
+          id: 'jamb_mth',
+          courseCode: 'J-MTH',
+          title: 'JAMB Mathematics CBT',
+          department: 'JAMB - Sciences',
+          totalMaterials: 20,
+          hasActivePastPapers: true,
+          iconName: 'calculate',
+          colorHex: '#6366F1',
+        ),
+        const CuratedCourseEntity(
+          id: 'waec_bio',
+          courseCode: 'W-BIO',
+          title: 'Biology',
+          department: 'WAEC - Sciences',
+          totalMaterials: 15,
+          hasActivePastPapers: true,
+          iconName: 'eco',
+          colorHex: '#10B981',
+        ),
+        const CuratedCourseEntity(
+          id: 'jamb_eng',
+          courseCode: 'J-ENG',
+          title: 'JAMB Use of English',
+          department: 'JAMB - Core',
+          totalMaterials: 25,
+          hasActivePastPapers: true,
+          iconName: 'auto_stories',
+          colorHex: '#F59E0B',
+        ),
+      ];
+
+      final waecState = CurateCoursesState(
+        status: CurateCoursesStatus.loaded,
+        catalogCourses: mixedCatalog,
+      );
+
+      final waecCourses = waecState.filteredCourses;
+      expect(waecCourses.length, equals(2));
+      expect(waecCourses.every((c) => c.department.startsWith('WAEC')), isTrue);
+      expect(waecCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
+
+      final jambState = CurateCoursesState(
+        status: CurateCoursesStatus.loaded,
+        catalogCourses: mixedCatalog,
+        activeTrack: 'JAMB',
+      );
+
+      final jambCourses = jambState.filteredCourses;
+      expect(jambCourses.length, equals(2));
+      expect(jambCourses.every((c) => c.department.startsWith('JAMB')), isTrue);
+      expect(jambCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
+    });
   });
 }

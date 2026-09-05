@@ -20,6 +20,8 @@ abstract class DeckModel with _$DeckModel {
     @Default([]) List<FlashcardModel> cards,
     String? colorHex,
     String? iconName,
+    @JsonKey(name: 'course_id') String? courseId,
+    @JsonKey(name: 'course_code') String? courseCode,
   }) = _DeckModel;
 
   const DeckModel._();
@@ -41,6 +43,8 @@ abstract class DeckModel with _$DeckModel {
       cards: entity.cards.map(FlashcardModel.fromEntity).toList(),
       colorHex: entity.colorHex,
       iconName: entity.iconName,
+      courseId: entity.courseId,
+      courseCode: entity.courseCode,
     );
   }
 
@@ -58,6 +62,8 @@ abstract class DeckModel with _$DeckModel {
       cards: cards.map((c) => c.toEntity()).toList(),
       colorHex: colorHex,
       iconName: iconName,
+      courseId: courseId,
+      courseCode: courseCode,
     );
   }
 }

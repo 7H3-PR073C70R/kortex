@@ -6,10 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -30,16 +34,19 @@ class CuratedCourseCarousel extends StatelessWidget {
 
     if (courses.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.dashboardCuratedCourses,
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 16.5,
-                letterSpacing: -0.2,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                l10n.dashboardCuratedCourses,
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 16.5,
+                  letterSpacing: -0.2,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -92,7 +99,7 @@ class CuratedCourseCarousel extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Select degree modules or past exam syllabi to tailor your deck generation.',
+                              'Select degree modules or exam subjects to tailor your deck generation.',
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 12,
@@ -119,9 +126,9 @@ class CuratedCourseCarousel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
+        // Section Header: aligned with 4px padding relative to parent ListView
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -136,17 +143,46 @@ class CuratedCourseCarousel extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    l10n.dashboardActiveCoursesCount(courses.length),
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 11,
-                      letterSpacing: 0.5,
+                  // "See All" button
+                  ShrinkableButton(
+                    onTap: () {
+                      AppFeedback.light();
+                      unawaited(context.router.push(const AllCuratedCoursesRoute()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'See All (${courses.length})',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 9,
+                            color: colors.primary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // "Manage" button
                   ShrinkableButton(
                     onTap: () async {
+                      AppFeedback.light();
                       final result = await context.router.push(
                         CurateCoursesRoute(
                           initialEnrolledIds: courses.map((c) => c.id).toList(),
@@ -159,10 +195,12 @@ class CuratedCourseCarousel extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(25),
+                        color: isDark
+                            ? colors.surfaceSecondary.withAlpha(140)
+                            : colors.surfacePrimary,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: colors.primary.withAlpha(40),
+                          color: colors.surfaceBorder.withAlpha(120),
                         ),
                       ),
                       child: Row(
@@ -171,13 +209,13 @@ class CuratedCourseCarousel extends StatelessWidget {
                           Icon(
                             Icons.tune_rounded,
                             size: 12,
-                            color: colors.primary,
+                            color: colors.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Manage',
                             style: typography.caption.bold.copyWith(
-                              color: colors.primary,
+                              color: colors.textSecondary,
                               fontSize: 11,
                             ),
                           ),
@@ -192,11 +230,11 @@ class CuratedCourseCarousel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Carousel List
+        // Carousel List: starts at 4px horizontal padding to align with section header
         SizedBox(
-          height: 160,
+          height: 165,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: courses.length,
@@ -232,6 +270,18 @@ class _CourseCard extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final coveragePercent = (course.syllabusCoverage * 100).toInt();
+
+    // Query matching decks from DecksBloc if registered
+    final allDecks = locator.isRegistered<DecksBloc>()
+        ? locator<DecksBloc>().state.allDecks
+        : const <DeckEntity>[];
+
+    final matchingDecks = allDecks.where((d) =>
+        d.courseId == course.id ||
+        (d.courseCode != null && d.courseCode == course.courseCode) ||
+        d.subject.toLowerCase() == course.title.toLowerCase()).toList();
+
+    final totalCards = matchingDecks.fold<int>(0, (s, d) => s + d.totalCards);
 
     return Semantics(
       button: true,
@@ -291,7 +341,7 @@ class _CourseCard extends StatelessWidget {
                           vertical: 3.5,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 60 : 30),
+                          color: colors.primary.withAlpha(isDark ? 50 : 25),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -303,10 +353,30 @@ class _CourseCard extends StatelessWidget {
                         ),
                       ),
                       if (course.hasActivePastPapers)
-                        Icon(
-                          Icons.verified_rounded,
-                          size: 16,
-                          color: colors.success,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colors.success.withAlpha(isDark ? 35 : 20),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_rounded,
+                                size: 12,
+                                color: colors.success,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Q-Bank',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.success,
+                                  fontSize: 9.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),
@@ -323,7 +393,7 @@ class _CourseCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Bottom Coverage & Material Count
+                  // Bottom Coverage & Deck/Card Count
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -331,12 +401,14 @@ class _CourseCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            l10n.dashboardResourcesCount(course.totalMaterials),
+                            matchingDecks.isNotEmpty
+                                ? '${matchingDecks.length} Decks • $totalCards Cards'
+                                : l10n.dashboardResourcesCount(course.totalMaterials),
                             style: typography.footnote.medium.copyWith(
                               color: isDark
                                   ? colors.textSecondary
                                   : colors.textPrimary.withAlpha(180),
-                              fontSize: 11,
+                              fontSize: 10.5,
                             ),
                           ),
                           Text(

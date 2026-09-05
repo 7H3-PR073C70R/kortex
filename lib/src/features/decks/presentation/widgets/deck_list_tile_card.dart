@@ -95,23 +95,54 @@ class DeckListTileCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 50 : 25),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          deck.subject.toUpperCase(),
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 10.5,
-                            letterSpacing: 0.6,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              deck.subject.toUpperCase(),
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 10.5,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (deck.courseCode != null &&
+                              deck.courseCode!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary.withAlpha(150)
+                                    : colors.surfacePrimary,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withAlpha(120),
+                                ),
+                              ),
+                              child: Text(
+                                deck.courseCode!,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,

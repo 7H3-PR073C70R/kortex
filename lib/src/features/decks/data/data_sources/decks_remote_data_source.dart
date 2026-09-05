@@ -28,4 +28,12 @@ abstract class DecksRemoteDataSource {
   });
 
   Future<void> deleteDeck(String deckId);
+
+  Future<void> deleteDecksForCourse(
+    String courseId, {
+    String? courseCode,
+    String? subject,
+  });
+
+  Future<void> deleteAllDecks();
 }

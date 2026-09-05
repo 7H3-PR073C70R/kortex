@@ -18,6 +18,8 @@ abstract class StudyDeckModel with _$StudyDeckModel {
     String? coverImageUrl,
     @Default(10) int estimatedMinutes,
     String? colorHex,
+    @JsonKey(name: 'course_id') String? courseId,
+    @JsonKey(name: 'course_code') String? courseCode,
   }) = _StudyDeckModel;
 
   const StudyDeckModel._();
@@ -37,5 +39,7 @@ abstract class StudyDeckModel with _$StudyDeckModel {
     coverImageUrl: coverImageUrl,
     estimatedMinutes: estimatedMinutes,
     colorHex: colorHex,
+    courseId: courseId,
+    courseCode: courseCode,
   );
 }

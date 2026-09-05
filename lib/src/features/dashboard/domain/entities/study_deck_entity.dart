@@ -15,6 +15,8 @@ class StudyDeckEntity extends Equatable {
     this.coverImageUrl,
     this.estimatedMinutes = 10,
     this.colorHex,
+    this.courseId,
+    this.courseCode,
   });
 
   final String id;
@@ -28,6 +30,8 @@ class StudyDeckEntity extends Equatable {
   final String? coverImageUrl;
   final int estimatedMinutes;
   final String? colorHex;
+  final String? courseId;
+  final String? courseCode;
 
   bool get isDueToday => dueCards > 0;
   double get progressFraction =>
@@ -46,5 +50,7 @@ class StudyDeckEntity extends Equatable {
     coverImageUrl,
     estimatedMinutes,
     colorHex,
+    courseId,
+    courseCode,
   ];
 }

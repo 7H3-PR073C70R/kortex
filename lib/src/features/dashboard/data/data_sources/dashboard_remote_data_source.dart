@@ -19,4 +19,8 @@ abstract class DashboardRemoteDataSource {
     required String examName,
     required List<String> subjects,
   });
+
+  Future<void> deleteCuratedCourse(String courseId);
+
+  Future<void> deleteAllCuratedCourses();
 }

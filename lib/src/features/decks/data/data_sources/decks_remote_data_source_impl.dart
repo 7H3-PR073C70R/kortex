@@ -372,4 +372,48 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       // Offline/Local deletion continues smoothly
     }
   }
+
+  @override
+  Future<void> deleteDecksForCourse(
+    String courseId, {
+    String? courseCode,
+    String? subject,
+  }) async {
+    final toDelete = _localCreatedDecks.where((d) {
+      if (d.courseId != null && d.courseId == courseId) return true;
+      if (courseCode != null &&
+          d.courseCode != null &&
+          d.courseCode!.toLowerCase() == courseCode.toLowerCase()) {
+        return true;
+      }
+      if (subject != null &&
+          d.subject.toLowerCase() == subject.toLowerCase()) {
+        return true;
+      }
+      return false;
+    }).toList();
+
+    for (final deck in toDelete) {
+      await deleteDeck(deck.id);
+    }
+  }
+
+  @override
+  Future<void> deleteAllDecks() async {
+    final allIds = _localCreatedDecks.map((d) => d.id).toList();
+    _localDeckCards.clear();
+    _localCreatedDecks.clear();
+    unawaited(_persistDecksToStorage());
+
+    for (final id in allIds) {
+      unawaited(
+        _localStorage?.deletePreference(
+          key: '${PrefKeys.persistedDeckCardsPrefix}$id',
+        ),
+      );
+      try {
+        await _client.deleteDeck(id);
+      } on Object catch (_) {}
+    }
+  }
 }

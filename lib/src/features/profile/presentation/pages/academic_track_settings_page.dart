@@ -7,12 +7,20 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_slider.dart';
+import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for calibrating active academic track, target exams, and goals.
@@ -174,19 +182,74 @@ class AcademicTrackSettingsPage extends HookWidget {
                   ShrinkableButton(
                     onTap: () {
                       AppFeedback.medium();
-                      context.read<AuthBloc>().add(
-                        AuthUpdateCourseTrackRequested(
-                          track: selectedTrack.value,
-                          dailyTarget: dailyTarget.value,
-                          retentionBenchmark: retentionBenchmark.value,
-                        ),
-                      );
+                      final currentTrack = currentProfile?.targetTrack ?? '';
+                      final isTrackChanging = currentTrack.isNotEmpty &&
+                          currentTrack.toUpperCase() !=
+                              selectedTrack.value.toUpperCase();
 
-                      context.showSnackBar(
-                        message: l10n.profileSavedSuccessNotice,
-                        type: SnackBarType.success,
-                      );
-                      Navigator.of(context).pop();
+                      if (isTrackChanging) {
+                        unawaited(
+                          AppDialog.show<void>(
+                            context: context,
+                            title: 'Switch Academic Track?',
+                            description:
+                                'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
+                                'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
+                            primaryActionText: 'Switch & Reset Workspace',
+                            isDestructive: true,
+                            onPrimaryAction: () async {
+                              AppFeedback.heavy();
+                              // 1. Wipe previous track's curated courses
+                              if (locator.isRegistered<DashboardRemoteDataSource>()) {
+                                await locator<DashboardRemoteDataSource>()
+                                    .deleteAllCuratedCourses();
+                              }
+                              // 2. Wipe previous track's study decks & flashcards
+                              if (locator.isRegistered<DecksRemoteDataSource>()) {
+                                await locator<DecksRemoteDataSource>()
+                                    .deleteAllDecks();
+                              }
+                              // 3. Refresh DecksBloc
+                              if (locator.isRegistered<DecksBloc>()) {
+                                locator<DecksBloc>().add(const DecksRefreshed());
+                              }
+                              // 4. Update Profile in AuthBloc
+                              if (context.mounted) {
+                                context.read<AuthBloc>().add(
+                                  AuthUpdateCourseTrackRequested(
+                                    track: selectedTrack.value,
+                                    dailyTarget: dailyTarget.value,
+                                    retentionBenchmark: retentionBenchmark.value,
+                                  ),
+                                );
+                                // 5. Refresh Dashboard Feed
+                                if (locator.isRegistered<DashboardBloc>()) {
+                                  locator<DashboardBloc>().add(const DashboardRefreshed());
+                                }
+                                context.showSnackBar(
+                                  message:
+                                      'Switched track to ${selectedTrack.value}. Previous track data cleared.',
+                                );
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            secondaryActionText: 'Cancel',
+                          ),
+                        );
+                      } else {
+                        context.read<AuthBloc>().add(
+                          AuthUpdateCourseTrackRequested(
+                            track: selectedTrack.value,
+                            dailyTarget: dailyTarget.value,
+                            retentionBenchmark: retentionBenchmark.value,
+                          ),
+                        );
+                        context.showSnackBar(
+                          message: l10n.profileSavedSuccessNotice,
+                          type: SnackBarType.success,
+                        );
+                        Navigator.of(context).pop();
+                      }
                     },
                     child: Container(
                       width: double.infinity,

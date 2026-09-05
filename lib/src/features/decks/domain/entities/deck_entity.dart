@@ -15,6 +15,8 @@ class DeckEntity extends Equatable {
     this.cards = const [],
     this.colorHex,
     this.iconName,
+    this.courseId,
+    this.courseCode,
   });
 
   final String id;
@@ -29,6 +31,8 @@ class DeckEntity extends Equatable {
   final List<FlashcardEntity> cards;
   final String? colorHex;
   final String? iconName;
+  final String? courseId;
+  final String? courseCode;
 
   bool get hasDueCards => dueCards > 0;
 
@@ -45,6 +49,8 @@ class DeckEntity extends Equatable {
     List<FlashcardEntity>? cards,
     String? colorHex,
     String? iconName,
+    String? courseId,
+    String? courseCode,
   }) {
     return DeckEntity(
       id: id ?? this.id,
@@ -59,6 +65,8 @@ class DeckEntity extends Equatable {
       cards: cards ?? this.cards,
       colorHex: colorHex ?? this.colorHex,
       iconName: iconName ?? this.iconName,
+      courseId: courseId ?? this.courseId,
+      courseCode: courseCode ?? this.courseCode,
     );
   }
 
@@ -76,5 +84,7 @@ class DeckEntity extends Equatable {
     cards,
     colorHex,
     iconName,
+    courseId,
+    courseCode,
   ];
 }

@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 
 class CurateCoursesCubit extends Cubit<CurateCoursesState> {
   CurateCoursesCubit({
@@ -141,5 +145,43 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
         emit(state.copyWith(status: CurateCoursesStatus.success));
       },
     );
+  }
+
+  Future<void> deleteCourse(
+    String courseId, {
+    bool deleteAssociatedDecks = true,
+  }) async {
+    final course = state.allCourses.firstWhere(
+      (c) => c.id == courseId,
+      orElse: () => CuratedCourseEntity(
+        id: courseId,
+        courseCode: '',
+        title: '',
+        department: '',
+        totalMaterials: 0,
+        hasActivePastPapers: false,
+        iconName: 'school',
+        colorHex: '#6366F1',
+      ),
+    );
+
+    final updatedSelected = Set<String>.from(state.selectedCourseIds)
+      ..remove(courseId);
+    emit(state.copyWith(selectedCourseIds: updatedSelected));
+
+    await saveCuratedCourses();
+
+    if (deleteAssociatedDecks && locator.isRegistered<DecksRemoteDataSource>()) {
+      try {
+        await locator<DecksRemoteDataSource>().deleteDecksForCourse(
+          courseId,
+          courseCode: course.courseCode.isNotEmpty ? course.courseCode : null,
+          subject: course.title.isNotEmpty ? course.title : null,
+        );
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
+      } on Object catch (_) {}
+    }
   }
 }

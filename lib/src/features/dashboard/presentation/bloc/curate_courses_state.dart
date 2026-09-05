@@ -36,7 +36,7 @@ class CurateCoursesState extends Equatable {
       status == CurateCoursesStatus.initial;
   bool get isSubmitting => status == CurateCoursesStatus.submitting;
 
-  /// Combined courses (catalog + user custom additions), prioritized by user active track
+  /// Combined courses (catalog + user custom additions), strictly filtered to the user's active academic track.
   List<CuratedCourseEntity> get allCourses {
     final ids = <String>{};
     final combined = <CuratedCourseEntity>[];
@@ -47,37 +47,99 @@ class CurateCoursesState extends Equatable {
       if (ids.add(c.id)) combined.add(c);
     }
 
-    if (activeTrack.isNotEmpty && activeTrack != 'All') {
-      final trackKeyword = activeTrack.toLowerCase();
-      combined.sort((a, b) {
-        final aMatches = a.department.toLowerCase().contains(trackKeyword) ||
-            a.courseCode.toLowerCase().contains(trackKeyword);
-        final bMatches = b.department.toLowerCase().contains(trackKeyword) ||
-            b.courseCode.toLowerCase().contains(trackKeyword);
-        if (aMatches && !bMatches) return -1;
-        if (!aMatches && bMatches) return 1;
-        return 0;
-      });
+    if (activeTrack.isEmpty || activeTrack == 'All') {
+      return combined;
     }
 
-    return combined;
+    final trackUpper = activeTrack.toUpperCase();
+    final isWaec = trackUpper.contains('WAEC') || trackUpper.contains('WASSCE');
+    final isJamb = trackUpper.contains('JAMB') || trackUpper.contains('UTME');
+    final isSat = trackUpper.contains('SAT');
+
+    final trackFiltered = combined.where((c) {
+      // Custom courses added by user are always shown
+      if (c.id.startsWith('custom_')) return true;
+
+      final deptUpper = c.department.toUpperCase();
+      final codeUpper = c.courseCode.toUpperCase();
+      final titleUpper = c.title.toUpperCase();
+
+      if (isWaec) {
+        final isJambCourse =
+            deptUpper.contains('JAMB') || codeUpper.startsWith('J-');
+        final isSatCourse =
+            deptUpper.contains('SAT') || codeUpper.startsWith('SAT-');
+        if (isJambCourse || isSatCourse) return false;
+        return deptUpper.contains('WAEC') ||
+            codeUpper.startsWith('W-') ||
+            titleUpper.contains('WAEC');
+      }
+
+      if (isJamb) {
+        final isWaecCourse =
+            deptUpper.contains('WAEC') || codeUpper.startsWith('W-');
+        final isSatCourse =
+            deptUpper.contains('SAT') || codeUpper.startsWith('SAT-');
+        if (isWaecCourse || isSatCourse) return false;
+        return deptUpper.contains('JAMB') ||
+            codeUpper.startsWith('J-') ||
+            titleUpper.contains('JAMB');
+      }
+
+      if (isSat) {
+        return deptUpper.contains('SAT') ||
+            codeUpper.startsWith('SAT-') ||
+            titleUpper.contains('SAT');
+      }
+
+      // Faculty / Department track (e.g. Computer Science, Medicine, Law)
+      final isHighSchoolExam = deptUpper.contains('WAEC') ||
+          deptUpper.contains('JAMB') ||
+          deptUpper.contains('SAT') ||
+          codeUpper.startsWith('W-') ||
+          codeUpper.startsWith('J-') ||
+          codeUpper.startsWith('SAT-');
+      if (isHighSchoolExam) return false;
+
+      final keyword = activeTrack.trim().toLowerCase();
+      return deptUpper.contains(keyword) ||
+          titleUpper.contains(keyword) ||
+          codeUpper.contains(keyword);
+    }).toList();
+
+    return trackFiltered.isNotEmpty ? trackFiltered : combined;
   }
 
   /// Filtered by category and search term
   List<CuratedCourseEntity> get filteredCourses {
     final query = searchQuery.trim().toLowerCase();
-    return allCourses.where((course) {
+
+    // If searching explicitly, search across all available courses.
+    // When browsing categories without search, restrict strictly to active track's courses.
+    final sourceList = query.isNotEmpty
+        ? [
+            ...customCourses,
+            ...catalogCourses.where(
+              (c) => !customCourses.any((x) => x.id == c.id),
+            ),
+          ]
+        : allCourses;
+
+    return sourceList.where((course) {
+      final deptLower = course.department.toLowerCase();
+      final titleLower = course.title.toLowerCase();
+
       final matchesCategory = selectedCategory == 'All' ||
-          course.department.toLowerCase().contains(selectedCategory.toLowerCase()) ||
-          course.title.toLowerCase().contains(selectedCategory.toLowerCase());
+          deptLower.contains(selectedCategory.toLowerCase()) ||
+          titleLower.contains(selectedCategory.toLowerCase());
 
       if (!matchesCategory) return false;
 
       if (query.isEmpty) return true;
 
       final codeMatch = course.courseCode.toLowerCase().contains(query);
-      final titleMatch = course.title.toLowerCase().contains(query);
-      final deptMatch = course.department.toLowerCase().contains(query);
+      final titleMatch = titleLower.contains(query);
+      final deptMatch = deptLower.contains(query);
       return codeMatch || titleMatch || deptMatch;
     }).toList();
   }

@@ -170,6 +170,32 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   @override
+  Future<void> deleteCuratedCourse(String courseId) async {
+    try {
+      final current = _getLocallySavedCourses();
+      final updated = current.where((c) => c.id != courseId).toList();
+      final jsonStr = jsonEncode(updated.map((c) => c.toJson()).toList());
+      await _storage?.savePreference(
+        key: PrefKeys.userCuratedCourses,
+        data: jsonStr,
+      );
+      await _client.syncUserCourses({
+        'p_courses': updated.map((c) => c.toJson()).toList(),
+      });
+    } on Object catch (_) {}
+  }
+
+  @override
+  Future<void> deleteAllCuratedCourses() async {
+    try {
+      await _storage?.deletePreference(key: PrefKeys.userCuratedCourses);
+      await _client.syncUserCourses({
+        'p_courses': <Map<String, dynamic>>[],
+      });
+    } on Object catch (_) {}
+  }
+
+  @override
   Future<String> startMockExam({
     required String examId,
     required String subject,
