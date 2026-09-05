@@ -212,9 +212,9 @@ void main() {
     test('activeTrack strictly filters courses to target track and excludes other exam tracks', () {
       final mixedCatalog = [
         const CuratedCourseEntity(
-          id: 'waec_mth',
-          courseCode: 'W-MATH',
-          title: 'General Mathematics',
+          id: 'waec-mth',
+          courseCode: 'MTH',
+          title: 'Mathematics',
           department: 'WAEC - Core',
           totalMaterials: 20,
           hasActivePastPapers: true,
@@ -222,18 +222,28 @@ void main() {
           colorHex: '#6366F1',
         ),
         const CuratedCourseEntity(
-          id: 'jamb_mth',
-          courseCode: 'J-MTH',
-          title: 'JAMB Mathematics CBT',
-          department: 'JAMB - Sciences',
+          id: 'jamb-mth',
+          courseCode: 'MTH',
+          title: 'Mathematics',
+          department: 'JAMB - Core',
           totalMaterials: 20,
           hasActivePastPapers: true,
           iconName: 'calculate',
           colorHex: '#6366F1',
         ),
         const CuratedCourseEntity(
-          id: 'waec_bio',
-          courseCode: 'W-BIO',
+          id: 'neco-mth',
+          courseCode: 'MTH',
+          title: 'Mathematics',
+          department: 'NECO - Core',
+          totalMaterials: 20,
+          hasActivePastPapers: true,
+          iconName: 'calculate',
+          colorHex: '#6366F1',
+        ),
+        const CuratedCourseEntity(
+          id: 'waec-bio',
+          courseCode: 'BIO',
           title: 'Biology',
           department: 'WAEC - Sciences',
           totalMaterials: 15,
@@ -242,9 +252,19 @@ void main() {
           colorHex: '#10B981',
         ),
         const CuratedCourseEntity(
-          id: 'jamb_eng',
-          courseCode: 'J-ENG',
-          title: 'JAMB Use of English',
+          id: 'neco-bio',
+          courseCode: 'BIO',
+          title: 'Biology',
+          department: 'NECO - Sciences',
+          totalMaterials: 15,
+          hasActivePastPapers: true,
+          iconName: 'eco',
+          colorHex: '#10B981',
+        ),
+        const CuratedCourseEntity(
+          id: 'jamb-eng',
+          courseCode: 'ENG',
+          title: 'English Language',
           department: 'JAMB - Core',
           totalMaterials: 25,
           hasActivePastPapers: true,
@@ -262,6 +282,7 @@ void main() {
       expect(waecCourses.length, equals(2));
       expect(waecCourses.every((c) => c.department.startsWith('WAEC')), isTrue);
       expect(waecCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
+      expect(waecCourses.any((c) => c.department.startsWith('NECO')), isFalse);
 
       final jambState = CurateCoursesState(
         status: CurateCoursesStatus.loaded,
@@ -273,6 +294,19 @@ void main() {
       expect(jambCourses.length, equals(2));
       expect(jambCourses.every((c) => c.department.startsWith('JAMB')), isTrue);
       expect(jambCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
+      expect(jambCourses.any((c) => c.department.startsWith('NECO')), isFalse);
+
+      final necoState = CurateCoursesState(
+        status: CurateCoursesStatus.loaded,
+        catalogCourses: mixedCatalog,
+        activeTrack: 'NECO',
+      );
+
+      final necoCourses = necoState.filteredCourses;
+      expect(necoCourses.length, equals(2));
+      expect(necoCourses.every((c) => c.department.startsWith('NECO')), isTrue);
+      expect(necoCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
+      expect(necoCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
     });
   });
 }

@@ -40,6 +40,7 @@ class CourseModulePage extends StatelessWidget {
   ExamCategory _getExamCategory(String? track) {
     final t = (track ?? '').toUpperCase();
     if (t.contains('JAMB') || t.contains('UTME')) return ExamCategory.jamb;
+    if (t.contains('NECO') || t.contains('SSCE')) return ExamCategory.neco;
     if (t.contains('SAT')) return ExamCategory.sat;
     if (t.contains('MEDICINE') || t.contains('HEALTH')) return ExamCategory.medicine;
     if (t.contains('LAW')) return ExamCategory.law;
@@ -49,19 +50,26 @@ class CourseModulePage extends StatelessWidget {
   }
 
   String _mapCourseToSubject(String title, String code) {
+    final c = code.trim().toUpperCase();
     final lower = '$title $code'.toLowerCase();
-    if (lower.contains('math')) return 'Mathematics';
-    if (lower.contains('english') || lower.contains('lit')) return 'English Language';
-    if (lower.contains('bio')) return 'Biology';
-    if (lower.contains('chem')) return 'Chemistry';
-    if (lower.contains('phys')) return 'Physics';
-    if (lower.contains('econ')) return 'Economics';
-    if (lower.contains('gov')) return 'Government';
-    if (lower.contains('acc') || lower.contains('fin')) return 'Financial Accounting';
-    if (lower.contains('comm')) return 'Commerce';
-    if (lower.contains('geo')) return 'Geography';
-    if (lower.contains('agric')) return 'Agricultural Science';
-    if (lower.contains('civic')) return 'Civic Education';
+    if (c == 'LIT' || lower.contains('literature')) return 'Literature in English';
+    if (c == 'FMTH' || lower.contains('further math')) return 'Further Mathematics';
+    if (c == 'MTH' || lower.contains('math')) return 'Mathematics';
+    if (c == 'ENG' || lower.contains('english')) return 'English Language';
+    if (c == 'BIO' || lower.contains('bio')) return 'Biology';
+    if (c == 'CHM' || lower.contains('chem')) return 'Chemistry';
+    if (c == 'PHY' || lower.contains('phys')) return 'Physics';
+    if (c == 'ECN' || lower.contains('econ')) return 'Economics';
+    if (c == 'GOV' || lower.contains('gov')) return 'Government';
+    if (c == 'ACC' || lower.contains('acc') || lower.contains('fin')) return 'Accounts - Principles of Accounts';
+    if (c == 'COM' || lower.contains('comm')) return 'Commerce';
+    if (c == 'GEO' || lower.contains('geo')) return 'Geography';
+    if (c == 'AGR' || lower.contains('agric')) return 'Agricultural Science';
+    if (c == 'CIV' || lower.contains('civic')) return 'Civic Education';
+    if (c == 'DPR' || lower.contains('data processing')) return 'Data Processing';
+    if (c == 'CMP' || lower.contains('computer')) return 'Computer Studies';
+    if (c == 'CRK' || lower.contains('crk') || lower.contains('christian')) return 'Christian Religious Knowledge (CRK)';
+    if (c == 'IRK' || lower.contains('irk') || lower.contains('islamic')) return 'Islamic Religious Knowledge (IRK)';
     return title.split('(').first.trim();
   }
 

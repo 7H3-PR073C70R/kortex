@@ -55,7 +55,7 @@ void main() {
     });
 
     test(
-      'getPastQuestions falls back to seed cache when client throws error',
+      'getPastQuestions returns empty list safely when client throws error and seed cache is purged',
       () async {
         when(
           () => mockClient.fetchPastQuestions(any()),
@@ -65,10 +65,7 @@ void main() {
           examCategory: ExamCategory.waec,
         );
 
-        expect(questions.isNotEmpty, isTrue);
-        for (final q in questions) {
-          expect(q.examType, equals(ExamCategory.waec));
-        }
+        expect(questions.isEmpty, isTrue);
       },
     );
 

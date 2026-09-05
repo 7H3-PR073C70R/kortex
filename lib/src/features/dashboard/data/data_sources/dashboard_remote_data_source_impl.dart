@@ -259,261 +259,80 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   List<CuratedCourseModel> _generateDefaultCatalogCourses() {
-    return const [
-      // ═══════════════════════════════════════════════════════════════════════
-      // 1. WAEC / WASSCE Core & Track Subjects
-      // ═══════════════════════════════════════════════════════════════════════
-      CuratedCourseModel(
-        id: 'waec-math-core',
-        courseCode: 'W-MATH',
-        title: 'General Mathematics (Core)',
-        department: 'WAEC - Core',
-        totalMaterials: 48,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.95,
-      ),
-      CuratedCourseModel(
-        id: 'waec-eng-lang',
-        courseCode: 'W-ENG',
-        title: 'English Language & Oral English',
-        department: 'WAEC - Core',
-        totalMaterials: 52,
-        hasActivePastPapers: true,
-        iconName: 'auto_stories',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.92,
-      ),
-      CuratedCourseModel(
-        id: 'waec-civic-edu',
-        courseCode: 'W-CIV',
-        title: 'Civic Education & Governance',
-        department: 'WAEC - Core',
-        totalMaterials: 26,
-        hasActivePastPapers: true,
-        iconName: 'policy',
-        colorHex: '#10B981',
-        syllabusCoverage: 0.88,
-      ),
-      CuratedCourseModel(
-        id: 'waec-physics',
-        courseCode: 'W-PHY',
-        title: 'Physics: Mechanics, Waves & Electricity',
-        department: 'WAEC - Sciences',
-        totalMaterials: 44,
-        hasActivePastPapers: true,
-        iconName: 'bolt',
-        colorHex: '#06B6D4',
-        syllabusCoverage: 0.90,
-      ),
-      CuratedCourseModel(
-        id: 'waec-chemistry',
-        courseCode: 'W-CHM',
-        title: 'Chemistry: Organic, Physical & Qualitative Analysis',
-        department: 'WAEC - Sciences',
-        totalMaterials: 40,
-        hasActivePastPapers: true,
-        iconName: 'biotech',
-        colorHex: '#EC4899',
-        syllabusCoverage: 0.89,
-      ),
-      CuratedCourseModel(
-        id: 'waec-biology',
-        courseCode: 'W-BIO',
-        title: 'Biology: Physiology, Genetics & Ecology',
-        department: 'WAEC - Sciences',
-        totalMaterials: 46,
-        hasActivePastPapers: true,
-        iconName: 'eco',
-        colorHex: '#10B981',
-        syllabusCoverage: 0.91,
-      ),
-      CuratedCourseModel(
-        id: 'waec-further-math',
-        courseCode: 'W-FMTH',
-        title: 'Further Mathematics & Vectors',
-        department: 'WAEC - Sciences',
-        totalMaterials: 35,
-        hasActivePastPapers: true,
-        iconName: 'functions',
-        colorHex: '#4F46E5',
-        syllabusCoverage: 0.85,
-      ),
-      CuratedCourseModel(
-        id: 'waec-agric-sci',
-        courseCode: 'W-AGR',
-        title: 'Agricultural Science & Crop Production',
-        department: 'WAEC - Sciences',
-        totalMaterials: 29,
-        hasActivePastPapers: true,
-        iconName: 'agriculture',
-        colorHex: '#84CC16',
-        syllabusCoverage: 0.86,
-      ),
-      CuratedCourseModel(
-        id: 'waec-economics',
-        courseCode: 'W-ECN',
-        title: 'Economics: Micro, Macro & Trade',
-        department: 'WAEC - Commercial',
-        totalMaterials: 38,
-        hasActivePastPapers: true,
-        iconName: 'trending_up',
-        colorHex: '#3B82F6',
-        syllabusCoverage: 0.87,
-      ),
-      CuratedCourseModel(
-        id: 'waec-fin-acc',
-        courseCode: 'W-ACC',
-        title: 'Financial Accounting & Balance Sheets',
-        department: 'WAEC - Commercial',
-        totalMaterials: 34,
-        hasActivePastPapers: true,
-        iconName: 'receipt_long',
-        colorHex: '#2563EB',
-        syllabusCoverage: 0.84,
-      ),
-      CuratedCourseModel(
-        id: 'waec-commerce',
-        courseCode: 'W-COM',
-        title: 'Commerce, Banking & Insurance',
-        department: 'WAEC - Commercial',
-        totalMaterials: 30,
-        hasActivePastPapers: true,
-        iconName: 'storefront',
-        colorHex: '#0284C7',
-        syllabusCoverage: 0.82,
-      ),
-      CuratedCourseModel(
-        id: 'waec-literature',
-        courseCode: 'W-LIT',
-        title: 'Literature in English: African & Non-African',
-        department: 'WAEC - Arts',
-        totalMaterials: 36,
-        hasActivePastPapers: true,
-        iconName: 'menu_book',
-        colorHex: '#D97706',
-        syllabusCoverage: 0.89,
-      ),
-      CuratedCourseModel(
-        id: 'waec-government',
-        courseCode: 'W-GOV',
-        title: 'Government: Constitutions & Political Systems',
-        department: 'WAEC - Arts',
-        totalMaterials: 32,
-        hasActivePastPapers: true,
-        iconName: 'account_balance',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.86,
-      ),
-      CuratedCourseModel(
-        id: 'waec-geography',
-        courseCode: 'W-GEO',
-        title: 'Geography: Physical, Regional & Map Work',
-        department: 'WAEC - Arts',
-        totalMaterials: 28,
-        hasActivePastPapers: true,
-        iconName: 'public',
-        colorHex: '#0D9488',
-        syllabusCoverage: 0.80,
-      ),
+    const curatedSubjects = [
+      // Core
+      (code: 'MTH', title: 'Mathematics', stream: 'Core', icon: 'calculate', color: '#6366F1', materials: 48, coverage: 0.95),
+      (code: 'ENG', title: 'English Language', stream: 'Core', icon: 'auto_stories', color: '#F59E0B', materials: 52, coverage: 0.92),
+      (code: 'CIV', title: 'Civic Education', stream: 'Core', icon: 'policy', color: '#10B981', materials: 26, coverage: 0.88),
+      (code: 'DPR', title: 'Data Processing', stream: 'Core', icon: 'terminal', color: '#8B5CF6', materials: 28, coverage: 0.85),
+      (code: 'CMP', title: 'Computer Studies', stream: 'Core', icon: 'laptop', color: '#06B6D4', materials: 30, coverage: 0.87),
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // 2. JAMB / UTME CBT Examination Tracks
-      // ═══════════════════════════════════════════════════════════════════════
-      CuratedCourseModel(
-        id: 'jamb-use-of-eng',
-        courseCode: 'J-ENG',
-        title: 'JAMB: Use of English & Comprehension Drills',
-        department: 'JAMB - Core',
-        totalMaterials: 60,
-        hasActivePastPapers: true,
-        iconName: 'record_voice_over',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.98,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-math',
-        courseCode: 'J-MTH',
-        title: 'JAMB: Mathematics CBT Speed & Accuracy',
-        department: 'JAMB - Sciences',
-        totalMaterials: 50,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.94,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-phy',
-        courseCode: 'J-PHY',
-        title: 'JAMB: Physics CBT Drills & Formula Mastery',
-        department: 'JAMB - Sciences',
-        totalMaterials: 45,
-        hasActivePastPapers: true,
-        iconName: 'bolt',
-        colorHex: '#06B6D4',
-        syllabusCoverage: 0.92,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-chm',
-        courseCode: 'J-CHM',
-        title: 'JAMB: Chemistry CBT Drills & Equations',
-        department: 'JAMB - Sciences',
-        totalMaterials: 42,
-        hasActivePastPapers: true,
-        iconName: 'biotech',
-        colorHex: '#EC4899',
-        syllabusCoverage: 0.90,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-bio',
-        courseCode: 'J-BIO',
-        title: 'JAMB: Biology CBT Drills & Diagrammatic Questions',
-        department: 'JAMB - Sciences',
-        totalMaterials: 45,
-        hasActivePastPapers: true,
-        iconName: 'eco',
-        colorHex: '#10B981',
-        syllabusCoverage: 0.91,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-ecn',
-        courseCode: 'J-ECN',
-        title: 'JAMB: Economics CBT Drills & Calculations',
-        department: 'JAMB - Commercial',
-        totalMaterials: 35,
-        hasActivePastPapers: true,
-        iconName: 'trending_up',
-        colorHex: '#3B82F6',
-        syllabusCoverage: 0.88,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-gov',
-        courseCode: 'J-GOV',
-        title: 'JAMB: Government CBT Objective Questions',
-        department: 'JAMB - Arts',
-        totalMaterials: 34,
-        hasActivePastPapers: true,
-        iconName: 'account_balance',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.89,
-      ),
-      CuratedCourseModel(
-        id: 'jamb-cbt-lit',
-        courseCode: 'J-LIT',
-        title: 'JAMB: Literature in English Prescribed Texts',
-        department: 'JAMB - Arts',
-        totalMaterials: 30,
-        hasActivePastPapers: true,
-        iconName: 'menu_book',
-        colorHex: '#D97706',
-        syllabusCoverage: 0.85,
-      ),
+      // Sciences
+      (code: 'PHY', title: 'Physics', stream: 'Sciences', icon: 'bolt', color: '#06B6D4', materials: 44, coverage: 0.90),
+      (code: 'CHM', title: 'Chemistry', stream: 'Sciences', icon: 'biotech', color: '#EC4899', materials: 40, coverage: 0.89),
+      (code: 'BIO', title: 'Biology', stream: 'Sciences', icon: 'eco', color: '#10B981', materials: 46, coverage: 0.91),
+      (code: 'FMTH', title: 'Further Mathematics', stream: 'Sciences', icon: 'functions', color: '#4F46E5', materials: 35, coverage: 0.85),
+      (code: 'AGR', title: 'Agricultural Science', stream: 'Sciences', icon: 'agriculture', color: '#84CC16', materials: 29, coverage: 0.86),
+      (code: 'TD', title: 'Technical Drawing', stream: 'Sciences', icon: 'architecture', color: '#F97316', materials: 24, coverage: 0.82),
+      (code: 'ANH', title: 'Animal Husbandry', stream: 'Sciences', icon: 'pets', color: '#A855F7', materials: 25, coverage: 0.84),
+      (code: 'PHE', title: 'Physical Education', stream: 'Sciences', icon: 'fitness_center', color: '#14B8A6', materials: 22, coverage: 0.80),
+
+      // Commercial
+      (code: 'ECN', title: 'Economics', stream: 'Commercial', icon: 'trending_up', color: '#3B82F6', materials: 38, coverage: 0.87),
+      (code: 'COM', title: 'Commerce', stream: 'Commercial', icon: 'storefront', color: '#0284C7', materials: 30, coverage: 0.82),
+      (code: 'ACC', title: 'Accounts - Principles of Accounts', stream: 'Commercial', icon: 'receipt_long', color: '#2563EB', materials: 34, coverage: 0.84),
+      (code: 'BKP', title: 'Book Keeping', stream: 'Commercial', icon: 'menu_book', color: '#0D9488', materials: 26, coverage: 0.81),
+      (code: 'MKT', title: 'Marketing', stream: 'Commercial', icon: 'campaign', color: '#E11D48', materials: 27, coverage: 0.83),
+      (code: 'INS', title: 'Insurance', stream: 'Commercial', icon: 'shield', color: '#6D28D9', materials: 24, coverage: 0.80),
+      (code: 'OFP', title: 'Office Practice', stream: 'Commercial', icon: 'business_center', color: '#475569', materials: 22, coverage: 0.79),
+
+      // Arts & Humanities
+      (code: 'LIT', title: 'Literature in English', stream: 'Arts', icon: 'menu_book', color: '#D97706', materials: 36, coverage: 0.89),
+      (code: 'GOV', title: 'Government', stream: 'Arts', icon: 'account_balance', color: '#8B5CF6', materials: 32, coverage: 0.86),
+      (code: 'GEO', title: 'Geography', stream: 'Arts', icon: 'public', color: '#0D9488', materials: 28, coverage: 0.80),
+      (code: 'HIS', title: 'History', stream: 'Arts', icon: 'history_edu', color: '#78350F', materials: 25, coverage: 0.82),
+      (code: 'CRK', title: 'Christian Religious Knowledge (CRK)', stream: 'Arts', icon: 'church', color: '#B45309', materials: 29, coverage: 0.85),
+      (code: 'IRK', title: 'Islamic Religious Knowledge (IRK)', stream: 'Arts', icon: 'mosque', color: '#047857', materials: 29, coverage: 0.85),
+      (code: 'FRE', title: 'French', stream: 'Arts', icon: 'translate', color: '#3B82F6', materials: 26, coverage: 0.81),
+      (code: 'YOR', title: 'Yoruba', stream: 'Arts', icon: 'language', color: '#EA580C', materials: 24, coverage: 0.80),
+      (code: 'IGB', title: 'Igbo', stream: 'Arts', icon: 'language', color: '#16A34A', materials: 24, coverage: 0.80),
+      (code: 'HAU', title: 'Hausa', stream: 'Arts', icon: 'language', color: '#9333EA', materials: 24, coverage: 0.80),
+      (code: 'ARA', title: 'Arabic', stream: 'Arts', icon: 'translate', color: '#059669', materials: 22, coverage: 0.78),
+      (code: 'ART', title: 'Fine Arts', stream: 'Arts', icon: 'palette', color: '#BE185D', materials: 25, coverage: 0.83),
+      (code: 'MUS', title: 'Music', stream: 'Arts', icon: 'music_note', color: '#6366F1', materials: 23, coverage: 0.80),
+      (code: 'HEC', title: 'Home Economics', stream: 'Arts', icon: 'home', color: '#CA8A04', materials: 25, coverage: 0.81),
+      (code: 'FDN', title: 'Food and Nutrition', stream: 'Arts', icon: 'restaurant', color: '#E11D48', materials: 26, coverage: 0.82),
+      (code: 'CCP', title: 'Catering Craft Practice', stream: 'Arts', icon: 'dinner_dining', color: '#D97706', materials: 24, coverage: 0.79),
+      (code: 'HMG', title: 'Home Management', stream: 'Arts', icon: 'roofing', color: '#475569', materials: 23, coverage: 0.78),
+    ];
+
+    final highSchoolCourses = <CuratedCourseModel>[];
+    for (final exam in const ['WAEC', 'JAMB', 'NECO']) {
+      final examLower = exam.toLowerCase();
+      for (final s in curatedSubjects) {
+        highSchoolCourses.add(
+          CuratedCourseModel(
+            id: '$examLower-${s.code.toLowerCase()}',
+            courseCode: s.code,
+            title: s.title,
+            department: '$exam - ${s.stream}',
+            totalMaterials: s.materials,
+            hasActivePastPapers: true,
+            iconName: s.icon,
+            colorHex: s.color,
+            syllabusCoverage: s.coverage,
+          ),
+        );
+      }
+    }
+
+    return [
+      ...highSchoolCourses,
 
       // ═══════════════════════════════════════════════════════════════════════
       // 3. SAT Standardized Prep
       // ═══════════════════════════════════════════════════════════════════════
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'sat-math-algebra',
         courseCode: 'SAT-MTH',
         title: 'SAT: Digital Math - Algebra & Advanced Math',
@@ -524,7 +343,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#6366F1',
         syllabusCoverage: 0.90,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'sat-reading-writing',
         courseCode: 'SAT-RW',
         title: 'SAT: Reading & Writing - Information & Ideas',
@@ -539,7 +358,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       // ═══════════════════════════════════════════════════════════════════════
       // 4. University & Higher Education Disciplines
       // ═══════════════════════════════════════════════════════════════════════
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'csc-201-data-structures',
         courseCode: 'CSC 201',
         title: 'Data Structures, Graph Algorithms & Asymptotic Complexity',
@@ -550,7 +369,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#8B5CF6',
         syllabusCoverage: 0.88,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'csc-101-intro-computing',
         courseCode: 'CSC 101',
         title: 'Introduction to Computer Systems & Discrete Structures',
@@ -561,7 +380,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#6366F1',
         syllabusCoverage: 0.85,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'med-anat-201',
         courseCode: 'ANAT 201',
         title: 'Gross Human Anatomy: Thorax, Abdomen & Musculoskeletal',
@@ -572,7 +391,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#EC4899',
         syllabusCoverage: 0.90,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'med-phs-201',
         courseCode: 'PHS 201',
         title: 'Medical Physiology: Cardiovascular & Renal Systems',
@@ -583,7 +402,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#EF4444',
         syllabusCoverage: 0.87,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'law-101-nigerian-legal',
         courseCode: 'LAW 101',
         title: 'Legal Systems, Precedence, Statutes & Methods',
@@ -594,7 +413,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#7C3AED',
         syllabusCoverage: 0.82,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'law-201-contract-law',
         courseCode: 'LAW 201',
         title: 'Law of Contract & Commercial Obligations',
@@ -605,7 +424,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#8B5CF6',
         syllabusCoverage: 0.88,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'eng-mth-301',
         courseCode: 'MTH 301',
         title: 'Engineering Mathematics: Differential Equations & Laplace',
@@ -616,7 +435,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#0EA5E9',
         syllabusCoverage: 0.85,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'eng-eee-201',
         courseCode: 'EEE 201',
         title: 'Circuit Theory & Linear Electrical Networks',
@@ -627,7 +446,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#06B6D4',
         syllabusCoverage: 0.83,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'bus-acc-101',
         courseCode: 'ACC 101',
         title: 'Financial Accounting Principles & Balance Sheets',
@@ -638,7 +457,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#3B82F6',
         syllabusCoverage: 0.80,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'bus-mgt-201',
         courseCode: 'MGT 201',
         title: 'Organizational Behavior & Strategic Leadership',
@@ -649,7 +468,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         colorHex: '#2563EB',
         syllabusCoverage: 0.74,
       ),
-      CuratedCourseModel(
+      const CuratedCourseModel(
         id: 'soc-soc-101',
         courseCode: 'SOC 101',
         title: 'Introduction to Social Structure & Human Behavior',

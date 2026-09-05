@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 enum ExamCategory {
   waec,
   jamb,
+  neco,
   sat,
   toefl,
   ielts,
@@ -21,6 +22,8 @@ extension ExamCategoryExt on ExamCategory {
         return 'WAEC / WASSCE';
       case ExamCategory.jamb:
         return 'JAMB / UTME';
+      case ExamCategory.neco:
+        return 'NECO / SSCE';
       case ExamCategory.sat:
         return 'SAT';
       case ExamCategory.toefl:
@@ -48,6 +51,8 @@ extension ExamCategoryExt on ExamCategory {
         return 'WAEC';
       case ExamCategory.jamb:
         return 'JAMB';
+      case ExamCategory.neco:
+        return 'NECO';
       case ExamCategory.sat:
         return 'SAT';
       case ExamCategory.toefl:

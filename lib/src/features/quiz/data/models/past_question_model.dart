@@ -25,6 +25,8 @@ class PastQuestionModel {
       category = ExamCategory.waec;
     } else if (rawExam.contains('jamb') || rawExam.contains('utme')) {
       category = ExamCategory.jamb;
+    } else if (rawExam.contains('neco')) {
+      category = ExamCategory.neco;
     } else if (rawExam.contains('sat')) {
       category = ExamCategory.sat;
     } else if (rawExam.contains('toefl')) {

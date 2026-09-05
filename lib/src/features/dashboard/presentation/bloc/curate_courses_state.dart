@@ -54,6 +54,7 @@ class CurateCoursesState extends Equatable {
     final trackUpper = activeTrack.toUpperCase();
     final isWaec = trackUpper.contains('WAEC') || trackUpper.contains('WASSCE');
     final isJamb = trackUpper.contains('JAMB') || trackUpper.contains('UTME');
+    final isNeco = trackUpper.contains('NECO') || trackUpper.contains('SSCE');
     final isSat = trackUpper.contains('SAT');
 
     final trackFiltered = combined.where((c) {
@@ -61,50 +62,48 @@ class CurateCoursesState extends Equatable {
       if (c.id.startsWith('custom_')) return true;
 
       final deptUpper = c.department.toUpperCase();
-      final codeUpper = c.courseCode.toUpperCase();
-      final titleUpper = c.title.toUpperCase();
+      final idLower = c.id.toLowerCase();
 
       if (isWaec) {
-        final isJambCourse =
-            deptUpper.contains('JAMB') || codeUpper.startsWith('J-');
-        final isSatCourse =
-            deptUpper.contains('SAT') || codeUpper.startsWith('SAT-');
-        if (isJambCourse || isSatCourse) return false;
-        return deptUpper.contains('WAEC') ||
-            codeUpper.startsWith('W-') ||
-            titleUpper.contains('WAEC');
+        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) return false;
+        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) return false;
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        return deptUpper.contains('WAEC') || idLower.startsWith('waec-');
       }
 
       if (isJamb) {
-        final isWaecCourse =
-            deptUpper.contains('WAEC') || codeUpper.startsWith('W-');
-        final isSatCourse =
-            deptUpper.contains('SAT') || codeUpper.startsWith('SAT-');
-        if (isWaecCourse || isSatCourse) return false;
-        return deptUpper.contains('JAMB') ||
-            codeUpper.startsWith('J-') ||
-            titleUpper.contains('JAMB');
+        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) return false;
+        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) return false;
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        return deptUpper.contains('JAMB') || idLower.startsWith('jamb-');
+      }
+
+      if (isNeco) {
+        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) return false;
+        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) return false;
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        return deptUpper.contains('NECO') || idLower.startsWith('neco-');
       }
 
       if (isSat) {
-        return deptUpper.contains('SAT') ||
-            codeUpper.startsWith('SAT-') ||
-            titleUpper.contains('SAT');
+        return deptUpper.contains('SAT') || idLower.startsWith('sat-');
       }
 
       // Faculty / Department track (e.g. Computer Science, Medicine, Law)
       final isHighSchoolExam = deptUpper.contains('WAEC') ||
           deptUpper.contains('JAMB') ||
+          deptUpper.contains('NECO') ||
           deptUpper.contains('SAT') ||
-          codeUpper.startsWith('W-') ||
-          codeUpper.startsWith('J-') ||
-          codeUpper.startsWith('SAT-');
+          idLower.startsWith('waec-') ||
+          idLower.startsWith('jamb-') ||
+          idLower.startsWith('neco-') ||
+          idLower.startsWith('sat-');
       if (isHighSchoolExam) return false;
 
       final keyword = activeTrack.trim().toLowerCase();
       return deptUpper.contains(keyword) ||
-          titleUpper.contains(keyword) ||
-          codeUpper.contains(keyword);
+          c.title.toLowerCase().contains(keyword) ||
+          c.courseCode.toLowerCase().contains(keyword);
     }).toList();
 
     return trackFiltered.isNotEmpty ? trackFiltered : combined;

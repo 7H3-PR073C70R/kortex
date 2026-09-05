@@ -28,6 +28,14 @@ class CourseTrackEntity extends Equatable {
       examCountdownDays: 68,
     ),
     CourseTrackEntity(
+      id: 'NECO',
+      name: 'NECO / SSCE',
+      description:
+          'National Examinations Council Senior School Certificate Examination',
+      iconName: 'assignment_turned_in',
+      examCountdownDays: 75,
+    ),
+    CourseTrackEntity(
       id: 'JAMB',
       name: 'JAMB / UTME',
       description: 'High-speed CBT drills, subject combinations & past papers',

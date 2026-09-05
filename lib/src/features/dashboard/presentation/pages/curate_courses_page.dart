@@ -89,6 +89,15 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
         'Arts',
       ];
     }
+    if (track.contains('NECO') || track.contains('SSCE')) {
+      return const [
+        'All',
+        'Core',
+        'Sciences',
+        'Commercial',
+        'Arts',
+      ];
+    }
     if (track.contains('SAT')) {
       return const [
         'All',
