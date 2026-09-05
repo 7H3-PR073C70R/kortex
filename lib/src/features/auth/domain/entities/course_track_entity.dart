@@ -44,76 +44,78 @@ class CourseTrackEntity extends Equatable {
       examCountdownDays: 45,
     ),
     CourseTrackEntity(
-      id: 'SAT',
-      name: 'SAT',
-      description: 'Standardized Reading, Writing, Math & problem solving',
-      iconName: 'calculate',
+      id: 'BSC',
+      name: "B.Sc / B.A (Bachelor's Degree)",
+      description:
+          'Undergraduate university coursework across science, arts & humanities',
+      iconName: 'history_edu',
+      defaultDailyTarget: 25,
       examCountdownDays: 90,
     ),
     CourseTrackEntity(
-      id: 'TOEFL',
-      name: 'TOEFL iBT',
-      description: 'Academic English Reading, Listening, Speaking & Writing',
-      iconName: 'record_voice_over',
-      examCountdownDays: 50,
-    ),
-    CourseTrackEntity(
-      id: 'IELTS',
-      name: 'IELTS',
+      id: 'MSC',
+      name: "M.Sc / M.A (Master's Degree)",
       description:
-          'International English language proficiency (Academic & General)',
-      iconName: 'translate',
-      examCountdownDays: 50,
-    ),
-    CourseTrackEntity(
-      id: 'Medicine',
-      name: 'Medicine & Health Sciences',
-      description:
-          'Anatomy, Physiology, Pharmacology, Pathology & Clinical Skills',
-      iconName: 'medical_services',
-      defaultDailyTarget: 35,
-      examCountdownDays: 40,
-    ),
-    CourseTrackEntity(
-      id: 'Law',
-      name: 'Law & Jurisprudence',
-      description:
-          'Constitutional, Criminal, Torts, Commercial Law & Jurisprudence',
-      iconName: 'gavel',
-      defaultDailyTarget: 25,
-      examCountdownDays: 45,
-    ),
-    CourseTrackEntity(
-      id: 'Engineering',
-      name: 'Engineering & Technology',
-      description:
-          'Mechanical, Electrical, Civil, Software & Applied Mathematics',
-      iconName: 'engineering',
+          'Postgraduate master degree studies, research & specialized seminars',
+      iconName: 'workspace_premium',
       defaultDailyTarget: 30,
-      examCountdownDays: 35,
+      examCountdownDays: 90,
     ),
     CourseTrackEntity(
-      id: 'Business',
-      name: 'Business & Economics',
-      description: 'Accounting, Finance, Economics, Marketing & Management',
-      iconName: 'trending_up',
-      defaultDailyTarget: 25,
-      examCountdownDays: 40,
+      id: 'PhD',
+      name: 'Ph.D (Doctorate Degree)',
+      description:
+          'Doctoral research, thesis defense & advanced scholarship',
+      iconName: 'psychology',
+      defaultDailyTarget: 30,
+      examCountdownDays: 120,
     ),
     CourseTrackEntity(
-      id: 'Humanities',
-      name: 'Arts & Humanities',
-      description: 'Literature, History, Philosophy, Linguistics & Mass Comm',
+      id: 'OND_I',
+      name: 'OND I (National Diploma Year 1)',
+      description:
+          'First year foundational polytechnic & diploma coursework',
       iconName: 'menu_book',
-      examCountdownDays: 45,
+      examCountdownDays: 90,
     ),
     CourseTrackEntity(
-      id: 'ComputerScience',
-      name: 'Computer Science & AI',
-      description: 'Algorithms, Data Structures, Operating Systems & Networks',
-      iconName: 'terminal',
-      defaultDailyTarget: 30,
-      examCountdownDays: 30,
+      id: 'OND_II',
+      name: 'OND II (National Diploma Year 2)',
+      description:
+          'Second year polytechnic diploma coursework, projects & SIWES',
+      iconName: 'menu_book',
+      examCountdownDays: 90,
+    ),
+    CourseTrackEntity(
+      id: 'HND_I',
+      name: 'HND I (Higher National Diploma Year 1)',
+      description:
+          'Higher National Diploma year 1 specialized technological coursework',
+      iconName: 'auto_stories',
+      examCountdownDays: 90,
+    ),
+    CourseTrackEntity(
+      id: 'HND_II',
+      name: 'HND II (Higher National Diploma Year 2)',
+      description:
+          'Final year Higher National Diploma capstone & practical defense',
+      iconName: 'auto_stories',
+      examCountdownDays: 90,
+    ),
+    CourseTrackEntity(
+      id: 'Vocational',
+      name: 'Vocational & Technical Studies',
+      description:
+          'Technical colleges, trades, craftsmanship & TVET programs',
+      iconName: 'handyman',
+    ),
+    CourseTrackEntity(
+      id: 'Professional',
+      name: 'Professional Certifications',
+      description:
+          'Professional licensing, chartered institutes & certified diplomas',
+      iconName: 'verified',
+      defaultDailyTarget: 25,
     ),
   ];
 

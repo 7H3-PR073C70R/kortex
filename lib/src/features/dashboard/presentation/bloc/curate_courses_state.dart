@@ -89,7 +89,8 @@ class CurateCoursesState extends Equatable {
         return deptUpper.contains('SAT') || idLower.startsWith('sat-');
       }
 
-      // Faculty / Department track (e.g. Computer Science, Medicine, Law)
+      // Higher Education / Polytechnic / Vocational / Post-Secondary tracks
+      // (BSC, MSC, PhD, OND I/II, HND I/II, Vocational, Professional, etc.)
       final isHighSchoolExam = deptUpper.contains('WAEC') ||
           deptUpper.contains('JAMB') ||
           deptUpper.contains('NECO') ||
@@ -98,12 +99,7 @@ class CurateCoursesState extends Equatable {
           idLower.startsWith('jamb-') ||
           idLower.startsWith('neco-') ||
           idLower.startsWith('sat-');
-      if (isHighSchoolExam) return false;
-
-      final keyword = activeTrack.trim().toLowerCase();
-      return deptUpper.contains(keyword) ||
-          c.title.toLowerCase().contains(keyword) ||
-          c.courseCode.toLowerCase().contains(keyword);
+      return !isHighSchoolExam;
     }).toList();
 
     return trackFiltered.isNotEmpty ? trackFiltered : combined;
