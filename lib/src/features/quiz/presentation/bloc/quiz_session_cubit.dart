@@ -61,6 +61,25 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     );
   }
 
+  /// Starts a live quiz/CBT exam session directly from past questions.
+  void startQuizFromPastQuestions({
+    required String title,
+    required List<QuizQuestionEntity> questions,
+    int? durationMinutes,
+  }) {
+    _timer?.cancel();
+    emit(
+      state.copyWith(
+        status: QuizSessionStatus.inProgress,
+        quizTitle: title,
+        questions: questions,
+        currentIndex: 0,
+        elapsedSeconds: 0,
+      ),
+    );
+    _startTimer();
+  }
+
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {

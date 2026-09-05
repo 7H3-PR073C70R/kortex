@@ -19,8 +19,20 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
   final SyncUserCoursesUseCase syncCoursesUseCase;
   final DashboardBloc? dashboardBloc;
 
-  Future<void> loadCatalog({List<String> currentlyEnrolledIds = const []}) async {
-    emit(state.copyWith(status: CurateCoursesStatus.loading));
+  Future<void> loadCatalog({
+    List<String> currentlyEnrolledIds = const [],
+    String? userTrack,
+  }) async {
+    final track = (userTrack != null && userTrack.trim().isNotEmpty)
+        ? userTrack.trim()
+        : state.activeTrack;
+
+    emit(
+      state.copyWith(
+        status: CurateCoursesStatus.loading,
+        activeTrack: track,
+      ),
+    );
 
     final result = await getCatalogUseCase(const NoParams());
     result.fold(
@@ -104,6 +116,11 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
           'courseCode': course.courseCode,
           'title': course.title,
           'department': course.department,
+          'totalMaterials': course.totalMaterials,
+          'hasActivePastPapers': course.hasActivePastPapers,
+          'iconName': course.iconName,
+          'colorHex': course.colorHex,
+          'syllabusCoverage': course.syllabusCoverage,
         });
       }
     }

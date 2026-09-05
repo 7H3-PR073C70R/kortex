@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
@@ -14,13 +17,26 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     this._client, {
     this.sm2Engine = const Sm2AlgorithmEngine(),
     UserStorageService? userStorage,
-  }) : _userStorage = userStorage;
+    LocalStorageService? storageService,
+  })  : _userStorage = userStorage,
+        _storageService = storageService;
 
   final DecksApiClient _client;
   final Sm2AlgorithmEngine sm2Engine;
   final UserStorageService? _userStorage;
+  final LocalStorageService? _storageService;
+
   final Map<String, List<FlashcardModel>> _localDeckCards = {};
   final List<DeckModel> _localCreatedDecks = [];
+
+  LocalStorageService? get _localStorage {
+    if (_storageService != null) return _storageService;
+    try {
+      return locator<LocalStorageService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
 
   CrashlyticsService? get _crashlyticsService {
     try {
@@ -30,20 +46,59 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
   }
 
+  void _loadPersistedDecksIntoMemory() {
+    try {
+      final raw = _localStorage?.getPreference(key: PrefKeys.persistedUserDecks);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        final loaded = list
+            .map((e) => DeckModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        for (final deck in loaded) {
+          final idx = _localCreatedDecks.indexWhere((d) => d.id == deck.id);
+          if (idx < 0) {
+            _localCreatedDecks.add(deck);
+          }
+        }
+      }
+    } on Object catch (_) {}
+  }
+
+  Future<void> _persistDecksToStorage() async {
+    try {
+      final jsonStr = jsonEncode(_localCreatedDecks.map((d) => d.toJson()).toList());
+      await _localStorage?.savePreference(
+        key: PrefKeys.persistedUserDecks,
+        data: jsonStr,
+      );
+    } on Object catch (_) {}
+  }
+
   @override
   Future<void> saveGeneratedDeck({
     required DeckModel deck,
     required List<FlashcardModel> cards,
   }) async {
-    // 1. Instant local persistence for zero-latency UI responsiveness
+    // 1. Instant local memory persistence
     _localDeckCards[deck.id] = cards;
     _localCreatedDecks
       ..removeWhere((d) => d.id == deck.id)
       ..insert(0, deck.copyWith(cards: cards));
 
-    // 2. Seamless Supabase Database Persistence
-    final userId = _userStorage?.getUserId() ?? '';
+    // 2. Resilient local disk persistence (Hive) across app restarts
+    unawaited(_persistDecksToStorage());
+    try {
+      final cardsJsonStr = jsonEncode(cards.map((c) => c.toJson()).toList());
+      unawaited(
+        _localStorage?.savePreference(
+          key: '${PrefKeys.persistedDeckCardsPrefix}${deck.id}',
+          data: cardsJsonStr,
+        ),
+      );
+    } on Object catch (_) {}
 
+    // 3. Seamless Supabase Database Persistence
+    final userId = _userStorage?.getUserId() ?? '';
     final actualDueCount = cards.where((c) => c.isDueToday).length;
 
     // Insert Deck Record
@@ -112,6 +167,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
   @override
   Future<List<DeckModel>> getUserDecks() async {
+    _loadPersistedDecksIntoMemory();
+
     try {
       final remoteDecks = await _client.getUserDecks();
       final remoteIds = remoteDecks.map((d) => d.id).toSet();
@@ -154,6 +211,25 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         _localDeckCards[deckId]!.isNotEmpty) {
       return _localDeckCards[deckId]!;
     }
+
+    // 1. Check local persistent storage first
+    try {
+      final raw = _localStorage?.getPreference(
+        key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
+      );
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        final loaded = list
+            .map((e) => FlashcardModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        if (loaded.isNotEmpty) {
+          _localDeckCards[deckId] = loaded;
+          return loaded;
+        }
+      }
+    } on Object catch (_) {}
+
+    // 2. Fetch from remote if not cached locally
     try {
       final cards = await _client.getDeckCards(deckId);
       if (cards.isNotEmpty) {
@@ -182,46 +258,26 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required int previousRepetitions,
     required double previousEaseFactor,
   }) async {
-    // Run SM-2 calculation locally for zero-latency instant card swiping
+    // 1. Execute local SM-2 algorithm immediately for 0ms UI latency
     final localResult = sm2Engine.calculate(
       quality: quality,
-      previousInterval: previousInterval,
       previousRepetitions: previousRepetitions,
+      previousInterval: previousInterval,
       previousEaseFactor: previousEaseFactor,
     );
 
-    // Update in-memory cached card state immediately
-    for (final deckCards in _localDeckCards.values) {
-      final idx = deckCards.indexWhere((c) => c.id == cardId);
-      if (idx != -1) {
-        deckCards[idx] = deckCards[idx].copyWith(
-          interval: localResult.nextInterval,
-          repetitions: localResult.newRepetitions,
-          easeFactor: localResult.newEaseFactor,
-          nextDueDate: localResult.nextDueDate,
-        );
-        break;
-      }
-    }
-
-    // Fire-and-forget sync to backend
+    // 2. Sync to Supabase RPC process_card_sm2_review with correct parameter names
     try {
-      unawaited(
-        _client.processCardReview(cardId, {
-          'p_card_id': cardId,
-          'p_quality': quality,
-        }),
-      );
-    } on Object catch (e, stack) {
-      if (_crashlyticsService != null) {
-        unawaited(
-          _crashlyticsService!.recordError(
-            e,
-            stack,
-            reason: 'DecksRemoteDataSource.processCardReview sync failed',
-          ),
-        );
-      }
+      await _client.processCardReview(cardId, {
+        'p_card_id': cardId,
+        'p_quality': quality,
+        'p_interval': localResult.nextInterval,
+        'p_repetitions': localResult.newRepetitions,
+        'p_ease_factor': localResult.newEaseFactor,
+        'p_next_due_date': localResult.nextDueDate.toIso8601String(),
+      });
+    } on Object catch (_) {
+      // Offline/Local continues gracefully
     }
 
     return localResult;
@@ -233,23 +289,30 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
+    double? masteryRate,
+    int? dueCards,
   }) async {
-    // 1. Calculate local deck mastery rate and due cards
     final cards = _localDeckCards[deckId] ?? const <FlashcardModel>[];
     final masteredCount = cards.where((c) => c.repetitions >= 1).length;
     final totalCount = cards.isNotEmpty ? cards.length : cardsReviewed;
-    final masteryRate = totalCount > 0
-        ? (masteredCount > 0 ? masteredCount / totalCount : (retentionScore > 0 ? retentionScore : 1.0)).clamp(0.0, 1.0)
-        : 1.0;
-    final dueCards = cards.where((c) => c.isDueToday).length;
+    final calculatedMasteryRate = masteryRate ??
+        (totalCount > 0
+            ? (masteredCount > 0
+                    ? masteredCount / totalCount
+                    : (retentionScore > 0 ? retentionScore : 1.0))
+                .clamp(0.0, 1.0)
+            : 1.0);
+    final calculatedDueCards =
+        dueCards ?? cards.where((c) => c.isDueToday).length;
     final now = DateTime.now();
 
-    // 2. Update local deck cache
-    final localIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
-    if (localIdx != -1) {
-      _localCreatedDecks[localIdx] = _localCreatedDecks[localIdx].copyWith(
-        masteryRate: masteryRate,
-        dueCards: dueCards,
+    // 1. Instant local state update
+    final deckIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
+    if (deckIdx >= 0) {
+      final old = _localCreatedDecks[deckIdx];
+      _localCreatedDecks[deckIdx] = old.copyWith(
+        masteryRate: calculatedMasteryRate,
+        dueCards: calculatedDueCards,
         lastStudied: now,
       );
     } else {
@@ -260,14 +323,15 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           subject: 'General',
           category: 'General',
           totalCards: totalCount,
-          dueCards: dueCards,
-          masteryRate: masteryRate,
+          dueCards: calculatedDueCards,
+          masteryRate: calculatedMasteryRate,
           lastStudied: now,
         ),
       );
     }
+    unawaited(_persistDecksToStorage());
 
-    // 3. Sync to Supabase RPC record_study_session with correct parameter names
+    // 2. Sync to Supabase RPC record_study_session with correct parameter names
     try {
       await _client.saveSessionResults({
         'p_deck_id': deckId,
@@ -279,11 +343,11 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       // Offline/Local continues gracefully
     }
 
-    // 4. Persist updated deck mastery and due status to Supabase decks table
+    // 3. Persist updated deck mastery and due status to Supabase decks table
     try {
       await _client.updateDeckRecord(deckId, {
-        'mastery_rate': masteryRate,
-        'due_cards': dueCards,
+        'mastery_rate': calculatedMasteryRate,
+        'due_cards': calculatedDueCards,
         'last_studied': now.toIso8601String(),
       });
     } on Object catch (_) {
@@ -295,6 +359,12 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   Future<void> deleteDeck(String deckId) async {
     _localDeckCards.remove(deckId);
     _localCreatedDecks.removeWhere((d) => d.id == deckId);
+    unawaited(_persistDecksToStorage());
+    unawaited(
+      _localStorage?.deletePreference(
+        key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
+      ),
+    );
 
     try {
       await _client.deleteDeck(deckId);

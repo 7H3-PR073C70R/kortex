@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -68,8 +70,21 @@ class QuickActionSpeedDial extends StatelessWidget {
                     color: colors.warning,
                     onTap: () {
                       AppFeedback.light();
+                      String? trackCode;
+                      try {
+                        final track = context
+                            .read<AuthBloc>()
+                            .state
+                            .userProfile
+                            ?.targetTrack;
+                        if (track != null && track.isNotEmpty) {
+                          trackCode = track;
+                        }
+                      } on Object catch (_) {}
                       unawaited(
-                        context.router.push(PastQuestionsBoardRoute()),
+                        context.router.push(
+                          PastQuestionsBoardRoute(initialExamCode: trackCode),
+                        ),
                       );
                     },
                   ),

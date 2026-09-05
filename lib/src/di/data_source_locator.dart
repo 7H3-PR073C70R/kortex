@@ -25,12 +25,14 @@ void _initDataSource() {
       () => DashboardRemoteDataSourceImpl(
         locator<DashboardApiClient>(),
         userActivityService: locator<UserActivityService>(),
+        storageService: locator<LocalStorageService>(),
       ),
     )
     ..registerLazySingleton<DecksRemoteDataSource>(
       () => DecksRemoteDataSourceImpl(
         locator<DecksApiClient>(),
         userStorage: locator<UserStorageService>(),
+        storageService: locator<LocalStorageService>(),
       ),
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(

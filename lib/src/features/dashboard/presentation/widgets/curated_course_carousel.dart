@@ -28,7 +28,93 @@ class CuratedCourseCarousel extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    if (courses.isEmpty) return const SizedBox.shrink();
+    if (courses.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.dashboardCuratedCourses,
+              style: typography.title3.bold.copyWith(
+                color: colors.textPrimary,
+                fontSize: 16.5,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ShrinkableButton(
+              onTap: () async {
+                final result =
+                    await context.router.push(CurateCoursesRoute());
+                if (result == true && context.mounted) {
+                  context.read<DashboardBloc>().add(const DashboardRefreshed());
+                }
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(140)
+                        : colors.surfacePrimary.withAlpha(210),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        ),
+                        child: Icon(
+                          Icons.school_outlined,
+                          color: colors.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Curate Your Courses',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Select degree modules or past exam syllabi to tailor your deck generation.',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: colors.primary,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

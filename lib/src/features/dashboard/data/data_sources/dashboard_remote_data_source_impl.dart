@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
@@ -6,19 +10,77 @@ import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.d
 import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart';
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
-  const DashboardRemoteDataSourceImpl(
+  DashboardRemoteDataSourceImpl(
     this._client, {
     UserActivityService? userActivityService,
-  }) : _userActivityService = userActivityService;
+    LocalStorageService? storageService,
+  })  : _userActivityService = userActivityService,
+        _storageService = storageService;
 
   final DashboardApiClient _client;
   final UserActivityService? _userActivityService;
+  final LocalStorageService? _storageService;
+
+  LocalStorageService? get _storage {
+    if (_storageService != null) return _storageService;
+    try {
+      return locator<LocalStorageService>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  List<CuratedCourseModel> _getLocallySavedCourses() {
+    try {
+      final raw = _storage?.getPreference(key: PrefKeys.userCuratedCourses);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list
+            .map((e) => CuratedCourseModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } on Object catch (_) {}
+    return const [];
+  }
+
+  List<StudyDeckModel> _getLocallySavedDecks() {
+    try {
+      final raw = _storage?.getPreference(key: PrefKeys.persistedUserDecks);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list.map((e) {
+          final m = e as Map<String, dynamic>;
+          return StudyDeckModel(
+            id: (m['id'] as String?) ?? 'deck',
+            title: (m['title'] as String?) ?? 'Study Deck',
+            subject: (m['subject'] as String?) ?? 'General Studies',
+            totalCards: (m['totalCards'] as int?) ?? 10,
+            dueCards: (m['dueCards'] as int?) ?? 5,
+            retentionRate: (m['masteryRate'] as num?)?.toDouble() ?? 0.8,
+            lastReviewedIso: DateTime.now().toIso8601String(),
+            category: (m['category'] as String?) ?? 'General',
+            colorHex: m['colorHex'] as String?,
+          );
+        }).toList();
+      }
+    } on Object catch (_) {}
+    return const [];
+  }
 
   @override
   Future<DashboardFeedModel> getDashboardFeed() async {
     final liveAnalytics = _userActivityService?.getAnalyticsSummary();
+    final localCourses = _getLocallySavedCourses();
+    final localDecks = _getLocallySavedDecks();
+
     try {
-      final feed = await _client.getDashboardFeed(const {});
+      var feed = await _client.getDashboardFeed(const {});
+      if (feed.curatedCourses.isEmpty && localCourses.isNotEmpty) {
+        feed = feed.copyWith(curatedCourses: localCourses);
+      }
+      if (feed.dueStudyDecks.isEmpty && localDecks.isNotEmpty) {
+        feed = feed.copyWith(dueStudyDecks: localDecks);
+      }
       if (liveAnalytics != null &&
           (liveAnalytics.currentStreakDays > 0 ||
               liveAnalytics.totalCardsMastered > 0 ||
@@ -36,9 +98,11 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   @override
   Future<List<StudyDeckModel>> getReviewQueue() async {
     try {
-      return await _client.getReviewQueue();
+      final decks = await _client.getReviewQueue();
+      if (decks.isNotEmpty) return decks;
+      return _getLocallySavedDecks();
     } on Object catch (_) {
-      return _generateFallbackDecks();
+      return _getLocallySavedDecks();
     }
   }
 
@@ -55,6 +119,36 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
   @override
   Future<void> syncUserCourses(List<Map<String, dynamic>> courses) async {
+    // 1. Instantly persist to Hive local storage for resilient offline/restart capability
+    try {
+      final catalog = _generateDefaultCatalogCourses();
+      final catalogMap = {for (final c in catalog) c.id: c};
+
+      final models = courses.map((m) {
+        final id = (m['id'] as String?) ?? 'course_${DateTime.now().microsecondsSinceEpoch}';
+        final catalogMatch = catalogMap[id];
+
+        return CuratedCourseModel(
+          id: id,
+          courseCode: (m['courseCode'] as String?) ?? catalogMatch?.courseCode ?? 'CRS',
+          title: (m['title'] as String?) ?? catalogMatch?.title ?? '',
+          department: (m['department'] as String?) ?? catalogMatch?.department ?? 'General Studies',
+          totalMaterials: catalogMatch?.totalMaterials ?? 15,
+          hasActivePastPapers: catalogMatch?.hasActivePastPapers ?? true,
+          iconName: catalogMatch?.iconName ?? 'school',
+          colorHex: catalogMatch?.colorHex ?? '#6366F1',
+          syllabusCoverage: catalogMatch?.syllabusCoverage ?? 0.70,
+        );
+      }).toList();
+
+      final jsonStr = jsonEncode(models.map((c) => c.toJson()).toList());
+      await _storage?.savePreference(
+        key: PrefKeys.userCuratedCourses,
+        data: jsonStr,
+      );
+    } on Object catch (_) {}
+
+    // 2. Sync to Supabase RPC
     try {
       await _client.syncUserCourses({
         'p_courses': courses,
@@ -115,12 +209,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     final streak = analytics.currentStreakDays;
     final insight = streak > 0
         ? 'Great momentum! You are on a $streak-day study streak. Keep up the active recall!'
-        : 'Welcome to Kortexify! Start your first study session to activate your neural memory retention tracking.';
+        : 'Welcome to Kortex! Select your curriculum courses or start a study session to activate neural retention tracking.';
 
     return DashboardFeedModel(
       analyticsSummary: analytics,
-      dueStudyDecks: const [],
-      curatedCourses: const [],
+      dueStudyDecks: _getLocallySavedDecks(),
+      curatedCourses: _getLocallySavedCourses(),
       syllabotDailyInsight: insight,
     );
   }
@@ -138,87 +232,380 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     });
   }
 
-  List<StudyDeckModel> _generateFallbackDecks() {
-    return const [];
-  }
-
   List<CuratedCourseModel> _generateDefaultCatalogCourses() {
     return const [
-      // Social Sciences & Humanities
+      // ═══════════════════════════════════════════════════════════════════════
+      // 1. WAEC / WASSCE Core & Track Subjects
+      // ═══════════════════════════════════════════════════════════════════════
       CuratedCourseModel(
-        id: '00000000-0000-0000-0001-000000000001',
-        courseCode: 'ENG 101',
-        title: 'Academic Writing, Rhetoric & Critical Analysis',
-        department: 'English & Literary Studies',
-        totalMaterials: 14,
+        id: 'waec-math-core',
+        courseCode: 'W-MATH',
+        title: 'General Mathematics (Core)',
+        department: 'WAEC - Core',
+        totalMaterials: 48,
         hasActivePastPapers: true,
-        iconName: 'menu_book',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.80,
+        iconName: 'calculate',
+        colorHex: '#6366F1',
+        syllabusCoverage: 0.95,
       ),
       CuratedCourseModel(
-        id: '00000000-0000-0000-0002-000000000001',
-        courseCode: 'ECN 101',
-        title: 'Principles of Microeconomics & Market Dynamics',
-        department: 'Economics',
-        totalMaterials: 22,
+        id: 'waec-eng-lang',
+        courseCode: 'W-ENG',
+        title: 'English Language & Oral English',
+        department: 'WAEC - Core',
+        totalMaterials: 52,
         hasActivePastPapers: true,
-        iconName: 'trending_up',
+        iconName: 'auto_stories',
+        colorHex: '#F59E0B',
+        syllabusCoverage: 0.92,
+      ),
+      CuratedCourseModel(
+        id: 'waec-civic-edu',
+        courseCode: 'W-CIV',
+        title: 'Civic Education & Governance',
+        department: 'WAEC - Core',
+        totalMaterials: 26,
+        hasActivePastPapers: true,
+        iconName: 'policy',
         colorHex: '#10B981',
+        syllabusCoverage: 0.88,
+      ),
+      CuratedCourseModel(
+        id: 'waec-physics',
+        courseCode: 'W-PHY',
+        title: 'Physics: Mechanics, Waves & Electricity',
+        department: 'WAEC - Sciences',
+        totalMaterials: 44,
+        hasActivePastPapers: true,
+        iconName: 'bolt',
+        colorHex: '#06B6D4',
+        syllabusCoverage: 0.90,
+      ),
+      CuratedCourseModel(
+        id: 'waec-chemistry',
+        courseCode: 'W-CHM',
+        title: 'Chemistry: Organic, Physical & Qualitative Analysis',
+        department: 'WAEC - Sciences',
+        totalMaterials: 40,
+        hasActivePastPapers: true,
+        iconName: 'biotech',
+        colorHex: '#EC4899',
+        syllabusCoverage: 0.89,
+      ),
+      CuratedCourseModel(
+        id: 'waec-biology',
+        courseCode: 'W-BIO',
+        title: 'Biology: Physiology, Genetics & Ecology',
+        department: 'WAEC - Sciences',
+        totalMaterials: 46,
+        hasActivePastPapers: true,
+        iconName: 'eco',
+        colorHex: '#10B981',
+        syllabusCoverage: 0.91,
+      ),
+      CuratedCourseModel(
+        id: 'waec-further-math',
+        courseCode: 'W-FMTH',
+        title: 'Further Mathematics & Vectors',
+        department: 'WAEC - Sciences',
+        totalMaterials: 35,
+        hasActivePastPapers: true,
+        iconName: 'functions',
+        colorHex: '#4F46E5',
         syllabusCoverage: 0.85,
       ),
       CuratedCourseModel(
-        id: '00000000-0000-0000-0002-000000000002',
-        courseCode: 'SOC 101',
-        title: 'Introduction to Social Structure & Human Behavior',
-        department: 'Sociology',
-        totalMaterials: 15,
-        hasActivePastPapers: false,
-        iconName: 'groups',
-        colorHex: '#059669',
-        syllabusCoverage: 0.72,
+        id: 'waec-agric-sci',
+        courseCode: 'W-AGR',
+        title: 'Agricultural Science & Crop Production',
+        department: 'WAEC - Sciences',
+        totalMaterials: 29,
+        hasActivePastPapers: true,
+        iconName: 'agriculture',
+        colorHex: '#84CC16',
+        syllabusCoverage: 0.86,
       ),
       CuratedCourseModel(
-        id: '00000000-0000-0000-0002-000000000003',
-        courseCode: 'POL 201',
-        title: 'Comparative Government & Political Institutions',
-        department: 'Political Science',
-        totalMaterials: 18,
+        id: 'waec-economics',
+        courseCode: 'W-ECN',
+        title: 'Economics: Micro, Macro & Trade',
+        department: 'WAEC - Commercial',
+        totalMaterials: 38,
         hasActivePastPapers: true,
-        iconName: 'account_balance',
-        colorHex: '#047857',
+        iconName: 'trending_up',
+        colorHex: '#3B82F6',
+        syllabusCoverage: 0.87,
       ),
-
-      // Law & Legal Studies
       CuratedCourseModel(
-        id: '00000000-0000-0000-0003-000000000001',
-        courseCode: 'LAW 101',
-        title: 'Nigerian & Common Legal Systems, Precedence & Method',
-        department: 'Faculty of Law',
-        totalMaterials: 28,
+        id: 'waec-fin-acc',
+        courseCode: 'W-ACC',
+        title: 'Financial Accounting & Balance Sheets',
+        department: 'WAEC - Commercial',
+        totalMaterials: 34,
         hasActivePastPapers: true,
-        iconName: 'gavel',
-        colorHex: '#8B5CF6',
+        iconName: 'receipt_long',
+        colorHex: '#2563EB',
+        syllabusCoverage: 0.84,
+      ),
+      CuratedCourseModel(
+        id: 'waec-commerce',
+        courseCode: 'W-COM',
+        title: 'Commerce, Banking & Insurance',
+        department: 'WAEC - Commercial',
+        totalMaterials: 30,
+        hasActivePastPapers: true,
+        iconName: 'storefront',
+        colorHex: '#0284C7',
         syllabusCoverage: 0.82,
       ),
       CuratedCourseModel(
-        id: '00000000-0000-0000-0003-000000000002',
+        id: 'waec-literature',
+        courseCode: 'W-LIT',
+        title: 'Literature in English: African & Non-African',
+        department: 'WAEC - Arts',
+        totalMaterials: 36,
+        hasActivePastPapers: true,
+        iconName: 'menu_book',
+        colorHex: '#D97706',
+        syllabusCoverage: 0.89,
+      ),
+      CuratedCourseModel(
+        id: 'waec-government',
+        courseCode: 'W-GOV',
+        title: 'Government: Constitutions & Political Systems',
+        department: 'WAEC - Arts',
+        totalMaterials: 32,
+        hasActivePastPapers: true,
+        iconName: 'account_balance',
+        colorHex: '#8B5CF6',
+        syllabusCoverage: 0.86,
+      ),
+      CuratedCourseModel(
+        id: 'waec-geography',
+        courseCode: 'W-GEO',
+        title: 'Geography: Physical, Regional & Map Work',
+        department: 'WAEC - Arts',
+        totalMaterials: 28,
+        hasActivePastPapers: true,
+        iconName: 'public',
+        colorHex: '#0D9488',
+        syllabusCoverage: 0.80,
+      ),
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 2. JAMB / UTME CBT Examination Tracks
+      // ═══════════════════════════════════════════════════════════════════════
+      CuratedCourseModel(
+        id: 'jamb-use-of-eng',
+        courseCode: 'J-ENG',
+        title: 'JAMB: Use of English & Comprehension Drills',
+        department: 'JAMB - Core',
+        totalMaterials: 60,
+        hasActivePastPapers: true,
+        iconName: 'record_voice_over',
+        colorHex: '#F59E0B',
+        syllabusCoverage: 0.98,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-math',
+        courseCode: 'J-MTH',
+        title: 'JAMB: Mathematics CBT Speed & Accuracy',
+        department: 'JAMB - Sciences',
+        totalMaterials: 50,
+        hasActivePastPapers: true,
+        iconName: 'calculate',
+        colorHex: '#6366F1',
+        syllabusCoverage: 0.94,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-phy',
+        courseCode: 'J-PHY',
+        title: 'JAMB: Physics CBT Drills & Formula Mastery',
+        department: 'JAMB - Sciences',
+        totalMaterials: 45,
+        hasActivePastPapers: true,
+        iconName: 'bolt',
+        colorHex: '#06B6D4',
+        syllabusCoverage: 0.92,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-chm',
+        courseCode: 'J-CHM',
+        title: 'JAMB: Chemistry CBT Drills & Equations',
+        department: 'JAMB - Sciences',
+        totalMaterials: 42,
+        hasActivePastPapers: true,
+        iconName: 'biotech',
+        colorHex: '#EC4899',
+        syllabusCoverage: 0.90,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-bio',
+        courseCode: 'J-BIO',
+        title: 'JAMB: Biology CBT Drills & Diagrammatic Questions',
+        department: 'JAMB - Sciences',
+        totalMaterials: 45,
+        hasActivePastPapers: true,
+        iconName: 'eco',
+        colorHex: '#10B981',
+        syllabusCoverage: 0.91,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-ecn',
+        courseCode: 'J-ECN',
+        title: 'JAMB: Economics CBT Drills & Calculations',
+        department: 'JAMB - Commercial',
+        totalMaterials: 35,
+        hasActivePastPapers: true,
+        iconName: 'trending_up',
+        colorHex: '#3B82F6',
+        syllabusCoverage: 0.88,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-gov',
+        courseCode: 'J-GOV',
+        title: 'JAMB: Government CBT Objective Questions',
+        department: 'JAMB - Arts',
+        totalMaterials: 34,
+        hasActivePastPapers: true,
+        iconName: 'account_balance',
+        colorHex: '#8B5CF6',
+        syllabusCoverage: 0.89,
+      ),
+      CuratedCourseModel(
+        id: 'jamb-cbt-lit',
+        courseCode: 'J-LIT',
+        title: 'JAMB: Literature in English Prescribed Texts',
+        department: 'JAMB - Arts',
+        totalMaterials: 30,
+        hasActivePastPapers: true,
+        iconName: 'menu_book',
+        colorHex: '#D97706',
+        syllabusCoverage: 0.85,
+      ),
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 3. SAT Standardized Prep
+      // ═══════════════════════════════════════════════════════════════════════
+      CuratedCourseModel(
+        id: 'sat-math-algebra',
+        courseCode: 'SAT-MTH',
+        title: 'SAT: Digital Math - Algebra & Advanced Math',
+        department: 'SAT Prep',
+        totalMaterials: 35,
+        hasActivePastPapers: true,
+        iconName: 'calculate',
+        colorHex: '#6366F1',
+        syllabusCoverage: 0.90,
+      ),
+      CuratedCourseModel(
+        id: 'sat-reading-writing',
+        courseCode: 'SAT-RW',
+        title: 'SAT: Reading & Writing - Information & Ideas',
+        department: 'SAT Prep',
+        totalMaterials: 38,
+        hasActivePastPapers: true,
+        iconName: 'auto_stories',
+        colorHex: '#F59E0B',
+        syllabusCoverage: 0.92,
+      ),
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 4. University & Higher Education Disciplines
+      // ═══════════════════════════════════════════════════════════════════════
+      CuratedCourseModel(
+        id: 'csc-201-data-structures',
+        courseCode: 'CSC 201',
+        title: 'Data Structures, Graph Algorithms & Asymptotic Complexity',
+        department: 'Computer Science',
+        totalMaterials: 40,
+        hasActivePastPapers: true,
+        iconName: 'terminal',
+        colorHex: '#8B5CF6',
+        syllabusCoverage: 0.88,
+      ),
+      CuratedCourseModel(
+        id: 'csc-101-intro-computing',
+        courseCode: 'CSC 101',
+        title: 'Introduction to Computer Systems & Discrete Structures',
+        department: 'Computer Science',
+        totalMaterials: 32,
+        hasActivePastPapers: true,
+        iconName: 'laptop',
+        colorHex: '#6366F1',
+        syllabusCoverage: 0.85,
+      ),
+      CuratedCourseModel(
+        id: 'med-anat-201',
+        courseCode: 'ANAT 201',
+        title: 'Gross Human Anatomy: Thorax, Abdomen & Musculoskeletal',
+        department: 'Medicine & Health',
+        totalMaterials: 36,
+        hasActivePastPapers: true,
+        iconName: 'medical_services',
+        colorHex: '#EC4899',
+        syllabusCoverage: 0.90,
+      ),
+      CuratedCourseModel(
+        id: 'med-phs-201',
+        courseCode: 'PHS 201',
+        title: 'Medical Physiology: Cardiovascular & Renal Systems',
+        department: 'Medicine & Health',
+        totalMaterials: 30,
+        hasActivePastPapers: true,
+        iconName: 'favorite',
+        colorHex: '#EF4444',
+        syllabusCoverage: 0.87,
+      ),
+      CuratedCourseModel(
+        id: 'law-101-nigerian-legal',
+        courseCode: 'LAW 101',
+        title: 'Legal Systems, Precedence, Statutes & Methods',
+        department: 'Law & Legal Studies',
+        totalMaterials: 28,
+        hasActivePastPapers: true,
+        iconName: 'gavel',
+        colorHex: '#7C3AED',
+        syllabusCoverage: 0.82,
+      ),
+      CuratedCourseModel(
+        id: 'law-201-contract-law',
         courseCode: 'LAW 201',
         title: 'Law of Contract & Commercial Obligations',
-        department: 'Faculty of Law',
+        department: 'Law & Legal Studies',
         totalMaterials: 25,
         hasActivePastPapers: true,
         iconName: 'policy',
-        colorHex: '#7C3AED',
+        colorHex: '#8B5CF6',
         syllabusCoverage: 0.88,
       ),
-
-      // Business & Accounting
       CuratedCourseModel(
-        id: '00000000-0000-0000-0004-000000000001',
+        id: 'eng-mth-301',
+        courseCode: 'MTH 301',
+        title: 'Engineering Mathematics: Differential Equations & Laplace',
+        department: 'Engineering',
+        totalMaterials: 24,
+        hasActivePastPapers: true,
+        iconName: 'engineering',
+        colorHex: '#0EA5E9',
+        syllabusCoverage: 0.85,
+      ),
+      CuratedCourseModel(
+        id: 'eng-eee-201',
+        courseCode: 'EEE 201',
+        title: 'Circuit Theory & Linear Electrical Networks',
+        department: 'Engineering',
+        totalMaterials: 22,
+        hasActivePastPapers: true,
+        iconName: 'settings_input_component',
+        colorHex: '#06B6D4',
+        syllabusCoverage: 0.83,
+      ),
+      CuratedCourseModel(
+        id: 'bus-acc-101',
         courseCode: 'ACC 101',
         title: 'Financial Accounting Principles & Balance Sheets',
-        department: 'Accounting',
+        department: 'Business & Management',
         totalMaterials: 26,
         hasActivePastPapers: true,
         iconName: 'receipt_long',
@@ -226,98 +613,26 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         syllabusCoverage: 0.80,
       ),
       CuratedCourseModel(
-        id: '00000000-0000-0000-0004-000000000002',
+        id: 'bus-mgt-201',
         courseCode: 'MGT 201',
         title: 'Organizational Behavior & Strategic Leadership',
-        department: 'Business Administration',
+        department: 'Business & Management',
         totalMaterials: 19,
         hasActivePastPapers: false,
         iconName: 'corporate_fare',
         colorHex: '#2563EB',
         syllabusCoverage: 0.74,
       ),
-
-      // Medicine & Health
       CuratedCourseModel(
-        id: '00000000-0000-0000-0005-000000000001',
-        courseCode: 'ANAT 201',
-        title: 'Gross Human Anatomy: Thorax, Abdomen & Musculoskeletal',
-        department: 'Medicine & Surgery',
-        totalMaterials: 34,
-        hasActivePastPapers: true,
-        iconName: 'accessibility_new',
-        colorHex: '#EC4899',
-        syllabusCoverage: 0.90,
-      ),
-
-      // STEM & Computing
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0000-000000000004',
-        courseCode: 'CS 201',
-        title: 'Data Structures, Graph Algorithms & Asymptotic Complexity',
-        department: 'Computer Science & Software Engineering',
-        totalMaterials: 40,
-        hasActivePastPapers: true,
-        iconName: 'code',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.88,
-      ),
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0000-000000000001',
-        courseCode: 'MTH 301',
-        title: 'Advanced Engineering Mathematics & Laplace Calculus',
-        department: 'Electrical & Electronic Engineering',
-        totalMaterials: 24,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.85,
-      ),
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0000-000000000002',
-        courseCode: 'PHY 202',
-        title: 'Electromagnetism & Maxwell Equations',
-        department: 'Physics & Applied Sciences',
-        totalMaterials: 18,
-        hasActivePastPapers: true,
-        iconName: 'bolt',
-        colorHex: '#06B6D4',
-        syllabusCoverage: 0.78,
-      ),
-
-      // Standardized Exam Prep (WAEC / JAMB / SAT)
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0006-000000000001',
-        courseCode: 'W-MATH',
-        title: 'WAEC/JAMB General Mathematics: Algebra & Geometry',
-        department: 'Secondary School Board',
-        totalMaterials: 42,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.95,
-      ),
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0006-000000000002',
-        courseCode: 'W-ENG',
-        title: 'WAEC/JAMB English Language: Lexis & Structure',
-        department: 'Secondary School Board',
-        totalMaterials: 38,
-        hasActivePastPapers: true,
-        iconName: 'auto_stories',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.92,
-      ),
-      CuratedCourseModel(
-        id: '00000000-0000-0000-0006-000000000006',
-        courseCode: 'W-GOV',
-        title: 'WAEC/JAMB Government: Constitutional Development',
-        department: 'Secondary School Board',
-        totalMaterials: 28,
-        hasActivePastPapers: true,
-        iconName: 'account_balance',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.85,
+        id: 'soc-soc-101',
+        courseCode: 'SOC 101',
+        title: 'Introduction to Social Structure & Human Behavior',
+        department: 'Social Sciences',
+        totalMaterials: 15,
+        hasActivePastPapers: false,
+        iconName: 'groups',
+        colorHex: '#059669',
+        syllabusCoverage: 0.72,
       ),
     ];
   }

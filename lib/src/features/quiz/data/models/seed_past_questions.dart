@@ -128,6 +128,70 @@ class SeedPastQuestions {
       topic: 'Chemical Bonding',
       difficulty: 'Easy',
     ),
+    PastQuestionModel(
+      id: 'waec_bio_2024_q1',
+      examType: ExamCategory.waec,
+      subject: 'Biology',
+      year: 2024,
+      questionNumber: 1,
+      prompt:
+          'Which cellular organelle contains hydrolytic enzymes responsible '
+          'for intracellular digestion and autolysis?',
+      options: [
+        'Ribosome',
+        'Mitochondrion',
+        'Lysosome',
+        'Endoplasmic Reticulum',
+      ],
+      correctOptionIndex: 2,
+      correctOptionLabel: 'C',
+      explanation:
+          'Lysosomes contain acid hydrolases that degrade cellular waste.',
+      topic: 'Cell Structure & Function',
+      difficulty: 'Easy',
+    ),
+    PastQuestionModel(
+      id: 'waec_ecn_2024_q1',
+      examType: ExamCategory.waec,
+      subject: 'Economics',
+      year: 2024,
+      questionNumber: 1,
+      prompt:
+          'When the price elasticity of demand for a good is greater than 1, '
+          'a decrease in price will result in:',
+      options: [
+        'A decrease in total revenue',
+        'An increase in total revenue',
+        'No change in total revenue',
+        'Zero demand for the commodity',
+      ],
+      correctOptionIndex: 1,
+      correctOptionLabel: 'B',
+      explanation:
+          'For price-elastic goods, price reductions lead to proportionally larger demand increases, raising total revenue.',
+      topic: 'Elasticity of Demand',
+    ),
+    PastQuestionModel(
+      id: 'waec_gov_2024_q1',
+      examType: ExamCategory.waec,
+      subject: 'Government',
+      year: 2024,
+      questionNumber: 1,
+      prompt:
+          'The Clifford Constitution of 1922 was significant in Nigerian '
+          'political history primarily because it:',
+      options: [
+        'Introduced the elective principle for the first time',
+        'Created regional assemblies in the North, West and East',
+        'Granted complete internal self-government',
+        'Abolished the British Colonial Office supervision',
+      ],
+      correctOptionIndex: 0,
+      correctOptionLabel: 'A',
+      explanation:
+          'The 1922 Clifford Constitution introduced the elective principle for 4 legislative seats (3 in Lagos, 1 in Calabar).',
+      topic: 'Constitutional Development',
+    ),
     // JAMB 2024
     PastQuestionModel(
       id: 'jamb_eng_2024_q1',

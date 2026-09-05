@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
@@ -20,26 +21,46 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class CurateCoursesPage extends StatelessWidget {
   const CurateCoursesPage({
     this.initialEnrolledIds = const [],
+    @queryParam this.userTrack,
     super.key,
   });
 
   final List<String> initialEnrolledIds;
+  final String? userTrack;
 
   @override
   Widget build(BuildContext context) {
+    var effectiveTrack = userTrack;
+    if (effectiveTrack == null || effectiveTrack.isEmpty) {
+      try {
+        final profile = context.read<AuthBloc>().state.userProfile;
+        if (profile != null && profile.targetTrack.isNotEmpty) {
+          effectiveTrack = profile.targetTrack;
+        }
+      } on Object catch (_) {}
+    }
+    effectiveTrack ??= 'WAEC';
+
     return BlocProvider(
       create: (_) {
         final cubit = locator<CurateCoursesCubit>();
-        unawaited(cubit.loadCatalog(currentlyEnrolledIds: initialEnrolledIds));
+        unawaited(
+          cubit.loadCatalog(
+            currentlyEnrolledIds: initialEnrolledIds,
+            userTrack: effectiveTrack,
+          ),
+        );
         return cubit;
       },
-      child: const _CurateCoursesView(),
+      child: _CurateCoursesView(userTrack: effectiveTrack),
     );
   }
 }
 
 class _CurateCoursesView extends StatefulWidget {
-  const _CurateCoursesView();
+  const _CurateCoursesView({required this.userTrack});
+
+  final String userTrack;
 
   @override
   State<_CurateCoursesView> createState() => _CurateCoursesViewState();
@@ -48,16 +69,46 @@ class _CurateCoursesView extends StatefulWidget {
 class _CurateCoursesViewState extends State<_CurateCoursesView> {
   late final TextEditingController _searchController;
 
-  static const _categories = [
-    'All',
-    'Social Sciences',
-    'Law & Legal Studies',
-    'Business & Management',
-    'Medicine & Health',
-    'Computer Science',
-    'Engineering',
-    'Exam Prep',
-  ];
+  List<String> get _categories {
+    final track = widget.userTrack.toUpperCase();
+    if (track.contains('WAEC') || track.contains('WASSCE')) {
+      return const [
+        'All',
+        'Core',
+        'Sciences',
+        'Commercial',
+        'Arts',
+      ];
+    }
+    if (track.contains('JAMB') || track.contains('UTME')) {
+      return const [
+        'All',
+        'Core',
+        'Sciences',
+        'Commercial',
+        'Arts',
+      ];
+    }
+    if (track.contains('SAT')) {
+      return const [
+        'All',
+        'SAT Prep',
+        'Math',
+        'Reading',
+      ];
+    }
+    return const [
+      'All',
+      'Computer Science',
+      'Medicine & Health',
+      'Law & Legal Studies',
+      'Engineering',
+      'Business & Management',
+      'Social Sciences',
+      'WAEC',
+      'JAMB',
+    ];
+  }
 
   @override
   void initState() {
@@ -137,7 +188,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
           context.showSnackBar(
             message: 'Curriculum successfully saved and synced!',
           );
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         } else if (state.status == CurateCoursesStatus.error &&
             state.errorMessage != null) {
           context.showSnackBar(
@@ -191,10 +242,46 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
           body: Stack(
             children: [
               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Track Indicator Badge
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 35 : 20),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 70 : 40),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.track_changes_rounded,
+                            size: 14,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Active Academic Track: ${widget.userTrack}',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   // 1. Search Bar & Add Custom Course Action
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 6),
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 6),
                     child: Row(
                       children: [
                         Expanded(

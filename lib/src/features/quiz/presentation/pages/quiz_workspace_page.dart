@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accordion.dart';
@@ -18,6 +19,7 @@ class QuizWorkspacePage extends StatelessWidget {
     @QueryParam('title') this.deckTitle,
     this.subject,
     this.durationMinutes,
+    this.initialQuestions,
     super.key,
   });
 
@@ -25,31 +27,45 @@ class QuizWorkspacePage extends StatelessWidget {
   final String? deckTitle;
   final String? subject;
   final int? durationMinutes;
+  final List<QuizQuestionEntity>? initialQuestions;
 
   @override
   Widget build(BuildContext context) {
-    Widget view = _QuizWorkspaceView(
+    final view = _QuizWorkspaceView(
       deckId: deckId,
       deckTitle: deckTitle ?? subject,
     );
     try {
-      context.read<QuizSessionCubit>();
-    } on Object {
-      view = BlocProvider<QuizSessionCubit>(
-        create: (_) {
-          final cubit = locator<QuizSessionCubit>();
+      final existing = context.read<QuizSessionCubit>();
+      if (existing.state.status == QuizSessionStatus.inProgress &&
+          existing.state.questions.isNotEmpty) {
+        return view;
+      }
+    } on Object catch (_) {
+      // No ancestor QuizSessionCubit found, proceed to create one.
+    }
+
+    return BlocProvider<QuizSessionCubit>(
+      create: (_) {
+        final cubit = locator<QuizSessionCubit>();
+        if (initialQuestions != null && initialQuestions!.isNotEmpty) {
+          cubit.startQuizFromPastQuestions(
+            title: deckTitle ?? subject ?? 'CBT Practice Test',
+            questions: initialQuestions!,
+            durationMinutes: durationMinutes,
+          );
+        } else {
           unawaited(
             cubit.startQuizFromDeck(
               deckId: deckId,
               deckTitle: deckTitle ?? subject ?? 'Practice Quiz',
             ),
           );
-          return cubit;
-        },
-        child: view,
-      );
-    }
-    return view;
+        }
+        return cubit;
+      },
+      child: view,
+    );
   }
 }
 

@@ -18,6 +18,7 @@ class CurateCoursesState extends Equatable {
     this.selectedCourseIds = const {},
     this.searchQuery = '',
     this.selectedCategory = 'All',
+    this.activeTrack = 'WAEC',
     this.errorMessage,
   });
 
@@ -27,6 +28,7 @@ class CurateCoursesState extends Equatable {
   final Set<String> selectedCourseIds;
   final String searchQuery;
   final String selectedCategory;
+  final String activeTrack;
   final String? errorMessage;
 
   bool get isLoading =>
@@ -34,7 +36,7 @@ class CurateCoursesState extends Equatable {
       status == CurateCoursesStatus.initial;
   bool get isSubmitting => status == CurateCoursesStatus.submitting;
 
-  /// Combined courses (catalog + user custom additions)
+  /// Combined courses (catalog + user custom additions), prioritized by user active track
   List<CuratedCourseEntity> get allCourses {
     final ids = <String>{};
     final combined = <CuratedCourseEntity>[];
@@ -44,6 +46,20 @@ class CurateCoursesState extends Equatable {
     for (final c in catalogCourses) {
       if (ids.add(c.id)) combined.add(c);
     }
+
+    if (activeTrack.isNotEmpty && activeTrack != 'All') {
+      final trackKeyword = activeTrack.toLowerCase();
+      combined.sort((a, b) {
+        final aMatches = a.department.toLowerCase().contains(trackKeyword) ||
+            a.courseCode.toLowerCase().contains(trackKeyword);
+        final bMatches = b.department.toLowerCase().contains(trackKeyword) ||
+            b.courseCode.toLowerCase().contains(trackKeyword);
+        if (aMatches && !bMatches) return -1;
+        if (!aMatches && bMatches) return 1;
+        return 0;
+      });
+    }
+
     return combined;
   }
 
@@ -73,6 +89,7 @@ class CurateCoursesState extends Equatable {
     Set<String>? selectedCourseIds,
     String? searchQuery,
     String? selectedCategory,
+    String? activeTrack,
     String? errorMessage,
   }) {
     return CurateCoursesState(
@@ -82,6 +99,7 @@ class CurateCoursesState extends Equatable {
       selectedCourseIds: selectedCourseIds ?? this.selectedCourseIds,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
+      activeTrack: activeTrack ?? this.activeTrack,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -94,6 +112,7 @@ class CurateCoursesState extends Equatable {
     selectedCourseIds,
     searchQuery,
     selectedCategory,
+    activeTrack,
     errorMessage,
   ];
 }

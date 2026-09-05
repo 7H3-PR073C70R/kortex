@@ -10,4 +10,8 @@ class PrefKeys {
       '__kortex_has_seen_welcome_walkthrough__';
   static const String isNewlyRegistered =
       '__kortex_is_newly_registered__';
+  static const String userCuratedCourses = '__kortex_user_curated_courses__';
+  static const String persistedUserDecks = '__kortex_persisted_user_decks__';
+  static const String persistedDeckCardsPrefix =
+      '__kortex_persisted_deck_cards_';
 }

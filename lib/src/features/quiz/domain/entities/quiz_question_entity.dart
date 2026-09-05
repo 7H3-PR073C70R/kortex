@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 
 enum QuizQuestionType {
   multipleChoice,
@@ -20,6 +21,30 @@ class QuizQuestionEntity extends Equatable {
     this.isAnswered = false,
     this.isCorrect = false,
   });
+
+  factory QuizQuestionEntity.fromPastQuestion(PastQuestionEntity q) {
+    final optionLetters = ['A', 'B', 'C', 'D', 'E'];
+    final correctAns = q.correctOptionIndex < q.options.length
+        ? q.options[q.correctOptionIndex]
+        : (q.correctOptionIndex < optionLetters.length
+              ? optionLetters[q.correctOptionIndex]
+              : '');
+
+    return QuizQuestionEntity(
+      id: q.id,
+      prompt: q.passage != null && q.passage!.isNotEmpty
+          ? '${q.passage}\n\n${q.prompt}'
+          : q.prompt,
+      type: QuizQuestionType.multipleChoice,
+      options: q.options,
+      correctAnswer: correctAns,
+      explanation: q.explanation.isNotEmpty
+          ? q.explanation
+          : 'Option ${q.correctOptionLabel} is the correct answer.',
+      subTopic: '${q.subject} (${q.year} • Q${q.questionNumber})',
+      latexFormula: q.latexFormula,
+    );
+  }
 
   final String id;
   final String prompt;
