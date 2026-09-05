@@ -15,8 +15,14 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+@Deprecated(
+  'Use OnboardingCalibrationPage instead. Deprecated as part of Phase 4 Onboarding Unification.',
+)
 @RoutePage()
 class OnboardingStepperPage extends StatelessWidget {
+  @Deprecated(
+    'Use OnboardingCalibrationPage instead. Deprecated as part of Phase 4 Onboarding Unification.',
+  )
   const OnboardingStepperPage({super.key});
 
   @override

@@ -68,6 +68,7 @@ class _CurateCoursesView extends StatefulWidget {
 
 class _CurateCoursesViewState extends State<_CurateCoursesView> {
   late final TextEditingController _searchController;
+  Timer? _searchDebounceTimer;
 
   List<String> get _categories {
     final track = widget.userTrack.toUpperCase();
@@ -127,6 +128,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
 
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -327,6 +329,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                                           size: 18,
                                         ),
                                         onPressed: () {
+                                          _searchDebounceTimer?.cancel();
                                           _searchController.clear();
                                           context
                                               .read<CurateCoursesCubit>()
@@ -340,9 +343,19 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                                   vertical: 12,
                                 ),
                               ),
-                              onChanged: (val) => context
-                                  .read<CurateCoursesCubit>()
-                                  .setSearchQuery(val),
+                              onChanged: (val) {
+                                _searchDebounceTimer?.cancel();
+                                _searchDebounceTimer = Timer(
+                                  const Duration(milliseconds: 300),
+                                  () {
+                                    if (mounted) {
+                                      context
+                                          .read<CurateCoursesCubit>()
+                                          .setSearchQuery(val);
+                                    }
+                                  },
+                                );
+                              },
                             ),
                           ),
                         ),

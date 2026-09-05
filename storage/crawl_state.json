@@ -1,10 +1,10 @@
 {
-  "total_synced": 1885,
+  "total_synced": 1915,
   "progress": {
     "waec": {
-      "mathematics": 8,
+      "mathematics": 13,
       "further-mathematics": 3,
-      "english-language": 2,
+      "english-language": 3,
       "chemistry": 2,
       "physics": 2,
       "biology": 2,
@@ -68,5 +68,5 @@
       "computer-studies": 2
     }
   },
-  "last_updated": "2026-09-05T20:21:18Z"
+  "last_updated": "2026-09-05T20:30:45Z"
 }

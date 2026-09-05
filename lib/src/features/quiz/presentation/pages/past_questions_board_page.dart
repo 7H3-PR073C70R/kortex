@@ -98,6 +98,8 @@ class _PastQuestionsBoardView extends HookWidget {
     final isDark = context.isDarkMode;
     final l10n = context.l10n;
     final searchController = useTextEditingController();
+    final debounceTimer = useRef<Timer?>(null);
+    useEffect(() => () => debounceTimer.value?.cancel(), const []);
 
     return Scaffold(
       backgroundColor: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
@@ -171,9 +173,17 @@ class _PastQuestionsBoardView extends HookWidget {
                             size: 19,
                           ),
                           onChanged: (query) {
-                            context.read<PastQuestionsBloc>().add(
-                                  LoadPastQuestionsEvent(searchQuery: query),
-                                );
+                            debounceTimer.value?.cancel();
+                            debounceTimer.value = Timer(
+                              const Duration(milliseconds: 300),
+                              () {
+                                if (context.mounted) {
+                                  context.read<PastQuestionsBloc>().add(
+                                        LoadPastQuestionsEvent(searchQuery: query),
+                                      );
+                                }
+                              },
+                            );
                           },
                         ),
                       ),

@@ -37,7 +37,7 @@ class LoginPage extends HookWidget {
         if (state.isFullyAuthenticated) {
           unawaited(context.router.replace(const MainRoute()));
         } else if (state.needsOnboarding) {
-          unawaited(context.router.replace(const OnboardingStepperRoute()));
+          unawaited(context.router.replace(const OnboardingCalibrationRoute()));
         } else if (state.status == AuthStatus.magicLinkSent) {
           context.showSnackBar(
             message: l10n.magicLinkSentNotice,
