@@ -187,6 +187,22 @@ class StudyEngineRouter {
     );
   }
 
+  /// Directly processes asset content (such as deck flashcards, OCR text, or document content)
+  /// and generates structured study items using either Cloud AI or on-device local GGUF inference
+  /// depending on network connectivity and offline model presence.
+  Future<StudyPackResult> processDirectAsset({
+    required String assetId,
+    required String content,
+    String? topic,
+    int count = 10,
+  }) async {
+    return generateStudyPack(
+      topic: topic ?? 'Asset $assetId',
+      count: count,
+      sourceText: content,
+    );
+  }
+
   /// Streams flashcard generations, routing dynamically to Cloud or Local LLM.
   Stream<GeneratedFlashcard> generateFlashcards({
     required String topic,

@@ -83,6 +83,9 @@ void _initServices() {
     ..registerFactory<ChatOnboardingBloc>(
       ChatOnboardingBloc.new,
     )
+    ..registerLazySingleton<StudyEngineRouter>(
+      StudyEngineRouter.new,
+    )
     ..registerLazySingleton<FsrsAlgorithmEngine>(
       FsrsAlgorithmEngine.new,
     )

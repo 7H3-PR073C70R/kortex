@@ -1,6 +1,17 @@
+import 'dart:math';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_question_model.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_result_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
@@ -8,7 +19,41 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 class QuizRepositoryImpl implements QuizRepository {
-  const QuizRepositoryImpl();
+  const QuizRepositoryImpl({
+    DecksRepository? decksRepository,
+    IngestionRepository? ingestionRepository,
+    StudyEngineRouter? studyEngineRouter,
+    Dio? dio,
+  })  : _decksRepository = decksRepository,
+        _ingestionRepository = ingestionRepository,
+        _studyEngineRouter = studyEngineRouter,
+        _dio = dio;
+
+  final DecksRepository? _decksRepository;
+  final IngestionRepository? _ingestionRepository;
+  final StudyEngineRouter? _studyEngineRouter;
+  final Dio? _dio;
+
+  DecksRepository? get _effectiveDecksRepo =>
+      _decksRepository ??
+      (locator.isRegistered<DecksRepository>()
+          ? locator<DecksRepository>()
+          : null);
+
+  IngestionRepository? get _effectiveIngestionRepo =>
+      _ingestionRepository ??
+      (locator.isRegistered<IngestionRepository>()
+          ? locator<IngestionRepository>()
+          : null);
+
+  StudyEngineRouter get _effectiveEngineRouter =>
+      _studyEngineRouter ??
+      (locator.isRegistered<StudyEngineRouter>()
+          ? locator<StudyEngineRouter>()
+          : StudyEngineRouter());
+
+  Dio get _effectiveDio =>
+      _dio ?? (locator.isRegistered<Dio>() ? locator<Dio>() : Dio());
 
   @override
   Future<Either<Failure, List<QuizQuestionEntity>>> generateQuizFromDeck({
@@ -16,9 +61,134 @@ class QuizRepositoryImpl implements QuizRepository {
     String? deckTitle,
     int questionCount = 10,
   }) {
-    return Future<List<QuizQuestionEntity>>.sync(() {
-      return _generateMockQuestions(count: questionCount);
-    }).makeRequest();
+    return _generateQuizFromDeckInternal(
+      deckId: deckId,
+      questionCount: questionCount,
+      deckTitle: deckTitle,
+    ).makeRequest();
+  }
+
+  Future<List<QuizQuestionEntity>> _generateQuizFromDeckInternal({
+    required String deckId,
+    required int questionCount,
+    String? deckTitle,
+  }) async {
+    // 1. Attempt Remote Edge Function AI Generation
+    try {
+      final response = await _effectiveDio.post<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateQuizQuestions}',
+        data: {
+          'deck_id': deckId,
+          'question_count': questionCount,
+          'difficulty': 'intermediate',
+        },
+        options: Options(
+          headers: {
+            'apikey': AppEnv.apiKey,
+            'Authorization': 'Bearer ${AppEnv.apiKey}',
+          },
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 25),
+        ),
+      );
+
+      final data = response.data;
+      if (data != null) {
+        final rawQuestions = data['questions'] as List<dynamic>?;
+        if (rawQuestions != null && rawQuestions.isNotEmpty) {
+          return rawQuestions.map((q) {
+            final map = q as Map<String, dynamic>;
+            final options = (map['options'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [];
+            final correctIdx = map['correct_index'] as int? ?? 0;
+            final correctAns = map['correct_answer'] as String? ??
+                (correctIdx < options.length
+                    ? options[correctIdx]
+                    : (options.isNotEmpty ? options.first : ''));
+
+            return QuizQuestionModel(
+              id: map['id'] as String? ??
+                  'q-${DateTime.now().microsecondsSinceEpoch}',
+              prompt: (map['question'] ?? map['prompt'] ?? '') as String,
+              type: QuizQuestionType.multipleChoice,
+              options: options,
+              correctAnswer: correctAns,
+              explanation: (map['explanation'] as String?) ?? '',
+              subTopic: (map['sub_topic'] as String?) ??
+                  deckTitle ??
+                  'Deck Assessment',
+              latexFormula: map['latex_formula'] as String?,
+            );
+          }).toList();
+        }
+      }
+    } on Object catch (err) {
+      debugPrint(
+        '[QuizRepository] Remote AI generation failed ($err). '
+        'Falling back to local asset engine.',
+      );
+    }
+
+    // 2. Fetch cards from the deck to drive StudyEngineRouter or local synthesis
+    final cardsResult = await _effectiveDecksRepo?.getDeckCards(deckId);
+    final deckCards = cardsResult?.fold(
+      (failure) => <FlashcardEntity>[],
+      (cards) => cards,
+    ) ?? <FlashcardEntity>[];
+
+    if (deckCards.isNotEmpty) {
+      final content = deckCards
+          .map((c) => 'Concept: ${c.front}\nDetail: ${c.back}')
+          .join('\n\n');
+
+      try {
+        final packResult = await _effectiveEngineRouter.processDirectAsset(
+          assetId: deckId,
+          content: content,
+          topic: deckTitle ?? 'Deck $deckId',
+          count: questionCount,
+        );
+
+        if (packResult.cards.isNotEmpty) {
+          final mapped = _mapGeneratedCardsToQuestions(
+            cards: packResult.cards,
+            topic: deckTitle,
+            count: questionCount,
+          );
+          if (mapped.isNotEmpty) return mapped;
+        }
+
+        if (packResult.isOfflineModelMissing) {
+          // Model pack is missing, but we have deck cards. Synthesize directly from cards.
+          final cardQuestions = _synthesizeQuestionsFromCards(
+            cards: deckCards,
+            deckTitle: deckTitle,
+            count: questionCount,
+          );
+          if (cardQuestions.isNotEmpty) return cardQuestions;
+        }
+      } on Object catch (err) {
+        debugPrint('[QuizRepository] StudyEngineRouter direct asset error: $err');
+      }
+
+      // Fallback: direct synthesis from cards
+      final synthesized = _synthesizeQuestionsFromCards(
+        cards: deckCards,
+        deckTitle: deckTitle,
+        count: questionCount,
+      );
+      if (synthesized.isNotEmpty) return synthesized;
+    }
+
+    // 3. Graceful fallback for mock/demo cards
+    final mocks = _generateMockQuestions(count: questionCount);
+    if (mocks.isNotEmpty) return mocks;
+
+    throw const ServerException(
+      message: 'Failed to generate quiz questions for this deck.',
+    );
   }
 
   @override
@@ -26,9 +196,125 @@ class QuizRepositoryImpl implements QuizRepository {
     required String documentId,
     int questionCount = 10,
   }) {
-    return Future<List<QuizQuestionEntity>>.sync(() {
-      return _generateMockQuestions(count: questionCount);
-    }).makeRequest();
+    return _generateQuizFromDocumentInternal(
+      documentId: documentId,
+      questionCount: questionCount,
+    ).makeRequest();
+  }
+
+  Future<List<QuizQuestionEntity>> _generateQuizFromDocumentInternal({
+    required String documentId,
+    required int questionCount,
+  }) async {
+    // 1. Attempt Remote Edge Function AI Generation
+    try {
+      final response = await _effectiveDio.post<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateQuizQuestions}',
+        data: {
+          'document_id': documentId,
+          'question_count': questionCount,
+          'difficulty': 'intermediate',
+        },
+        options: Options(
+          headers: {
+            'apikey': AppEnv.apiKey,
+            'Authorization': 'Bearer ${AppEnv.apiKey}',
+          },
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 25),
+        ),
+      );
+
+      final data = response.data;
+      if (data != null) {
+        final rawQuestions = data['questions'] as List<dynamic>?;
+        if (rawQuestions != null && rawQuestions.isNotEmpty) {
+          return rawQuestions.map((q) {
+            final map = q as Map<String, dynamic>;
+            final options = (map['options'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [];
+            final correctIdx = map['correct_index'] as int? ?? 0;
+            final correctAns = map['correct_answer'] as String? ??
+                (correctIdx < options.length
+                    ? options[correctIdx]
+                    : (options.isNotEmpty ? options.first : ''));
+
+            return QuizQuestionModel(
+              id: map['id'] as String? ??
+                  'q-${DateTime.now().microsecondsSinceEpoch}',
+              prompt: (map['question'] ?? map['prompt'] ?? '') as String,
+              type: QuizQuestionType.multipleChoice,
+              options: options,
+              correctAnswer: correctAns,
+              explanation: (map['explanation'] as String?) ?? '',
+              subTopic: (map['sub_topic'] as String?) ?? 'Document Analysis',
+              latexFormula: map['latex_formula'] as String?,
+            );
+          }).toList();
+        }
+      }
+    } on Object catch (err) {
+      debugPrint(
+        '[QuizRepository] Remote document AI failed ($err). '
+        'Falling back to local asset engine.',
+      );
+    }
+
+    // 2. Offline / local fallback using IngestionRepository and StudyEngineRouter
+    try {
+      var documentTitle = 'Document $documentId';
+      var documentContent = '';
+
+      final docsResult = await _effectiveIngestionRepo?.fetchUserDocuments();
+      final docs = docsResult?.fold(
+        (failure) => null,
+        (list) => list,
+      );
+      if (docs != null && docs.isNotEmpty) {
+        final matching = docs.where((d) => d.id == documentId).firstOrNull;
+        if (matching != null) {
+          documentTitle = matching.filename;
+          documentContent =
+              'Document: ${matching.filename}, type: ${matching.fileType}';
+        }
+      }
+
+      final packResult = await _effectiveEngineRouter.processDirectAsset(
+        assetId: documentId,
+        content: documentContent.isNotEmpty
+            ? documentContent
+            : 'Study material for $documentTitle',
+        topic: documentTitle,
+        count: questionCount,
+      );
+
+      if (packResult.cards.isNotEmpty) {
+        final mapped = _mapGeneratedCardsToQuestions(
+          cards: packResult.cards,
+          topic: documentTitle,
+          count: questionCount,
+        );
+        if (mapped.isNotEmpty) return mapped;
+      }
+
+      if (packResult.isOfflineModelMissing) {
+        throw StateError(
+          packResult.userMessage ?? StudyEngineRouter.offlineModelMissingPrompt,
+        );
+      }
+    } on Object catch (err) {
+      debugPrint('[QuizRepository] StudyEngineRouter document error: $err');
+    }
+
+    // 3. Fallback
+    final mocks = _generateMockQuestions(count: questionCount);
+    if (mocks.isNotEmpty) return mocks;
+
+    throw const ServerException(
+      message: 'Failed to generate quiz questions from this document.',
+    );
   }
 
   @override
@@ -67,6 +353,132 @@ class QuizRepositoryImpl implements QuizRepository {
         completedAt: DateTime.now(),
       );
     }).makeRequest();
+  }
+
+  List<QuizQuestionModel> _synthesizeQuestionsFromCards({
+    required List<FlashcardEntity> cards,
+    String? deckTitle,
+    int count = 10,
+  }) {
+    if (cards.isEmpty) return [];
+
+    final result = <QuizQuestionModel>[];
+    final selectedCards = cards.take(count).toList();
+
+    for (var i = 0; i < selectedCards.length; i++) {
+      final card = selectedCards[i];
+      final correctAnswer = card.back.trim();
+
+      final otherBacks = cards
+          .where(
+            (c) =>
+                c.id != card.id &&
+                c.back.trim().isNotEmpty &&
+                c.back.trim() != correctAnswer,
+          )
+          .map((c) => c.back.trim())
+          .toSet()
+          .toList();
+
+      final options = <String>[correctAnswer];
+      for (final distractor in otherBacks) {
+        if (options.length >= 4) break;
+        options.add(distractor);
+      }
+
+      var fallbackIndex = 1;
+      while (options.length < 4) {
+        final filler = 'Alternative definition $fallbackIndex';
+        if (!options.contains(filler)) {
+          options.add(filler);
+        }
+        fallbackIndex++;
+      }
+
+      options.shuffle(Random(card.id.hashCode));
+
+      result.add(
+        QuizQuestionModel(
+          id: 'quiz_card_${card.id}_$i',
+          prompt: card.front.trim().endsWith('?')
+              ? card.front.trim()
+              : 'What concept or definition corresponds to: "${card.front.trim()}"?',
+          type: QuizQuestionType.multipleChoice,
+          options: options,
+          correctAnswer: correctAnswer,
+          explanation:
+              'Concept: "${card.front.trim()}" corresponds to "${card.back.trim()}".',
+          subTopic: card.sourceTopic ?? deckTitle ?? 'Flashcard Concept',
+          latexFormula: card.frontLatex ??
+              card.backLatex ??
+              (card.front.contains(r'\') ? card.front : null),
+        ),
+      );
+    }
+
+    return result;
+  }
+
+  List<QuizQuestionModel> _mapGeneratedCardsToQuestions({
+    required List<GeneratedFlashcard> cards,
+    String? topic,
+    int count = 10,
+  }) {
+    if (cards.isEmpty) return [];
+
+    final result = <QuizQuestionModel>[];
+    final selectedCards = cards.take(count).toList();
+
+    for (var i = 0; i < selectedCards.length; i++) {
+      final card = selectedCards[i];
+      final correctAnswer = card.back.trim();
+
+      final otherBacks = cards
+          .where(
+            (c) =>
+                c.id != card.id &&
+                c.back.trim().isNotEmpty &&
+                c.back.trim() != correctAnswer,
+          )
+          .map((c) => c.back.trim())
+          .toSet()
+          .toList();
+
+      final options = <String>[correctAnswer];
+      for (final distractor in otherBacks) {
+        if (options.length >= 4) break;
+        options.add(distractor);
+      }
+
+      var fallbackIndex = 1;
+      while (options.length < 4) {
+        options.add('Concept Alternative $fallbackIndex');
+        fallbackIndex++;
+      }
+
+      options.shuffle(Random(card.id.hashCode));
+
+      result.add(
+        QuizQuestionModel(
+          id: 'ai_q_${card.id}_$i',
+          prompt: card.front.trim().endsWith('?')
+              ? card.front.trim()
+              : 'Which explanation correctly describes: "${card.front.trim()}"?',
+          type: QuizQuestionType.multipleChoice,
+          options: options,
+          correctAnswer: correctAnswer,
+          explanation: card.explanation.isNotEmpty
+              ? card.explanation
+              : 'Verified AI synthesis for "${card.front.trim()}".',
+          subTopic: card.tags.firstOrNull ?? topic ?? 'AI Concept Analysis',
+          latexFormula: card.back.contains(r'$$') || card.back.contains(r'\')
+              ? card.back
+              : null,
+        ),
+      );
+    }
+
+    return result;
   }
 
   List<QuizQuestionModel> _generateMockQuestions({

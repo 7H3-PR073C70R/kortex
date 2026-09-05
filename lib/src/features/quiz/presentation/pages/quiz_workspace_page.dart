@@ -193,8 +193,64 @@ class _QuizWorkspaceView extends HookWidget {
         final current = state.currentQuestion;
         if (current == null) {
           return Scaffold(
-            backgroundColor: colors.transparent,
-            body: const SizedBox.shrink(),
+            backgroundColor:
+                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+            appBar: AppBar(
+              backgroundColor: colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                state.quizTitle,
+                style:
+                    typography.title3.bold.copyWith(color: colors.textPrimary),
+              ),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.quiz_outlined,
+                      color: colors.textSecondary,
+                      size: 56,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Quiz Questions Available',
+                      style: typography.title2.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'There are no flashcards or questions available to generate a quiz for this session.',
+                      textAlign: TextAlign.center,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                      ),
+                      child: Text(
+                        l10n.cancelAction,
+                        style:
+                            typography.body.bold.copyWith(color: colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 

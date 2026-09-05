@@ -1,8 +1,8 @@
 {
-  "total_synced": 1740,
+  "total_synced": 1885,
   "progress": {
     "waec": {
-      "mathematics": 3,
+      "mathematics": 8,
       "further-mathematics": 3,
       "english-language": 2,
       "chemistry": 2,
@@ -52,9 +52,9 @@
       "igbo": 12,
       "arabic": 12,
       "home-economics": 12,
-      "hausa": 8,
-      "computer-studies": 2,
-      "physical-education": 2
+      "hausa": 12,
+      "computer-studies": 12,
+      "physical-education": 12
     },
     "neco": {
       "mathematics": 2,
@@ -68,5 +68,5 @@
       "computer-studies": 2
     }
   },
-  "last_updated": "2026-09-05T19:56:08Z"
+  "last_updated": "2026-09-05T20:21:18Z"
 }

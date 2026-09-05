@@ -72,7 +72,12 @@ void _initRepositoryLocator() {
       PlannerRepositoryImpl.new,
     )
     ..registerLazySingleton<QuizRepository>(
-      QuizRepositoryImpl.new,
+      () => QuizRepositoryImpl(
+        decksRepository: locator<DecksRepository>(),
+        ingestionRepository: locator<IngestionRepository>(),
+        studyEngineRouter: locator<StudyEngineRouter>(),
+        dio: locator<Dio>(),
+      ),
     )
     ..registerLazySingleton<PastQuestionsRepository>(
       () => PastQuestionsRepositoryImpl(

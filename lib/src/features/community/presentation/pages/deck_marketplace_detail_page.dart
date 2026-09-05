@@ -7,6 +7,10 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -47,6 +51,12 @@ class DeckMarketplaceDetailPage extends HookWidget {
             context.showSnackBar(
               message: l10n.marketplaceCloneSuccess,
             );
+            if (locator.isRegistered<DecksBloc>()) {
+              locator<DecksBloc>().add(const DecksRefreshed());
+            }
+            if (locator.isRegistered<DashboardBloc>()) {
+              locator<DashboardBloc>().add(const DashboardRefreshed());
+            }
           },
         );
       } on Object catch (_) {
