@@ -1,5 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
@@ -40,6 +43,10 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
         ),
       ),
     );
+
+    if (locator.isRegistered<DashboardBloc>()) {
+      locator<DashboardBloc>().add(DashboardDeckDeleted(event.deckId));
+    }
 
     if (_deleteDeckUseCase != null) {
       await _deleteDeckUseCase(event.deckId);

@@ -127,7 +127,7 @@ class _CourseModuleView extends StatelessWidget {
         description:
             'Are you sure you want to remove "$courseCode - $courseTitle"?\n\n'
             'This action is destructive and will delete the course along with its $deckCount associated study deck(s), flashcards, and uploaded documents.',
-        primaryActionText: 'Delete Course & Decks',
+        primaryActionText: 'Delete Course',
         isDestructive: true,
         onPrimaryAction: () async {
           AppFeedback.heavy();

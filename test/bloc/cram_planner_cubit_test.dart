@@ -73,5 +73,28 @@ void main() {
         ),
       ],
     );
+
+    blocTest<CramPlannerCubit, CramPlannerState>(
+      'emits [loading, loaded] and removes exam when deleteExamCountdown succeeds',
+      build: () {
+        when(() => mockRepository.deleteExam(tExam.id)).thenAnswer(
+          (_) async => const Right(null),
+        );
+        return cubit;
+      },
+      seed: () => CramPlannerState(
+        status: CramPlannerStatus.loaded,
+        activeExams: [tExam],
+        selectedExam: tExam,
+      ),
+      act: (cubit) => cubit.deleteExamCountdown(tExam.id),
+      expect: () => [
+        isA<CramPlannerState>().having((s) => s.status, 'status', CramPlannerStatus.loading),
+        isA<CramPlannerState>()
+            .having((s) => s.status, 'status', CramPlannerStatus.loaded)
+            .having((s) => s.activeExams.isEmpty, 'activeExams.isEmpty', isTrue)
+            .having((s) => s.selectedExam, 'selectedExam', isNull),
+      ],
+    );
   });
 }

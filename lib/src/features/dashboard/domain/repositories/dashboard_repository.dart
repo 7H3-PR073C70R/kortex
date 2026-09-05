@@ -30,4 +30,7 @@ abstract class DashboardRepository {
     required String examName,
     required List<String> subjects,
   });
+
+  /// Deletes a specific curated course by ID.
+  Future<Either<Failure, void>> deleteCuratedCourse(String courseId);
 }

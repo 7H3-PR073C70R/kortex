@@ -3,6 +3,8 @@ import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/delete_curated_course_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
@@ -16,11 +18,17 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
   CurateCoursesCubit({
     required this.getCatalogUseCase,
     required this.syncCoursesUseCase,
+    DeleteCuratedCourseUseCase? deleteCuratedCourseUseCase,
     this.dashboardBloc,
-  }) : super(const CurateCoursesState());
+  })  : _deleteCuratedCourseUseCase = deleteCuratedCourseUseCase ??
+            (locator.isRegistered<DashboardRepository>()
+                ? DeleteCuratedCourseUseCase(locator<DashboardRepository>())
+                : null),
+        super(const CurateCoursesState());
 
   final GetCuratedCoursesCatalogUseCase getCatalogUseCase;
   final SyncUserCoursesUseCase syncCoursesUseCase;
+  final DeleteCuratedCourseUseCase? _deleteCuratedCourseUseCase;
   final DashboardBloc? dashboardBloc;
 
   Future<void> loadCatalog({
@@ -167,9 +175,17 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
 
     final updatedSelected = Set<String>.from(state.selectedCourseIds)
       ..remove(courseId);
-    emit(state.copyWith(selectedCourseIds: updatedSelected));
+    final updatedCustom =
+        state.customCourses.where((c) => c.id != courseId).toList();
+    emit(
+      state.copyWith(
+        selectedCourseIds: updatedSelected,
+        customCourses: updatedCustom,
+      ),
+    );
 
-    await saveCuratedCourses();
+    await _deleteCuratedCourseUseCase?.call(courseId);
+    dashboardBloc?.add(const DashboardRefreshed());
 
     if (deleteAssociatedDecks && locator.isRegistered<DecksRemoteDataSource>()) {
       try {

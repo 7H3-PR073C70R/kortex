@@ -2,22 +2,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 class AddExamModalSheet extends StatefulWidget {
-  const AddExamModalSheet({super.key});
+  const AddExamModalSheet({this.initialExam, super.key});
 
-  static Future<void> show(BuildContext context) {
+  final ExamEventEntity? initialExam;
+
+  static Future<void> show(
+    BuildContext context, {
+    ExamEventEntity? initialExam,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: context.read<CramPlannerCubit>(),
-        child: const AddExamModalSheet(),
+        child: AddExamModalSheet(initialExam: initialExam),
       ),
     );
   }
@@ -28,9 +34,21 @@ class AddExamModalSheet extends StatefulWidget {
 
 class _AddExamModalSheetState extends State<AddExamModalSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  String _selectedTrack = 'WAEC';
-  DateTime _selectedDate = DateTime.now().add(const Duration(days: 30));
+  late final TextEditingController _nameController;
+  late String _selectedTrack;
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.initialExam?.examName ?? '',
+    );
+    _selectedTrack = widget.initialExam?.subjectTrack ?? 'WAEC';
+    _selectedDate =
+        widget.initialExam?.targetDate ??
+        DateTime.now().add(const Duration(days: 30));
+  }
 
   @override
   void dispose() {
@@ -42,7 +60,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _selectedDate.isBefore(now)
+          ? now.add(const Duration(days: 1))
+          : _selectedDate,
       firstDate: now.add(const Duration(days: 1)),
       lastDate: now.add(const Duration(days: 730)),
     );
@@ -57,14 +77,27 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    unawaited(
-      context.read<CramPlannerCubit>().addExamCountdown(
-        examName: _nameController.text.trim(),
-        targetDate: _selectedDate,
-        subjectTrack: _selectedTrack,
-        totalCardsCount: 150,
-      ),
-    );
+    final cubit = context.read<CramPlannerCubit>();
+    if (widget.initialExam != null) {
+      unawaited(
+        cubit.updateExamCountdown(
+          examId: widget.initialExam!.id,
+          examName: _nameController.text.trim(),
+          targetDate: _selectedDate,
+          subjectTrack: _selectedTrack,
+          totalCardsCount: widget.initialExam!.totalCardsCount,
+        ),
+      );
+    } else {
+      unawaited(
+        cubit.addExamCountdown(
+          examName: _nameController.text.trim(),
+          targetDate: _selectedDate,
+          subjectTrack: _selectedTrack,
+          totalCardsCount: 150,
+        ),
+      );
+    }
 
     Navigator.of(context).pop();
   }
@@ -100,7 +133,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    l10n.addExamTitle,
+                    widget.initialExam != null
+                        ? 'Edit Exam Countdown'
+                        : l10n.addExamTitle,
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                     ),
@@ -250,7 +285,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
               // Save Button
               AppButton(
-                text: l10n.saveExamCountdown,
+                text: widget.initialExam != null
+                    ? 'Update Exam Countdown'
+                    : l10n.saveExamCountdown,
                 onPressed: _submit,
               ),
             ],

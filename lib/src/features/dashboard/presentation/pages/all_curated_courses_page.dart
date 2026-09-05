@@ -429,7 +429,7 @@ class AllCuratedCoursesPage extends HookWidget {
         description:
             'Are you sure you want to remove "${course.courseCode} - ${course.title}"? '
             'This will delete the course from your curriculum along with its $deckCount associated study deck(s), flashcards, and uploaded documents.',
-        primaryActionText: 'Delete Course & Decks',
+        primaryActionText: 'Delete Course',
         isDestructive: true,
         onPrimaryAction: () async {
           AppFeedback.heavy();

@@ -4,6 +4,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/delete_curated_course_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
@@ -15,6 +16,9 @@ class MockGetCuratedCoursesCatalogUseCase extends Mock
 
 class MockSyncUserCoursesUseCase extends Mock
     implements SyncUserCoursesUseCase {}
+
+class MockDeleteCuratedCourseUseCase extends Mock
+    implements DeleteCuratedCourseUseCase {}
 
 void main() {
   late MockGetCuratedCoursesCatalogUseCase mockGetCatalogUseCase;
@@ -307,6 +311,30 @@ void main() {
       expect(necoCourses.every((c) => c.department.startsWith('NECO')), isTrue);
       expect(necoCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
       expect(necoCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
+    });
+
+    test('deleteCourse only removes the target course without wiping all courses', () async {
+      final mockDeleteUseCase = MockDeleteCuratedCourseUseCase();
+      when(() => mockDeleteUseCase('course_1')).thenAnswer((_) async => const Right(null));
+
+      final cubit = CurateCoursesCubit(
+        getCatalogUseCase: mockGetCatalogUseCase,
+        syncCoursesUseCase: mockSyncUseCase,
+        deleteCuratedCourseUseCase: mockDeleteUseCase,
+      );
+
+      // Pre-select two courses
+      cubit.emit(
+        cubit.state.copyWith(
+          selectedCourseIds: {'course_1', 'course_2'},
+        ),
+      );
+
+      await cubit.deleteCourse('course_1', deleteAssociatedDecks: false);
+
+      verify(() => mockDeleteUseCase('course_1')).called(1);
+      expect(cubit.state.selectedCourseIds.contains('course_1'), isFalse);
+      expect(cubit.state.selectedCourseIds.contains('course_2'), isTrue);
     });
   });
 }

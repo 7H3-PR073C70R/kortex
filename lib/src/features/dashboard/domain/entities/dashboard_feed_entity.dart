@@ -113,6 +113,27 @@ class DashboardFeedEntity extends Equatable {
 
   bool get isProfileUncalibrated => !calibrationProfile.isCalibrated;
 
+  DashboardFeedEntity copyWith({
+    CalibrationProfile? calibrationProfile,
+    AnalyticsSummaryEntity? analyticsSummary,
+    List<StudyDeckEntity>? dueStudyDecks,
+    List<CuratedCourseEntity>? curatedCourses,
+    ExamCountdownEntity? targetExamCountdown,
+    int? unreadNotificationCount,
+    String? syllabotDailyInsight,
+  }) {
+    return DashboardFeedEntity(
+      calibrationProfile: calibrationProfile ?? this.calibrationProfile,
+      analyticsSummary: analyticsSummary ?? this.analyticsSummary,
+      dueStudyDecks: dueStudyDecks ?? this.dueStudyDecks,
+      curatedCourses: curatedCourses ?? this.curatedCourses,
+      targetExamCountdown: targetExamCountdown ?? this.targetExamCountdown,
+      unreadNotificationCount:
+          unreadNotificationCount ?? this.unreadNotificationCount,
+      syllabotDailyInsight: syllabotDailyInsight ?? this.syllabotDailyInsight,
+    );
+  }
+
   @override
   List<Object?> get props => [
     calibrationProfile,

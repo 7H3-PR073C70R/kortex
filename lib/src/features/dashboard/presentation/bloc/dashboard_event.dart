@@ -41,3 +41,13 @@ class DashboardQuickPromptSubmitted extends DashboardEvent {
   @override
   List<Object?> get props => [prompt];
 }
+
+/// Dispatched when a study deck is deleted so the dashboard can update immediately
+class DashboardDeckDeleted extends DashboardEvent {
+  const DashboardDeckDeleted(this.deckId);
+
+  final String deckId;
+
+  @override
+  List<Object?> get props => [deckId];
+}

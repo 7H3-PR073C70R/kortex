@@ -6,6 +6,7 @@ import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculato
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class ExamCountdownBanner extends StatelessWidget {
@@ -89,78 +90,123 @@ class ExamCountdownBanner extends StatelessWidget {
 
         return Semantics(
           container: true,
+          button: true,
           label: bannerLabel,
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(170)
-                  : colors.surfacePrimary.withAlpha(225),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: badgeColor.withAlpha(isDark ? 90 : 60),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: badgeColor.withAlpha(isDark ? 30 : 15),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
+          child: InkWell(
+            onTap: () {
+              unawaited(ManageExamModalSheet.show(context));
+            },
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceSecondary.withAlpha(170)
+                    : colors.surfacePrimary.withAlpha(225),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: badgeColor.withAlpha(isDark ? 90 : 60),
+                  width: 1.2,
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withAlpha(isDark ? 40 : 25),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: badgeColor.withAlpha(100),
+                boxShadow: [
+                  BoxShadow(
+                    color: badgeColor.withAlpha(isDark ? 30 : 15),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.timer_rounded,
-                            size: 14,
-                            color: badgeColor,
+                        decoration: BoxDecoration(
+                          color: badgeColor.withAlpha(isDark ? 40 : 25),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: badgeColor.withAlpha(100),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${exam.subjectTrack} Track',
-                            style: typography.caption.bold.copyWith(
-                              fontSize: 11,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_rounded,
+                              size: 14,
                               color: badgeColor,
                             ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${exam.subjectTrack} Track',
+                              style: typography.caption.bold.copyWith(
+                                fontSize: 11,
+                                color: badgeColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfacePrimary.withAlpha(150)
+                                  : colors.surfaceSecondary.withAlpha(150),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: colors.surfaceBorder.withAlpha(90),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.tune_rounded,
+                                  size: 12,
+                                  color: colors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Manage',
+                                  style: typography.caption.medium.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(
+                              Icons.add_rounded,
+                              color: colors.textSecondary,
+                              size: 20,
+                            ),
+                            tooltip: l10n.addExamTitle,
+                            onPressed: () {
+                              unawaited(AddExamModalSheet.show(context));
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
                         ],
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.add_rounded,
-                        color: colors.textSecondary,
-                        size: 20,
-                      ),
-                      tooltip: l10n.addExamTitle,
-                      onPressed: () {
-                        unawaited(AddExamModalSheet.show(context));
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(height: 12),
                 Text(
                   l10n.daysUntilExam(days, exam.examName),
@@ -189,8 +235,9 @@ class ExamCountdownBanner extends StatelessWidget {
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }

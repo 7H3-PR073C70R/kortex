@@ -67,10 +67,14 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<AutoCurateExamCoursesUseCase>(
       () => AutoCurateExamCoursesUseCase(locator<DashboardRepository>()),
     )
+    ..registerLazySingleton<DeleteCuratedCourseUseCase>(
+      () => DeleteCuratedCourseUseCase(locator<DashboardRepository>()),
+    )
     ..registerFactory<CurateCoursesCubit>(
       () => CurateCoursesCubit(
         getCatalogUseCase: locator<GetCuratedCoursesCatalogUseCase>(),
         syncCoursesUseCase: locator<SyncUserCoursesUseCase>(),
+        deleteCuratedCourseUseCase: locator<DeleteCuratedCourseUseCase>(),
         dashboardBloc: locator<DashboardBloc>(),
       ),
     )

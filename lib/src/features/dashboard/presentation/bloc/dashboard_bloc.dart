@@ -13,6 +13,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<DashboardStarted>(_onStarted);
     on<DashboardRefreshed>(_onRefreshed);
     on<DashboardExamStarted>(_onExamStarted);
+    on<DashboardDeckDeleted>(_onDeckDeleted);
   }
 
   final GetDashboardFeedUseCase getDashboardFeedUseCase;
@@ -86,6 +87,26 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         state.copyWith(
           isExamLaunching: false,
           launchedExamSessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  void _onDeckDeleted(
+    DashboardDeckDeleted event,
+    Emitter<DashboardState> emit,
+  ) {
+    final currentFeed = state.feed;
+    if (currentFeed == null) return;
+
+    final updatedDecks = currentFeed.dueStudyDecks
+        .where((d) => d.id != event.deckId)
+        .toList();
+
+    emit(
+      state.copyWith(
+        feed: currentFeed.copyWith(
+          dueStudyDecks: updatedDecks,
         ),
       ),
     );

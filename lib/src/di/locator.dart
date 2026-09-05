@@ -57,6 +57,7 @@ import 'package:kortex/src/features/dashboard/data/repositories/dashboard_reposi
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/auto_curate_exam_courses_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/delete_curated_course_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_feed_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';

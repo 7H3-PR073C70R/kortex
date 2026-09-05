@@ -84,4 +84,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
         )
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, void>> deleteCuratedCourse(String courseId) {
+    return remoteDataSource.deleteCuratedCourse(courseId).makeRequest();
+  }
 }

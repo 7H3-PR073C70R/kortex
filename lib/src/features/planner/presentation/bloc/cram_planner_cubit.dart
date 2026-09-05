@@ -59,6 +59,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             status: CramPlannerStatus.loaded,
             activeExams: sorted,
             selectedExam: primaryExam,
+            clearSelectedExam: primaryExam == null,
             dynamicDailyTarget: pace,
             urgencyLevel: urgency,
           ),
@@ -133,6 +134,134 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       state.copyWith(
         dynamicDailyTarget: adjustedPace,
         urgencyLevel: _calculator.getUrgencyLevel(exam.daysRemaining),
+      ),
+    );
+  }
+
+  /// Updates an existing exam countdown.
+  Future<void> updateExamCountdown({
+    required String examId,
+    required String examName,
+    required DateTime targetDate,
+    required String subjectTrack,
+    int? totalCardsCount,
+    double? targetScorePercent,
+  }) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.updateExam(
+      examId: examId,
+      examName: examName,
+      targetDate: targetDate,
+      subjectTrack: subjectTrack,
+      totalCardsCount: totalCardsCount,
+      targetScorePercent: targetScorePercent,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (updatedExam) {
+        final updatedList = state.activeExams
+            .map((e) => e.id == examId ? updatedExam : e)
+            .toList()
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final primary = (state.selectedExam?.id == examId)
+            ? updatedExam
+            : (updatedList.isNotEmpty ? updatedList.first : null);
+
+        var pace = 20;
+        var urgency = ExamUrgencyLevel.normal;
+        if (primary != null) {
+          pace = _calculateTargetUseCase(
+            remainingCards: primary.remainingCards,
+            lapses: primary.totalLapses,
+            daysRemaining: primary.daysRemaining,
+          );
+          urgency = _calculator.getUrgencyLevel(primary.daysRemaining);
+        }
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            dynamicDailyTarget: pace,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Deletes an exam countdown.
+  Future<void> deleteExamCountdown(String examId) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.deleteExam(examId);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (_) {
+        final updatedList = state.activeExams
+            .where((e) => e.id != examId)
+            .toList()
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final primary = updatedList.isNotEmpty ? updatedList.first : null;
+        var pace = 20;
+        var urgency = ExamUrgencyLevel.normal;
+
+        if (primary != null) {
+          pace = _calculateTargetUseCase(
+            remainingCards: primary.remainingCards,
+            lapses: primary.totalLapses,
+            daysRemaining: primary.daysRemaining,
+          );
+          urgency = _calculator.getUrgencyLevel(primary.daysRemaining);
+        }
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            clearSelectedExam: primary == null,
+            dynamicDailyTarget: pace,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Selects which exam is active in the banner.
+  void selectExam(String examId) {
+    final match = state.activeExams.where((e) => e.id == examId).firstOrNull;
+    if (match == null) return;
+
+    final pace = _calculateTargetUseCase(
+      remainingCards: match.remainingCards,
+      lapses: match.totalLapses,
+      daysRemaining: match.daysRemaining,
+    );
+    final urgency = _calculator.getUrgencyLevel(match.daysRemaining);
+
+    emit(
+      state.copyWith(
+        selectedExam: match,
+        dynamicDailyTarget: pace,
+        urgencyLevel: urgency,
       ),
     );
   }

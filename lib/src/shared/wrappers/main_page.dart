@@ -10,6 +10,11 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
@@ -682,6 +687,12 @@ void _handleTabTap(
   if (tabsRouter.activeIndex != targetIndex) {
     unawaited(HapticFeedback.selectionClick());
     tabsRouter.setActiveIndex(targetIndex);
+
+    if (targetIndex == 0 && locator.isRegistered<DashboardBloc>()) {
+      locator<DashboardBloc>().add(const DashboardRefreshed());
+    } else if (targetIndex == 1 && locator.isRegistered<DecksBloc>()) {
+      locator<DecksBloc>().add(const DecksRefreshed());
+    }
 
     unawaited(
       // ignore: deprecated_member_use, backward-compatible a11y announcement

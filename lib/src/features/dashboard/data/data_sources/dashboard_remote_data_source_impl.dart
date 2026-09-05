@@ -55,13 +55,13 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             title: (m['title'] as String?) ?? 'Study Deck',
             subject: (m['subject'] as String?) ?? 'General Studies',
             totalCards: (m['totalCards'] as int?) ?? 10,
-            dueCards: (m['dueCards'] as int?) ?? 5,
+            dueCards: (m['dueCards'] as int?) ?? 0,
             retentionRate: (m['masteryRate'] as num?)?.toDouble() ?? 0.8,
             lastReviewedIso: DateTime.now().toIso8601String(),
             category: (m['category'] as String?) ?? 'General',
             colorHex: m['colorHex'] as String?,
           );
-        }).toList();
+        }).where((d) => d.dueCards > 0).toList();
       }
     } on Object catch (_) {}
     return const [];
@@ -78,7 +78,11 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       if (feed.curatedCourses.isEmpty && localCourses.isNotEmpty) {
         feed = feed.copyWith(curatedCourses: localCourses);
       }
-      if (feed.dueStudyDecks.isEmpty && localDecks.isNotEmpty) {
+      if (feed.dueStudyDecks.isNotEmpty) {
+        feed = feed.copyWith(
+          dueStudyDecks: feed.dueStudyDecks.where((d) => d.dueCards > 0).toList(),
+        );
+      } else if (localDecks.isNotEmpty) {
         feed = feed.copyWith(dueStudyDecks: localDecks);
       }
       if (liveAnalytics != null &&

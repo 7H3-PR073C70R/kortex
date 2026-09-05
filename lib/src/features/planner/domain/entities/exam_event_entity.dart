@@ -30,7 +30,9 @@ class ExamEventEntity extends Equatable {
 
   int get daysRemaining {
     final now = DateTime.now();
-    final difference = targetDate.difference(now).inDays;
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
+    final difference = target.difference(today).inDays;
     return difference < 0 ? 0 : difference;
   }
 

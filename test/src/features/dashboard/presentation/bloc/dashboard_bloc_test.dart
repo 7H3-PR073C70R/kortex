@@ -89,6 +89,11 @@ class MockDashboardRepository implements DashboardRepository {
   }) async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, void>> deleteCuratedCourse(String courseId) async {
+    return const Right(null);
+  }
 }
 
 void main() {
@@ -159,6 +164,19 @@ void main() {
           subject: 'Physics',
         ),
       );
+    });
+
+    test('DashboardDeckDeleted removes the deleted deck immediately from feed', () async {
+      // First load the dashboard
+      bloc.add(const DashboardStarted());
+      await bloc.stream.firstWhere((s) => s.status == DashboardStatus.loaded);
+      expect(bloc.state.feed?.dueStudyDecks.length, 1);
+
+      // Now dispatch DashboardDeckDeleted
+      bloc.add(const DashboardDeckDeleted('deck_1'));
+      await pumpEventQueue();
+
+      expect(bloc.state.feed?.dueStudyDecks.isEmpty, isTrue);
     });
   });
 }

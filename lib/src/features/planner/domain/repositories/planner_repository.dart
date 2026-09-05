@@ -13,5 +13,14 @@ abstract class PlannerRepository {
     double targetScorePercent = 0.85,
   });
 
+  Future<Either<Failure, ExamEventEntity>> updateExam({
+    required String examId,
+    required String examName,
+    required DateTime targetDate,
+    required String subjectTrack,
+    int? totalCardsCount,
+    double? targetScorePercent,
+  });
+
   Future<Either<Failure, void>> deleteExam(String examId);
 }

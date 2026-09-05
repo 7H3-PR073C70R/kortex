@@ -14,4 +14,6 @@ class PrefKeys {
   static const String persistedUserDecks = '__kortex_persisted_user_decks__';
   static const String persistedDeckCardsPrefix =
       '__kortex_persisted_deck_cards_';
+  static const String persistedExamCountdowns =
+      '__kortex_persisted_exam_countdowns__';
 }
