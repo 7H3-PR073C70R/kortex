@@ -213,6 +213,24 @@ class NotificationService {
     );
   }
 
+  /// Sends an immediate calibration notification when an exam countdown is scheduled or modified.
+  Future<void> sendExamCalibrationNotification({
+    required String examName,
+    required int daysRemaining,
+    required int dailyTarget,
+  }) async {
+    final title = '🎯 Exam Calibrated: $examName';
+    final body = daysRemaining > 0
+        ? '$daysRemaining days left. Review $dailyTarget cards daily to stay on track!'
+        : 'Exam is scheduled for today! Good luck!';
+    await showLocalNotification(
+      id: examName.hashCode.abs() % 100000,
+      title: title,
+      body: body,
+      payload: '/planner',
+    );
+  }
+
   /// Show a local notification immediately.
   Future<void> showLocalNotification({
     required int id,

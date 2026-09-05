@@ -37,6 +37,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: QuizResultsRoute.page),
     AutoRoute(page: PaywallRoute.page),
     AutoRoute(page: SyllabotChatRoute.page),
+    AutoRoute(page: ExamTimetableRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [

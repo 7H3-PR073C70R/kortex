@@ -17,15 +17,15 @@ class ExamEventModel extends ExamEventEntity {
 
   factory ExamEventModel.fromJson(Map<String, dynamic> json) {
     return ExamEventModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      examName: json['exam_name'] as String,
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? 'current-user',
+      examName: json['exam_name']?.toString() ?? 'Exam',
       targetDate: DateTime.parse(json['target_date'] as String),
-      subjectTrack: json['subject_track'] as String? ?? 'General',
-      totalCardsCount: json['total_cards_count'] as int? ?? 0,
-      masteredCardsCount: json['mastered_cards_count'] as int? ?? 0,
-      totalLapses: json['total_lapses'] as int? ?? 0,
-      dailyTarget: json['daily_target'] as int? ?? 20,
+      subjectTrack: json['subject_track']?.toString() ?? 'General',
+      totalCardsCount: (json['total_cards_count'] as num?)?.toInt() ?? 0,
+      masteredCardsCount: (json['mastered_cards_count'] as num?)?.toInt() ?? 0,
+      totalLapses: (json['total_lapses'] as num?)?.toInt() ?? 0,
+      dailyTarget: (json['daily_target'] as num?)?.toInt() ?? 20,
       targetScorePercent:
           (json['target_score_percent'] as num?)?.toDouble() ?? 0.85,
       createdAt: json['created_at'] != null

@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Modal dialog component trapping screen-reader focus within its route.
-class AppDialog extends StatelessWidget {
+class AppDialog extends StatefulWidget {
   const AppDialog({
     super.key,
     this.title,
@@ -27,7 +28,7 @@ class AppDialog extends StatelessWidget {
   final Widget? icon;
   final Color? iconBackgroundColor;
   final String? primaryActionText;
-  final VoidCallback? onPrimaryAction;
+  final FutureOr<void> Function()? onPrimaryAction;
   final String? secondaryActionText;
   final VoidCallback? onSecondaryAction;
   final bool isDestructive;
@@ -43,7 +44,7 @@ class AppDialog extends StatelessWidget {
     Widget? icon,
     Color? iconBackgroundColor,
     String? primaryActionText,
-    VoidCallback? onPrimaryAction,
+    FutureOr<void> Function()? onPrimaryAction,
     String? secondaryActionText,
     VoidCallback? onSecondaryAction,
     bool isDestructive = false,
@@ -84,6 +85,41 @@ class AppDialog extends StatelessWidget {
   }
 
   @override
+  State<AppDialog> createState() => _AppDialogState();
+}
+
+class _AppDialogState extends State<AppDialog> {
+  late bool _isLoading;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoading = widget.isPrimaryLoading;
+  }
+
+  Future<void> _handlePrimaryAction() async {
+    if (widget.onPrimaryAction == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = widget.onPrimaryAction!();
+      if (result is Future) {
+        await result;
+      }
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
@@ -92,7 +128,7 @@ class AppDialog extends StatelessWidget {
     return Semantics(
       scopesRoute: true,
       explicitChildNodes: true,
-      label: semanticLabel ?? title ?? l10n.defaultDialogTitle,
+      label: widget.semanticLabel ?? widget.title ?? l10n.defaultDialogTitle,
       child: Dialog(
         backgroundColor: colors.surfacePrimary,
         surfaceTintColor: colors.transparent,
@@ -111,7 +147,7 @@ class AppDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (icon != null) ...[
+              if (widget.icon != null) ...[
                 Center(
                   child: ExcludeSemantics(
                     child: Container(
@@ -119,8 +155,8 @@ class AppDialog extends StatelessWidget {
                       height: 52,
                       decoration: BoxDecoration(
                         color:
-                            iconBackgroundColor ??
-                            (isDestructive
+                            widget.iconBackgroundColor ??
+                            (widget.isDestructive
                                 ? colors.error.withAlpha(30)
                                 : colors.primary.withAlpha(30)),
                         shape: BoxShape.circle,
@@ -128,66 +164,65 @@ class AppDialog extends StatelessWidget {
                       alignment: Alignment.center,
                       child: IconTheme(
                         data: IconThemeData(
-                          color: isDestructive ? colors.error : colors.primary,
+                          color: widget.isDestructive ? colors.error : colors.primary,
                           size: 26,
                         ),
-                        child: icon!,
+                        child: widget.icon!,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
-              if (title != null) ...[
+              if (widget.title != null) ...[
                 Text(
-                  title!,
+                  widget.title!,
                   style: typography.title3.bold.copyWith(
                     color: colors.textPrimary,
                   ),
-                  textAlign: icon != null ? TextAlign.center : TextAlign.start,
+                  textAlign: widget.icon != null ? TextAlign.center : TextAlign.start,
                 ),
                 const SizedBox(height: 8),
               ],
-              if (description != null) ...[
+              if (widget.description != null) ...[
                 Text(
-                  description!,
+                  widget.description!,
                   style: typography.callout.regular.copyWith(
                     color: colors.textSecondary,
                   ),
-                  textAlign: icon != null ? TextAlign.center : TextAlign.start,
+                  textAlign: widget.icon != null ? TextAlign.center : TextAlign.start,
                 ),
               ],
-              if (content != null) ...[
-                if (title != null || description != null)
+              if (widget.content != null) ...[
+                if (widget.title != null || widget.description != null)
                   const SizedBox(height: 16),
-                content!,
+                widget.content!,
               ],
-              if (primaryActionText != null || secondaryActionText != null) ...[
+              if (widget.primaryActionText != null || widget.secondaryActionText != null) ...[
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    if (secondaryActionText != null) ...[
+                    if (widget.secondaryActionText != null) ...[
                       Expanded(
                         child: AppButton.secondary(
-                          text: secondaryActionText!,
-                          onPressed:
-                              onSecondaryAction ??
-                              () => Navigator.of(context).pop(false),
+                          text: widget.secondaryActionText!,
+                          onPressed: _isLoading
+                              ? null
+                              : (widget.onSecondaryAction ??
+                                  () => Navigator.of(context).pop(false)),
                         ),
                       ),
-                      if (primaryActionText != null) const SizedBox(width: 12),
+                      if (widget.primaryActionText != null) const SizedBox(width: 12),
                     ],
-                    if (primaryActionText != null) ...[
+                    if (widget.primaryActionText != null) ...[
                       Expanded(
                         child: AppButton(
-                          text: primaryActionText!,
-                          variant: isDestructive
+                          text: widget.primaryActionText!,
+                          variant: widget.isDestructive
                               ? AppButtonVariant.destructive
                               : AppButtonVariant.primary,
-                          isLoading: isPrimaryLoading,
-                          onPressed:
-                              onPrimaryAction ??
-                              () => Navigator.of(context).pop(true),
+                          isLoading: _isLoading,
+                          onPressed: _isLoading ? null : _handlePrimaryAction,
                         ),
                       ),
                     ],

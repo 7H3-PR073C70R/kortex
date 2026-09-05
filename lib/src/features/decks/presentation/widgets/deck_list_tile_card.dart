@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -25,7 +26,7 @@ class DeckListTileCard extends StatelessWidget {
     final l10n = context.l10n;
     final decksBloc = context.read<DecksBloc>();
     unawaited(
-      AppDialog.show<void>(
+      AppDialog.show<bool>(
         context: context,
         title: l10n.deleteStudyDeckTitle,
         description: l10n.deleteStudyDeckDesc(deck.title, deck.totalCards),
@@ -35,7 +36,14 @@ class DeckListTileCard extends StatelessWidget {
           decksBloc.add(DecksDeckDeleted(deck.id));
         },
         secondaryActionText: l10n.cancelAction,
-      ),
+      ).then((didDelete) {
+        if (didDelete == true && context.mounted) {
+          context.showSnackBar(
+            message: 'Deck "${deck.title}" deleted successfully',
+            type: SnackBarType.success,
+          );
+        }
+      }),
     );
   }
 

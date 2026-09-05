@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 
 class McqOptionCard extends StatelessWidget {
   const McqOptionCard({
@@ -20,6 +21,13 @@ class McqOptionCard extends StatelessWidget {
   final VoidCallback onTap;
 
   String get _letterPrefix => String.fromCharCode(65 + index); // A, B, C, D
+
+  String get _displayOptionText {
+    return optionText.replaceFirst(
+      RegExp(r'^(\(?[A-Ea-e][\.\)]|\b[A-Ea-e]\.)\s*'),
+      '',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +64,7 @@ class McqOptionCard extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: !isAnswered,
-      label: 'Option $_letterPrefix: $optionText',
+      label: 'Option $_letterPrefix: $_displayOptionText',
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: InkWell(
@@ -97,8 +105,8 @@ class McqOptionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    optionText,
+                  child: LatexRichViewer(
+                    text: _displayOptionText,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w500,

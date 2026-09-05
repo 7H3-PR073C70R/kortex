@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -35,8 +38,10 @@ class AddExamModalSheet extends StatefulWidget {
 class _AddExamModalSheetState extends State<AddExamModalSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _cardsController;
   late String _selectedTrack;
   late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
 
   @override
   void initState() {
@@ -44,15 +49,25 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
     _nameController = TextEditingController(
       text: widget.initialExam?.examName ?? '',
     );
+    _cardsController = TextEditingController(
+      text: (widget.initialExam?.totalCardsCount ?? 150).toString(),
+    );
     _selectedTrack = widget.initialExam?.subjectTrack ?? 'WAEC';
     _selectedDate =
         widget.initialExam?.targetDate ??
         DateTime.now().add(const Duration(days: 30));
+    _selectedTime = widget.initialExam != null
+        ? TimeOfDay(
+            hour: widget.initialExam!.targetDate.hour,
+            minute: widget.initialExam!.targetDate.minute,
+          )
+        : const TimeOfDay(hour: 9, minute: 0);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _cardsController.dispose();
     super.dispose();
   }
 
@@ -63,13 +78,39 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       initialDate: _selectedDate.isBefore(now)
           ? now.add(const Duration(days: 1))
           : _selectedDate,
-      firstDate: now.add(const Duration(days: 1)),
+      firstDate: now,
       lastDate: now.add(const Duration(days: 730)),
     );
 
     if (picked != null) {
       setState(() {
-        _selectedDate = picked;
+        _selectedDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _selectedTime.hour,
+          _selectedTime.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedTime = picked;
+        _selectedDate = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          picked.hour,
+          picked.minute,
+        );
       });
     }
   }
@@ -77,27 +118,51 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final targetDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+
+    final totalCards = int.tryParse(_cardsController.text.trim()) ?? 150;
     final cubit = context.read<CramPlannerCubit>();
+    final examName = _nameController.text.trim();
+
     if (widget.initialExam != null) {
       unawaited(
         cubit.updateExamCountdown(
           examId: widget.initialExam!.id,
-          examName: _nameController.text.trim(),
-          targetDate: _selectedDate,
+          examName: examName,
+          targetDate: targetDateTime,
           subjectTrack: _selectedTrack,
-          totalCardsCount: widget.initialExam!.totalCardsCount,
+          totalCardsCount: totalCards,
         ),
       );
     } else {
       unawaited(
         cubit.addExamCountdown(
-          examName: _nameController.text.trim(),
-          targetDate: _selectedDate,
+          examName: examName,
+          targetDate: targetDateTime,
           subjectTrack: _selectedTrack,
-          totalCardsCount: 150,
+          totalCardsCount: totalCards,
         ),
       );
     }
+
+    try {
+      if (locator.isRegistered<NotificationService>()) {
+        final days = targetDateTime.difference(DateTime.now()).inDays;
+        unawaited(
+          locator<NotificationService>().sendExamCalibrationNotification(
+            examName: examName,
+            daysRemaining: days < 0 ? 0 : days,
+            dailyTarget: (totalCards / (days < 1 ? 1 : days)).ceil(),
+          ),
+        );
+      }
+    } on Object catch (_) {}
 
     Navigator.of(context).pop();
   }
@@ -108,6 +173,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final formattedDate = DateFormat('EEE, d MMM y').format(_selectedDate);
+    final formattedTime = _selectedTime.format(context);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -134,7 +202,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 children: [
                   Text(
                     widget.initialExam != null
-                        ? 'Edit Exam Countdown'
+                        ? 'Edit Exam Timetable'
                         : l10n.addExamTitle,
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
@@ -229,56 +297,137 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
               const SizedBox(height: 14),
 
-              // Date Picker Tile
-              InkWell(
-                onTap: () {
-                  unawaited(_pickDate());
+              // Total Cards Target
+              AppTextField(
+                controller: _cardsController,
+                label: 'Total Flashcards to Complete',
+                hintText: 'e.g. 150',
+                keyboardType: TextInputType.number,
+                prefixIcon: Icon(
+                  Icons.style_rounded,
+                  color: colors.textSecondary,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter total cards to complete';
+                  }
+                  final count = int.tryParse(value.trim());
+                  if (count == null || count <= 0) {
+                    return 'Enter a valid positive number';
+                  }
+                  return null;
                 },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colors.surfaceBorder,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today_rounded,
-                            size: 20,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            l10n.targetDateLabel,
-                            style: typography.body.regular.copyWith(
-                              color: colors.textSecondary,
+              ),
+
+              const SizedBox(height: 14),
+
+              // Date & Time Picker Row
+              Row(
+                children: [
+                  // Date Picker Tile
+                  Expanded(
+                    flex: 6,
+                    child: InkWell(
+                      onTap: () => unawaited(_pickDate()),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colors.surfaceBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Exam Date',
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '${_selectedDate.year}-'
-                        '${_selectedDate.month.toString().padLeft(2, '0')}-'
-                        '${_selectedDate.day.toString().padLeft(2, '0')}',
-                        style: typography.body.bold.copyWith(
-                          color: colors.primary,
+                            const SizedBox(height: 6),
+                            Text(
+                              formattedDate,
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  // Time Picker Tile
+                  Expanded(
+                    flex: 4,
+                    child: InkWell(
+                      onTap: () => unawaited(_pickTime()),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colors.surfaceBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Start Time',
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              formattedTime,
+                              style: typography.callout.bold.copyWith(
+                                color: colors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
@@ -286,7 +435,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
               // Save Button
               AppButton(
                 text: widget.initialExam != null
-                    ? 'Update Exam Countdown'
+                    ? 'Update Exam Timetable'
                     : l10n.saveExamCountdown,
                 onPressed: _submit,
               ),

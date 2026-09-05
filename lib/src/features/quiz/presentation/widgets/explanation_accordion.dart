@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class ExplanationAccordion extends StatefulWidget {
@@ -26,26 +27,22 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
     final l10n = context.l10n;
 
     return Container(
-      margin: const EdgeInsets.only(top: 14),
+      margin: const EdgeInsets.only(top: 20, bottom: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.7),
+        color: colors.surfacePrimary.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Icon(
@@ -80,31 +77,18 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.latexFormula != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        widget.latexFormula!,
-                        style: context.typography.code.regular.copyWith(
-                          color: colors.success,
-                          fontSize: 14,
-                        ),
-                      ),
+                  if (widget.latexFormula != null &&
+                      widget.latexFormula!.trim().isNotEmpty) ...[
+                    LatexFormulaBlock(
+                      formula: widget.latexFormula!,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                   ],
-                  Text(
-                    widget.explanation,
+                  LatexRichViewer(
+                    text: widget.explanation,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
-                      height: 1.4,
+                      height: 1.5,
                     ),
                   ),
                 ],

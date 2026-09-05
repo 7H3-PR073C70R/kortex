@@ -36,6 +36,31 @@ class ExamEventEntity extends Equatable {
     return difference < 0 ? 0 : difference;
   }
 
+  Duration get timeRemaining {
+    final diff = targetDate.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  int get hoursRemaining => timeRemaining.inHours % 24;
+
+  int get minutesRemaining => timeRemaining.inMinutes % 60;
+
+  bool get isPast => targetDate.isBefore(DateTime.now());
+
+  String get formattedCountdown {
+    if (isPast) return 'Completed';
+    final days = timeRemaining.inDays;
+    final hours = hoursRemaining;
+    final mins = minutesRemaining;
+    if (days > 0) {
+      return '$days ${days == 1 ? "day" : "days"}, $hours ${hours == 1 ? "hr" : "hrs"} left';
+    }
+    if (hours > 0) {
+      return '$hours ${hours == 1 ? "hr" : "hrs"}, $mins min left';
+    }
+    return '$mins min left';
+  }
+
   int get remainingCards =>
       (totalCardsCount - masteredCardsCount).clamp(0, totalCardsCount);
 

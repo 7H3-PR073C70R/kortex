@@ -91,6 +91,10 @@ class AppApiEndpoint {
   // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';
 
+  // Planner & Exam Countdown Timetable
+  static const String examEvents = '/rest/v1/exam_events';
+  static const String recalculateCramRpc = '/rest/v1/rpc/recalculate_cram_pacing';
+
   // Push Notifications & Device Tokens
   static const String registerDeviceTokenRpc =
       '/rest/v1/rpc/register_device_token';

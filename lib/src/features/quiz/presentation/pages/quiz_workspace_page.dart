@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accordion.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -69,7 +71,7 @@ class QuizWorkspacePage extends StatelessWidget {
   }
 }
 
-class _QuizWorkspaceView extends StatelessWidget {
+class _QuizWorkspaceView extends HookWidget {
   const _QuizWorkspaceView({
     required this.deckId,
     this.deckTitle,
@@ -286,8 +288,8 @@ class _QuizWorkspaceView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            current.prompt,
+                          LatexRichViewer(
+                            text: current.prompt,
                             style: typography.title3.bold.copyWith(
                               color: colors.textPrimary,
                               height: 1.4,
@@ -304,21 +306,11 @@ class _QuizWorkspaceView extends StatelessWidget {
                               ),
                             ),
                           ],
-                          if (current.latexFormula != null) ...[
+                          if (current.latexFormula != null &&
+                              current.latexFormula!.trim().isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: colors.black.withAlpha(97),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                current.latexFormula!,
-                                style: typography.code.regular.copyWith(
-                                  color: colors.success,
-                                  fontSize: 15,
-                                ),
-                              ),
+                            LatexFormulaBlock(
+                              formula: current.latexFormula!,
                             ),
                           ],
                         ],

@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
@@ -33,7 +36,7 @@ class ManageExamModalSheet extends StatelessWidget {
     ExamEventEntity exam,
   ) {
     unawaited(
-      AppDialog.show<void>(
+      AppDialog.show<bool>(
         context: context,
         title: 'Delete Exam Countdown?',
         description:
@@ -43,12 +46,17 @@ class ManageExamModalSheet extends StatelessWidget {
         onPrimaryAction: () async {
           AppFeedback.heavy();
           await cubit.deleteExamCountdown(exam.id);
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
         },
         secondaryActionText: 'Cancel',
-      ),
+      ).then((didDelete) {
+        if (didDelete == true && context.mounted) {
+          context.showSnackBar(
+            message: 'Countdown for "${exam.examName}" deleted',
+            type: SnackBarType.success,
+          );
+          Navigator.of(context).pop();
+        }
+      }),
     );
   }
 
@@ -309,6 +317,43 @@ class ManageExamModalSheet extends StatelessWidget {
                   }),
                   const SizedBox(height: 10),
                 ],
+
+                // Open Full Timetable Action
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    unawaited(context.router.push(const ExamTimetableRoute()));
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 50 : 25),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(100),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.calendar_month_rounded,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'View Full Timetable & Pacing',
+                          style: typography.callout.bold.copyWith(
+                            color: colors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
                 // Action Buttons Row: Edit and Add
                 Row(

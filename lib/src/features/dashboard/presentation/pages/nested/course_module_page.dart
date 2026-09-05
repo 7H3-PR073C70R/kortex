@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -16,11 +17,12 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/create_course_deck_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
-import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -121,7 +123,7 @@ class _CourseModuleView extends StatelessWidget {
 
   void _confirmDelete(BuildContext context, int deckCount) {
     unawaited(
-      AppDialog.show<void>(
+      AppDialog.show<bool>(
         context: context,
         title: 'Delete Curated Course?',
         description:
@@ -132,17 +134,22 @@ class _CourseModuleView extends StatelessWidget {
         onPrimaryAction: () async {
           AppFeedback.heavy();
           if (locator.isRegistered<CurateCoursesCubit>()) {
-            await locator<CurateCoursesCubit>().deleteCourse(
-              courseId,
-            );
-          }
-          if (context.mounted) {
-            locator<DashboardBloc>().add(const DashboardRefreshed());
-            context.router.pop();
+            await locator<CurateCoursesCubit>().deleteCourse(courseId);
           }
         },
         secondaryActionText: 'Cancel',
-      ),
+      ).then((didDelete) {
+        if (didDelete == true && context.mounted) {
+          if (locator.isRegistered<DashboardBloc>()) {
+            locator<DashboardBloc>().add(const DashboardRefreshed());
+          }
+          context.showSnackBar(
+            message: '$courseCode deleted successfully',
+            type: SnackBarType.success,
+          );
+          context.router.pop();
+        }
+      }),
     );
   }
 
@@ -405,34 +412,37 @@ class _CourseModuleView extends StatelessWidget {
     required TypographyThemeExtension typography,
     bool isAlert = false,
   }) {
-    return Row(
+    final iconColor = isAlert ? colors.error : colors.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 15,
-          color: isAlert ? colors.error : colors.primary,
-        ),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(
+              icon,
+              size: 16,
+              color: iconColor,
+            ),
+            const SizedBox(width: 5),
             Text(
               value,
               style: typography.callout.bold.copyWith(
                 color: isAlert ? colors.error : colors.textPrimary,
-                fontSize: 13.5,
-              ),
-            ),
-            Text(
-              label,
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-                fontSize: 10,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: typography.caption.regular.copyWith(
+            color: colors.textSecondary,
+            fontSize: 10.5,
+          ),
         ),
       ],
     );
@@ -551,12 +561,11 @@ class _CourseModuleView extends StatelessWidget {
               onTap: () {
                 AppFeedback.light();
                 unawaited(
-                  context.router.push(
-                    DocumentIngestionRoute(
-                      courseId: courseId,
-                      courseCode: courseCode,
-                      courseTitle: courseTitle,
-                    ),
+                  CreateCourseDeckModalSheet.show(
+                    context,
+                    courseId: courseId,
+                    courseCode: courseCode,
+                    courseTitle: courseTitle,
                   ),
                 );
               },
@@ -822,7 +831,7 @@ class _CourseModuleView extends StatelessWidget {
                 badgeText: 'MOCK EXAM',
                 icon: Icons.timer_outlined,
                 accentColor: colors.primary,
-                questions: questions.take(40).toList(),
+                questions: questions,
                 isTimed: true,
                 colors: colors,
                 typography: typography,
@@ -839,7 +848,7 @@ class _CourseModuleView extends StatelessWidget {
                 badgeText: 'DRILL',
                 icon: Icons.bolt_rounded,
                 accentColor: colors.syllabotAccent,
-                questions: questions.take(20).toList(),
+                questions: questions,
                 isTimed: false,
                 colors: colors,
                 typography: typography,
@@ -1034,20 +1043,16 @@ class _CourseModuleView extends StatelessWidget {
   }) {
     return ShrinkableButton(
       onTap: () {
-        AppFeedback.medium();
-        final quizQuestions = questions
-            .map(QuizQuestionEntity.fromPastQuestion)
-            .toList();
-
+        AppFeedback.light();
         unawaited(
-          context.router.push(
-            QuizWorkspaceRoute(
-              deckId: 'cbt_${examCategory.code}_$courseId',
-              deckTitle: '$courseCode $title',
-              subject: courseTitle,
-              durationMinutes: isTimed ? (quizQuestions.length * 1.5).round() : null,
-              initialQuestions: quizQuestions,
-            ),
+          CbtPracticeConfigModalSheet.show(
+            context,
+            title: title,
+            courseId: courseId,
+            courseCode: courseCode,
+            courseTitle: courseTitle,
+            allQuestions: questions,
+            isMockExam: isTimed,
           ),
         );
       },

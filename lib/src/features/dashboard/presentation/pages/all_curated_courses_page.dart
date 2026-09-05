@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -423,7 +424,7 @@ class AllCuratedCoursesPage extends HookWidget {
     int deckCount,
   ) {
     unawaited(
-      AppDialog.show<void>(
+      AppDialog.show<bool>(
         context: context,
         title: 'Delete Curated Course?',
         description:
@@ -438,12 +439,19 @@ class AllCuratedCoursesPage extends HookWidget {
               course.id,
             );
           }
-          if (context.mounted) {
-            locator<DashboardBloc>().add(const DashboardRefreshed());
-          }
         },
         secondaryActionText: 'Cancel',
-      ),
+      ).then((didDelete) {
+        if (didDelete == true && context.mounted) {
+          if (locator.isRegistered<DashboardBloc>()) {
+            locator<DashboardBloc>().add(const DashboardRefreshed());
+          }
+          context.showSnackBar(
+            message: '${course.courseCode} deleted successfully',
+            type: SnackBarType.success,
+          );
+        }
+      }),
     );
   }
 }

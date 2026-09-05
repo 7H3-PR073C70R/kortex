@@ -117,9 +117,10 @@ lib/l10n/gen/
 *.gr.dart
 *.g.dart
 *freezed.dart
-
+**/vendor
 ## env files
 .env.development
 .env.production
 .env.staging
 .note.txt
+

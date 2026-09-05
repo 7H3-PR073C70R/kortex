@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class LatexCardContentViewer extends StatelessWidget {
@@ -149,9 +150,9 @@ class LatexCardContentViewer extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Primary text
-        Text(
-          text,
+        // Primary text with LaTeX support
+        LatexRichViewer(
+          text: text,
           textAlign: TextAlign.center,
           style: baseStyle.copyWith(
             color: colors.textPrimary,

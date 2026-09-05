@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -15,11 +18,24 @@ class PlannerRepositoryImpl implements PlannerRepository {
   PlannerRepositoryImpl({
     CramWorkloadCalculator? calculator,
     LocalStorageService? storageService,
+    Dio? dio,
   })  : _calculator = calculator ?? const CramWorkloadCalculator(),
-        _storageService = storageService;
+        _storageService = storageService,
+        _dio = dio;
 
   final CramWorkloadCalculator _calculator;
   final LocalStorageService? _storageService;
+  final Dio? _dio;
+
+  Dio? get _effectiveDio {
+    if (_dio != null) return _dio;
+    try {
+      if (locator.isRegistered<Dio>()) {
+        return locator<Dio>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
 
   LocalStorageService? get _storage {
     if (_storageService != null) return _storageService;
@@ -43,7 +59,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
           ..clear()
           ..addAll(
             list.map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>)),
-          );
+          )
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
       }
     } on Object catch (_) {}
   }
@@ -63,10 +80,35 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
   @override
   Future<Either<Failure, List<ExamEventEntity>>> getActiveExams() {
-    return Future<List<ExamEventEntity>>.sync(() {
+    return Future<List<ExamEventEntity>>.sync(() async {
       if (_cachedExams.isEmpty) {
         _loadFromStorage();
       }
+
+      // Attempt background/active sync with Supabase backend
+      final client = _effectiveDio;
+      if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+        try {
+          final response = await client.get<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?order=target_date.asc',
+          );
+          if (response.statusCode == 200 && response.data is List) {
+            final remoteList = (response.data as List<dynamic>)
+                .map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>))
+                .toList()
+              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+            _cachedExams
+              ..clear()
+              ..addAll(remoteList);
+            _saveToStorage();
+          }
+        } on Object catch (e) {
+          developer.log('Failed to fetch exams from Supabase: $e');
+        }
+      }
+
+      _cachedExams.sort((a, b) => a.targetDate.compareTo(b.targetDate));
       return List<ExamEventEntity>.from(_cachedExams);
     }).makeRequest();
   }
@@ -79,7 +121,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
   }) {
-    return Future<ExamEventEntity>.sync(() {
+    return Future<ExamEventEntity>.sync(() async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
@@ -90,8 +132,43 @@ class PlannerRepositoryImpl implements PlannerRepository {
         daysRemaining: daysRemaining < 1 ? 1 : daysRemaining,
       );
 
+      var examId = 'exam-${DateTime.now().millisecondsSinceEpoch}';
+      final client = _effectiveDio;
+
+      if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+        try {
+          final payload = {
+            'exam_name': examName,
+            'target_date': targetDate.toIso8601String(),
+            'subject_track': subjectTrack,
+            'total_cards_count': totalCardsCount,
+            'mastered_cards_count': 0,
+            'total_lapses': 0,
+            'daily_target': dailyTarget,
+            'target_score_percent': targetScorePercent,
+          };
+          final response = await client.post<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+            data: payload,
+            options: Options(headers: {'Prefer': 'return=representation'}),
+          );
+          if (response.statusCode == 201 || response.statusCode == 200) {
+            if (response.data is List && (response.data as List).isNotEmpty) {
+              final first = (response.data as List).first as Map<String, dynamic>;
+              if (first['id'] != null) {
+                examId = first['id'].toString();
+              }
+            } else if (response.data is Map && (response.data as Map)['id'] != null) {
+              examId = (response.data as Map)['id'].toString();
+            }
+          }
+        } on Object catch (e) {
+          developer.log('Failed to post new exam to Supabase: $e');
+        }
+      }
+
       final newExam = ExamEventModel(
-        id: 'exam-${DateTime.now().millisecondsSinceEpoch}',
+        id: examId,
         userId: 'current-user',
         examName: examName,
         targetDate: targetDate,
@@ -102,7 +179,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
         createdAt: DateTime.now(),
       );
 
-      _cachedExams.add(newExam);
+      _cachedExams
+        ..add(newExam)
+        ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
       _saveToStorage();
       return newExam;
     }).makeRequest();
@@ -117,7 +196,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
     int? totalCardsCount,
     double? targetScorePercent,
   }) {
-    return Future<ExamEventEntity>.sync(() {
+    return Future<ExamEventEntity>.sync(() async {
       final idx = _cachedExams.indexWhere((e) => e.id == examId);
       final existing = idx >= 0 ? _cachedExams[idx] : null;
 
@@ -131,6 +210,27 @@ class PlannerRepositoryImpl implements PlannerRepository {
         lapses: existing?.totalLapses ?? 0,
         daysRemaining: daysRemaining < 1 ? 1 : daysRemaining,
       );
+
+      final client = _effectiveDio;
+      if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+        try {
+          final payload = {
+            'exam_name': examName,
+            'target_date': targetDate.toIso8601String(),
+            'subject_track': subjectTrack,
+            'total_cards_count': ?totalCardsCount,
+            'target_score_percent': ?targetScorePercent,
+            'daily_target': dailyTarget,
+            'updated_at': DateTime.now().toIso8601String(),
+          };
+          await client.patch<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId',
+            data: payload,
+          );
+        } on Object catch (e) {
+          developer.log('Failed to patch exam in Supabase: $e');
+        }
+      }
 
       final updated = ExamEventModel(
         id: examId,
@@ -152,6 +252,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
       } else {
         _cachedExams.add(updated);
       }
+      _cachedExams.sort((a, b) => a.targetDate.compareTo(b.targetDate));
       _saveToStorage();
       return updated;
     }).makeRequest();
@@ -159,7 +260,18 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
   @override
   Future<Either<Failure, void>> deleteExam(String examId) {
-    return Future<void>.sync(() {
+    return Future<void>.sync(() async {
+      final client = _effectiveDio;
+      if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+        try {
+          await client.delete<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId',
+          );
+        } on Object catch (e) {
+          developer.log('Failed to delete exam from Supabase: $e');
+        }
+      }
+
       _cachedExams.removeWhere((e) => e.id == examId);
       _saveToStorage();
     }).makeRequest();

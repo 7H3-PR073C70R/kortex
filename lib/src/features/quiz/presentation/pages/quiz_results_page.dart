@@ -6,6 +6,8 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
@@ -20,11 +22,15 @@ class QuizResultsPage extends StatelessWidget {
   const QuizResultsPage({
     required this.result,
     this.questions = const [],
+    this.courseId,
+    this.courseCode,
     super.key,
   });
 
   final QuizResultEntity result;
   final List<QuizQuestionEntity> questions;
+  final String? courseId;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -298,6 +304,8 @@ class QuizResultsPage extends StatelessWidget {
       category: 'Quiz Review',
       description: 'Practice flashcards generated from CBT test session.',
       cards: cards,
+      courseId: courseId,
+      courseCode: courseCode,
     );
 
     // Save to DecksRemoteDataSource
@@ -308,9 +316,12 @@ class QuizResultsPage extends StatelessWidget {
       );
     }
 
-    // Refresh DecksBloc
+    // Refresh DecksBloc & DashboardBloc
     if (locator.isRegistered<DecksBloc>()) {
       locator<DecksBloc>().add(const DecksRefreshed());
+    }
+    if (locator.isRegistered<DashboardBloc>()) {
+      locator<DashboardBloc>().add(const DashboardRefreshed());
     }
 
     if (context.mounted) {
