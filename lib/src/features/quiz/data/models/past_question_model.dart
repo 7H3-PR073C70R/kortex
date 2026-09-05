@@ -15,6 +15,7 @@ class PastQuestionModel {
     required this.topic,
     this.passage,
     this.latexFormula,
+    this.imageUrl,
     this.difficulty = 'Medium',
   });
 
@@ -76,6 +77,7 @@ class PastQuestionModel {
       topic: json['topic'] as String? ?? 'General',
       passage: json['passage'] as String?,
       latexFormula: json['latex_formula'] as String?,
+      imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       difficulty: json['difficulty'] as String? ?? 'Medium',
     );
   }
@@ -93,6 +95,7 @@ class PastQuestionModel {
   final String topic;
   final String? passage;
   final String? latexFormula;
+  final String? imageUrl;
   final String difficulty;
 
   Map<String, dynamic> toJson() {
@@ -110,6 +113,7 @@ class PastQuestionModel {
       'topic': topic,
       'passage': passage,
       'latex_formula': latexFormula,
+      'image_url': imageUrl,
       'difficulty': difficulty,
     };
   }
@@ -129,6 +133,7 @@ class PastQuestionModel {
       topic: topic,
       passage: passage,
       latexFormula: latexFormula,
+      imageUrl: imageUrl,
       difficulty: difficulty,
     );
   }

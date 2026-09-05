@@ -17,6 +17,7 @@ class QuizQuestionEntity extends Equatable {
     required this.explanation,
     required this.subTopic,
     this.latexFormula,
+    this.imageUrl,
     this.userSelectedAnswer,
     this.isAnswered = false,
     this.isCorrect = false,
@@ -43,6 +44,7 @@ class QuizQuestionEntity extends Equatable {
           : 'Option ${q.correctOptionLabel} is the correct answer.',
       subTopic: '${q.subject} (${q.year} • Q${q.questionNumber})',
       latexFormula: q.latexFormula,
+      imageUrl: q.imageUrl,
     );
   }
 
@@ -54,6 +56,7 @@ class QuizQuestionEntity extends Equatable {
   final String explanation;
   final String subTopic;
   final String? latexFormula;
+  final String? imageUrl;
   final String? userSelectedAnswer;
   final bool isAnswered;
   final bool isCorrect;
@@ -67,6 +70,7 @@ class QuizQuestionEntity extends Equatable {
     String? explanation,
     String? subTopic,
     String? latexFormula,
+    String? imageUrl,
     String? userSelectedAnswer,
     bool? isAnswered,
     bool? isCorrect,
@@ -80,6 +84,7 @@ class QuizQuestionEntity extends Equatable {
       explanation: explanation ?? this.explanation,
       subTopic: subTopic ?? this.subTopic,
       latexFormula: latexFormula ?? this.latexFormula,
+      imageUrl: imageUrl ?? this.imageUrl,
       userSelectedAnswer: userSelectedAnswer ?? this.userSelectedAnswer,
       isAnswered: isAnswered ?? this.isAnswered,
       isCorrect: isCorrect ?? this.isCorrect,
@@ -96,6 +101,7 @@ class QuizQuestionEntity extends Equatable {
     explanation,
     subTopic,
     latexFormula,
+    imageUrl,
     userSelectedAnswer,
     isAnswered,
     isCorrect,

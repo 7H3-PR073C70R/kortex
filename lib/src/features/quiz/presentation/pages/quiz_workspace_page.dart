@@ -293,6 +293,17 @@ class _QuizWorkspaceView extends StatelessWidget {
                               height: 1.4,
                             ),
                           ),
+                          if (current.imageUrl != null && current.imageUrl!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                current.imageUrl!,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                              ),
+                            ),
+                          ],
                           if (current.latexFormula != null) ...[
                             const SizedBox(height: 12),
                             Container(

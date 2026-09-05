@@ -1032,6 +1032,17 @@ class _PastQuestionCard extends StatelessWidget {
               height: 1.4,
             ),
           ),
+          if (question.imageUrl != null && question.imageUrl!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                question.imageUrl!,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
 
           // Multiple Choice Options

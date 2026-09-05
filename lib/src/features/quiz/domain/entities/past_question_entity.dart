@@ -90,6 +90,7 @@ class PastQuestionEntity extends Equatable {
     required this.topic,
     this.passage,
     this.latexFormula,
+    this.imageUrl,
     this.difficulty = 'Medium',
     this.userSelectedOptionIndex,
     this.isBookmarked = false,
@@ -108,6 +109,7 @@ class PastQuestionEntity extends Equatable {
   final String topic;
   final String? passage;
   final String? latexFormula;
+  final String? imageUrl;
   final String difficulty;
   final int? userSelectedOptionIndex;
   final bool isBookmarked;
@@ -129,6 +131,7 @@ class PastQuestionEntity extends Equatable {
     String? topic,
     String? passage,
     String? latexFormula,
+    String? imageUrl,
     String? difficulty,
     int? userSelectedOptionIndex,
     bool? isBookmarked,
@@ -147,6 +150,7 @@ class PastQuestionEntity extends Equatable {
       topic: topic ?? this.topic,
       passage: passage ?? this.passage,
       latexFormula: latexFormula ?? this.latexFormula,
+      imageUrl: imageUrl ?? this.imageUrl,
       difficulty: difficulty ?? this.difficulty,
       userSelectedOptionIndex:
           userSelectedOptionIndex ?? this.userSelectedOptionIndex,
@@ -169,6 +173,7 @@ class PastQuestionEntity extends Equatable {
     topic,
     passage,
     latexFormula,
+    imageUrl,
     difficulty,
     userSelectedOptionIndex,
     isBookmarked,

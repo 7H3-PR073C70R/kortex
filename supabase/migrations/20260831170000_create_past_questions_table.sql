@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.past_questions (
     topic TEXT NOT NULL,
     passage TEXT,
     latex_formula TEXT,
+    image_url TEXT,
     difficulty TEXT DEFAULT 'Medium',
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

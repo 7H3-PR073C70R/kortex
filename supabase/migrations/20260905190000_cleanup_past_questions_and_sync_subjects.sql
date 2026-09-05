@@ -6,6 +6,9 @@
 -- 1. Purge all generic past questions that were previously curated without headway
 DELETE FROM public.past_questions;
 
+-- Ensure image_url column is present for questions with diagrams/figures
+ALTER TABLE public.past_questions ADD COLUMN IF NOT EXISTS image_url TEXT;
+
 -- 2. Remove legacy high school course entries with W- or J- prefixes
 DELETE FROM public.curated_courses 
 WHERE course_code LIKE 'W-%' 
