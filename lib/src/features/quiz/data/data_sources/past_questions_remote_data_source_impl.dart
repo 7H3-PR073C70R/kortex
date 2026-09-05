@@ -9,6 +9,20 @@ class PastQuestionsRemoteDataSourceImpl
   PastQuestionsRemoteDataSourceImpl(this._client);
 
   final PastQuestionsApiClient _client;
+  final List<PastQuestionModel> _inMemoryQuestions = [];
+
+  @override
+  Future<void> savePastQuestions(List<PastQuestionModel> questions) async {
+    if (questions.isEmpty) return;
+    _inMemoryQuestions.insertAll(0, questions);
+
+    try {
+      final payload = questions.map((q) => q.toJson()).toList();
+      await _client.insertPastQuestions(payload);
+    } on Object {
+      // Gracefully continue offline
+    }
+  }
 
   Map<String, dynamic> _buildParams({
     String? examType,
@@ -50,6 +64,23 @@ class PastQuestionsRemoteDataSourceImpl
     int? year,
     String? searchQuery,
   }) async {
+    final memoryMatches = _inMemoryQuestions.where((q) {
+      if (examCategory != null && q.examType != examCategory) return false;
+      if (subject != null &&
+          subject != 'All' &&
+          !q.subject.toLowerCase().contains(subject.toLowerCase())) {
+        return false;
+      }
+      if (year != null && q.year != year) return false;
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        final query = searchQuery.toLowerCase();
+        return q.prompt.toLowerCase().contains(query) ||
+            q.subject.toLowerCase().contains(query) ||
+            q.topic.toLowerCase().contains(query);
+      }
+      return true;
+    }).toList();
+
     try {
       final params = _buildParams(
         examType: examCategory?.code,
@@ -61,20 +92,32 @@ class PastQuestionsRemoteDataSourceImpl
       final rows = res.data is List ? (res.data as List) : <dynamic>[];
 
       if (rows.isNotEmpty) {
-        return rows
+        final remote = rows
             .map((e) => PastQuestionModel.fromJson(e as Map<String, dynamic>))
             .toList();
+
+        final seenIds = memoryMatches.map((e) => e.id).toSet();
+        return [
+          ...memoryMatches,
+          ...remote.where((q) => !seenIds.contains(q.id)),
+        ];
       }
     } on Object {
       // Fallback gracefully to offline seed cache if remote is initializing
     }
 
-    return SeedPastQuestions.filter(
+    final seedMatches = SeedPastQuestions.filter(
       examCategory: examCategory,
       subject: subject,
       year: year,
       searchQuery: searchQuery,
     );
+
+    final seenIds = memoryMatches.map((e) => e.id).toSet();
+    return [
+      ...memoryMatches,
+      ...seedMatches.where((q) => !seenIds.contains(q.id)),
+    ];
   }
 
   @override

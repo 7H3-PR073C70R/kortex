@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
+import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 
@@ -62,5 +63,32 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         _bookmarkedIds.add(questionId);
       }
     }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> savePastQuestions(
+    List<PastQuestionEntity> questions,
+  ) {
+    final models = questions.map((e) {
+      return PastQuestionModel(
+        id: e.id,
+        examType: e.examType,
+        subject: e.subject,
+        year: e.year,
+        questionNumber: e.questionNumber,
+        prompt: e.prompt,
+        options: e.options,
+        correctOptionIndex: e.correctOptionIndex,
+        correctOptionLabel: e.correctOptionLabel,
+        explanation: e.explanation,
+        topic: e.topic,
+        passage: e.passage,
+        latexFormula: e.latexFormula,
+        imageUrl: e.imageUrl,
+        difficulty: e.difficulty,
+      );
+    }).toList();
+
+    return _remoteDataSource.savePastQuestions(models).makeRequest();
   }
 }

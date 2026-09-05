@@ -66,7 +66,6 @@ class CreateCourseDeckModalSheet extends HookWidget {
       if (front.isEmpty || back.isEmpty) {
         context.showSnackBar(
           message: 'Please enter both question (front) and answer (back)',
-          type: SnackBarType.info,
         );
         return;
       }
@@ -85,7 +84,6 @@ class CreateCourseDeckModalSheet extends HookWidget {
       if (title.isEmpty) {
         context.showSnackBar(
           message: 'Please provide a deck title',
-          type: SnackBarType.info,
         );
         return;
       }
@@ -96,7 +94,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
       try {
         final deckId = 'deck_${DateTime.now().millisecondsSinceEpoch}';
 
-        final List<FlashcardModel> flashcards =
+        final flashcards =
             addedCards.value.asMap().entries.map<FlashcardModel>((entry) {
           final idx = entry.key;
           final item = entry.value;
@@ -144,7 +142,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
             type: SnackBarType.success,
           );
         }
-      } catch (err) {
+      } on Object catch (err) {
         if (context.mounted) {
           context.showSnackBar(
             message: 'Failed to create deck: $err',
@@ -305,7 +303,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                     ),
                     if (addedCards.value.isNotEmpty)
                       Text(
-                        'LaTeX supported \\(...\\)',
+                        r'LaTeX supported \(...\)',
                         style: typography.caption.regular.copyWith(
                           color: colors.textMuted,
                           fontSize: 11,
@@ -386,11 +384,9 @@ class CreateCourseDeckModalSheet extends HookWidget {
                                   color: colors.error.withAlpha(180),
                                 ),
                                 onPressed: () {
-                                  final list = List<Map<String, String>>.from(
+                                  addedCards.value = List<Map<String, String>>.from(
                                     addedCards.value,
-                                  );
-                                  list.removeAt(index);
-                                  addedCards.value = list;
+                                  )..removeAt(index);
                                 },
                               ),
                             ],
@@ -456,7 +452,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                           fontSize: 13.5,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'e.g. \\(x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\\)',
+                          hintText: r'e.g. \(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\)',
                           isDense: true,
                           filled: true,
                           fillColor: colors.surfacePrimary,

@@ -19,4 +19,8 @@ abstract class PastQuestionsRepository {
   );
 
   Future<Either<Failure, void>> toggleBookmarkQuestion(String questionId);
+
+  Future<Either<Failure, void>> savePastQuestions(
+    List<PastQuestionEntity> questions,
+  );
 }

@@ -252,11 +252,34 @@ class QuizResultsPage extends StatelessWidget {
       return;
     }
 
+    // Resolve course affiliation if not explicitly supplied
+    var resolvedCourseId = courseId?.trim();
+    var resolvedCourseCode = courseCode?.trim();
+
+    if ((resolvedCourseId == null || resolvedCourseId.isEmpty) &&
+        (resolvedCourseCode == null || resolvedCourseCode.isEmpty)) {
+      if (locator.isRegistered<DecksBloc>()) {
+        final allDecks = locator<DecksBloc>().state.allDecks;
+        for (final d in allDecks) {
+          if (d.courseCode != null &&
+              d.courseCode!.isNotEmpty &&
+              result.quizTitle.toLowerCase().contains(d.courseCode!.toLowerCase())) {
+            resolvedCourseId = d.courseId;
+            resolvedCourseCode = d.courseCode;
+            break;
+          }
+        }
+      }
+    }
+
     final deckId = 'quiz_deck_${DateTime.now().millisecondsSinceEpoch}';
-    final deckTitle = '${result.quizTitle} - Practice Deck';
-    final subject = result.weaknesses.isNotEmpty
-        ? result.weaknesses.first.subTopic
-        : 'Quiz Review';
+    final deckTitle = resolvedCourseCode != null && resolvedCourseCode.isNotEmpty
+        ? '$resolvedCourseCode CBT Practice Deck'
+        : '${result.quizTitle} - Practice Deck';
+    final subject = resolvedCourseCode ??
+        (result.weaknesses.isNotEmpty
+            ? result.weaknesses.first.subTopic
+            : 'Quiz Review');
 
     final cards = <FlashcardModel>[];
 
@@ -272,7 +295,7 @@ class QuizResultsPage extends StatelessWidget {
             deckId: deckId,
             front: q.prompt,
             back: '${q.correctAnswer}$explanationPart',
-            sourceTopic: q.subTopic,
+            sourceTopic: q.subTopic.isNotEmpty ? q.subTopic : subject,
             nextDueDate: DateTime.now().add(const Duration(days: 1)),
           ),
         );
@@ -304,8 +327,8 @@ class QuizResultsPage extends StatelessWidget {
       category: 'Quiz Review',
       description: 'Practice flashcards generated from CBT test session.',
       cards: cards,
-      courseId: courseId,
-      courseCode: courseCode,
+      courseId: resolvedCourseId,
+      courseCode: resolvedCourseCode,
     );
 
     // Save to DecksRemoteDataSource

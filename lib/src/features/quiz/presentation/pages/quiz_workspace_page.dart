@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
@@ -22,6 +23,8 @@ class QuizWorkspacePage extends StatelessWidget {
     this.subject,
     this.durationMinutes,
     this.initialQuestions,
+    this.courseId,
+    this.courseCode,
     super.key,
   });
 
@@ -30,12 +33,16 @@ class QuizWorkspacePage extends StatelessWidget {
   final String? subject;
   final int? durationMinutes;
   final List<QuizQuestionEntity>? initialQuestions;
+  final String? courseId;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
     final view = _QuizWorkspaceView(
       deckId: deckId,
       deckTitle: deckTitle ?? subject,
+      courseId: courseId,
+      courseCode: courseCode,
     );
     try {
       final existing = context.read<QuizSessionCubit>();
@@ -75,10 +82,14 @@ class _QuizWorkspaceView extends HookWidget {
   const _QuizWorkspaceView({
     required this.deckId,
     this.deckTitle,
+    this.courseId,
+    this.courseCode,
   });
 
   final String deckId;
   final String? deckTitle;
+  final String? courseId;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +97,20 @@ class _QuizWorkspaceView extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    var effectiveCourseId = courseId;
+    var effectiveCourseCode = courseCode;
+
+    if (effectiveCourseId == null || effectiveCourseCode == null) {
+      if (locator.isRegistered<DecksBloc>()) {
+        final allDecks = locator<DecksBloc>().state.allDecks;
+        final matchingDeck = allDecks.where((d) => d.id == deckId).firstOrNull;
+        if (matchingDeck != null) {
+          effectiveCourseId ??= matchingDeck.courseId;
+          effectiveCourseCode ??= matchingDeck.courseCode;
+        }
+      }
+    }
 
     return BlocConsumer<QuizSessionCubit, QuizSessionState>(
       listener: (context, state) {
@@ -96,6 +121,8 @@ class _QuizWorkspaceView extends HookWidget {
               QuizResultsRoute(
                 result: state.result!,
                 questions: state.questions,
+                courseId: effectiveCourseId,
+                courseCode: effectiveCourseCode,
               ),
             ),
           );

@@ -72,8 +72,9 @@ class LatexRichViewer extends StatelessWidget {
       if (match.start > lastIndex) {
         final textChunk = text.substring(lastIndex, match.start).trim();
         if (textChunk.isNotEmpty) {
-          widgets.add(_buildInlineRichText(context, textChunk, defaultStyle));
-          widgets.add(const SizedBox(height: 6));
+          widgets
+            ..add(_buildInlineRichText(context, textChunk, defaultStyle))
+            ..add(const SizedBox(height: 6));
         }
       }
 
@@ -106,8 +107,9 @@ class LatexRichViewer extends StatelessWidget {
     if (lastIndex < text.length) {
       final remaining = text.substring(lastIndex).trim();
       if (remaining.isNotEmpty) {
-        widgets.add(const SizedBox(height: 6));
-        widgets.add(_buildInlineRichText(context, remaining, defaultStyle));
+        widgets
+          ..add(const SizedBox(height: 6))
+          ..add(_buildInlineRichText(context, remaining, defaultStyle));
       }
     }
 

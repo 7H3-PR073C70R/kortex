@@ -13,4 +13,9 @@ abstract class PastQuestionsApiClient {
   Future<HttpResponse<dynamic>> fetchPastQuestions(
     @Queries() Map<String, dynamic> query,
   );
+
+  @POST(AppApiEndpoint.pastQuestions)
+  Future<HttpResponse<dynamic>> insertPastQuestions(
+    @Body() List<Map<String, dynamic>> questions,
+  );
 }

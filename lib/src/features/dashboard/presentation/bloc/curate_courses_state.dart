@@ -102,23 +102,25 @@ class CurateCoursesState extends Equatable {
       return !isHighSchoolExam;
     }).toList();
 
-    return trackFiltered.isNotEmpty ? trackFiltered : combined;
+    // Deduplicate any duplicate course codes or identical subjects within the track
+    final seenKeys = <String>{};
+    final deduplicated = <CuratedCourseEntity>[];
+    for (final c in (trackFiltered.isNotEmpty ? trackFiltered : combined)) {
+      final key = '${c.courseCode.trim().toUpperCase()}_${c.title.trim().toLowerCase()}';
+      if (seenKeys.add(key)) {
+        deduplicated.add(c);
+      }
+    }
+
+    return deduplicated;
   }
 
-  /// Filtered by category and search term
+  /// Filtered by category and search term within active track's courses
   List<CuratedCourseEntity> get filteredCourses {
     final query = searchQuery.trim().toLowerCase();
 
-    // If searching explicitly, search across all available courses.
-    // When browsing categories without search, restrict strictly to active track's courses.
-    final sourceList = query.isNotEmpty
-        ? [
-            ...customCourses,
-            ...catalogCourses.where(
-              (c) => !customCourses.any((x) => x.id == c.id),
-            ),
-          ]
-        : allCourses;
+    // Strictly search and browse within the track-filtered list to prevent cross-track pollution
+    final sourceList = allCourses;
 
     return sourceList.where((course) {
       final deptLower = course.department.toLowerCase();

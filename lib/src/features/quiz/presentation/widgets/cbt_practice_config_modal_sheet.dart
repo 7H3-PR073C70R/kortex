@@ -92,8 +92,9 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     // Available count options
     final countOptions = [10, 20, 30, 40].where((c) => c <= allQuestions.length || c == 10).toList();
     if (!countOptions.contains(allQuestions.length) && allQuestions.length < 40 && allQuestions.isNotEmpty) {
-      countOptions.add(allQuestions.length);
-      countOptions.sort();
+      countOptions
+        ..add(allQuestions.length)
+        ..sort();
     }
 
     void handleStart() {
@@ -130,6 +131,8 @@ class CbtPracticeConfigModalSheet extends HookWidget {
             subject: courseTitle,
             durationMinutes: durationMinutes,
             initialQuestions: quizQuestions,
+            courseId: courseId,
+            courseCode: courseCode,
           ),
         ),
       );

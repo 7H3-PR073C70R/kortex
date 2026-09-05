@@ -17,6 +17,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: OnboardingContentRoute.page),
     AutoRoute(page: PermissionsRoute.page),
     AutoRoute(page: DeckDetailRoute.page),
+    AutoRoute(page: CreateDeckRoute.page),
     AutoRoute(page: StudySessionRoute.page),
     AutoRoute(page: SessionSummaryRoute.page),
     AutoRoute(page: MockExamLobbyRoute.page),

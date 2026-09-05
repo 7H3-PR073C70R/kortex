@@ -17,7 +17,6 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/create_course_deck_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
@@ -561,11 +560,13 @@ class _CourseModuleView extends StatelessWidget {
               onTap: () {
                 AppFeedback.light();
                 unawaited(
-                  CreateCourseDeckModalSheet.show(
-                    context,
-                    courseId: courseId,
-                    courseCode: courseCode,
-                    courseTitle: courseTitle,
+                  context.router.push(
+                    CreateDeckRoute(
+                      courseId: courseId,
+                      courseCode: courseCode,
+                      courseTitle: courseTitle,
+                      mappedSubject: mappedSubject,
+                    ),
                   ),
                 );
               },

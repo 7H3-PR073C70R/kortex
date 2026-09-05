@@ -12,4 +12,5 @@ abstract class PastQuestionsRemoteDataSource {
   Future<List<String>> getAvailableSubjects(ExamCategory category);
 
   Future<List<int>> getAvailableYears(ExamCategory category);
+  Future<void> savePastQuestions(List<PastQuestionModel> questions);
 }

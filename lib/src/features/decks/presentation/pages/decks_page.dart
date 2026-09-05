@@ -81,6 +81,23 @@ class _DecksView extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
+                  // Option 0: Dedicated Study Deck Creation Page
+                  _ActionOptionTile(
+                    icon: Icons.layers_rounded,
+                    iconColor: colors.primary,
+                    title: 'Create Study Deck',
+                    subtitle: 'Upload past questions or create flashcards manually',
+                    onTap: () {
+                      Navigator.pop(bottomSheetContext);
+                      unawaited(
+                        context.router.push(
+                          CreateDeckRoute(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
                   // Option 1: AI Generation
                   _ActionOptionTile(
                     icon: Icons.auto_awesome_rounded,

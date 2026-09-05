@@ -112,6 +112,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         'mastery_rate': deck.masteryRate,
         'description': deck.description,
         if (userId.isNotEmpty) 'user_id': userId,
+        if (deck.courseId != null) 'course_id': deck.courseId,
+        if (deck.courseCode != null) 'course_code': deck.courseCode,
       };
       await _client.createDeckRecord(deckPayload);
     } on Object catch (e, stack) {
