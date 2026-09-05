@@ -56,4 +56,32 @@ class DashboardRepositoryImpl implements DashboardRepository {
         )
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, List<CuratedCourseEntity>>> getCatalogCourses() {
+    return remoteDataSource
+        .getCatalogCourses()
+        .then((models) => models.map((e) => e.toEntity()).toList())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> syncUserCourses(
+    List<Map<String, dynamic>> courses,
+  ) {
+    return remoteDataSource.syncUserCourses(courses).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> autoCurateExamCourses({
+    required String examName,
+    required List<String> subjects,
+  }) {
+    return remoteDataSource
+        .autoCurateExamCourses(
+          examName: examName,
+          subjects: subjects,
+        )
+        .makeRequest();
+  }
 }

@@ -56,9 +56,13 @@ import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote
 import 'package:kortex/src/features/dashboard/data/repositories/dashboard_repository_impl.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/auto_curate_exam_courses_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_feed_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/quick_start_mock_exam_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses_use_case.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';

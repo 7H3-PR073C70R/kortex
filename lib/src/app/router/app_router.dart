@@ -22,6 +22,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: MockExamLobbyRoute.page),
     AutoRoute(page: AnalyticsDetailRoute.page),
     AutoRoute(page: CourseModuleRoute.page),
+    AutoRoute(page: CurateCoursesRoute.page),
     AutoRoute(page: DocumentIngestionRoute.page),
     AutoRoute(page: OcrPreviewRoute.page),
     AutoRoute(page: GeneratedCardsReviewRoute.page),

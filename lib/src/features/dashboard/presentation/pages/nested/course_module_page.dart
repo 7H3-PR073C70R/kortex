@@ -96,6 +96,77 @@ class CourseModulePage extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // Course Syllabus & Ingestion Action
+              Text(
+                'Syllabus & Course Material',
+                style: typography.callout.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  unawaited(context.router.push(const DocumentIngestionRoute()));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 28 : 16),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 70 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 50 : 30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.upload_file_rounded,
+                          size: 20,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Upload Syllabus or Notes',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Ingest PDF slides, syllabi, or handouts for AI cards & answers.',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: colors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
 
               Text(

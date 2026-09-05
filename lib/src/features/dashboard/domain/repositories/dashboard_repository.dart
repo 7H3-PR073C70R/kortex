@@ -16,4 +16,18 @@ abstract class DashboardRepository {
     required String examId,
     required String subject,
   });
+
+  /// Fetches the catalog of curated courses across all faculties & tracks.
+  Future<Either<Failure, List<CuratedCourseEntity>>> getCatalogCourses();
+
+  /// Synchronizes or enrolls the student into selected/custom courses.
+  Future<Either<Failure, void>> syncUserCourses(
+    List<Map<String, dynamic>> courses,
+  );
+
+  /// Automatically curates standardized lower exam subjects (WAEC, JAMB, SAT).
+  Future<Either<Failure, void>> autoCurateExamCourses({
+    required String examName,
+    required List<String> subjects,
+  });
 }

@@ -41,6 +41,12 @@ class AppApiEndpoint {
   static const String dashboardReviewQueue =
       '/rest/v1/decks?due_cards=gt.0&order=due_cards.desc&limit=5';
   static const String dashboardStartExam = '/rest/v1/rpc/record_study_session';
+  static const String curatedCoursesCatalog =
+      '/rest/v1/curated_courses?select=*&order=field_category.asc,course_code.asc';
+  static const String syncCoursesRpc =
+      '/rest/v1/rpc/sync_or_create_user_courses';
+  static const String autoCurateExamRpc =
+      '/rest/v1/rpc/auto_curate_exam_courses';
 
   // Decks & Flashcards Endpoints
   static const String decks = '/rest/v1/decks?select=*';

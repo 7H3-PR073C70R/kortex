@@ -519,10 +519,11 @@ class _EmptyCoursesCard extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     return ShrinkableButton(
-      onTap: () {
-        unawaited(
-          context.router.push(const OnboardingCalibrationRoute()),
-        );
+      onTap: () async {
+        final result = await context.router.push(CurateCoursesRoute());
+        if (result == true && context.mounted) {
+          context.read<DashboardBloc>().add(const DashboardRefreshed());
+        }
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),

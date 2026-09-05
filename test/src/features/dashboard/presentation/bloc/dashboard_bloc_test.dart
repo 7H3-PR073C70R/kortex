@@ -69,6 +69,26 @@ class MockDashboardRepository implements DashboardRepository {
     }
     return const Right('mock_session_123');
   }
+
+  @override
+  Future<Either<Failure, List<CuratedCourseEntity>>> getCatalogCourses() async {
+    return const Right([]);
+  }
+
+  @override
+  Future<Either<Failure, void>> syncUserCourses(
+    List<Map<String, dynamic>> courses,
+  ) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> autoCurateExamCourses({
+    required String examName,
+    required List<String> subjects,
+  }) async {
+    return const Right(null);
+  }
 }
 
 void main() {

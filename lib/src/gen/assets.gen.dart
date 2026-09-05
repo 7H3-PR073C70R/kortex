@@ -55,6 +55,10 @@ class $AssetsImagesGen {
   AssetGenImage get campusStudentBg =>
       const AssetGenImage('assets/images/campus_student_bg.png');
 
+  /// File path: assets/images/launch_image.png
+  AssetGenImage get launchImage =>
+      const AssetGenImage('assets/images/launch_image.png');
+
   /// File path: assets/images/logo.svg
   SvgGenImage get logo => const SvgGenImage('assets/images/logo.svg');
 
@@ -70,6 +74,7 @@ class $AssetsImagesGen {
     aGitkeep,
     campusLightBg,
     campusStudentBg,
+    launchImage,
     logo,
     logoMain,
     syllabotAvatar,

@@ -58,6 +58,22 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<QuickStartMockExamUseCase>(
       () => QuickStartMockExamUseCase(locator<DashboardRepository>()),
     )
+    ..registerLazySingleton<GetCuratedCoursesCatalogUseCase>(
+      () => GetCuratedCoursesCatalogUseCase(locator<DashboardRepository>()),
+    )
+    ..registerLazySingleton<SyncUserCoursesUseCase>(
+      () => SyncUserCoursesUseCase(locator<DashboardRepository>()),
+    )
+    ..registerLazySingleton<AutoCurateExamCoursesUseCase>(
+      () => AutoCurateExamCoursesUseCase(locator<DashboardRepository>()),
+    )
+    ..registerFactory<CurateCoursesCubit>(
+      () => CurateCoursesCubit(
+        getCatalogUseCase: locator<GetCuratedCoursesCatalogUseCase>(),
+        syncCoursesUseCase: locator<SyncUserCoursesUseCase>(),
+        dashboardBloc: locator<DashboardBloc>(),
+      ),
+    )
     ..registerLazySingleton<DashboardBloc>(
       () => DashboardBloc(
         getDashboardFeedUseCase: locator<GetDashboardFeedUseCase>(),

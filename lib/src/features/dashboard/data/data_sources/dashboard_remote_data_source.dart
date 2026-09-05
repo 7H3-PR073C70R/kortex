@@ -10,4 +10,13 @@ abstract class DashboardRemoteDataSource {
     required String examId,
     required String subject,
   });
+
+  Future<List<CuratedCourseModel>> getCatalogCourses();
+
+  Future<void> syncUserCourses(List<Map<String, dynamic>> courses);
+
+  Future<void> autoCurateExamCourses({
+    required String examName,
+    required List<String> subjects,
+  });
 }

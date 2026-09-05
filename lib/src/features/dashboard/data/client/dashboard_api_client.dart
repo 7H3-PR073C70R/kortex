@@ -10,11 +10,26 @@ part 'dashboard_api_client.g.dart';
 abstract class DashboardApiClient {
   factory DashboardApiClient(Dio dio, {String baseUrl}) = _DashboardApiClient;
 
-  @GET(AppApiEndpoint.dashboardFeed)
-  Future<DashboardFeedModel> getDashboardFeed();
+  @POST(AppApiEndpoint.dashboardFeed)
+  Future<DashboardFeedModel> getDashboardFeed(
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET(AppApiEndpoint.dashboardReviewQueue)
   Future<List<StudyDeckModel>> getReviewQueue();
+
+  @GET(AppApiEndpoint.curatedCoursesCatalog)
+  Future<List<CuratedCourseModel>> getCuratedCoursesCatalog();
+
+  @POST(AppApiEndpoint.syncCoursesRpc)
+  Future<HttpResponse<dynamic>> syncUserCourses(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.autoCurateExamRpc)
+  Future<HttpResponse<dynamic>> autoCurateExamCourses(
+    @Body() Map<String, dynamic> body,
+  );
 
   @POST(AppApiEndpoint.dashboardStartExam)
   Future<HttpResponse<dynamic>> startMockExam(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/auto_curate_exam_courses_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
@@ -8,10 +9,13 @@ import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/cal
 class CalibrationCubit extends Cubit<CalibrationState> {
   CalibrationCubit({
     required SaveCalibrationProfileUseCase saveCalibrationProfileUseCase,
+    AutoCurateExamCoursesUseCase? autoCurateExamCoursesUseCase,
   }) : _saveCalibrationProfileUseCase = saveCalibrationProfileUseCase,
+       _autoCurateExamCoursesUseCase = autoCurateExamCoursesUseCase,
        super(const CalibrationState());
 
   final SaveCalibrationProfileUseCase _saveCalibrationProfileUseCase;
+  final AutoCurateExamCoursesUseCase? _autoCurateExamCoursesUseCase;
 
   void setAcademicFocus(AcademicFocus focus) {
     emit(
@@ -156,12 +160,27 @@ class CalibrationCubit extends Cubit<CalibrationState> {
           errorMessage: failure.message,
         ),
       ),
-      (_) => emit(
-        state.copyWith(
-          status: CalibrationStatus.completed,
-          profile: finalizedProfile,
-        ),
-      ),
+      (_) {
+        final exam = finalizedProfile.highSchoolExam;
+        if (finalizedProfile.focus == AcademicFocus.highSchool &&
+            exam != null &&
+            _autoCurateExamCoursesUseCase != null) {
+          unawaited(
+            _autoCurateExamCoursesUseCase(
+              AutoCurateExamCoursesParams(
+                examName: exam,
+                subjects: finalizedProfile.highSchoolSubjects,
+              ),
+            ),
+          );
+        }
+        emit(
+          state.copyWith(
+            status: CalibrationStatus.completed,
+            profile: finalizedProfile,
+          ),
+        );
+      },
     );
   }
 }
