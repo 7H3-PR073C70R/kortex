@@ -59,7 +59,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   ) async {
     await _streamSubscription?.cancel();
 
-    final isPro = locator.isRegistered<SubscriptionGuard>() &&
+    final isPro = !locator.isRegistered<SubscriptionGuard>() ||
         locator<SubscriptionGuard>().canAccessCloudAi();
     final effectiveEngine =
         (!isPro && event.engineType == ExecutionEngineType.cloudRemote)

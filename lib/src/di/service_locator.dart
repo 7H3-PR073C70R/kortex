@@ -129,5 +129,8 @@ void _initServices() {
     )
     ..registerFactory<OnboardingStreamController>(
       () => OnboardingStreamController(dio: locator<Dio>()),
+    )
+    ..registerLazySingleton<LiveKitAudioService>(
+      LiveKitAudioServiceImpl.new,
     );
 }

@@ -1,31 +1,50 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
+import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
+
+enum RoomViewMode { stage, whiteboard }
 
 class LiveRoomState extends Equatable {
   const LiveRoomState({
     required this.room,
     this.remainingSeconds = 1500,
     this.isConnected = true,
+    this.isAudioConnected = false,
     this.participants = const [],
     this.ephemeralParticipants = const [],
+    this.activeSpeakerIds = const {},
     this.isHandRaised = false,
     this.isMuted = true,
     this.completedPomodoros = 0,
+    this.activeViewMode = RoomViewMode.stage,
+    this.whiteboardStrokes = const [],
+    this.whiteboardRedoStack = const [],
+    this.chatMessages = const [],
+    this.unreadChatCount = 0,
   });
 
   final StudyRoomEntity room;
   final int remainingSeconds;
   final bool isConnected;
+  final bool isAudioConnected;
   final List<String> participants;
   final List<EphemeralParticipant> ephemeralParticipants;
+  final Set<String> activeSpeakerIds;
   final bool isHandRaised;
   final bool isMuted;
   final int completedPomodoros;
+  final RoomViewMode activeViewMode;
+  final List<WhiteboardStroke> whiteboardStrokes;
+  final List<WhiteboardStroke> whiteboardRedoStack;
+  final List<RoomChatMessage> chatMessages;
+  final int unreadChatCount;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -43,22 +62,36 @@ class LiveRoomState extends Equatable {
     StudyRoomEntity? room,
     int? remainingSeconds,
     bool? isConnected,
+    bool? isAudioConnected,
     List<String>? participants,
     List<EphemeralParticipant>? ephemeralParticipants,
+    Set<String>? activeSpeakerIds,
     bool? isHandRaised,
     bool? isMuted,
     int? completedPomodoros,
+    RoomViewMode? activeViewMode,
+    List<WhiteboardStroke>? whiteboardStrokes,
+    List<WhiteboardStroke>? whiteboardRedoStack,
+    List<RoomChatMessage>? chatMessages,
+    int? unreadChatCount,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       isConnected: isConnected ?? this.isConnected,
+      isAudioConnected: isAudioConnected ?? this.isAudioConnected,
       participants: participants ?? this.participants,
       ephemeralParticipants:
           ephemeralParticipants ?? this.ephemeralParticipants,
+      activeSpeakerIds: activeSpeakerIds ?? this.activeSpeakerIds,
       isHandRaised: isHandRaised ?? this.isHandRaised,
       isMuted: isMuted ?? this.isMuted,
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
+      activeViewMode: activeViewMode ?? this.activeViewMode,
+      whiteboardStrokes: whiteboardStrokes ?? this.whiteboardStrokes,
+      whiteboardRedoStack: whiteboardRedoStack ?? this.whiteboardRedoStack,
+      chatMessages: chatMessages ?? this.chatMessages,
+      unreadChatCount: unreadChatCount ?? this.unreadChatCount,
     );
   }
 
@@ -67,11 +100,18 @@ class LiveRoomState extends Equatable {
     room,
     remainingSeconds,
     isConnected,
+    isAudioConnected,
     participants,
     ephemeralParticipants,
+    activeSpeakerIds,
     isHandRaised,
     isMuted,
     completedPomodoros,
+    activeViewMode,
+    whiteboardStrokes,
+    whiteboardRedoStack,
+    chatMessages,
+    unreadChatCount,
   ];
 }
 
@@ -80,11 +120,16 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     required StudyRoomEntity initialRoom,
     required CommunityRepository repository,
     EphemeralRoomRepository? ephemeralRepository,
+    LiveKitAudioService? audioService,
     String? currentUserId,
     String? currentUserName,
     String? currentUserAvatar,
   }) : _repository = repository,
        _ephemeralRepository = ephemeralRepository,
+       _audioService = audioService ??
+           (locator.isRegistered<LiveKitAudioService>()
+               ? locator<LiveKitAudioService>()
+               : null),
        _currentUserId = currentUserId ?? 'user_local',
        _currentUserName = currentUserName ?? 'Scholar',
        _currentUserAvatar = currentUserAvatar ?? '',
@@ -98,10 +143,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     _startTimer();
     _subscribeToRoom(initialRoom.id);
     _initEphemeralPresence(initialRoom.id);
+    _initAudioRtc(initialRoom.id);
   }
 
   final CommunityRepository _repository;
   final EphemeralRoomRepository? _ephemeralRepository;
+  final LiveKitAudioService? _audioService;
   final String _currentUserId;
   final String _currentUserName;
   final String _currentUserAvatar;
@@ -110,6 +157,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   StreamSubscription<StudyRoomEntity>? _roomSubscription;
   StreamSubscription<List<EphemeralParticipant>>? _presenceSubscription;
   StreamSubscription<PomodoroSyncEvent>? _syncSubscription;
+  StreamSubscription<WhiteboardStroke>? _whiteboardSubscription;
+  StreamSubscription<void>? _whiteboardClearSubscription;
+  StreamSubscription<RoomChatMessage>? _chatSubscription;
+  StreamSubscription<Set<String>>? _speakersSubscription;
+  StreamSubscription<bool>? _micSubscription;
+  StreamSubscription<LiveAudioConnectionState>? _audioConnSubscription;
 
   void _startTimer() {
     _timer?.cancel();
@@ -172,11 +225,48 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     );
   }
 
-  void _initEphemeralPresence(String roomId) {
-    if (_ephemeralRepository == null) return;
+  void _initAudioRtc(String roomId) {
+    final audio = _audioService;
+    if (audio == null) return;
+
+    _speakersSubscription = audio.speakingParticipantsStream.listen((speakers) {
+      if (!isClosed) {
+        emit(state.copyWith(activeSpeakerIds: speakers));
+      }
+    });
+
+    _micSubscription = audio.microphoneStateStream.listen((enabled) {
+      if (!isClosed) {
+        emit(state.copyWith(isMuted: !enabled));
+      }
+    });
+
+    _audioConnSubscription = audio.connectionStateStream.listen((connState) {
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isAudioConnected: connState == LiveAudioConnectionState.connected,
+          ),
+        );
+      }
+    });
 
     unawaited(
-      _ephemeralRepository.joinRoomPresence(
+      audio.connect(
+        url: AppEnv.liveKitUrl,
+        token: 'demo_livekit_token_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: roomId,
+        userId: _currentUserId,
+      ),
+    );
+  }
+
+  void _initEphemeralPresence(String roomId) {
+    final ephemeral = _ephemeralRepository;
+    if (ephemeral == null) return;
+
+    unawaited(
+      ephemeral.joinRoomPresence(
         roomId: roomId,
         userId: _currentUserId,
         displayName: _currentUserName,
@@ -184,7 +274,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       ),
     );
 
-    _presenceSubscription = _ephemeralRepository
+    _presenceSubscription = ephemeral
         .watchParticipants(roomId)
         .listen((participants) {
           if (!isClosed) {
@@ -198,7 +288,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           }
         });
 
-    _syncSubscription = _ephemeralRepository.watchPomodoroSync(roomId).listen((
+    _syncSubscription = ephemeral.watchPomodoroSync(roomId).listen((
       syncEvent,
     ) {
       if (!isClosed && syncEvent.senderId != _currentUserId) {
@@ -211,6 +301,44 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
             ),
           );
         }
+      }
+    });
+
+    _whiteboardSubscription = ephemeral.watchWhiteboardStrokes(roomId).listen((
+      stroke,
+    ) {
+      if (!isClosed && stroke.userId != _currentUserId) {
+        if (!state.whiteboardStrokes.any((s) => s.id == stroke.id)) {
+          emit(
+            state.copyWith(
+              whiteboardStrokes: [...state.whiteboardStrokes, stroke],
+            ),
+          );
+        }
+      }
+    });
+
+    _whiteboardClearSubscription = ephemeral.watchWhiteboardClear(roomId).listen(
+      (_) {
+        if (!isClosed) {
+          emit(state.copyWith(
+            whiteboardStrokes: const [],
+            whiteboardRedoStack: const [],
+          ));
+        }
+      },
+    );
+
+    _chatSubscription = ephemeral.watchChatMessages(roomId).listen((
+      chatMsg,
+    ) {
+      if (!isClosed && chatMsg.senderId != _currentUserId) {
+        emit(
+          state.copyWith(
+            chatMessages: [...state.chatMessages, chatMsg],
+            unreadChatCount: state.unreadChatCount + 1,
+          ),
+        );
       }
     });
   }
@@ -275,6 +403,11 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       ephemeralParticipants: updatedList,
     ));
 
+    // Update LiveKit hardware microphone track publishing
+    if (_audioService != null) {
+      unawaited(_audioService.setMicrophoneEnabled(enabled: !nextMuted));
+    }
+
     final repo = _ephemeralRepository;
     if (repo != null) {
       unawaited(
@@ -285,6 +418,96 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ),
       );
     }
+  }
+
+  void addWhiteboardStroke(WhiteboardStroke stroke) {
+    final updated = List<WhiteboardStroke>.from(state.whiteboardStrokes)
+      ..add(stroke);
+    emit(state.copyWith(
+      whiteboardStrokes: updated,
+      whiteboardRedoStack: const [],
+    ));
+    unawaited(
+      _ephemeralRepository?.broadcastWhiteboardStroke(
+        roomId: state.room.id,
+        stroke: stroke,
+      ),
+    );
+  }
+
+  void clearWhiteboard() {
+    emit(state.copyWith(
+      whiteboardStrokes: const [],
+      whiteboardRedoStack: const [],
+    ));
+    unawaited(
+      _ephemeralRepository?.broadcastWhiteboardClear(roomId: state.room.id),
+    );
+  }
+
+  void undoWhiteboardStroke() {
+    if (state.whiteboardStrokes.isEmpty) return;
+    final updated = List<WhiteboardStroke>.from(state.whiteboardStrokes);
+    final lastIndex = updated.lastIndexWhere((s) => s.userId == _currentUserId);
+    if (lastIndex != -1) {
+      final removed = updated.removeAt(lastIndex);
+      final updatedRedo = List<WhiteboardStroke>.from(state.whiteboardRedoStack)
+        ..add(removed);
+      emit(state.copyWith(
+        whiteboardStrokes: updated,
+        whiteboardRedoStack: updatedRedo,
+      ));
+    }
+  }
+
+  void redoWhiteboardStroke() {
+    if (state.whiteboardRedoStack.isEmpty) return;
+    final updatedRedo = List<WhiteboardStroke>.from(state.whiteboardRedoStack);
+    final strokeToRestore = updatedRedo.removeLast();
+    final updatedStrokes = List<WhiteboardStroke>.from(state.whiteboardStrokes)
+      ..add(strokeToRestore);
+    emit(state.copyWith(
+      whiteboardStrokes: updatedStrokes,
+      whiteboardRedoStack: updatedRedo,
+    ));
+    unawaited(
+      _ephemeralRepository?.broadcastWhiteboardStroke(
+        roomId: state.room.id,
+        stroke: strokeToRestore,
+      ),
+    );
+  }
+
+  void sendChatMessage(String text, {bool isReaction = false}) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final msg = RoomChatMessage(
+      id: 'msg_${DateTime.now().millisecondsSinceEpoch}_${_currentUserId.hashCode}',
+      senderId: _currentUserId,
+      senderName: _currentUserName,
+      senderAvatar: _currentUserAvatar,
+      text: trimmed,
+      timestamp: DateTime.now(),
+      isReaction: isReaction,
+    );
+    final updated = List<RoomChatMessage>.from(state.chatMessages)..add(msg);
+    emit(state.copyWith(chatMessages: updated));
+    unawaited(
+      _ephemeralRepository?.broadcastChatMessage(
+        roomId: state.room.id,
+        message: msg,
+      ),
+    );
+  }
+
+  void setRoomViewMode(RoomViewMode mode) {
+    emit(state.copyWith(activeViewMode: mode));
+  }
+
+  void switchViewMode(RoomViewMode mode) => setRoomViewMode(mode);
+
+  void markChatAsRead() {
+    emit(state.copyWith(unreadChatCount: 0));
   }
 
   void toggleTimerPause() {
@@ -323,6 +546,13 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     await _roomSubscription?.cancel();
     await _presenceSubscription?.cancel();
     await _syncSubscription?.cancel();
+    await _whiteboardSubscription?.cancel();
+    await _whiteboardClearSubscription?.cancel();
+    await _chatSubscription?.cancel();
+    await _speakersSubscription?.cancel();
+    await _micSubscription?.cancel();
+    await _audioConnSubscription?.cancel();
+    await _audioService?.disconnect();
     await _ephemeralRepository?.leaveRoomPresence(state.room.id);
     return super.close();
   }

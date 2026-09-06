@@ -39,8 +39,10 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/ephemeral_room_repository_impl.dart';
+import 'package:kortex/src/features/community/data/services/livekit_audio_service_impl.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
+import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/community/domain/use_cases/auto_provision_community_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/fetch_course_community_stats_use_case.dart';

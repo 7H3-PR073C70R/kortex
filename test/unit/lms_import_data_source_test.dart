@@ -18,13 +18,13 @@ void main() {
     group('HTML Stripping Utility', () {
       test('strips HTML tags and decodes entities properly', () {
         const rawHtml =
-            '<h1>Course Syllabus</h1>'
-            '<p>Welcome to <b>Advanced Mechanics</b> &amp; Energy.<br>'
-            'Topics include:</p>'
-            '<ul>'
-            '<li>Hamiltonian Formulations</li>'
-            '<li>Chaos &lt; Theory &gt;</li>'
-            '</ul>'
+            '<h1>Course Syllabus</h1>\n'
+            '<p>Welcome to <b>Advanced Mechanics</b> &amp; Energy.<br>\n'
+            'Topics include:</p>\n'
+            '<ul>\n'
+            '<li>Hamiltonian Formulations</li>\n'
+            '<li>Chaos &lt; Theory &gt;</li>\n'
+            '</ul>\n'
             '<p>Office hours: Mon &amp; Wed&nbsp;2-4pm.</p>';
 
         final clean = LmsImportDataSourceImpl.stripHtml(rawHtml);
@@ -91,8 +91,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: {
               'courses': [
                 {
@@ -125,8 +124,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: {
               'id': 'course-999',
               'name': 'Differential Equations & Dynamical Systems',
@@ -144,8 +142,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: {
               'courseWork': [
                 {
@@ -169,8 +166,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: {
               'announcements': [
                 {
@@ -206,8 +202,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: [
               {
                 'id': 12345,
@@ -245,8 +240,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: {
               'id': 777,
               'name': 'Organic Chemistry I',
@@ -265,8 +259,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: [
               {
                 'id': 101,
@@ -288,8 +281,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            requestOptions: RequestOptions(path: ''),
-            statusCode: 200,
+            requestOptions: RequestOptions(),
             data: [
               {
                 'name': 'Module 1: Alkane Nomenclature & Stereochemistry',
@@ -329,9 +321,9 @@ void main() {
           ),
         ).thenThrow(
           DioException(
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
             response: Response(
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
               statusCode: 401,
               statusMessage: 'Unauthorized',
             ),
@@ -353,9 +345,9 @@ void main() {
           ),
         ).thenThrow(
           DioException(
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
             response: Response(
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
               statusCode: 403,
               statusMessage: 'Forbidden',
             ),

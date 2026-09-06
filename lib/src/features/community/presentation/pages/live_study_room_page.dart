@@ -13,7 +13,10 @@ import 'package:kortex/src/features/community/data/client/ephemeral_presence_cli
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
+import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/features/community/presentation/widgets/collaborative_whiteboard_widget.dart';
+import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -31,24 +34,35 @@ class LiveStudyRoomPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final userStorage = locator<UserStorageService>();
     final currentUserId = userStorage.getUserId() ?? 'user_local';
+    final currentUserName = userStorage.getUserDisplayName() ?? 'Scholar';
     return BlocProvider<LiveRoomCubit>(
       create: (_) => LiveRoomCubit(
         initialRoom: room,
         repository: locator<CommunityRepository>(),
         ephemeralRepository: locator<EphemeralRoomRepository>(),
+        audioService: locator.isRegistered<LiveKitAudioService>()
+            ? locator<LiveKitAudioService>()
+            : null,
         currentUserId: currentUserId,
-        currentUserName: userStorage.getUserDisplayName() ?? 'You',
+        currentUserName: currentUserName,
         currentUserAvatar: userStorage.getUserAvatarUrl() ?? '',
       ),
-      child: _LiveStudyRoomView(currentUserId: currentUserId),
+      child: _LiveStudyRoomView(
+        currentUserId: currentUserId,
+        currentUserName: currentUserName,
+      ),
     );
   }
 }
 
 class _LiveStudyRoomView extends StatefulWidget {
-  const _LiveStudyRoomView({required this.currentUserId});
+  const _LiveStudyRoomView({
+    required this.currentUserId,
+    required this.currentUserName,
+  });
 
   final String currentUserId;
+  final String currentUserName;
 
   @override
   State<_LiveStudyRoomView> createState() => _LiveStudyRoomViewState();
@@ -132,42 +146,80 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
           body: SafeArea(
             child: Column(
               children: [
-                // Stage section — participants on stage
-                Expanded(
-                  flex: 5,
-                  child: _StageSection(
-                    onStage: onStage,
-                    fallbackNames: hasEphemeral ? const [] : state.participants,
-                    colors: colors,
-                    typography: typography,
-                    isDark: isDark,
-                    subject: state.room.subject,
-                    participantCount: hasEphemeral
-                        ? state.ephemeralParticipants.length
-                        : state.participants.length,
-                    l10n: l10n,
-                  ),
+                // Top mode switcher: Stage vs Whiteboard
+                _ViewModeSwitcher(
+                  activeMode: state.activeViewMode,
+                  isDark: isDark,
+                  strokeCount: state.whiteboardStrokes.length,
                 ),
 
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
 
-                // Audience section — listeners
-                if (audience.isNotEmpty || (!hasEphemeral && state.participants.length > 1))
-                  Expanded(
-                    flex: 3,
-                    child: _AudienceSection(
-                      audience: audience,
-                      fallbackNames: hasEphemeral ? const [] : state.participants.skip(1).toList(),
-                      colors: colors,
-                      typography: typography,
-                      isDark: isDark,
-                      l10n: l10n,
-                    ),
-                  ),
+                // Main body: Whiteboard or Stage & Audience
+                Expanded(
+                  child: state.activeViewMode == RoomViewMode.whiteboard
+                      ? Stack(
+                          children: [
+                            CollaborativeWhiteboardWidget(
+                              currentUserId: widget.currentUserId,
+                              currentUserName: widget.currentUserName,
+                            ),
+                            if (state.activeSpeakerIds.isNotEmpty)
+                              Positioned(
+                                top: 8,
+                                left: 16,
+                                right: 16,
+                                child: _ActiveSpeakersBanner(
+                                  speakerIds: state.activeSpeakerIds,
+                                  participants: state.ephemeralParticipants,
+                                  isDark: isDark,
+                                ),
+                              ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            // Stage section — participants on stage
+                            Expanded(
+                              flex: 5,
+                              child: _StageSection(
+                                onStage: onStage,
+                                activeSpeakerIds: state.activeSpeakerIds,
+                                fallbackNames: hasEphemeral ? const [] : state.participants,
+                                colors: colors,
+                                typography: typography,
+                                isDark: isDark,
+                                subject: state.room.subject,
+                                participantCount: hasEphemeral
+                                    ? state.ephemeralParticipants.length
+                                    : state.participants.length,
+                                l10n: l10n,
+                              ),
+                            ),
 
-                // Bottom action bar with Raise Hand & Mic Mute/Unmute
+                            const SizedBox(height: 2),
+
+                            // Audience section — listeners
+                            if (audience.isNotEmpty || (!hasEphemeral && state.participants.length > 1))
+                              Expanded(
+                                flex: 3,
+                                child: _AudienceSection(
+                                  audience: audience,
+                                  fallbackNames: hasEphemeral ? const [] : state.participants.skip(1).toList(),
+                                  colors: colors,
+                                  typography: typography,
+                                  isDark: isDark,
+                                  l10n: l10n,
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+
+                // Bottom action bar with Stage, Mic, Whiteboard, Chat, Timer, Leave
                 _BottomActionBar(
                   state: state,
+                  currentUserId: widget.currentUserId,
                   colors: colors,
                   typography: typography,
                   isDark: isDark,
@@ -187,6 +239,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
 class _StageSection extends StatelessWidget {
   const _StageSection({
     required this.onStage,
+    required this.activeSpeakerIds,
     required this.fallbackNames,
     required this.colors,
     required this.typography,
@@ -197,6 +250,7 @@ class _StageSection extends StatelessWidget {
   });
 
   final List<EphemeralParticipant> onStage;
+  final Set<String> activeSpeakerIds;
   final List<String> fallbackNames;
   final dynamic colors;
   final dynamic typography;
@@ -276,6 +330,8 @@ class _StageSection extends StatelessWidget {
                         colors: cColors,
                         typography: cTypography,
                         isDark: cIsDark,
+                        isSpeaking: activeSpeakerIds.contains(p.userId) ||
+                            (!p.isMuted && activeSpeakerIds.isEmpty),
                       ),
                     )
                     .toList(),
@@ -305,20 +361,20 @@ class _SpeakerTile extends StatelessWidget {
     required this.colors,
     required this.typography,
     required this.isDark,
+    required this.isSpeaking,
   });
 
   final EphemeralParticipant participant;
   final dynamic colors;
   final dynamic typography;
   final bool isDark;
+  final bool isSpeaking;
 
   @override
   Widget build(BuildContext context) {
     final cColors = context.colors;
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
-
-    final isSpeaking = !participant.isMuted;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -372,7 +428,9 @@ class _SpeakerTile extends StatelessWidget {
             ),
             const SizedBox(width: 3),
             Text(
-              participant.isMuted ? 'Muted' : 'Speaking',
+              participant.isMuted
+                  ? 'Muted'
+                  : (isSpeaking ? 'Speaking' : 'Listening'),
               style: cTypography.caption.bold.copyWith(
                 color: participant.isMuted ? cColors.textMuted : cColors.recallEasy,
                 fontSize: 10,
@@ -493,6 +551,7 @@ class _AudienceSection extends StatelessWidget {
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.state,
+    required this.currentUserId,
     required this.colors,
     required this.typography,
     required this.isDark,
@@ -500,6 +559,7 @@ class _BottomActionBar extends StatelessWidget {
   });
 
   final LiveRoomState state;
+  final String currentUserId;
   final dynamic colors;
   final dynamic typography;
   final bool isDark;
@@ -511,8 +571,10 @@ class _BottomActionBar extends StatelessWidget {
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
 
+    final isWhiteboard = state.activeViewMode == RoomViewMode.whiteboard;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
         color: cIsDark ? cColors.surfaceSecondary.withAlpha(180) : cColors.surfacePrimary,
         border: Border(
@@ -523,7 +585,6 @@ class _BottomActionBar extends StatelessWidget {
         children: [
           // Raise Hand / On Stage button
           Expanded(
-            flex: 3,
             child: ShrinkableButton(
               onTap: () {
                 unawaited(HapticFeedback.mediumImpact());
@@ -532,12 +593,20 @@ class _BottomActionBar extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: state.isHandRaised ? cColors.primary : cColors.primary.withAlpha(cIsDark ? 50 : 30),
-                  borderRadius: BorderRadius.circular(20),
+                  color: state.isHandRaised
+                      ? cColors.primary
+                      : cColors.primary.withAlpha(cIsDark ? 50 : 30),
+                  borderRadius: BorderRadius.circular(18),
                   boxShadow: state.isHandRaised
-                      ? [BoxShadow(color: cColors.primary.withAlpha(100), blurRadius: 12, spreadRadius: 2)]
+                      ? [
+                          BoxShadow(
+                            color: cColors.primary.withAlpha(100),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ]
                       : null,
                 ),
                 child: Row(
@@ -546,13 +615,17 @@ class _BottomActionBar extends StatelessWidget {
                     Icon(
                       state.isHandRaised ? Icons.pan_tool_rounded : Icons.pan_tool_outlined,
                       color: state.isHandRaised ? cColors.white : cColors.primary,
-                      size: 18,
+                      size: 16,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      state.isHandRaised ? l10n.onStage : l10n.raiseHand,
-                      style: cTypography.footnote.bold.copyWith(
-                        color: state.isHandRaised ? cColors.white : cColors.primary,
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        state.isHandRaised ? l10n.onStage : l10n.raiseHand,
+                        style: cTypography.footnote.bold.copyWith(
+                          color: state.isHandRaised ? cColors.white : cColors.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -560,7 +633,7 @@ class _BottomActionBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
           // Mic Mute / Unmute Toggle Button
           ShrinkableButton(
@@ -570,7 +643,7 @@ class _BottomActionBar extends StatelessWidget {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: state.isMuted
@@ -595,9 +668,89 @@ class _BottomActionBar extends StatelessWidget {
               child: Icon(
                 state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                 color: state.isMuted ? cColors.error : cColors.recallEasy,
-                size: 20,
+                size: 18,
               ),
             ),
+          ),
+          const SizedBox(width: 8),
+
+          // Whiteboard Toggle Button
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              context.read<LiveRoomCubit>().switchViewMode(
+                    isWhiteboard ? RoomViewMode.stage : RoomViewMode.whiteboard,
+                  );
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isWhiteboard ? cColors.primary : cColors.surfaceSecondary,
+                border: Border.all(
+                  color: isWhiteboard
+                      ? cColors.primary
+                      : cColors.primary.withAlpha(50),
+                ),
+              ),
+              child: Icon(
+                Icons.draw_rounded,
+                color: isWhiteboard ? cColors.white : cColors.primary,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // In-Room Live Chat Drawer Button with Unread Badge
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  RoomChatDrawer.show(context, currentUserId: currentUserId);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cColors.surfaceSecondary,
+                    border: Border.all(color: cColors.primary.withAlpha(50)),
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: cColors.primary,
+                    size: 18,
+                  ),
+                ),
+              ),
+              if (state.unreadChatCount > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: cColors.error,
+                      border: Border.all(color: cColors.surfacePrimary, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Center(
+                      child: Text(
+                        state.unreadChatCount > 9 ? '9+' : '${state.unreadChatCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 8),
 
@@ -605,7 +758,7 @@ class _BottomActionBar extends StatelessWidget {
           ShrinkableButton(
             onTap: () => context.read<LiveRoomCubit>().toggleTimerPause(),
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: cColors.surfaceSecondary,
@@ -614,17 +767,17 @@ class _BottomActionBar extends StatelessWidget {
               child: Icon(
                 state.room.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                 color: cColors.primary,
-                size: 20,
+                size: 18,
               ),
             ),
           ),
           const SizedBox(width: 8),
 
-          // Leave
+          // Leave Room
           ShrinkableButton(
             onTap: () => unawaited(context.router.maybePop()),
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: cColors.error.withAlpha(25),
@@ -633,8 +786,202 @@ class _BottomActionBar extends StatelessWidget {
               child: Icon(
                 Icons.call_end_rounded,
                 color: cColors.error,
-                size: 20,
+                size: 18,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── View Mode Switcher (Stage / Whiteboard) ───────────────────────────────────
+
+class _ViewModeSwitcher extends StatelessWidget {
+  const _ViewModeSwitcher({
+    required this.activeMode,
+    required this.isDark,
+    required this.strokeCount,
+  });
+
+  final RoomViewMode activeMode;
+  final bool isDark;
+  final int strokeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfaceSecondary,
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: colors.primary.withAlpha(25)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _ModeTab(
+                icon: Icons.mic_rounded,
+                label: 'Stage',
+                isSelected: activeMode == RoomViewMode.stage,
+                onTap: () => context.read<LiveRoomCubit>().switchViewMode(RoomViewMode.stage),
+              ),
+            ),
+            Expanded(
+              child: _ModeTab(
+                icon: Icons.draw_rounded,
+                label: 'Whiteboard',
+                badgeText: strokeCount > 0 ? '$strokeCount' : null,
+                isSelected: activeMode == RoomViewMode.whiteboard,
+                onTap: () => context.read<LiveRoomCubit>().switchViewMode(RoomViewMode.whiteboard),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.badgeText,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final String? badgeText;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? colors.primary : colors.transparent,
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected ? colors.white : colors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(
+                color: isSelected ? colors.white : colors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            if (badgeText != null) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? colors.white.withAlpha(50)
+                      : colors.primary.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badgeText!,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? colors.white : colors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Active Speakers Banner ───────────────────────────────────────────────────
+
+class _ActiveSpeakersBanner extends StatelessWidget {
+  const _ActiveSpeakersBanner({
+    required this.speakerIds,
+    required this.participants,
+    required this.isDark,
+  });
+
+  final Set<String> speakerIds;
+  final List<EphemeralParticipant> participants;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    final speakingUsers = participants
+        .where((p) => speakerIds.contains(p.userId))
+        .toList();
+    if (speakingUsers.isEmpty) return const SizedBox.shrink();
+
+    final names = speakingUsers.map((p) => p.displayName).join(', ');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: (isDark ? colors.surfaceSecondary : colors.surfacePrimary)
+            .withAlpha(220),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.recallEasy.withAlpha(100)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.recallEasy.withAlpha(30),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.recallEasy,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.volume_up_rounded, size: 14, color: colors.recallEasy),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '$names speaking',
+              style: typography.caption.bold.copyWith(
+                color: colors.textPrimary,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

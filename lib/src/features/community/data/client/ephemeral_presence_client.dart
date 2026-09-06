@@ -101,6 +101,135 @@ class PomodoroSyncEvent {
   }
 }
 
+class WhiteboardPoint {
+  const WhiteboardPoint({required this.x, required this.y});
+
+  factory WhiteboardPoint.fromJson(Map<String, dynamic> json) {
+    return WhiteboardPoint(
+      x: (json['x'] as num?)?.toDouble() ?? 0.0,
+      y: (json['y'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  final double x;
+  final double y;
+
+  Map<String, dynamic> toJson() => {'x': x, 'y': y};
+}
+
+class WhiteboardStroke {
+  const WhiteboardStroke({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.colorHex,
+    required this.strokeWidth,
+    required this.points,
+    this.isEraser = false,
+    this.elementType = 'stroke',
+    this.shapeType,
+    this.text,
+    this.fontSize,
+  });
+
+  factory WhiteboardStroke.fromJson(Map<String, dynamic> json) {
+    final rawPoints = json['points'] as List<dynamic>? ?? [];
+    return WhiteboardStroke(
+      id: json['id'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      userName: json['userName'] as String? ?? 'Scholar',
+      colorHex: json['colorHex'] as int? ?? 0xFFFFFFFF,
+      strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 3.0,
+      isEraser: json['isEraser'] as bool? ?? false,
+      elementType: json['elementType'] as String? ?? 'stroke',
+      shapeType: json['shapeType'] as String?,
+      text: json['text'] as String?,
+      fontSize: (json['fontSize'] as num?)?.toDouble(),
+      points: rawPoints
+          .cast<Map<String, dynamic>>()
+          .map(WhiteboardPoint.fromJson)
+          .toList(),
+    );
+  }
+
+  final String id;
+  final String userId;
+  final String userName;
+  final int colorHex;
+  final double strokeWidth;
+  final bool isEraser;
+  final String elementType; // 'stroke', 'shape', 'text'
+  final String? shapeType; // 'rectangle', 'circle', 'line', 'arrow', 'triangle'
+  final String? text;
+  final double? fontSize;
+  final List<WhiteboardPoint> points;
+
+  bool get isShape => elementType == 'shape';
+  bool get isText => elementType == 'text';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'userName': userName,
+      'colorHex': colorHex,
+      'strokeWidth': strokeWidth,
+      'isEraser': isEraser,
+      'elementType': elementType,
+      if (shapeType != null) 'shapeType': shapeType,
+      if (text != null) 'text': text,
+      if (fontSize != null) 'fontSize': fontSize,
+      'points': points.map((p) => p.toJson()).toList(),
+    };
+  }
+}
+
+class RoomChatMessage {
+  const RoomChatMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.senderAvatar,
+    required this.text,
+    required this.timestamp,
+    this.isReaction = false,
+  });
+
+  factory RoomChatMessage.fromJson(Map<String, dynamic> json) {
+    return RoomChatMessage(
+      id: json['id'] as String? ?? '',
+      senderId: json['senderId'] as String? ?? '',
+      senderName: json['senderName'] as String? ?? 'Scholar',
+      senderAvatar: json['senderAvatar'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      isReaction: json['isReaction'] as bool? ?? false,
+    );
+  }
+
+  final String id;
+  final String senderId;
+  final String senderName;
+  final String senderAvatar;
+  final String text;
+  final DateTime timestamp;
+  final bool isReaction;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'senderId': senderId,
+      'senderName': senderName,
+      'senderAvatar': senderAvatar,
+      'text': text,
+      'timestamp': timestamp.toIso8601String(),
+      'isReaction': isReaction,
+    };
+  }
+}
+
 abstract class EphemeralPresenceClient {
   Future<void> joinRoomPresence({
     required String roomId,
@@ -130,9 +259,27 @@ abstract class EphemeralPresenceClient {
     required bool isMuted,
   });
 
+  Future<void> broadcastWhiteboardStroke({
+    required String roomId,
+    required WhiteboardStroke stroke,
+  });
+
+  Future<void> broadcastWhiteboardClear({required String roomId});
+
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  });
+
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId);
 
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
+
+  Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId);
+
+  Stream<void> watchWhiteboardClear(String roomId);
+
+  Stream<RoomChatMessage> watchChatMessages(String roomId);
 
   Future<void> recordCompletedPomodoroSession({
     required String userId,
@@ -143,10 +290,6 @@ abstract class EphemeralPresenceClient {
 }
 
 /// Real-time presence client backed by the WebSocket [RealtimeClient].
-///
-/// Each study room maps to a broadcast channel `room:{roomId}`.
-/// Participant state is shared via broadcast payloads; all devices
-/// in the same channel see the same participant list in real time.
 class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   EphemeralPresenceClientImpl({RealtimeClient? realtimeClient})
       : _realtime = realtimeClient ?? RealtimeClient.instance;
@@ -156,13 +299,15 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   // Local view: roomId → Map<userId, participant>
   final Map<String, Map<String, EphemeralParticipant>> _roomParticipants = {};
 
-  // Stream controllers per room for participants
+  // Stream controllers per room
   final Map<String, StreamController<List<EphemeralParticipant>>>
       _participantControllers = {};
-
-  // Stream controllers per room for Pomodoro sync events
   final Map<String, StreamController<PomodoroSyncEvent>> _pomodoroControllers =
       {};
+  final Map<String, StreamController<WhiteboardStroke>> _whiteboardControllers =
+      {};
+  final Map<String, StreamController<void>> _whiteboardClearControllers = {};
+  final Map<String, StreamController<RoomChatMessage>> _chatControllers = {};
 
   // WS subscriptions per room
   final Map<String, StreamSubscription<Map<String, dynamic>>> _wsSubs = {};
@@ -200,6 +345,16 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final syncEvent = PomodoroSyncEvent.fromJson(data);
             _pomodoroControllers[roomId]?.add(syncEvent);
+          } else if (type == 'whiteboard_stroke') {
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+            final stroke = WhiteboardStroke.fromJson(data);
+            _whiteboardControllers[roomId]?.add(stroke);
+          } else if (type == 'whiteboard_clear') {
+            _whiteboardClearControllers[roomId]?.add(null);
+          } else if (type == 'chat_message') {
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+            final chat = RoomChatMessage.fromJson(data);
+            _chatControllers[roomId]?.add(chat);
           }
         }
 
@@ -289,6 +444,9 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     _roomParticipants.remove(roomId);
     unawaited(_participantControllers.remove(roomId)?.close() ?? Future<void>.value());
     unawaited(_pomodoroControllers.remove(roomId)?.close() ?? Future<void>.value());
+    unawaited(_whiteboardControllers.remove(roomId)?.close() ?? Future<void>.value());
+    unawaited(_whiteboardClearControllers.remove(roomId)?.close() ?? Future<void>.value());
+    unawaited(_chatControllers.remove(roomId)?.close() ?? Future<void>.value());
   }
 
   @override
@@ -366,6 +524,45 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastWhiteboardStroke({
+    required String roomId,
+    required WhiteboardStroke stroke,
+  }) async {
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'type': 'whiteboard_stroke',
+        'data': stroke.toJson(),
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastWhiteboardClear({required String roomId}) async {
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'type': 'whiteboard_clear',
+        'data': {'clearedAt': DateTime.now().toIso8601String()},
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  }) async {
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'type': 'chat_message',
+        'data': message.toJson(),
+      },
+    );
+  }
+
+  @override
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId) {
     _ensureRoomListening(roomId);
     if (!_participantControllers.containsKey(roomId)) {
@@ -388,6 +585,36 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }
 
   @override
+  Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) {
+    _ensureRoomListening(roomId);
+    if (!_whiteboardControllers.containsKey(roomId)) {
+      _whiteboardControllers[roomId] =
+          StreamController<WhiteboardStroke>.broadcast();
+    }
+    return _whiteboardControllers[roomId]!.stream;
+  }
+
+  @override
+  Stream<void> watchWhiteboardClear(String roomId) {
+    _ensureRoomListening(roomId);
+    if (!_whiteboardClearControllers.containsKey(roomId)) {
+      _whiteboardClearControllers[roomId] =
+          StreamController<void>.broadcast();
+    }
+    return _whiteboardClearControllers[roomId]!.stream;
+  }
+
+  @override
+  Stream<RoomChatMessage> watchChatMessages(String roomId) {
+    _ensureRoomListening(roomId);
+    if (!_chatControllers.containsKey(roomId)) {
+      _chatControllers[roomId] =
+          StreamController<RoomChatMessage>.broadcast();
+    }
+    return _chatControllers[roomId]!.stream;
+  }
+
+  @override
   Future<void> recordCompletedPomodoroSession({
     required String userId,
     required String roomId,
@@ -395,6 +622,5 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     required String subject,
   }) async {
     // Recorded via the REST API in EphemeralRoomRepositoryImpl
-    // No action needed here at the presence layer
   }
 }

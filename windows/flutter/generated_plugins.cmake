@@ -8,6 +8,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_core
   flutter_tts
+  flutter_webrtc
+  livekit_client
   local_auth_windows
   permission_handler_windows
   share_plus

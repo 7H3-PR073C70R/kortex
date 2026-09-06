@@ -77,6 +77,33 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastWhiteboardStroke({
+    required String roomId,
+    required WhiteboardStroke stroke,
+  }) async {
+    await _presenceClient.broadcastWhiteboardStroke(
+      roomId: roomId,
+      stroke: stroke,
+    );
+  }
+
+  @override
+  Future<void> broadcastWhiteboardClear({required String roomId}) async {
+    await _presenceClient.broadcastWhiteboardClear(roomId: roomId);
+  }
+
+  @override
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  }) async {
+    await _presenceClient.broadcastChatMessage(
+      roomId: roomId,
+      message: message,
+    );
+  }
+
+  @override
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId) {
     return _presenceClient.watchParticipants(roomId);
   }
@@ -84,6 +111,21 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   @override
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId) {
     return _presenceClient.watchPomodoroSync(roomId);
+  }
+
+  @override
+  Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) {
+    return _presenceClient.watchWhiteboardStrokes(roomId);
+  }
+
+  @override
+  Stream<void> watchWhiteboardClear(String roomId) {
+    return _presenceClient.watchWhiteboardClear(roomId);
+  }
+
+  @override
+  Stream<RoomChatMessage> watchChatMessages(String roomId) {
+    return _presenceClient.watchChatMessages(roomId);
   }
 
   @override

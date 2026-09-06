@@ -31,9 +31,27 @@ abstract class EphemeralRoomRepository {
     required bool isMuted,
   });
 
+  Future<void> broadcastWhiteboardStroke({
+    required String roomId,
+    required WhiteboardStroke stroke,
+  });
+
+  Future<void> broadcastWhiteboardClear({required String roomId});
+
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  });
+
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId);
 
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
+
+  Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId);
+
+  Stream<void> watchWhiteboardClear(String roomId);
+
+  Stream<RoomChatMessage> watchChatMessages(String roomId);
 
   /// Database persistence handshake executed ONLY on completion/exit of 25-minute Pomodoro block.
   Future<Either<Failure, void>> recordCompletedPomodoroSession({

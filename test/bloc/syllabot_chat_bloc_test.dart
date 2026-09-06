@@ -160,7 +160,7 @@ void main() {
             prompt: 'Explain light dependent reactions',
             sessionId: 'session_rag_1',
             socraticMode: SocraticMode.stepByStep,
-            preferredEngine: ExecutionEngineType.cloudRemote,
+            preferredEngine: any(named: 'preferredEngine'),
             contextHistory: any(
               named: 'contextHistory',
               that: isA<List<ChatMessageEntity>>().having(

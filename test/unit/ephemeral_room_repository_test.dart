@@ -8,8 +8,16 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
       StreamController<List<EphemeralParticipant>>.broadcast();
   final _pomodoroController = StreamController<PomodoroSyncEvent>.broadcast();
 
+  final _whiteboardStrokeController =
+      StreamController<WhiteboardStroke>.broadcast();
+  final _whiteboardClearController = StreamController<void>.broadcast();
+  final _chatMessageController = StreamController<RoomChatMessage>.broadcast();
+
   final List<EphemeralParticipant> joinedParticipants = [];
   final List<PomodoroSyncEvent> broadcastedTicks = [];
+  final List<WhiteboardStroke> broadcastedStrokes = [];
+  final List<RoomChatMessage> broadcastedMessages = [];
+  bool whiteboardCleared = false;
   bool handRaised = false;
   bool isMuted = true;
   int recordedSessions = 0;
@@ -83,6 +91,45 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastWhiteboardStroke({
+    required String roomId,
+    required WhiteboardStroke stroke,
+  }) async {
+    broadcastedStrokes.add(stroke);
+    _whiteboardStrokeController.add(stroke);
+  }
+
+  @override
+  Future<void> broadcastWhiteboardClear({required String roomId}) async {
+    whiteboardCleared = true;
+    _whiteboardClearController.add(null);
+  }
+
+  @override
+  Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) {
+    return _whiteboardStrokeController.stream;
+  }
+
+  @override
+  Stream<void> watchWhiteboardClear(String roomId) {
+    return _whiteboardClearController.stream;
+  }
+
+  @override
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  }) async {
+    broadcastedMessages.add(message);
+    _chatMessageController.add(message);
+  }
+
+  @override
+  Stream<RoomChatMessage> watchChatMessages(String roomId) {
+    return _chatMessageController.stream;
+  }
+
+  @override
   Future<void> recordCompletedPomodoroSession({
     required String userId,
     required String roomId,
@@ -95,6 +142,9 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   Future<void> dispose() async {
     await _participantsController.close();
     await _pomodoroController.close();
+    await _whiteboardStrokeController.close();
+    await _whiteboardClearController.close();
+    await _chatMessageController.close();
   }
 }
 
