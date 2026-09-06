@@ -88,6 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
               await _userStorageService.saveToken(entity.token!);
             }
           }
+          await _userStorageService.saveUserEmail(email);
           _authStateController.add(AuthSessionStatus.authenticatedComplete);
           return entity;
         })
@@ -120,6 +121,7 @@ class AuthRepositoryImpl implements AuthRepository {
               await _userStorageService.saveToken(entity.token!);
             }
           }
+          await _userStorageService.saveUserEmail(email);
           _authStateController.add(
             AuthSessionStatus.authenticatedNeedsOnboarding,
           );
@@ -153,6 +155,9 @@ class AuthRepositoryImpl implements AuthRepository {
             } else {
               await _userStorageService.saveToken(entity.token!);
             }
+          }
+          if (entity.email.isNotEmpty) {
+            await _userStorageService.saveUserEmail(entity.email);
           }
           _authStateController.add(AuthSessionStatus.authenticatedComplete);
           return entity;
@@ -190,6 +195,7 @@ class AuthRepositoryImpl implements AuthRepository {
               await _userStorageService.saveToken(entity.token!);
             }
           }
+          await _userStorageService.saveUserEmail(email);
           _authStateController.add(AuthSessionStatus.authenticatedComplete);
           return entity;
         })

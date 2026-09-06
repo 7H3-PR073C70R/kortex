@@ -23,6 +23,10 @@ abstract class UserStorageService {
 
   String? getUserAvatarUrl();
 
+  String? getUserEmail();
+
+  Future<void> saveUserEmail(String email);
+
   Future<void> saveProStatus({required bool isPro});
 
   bool isProSubscriber();
@@ -36,6 +40,7 @@ class UserStorageServiceImpl implements UserStorageService {
 
   final _tokenKey = '__token';
   final _refreshTokenKey = '__refresh_token';
+  final _emailKey = '__user_email';
 
   @override
   String? getToken() {
@@ -101,6 +106,36 @@ class UserStorageServiceImpl implements UserStorageService {
     return metadata?['avatar_url'] as String? ??
         metadata?['picture'] as String? ??
         metadata?['photo_url'] as String?;
+  }
+
+  @override
+  String? getUserEmail() {
+    final map = _decodeJwtPayload();
+    final email = map?['email'] as String?;
+    if (email != null && email.trim().isNotEmpty) {
+      return email.trim();
+    }
+    try {
+      final storedEmail = _localStorageService.getPreference(key: _emailKey);
+      if (storedEmail != null && storedEmail.trim().isNotEmpty) {
+        return storedEmail.trim();
+      }
+    } on Object {
+      return null;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> saveUserEmail(String email) async {
+    try {
+      await _localStorageService.savePreference(
+        key: _emailKey,
+        data: email.trim(),
+      );
+    } on Object {
+      return;
+    }
   }
 
   @override
@@ -174,5 +209,6 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(
       _localStorageService.deletePreference(key: PrefKeys.isProSubscriber),
     );
+    unawaited(_localStorageService.deletePreference(key: _emailKey));
   }
 }

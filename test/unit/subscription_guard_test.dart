@@ -58,6 +58,12 @@ class _FakeUserStorageService implements UserStorageService {
   String? getUserId() => 'test_user_id';
 
   @override
+  String? getUserEmail() => null;
+
+  @override
+  Future<void> saveUserEmail(String email) async {}
+
+  @override
   Future<void> saveAuthTokens({
     required String accessToken,
     required String refreshToken,

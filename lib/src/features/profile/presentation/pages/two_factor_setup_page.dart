@@ -7,7 +7,9 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -22,16 +24,18 @@ import 'package:qr_flutter/qr_flutter.dart';
 class TwoFactorSetupPage extends HookWidget {
   const TwoFactorSetupPage({
     super.key,
-    this.email = 'scholar@kortexify.com',
+    this.email,
     this.initialSecret,
     this.initialFactorId,
     this.initialTotpUri,
+    this.issuer = 'Kortexify',
   });
 
-  final String email;
+  final String? email;
   final String? initialSecret;
   final String? initialFactorId;
   final String? initialTotpUri;
+  final String issuer;
 
   @override
   Widget build(BuildContext context) {
@@ -39,45 +43,75 @@ class TwoFactorSetupPage extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final secretState = useState<String>(
-      initialSecret ?? 'MJ6YDJSONHTA3IXIW7JSX2USKBC67XTN',
-    );
+    final resolvedEmail = useMemoized(() {
+      if (email != null && email!.trim().isNotEmpty) {
+        return email!.trim();
+      }
+      try {
+        if (locator.isRegistered<UserStorageService>()) {
+          final userStorage = locator<UserStorageService>();
+          final storedEmail = userStorage.getUserEmail();
+          if (storedEmail != null && storedEmail.trim().isNotEmpty) {
+            return storedEmail.trim();
+          }
+        }
+      } on Object {
+        // Fallback below
+      }
+      return 'scholar@kortexify.com';
+    }, [email]);
+
+    final secretState = useState<String>(initialSecret ?? '');
     final factorIdState = useState<String?>(initialFactorId);
-    final totpUriState = useState<String>(
-      initialTotpUri ??
-          'otpauth://totp/Kortexify:$email?secret=${secretState.value}&issuer=Kortexify',
+    final totpUriState = useState<String>(() {
+      if (initialTotpUri != null && initialTotpUri!.isNotEmpty) {
+        return initialTotpUri!;
+      }
+      if (initialSecret != null && initialSecret!.isNotEmpty) {
+        return 'otpauth://totp/$issuer:${Uri.encodeComponent(resolvedEmail)}?secret=$initialSecret&issuer=${Uri.encodeComponent(issuer)}';
+      }
+      return '';
+    }());
+    final isEnrolling = useState<bool>(
+      initialSecret == null || initialSecret!.isEmpty,
     );
-    final isEnrolling = useState<bool>(false);
+    final enrollmentErrorState = useState<String?>(null);
     final isVerifying = useState<bool>(false);
     final codeController = useTextEditingController();
+
+    Future<void> enroll() async {
+      isEnrolling.value = true;
+      enrollmentErrorState.value = null;
+      try {
+        final result = await locator<EnrollMfaTotpUseCase>()(
+          const NoParams(),
+        );
+        if (result.isRight) {
+          final enrollRes =
+              (result as Right<Failure, MfaEnrollResultEntity>).value;
+          secretState.value = enrollRes.secret;
+          factorIdState.value = enrollRes.factorId;
+          final uri = enrollRes.uri;
+          totpUriState.value = (uri != null && uri.isNotEmpty)
+              ? uri
+              : 'otpauth://totp/$issuer:${Uri.encodeComponent(resolvedEmail)}?secret=${enrollRes.secret}&issuer=${Uri.encodeComponent(issuer)}';
+        } else {
+          final failure =
+              (result as Left<Failure, MfaEnrollResultEntity>).value;
+          enrollmentErrorState.value = failure.message ??
+              'Failed to initialize 2FA enrollment. Please try again.';
+        }
+      } on Object catch (_) {
+        enrollmentErrorState.value =
+            'Could not connect to authentication server. Please check your connection and retry.';
+      } finally {
+        isEnrolling.value = false;
+      }
+    }
 
     // Initialize TOTP Enrollment if not provided
     useEffect(() {
       if (initialSecret != null && initialSecret!.isNotEmpty) return null;
-
-      Future<void> enroll() async {
-        isEnrolling.value = true;
-        try {
-          final result = await locator<EnrollMfaTotpUseCase>()(
-            const NoParams(),
-          );
-          if (result.isRight) {
-            final enrollRes =
-                (result as Right<Failure, MfaEnrollResultEntity>).value;
-            secretState.value = enrollRes.secret;
-            factorIdState.value = enrollRes.factorId;
-            final uri = enrollRes.uri;
-            totpUriState.value = (uri != null && uri.isNotEmpty)
-                ? uri
-                : 'otpauth://totp/Kortexify:$email?secret=${enrollRes.secret}&issuer=Kortexify';
-          }
-        } on Object catch (_) {
-          // Fallback to offline standard secret key
-        } finally {
-          isEnrolling.value = false;
-        }
-      }
-
       unawaited(enroll());
       return null;
     }, const []);
@@ -107,7 +141,16 @@ class TwoFactorSetupPage extends HookWidget {
       body: SafeArea(
         child: isEnrolling.value
             ? _buildShimmerLoadingSkeleton(colors, isDark)
-            : SingleChildScrollView(
+            : (enrollmentErrorState.value != null && secretState.value.isEmpty)
+                ? _buildErrorView(
+                    context,
+                    colors,
+                    typography,
+                    isDark,
+                    enrollmentErrorState.value!,
+                    () => unawaited(enroll()),
+                  )
+                : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,22 +224,29 @@ class TwoFactorSetupPage extends HookWidget {
                                 ),
                               ],
                             ),
-                            child: QrImageView(
-                              data: totpUriState.value,
-                              size: 190,
-                              gapless: false,
-                              errorStateBuilder: (cxt, err) {
-                                return const SizedBox(
-                                  height: 190,
-                                  child: Center(
-                                    child: Text(
-                                      'Could not generate QR',
-                                      textAlign: TextAlign.center,
+                            child: totpUriState.value.isNotEmpty
+                                ? QrImageView(
+                                    data: totpUriState.value,
+                                    size: 190,
+                                    gapless: false,
+                                    errorStateBuilder: (cxt, err) {
+                                      return const SizedBox(
+                                        height: 190,
+                                        child: Center(
+                                          child: Text(
+                                            'Could not generate QR',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : const SizedBox(
+                                    height: 190,
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -277,7 +327,9 @@ class TwoFactorSetupPage extends HookWidget {
                               children: [
                                 Expanded(
                                   child: SelectableText(
-                                    secretState.value,
+                                    secretState.value.isNotEmpty
+                                        ? secretState.value
+                                        : 'Generating secret key...',
                                     style: typography.caption.bold.copyWith(
                                       color: colors.primary,
                                       fontSize: 13.5,
@@ -288,19 +340,21 @@ class TwoFactorSetupPage extends HookWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 ShrinkableButton(
-                                  onTap: () {
-                                    AppFeedback.selection();
-                                    unawaited(
-                                      Clipboard.setData(
-                                        ClipboardData(text: secretState.value),
-                                      ),
-                                    );
-                                    context.showSnackBar(
-                                      message:
-                                          'Secret key copied to clipboard!',
-                                      type: SnackBarType.success,
-                                    );
-                                  },
+                                  onTap: secretState.value.isEmpty
+                                      ? () {}
+                                      : () {
+                                          AppFeedback.selection();
+                                          unawaited(
+                                            Clipboard.setData(
+                                              ClipboardData(text: secretState.value),
+                                            ),
+                                          );
+                                          context.showSnackBar(
+                                            message:
+                                                'Secret key copied to clipboard!',
+                                            type: SnackBarType.success,
+                                          );
+                                        },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 10,
@@ -415,11 +469,20 @@ class TwoFactorSetupPage extends HookWidget {
                                 return;
                               }
 
+                              final factorId = factorIdState.value;
+                              if (factorId == null || factorId.isEmpty) {
+                                AppFeedback.heavy();
+                                context.showSnackBar(
+                                  message:
+                                      '2FA factor not initialized. Please retry enrollment.',
+                                  type: SnackBarType.error,
+                                );
+                                return;
+                              }
+
                               isVerifying.value = true;
                               AppFeedback.medium();
 
-                              final factorId =
-                                  factorIdState.value ?? 'local_totp_factor';
                               final result =
                                   await locator<VerifyMfaTotpUseCase>()(
                                     VerifyMfaTotpParams(
@@ -495,6 +558,103 @@ class TwoFactorSetupPage extends HookWidget {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildErrorView(
+    BuildContext context,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+    String errorMessage,
+    VoidCallback onRetry,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: colors.surfaceSecondary,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(90),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: colors.error.withAlpha(30),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.shield_outlined,
+                  color: colors.error,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Could Not Initialize 2FA',
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                errorMessage,
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 12.5,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ShrinkableButton(
+                onTap: onRetry,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colors.primary, colors.syllabotAccent],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.refresh_rounded,
+                          size: 16,
+                          color: colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Retry Enrollment',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

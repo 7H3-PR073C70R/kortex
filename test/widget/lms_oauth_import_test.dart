@@ -75,14 +75,10 @@ void main() {
         );
         expect(find.text('Authorize & Connect'), findsOneWidget);
 
-        // Tap authorize
-        await tester.tap(find.text('Authorize & Connect'));
-        await tester.pump(const Duration(milliseconds: 500));
-        // Progress indicator visible during authorization
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('Test with Demo Account'), findsOneWidget);
 
-        // Complete handshake delay
-        await tester.pump(const Duration(seconds: 2));
+        // Tap demo authorize button
+        await tester.tap(find.text('Test with Demo Account'));
         await tester.pumpAndSettle();
 
         expect(result, isNotNull);

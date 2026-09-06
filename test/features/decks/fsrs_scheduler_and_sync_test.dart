@@ -73,6 +73,12 @@ class _FakeUserStorageService implements UserStorageService {
   String? getUserAvatarUrl() => null;
 
   @override
+  String? getUserEmail() => 'scholar@kortex.app';
+
+  @override
+  Future<void> saveUserEmail(String email) async {}
+
+  @override
   Future<void> saveProStatus({required bool isPro}) async => this.isPro = isPro;
 
   @override

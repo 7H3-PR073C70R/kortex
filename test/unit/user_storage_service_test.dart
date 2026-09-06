@@ -71,4 +71,35 @@ void main() {
       expect(userStorage.getRefreshToken(), isNull);
     });
   });
+
+  group('UserStorageService User Email Resolution Suite', () {
+    test('getUserEmail returns null when no token or email stored', () {
+      expect(userStorage.getUserEmail(), isNull);
+    });
+
+    test('getUserEmail extracts authenticated email from JWT payload', () async {
+      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
+      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
+      const jwt = '$header.$payload.dummySignature';
+
+      await userStorage.saveToken(jwt);
+
+      expect(userStorage.getUserEmail(), equals('scholar@kortex.ai'));
+    });
+
+    test('saveUserEmail persists email and retrieves it when JWT is not available', () async {
+      await userStorage.saveUserEmail('persisted@kortex.ai');
+
+      expect(userStorage.getUserEmail(), equals('persisted@kortex.ai'));
+    });
+
+    test('clearStorage removes stored email', () async {
+      await userStorage.saveUserEmail('persisted@kortex.ai');
+      expect(userStorage.getUserEmail(), equals('persisted@kortex.ai'));
+
+      userStorage.clearStorage();
+      expect(userStorage.getUserEmail(), isNull);
+    });
+  });
 }

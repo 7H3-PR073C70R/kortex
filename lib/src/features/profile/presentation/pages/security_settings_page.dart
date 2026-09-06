@@ -10,6 +10,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -740,7 +741,10 @@ class SecuritySettingsPage extends HookWidget {
   ) async {
     final email =
         context.read<AuthBloc>().state.userProfile?.email ??
-        'scholar@kortexify.com';
+        context.read<AuthBloc>().state.user?.email ??
+        (locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>().getUserEmail()
+            : null);
     final success = await context.router.push<bool>(
       TwoFactorSetupRoute(email: email),
     );
