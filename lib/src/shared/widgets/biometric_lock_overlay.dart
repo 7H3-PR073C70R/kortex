@@ -9,10 +9,18 @@ import 'package:kortex/src/shared/widgets/tailored_biometric_lock_view.dart';
 class BiometricLockOverlay extends StatefulWidget {
   const BiometricLockOverlay({
     required this.child,
+    this.backgroundTimeout,
+    this.clock,
+    this.biometricService,
+    this.userStorageService,
     super.key,
   });
 
   final Widget child;
+  final Duration? backgroundTimeout;
+  final DateTime Function()? clock;
+  final BiometricAuthService? biometricService;
+  final UserStorageService? userStorageService;
 
   @override
   State<BiometricLockOverlay> createState() => _BiometricLockOverlayState();
@@ -22,9 +30,13 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay>
     with WidgetsBindingObserver {
   bool _isLocked = false;
   bool _isAuthenticating = false;
-  bool _wasPaused = false;
-  final BiometricAuthService _biometricService =
-      locator<BiometricAuthService>();
+
+  late final BiometricAuthService _biometricService =
+      widget.biometricService ?? locator<BiometricAuthService>();
+  late final UserStorageService _userStorage =
+      widget.userStorageService ?? locator<UserStorageService>();
+
+  DateTime _now() => widget.clock != null ? widget.clock!() : DateTime.now();
 
   @override
   void initState() {
@@ -49,19 +61,23 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _wasPaused = true;
+      _biometricService.recordBackgroundedAt(_now());
     } else if (state == AppLifecycleState.resumed) {
-      final token = locator<UserStorageService>().getToken();
+      final token = _userStorage.getToken();
       final isAuthenticated = token != null && token.isNotEmpty;
-      if (isAuthenticated &&
+      final shouldLock = isAuthenticated &&
           _biometricService.isBiometricLockEnabled() &&
-          _wasPaused &&
-          !_isLocked) {
-        _wasPaused = false;
+          _biometricService.shouldReArmLock(
+            threshold: widget.backgroundTimeout,
+            now: _now(),
+          ) &&
+          !_isLocked;
+
+      _biometricService.clearBackgroundedAt();
+
+      if (shouldLock) {
         setState(() => _isLocked = true);
         unawaited(_authenticate());
-      } else {
-        _wasPaused = false;
       }
     }
   }

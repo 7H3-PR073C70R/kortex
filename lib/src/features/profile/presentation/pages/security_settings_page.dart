@@ -63,6 +63,7 @@ class SecuritySettingsPage extends HookWidget {
 
     final isUpdatingPassword = useState<bool>(false);
     final biometricLockEnabled = useState<bool>(false);
+    final backgroundLockTimeoutSeconds = useState<int>(30);
     final twoFactorEnabled = useState<bool>(false);
     final activeTotpFactorId = useState<String?>(null);
 
@@ -72,6 +73,15 @@ class SecuritySettingsPage extends HookWidget {
       final savedBiometric =
           storage.getPreference(key: '__biometric_lock_enabled') == 'true';
       biometricLockEnabled.value = savedBiometric;
+
+      final savedTimeoutStr =
+          storage.getPreference(key: '__biometric_lock_timeout_seconds');
+      if (savedTimeoutStr != null) {
+        final parsed = int.tryParse(savedTimeoutStr);
+        if (parsed != null && parsed >= 0) {
+          backgroundLockTimeoutSeconds.value = parsed;
+        }
+      }
 
       Future<void> loadMfa() async {
         final result = await locator<ListMfaFactorsUseCase>()(const NoParams());
@@ -159,6 +169,8 @@ class SecuritySettingsPage extends HookWidget {
                             hasSpecial: hasSpecial,
                             isUpdatingPassword: isUpdatingPassword,
                             biometricLockEnabled: biometricLockEnabled,
+                            backgroundLockTimeoutSeconds:
+                                backgroundLockTimeoutSeconds,
                             twoFactorEnabled: twoFactorEnabled,
                             activeTotpFactorId: activeTotpFactorId,
                           )
@@ -295,6 +307,7 @@ class SecuritySettingsPage extends HookWidget {
     required bool hasSpecial,
     required ValueNotifier<bool> isUpdatingPassword,
     required ValueNotifier<bool> biometricLockEnabled,
+    required ValueNotifier<int> backgroundLockTimeoutSeconds,
     required ValueNotifier<bool> twoFactorEnabled,
     required ValueNotifier<String?> activeTotpFactorId,
   }) {
@@ -594,6 +607,87 @@ class SecuritySettingsPage extends HookWidget {
                     ),
                   ],
                 ),
+                if (biometricLockEnabled.value) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(70),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Auto-Lock Timeout',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Re-arm lock when backgrounded',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        DropdownButton<int>(
+                          value: const [0, 15, 30, 60, 300]
+                                  .contains(backgroundLockTimeoutSeconds.value)
+                              ? backgroundLockTimeoutSeconds.value
+                              : 30,
+                          underline: const SizedBox.shrink(),
+                          dropdownColor: colors.surfacePrimary,
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: colors.textSecondary,
+                            size: 18,
+                          ),
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 12,
+                          ),
+                          onChanged: (newSeconds) async {
+                            if (newSeconds == null) return;
+                            AppFeedback.selection();
+                            backgroundLockTimeoutSeconds.value = newSeconds;
+                            await locator<BiometricAuthService>()
+                                .setBackgroundLockTimeout(
+                              Duration(seconds: newSeconds),
+                            );
+                            if (context.mounted) {
+                              context.showSnackBar(
+                                message: 'Auto-lock timeout updated.',
+                              );
+                            }
+                          },
+                          items: const [
+                            DropdownMenuItem(value: 0, child: Text('Immediately')),
+                            DropdownMenuItem(value: 15, child: Text('15 seconds')),
+                            DropdownMenuItem(
+                              value: 30,
+                              child: Text('30 seconds (Default)'),
+                            ),
+                            DropdownMenuItem(value: 60, child: Text('1 minute')),
+                            DropdownMenuItem(value: 300, child: Text('5 minutes')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const Divider(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
