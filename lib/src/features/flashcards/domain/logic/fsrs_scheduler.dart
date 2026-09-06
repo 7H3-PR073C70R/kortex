@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 
 enum FsrsRating {
   again(1),
@@ -144,11 +145,14 @@ class FsrsReviewLog {
   });
 
   factory FsrsReviewLog.fromMap(Map<String, dynamic> map) {
+    final rawTx = map['transaction_uuid'] as String?;
+    final txUuid = (rawTx != null && UuidUtils.isValidUuid(rawTx))
+        ? rawTx
+        : UuidUtils.generate();
+
     return FsrsReviewLog(
       id: map['id'] as String,
-      transactionUuid:
-          map['transaction_uuid'] as String? ??
-          'tx_${DateTime.now().microsecondsSinceEpoch}',
+      transactionUuid: txUuid,
       cardId: map['card_id'] as String,
       rating: FsrsRating.fromValue(map['rating'] as int),
       stability: (map['stability'] as num?)?.toDouble() ?? 0.0,
@@ -179,6 +183,36 @@ class FsrsReviewLog {
   final FsrsCardState state;
   final bool isSynced;
 
+  FsrsReviewLog copyWith({
+    String? id,
+    String? transactionUuid,
+    String? cardId,
+    FsrsRating? rating,
+    double? stability,
+    double? difficulty,
+    int? elapsedDays,
+    int? scheduledDays,
+    DateTime? reviewedAtUtc,
+    int? reviewedAtEpoch,
+    FsrsCardState? state,
+    bool? isSynced,
+  }) {
+    return FsrsReviewLog(
+      id: id ?? this.id,
+      transactionUuid: transactionUuid ?? this.transactionUuid,
+      cardId: cardId ?? this.cardId,
+      rating: rating ?? this.rating,
+      stability: stability ?? this.stability,
+      difficulty: difficulty ?? this.difficulty,
+      elapsedDays: elapsedDays ?? this.elapsedDays,
+      scheduledDays: scheduledDays ?? this.scheduledDays,
+      reviewedAtUtc: reviewedAtUtc ?? this.reviewedAtUtc,
+      reviewedAtEpoch: reviewedAtEpoch ?? this.reviewedAtEpoch,
+      state: state ?? this.state,
+      isSynced: isSynced ?? this.isSynced,
+    );
+  }
+
   Map<String, dynamic> toMap() => {
     'id': id,
     'transaction_uuid': transactionUuid,
@@ -195,7 +229,9 @@ class FsrsReviewLog {
   };
 
   Map<String, dynamic> toSupabasePayload() => {
-    'transaction_uuid': transactionUuid,
+    'transaction_uuid': UuidUtils.isValidUuid(transactionUuid)
+        ? transactionUuid
+        : UuidUtils.generate(),
     'card_id': cardId,
     'rating': rating.value,
     'stability': stability,
@@ -321,8 +357,9 @@ class FsrsScheduler {
     final reviewTime = (now ?? DateTime.now()).toUtc();
     final reviewEpoch = reviewTime.millisecondsSinceEpoch;
     final txUuid =
-        transactionUuid ??
-        'tx_${reviewEpoch}_${math.Random().nextInt(1000000)}';
+        (transactionUuid != null && UuidUtils.isValidUuid(transactionUuid))
+            ? transactionUuid
+            : UuidUtils.generate();
 
     final elapsedDays = currentCard.lastReview == null
         ? 0

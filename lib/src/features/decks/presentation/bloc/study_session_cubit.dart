@@ -8,6 +8,9 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
@@ -198,13 +201,33 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     // 4. Enqueue into CardSyncQueue for robust offline persistence & automatic flush
     unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));
 
+    // 5. Update flashcard entity with latest repetition, interval, and next due date
+    final updatedCard = currentCard.copyWith(
+      repetitions: reviewResult.card.reps,
+      interval: reviewResult.card.scheduledDays,
+      easeFactor: (3.0 - (reviewResult.card.difficulty / 5.0)).clamp(1.3, 2.5),
+      lastReviewed: nowUtc,
+      nextDueDate: reviewResult.card.due ??
+          nowUtc.add(Duration(
+              days: reviewResult.card.scheduledDays > 0
+                  ? reviewResult.card.scheduledDays
+                  : 1)),
+    );
+
+    final updatedCards = List<FlashcardEntity>.from(state.cards);
+    if (state.currentIndex >= 0 && state.currentIndex < updatedCards.length) {
+      updatedCards[state.currentIndex] = updatedCard;
+    }
+
     if (state.isLastCard) {
       _timer?.cancel();
-      final totalReviewed = state.cards.length;
+      final totalReviewed = updatedCards.length;
       final finalRetention =
           ((newHard * 0.7) + (newGood * 1.0) + (newEasy * 1.0)) /
           (totalReviewed == 0 ? 1 : totalReviewed);
       final mastered = newGood + newEasy;
+      final remainingDue = updatedCards.where((c) => c.isDueToday).length;
+      final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
 
       // 1. Record in UserActivityService for persistent analytics & streak calculation
       try {
@@ -216,7 +239,17 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         );
       } on Object catch (_) {}
 
-      // 2. Save session results to backend API & recalculate deck mastery
+      // 2. Persist updated cards locally and in-memory
+      try {
+        if (locator.isRegistered<DecksRemoteDataSource>()) {
+          await locator<DecksRemoteDataSource>().updateDeckCards(
+            state.deckId,
+            updatedCards.map(FlashcardModel.fromEntity).toList(),
+          );
+        }
+      } on Object catch (_) {}
+
+      // 3. Save session results to backend API & recalculate deck mastery
       try {
         await _saveSessionResultsUseCase(
           SaveSessionResultsParams(
@@ -224,16 +257,19 @@ class StudySessionCubit extends Cubit<StudySessionState> {
             cardsReviewed: totalReviewed,
             durationSeconds: state.elapsedSeconds,
             retentionScore: finalRetention.clamp(0.0, 1.0),
+            masteryRate: calculatedMasteryRate,
+            dueCards: remainingDue,
+            updatedCards: updatedCards,
           ),
         );
       } on Object catch (_) {}
 
-      // 3. Increment streak in AuthBloc
+      // 4. Increment streak in AuthBloc
       try {
         locator<AuthBloc>().add(const AuthStreakIncremented());
       } on Object catch (_) {}
 
-      // 4. Trigger live refresh on DecksBloc and DashboardBloc
+      // 5. Trigger live refresh on DecksBloc and DashboardBloc
       try {
         locator<DecksBloc>().add(const DecksRefreshed());
       } on Object catch (_) {}
@@ -241,7 +277,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       } on Object catch (_) {}
 
-      // 5. Telemetry: Performance trace and Crashlytics completion metrics
+      // 6. Telemetry: Performance trace and Crashlytics completion metrics
       try {
         final crashlytics = locator<CrashlyticsService>();
         unawaited(
@@ -261,12 +297,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         unawaited(trace.start().then((_) => trace.stop()));
       } on Object catch (_) {}
 
-      // 6. Trigger flush of queued card reviews upon session completion
+      // 7. Trigger flush of queued card reviews upon session completion
       unawaited(_cardSyncQueue.flushPendingLogs());
 
       emit(
         state.copyWith(
           status: StudySessionStatus.finished,
+          cards: updatedCards,
           againCount: newAgain,
           hardCount: newHard,
           goodCount: newGood,
@@ -277,6 +314,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     } else {
       emit(
         state.copyWith(
+          cards: updatedCards,
           currentIndex: state.currentIndex + 1,
           isFlipped: false,
           againCount: newAgain,

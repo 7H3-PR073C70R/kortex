@@ -24,8 +24,14 @@ abstract class FlashcardModel with _$FlashcardModel {
 
   const FlashcardModel._();
 
-  bool get isDueToday =>
-      nextDueDate == null || nextDueDate!.isBefore(DateTime.now());
+  bool get isDueToday {
+    if (nextDueDate == null) return true;
+    final now = DateTime.now();
+    return nextDueDate!.isBefore(now) ||
+        (nextDueDate!.year == now.year &&
+            nextDueDate!.month == now.month &&
+            nextDueDate!.day == now.day);
+  }
 
   factory FlashcardModel.fromJson(Map<String, dynamic> json) =>
       _$FlashcardModelFromJson(json);

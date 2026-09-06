@@ -60,11 +60,42 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         final loaded = list
             .map((e) => DeckModel.fromJson(e as Map<String, dynamic>))
             .toList();
-        for (final deck in loaded) {
+        var didHealAny = false;
+        for (var deck in loaded) {
+          // Self-healing: if deck was studied (lastStudied != null, masteryRate >= 0.8)
+          // but dueCards was stuck at total cards because card review state wasn't updated,
+          // heal cards & due count.
+          if (deck.lastStudied != null && deck.masteryRate >= 0.8 && deck.cards.isNotEmpty) {
+            final hasUnreviewedCards = deck.cards.any((c) => c.repetitions == 0 && c.lastReviewed == null);
+            if (hasUnreviewedCards) {
+              final healedCards = deck.cards.map((c) {
+                if (c.repetitions == 0 && c.lastReviewed == null) {
+                  return c.copyWith(
+                    repetitions: 1,
+                    lastReviewed: deck.lastStudied,
+                    nextDueDate: deck.lastStudied!.add(Duration(days: c.interval > 0 ? c.interval : 1)),
+                  );
+                }
+                return c;
+              }).toList();
+              final actualDue = healedCards.where((c) => c.isDueToday).length;
+              deck = deck.copyWith(
+                cards: healedCards,
+                dueCards: actualDue,
+              );
+              _localDeckCards[deck.id] = healedCards;
+              didHealAny = true;
+            }
+          }
           final idx = _localCreatedDecks.indexWhere((d) => d.id == deck.id);
           if (idx < 0) {
             _localCreatedDecks.add(deck);
+          } else {
+            _localCreatedDecks[idx] = deck;
           }
+        }
+        if (didHealAny) {
+          unawaited(_persistDecksToStorage());
         }
       }
     } on Object catch (_) {}
@@ -220,6 +251,14 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       return _localDeckCards[deckId]!;
     }
 
+    // 0. Check in-memory created decks
+    final inMemoryDeck =
+        _localCreatedDecks.where((d) => d.id == deckId).firstOrNull;
+    if (inMemoryDeck != null && inMemoryDeck.cards.isNotEmpty) {
+      _localDeckCards[deckId] = inMemoryDeck.cards;
+      return inMemoryDeck.cards;
+    }
+
     // 1. Check local persistent storage first
     try {
       final raw = _localStorage?.getPreference(
@@ -325,6 +364,39 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   }
 
   @override
+  Future<void> updateDeckCards(String deckId, List<FlashcardModel> cards) async {
+    _localDeckCards[deckId] = cards;
+
+    final dueCount = cards.where((c) => c.isDueToday).length;
+    final masteredCount = cards.where((c) => c.repetitions >= 1).length;
+    final calculatedMasteryRate =
+        cards.isNotEmpty ? (masteredCount / cards.length) : 0.0;
+
+    final deckIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
+    if (deckIdx >= 0) {
+      final old = _localCreatedDecks[deckIdx];
+      _localCreatedDecks[deckIdx] = old.copyWith(
+        cards: cards,
+        dueCards: dueCount,
+        masteryRate: calculatedMasteryRate > old.masteryRate
+            ? calculatedMasteryRate
+            : old.masteryRate,
+      );
+      unawaited(_persistDecksToStorage());
+    }
+
+    try {
+      final cardsJsonStr = jsonEncode(cards.map((c) => c.toJson()).toList());
+      unawaited(
+        _localStorage?.savePreference(
+          key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
+          data: cardsJsonStr,
+        ),
+      );
+    } on Object catch (_) {}
+  }
+
+  @override
   Future<void> saveSessionResults({
     required String deckId,
     required int cardsReviewed,
@@ -332,8 +404,24 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required double retentionScore,
     double? masteryRate,
     int? dueCards,
+    List<FlashcardModel>? updatedCards,
   }) async {
-    final cards = _localDeckCards[deckId] ?? const <FlashcardModel>[];
+    if (updatedCards != null && updatedCards.isNotEmpty) {
+      _localDeckCards[deckId] = updatedCards;
+      try {
+        final cardsJsonStr =
+            jsonEncode(updatedCards.map((c) => c.toJson()).toList());
+        unawaited(
+          _localStorage?.savePreference(
+            key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
+            data: cardsJsonStr,
+          ),
+        );
+      } on Object catch (_) {}
+    }
+
+    final cards =
+        _localDeckCards[deckId] ?? updatedCards ?? const <FlashcardModel>[];
     final masteredCount = cards.where((c) => c.repetitions >= 1).length;
     final totalCount = cards.isNotEmpty ? cards.length : cardsReviewed;
     final calculatedMasteryRate = masteryRate ??
@@ -355,6 +443,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         masteryRate: calculatedMasteryRate,
         dueCards: calculatedDueCards,
         lastStudied: now,
+        cards: cards.isNotEmpty ? cards : old.cards,
       );
     } else {
       _localCreatedDecks.add(
@@ -367,6 +456,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           dueCards: calculatedDueCards,
           masteryRate: calculatedMasteryRate,
           lastStudied: now,
+          cards: cards,
         ),
       );
     }

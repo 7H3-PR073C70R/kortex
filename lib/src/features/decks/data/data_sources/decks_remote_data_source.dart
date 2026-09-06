@@ -20,11 +20,16 @@ abstract class DecksRemoteDataSource {
     required double previousEaseFactor,
   });
 
+  Future<void> updateDeckCards(String deckId, List<FlashcardModel> cards);
+  
   Future<void> saveSessionResults({
     required String deckId,
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
+    double? masteryRate,
+    int? dueCards,
+    List<FlashcardModel>? updatedCards,
   });
 
   Future<void> deleteDeck(String deckId);

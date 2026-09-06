@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
@@ -50,11 +51,27 @@ class DecksRepositoryImpl implements DecksRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateDeckCards(
+    String deckId,
+    List<FlashcardEntity> cards,
+  ) {
+    return _remoteDataSource
+        .updateDeckCards(
+          deckId,
+          cards.map(FlashcardModel.fromEntity).toList(),
+        )
+        .makeRequest();
+  }
+
+  @override
   Future<Either<Failure, void>> saveSessionResults({
     required String deckId,
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
+    double? masteryRate,
+    int? dueCards,
+    List<FlashcardEntity>? updatedCards,
   }) {
     return _remoteDataSource
         .saveSessionResults(
@@ -62,6 +79,9 @@ class DecksRepositoryImpl implements DecksRepository {
           cardsReviewed: cardsReviewed,
           durationSeconds: durationSeconds,
           retentionScore: retentionScore,
+          masteryRate: masteryRate,
+          dueCards: dueCards,
+          updatedCards: updatedCards?.map(FlashcardModel.fromEntity).toList(),
         )
         .makeRequest();
   }

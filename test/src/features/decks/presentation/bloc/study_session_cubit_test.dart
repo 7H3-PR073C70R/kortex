@@ -61,11 +61,22 @@ class _FakeDecksRepository implements DecksRepository {
   }
 
   @override
+  Future<Either<Failure, void>> updateDeckCards(
+    String deckId,
+    List<FlashcardEntity> cards,
+  ) async {
+    return const Right(null);
+  }
+
+  @override
   Future<Either<Failure, void>> saveSessionResults({
     required String deckId,
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
+    double? masteryRate,
+    int? dueCards,
+    List<FlashcardEntity>? updatedCards,
   }) async {
     return const Right(null);
   }

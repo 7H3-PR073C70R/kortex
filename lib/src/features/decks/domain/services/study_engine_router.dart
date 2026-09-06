@@ -122,8 +122,13 @@ class StudyEngineRouter {
     required String topic,
     int count = 5,
     String? sourceText,
+    bool forceOffline = false,
   }) async {
-    final mode = await getExecutionMode();
+    final mode = forceOffline
+        ? ((await _modelInstaller.isModelInstalled())
+            ? StudyEngineExecutionMode.offlineOnDevice
+            : StudyEngineExecutionMode.unavailable)
+        : await getExecutionMode();
 
     if (mode == StudyEngineExecutionMode.cloudRemote) {
       debugPrint('[StudyEngineRouter] Online: Routing payload to Cloud API...');

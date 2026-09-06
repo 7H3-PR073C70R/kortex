@@ -6,7 +6,6 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Representation of a single step in the interactive app walkthrough.
@@ -128,20 +127,13 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.speed_rounded,
         accentColor: const Color(0xFF388AF6),
         resolveTarget: (context, screenSize, insets) {
-          final rect = AppTourKeys.getTargetRect(AppTourKeys.headerProfileKey);
-          if (rect != null) {
-            // Expand slightly to also encompass the countdown banner if right below
-            return Rect.fromLTWH(
-              rect.left,
-              rect.top,
-              rect.width,
-              math.min(rect.height + 64, 150),
-            );
-          }
+          final top = insets.top + 16;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
           return Rect.fromLTWH(
-            16,
-            insets.top + 8,
-            screenSize.width - 32,
+            left,
+            top,
+            width,
             135,
           );
         },
@@ -158,13 +150,14 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.alarm_on_rounded,
         accentColor: const Color(0xFF10B981),
         resolveTarget: (context, screenSize, insets) {
-          final rect = AppTourKeys.getTargetRect(AppTourKeys.reviewQueueKey);
-          if (rect != null) return rect;
+          final top = insets.top + 165;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
           return Rect.fromLTWH(
-            16,
-            insets.top + 160,
-            screenSize.width - 32,
-            100,
+            left,
+            top,
+            width,
+            110,
           );
         },
       ),
@@ -180,21 +173,13 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.style_rounded,
         accentColor: const Color(0xFFF59E0B),
         resolveTarget: (context, screenSize, insets) {
-          final dockRect = AppTourKeys.getTargetRect(AppTourKeys.dockKey);
-          if (dockRect != null) {
-            final slotWidth = dockRect.width / 4;
-            return Rect.fromLTWH(
-              dockRect.left + slotWidth * 1,
-              dockRect.top - 4,
-              slotWidth,
-              dockRect.height + 8,
-            );
-          }
           final defaultBottom = math.max(16, insets.bottom + 8);
-          final slotWidth = (screenSize.width - 32) / 4;
+          final dockWidth = math.min(screenSize.width - 32, 480);
+          final dockLeft = (screenSize.width - dockWidth) / 2;
+          final slotWidth = dockWidth / 4;
           return Rect.fromLTWH(
-            16 + slotWidth * 1,
-            screenSize.height - defaultBottom - 64,
+            dockLeft + slotWidth,
+            screenSize.height - defaultBottom - 68,
             slotWidth,
             64,
           );
@@ -212,8 +197,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.psychology_rounded,
         accentColor: const Color(0xFF8B5CF6),
         resolveTarget: (context, screenSize, insets) {
-          final rect = AppTourKeys.getTargetRect(AppTourKeys.syllabotFabKey);
-          if (rect != null) return rect;
           final defaultBottom = math.max(84, insets.bottom + 72);
           return Rect.fromLTWH(
             screenSize.width - 160,
@@ -235,21 +218,13 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.groups_rounded,
         accentColor: const Color(0xFF06B6D4),
         resolveTarget: (context, screenSize, insets) {
-          final dockRect = AppTourKeys.getTargetRect(AppTourKeys.dockKey);
-          if (dockRect != null) {
-            final slotWidth = dockRect.width / 4;
-            return Rect.fromLTWH(
-              dockRect.left + slotWidth * 2,
-              dockRect.top - 4,
-              slotWidth,
-              dockRect.height + 8,
-            );
-          }
           final defaultBottom = math.max(16, insets.bottom + 8);
-          final slotWidth = (screenSize.width - 32) / 4;
+          final dockWidth = math.min(screenSize.width - 32, 480);
+          final dockLeft = (screenSize.width - dockWidth) / 2;
+          final slotWidth = dockWidth / 4;
           return Rect.fromLTWH(
-            16 + slotWidth * 2,
-            screenSize.height - defaultBottom - 64,
+            dockLeft + slotWidth * 2,
+            screenSize.height - defaultBottom - 68,
             slotWidth,
             64,
           );

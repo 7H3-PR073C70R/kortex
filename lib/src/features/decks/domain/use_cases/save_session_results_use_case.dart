@@ -1,6 +1,7 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 
 class SaveSessionResultsParams {
@@ -9,12 +10,18 @@ class SaveSessionResultsParams {
     required this.cardsReviewed,
     required this.durationSeconds,
     required this.retentionScore,
+    this.masteryRate,
+    this.dueCards,
+    this.updatedCards,
   });
 
   final String deckId;
   final int cardsReviewed;
   final int durationSeconds;
   final double retentionScore;
+  final double? masteryRate;
+  final int? dueCards;
+  final List<FlashcardEntity>? updatedCards;
 }
 
 class SaveSessionResultsUseCase
@@ -30,6 +37,9 @@ class SaveSessionResultsUseCase
       cardsReviewed: params.cardsReviewed,
       durationSeconds: params.durationSeconds,
       retentionScore: params.retentionScore,
+      masteryRate: params.masteryRate,
+      dueCards: params.dueCards,
+      updatedCards: params.updatedCards,
     );
   }
 }

@@ -126,5 +126,113 @@ void main() {
         verify(() => mockClient.deleteDeck('deck_bio_101')).called(1);
       },
     );
+
+    test('updateDeckCards recalculates due cards and mastery correctly', () async {
+      const deck = DeckModel(
+        id: 'deck_math',
+        title: 'Math',
+        subject: 'Mathematics',
+        category: 'General',
+        totalCards: 2,
+        dueCards: 2,
+        masteryRate: 0,
+      );
+
+      final cards = [
+        const FlashcardModel(
+          id: 'm1',
+          deckId: 'deck_math',
+          front: '1+1',
+          back: '2',
+        ),
+        const FlashcardModel(
+          id: 'm2',
+          deckId: 'deck_math',
+          front: '2+2',
+          back: '4',
+        ),
+      ];
+
+      when(() => mockClient.createDeckRecord(any())).thenAnswer(
+        (_) async => HttpResponse({'id': 'deck_math'}, Response(requestOptions: RequestOptions())),
+      );
+      when(() => mockClient.bulkInsertCards(any())).thenAnswer(
+        (_) async => HttpResponse([], Response(requestOptions: RequestOptions())),
+      );
+
+      await dataSource.saveGeneratedDeck(deck: deck, cards: cards);
+
+      // Now review card 1 and 2 (nextDueDate in future)
+      final reviewedCards = [
+        cards[0].copyWith(
+          repetitions: 1,
+          lastReviewed: DateTime.now(),
+          nextDueDate: DateTime.now().add(const Duration(days: 3)),
+        ),
+        cards[1].copyWith(
+          repetitions: 1,
+          lastReviewed: DateTime.now(),
+          nextDueDate: DateTime.now().add(const Duration(days: 3)),
+        ),
+      ];
+
+      await dataSource.updateDeckCards('deck_math', reviewedCards);
+
+      final userDecks = await dataSource.getUserDecks();
+      final updatedDeck = userDecks.firstWhere((d) => d.id == 'deck_math');
+      expect(updatedDeck.dueCards, 0);
+      expect(updatedDeck.masteryRate, 1.0);
+      expect(updatedDeck.cards.first.repetitions, 1);
+    });
+
+    test('saveSessionResults with updatedCards sets dueCards to 0 when all cards are scheduled in future', () async {
+      const deck = DeckModel(
+        id: 'deck_physics',
+        title: 'Physics',
+        subject: 'Physics',
+        category: 'General',
+        totalCards: 2,
+        dueCards: 2,
+        masteryRate: 0,
+      );
+
+      final cards = [
+        const FlashcardModel(id: 'p1', deckId: 'deck_physics', front: 'F', back: 'ma'),
+        const FlashcardModel(id: 'p2', deckId: 'deck_physics', front: 'E', back: 'mc^2'),
+      ];
+
+      when(() => mockClient.createDeckRecord(any())).thenAnswer(
+        (_) async => HttpResponse({'id': 'deck_physics'}, Response(requestOptions: RequestOptions())),
+      );
+      when(() => mockClient.bulkInsertCards(any())).thenAnswer(
+        (_) async => HttpResponse([], Response(requestOptions: RequestOptions())),
+      );
+      when(() => mockClient.saveSessionResults(any())).thenAnswer(
+        (_) async => HttpResponse(null, Response(requestOptions: RequestOptions())),
+      );
+      when(() => mockClient.updateDeckRecord(any(), any())).thenAnswer(
+        (_) async => HttpResponse(null, Response(requestOptions: RequestOptions())),
+      );
+
+      await dataSource.saveGeneratedDeck(deck: deck, cards: cards);
+
+      final updatedCards = [
+        cards[0].copyWith(repetitions: 1, lastReviewed: DateTime.now(), nextDueDate: DateTime.now().add(const Duration(days: 2))),
+        cards[1].copyWith(repetitions: 1, lastReviewed: DateTime.now(), nextDueDate: DateTime.now().add(const Duration(days: 2))),
+      ];
+
+      await dataSource.saveSessionResults(
+        deckId: 'deck_physics',
+        cardsReviewed: 2,
+        durationSeconds: 30,
+        retentionScore: 1.0,
+        updatedCards: updatedCards,
+      );
+
+      final userDecks = await dataSource.getUserDecks();
+      final updatedDeck = userDecks.firstWhere((d) => d.id == 'deck_physics');
+      expect(updatedDeck.dueCards, 0);
+      expect(updatedDeck.masteryRate, 1.0);
+    });
   });
 }

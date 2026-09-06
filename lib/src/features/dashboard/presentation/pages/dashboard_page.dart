@@ -25,7 +25,6 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
-import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -383,7 +382,6 @@ class _CompactDashboardLayout extends StatelessWidget {
       children: [
         // 1. Header Profile & Streak Bar
         HeaderProfileBar(
-          key: AppTourKeys.headerProfileKey,
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
           userName: userName,
@@ -394,16 +392,14 @@ class _CompactDashboardLayout extends StatelessWidget {
         // 2. Syllabot Floating Prompt Bar
 
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
-        ExamCountdownBanner(key: AppTourKeys.countdownKey),
-        KeyedSubtree(
-          key: AppTourKeys.reviewQueueKey,
-          child: feed.dueStudyDecks.isNotEmpty
-              ? Sm2ReviewDeckCard(
-                  deck: feed.dueStudyDecks.first,
-                  isHero: true,
-                )
-              : _EmptyStudyDecksCard(l10n: l10n),
-        ),
+        const ExamCountdownBanner(),
+        if (feed.dueStudyDecks.isNotEmpty)
+          Sm2ReviewDeckCard(
+            deck: feed.dueStudyDecks.first,
+            isHero: true,
+          )
+        else
+          _EmptyStudyDecksCard(l10n: l10n),
         const SizedBox(height: 20),
 
         // 4. Quick Action Speed Dial Bar

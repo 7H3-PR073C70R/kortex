@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 
@@ -149,11 +150,11 @@ class CardSyncQueue {
     var syncedCount = 0;
 
     try {
-      final pendingLogs = _inMemoryLogBuffer
-          .where((log) => !log.isSynced)
-          .toList();
+      final pendingLogs =
+          _inMemoryLogBuffer.where((log) => !log.isSynced).toList();
 
       if (pendingLogs.isEmpty) {
+        await _persistLogs();
         return 0;
       }
 
@@ -163,7 +164,16 @@ class CardSyncQueue {
             : pendingLogs.length;
 
         final batch = pendingLogs.sublist(i, endIndex);
-        final payload = batch.map((log) => log.toSupabasePayload()).toList();
+        final payload = batch.map((log) {
+          final p = log.toSupabasePayload();
+          if (!UuidUtils.isValidUuid(p['transaction_uuid'] as String?)) {
+            p['transaction_uuid'] = UuidUtils.generate();
+          }
+          if (!UuidUtils.isValidUuid(p['card_id'] as String?)) {
+            p['card_id'] = UuidUtils.generate();
+          }
+          return p;
+        }).toList();
 
         try {
           await _dio.post<dynamic>(

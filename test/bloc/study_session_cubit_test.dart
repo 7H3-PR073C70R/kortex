@@ -114,14 +114,15 @@ void main() {
       ),
       act: (cubit) => cubit.rateCard(4),
       expect: () => [
-        const StudySessionState(
-          status: StudySessionStatus.studying,
-          deckId: 'deck_100',
-          cards: tCards,
-          currentIndex: 1,
-          correctCount: 1,
-          goodCount: 1,
-        ),
+        isA<StudySessionState>()
+            .having((s) => s.status, 'status', StudySessionStatus.studying)
+            .having((s) => s.deckId, 'deckId', 'deck_100')
+            .having((s) => s.currentIndex, 'currentIndex', 1)
+            .having((s) => s.correctCount, 'correctCount', 1)
+            .having((s) => s.goodCount, 'goodCount', 1)
+            .having((s) => s.cards.first.repetitions, 'card 1 repetitions', 1)
+            .having((s) => s.cards.first.lastReviewed, 'card 1 lastReviewed', isNotNull)
+            .having((s) => s.cards.first.nextDueDate, 'card 1 nextDueDate', isNotNull),
       ],
       verify: (cubit) {
         expect(cubit.cardSyncQueue.getPendingCount(), equals(1));

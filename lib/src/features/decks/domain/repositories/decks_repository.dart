@@ -17,11 +17,19 @@ abstract class DecksRepository {
     required double previousEaseFactor,
   });
 
+  Future<Either<Failure, void>> updateDeckCards(
+    String deckId,
+    List<FlashcardEntity> cards,
+  );
+
   Future<Either<Failure, void>> saveSessionResults({
     required String deckId,
     required int cardsReviewed,
     required int durationSeconds,
     required double retentionScore,
+    double? masteryRate,
+    int? dueCards,
+    List<FlashcardEntity>? updatedCards,
   });
 
   Future<Either<Failure, void>> deleteDeck(String deckId);

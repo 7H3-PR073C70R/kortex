@@ -527,18 +527,48 @@ BEGIN
     ) h;
 
     SELECT jsonb_build_object(
-        'currentStreakDays', COALESCE(p.streak_days, 0),
-        'longestStreakDays', GREATEST(COALESCE(p.streak_days, 0), 1),
-        'weeklyMinutesStudied', COALESCE(p.weekly_minutes_studied, 0),
-        'overallRetentionRate', COALESCE(p.overall_retention_rate, 0.85),
-        'totalCardsMastered', COALESCE(p.total_cards_mastered, 0),
+        'currentStreakDays', COALESCE(a.current_streak_days, p.streak_days, 0),
+        'longestStreakDays', GREATEST(COALESCE(a.longest_streak_days, p.streak_days, 0), 1),
+        'weeklyMinutesStudied', COALESCE(a.weekly_minutes_studied, 0),
+        'overallRetentionRate', COALESCE(a.overall_retention_rate, 0.85),
+        'totalCardsMastered', COALESCE(a.total_cards_mastered, 0),
         'heatMapData', v_heatmap,
-        'xpPoints', COALESCE(p.xp_points, 0),
-        'academicRank', COALESCE(p.academic_rank, 'Neural Scholar I')
+        'xpPoints', COALESCE(a.xp_points, 0),
+        'academicRank', COALESCE(a.academic_rank, 'Neural Scholar I')
     )
     INTO v_analytics
     FROM public.profiles p
+    LEFT JOIN public.user_analytics a ON a.user_id = p.id
     WHERE p.id = v_user_id;
+
+    IF v_analytics IS NULL THEN
+        SELECT jsonb_build_object(
+            'currentStreakDays', COALESCE(a.current_streak_days, 0),
+            'longestStreakDays', GREATEST(COALESCE(a.longest_streak_days, 0), 1),
+            'weeklyMinutesStudied', COALESCE(a.weekly_minutes_studied, 0),
+            'overallRetentionRate', COALESCE(a.overall_retention_rate, 0.85),
+            'totalCardsMastered', COALESCE(a.total_cards_mastered, 0),
+            'heatMapData', v_heatmap,
+            'xpPoints', COALESCE(a.xp_points, 0),
+            'academicRank', COALESCE(a.academic_rank, 'Neural Scholar I')
+        )
+        INTO v_analytics
+        FROM public.user_analytics a
+        WHERE a.user_id = v_user_id;
+    END IF;
+
+    IF v_analytics IS NULL THEN
+        v_analytics := jsonb_build_object(
+            'currentStreakDays', 0,
+            'longestStreakDays', 1,
+            'weeklyMinutesStudied', 0,
+            'overallRetentionRate', 0.85,
+            'totalCardsMastered', 0,
+            'heatMapData', v_heatmap,
+            'xpPoints', 0,
+            'academicRank', 'Neural Scholar I'
+        );
+    END IF;
 
     -- Due Flashcard Decks for Review
     SELECT COALESCE(jsonb_agg(
