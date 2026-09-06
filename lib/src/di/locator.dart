@@ -40,7 +40,6 @@ import 'package:kortex/src/features/community/data/data_sources/community_local_
 import 'package:kortex/src/features/community/data/data_sources/community_local_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
-import 'package:kortex/src/features/community/data/database/community_database_service.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/ephemeral_room_repository_impl.dart';
 import 'package:kortex/src/features/community/data/services/livekit_audio_service_impl.dart';

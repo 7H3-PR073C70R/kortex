@@ -31,9 +31,14 @@ class TextToSpeechHandler {
   VoiceGender _gender = VoiceGender.female;
   double _speechRate = 1;
 
+  final List<String> _sentenceQueue = [];
+  bool _isProcessingQueue = false;
+  Completer<void>? _queueDrainedCompleter;
+
   bool get isSpeaking => _isSpeaking;
   VoiceGender get voiceGender => _gender;
   double get speechRate => _speechRate;
+  bool get hasQueuedSentences => _sentenceQueue.isNotEmpty || _isProcessingQueue;
 
   LocalStorageService? get _effectiveLocalStorage =>
       _localStorageService ??
@@ -72,16 +77,41 @@ class TextToSpeechHandler {
         onSpeakingChanged?.call(true);
       })
       ..setCompletionHandler(() {
-        _isSpeaking = false;
-        onSpeakingChanged?.call(false);
+        if (_sentenceQueue.isNotEmpty) {
+          final nextSentence = _sentenceQueue.removeAt(0);
+          unawaited(_flutterTts.speak(nextSentence));
+        } else {
+          _isSpeaking = false;
+          _isProcessingQueue = false;
+          onSpeakingChanged?.call(false);
+          if (_queueDrainedCompleter != null &&
+              !_queueDrainedCompleter!.isCompleted) {
+            _queueDrainedCompleter!.complete();
+            _queueDrainedCompleter = null;
+          }
+        }
       })
       ..setCancelHandler(() {
+        _sentenceQueue.clear();
         _isSpeaking = false;
+        _isProcessingQueue = false;
         onSpeakingChanged?.call(false);
+        if (_queueDrainedCompleter != null &&
+            !_queueDrainedCompleter!.isCompleted) {
+          _queueDrainedCompleter!.complete();
+          _queueDrainedCompleter = null;
+        }
       })
       ..setErrorHandler((dynamic msg) {
+        _sentenceQueue.clear();
         _isSpeaking = false;
+        _isProcessingQueue = false;
         onSpeakingChanged?.call(false);
+        if (_queueDrainedCompleter != null &&
+            !_queueDrainedCompleter!.isCompleted) {
+          _queueDrainedCompleter!.complete();
+          _queueDrainedCompleter = null;
+        }
         onError?.call(msg.toString());
       });
 
@@ -212,25 +242,74 @@ class TextToSpeechHandler {
     return text;
   }
 
-  /// Reads out text cleanly.
+  /// Enqueues a single sentence for immediate or sequential speech synthesis.
+  Future<void> enqueueSentence(String rawSentence) async {
+    final clean = cleanTextForSpeech(rawSentence);
+    if (clean.isEmpty) return;
+
+    if (_queueDrainedCompleter == null ||
+        _queueDrainedCompleter!.isCompleted) {
+      _queueDrainedCompleter = Completer<void>();
+    }
+
+    if (!_isSpeaking && !_isProcessingQueue) {
+      _isSpeaking = true;
+      _isProcessingQueue = true;
+      onSpeakingChanged?.call(true);
+      try {
+        await _applyVoiceConfiguration();
+        await _flutterTts.speak(clean);
+      } on Object catch (e) {
+        _isSpeaking = false;
+        _isProcessingQueue = false;
+        onSpeakingChanged?.call(false);
+        onError?.call(e.toString());
+      }
+    } else {
+      _sentenceQueue.add(clean);
+    }
+  }
+
+  /// Waits until all queued sentences have completed synthesis and playback.
+  Future<void> waitForQueueDrained() async {
+    if (!_isSpeaking && !_isProcessingQueue && _sentenceQueue.isEmpty) {
+      return;
+    }
+    await _queueDrainedCompleter?.future;
+  }
+
+  /// Reads out text cleanly (clears existing queue).
   Future<void> speak(String rawText) async {
     final clean = cleanTextForSpeech(rawText);
     if (clean.isEmpty) return;
 
-    if (_isSpeaking) {
-      await stop();
-    }
+    await stop();
+
+    _isSpeaking = true;
+    _isProcessingQueue = true;
+    onSpeakingChanged?.call(true);
 
     try {
       await _applyVoiceConfiguration();
       await _flutterTts.speak(clean);
     } on Object catch (e) {
+      _isSpeaking = false;
+      _isProcessingQueue = false;
+      onSpeakingChanged?.call(false);
       onError?.call(e.toString());
     }
   }
 
-  /// Stops ongoing speech.
+  /// Stops ongoing speech and clears all buffered sentences.
   Future<void> stop() async {
+    _sentenceQueue.clear();
+    _isProcessingQueue = false;
+    if (_queueDrainedCompleter != null &&
+        !_queueDrainedCompleter!.isCompleted) {
+      _queueDrainedCompleter!.complete();
+      _queueDrainedCompleter = null;
+    }
+
     try {
       await _flutterTts.stop();
       _isSpeaking = false;
@@ -242,6 +321,6 @@ class TextToSpeechHandler {
 
   /// Releases resources.
   void dispose() {
-    unawaited(_flutterTts.stop());
+    unawaited(stop());
   }
 }

@@ -1,16 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_local_data_source.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_local_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
-import 'package:kortex/src/features/community/data/database/community_database_service.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockCommunityApiClient extends Mock implements CommunityApiClient {}
 
@@ -19,10 +19,8 @@ class MockUserStorageService extends Mock implements UserStorageService {}
 class MockRealtimeClient extends Mock implements RealtimeClient {}
 
 void main() {
-  setUpAll(CommunityDatabaseService.ensureFfiInitialized);
-
-  group('Community Forum SQLite Caching', () {
-    late CommunityDatabaseService dbService;
+  group('Community Forum SQLite Caching with Drift', () {
+    late AppDatabase appDatabase;
     late CommunityLocalDataSource localDataSource;
     late MockCommunityApiClient mockApiClient;
     late MockUserStorageService mockUserStorage;
@@ -30,9 +28,8 @@ void main() {
     late CommunityRemoteDataSourceImpl remoteDataSource;
 
     setUp(() async {
-      dbService = CommunityDatabaseService();
-      await dbService.initDatabase(customPath: inMemoryDatabasePath);
-      localDataSource = CommunityLocalDataSourceImpl(dbService);
+      appDatabase = AppDatabase(NativeDatabase.memory());
+      localDataSource = CommunityLocalDataSourceImpl(appDatabase);
       mockApiClient = MockCommunityApiClient();
       mockUserStorage = MockUserStorageService();
       mockRealtime = MockRealtimeClient();
@@ -50,7 +47,7 @@ void main() {
     });
 
     tearDown(() async {
-      await dbService.close();
+      await appDatabase.close();
     });
 
     test('fetchForumPosts persists remote posts to SQLite for read-through caching', () async {

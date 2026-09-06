@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:drift/drift.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_local_data_source.dart';
@@ -10,10 +12,13 @@ import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart'
 class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   SyllabotLocalDataSourceImpl(
     this._llmClient, {
+    AppDatabase? database,
     LocalStorageService? storageService,
-  }) : _storage = storageService;
+  })  : _database = database,
+        _storage = storageService;
 
   final LocalLlmEngineClient _llmClient;
+  final AppDatabase? _database;
   final LocalStorageService? _storage;
 
   static const String _sessionsKey = '__syllabot_local_sessions';
@@ -22,6 +27,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   // In-memory cache fallback keyed by sessionId
   final Map<String, List<ChatMessageModel>> _messageCache = {};
   final List<ConversationSessionModel> _sessionCache = [];
+  bool _sessionsMigrated = false;
 
   @override
   Stream<String> generateOfflineResponse({
@@ -48,19 +54,70 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
 
   @override
   Future<List<ConversationSessionModel>> getCachedSessions() async {
+    final db = _database;
+    if (db != null) {
+      try {
+        final entries = await db.getAllSyllabotSessions();
+        if (entries.isNotEmpty) {
+          return entries
+              .map(
+                (e) => ConversationSessionModel(
+                  id: e.id,
+                  userId: e.userId,
+                  title: e.title,
+                  socraticMode: e.socraticMode,
+                  createdAt: e.createdAt,
+                  updatedAt: e.updatedAt,
+                ),
+              )
+              .toList();
+        }
+
+        // Check if migration from SharedPreferences is needed
+        if (!_sessionsMigrated && _storage != null) {
+          _sessionsMigrated = true;
+          final raw = _storage.getPreference(key: _sessionsKey);
+          if (raw != null && raw.isNotEmpty) {
+            final list = jsonDecode(raw) as List<dynamic>;
+            final legacy = list
+                .map(
+                  (e) => ConversationSessionModel.fromJson(
+                    e as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
+
+            for (final s in legacy) {
+              await db.upsertSyllabotSession(
+                SyllabotSessionsCompanion(
+                  id: Value(s.id),
+                  userId: Value(s.userId),
+                  title: Value(s.title),
+                  socraticMode: Value(s.socraticMode),
+                  createdAt: Value(s.createdAt),
+                  updatedAt: Value(s.updatedAt),
+                ),
+              );
+            }
+            await _storage.deletePreference(key: _sessionsKey);
+            return legacy;
+          }
+        }
+      } on Object catch (_) {}
+    }
+
     try {
       if (_storage != null) {
         final raw = _storage.getPreference(key: _sessionsKey);
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List<dynamic>;
-          final parsed = list
+          return list
               .map(
                 (e) => ConversationSessionModel.fromJson(
                   e as Map<String, dynamic>,
                 ),
               )
               .toList();
-          return parsed;
         }
       }
     } on Object catch (_) {}
@@ -73,6 +130,23 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     _sessionCache
       ..removeWhere((s) => s.id == session.id)
       ..insert(0, session);
+
+    final db = _database;
+    if (db != null) {
+      try {
+        await db.upsertSyllabotSession(
+          SyllabotSessionsCompanion(
+            id: Value(session.id),
+            userId: Value(session.userId),
+            title: Value(session.title),
+            socraticMode: Value(session.socraticMode),
+            createdAt: Value(session.createdAt),
+            updatedAt: Value(session.updatedAt),
+          ),
+        );
+        return;
+      } on Object catch (_) {}
+    }
 
     try {
       if (_storage != null) {
@@ -92,6 +166,14 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     _sessionCache.removeWhere((s) => s.id == sessionId);
     _messageCache.remove(sessionId);
 
+    final db = _database;
+    if (db != null) {
+      try {
+        await db.deleteSyllabotSessionById(sessionId);
+        await db.deleteSyllabotMessagesForSession(sessionId);
+      } on Object catch (_) {}
+    }
+
     try {
       if (_storage != null) {
         final existing = await getCachedSessions();
@@ -107,15 +189,75 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   Future<List<ChatMessageModel>> getCachedMessages({
     required String sessionId,
   }) async {
+    final db = _database;
+    if (db != null) {
+      try {
+        final entries = await db.getSyllabotMessagesForSession(sessionId);
+        if (entries.isNotEmpty) {
+          return entries.map((e) {
+            List<String> latex = const [];
+            if (e.latexSnippets != null && e.latexSnippets!.isNotEmpty) {
+              try {
+                latex = (jsonDecode(e.latexSnippets!) as List<dynamic>)
+                    .map((x) => x.toString())
+                    .toList();
+              } catch (_) {}
+            }
+            return ChatMessageModel(
+              id: e.id,
+              sessionId: e.sessionId,
+              userId: e.userId,
+              sender: e.sender,
+              text: e.textContent,
+              createdAt: e.createdAt,
+              latexSnippets: latex,
+              engineType: e.engineType,
+              tokensCount: e.tokensCount,
+            );
+          }).toList();
+        }
+
+        // Migrate from storage if available
+        if (_storage != null) {
+          final raw = _storage.getPreference(key: '$_messageKeyPrefix$sessionId');
+          if (raw != null && raw.isNotEmpty) {
+            final list = jsonDecode(raw) as List<dynamic>;
+            final parsed = list
+                .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+
+            for (final m in parsed) {
+              await db.upsertSyllabotMessage(
+                SyllabotMessagesCompanion(
+                  id: Value(m.id),
+                  sessionId: Value(m.sessionId),
+                  userId: Value(m.userId),
+                  sender: Value(m.sender),
+                  textContent: Value(m.text),
+                  latexSnippets: Value(
+                    m.latexSnippets.isNotEmpty ? jsonEncode(m.latexSnippets) : null,
+                  ),
+                  engineType: Value(m.engineType),
+                  tokensCount: Value(m.tokensCount),
+                  createdAt: Value(m.createdAt),
+                ),
+              );
+            }
+            await _storage.deletePreference(key: '$_messageKeyPrefix$sessionId');
+            return parsed;
+          }
+        }
+      } on Object catch (_) {}
+    }
+
     try {
       if (_storage != null) {
         final raw = _storage.getPreference(key: '$_messageKeyPrefix$sessionId');
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List<dynamic>;
-          final parsed = list
+          return list
               .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
               .toList();
-          return parsed;
         }
       }
     } on Object catch (_) {}
@@ -127,6 +269,30 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   Future<void> cacheMessage(ChatMessageEntity message) async {
     final model = ChatMessageModel.fromEntity(message);
     _messageCache.putIfAbsent(message.sessionId, () => []).add(model);
+
+    final db = _database;
+    if (db != null) {
+      try {
+        await db.upsertSyllabotMessage(
+          SyllabotMessagesCompanion(
+            id: Value(model.id),
+            sessionId: Value(model.sessionId),
+            userId: Value(model.userId),
+            sender: Value(model.sender),
+            textContent: Value(model.text),
+            latexSnippets: Value(
+              model.latexSnippets.isNotEmpty
+                  ? jsonEncode(model.latexSnippets)
+                  : null,
+            ),
+            engineType: Value(model.engineType),
+            tokensCount: Value(model.tokensCount),
+            createdAt: Value(model.createdAt),
+          ),
+        );
+        return;
+      } on Object catch (_) {}
+    }
 
     try {
       if (_storage != null) {
@@ -144,6 +310,13 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
   @override
   Future<void> clearExpiredCache({int maxAgeInDays = 30}) async {
     final cutoff = DateTime.now().subtract(Duration(days: maxAgeInDays));
+    final db = _database;
+    if (db != null) {
+      try {
+        await db.deleteExpiredSyllabotMessages(cutoff);
+      } on Object catch (_) {}
+    }
+
     for (final key in List.of(_messageCache.keys)) {
       _messageCache[key]?.removeWhere((m) => m.createdAt.isBefore(cutoff));
       if (_messageCache[key]?.isEmpty ?? false) {
@@ -152,3 +325,4 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     }
   }
 }
+

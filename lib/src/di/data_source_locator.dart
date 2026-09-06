@@ -51,6 +51,7 @@ void _initDataSource() {
     ..registerLazySingleton<SyllabotLocalDataSource>(
       () => SyllabotLocalDataSourceImpl(
         locator<LocalLlmEngineClient>(),
+        database: locator<AppDatabase>(),
         storageService: locator<LocalStorageService>(),
       ),
     )
@@ -63,7 +64,7 @@ void _initDataSource() {
     )
     ..registerLazySingleton<CommunityLocalDataSource>(
       () => CommunityLocalDataSourceImpl(
-        locator<CommunityDatabaseService>(),
+        locator<AppDatabase>(),
       ),
     )
     ..registerLazySingleton<CommunityRemoteDataSource>(

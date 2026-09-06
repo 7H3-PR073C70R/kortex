@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/features/community/domain/services/whiteboard_compression.dart';
 
 class EphemeralParticipant {
   const EphemeralParticipant({
@@ -133,7 +134,19 @@ class WhiteboardStroke {
   });
 
   factory WhiteboardStroke.fromJson(Map<String, dynamic> json) {
-    final rawPoints = json['points'] as List<dynamic>? ?? [];
+    final List<WhiteboardPoint> parsedPoints;
+    if (json['deltas'] is List) {
+      parsedPoints =
+          WhiteboardCompression.decodeDelta(json['deltas'] as List<dynamic>);
+    } else if (json['points'] is List) {
+      parsedPoints = (json['points'] as List<dynamic>)
+          .cast<Map<String, dynamic>>()
+          .map(WhiteboardPoint.fromJson)
+          .toList();
+    } else {
+      parsedPoints = const [];
+    }
+
     return WhiteboardStroke(
       id: json['id'] as String? ?? '',
       userId: json['userId'] as String? ?? '',
@@ -145,10 +158,7 @@ class WhiteboardStroke {
       shapeType: json['shapeType'] as String?,
       text: json['text'] as String?,
       fontSize: (json['fontSize'] as num?)?.toDouble(),
-      points: rawPoints
-          .cast<Map<String, dynamic>>()
-          .map(WhiteboardPoint.fromJson)
-          .toList(),
+      points: parsedPoints,
     );
   }
 
@@ -179,7 +189,7 @@ class WhiteboardStroke {
       if (shapeType != null) 'shapeType': shapeType,
       if (text != null) 'text': text,
       if (fontSize != null) 'fontSize': fontSize,
-      'points': points.map((p) => p.toJson()).toList(),
+      'deltas': WhiteboardCompression.encodeDelta(points),
     };
   }
 }

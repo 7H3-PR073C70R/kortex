@@ -107,3 +107,94 @@ class CourseModules extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+@DataClassName('ExamEventEntry')
+class ExamEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('current-user'))();
+  TextColumn get examName => text()();
+  DateTimeColumn get targetDate => dateTime()();
+  TextColumn get subjectTrack =>
+      text().withDefault(const Constant('General'))();
+  IntColumn get totalCardsCount => integer().withDefault(const Constant(0))();
+  IntColumn get masteredCardsCount =>
+      integer().withDefault(const Constant(0))();
+  IntColumn get totalLapses => integer().withDefault(const Constant(0))();
+  IntColumn get dailyTarget => integer().withDefault(const Constant(20))();
+  RealColumn get targetScorePercent =>
+      real().withDefault(const Constant(0.85))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('ForumPostEntry')
+class ForumPosts extends Table {
+  TextColumn get id => text()();
+  TextColumn get authorId => text()();
+  TextColumn get authorName => text()();
+  TextColumn get authorAvatar => text().nullable()();
+  TextColumn get track => text()();
+  TextColumn get title => text()();
+  TextColumn get content => text()();
+  TextColumn get latexContent => text().nullable()();
+  IntColumn get upvotes => integer().withDefault(const Constant(0))();
+  IntColumn get repliesCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('ForumReplyEntry')
+class ForumReplies extends Table {
+  TextColumn get id => text()();
+  TextColumn get postId =>
+      text().references(ForumPosts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get authorId => text()();
+  TextColumn get authorName => text()();
+  TextColumn get authorAvatar => text().nullable()();
+  TextColumn get content => text()();
+  TextColumn get latexContent => text().nullable()();
+  IntColumn get upvotes => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('SyllabotSessionEntry')
+class SyllabotSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('current-user'))();
+  TextColumn get title => text()();
+  TextColumn get socraticMode =>
+      text().withDefault(const Constant('stepByStep'))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('SyllabotMessageEntry')
+class SyllabotMessages extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId =>
+      text().references(SyllabotSessions, #id, onDelete: KeyAction.cascade)();
+  TextColumn get userId => text().withDefault(const Constant('current-user'))();
+  TextColumn get sender => text()();
+  TextColumn get textContent => text()();
+  TextColumn get latexSnippets => text().nullable()();
+  TextColumn get engineType =>
+      text().withDefault(const Constant('cloudRemote'))();
+  IntColumn get tokensCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

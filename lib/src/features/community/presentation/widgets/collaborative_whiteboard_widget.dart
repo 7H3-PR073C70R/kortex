@@ -7,10 +7,11 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/community/domain/services/whiteboard_compression.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-enum WhiteboardTool { pen, eraser, shape, text }
+enum WhiteboardTool { pen, eraser, shape, text, pan }
 
 enum WhiteboardShape { rectangle, circle, line, arrow, triangle }
 
@@ -36,6 +37,9 @@ class _CollaborativeWhiteboardWidgetState
   Color _selectedColor = const Color(0xFFFFFFFF);
   double _penStrokeWidth = 4;
   double _eraserStrokeWidth = 28;
+
+  final TransformationController _transformationController =
+      TransformationController();
 
   List<WhiteboardPoint> _activePoints = [];
 
@@ -81,8 +85,23 @@ class _CollaborativeWhiteboardWidgetState
     });
   }
 
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _resetViewport() {
+    AppFeedback.light();
+    _transformationController.value = Matrix4.identity();
+    setState(() {});
+  }
+
   void _onPanEnd(DragEndDetails details) {
-    if (_currentTool == WhiteboardTool.text) return;
+    if (_currentTool == WhiteboardTool.text ||
+        _currentTool == WhiteboardTool.pan) {
+      return;
+    }
     if (_activePoints.length < 2) {
       _activePoints = [];
       return;
@@ -93,6 +112,11 @@ class _CollaborativeWhiteboardWidgetState
     final isEraser = _currentTool == WhiteboardTool.eraser;
     final isShape = _currentTool == WhiteboardTool.shape;
 
+    // Apply Douglas-Peucker line simplification to achieve ~85% point reduction
+    final simplifiedPoints = isShape || _activePoints.length <= 2
+        ? List<WhiteboardPoint>.from(_activePoints)
+        : WhiteboardCompression.simplify(_activePoints, epsilon: 1.2);
+
     final stroke = WhiteboardStroke(
       id: strokeId,
       userId: widget.currentUserId,
@@ -102,7 +126,7 @@ class _CollaborativeWhiteboardWidgetState
       isEraser: isEraser,
       elementType: isShape ? 'shape' : 'stroke',
       shapeType: isShape ? _currentShape.name : null,
-      points: List.from(_activePoints),
+      points: simplifiedPoints,
     );
 
     context.read<LiveRoomCubit>().addWhiteboardStroke(stroke);
@@ -273,34 +297,47 @@ class _CollaborativeWhiteboardWidgetState
       builder: (context, state) {
         return Stack(
           children: [
-            // Interactive Blackboard/Whiteboard Drawing Canvas
+            // Interactive Blackboard/Whiteboard Drawing Canvas with Infinite Zoom & Pan
             Positioned.fill(
               child: ColoredBox(
                 color: isDark
                     ? const Color(0xFF14171E)
                     : const Color(0xFF23272F),
-                child: GestureDetector(
-                  onPanStart: _onPanStart,
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: _onPanEnd,
-                  onTapUp: _onTapUp,
-                  child: CustomPaint(
-                    painter: _WhiteboardPainter(
-                      committedStrokes: state.whiteboardStrokes,
-                      activePoints: _activePoints,
-                      activeColor: _selectedColor,
-                      activeStrokeWidth: _currentTool == WhiteboardTool.eraser
-                          ? _eraserStrokeWidth
-                          : _penStrokeWidth,
-                      isEraser: _currentTool == WhiteboardTool.eraser,
-                      activeShape: _currentTool == WhiteboardTool.shape
-                          ? _currentShape
-                          : null,
-                      backgroundColor: isDark
-                          ? const Color(0xFF14171E)
-                          : const Color(0xFF23272F),
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  minScale: 0.5,
+                  maxScale: 3.0,
+                  boundaryMargin: const EdgeInsets.all(1200),
+                  panEnabled: _currentTool == WhiteboardTool.pan,
+                  scaleEnabled: true,
+                  child: GestureDetector(
+                    onPanStart:
+                        _currentTool == WhiteboardTool.pan ? null : _onPanStart,
+                    onPanUpdate: _currentTool == WhiteboardTool.pan
+                        ? null
+                        : _onPanUpdate,
+                    onPanEnd:
+                        _currentTool == WhiteboardTool.pan ? null : _onPanEnd,
+                    onTapUp: _currentTool == WhiteboardTool.pan ? null : _onTapUp,
+                    child: CustomPaint(
+                      painter: _WhiteboardPainter(
+                        committedStrokes: state.whiteboardStrokes,
+                        activePoints: _activePoints,
+                        activeColor: _selectedColor,
+                        activeStrokeWidth:
+                            _currentTool == WhiteboardTool.eraser
+                                ? _eraserStrokeWidth
+                                : _penStrokeWidth,
+                        isEraser: _currentTool == WhiteboardTool.eraser,
+                        activeShape: _currentTool == WhiteboardTool.shape
+                            ? _currentShape
+                            : null,
+                        backgroundColor: isDark
+                            ? const Color(0xFF14171E)
+                            : const Color(0xFF23272F),
+                      ),
+                      size: const Size(2800, 2800),
                     ),
-                    size: Size.infinite,
                   ),
                 ),
               ),
@@ -343,6 +380,38 @@ class _CollaborativeWhiteboardWidgetState
                             color: colors.textPrimary,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _resetViewport,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceSecondary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.center_focus_strong_rounded,
+                                  size: 11,
+                                  color: colors.textSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'Reset',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -377,6 +446,19 @@ class _CollaborativeWhiteboardWidgetState
                       ),
                     ),
                 ],
+              ),
+            ),
+
+            // Floating Minimap HUD
+            Positioned(
+              bottom: 130,
+              right: 16,
+              child: _WhiteboardMinimap(
+                strokes: state.whiteboardStrokes,
+                transformationController: _transformationController,
+                onReset: _resetViewport,
+                colors: colors,
+                isDark: isDark,
               ),
             ),
 
@@ -469,6 +551,19 @@ class _CollaborativeWhiteboardWidgetState
                               onTap: () {
                                 AppFeedback.selection();
                                 setState(() => _currentTool = WhiteboardTool.text);
+                              },
+                              colors: colors,
+                            ),
+                            const SizedBox(width: 4),
+
+                            // Tool: Pan & Zoom
+                            _ToolButton(
+                              icon: Icons.pan_tool_rounded,
+                              label: 'Pan',
+                              isSelected: _currentTool == WhiteboardTool.pan,
+                              onTap: () {
+                                AppFeedback.selection();
+                                setState(() => _currentTool = WhiteboardTool.pan);
                               },
                               colors: colors,
                             ),
@@ -1041,3 +1136,170 @@ class _WhiteboardPainter extends CustomPainter {
     return true;
   }
 }
+
+class _WhiteboardMinimap extends StatelessWidget {
+  const _WhiteboardMinimap({
+    required this.strokes,
+    required this.transformationController,
+    required this.onReset,
+    required this.colors,
+    required this.isDark,
+  });
+
+  final List<WhiteboardStroke> strokes;
+  final TransformationController transformationController;
+  final VoidCallback onReset;
+  final AppThemeColorsExtension colors;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onReset,
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: (isDark ? const Color(0xFF1E222D) : colors.surfacePrimary)
+              .withAlpha(220),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colors.surfaceBorder.withAlpha(150),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Stack(
+            children: [
+              AnimatedBuilder(
+                animation: transformationController,
+                builder: (context, _) {
+                  return CustomPaint(
+                    size: const Size(80, 80),
+                    painter: _MinimapPainter(
+                      strokes: strokes,
+                      matrix: transformationController.value,
+                      isDark: isDark,
+                      accentColor: colors.primary,
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                top: 4,
+                left: 6,
+                child: Text(
+                  'Map',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: colors.textSecondary.withAlpha(160),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MinimapPainter extends CustomPainter {
+  _MinimapPainter({
+    required this.strokes,
+    required this.matrix,
+    required this.isDark,
+    required this.accentColor,
+  });
+
+  final List<WhiteboardStroke> strokes;
+  final Matrix4 matrix;
+  final bool isDark;
+  final Color accentColor;
+
+  static const double canvasDimension = 2800.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scaleFactor = size.width / canvasDimension;
+
+    // Draw miniature strokes
+    for (final stroke in strokes) {
+      if (stroke.points.isEmpty) continue;
+      final strokePaint = Paint()
+        ..color = Color(stroke.colorHex).withAlpha(180)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+
+      if (stroke.points.length == 1) {
+        canvas.drawCircle(
+          Offset(
+            stroke.points[0].x * scaleFactor,
+            stroke.points[0].y * scaleFactor,
+          ),
+          0.8,
+          strokePaint,
+        );
+      } else {
+        for (int i = 0; i < stroke.points.length - 1; i++) {
+          canvas.drawLine(
+            Offset(
+              stroke.points[i].x * scaleFactor,
+              stroke.points[i].y * scaleFactor,
+            ),
+            Offset(
+              stroke.points[i + 1].x * scaleFactor,
+              stroke.points[i + 1].y * scaleFactor,
+            ),
+            strokePaint,
+          );
+        }
+      }
+    }
+
+    // Draw current viewport indicator box
+    final zoom = matrix.getMaxScaleOnAxis();
+    final translation = matrix.getTranslation();
+    final viewWidth = (size.width / zoom) * (canvasDimension / 500.0) * scaleFactor;
+    final viewHeight = (size.height / zoom) * (canvasDimension / 500.0) * scaleFactor;
+    final viewX = (-translation.x / zoom) * scaleFactor;
+    final viewY = (-translation.y / zoom) * scaleFactor;
+
+    final viewRect = Rect.fromLTWH(
+      viewX.clamp(0.0, size.width - 10),
+      viewY.clamp(0.0, size.height - 10),
+      viewWidth.clamp(10.0, size.width),
+      viewHeight.clamp(10.0, size.height),
+    );
+
+    final viewPaint = Paint()
+      ..color = accentColor.withAlpha(50)
+      ..style = PaintingStyle.fill;
+    final viewBorder = Paint()
+      ..color = accentColor.withAlpha(200)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
+      viewPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
+      viewBorder,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MinimapPainter oldDelegate) => true;
+}
+

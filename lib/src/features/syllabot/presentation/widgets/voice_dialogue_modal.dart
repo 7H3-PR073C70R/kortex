@@ -21,20 +21,26 @@ enum DialogueState {
 /// bidirectional speech-to-text / text-to-speech, and voice gender toggle.
 class VoiceDialogueModal extends StatefulWidget {
   const VoiceDialogueModal({
-    required this.onSendPrompt,
     required this.ttsHandler,
+    this.onSendPrompt,
+    this.onStreamPrompt,
     this.initialMode = SocraticMode.stepByStep,
     super.key,
-  });
+  }) : assert(
+          onSendPrompt != null || onStreamPrompt != null,
+          'Either onSendPrompt or onStreamPrompt must be provided',
+        );
 
-  final Future<String> Function(String prompt) onSendPrompt;
+  final Future<String> Function(String prompt)? onSendPrompt;
+  final Stream<String> Function(String prompt)? onStreamPrompt;
   final TextToSpeechHandler ttsHandler;
   final SocraticMode initialMode;
 
   static Future<void> show({
     required BuildContext context,
-    required Future<String> Function(String prompt) onSendPrompt,
     required TextToSpeechHandler ttsHandler,
+    Future<String> Function(String prompt)? onSendPrompt,
+    Stream<String> Function(String prompt)? onStreamPrompt,
     SocraticMode initialMode = SocraticMode.stepByStep,
   }) {
     final colors = context.colors;
@@ -45,6 +51,7 @@ class VoiceDialogueModal extends StatefulWidget {
       backgroundColor: colors.transparent,
       builder: (context) => VoiceDialogueModal(
         onSendPrompt: onSendPrompt,
+        onStreamPrompt: onStreamPrompt,
         ttsHandler: ttsHandler,
         initialMode: initialMode,
       ),
@@ -145,23 +152,83 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   Future<void> _processVoicePrompt(String prompt) async {
     setState(() {
       _state = DialogueState.thinking;
+      _latestResponse = '';
     });
 
     try {
-      final response = await widget.onSendPrompt(prompt);
-      if (!mounted) return;
+      if (widget.onStreamPrompt != null) {
+        final stream = widget.onStreamPrompt!(prompt);
+        final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
+        var accumulated = '';
+        var firstSentenceSpoken = false;
 
-      setState(() {
-        _latestResponse = response;
-        _state = DialogueState.speaking;
-      });
+        await for (final chunk in stream) {
+          if (!mounted) break;
+          accumulated += chunk;
 
-      await widget.ttsHandler.speak(response);
+          Match? match;
+          while ((match = sentenceDelimiters.firstMatch(accumulated)) != null) {
+            final sentence = accumulated.substring(0, match!.end).trim();
+            accumulated = accumulated.substring(match.end);
 
-      if (mounted) {
+            if (sentence.isNotEmpty) {
+              if (!firstSentenceSpoken) {
+                firstSentenceSpoken = true;
+                if (mounted) {
+                  setState(() {
+                    _state = DialogueState.speaking;
+                  });
+                }
+              }
+              await widget.ttsHandler.enqueueSentence(sentence);
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _latestResponse =
+                  _latestResponse.isEmpty ? chunk : '$_latestResponse$chunk';
+            });
+          }
+        }
+
+        // Flush any remaining partial sentence
+        final remaining = accumulated.trim();
+        if (remaining.isNotEmpty) {
+          if (!firstSentenceSpoken && mounted) {
+            setState(() {
+              _state = DialogueState.speaking;
+            });
+          }
+          await widget.ttsHandler.enqueueSentence(remaining);
+        }
+
+        await widget.ttsHandler.waitForQueueDrained();
+
+        if (mounted) {
+          setState(() {
+            _state = DialogueState.idle;
+          });
+        }
+        return;
+      }
+
+      if (widget.onSendPrompt != null) {
+        final response = await widget.onSendPrompt!(prompt);
+        if (!mounted) return;
+
         setState(() {
-          _state = DialogueState.idle;
+          _latestResponse = response;
+          _state = DialogueState.speaking;
         });
+
+        await widget.ttsHandler.speak(response);
+
+        if (mounted) {
+          setState(() {
+            _state = DialogueState.idle;
+          });
+        }
       }
     } on Object catch (_) {
       if (mounted) {

@@ -6,14 +6,25 @@ import 'package:kortex/src/core/database/tables.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Decks, Flashcards, FsrsReviewLogs, PastQuestions, CourseModules],
+  tables: [
+    Decks,
+    Flashcards,
+    FsrsReviewLogs,
+    PastQuestions,
+    CourseModules,
+    ExamEvents,
+    ForumPosts,
+    ForumReplies,
+    SyllabotSessions,
+    SyllabotMessages,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
       : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -22,26 +33,70 @@ class AppDatabase extends _$AppDatabase {
         },
         onCreate: (m) async {
           await m.createAll();
+          await _createIndicesAndTriggers();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(examEvents);
+            await m.createTable(forumPosts);
+            await m.createTable(forumReplies);
+            await m.createTable(syllabotSessions);
+            await m.createTable(syllabotMessages);
 
-          // Standard indices
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_flashcards_deck_id ON flashcards(deck_id);',
-          );
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_flashcards_next_due_date ON flashcards(next_due_date);',
-          );
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_decks_course_id ON decks(course_id);',
-          );
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_decks_course_code ON decks(course_code);',
-          );
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_fsrs_review_logs_is_synced ON fsrs_review_logs(is_synced);',
-          );
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_past_questions_exam_subject_year ON past_questions(exam_type, subject, year);',
-          );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_forum_posts_track ON forum_posts(track);',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_forum_posts_created_at ON forum_posts(created_at DESC);',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_forum_replies_post_id ON forum_replies(post_id);',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_session_id ON syllabot_messages(session_id);',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
+            );
+          }
+        },
+      );
+
+  Future<void> _createIndicesAndTriggers() async {
+    // Standard indices
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_flashcards_deck_id ON flashcards(deck_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_flashcards_next_due_date ON flashcards(next_due_date);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_decks_course_id ON decks(course_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_decks_course_code ON decks(course_code);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_fsrs_review_logs_is_synced ON fsrs_review_logs(is_synced);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_past_questions_exam_subject_year ON past_questions(exam_type, subject, year);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_forum_posts_track ON forum_posts(track);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_forum_posts_created_at ON forum_posts(created_at DESC);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_forum_replies_post_id ON forum_replies(post_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_session_id ON syllabot_messages(session_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
+    );
 
           // SQLite FTS5 Virtual Tables and triggers for sub-millisecond search
           try {
@@ -107,8 +162,7 @@ class AppDatabase extends _$AppDatabase {
           } on Object {
             // Non-fatal if FTS5 is not enabled in standard mock build
           }
-        },
-      );
+  }
 
   // ==========================================
   // DECKS OPERATIONS
@@ -556,4 +610,179 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteCourseModuleById(String id) {
     return (delete(courseModules)..where((t) => t.id.equals(id))).go();
   }
+
+  // ==========================================
+  // EXAM EVENTS OPERATIONS
+  // ==========================================
+
+  Future<List<ExamEventEntry>> getAllExamEvents() {
+    return (select(examEvents)
+          ..orderBy([(t) => OrderingTerm(expression: t.targetDate)]))
+        .get();
+  }
+
+  Future<ExamEventEntry?> getExamEventById(String id) {
+    return (select(examEvents)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertExamEvent(ExamEventsCompanion event) {
+    return into(examEvents).insertOnConflictUpdate(event);
+  }
+
+  Future<void> batchUpsertExamEvents(List<ExamEventsCompanion> eventsList) {
+    return batch((b) {
+      b.insertAllOnConflictUpdate(examEvents, eventsList);
+    });
+  }
+
+  Future<void> deleteExamEventById(String id) {
+    return (delete(examEvents)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> deleteAllExamEvents() {
+    return delete(examEvents).go();
+  }
+
+  // ==========================================
+  // FORUM POSTS & REPLIES OPERATIONS
+  // ==========================================
+
+  Future<List<ForumPostEntry>> getForumPosts({String? track}) {
+    final query = select(forumPosts)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    if (track != null && track.isNotEmpty && track.toLowerCase() != 'all') {
+      query.where((t) => t.track.lower().equals(track.toLowerCase()));
+    }
+    return query.get();
+  }
+
+  Future<ForumPostEntry?> getForumPostById(String id) {
+    return (select(forumPosts)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertForumPost(ForumPostsCompanion post) {
+    return into(forumPosts).insertOnConflictUpdate(post);
+  }
+
+  Future<void> batchUpsertForumPostsAndReplies({
+    required List<ForumPostsCompanion> posts,
+    List<ForumRepliesCompanion> replies = const [],
+  }) {
+    return batch((b) {
+      if (posts.isNotEmpty) {
+        b.insertAllOnConflictUpdate(forumPosts, posts);
+      }
+      if (replies.isNotEmpty) {
+        b.insertAllOnConflictUpdate(forumReplies, replies);
+      }
+    });
+  }
+
+  Future<void> deleteForumPostById(String id) {
+    return (delete(forumPosts)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> deleteAllForumPosts() {
+    return batch((b) {
+      b.deleteWhere(forumReplies, (t) => const Constant(true));
+      b.deleteWhere(forumPosts, (t) => const Constant(true));
+    });
+  }
+
+  Future<List<ForumReplyEntry>> getForumRepliesForPost(String postId) {
+    return (select(forumReplies)
+          ..where((t) => t.postId.equals(postId))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  Future<void> upsertForumReply(ForumRepliesCompanion reply) async {
+    await into(forumReplies).insertOnConflictUpdate(reply);
+    // Update reply count on parent post if postId is present
+    if (reply.postId.present) {
+      final postId = reply.postId.value;
+      final countExp = forumReplies.id.count();
+      final countQuery = selectOnly(forumReplies)
+        ..addColumns([countExp])
+        ..where(forumReplies.postId.equals(postId));
+      final result = await countQuery.getSingle();
+      final count = result.read(countExp) ?? 0;
+      await (update(forumPosts)..where((t) => t.id.equals(postId))).write(
+        ForumPostsCompanion(repliesCount: Value(count)),
+      );
+    }
+  }
+
+  // ==========================================
+  // SYLLABOT SESSIONS & MESSAGES OPERATIONS
+  // ==========================================
+
+  Future<List<SyllabotSessionEntry>> getAllSyllabotSessions() {
+    return (select(syllabotSessions)
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  Future<SyllabotSessionEntry?> getSyllabotSessionById(String id) {
+    return (select(syllabotSessions)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertSyllabotSession(SyllabotSessionsCompanion session) {
+    return into(syllabotSessions).insertOnConflictUpdate(session);
+  }
+
+  Future<void> deleteSyllabotSessionById(String id) {
+    return (delete(syllabotSessions)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> deleteAllSyllabotSessions() {
+    return batch((b) {
+      b.deleteWhere(syllabotMessages, (t) => const Constant(true));
+      b.deleteWhere(syllabotSessions, (t) => const Constant(true));
+    });
+  }
+
+  Future<List<SyllabotMessageEntry>> getSyllabotMessagesForSession(
+    String sessionId,
+  ) {
+    return (select(syllabotMessages)
+          ..where((t) => t.sessionId.equals(sessionId))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  Future<void> upsertSyllabotMessage(SyllabotMessagesCompanion message) {
+    return into(syllabotMessages).insertOnConflictUpdate(message);
+  }
+
+  Future<void> batchUpsertSyllabotMessages(
+    List<SyllabotMessagesCompanion> messages,
+  ) {
+    return batch((b) {
+      b.insertAllOnConflictUpdate(syllabotMessages, messages);
+    });
+  }
+
+  Future<void> deleteSyllabotMessagesForSession(String sessionId) {
+    return (delete(syllabotMessages)..where((t) => t.sessionId.equals(sessionId)))
+        .go();
+  }
+
+  Future<void> deleteExpiredSyllabotMessages(DateTime cutoff) {
+    return (delete(syllabotMessages)
+          ..where((t) => t.createdAt.isSmallerThanValue(cutoff)))
+        .go();
+  }
 }
+

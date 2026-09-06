@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
@@ -17,13 +19,16 @@ import 'package:kortex/src/features/planner/domain/repositories/planner_reposito
 class PlannerRepositoryImpl implements PlannerRepository {
   PlannerRepositoryImpl({
     CramWorkloadCalculator? calculator,
+    AppDatabase? database,
     LocalStorageService? storageService,
     Dio? dio,
   })  : _calculator = calculator ?? const CramWorkloadCalculator(),
+        _database = database,
         _storageService = storageService,
         _dio = dio;
 
   final CramWorkloadCalculator _calculator;
+  final AppDatabase? _database;
   final LocalStorageService? _storageService;
   final Dio? _dio;
 
@@ -32,6 +37,16 @@ class PlannerRepositoryImpl implements PlannerRepository {
     try {
       if (locator.isRegistered<Dio>()) {
         return locator<Dio>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  AppDatabase? get _effectiveDatabase {
+    if (_database != null) return _database;
+    try {
+      if (locator.isRegistered<AppDatabase>()) {
+        return locator<AppDatabase>();
       }
     } on Object catch (_) {}
     return null;
@@ -48,8 +63,18 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
   // In-memory local cache / fallback list
   final List<ExamEventModel> _cachedExams = [];
+  bool _migrationAttempted = false;
 
   void _loadFromStorage() {
+    final db = _effectiveDatabase;
+    if (db != null) {
+      try {
+        // Load synchronously from memory while kicking off async Drift sync
+        unawaited(_syncFromDrift());
+        return;
+      } on Object catch (_) {}
+    }
+
     try {
       final storage = _storage;
       final raw = storage?.getPreference(key: PrefKeys.persistedExamCountdowns);
@@ -65,7 +90,107 @@ class PlannerRepositoryImpl implements PlannerRepository {
     } on Object catch (_) {}
   }
 
+  Future<void> _syncFromDrift() async {
+    final db = _effectiveDatabase;
+    if (db == null) return;
+
+    try {
+      final entries = await db.getAllExamEvents();
+      if (entries.isNotEmpty) {
+        _cachedExams
+          ..clear()
+          ..addAll(
+            entries.map(
+              (e) => ExamEventModel(
+                id: e.id,
+                userId: e.userId,
+                examName: e.examName,
+                targetDate: e.targetDate,
+                subjectTrack: e.subjectTrack,
+                totalCardsCount: e.totalCardsCount,
+                masteredCardsCount: e.masteredCardsCount,
+                totalLapses: e.totalLapses,
+                dailyTarget: e.dailyTarget,
+                targetScorePercent: e.targetScorePercent,
+                createdAt: e.createdAt,
+              ),
+            ),
+          )
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+        return;
+      }
+
+      // Check migration from SharedPreferences
+      if (!_migrationAttempted && _storage != null) {
+        _migrationAttempted = true;
+        final raw = _storage?.getPreference(key: PrefKeys.persistedExamCountdowns);
+        if (raw != null && raw.isNotEmpty) {
+          final list = jsonDecode(raw) as List<dynamic>;
+          final parsed = list
+              .map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+
+          final companions = parsed
+              .map(
+                (e) => ExamEventsCompanion(
+                  id: Value(e.id),
+                  userId: Value(e.userId),
+                  examName: Value(e.examName),
+                  targetDate: Value(e.targetDate),
+                  subjectTrack: Value(e.subjectTrack),
+                  totalCardsCount: Value(e.totalCardsCount),
+                  masteredCardsCount: Value(e.masteredCardsCount),
+                  totalLapses: Value(e.totalLapses),
+                  dailyTarget: Value(e.dailyTarget),
+                  targetScorePercent: Value(e.targetScorePercent),
+                  createdAt: Value(e.createdAt ?? DateTime.now()),
+                ),
+              )
+              .toList();
+
+          await db.batchUpsertExamEvents(companions);
+          await _storage?.deletePreference(key: PrefKeys.persistedExamCountdowns);
+
+          _cachedExams
+            ..clear()
+            ..addAll(parsed)
+            ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+        }
+      }
+    } on Object catch (e) {
+      developer.log('Error syncing ExamEvents from Drift: $e');
+    }
+  }
+
   void _saveToStorage() {
+    final db = _effectiveDatabase;
+    if (db != null) {
+      try {
+        final companions = _cachedExams
+            .map(
+              (e) => ExamEventsCompanion(
+                id: Value(e.id),
+                userId: Value(e.userId),
+                examName: Value(e.examName),
+                targetDate: Value(e.targetDate),
+                subjectTrack: Value(e.subjectTrack),
+                totalCardsCount: Value(e.totalCardsCount),
+                masteredCardsCount: Value(e.masteredCardsCount),
+                totalLapses: Value(e.totalLapses),
+                dailyTarget: Value(e.dailyTarget),
+                targetScorePercent: Value(e.targetScorePercent),
+                createdAt: Value(e.createdAt ?? DateTime.now()),
+                updatedAt: Value(DateTime.now()),
+              ),
+            )
+            .toList();
+
+        unawaited(db.batchUpsertExamEvents(companions));
+      } on Object catch (e) {
+        developer.log('Error saving ExamEvents to Drift: $e');
+      }
+    }
+
     try {
       final storage = _storage;
       final jsonStr = jsonEncode(_cachedExams.map((e) => e.toJson()).toList());

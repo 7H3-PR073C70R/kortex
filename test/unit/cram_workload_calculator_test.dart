@@ -50,5 +50,69 @@ void main() {
       expect(calculator.getUrgencyLevel(6), equals(ExamUrgencyLevel.critical));
       expect(calculator.getUrgencyLevel(0), equals(ExamUrgencyLevel.critical));
     });
+
+    test('FSRS-6 retrievability calculation matches power-law forgetting curve', () {
+      // At elapsedDays = 0, R = 1.0
+      expect(calculator.calculateRetrievability(stability: 10, elapsedDays: 0), equals(1.0));
+
+      // At elapsedDays = stability, R should be 0.90
+      final rAtS = calculator.calculateRetrievability(stability: 10, elapsedDays: 10);
+      expect((rAtS * 100).round(), equals(90));
+
+      // As elapsed days increase, retrievability decays monotonically
+      final rAt20 = calculator.calculateRetrievability(stability: 10, elapsedDays: 20);
+      expect(rAt20 < rAtS, isTrue);
+
+      // Stability <= 0 returns 0.0
+      expect(calculator.calculateRetrievability(stability: 0, elapsedDays: 5), equals(0.0));
+    });
+
+    test('calculateExamReadinessScore accurately combines coverage, stability, and difficulty', () {
+      // 100% mastered, high stability, 0 lapses => high score
+      final highScore = calculator.calculateExamReadinessScore(
+        totalCards: 100,
+        masteredCards: 100,
+        averageStability: 30,
+        averageDifficulty: 3.0,
+        daysRemaining: 5,
+        totalLapses: 0,
+      );
+      expect(highScore > 90.0, isTrue);
+
+      // 0 cards mastered => low score
+      final lowScore = calculator.calculateExamReadinessScore(
+        totalCards: 100,
+        masteredCards: 0,
+        averageStability: 0,
+        averageDifficulty: 8.0,
+        daysRemaining: 5,
+        totalLapses: 20,
+      );
+      expect(lowScore < 10.0, isTrue);
+
+      // Total cards = 0 returns 0.0
+      expect(
+        calculator.calculateExamReadinessScore(
+          totalCards: 0,
+          masteredCards: 0,
+          averageStability: 10,
+          daysRemaining: 5,
+        ),
+        equals(0.0),
+      );
+    });
+
+    test('predictRetentionTrajectory returns monotonic decay projection over days remaining', () {
+      final trajectory = calculator.predictRetentionTrajectory(
+        initialStability: 15,
+        daysRemaining: 10,
+      );
+      expect(trajectory.length, equals(11)); // 0 through 10
+      expect(trajectory.first, equals(100.0)); // Day 0 is 100%
+
+      for (var i = 1; i < trajectory.length; i++) {
+        expect(trajectory[i] <= trajectory[i - 1], isTrue);
+      }
+    });
   });
 }

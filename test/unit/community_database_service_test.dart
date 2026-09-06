@@ -1,124 +1,119 @@
+import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/community/data/database/community_database_service.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 
 void main() {
-  setUpAll(CommunityDatabaseService.ensureFfiInitialized);
+  group('AppDatabase Community & Forum Operations', () {
+    late AppDatabase db;
 
-  group('CommunityDatabaseService', () {
-    late CommunityDatabaseService service;
-
-    setUp(() async {
-      service = CommunityDatabaseService();
-      await service.initDatabase(customPath: inMemoryDatabasePath);
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
     });
 
     tearDown(() async {
-      await service.close();
+      await db.close();
     });
 
-    test('initializes forum_posts and forum_replies tables correctly', () async {
-      final db = await service.database;
-      final tables = await db.query(
-        'sqlite_master',
-        where: 'type = ?',
-        whereArgs: ['table'],
-      );
-      final tableNames =
-          tables.map((t) => t['name']?.toString()).whereType<String>().toSet();
-
-      expect(tableNames.contains('forum_posts'), isTrue);
-      expect(tableNames.contains('forum_replies'), isTrue);
-    });
-
-    test('cascades deletion from forum_posts to forum_replies', () async {
+    test('upserts forum posts and replies with count tracking', () async {
       const postId = 'post_101';
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now();
 
-      await service.upsertPost({
-        'id': postId,
-        'author_id': 'user_1',
-        'author_name': 'Isaac Newton',
-        'track': 'Physics',
-        'title': 'Optics Theory',
-        'content': 'Discussion on prisms and light refraction',
-        'created_at': now,
-      });
+      await db.upsertForumPost(
+        ForumPostsCompanion(
+          id: const Value(postId),
+          authorId: const Value('user_1'),
+          authorName: const Value('Isaac Newton'),
+          track: const Value('Physics'),
+          title: const Value('Optics Theory'),
+          content: const Value('Discussion on prisms and light refraction'),
+          createdAt: Value(now),
+          cachedAt: Value(now),
+        ),
+      );
 
-      await service.upsertReply({
-        'id': 'reply_1',
-        'post_id': postId,
-        'author_id': 'user_2',
-        'author_name': 'Christiaan Huygens',
-        'content': 'Wave theory is also relevant here.',
-        'created_at': now,
-      });
+      await db.upsertForumReply(
+        ForumRepliesCompanion(
+          id: const Value('reply_1'),
+          postId: const Value(postId),
+          authorId: const Value('user_2'),
+          authorName: const Value('Christiaan Huygens'),
+          content: const Value('Wave theory is also relevant here.'),
+          createdAt: Value(now),
+          cachedAt: Value(now),
+        ),
+      );
 
-      var replies = await service.queryRepliesForPost(postId);
+      final replies = await db.getForumRepliesForPost(postId);
       expect(replies.length, equals(1));
 
-      // Check that replies_count was updated
-      var post = await service.queryForumPost(postId);
+      // Verify repliesCount was incremented on post
+      final post = await db.getForumPostById(postId);
       expect(post, isNotNull);
-      expect(post!['replies_count'], equals(1));
+      expect(post!.repliesCount, equals(1));
 
-      // Delete post
-      await service.deletePost(postId);
+      // Cascade delete
+      await db.deleteForumPostById(postId);
+      final deletedPost = await db.getForumPostById(postId);
+      expect(deletedPost, isNull);
 
-      post = await service.queryForumPost(postId);
-      expect(post, isNull);
-
-      replies = await service.queryRepliesForPost(postId);
-      expect(replies, isEmpty);
+      final deletedReplies = await db.getForumRepliesForPost(postId);
+      expect(deletedReplies, isEmpty);
     });
 
-    test('queryForumPosts filters by track correctly and sorts by created_at desc', () async {
-      final t1 = DateTime(2026, 9).toIso8601String();
-      final t2 = DateTime(2026, 9, 2).toIso8601String();
-      final t3 = DateTime(2026, 9, 3).toIso8601String();
+    test('getForumPosts filters by track and sorts by createdAt desc', () async {
+      final t1 = DateTime(2026, 9, 1);
+      final t2 = DateTime(2026, 9, 2);
+      final t3 = DateTime(2026, 9, 3);
 
-      await service.batchUpsertPostsAndReplies([
-        {
-          'id': 'p1',
-          'author_id': 'a1',
-          'author_name': 'Scholar 1',
-          'track': 'Medicine',
-          'title': 'Cardiology',
-          'content': 'ECG reading',
-          'created_at': t1,
-        },
-        {
-          'id': 'p2',
-          'author_id': 'a2',
-          'author_name': 'Scholar 2',
-          'track': 'Engineering',
-          'title': 'Circuits',
-          'content': 'Kirchhoff Laws',
-          'created_at': t2,
-        },
-        {
-          'id': 'p3',
-          'author_id': 'a3',
-          'author_name': 'Scholar 3',
-          'track': 'Medicine',
-          'title': 'Neurology',
-          'content': 'Cranial nerves',
-          'created_at': t3,
-        },
-      ]);
+      await db.batchUpsertForumPostsAndReplies(
+        posts: [
+          ForumPostsCompanion(
+            id: const Value('p1'),
+            authorId: const Value('a1'),
+            authorName: const Value('Scholar 1'),
+            track: const Value('Medicine'),
+            title: const Value('Cardiology'),
+            content: const Value('ECG reading'),
+            createdAt: Value(t1),
+            cachedAt: Value(t1),
+          ),
+          ForumPostsCompanion(
+            id: const Value('p2'),
+            authorId: const Value('a2'),
+            authorName: const Value('Scholar 2'),
+            track: const Value('Engineering'),
+            title: const Value('Circuits'),
+            content: const Value('Kirchhoff Laws'),
+            createdAt: Value(t2),
+            cachedAt: Value(t2),
+          ),
+          ForumPostsCompanion(
+            id: const Value('p3'),
+            authorId: const Value('a3'),
+            authorName: const Value('Scholar 3'),
+            track: const Value('Medicine'),
+            title: const Value('Neurology'),
+            content: const Value('Cranial nerves'),
+            createdAt: Value(t3),
+            cachedAt: Value(t3),
+          ),
+        ],
+      );
 
       // All posts
-      final allPosts = await service.queryForumPosts();
+      final allPosts = await db.getForumPosts();
       expect(allPosts.length, equals(3));
-      expect(allPosts[0]['id'], equals('p3')); // Most recent first
-      expect(allPosts[1]['id'], equals('p2'));
-      expect(allPosts[2]['id'], equals('p1'));
+      expect(allPosts[0].id, equals('p3')); // Most recent first
+      expect(allPosts[1].id, equals('p2'));
+      expect(allPosts[2].id, equals('p1'));
 
       // Filtered by track 'Medicine'
-      final medicinePosts = await service.queryForumPosts(track: 'Medicine');
+      final medicinePosts = await db.getForumPosts(track: 'Medicine');
       expect(medicinePosts.length, equals(2));
-      expect(medicinePosts[0]['id'], equals('p3'));
-      expect(medicinePosts[1]['id'], equals('p1'));
+      expect(medicinePosts[0].id, equals('p3'));
+      expect(medicinePosts[1].id, equals('p1'));
     });
   });
 }
+

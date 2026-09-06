@@ -252,7 +252,7 @@ class _SyllabotChatView extends HookWidget {
           context: dialogContext,
           ttsHandler: ttsHandler,
           initialMode: state.socraticMode,
-          onSendPrompt: (voicePrompt) async {
+          onStreamPrompt: (voicePrompt) {
             final sid = UuidUtils.isValidUuid(state.sessionId)
                 ? state.sessionId
                 : UuidUtils.generate();
@@ -266,16 +266,13 @@ class _SyllabotChatView extends HookWidget {
               ),
             );
 
-            // Dynamic response synthesis
+            // Stream response tokens directly to sentence-buffered speech synthesizer
             final localLlm = locator<LocalLlmEngineClient>();
-            final stream = localLlm.generate(
+            return localLlm.generate(
               prompt: voicePrompt,
               systemInstruction: '',
               socraticMode: state.socraticMode,
             );
-            final buffer = StringBuffer();
-            await stream.forEach(buffer.write);
-            return buffer.toString();
           },
         ),
       );
