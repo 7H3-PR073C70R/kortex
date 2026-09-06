@@ -71,7 +71,6 @@ import 'package:kortex/src/features/decks/data/repositories/decks_repository_imp
 import 'package:kortex/src/features/decks/domain/logic/crdt_deck_merger.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
 import 'package:kortex/src/features/decks/domain/logic/scheduler_factory.dart';
-import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';

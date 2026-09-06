@@ -37,12 +37,16 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
-  Future<Either<Failure, List<StudyDeckEntity>>> getSm2ReviewQueue() {
+  Future<Either<Failure, List<StudyDeckEntity>>> getReviewQueue() {
     return remoteDataSource
         .getReviewQueue()
         .then((deckModels) => deckModels.map((e) => e.toEntity()).toList())
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, List<StudyDeckEntity>>> getSm2ReviewQueue() =>
+      getReviewQueue();
 
   @override
   Future<Either<Failure, String>> quickStartMockExam({

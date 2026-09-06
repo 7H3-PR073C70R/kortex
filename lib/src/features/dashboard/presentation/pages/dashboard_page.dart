@@ -394,7 +394,7 @@ class _CompactDashboardLayout extends StatelessWidget {
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         const ExamCountdownBanner(),
         if (feed.dueStudyDecks.isNotEmpty)
-          Sm2ReviewDeckCard(
+          FsrsReviewDeckCard(
             deck: feed.dueStudyDecks.first,
             isHero: true,
           )
@@ -443,7 +443,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           ...feed.dueStudyDecks.skip(1).map((deck) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Sm2ReviewDeckCard(deck: deck),
+              child: FsrsReviewDeckCard(deck: deck),
             );
           }),
           const SizedBox(height: 16),
@@ -644,7 +644,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   if (feed.dueStudyDecks.isNotEmpty)
-                    Sm2ReviewDeckCard(
+                    FsrsReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,
                     ),
@@ -670,7 +670,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                   ...feed.dueStudyDecks.skip(1).map((deck) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Sm2ReviewDeckCard(deck: deck),
+                      child: FsrsReviewDeckCard(deck: deck),
                     );
                   }),
                 ],
@@ -726,7 +726,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   if (feed.dueStudyDecks.isNotEmpty)
-                    Sm2ReviewDeckCard(
+                    FsrsReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,
                     ),
@@ -755,7 +755,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   ...feed.dueStudyDecks.skip(1).map((deck) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Sm2ReviewDeckCard(deck: deck),
+                      child: FsrsReviewDeckCard(deck: deck),
                     );
                   }),
                 ],

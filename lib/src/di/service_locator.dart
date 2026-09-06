@@ -90,7 +90,6 @@ void _initServices() {
     )
     ..registerLazySingleton<SchedulerFactory>(
       () => SchedulerFactory(
-        sm2Engine: const Sm2AlgorithmEngine(),
         fsrsEngine: locator<FsrsAlgorithmEngine>(),
       ),
     )

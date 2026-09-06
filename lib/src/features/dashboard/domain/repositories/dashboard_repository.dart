@@ -8,7 +8,11 @@ abstract class DashboardRepository {
   /// Fetches the personalized dashboard feed based on active user calibration.
   Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed();
 
-  /// Fetches the active recall spaced repetition (SM-2) queue for today.
+  /// Fetches the active recall spaced repetition (FSRS-6) queue for today.
+  Future<Either<Failure, List<StudyDeckEntity>>> getReviewQueue();
+
+  /// Legacy alias for [getReviewQueue].
+  @Deprecated('Use getReviewQueue() with FSRS-6 instead')
   Future<Either<Failure, List<StudyDeckEntity>>> getSm2ReviewQueue();
 
   /// Initiates an interactive mock exam or test simulator session.

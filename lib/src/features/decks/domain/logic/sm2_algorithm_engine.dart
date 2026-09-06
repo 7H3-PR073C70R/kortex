@@ -1,7 +1,12 @@
 import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 
 /// Pure mathematical engine for SuperMemo-2 (SM-2) spaced repetition.
+@Deprecated(
+  'Use FsrsScheduler or FsrsAlgorithmEngine with FSRS-6 instead. '
+  'SM-2 is superseded by FSRS-6.',
+)
 class Sm2AlgorithmEngine {
+  @Deprecated('Use FSRS-6')
   const Sm2AlgorithmEngine();
 
   /// Calculates the next interval, ease factor, and repetition count.

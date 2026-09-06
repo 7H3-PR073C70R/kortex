@@ -2619,11 +2619,11 @@
     "@actualRetentionLabel": {
         "description": "Label for actual measured retention curve in dashboard chart"
     },
-    "fsrsModeDescription": "Adaptive Stability & Difficulty decay modeling for optimal study load",
+    "fsrsModeDescription": "Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling",
     "@fsrsModeDescription": {
-        "description": "Description of FSRS-4.5 scheduler"
+        "description": "Description of FSRS-6 scheduler"
     },
-    "sm2ModeDescription": "Classical SuperMemo-2 interval and ease factor spacing",
+    "sm2ModeDescription": "Classical SuperMemo-2 interval spacing (Superseded by FSRS-6)",
     "@sm2ModeDescription": {
         "description": "Description of classical SM-2 scheduler"
     },

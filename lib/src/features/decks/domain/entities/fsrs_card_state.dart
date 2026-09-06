@@ -1,31 +1,8 @@
 import 'package:equatable/equatable.dart';
+export 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart'
+    show FsrsRating;
 
-enum FsrsRating {
-  again(1),
-  hard(2),
-  good(3),
-  easy(4)
-  ;
-
-  const FsrsRating(this.value);
-  final int value;
-
-  static FsrsRating fromValue(int val) {
-    switch (val) {
-      case 1:
-        return FsrsRating.again;
-      case 2:
-        return FsrsRating.hard;
-      case 3:
-        return FsrsRating.good;
-      case 4:
-      default:
-        return FsrsRating.easy;
-    }
-  }
-}
-
-/// Represents the mathematical memory state of a card in the FSRS-4.5 engine.
+/// Represents the mathematical memory state of a card in the FSRS-6 engine.
 class FsrsCardState extends Equatable {
   const FsrsCardState({
     required this.stability,

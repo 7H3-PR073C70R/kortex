@@ -107,31 +107,22 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     final currentCard = state.currentCard;
     if (currentCard == null) return;
 
-    // 1. Map input rating/quality directly to FsrsRating
+    // 1. Resolve input rating directly to FsrsRating
     final FsrsRating fsrsRating;
-    final int quality;
     if (rating is FsrsRating) {
       fsrsRating = rating;
-      quality = switch (rating) {
-        FsrsRating.again => 0,
-        FsrsRating.hard => 3,
-        FsrsRating.good => 4,
-        FsrsRating.easy => 5,
-      };
     } else if (rating is int) {
-      quality = rating;
-      if (quality < 3) {
+      if (rating < 3) {
         fsrsRating = FsrsRating.again;
-      } else if (quality == 3) {
+      } else if (rating == 3) {
         fsrsRating = FsrsRating.hard;
-      } else if (quality == 4) {
+      } else if (rating == 4) {
         fsrsRating = FsrsRating.good;
       } else {
         fsrsRating = FsrsRating.easy;
       }
     } else {
       fsrsRating = FsrsRating.good;
-      quality = 4;
     }
 
     // 2. Track ratings statistics
@@ -155,7 +146,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         newEasy++;
     }
 
-    // 3. FSRS v6 Transition with SM-2 Backward Compatibility & UTC Timestamps
+    // 3. FSRS-6 Review State Transition & UTC Timestamps
     final nowUtc = DateTime.now().toUtc();
     final lastReviewUtc = currentCard.lastReviewed?.toUtc();
     final elapsedDays = lastReviewUtc == null

@@ -256,33 +256,36 @@ class FsrsScheduler {
   final int maximumInterval;
   final List<double> w;
 
-  /// Default 17 FSRS v4 parameter weights.
+  /// Default 21 FSRS v6 parameter weights.
   static const List<double> defaultWeights = [
-    0.40255,
-    1.18385,
-    3.173,
-    15.69105,
-    7.1949,
-    0.5345,
-    1.4604,
-    0.0046,
-    1.54575,
-    0.1192,
-    1.01925,
-    1.9395,
-    0.11,
-    0.29605,
-    0.22695,
-    0.5698,
-    2.0619,
+    0.40255, 1.18385, 3.173, 15.69105, // w0-w3: Initial stability for Again, Hard, Good, Easy
+    7.1949, 0.5345, // w4-w5: Initial difficulty
+    1.4604, 0.0046, // w6-w7: Difficulty transition & mean reversion
+    1.54575, 0.1192, 1.01925, // w8-w10: Stability recall transition
+    1.9395, 0.11, 0.29605, 0.22695, // w11-w14: Stability forgetting/lapse transition
+    0.5698, 2.0619, // w15-w16: Hard penalty & Easy bonus
+    0.0, // w17: Short-term stability factor
+    0.5, // w18: Short-term difficulty adjustment
+    0.0, // w19: Multi-review daily stability decay
+    0.5, // w20: Forgetting curve power decay exponent
   ];
 
-  /// Calculates Retrievability R(t, S).
+  /// Calculates factor derived from w20 such that R(S, S) = 0.90.
+  double get _factor {
+    final decayExponent = w.length > 20 ? w[20] : 0.5;
+    return math.pow(0.9, -1.0 / decayExponent).toDouble() - 1.0;
+  }
+
+  /// Calculates Retrievability R(t, S) using the FSRS-6 power forgetting curve:
+  /// R(t, S) = (1 + factor * t / S)^(-w20).
   double retrievability(double elapsedDays, double stability) {
     if (stability <= 0) return 0;
+    if (elapsedDays <= 0) return 1;
+    final decayExponent = w.length > 20 ? w[20] : 0.5;
     return math
-        .pow(1.0 + (19.0 / 81.0) * (elapsedDays / stability), -0.5)
-        .toDouble();
+        .pow(1.0 + _factor * (elapsedDays / stability), -decayExponent)
+        .toDouble()
+        .clamp(0.0, 1.0);
   }
 
   /// Calculates initial stability for first review (Rating 1..4).
@@ -312,7 +315,14 @@ class FsrsScheduler {
     double s,
     double r,
     FsrsRating rating,
+    int elapsedDays,
   ) {
+    // Short-term intraday update in FSRS-6
+    if (elapsedDays < 1 && w.length > 18 && w[17] != 0.0) {
+      final sShort = s * math.exp(w[17] * (rating.value - 3 + w[18]));
+      return math.max(0.1, sShort);
+    }
+
     final hardPenalty = rating == FsrsRating.hard ? w[15] : 1.0;
     final easyBonus = rating == FsrsRating.easy ? w[16] : 1.0;
     final sNext =
@@ -338,10 +348,15 @@ class FsrsScheduler {
   }
 
   /// Calculates next scheduled review interval from stability and
-  /// target retention.
+  /// target retention using FSRS-6 power-law:
+  /// I(S, r) = S / factor * (r^(-1 / w20) - 1).
   int _nextInterval(double stability) {
+    if (stability <= 0) return 1;
+    final decayExponent = w.length > 20 ? w[20] : 0.5;
     final newInterval =
-        (stability / (19.0 / 81.0) * (math.pow(requestRetention, -2.0) - 1.0))
+        (stability /
+                _factor *
+                (math.pow(requestRetention, -1.0 / decayExponent) - 1.0))
             .round();
     return newInterval.clamp(1, maximumInterval);
   }
@@ -385,7 +400,13 @@ class FsrsScheduler {
         nextS = _nextForgetStability(nextD, currentCard.stability, r);
         nextState = FsrsCardState.relearning;
       } else {
-        nextS = _nextRecallStability(nextD, currentCard.stability, r, rating);
+        nextS = _nextRecallStability(
+          nextD,
+          currentCard.stability,
+          r,
+          rating,
+          elapsedDays,
+        );
         nextState = FsrsCardState.review;
       }
     }

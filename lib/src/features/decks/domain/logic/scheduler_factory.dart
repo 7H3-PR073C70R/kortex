@@ -4,6 +4,7 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dar
 import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 
 enum SpacedRepetitionAlgorithm {
+  @Deprecated('Use FSRS-6 exclusively. Legacy SM-2 is superseded.')
   sm2,
   fsrs,
 }
@@ -24,19 +25,19 @@ class UnifiedReviewResult {
   final FsrsCardState? fsrsState;
 }
 
+/// Unified scheduler factory configured strictly to use FSRS Version 6.
 class SchedulerFactory {
   SchedulerFactory({
+    @Deprecated('Legacy SM-2 engine is ignored in favor of FSRS-6')
     Sm2AlgorithmEngine? sm2Engine,
     FsrsAlgorithmEngine? fsrsEngine,
-  }) : _sm2 = sm2Engine ?? const Sm2AlgorithmEngine(),
-       _fsrs = fsrsEngine ?? const FsrsAlgorithmEngine();
+  }) : _fsrs = fsrsEngine ?? FsrsAlgorithmEngine();
 
-  final Sm2AlgorithmEngine _sm2;
   final FsrsAlgorithmEngine _fsrs;
 
   UnifiedReviewResult calculate({
-    required SpacedRepetitionAlgorithm algorithm,
-    required int rating, // 1=Again, 2=Hard, 3=Good, 4=Easy (or 0-5 for SM-2)
+    required int rating, // 1=Again, 2=Hard, 3=Good, 4=Easy (or legacy 0-5 quality)
+    SpacedRepetitionAlgorithm algorithm = SpacedRepetitionAlgorithm.fsrs,
     int previousInterval = 1,
     int previousReps = 0,
     double previousEaseFactor = 2.5,
@@ -45,37 +46,46 @@ class SchedulerFactory {
   }) {
     final now = referenceDate ?? DateTime.now();
 
-    if (algorithm == SpacedRepetitionAlgorithm.fsrs) {
-      final fsrsRating = FsrsRating.fromValue(rating.clamp(1, 4));
-      final currentState = previousFsrsState ?? FsrsCardState.initial();
-      final updatedFsrs = _fsrs.review(
-        currentState: currentState,
-        rating: fsrsRating,
-        reviewTime: now,
-      );
-
-      return UnifiedReviewResult(
-        algorithm: SpacedRepetitionAlgorithm.fsrs,
-        nextIntervalDays: updatedFsrs.scheduledDays,
-        nextDueDate: updatedFsrs.nextDueDate,
-        fsrsState: updatedFsrs,
-      );
+    // Map input rating to FsrsRating (handling both 1..4 scale and legacy 0..5 quality scale)
+    final FsrsRating fsrsRating;
+    if (rating >= 1 && rating <= 4 && algorithm == SpacedRepetitionAlgorithm.fsrs) {
+      fsrsRating = FsrsRating.fromValue(rating);
     } else {
-      final quality = rating.clamp(0, 5);
-      final sm2Res = _sm2.calculate(
-        quality: quality,
-        previousInterval: previousInterval,
-        previousRepetitions: previousReps,
-        previousEaseFactor: previousEaseFactor,
-        referenceDate: now,
-      );
-
-      return UnifiedReviewResult(
-        algorithm: SpacedRepetitionAlgorithm.sm2,
-        nextIntervalDays: sm2Res.nextInterval,
-        nextDueDate: sm2Res.nextDueDate,
-        sm2Result: sm2Res,
-      );
+      // Legacy quality mapping (0-2: Again, 3: Hard, 4: Good, 5: Easy)
+      if (rating < 3) {
+        fsrsRating = FsrsRating.again;
+      } else if (rating == 3) {
+        fsrsRating = FsrsRating.hard;
+      } else if (rating == 4) {
+        fsrsRating = FsrsRating.good;
+      } else {
+        fsrsRating = FsrsRating.easy;
+      }
     }
+
+    final currentState = previousFsrsState ??
+        FsrsCardState(
+          stability: previousInterval > 0 ? previousInterval.toDouble() : 0.0,
+          difficulty: ((3.0 - previousEaseFactor) * 5.0).clamp(1.0, 10.0),
+          retrievability: 1,
+          elapsedDays: previousInterval,
+          scheduledDays: previousInterval,
+          reps: previousReps,
+          lapses: 0,
+          nextDueDate: now.add(Duration(days: previousInterval)),
+        );
+
+    final updatedFsrs = _fsrs.review(
+      currentState: currentState,
+      rating: fsrsRating,
+      reviewTime: now,
+    );
+
+    return UnifiedReviewResult(
+      algorithm: SpacedRepetitionAlgorithm.fsrs,
+      nextIntervalDays: updatedFsrs.scheduledDays,
+      nextDueDate: updatedFsrs.nextDueDate,
+      fsrsState: updatedFsrs,
+    );
   }
 }

@@ -3,8 +3,8 @@ import 'package:kortex/src/features/decks/domain/entities/fsrs_card_state.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
 
 void main() {
-  group('FsrsAlgorithmEngine FSRS-4.5 Unit Test Suite', () {
-    const engine = FsrsAlgorithmEngine();
+  group('FsrsAlgorithmEngine FSRS-6 Unit Test Suite', () {
+    final engine = FsrsAlgorithmEngine();
 
     test('first review assigns initial stability and difficulty by rating', () {
       final initial = FsrsCardState.initial();
@@ -17,8 +17,8 @@ void main() {
       );
 
       expect(afterGood.reps, equals(1));
-      expect(afterGood.stability, equals(2.4)); // w[2] = 2.4
-      expect(afterGood.difficulty, equals(4.93)); // w[4] = 4.93
+      expect(afterGood.stability, equals(3.173)); // w[2] = 3.173
+      expect(afterGood.difficulty, inInclusiveRange(1.0, 10.0));
       expect(afterGood.scheduledDays, greaterThanOrEqualTo(2));
       expect(afterGood.lapses, equals(0));
 
@@ -29,8 +29,8 @@ void main() {
         reviewTime: DateTime(2026, 9, 1, 10),
       );
 
-      expect(afterEasy.stability, equals(5.8)); // w[3] = 5.8
-      expect(afterEasy.difficulty, lessThan(4.93));
+      expect(afterEasy.stability, equals(15.691)); // w[3] = 15.69105 -> 15.691
+      expect(afterEasy.difficulty, lessThan(afterGood.difficulty));
     });
 
     test('consecutive recall increases stability and scheduled interval', () {

@@ -3,16 +3,24 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-class Sm2RatingActionBar extends StatelessWidget {
-  const Sm2RatingActionBar({
-    required this.onRate,
-    super.key,
-  });
+@Deprecated('Use FsrsRatingActionBar with FSRS-6 ratings')
+typedef Sm2RatingActionBar = FsrsRatingActionBar;
 
-  final void Function(int quality) onRate;
+/// Tactile review rating bar powered by the FSRS-6 spaced repetition algorithm.
+class FsrsRatingActionBar extends StatelessWidget {
+  const FsrsRatingActionBar({
+    void Function(FsrsRating rating)? onRateRating,
+    void Function(int quality)? onRate,
+    super.key,
+  }) : _onRateRating = onRateRating,
+       _onRateQuality = onRate;
+
+  final void Function(FsrsRating rating)? _onRateRating;
+  final void Function(int quality)? _onRateQuality;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +33,7 @@ class Sm2RatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingAgain,
         interval: l10n.studyRatingAgainInterval,
+        rating: FsrsRating.again,
         quality: 0,
         color: colors.recallAgain,
         icon: Icons.replay_rounded,
@@ -33,6 +42,7 @@ class Sm2RatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingHard,
         interval: l10n.studyRatingHardInterval,
+        rating: FsrsRating.hard,
         quality: 3,
         color: colors.recallHard,
         icon: Icons.bolt_rounded,
@@ -41,6 +51,7 @@ class Sm2RatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingGood,
         interval: l10n.studyRatingGoodInterval,
+        rating: FsrsRating.good,
         quality: 4,
         color: colors.recallGood,
         icon: Icons.thumb_up_rounded,
@@ -49,6 +60,7 @@ class Sm2RatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingEasy,
         interval: l10n.studyRatingEasyInterval,
+        rating: FsrsRating.easy,
         quality: 5,
         color: colors.recallEasy,
         icon: Icons.rocket_launch_rounded,
@@ -69,10 +81,11 @@ class Sm2RatingActionBar extends StatelessWidget {
                   button: true,
                   label: '${b.label}, review in ${b.interval}',
                   child: ShrinkableButton(
-                    key: ValueKey('sm2_rating_${b.quality}'),
+                    key: ValueKey('fsrs_rating_${b.rating.name}'),
                     onTap: () {
                       unawaited(HapticFeedback.mediumImpact());
-                      onRate(b.quality);
+                      _onRateRating?.call(b.rating);
+                      _onRateQuality?.call(b.quality);
                     },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),

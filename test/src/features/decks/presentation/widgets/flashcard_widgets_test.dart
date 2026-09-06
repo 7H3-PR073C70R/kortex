@@ -7,6 +7,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_ca
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sm2_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 
 Widget _buildTestApp(Widget child) {
@@ -58,28 +59,28 @@ void main() {
       expect(find.text('01:45'), findsOneWidget);
     });
 
-    testWidgets('Sm2RatingActionBar invokes correct quality callback', (
+    testWidgets('FsrsRatingActionBar invokes correct rating callback', (
       tester,
     ) async {
-      int? ratedQuality;
+      FsrsRating? ratedRating;
 
       await tester.pumpWidget(
         _buildTestApp(
-          Sm2RatingActionBar(
-            onRate: (quality) {
-              ratedQuality = quality;
+          FsrsRatingActionBar(
+            onRateRating: (rating) {
+              ratedRating = rating;
             },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Find and tap "Good" button (Quality = 4)
-      final goodFinder = find.byKey(const ValueKey('sm2_rating_4'));
+      // Find and tap "Good" button (FsrsRating.good)
+      final goodFinder = find.byKey(const ValueKey('fsrs_rating_good'));
       expect(goodFinder, findsOneWidget);
 
       await tester.tap(goodFinder);
-      expect(ratedQuality, 4);
+      expect(ratedRating, FsrsRating.good);
     });
 
     testWidgets('DeckListTileCard displays deck title and subject', (

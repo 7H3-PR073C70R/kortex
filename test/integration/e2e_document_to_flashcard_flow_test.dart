@@ -98,7 +98,7 @@ void main() {
         );
         ragQueryUseCase = QueryDocumentContextUseCase(mockRagRepo);
         schedulerFactory = SchedulerFactory(
-          fsrsEngine: const FsrsAlgorithmEngine(),
+          fsrsEngine: FsrsAlgorithmEngine(),
         );
       });
 
@@ -162,7 +162,7 @@ void main() {
             (chunks) => expect(chunks.first.similarityScore, equals(0.95)),
           );
 
-          // 4. Generate Deck & Schedule Review with FSRS
+          // 4. Generate Deck & Schedule Review with FSRS-6
           when(
             () => mockIngestionRepo.generateFlashcardsFromDoc(
               documentId: 'doc-chemistry-101',
@@ -184,10 +184,9 @@ void main() {
             (deck) => expect(deck.cards.length, equals(1)),
           );
 
-          // 5. Compute FSRS Review Transition for newly generated card
+          // 5. Compute FSRS-6 Review Transition for newly generated card
           final initialFsrs = FsrsCardState.initial();
           final reviewResult = schedulerFactory.calculate(
-            algorithm: SpacedRepetitionAlgorithm.fsrs,
             rating: 3, // Good
             previousFsrsState: initialFsrs,
           );
@@ -196,7 +195,7 @@ void main() {
             reviewResult.algorithm,
             equals(SpacedRepetitionAlgorithm.fsrs),
           );
-          expect(reviewResult.fsrsState?.stability, equals(2.4));
+          expect(reviewResult.fsrsState?.stability, equals(3.173));
           expect(reviewResult.nextIntervalDays, greaterThanOrEqualTo(2));
         },
       );

@@ -25,17 +25,13 @@ void main() {
     }
 
     testWidgets(
-      'renders current SM-2 state and triggers switch to FSRS on tap',
+      'renders FSRS-6 active neural engine status',
       (tester) async {
-        SpacedRepetitionAlgorithm? selected;
-
         await tester.pumpWidget(
           createTestApp(
             SchedulerToggleTile(
-              currentAlgorithm: SpacedRepetitionAlgorithm.sm2,
-              onChanged: (alg) {
-                selected = alg;
-              },
+              currentAlgorithm: SpacedRepetitionAlgorithm.fsrs,
+              onChanged: (_) {},
             ),
           ),
         );
@@ -43,17 +39,11 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Spaced Repetition Scheduler'), findsOneWidget);
-        expect(find.text('SM-2'), findsOneWidget);
-        expect(find.text('FSRS-4.5'), findsOneWidget);
+        expect(find.text('FSRS-6'), findsOneWidget);
         expect(
-          find.text('Classical SuperMemo-2 interval and ease factor spacing'),
+          find.textContaining('Adaptive 21-parameter neural scheduling'),
           findsOneWidget,
         );
-
-        await tester.tap(find.text('FSRS-4.5'));
-        await tester.pump();
-
-        expect(selected, equals(SpacedRepetitionAlgorithm.fsrs));
       },
     );
   });

@@ -73,7 +73,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          Sm2ReviewDeckCard(deck: deck),
+          FsrsReviewDeckCard(deck: deck),
         ),
       );
 

@@ -338,12 +338,12 @@ class _DeckDetailContent extends HookWidget {
               ),
               const SizedBox(height: 20),
 
-              // SM-2 Rating Buttons (Hard / Good / Easy)
+              // FSRS-6 Rating Buttons (Hard / Good / Easy)
               if (isFlipped.value) ...[
                 Row(
                   children: [
                     Expanded(
-                      child: _Sm2RatingButton(
+                      child: _FsrsRatingButton(
                         label: l10n.deckDetailHard,
                         interval: '1d',
                         color: colors.error,
@@ -359,7 +359,7 @@ class _DeckDetailContent extends HookWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _Sm2RatingButton(
+                      child: _FsrsRatingButton(
                         label: l10n.deckDetailGood,
                         interval: '3d',
                         color: colors.primary,
@@ -375,7 +375,7 @@ class _DeckDetailContent extends HookWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _Sm2RatingButton(
+                      child: _FsrsRatingButton(
                         label: l10n.deckDetailEasy,
                         interval: '7d',
                         color: colors.success,
@@ -400,8 +400,8 @@ class _DeckDetailContent extends HookWidget {
   }
 }
 
-class _Sm2RatingButton extends StatelessWidget {
-  const _Sm2RatingButton({
+class _FsrsRatingButton extends StatelessWidget {
+  const _FsrsRatingButton({
     required this.label,
     required this.interval,
     required this.color,

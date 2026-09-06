@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
@@ -17,13 +17,13 @@ class MockIngestionRepository extends Mock implements IngestionRepository {}
 
 void main() {
   group(
-    'E2E Ingestion to Flashcard Deck & SM-2 Queue Integration Test Suite',
+    'E2E Ingestion to Flashcard Deck & FSRS-6 Queue Integration Test Suite',
     () {
       late MockIngestionRepository mockIngestionRepository;
       late UploadStudyDocumentUseCase uploadUseCase;
       late ProcessStemOcrUseCase ocrUseCase;
       late GenerateFlashcardsFromDocUseCase generateDeckUseCase;
-      const sm2Engine = Sm2AlgorithmEngine();
+      final fsrsScheduler = FsrsScheduler();
 
       final testBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
@@ -144,17 +144,20 @@ void main() {
           expect(deck.cards.length, equals(1));
           expect(deck.dueCards, equals(1));
 
-          // 4. Initial SM-2 Calculation on the generated flashcard
+          // 4. Initial FSRS-6 Calculation on the generated flashcard
           final initialCard = deck.cards.first;
-          final sm2Result = sm2Engine.calculate(
-            quality: 5,
-            previousInterval: initialCard.interval,
-            previousRepetitions: initialCard.repetitions,
+          final fsrsCard = FsrsCard(
+            cardId: initialCard.id,
+            reps: initialCard.repetitions,
+          );
+          final reviewResult = fsrsScheduler.reviewCard(
+            currentCard: fsrsCard,
+            rating: FsrsRating.easy,
           );
 
-          expect(sm2Result.nextInterval, equals(1));
-          expect(sm2Result.newRepetitions, equals(1));
-          expect(sm2Result.newEaseFactor, equals(2.6));
+          expect(reviewResult.card.reps, equals(1));
+          expect(reviewResult.card.stability, equals(15.69105));
+          expect(reviewResult.card.scheduledDays, greaterThanOrEqualTo(6));
         },
       );
     },

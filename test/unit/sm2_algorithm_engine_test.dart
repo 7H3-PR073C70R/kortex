@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use_from_same_package, tests for legacy SM-2 algorithm
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
 

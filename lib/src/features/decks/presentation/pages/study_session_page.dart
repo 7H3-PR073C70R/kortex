@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sm2_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -175,22 +176,30 @@ class _StudySessionView extends HookWidget {
                           },
                           onSwipeLeft: () {
                             unawaited(
-                              context.read<StudySessionCubit>().rateCard(3),
+                              context
+                                  .read<StudySessionCubit>()
+                                  .rateCard(FsrsRating.hard),
                             );
                           },
                           onSwipeRight: () {
                             unawaited(
-                              context.read<StudySessionCubit>().rateCard(4),
+                              context
+                                  .read<StudySessionCubit>()
+                                  .rateCard(FsrsRating.good),
                             );
                           },
                           onSwipeUp: () {
                             unawaited(
-                              context.read<StudySessionCubit>().rateCard(5),
+                              context
+                                  .read<StudySessionCubit>()
+                                  .rateCard(FsrsRating.easy),
                             );
                           },
                           onSwipeDown: () {
                             unawaited(
-                              context.read<StudySessionCubit>().rateCard(0),
+                              context
+                                  .read<StudySessionCubit>()
+                                  .rateCard(FsrsRating.again),
                             );
                           },
                         ),
@@ -198,7 +207,7 @@ class _StudySessionView extends HookWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // 3. SM-2 Rating Controls (Revealed when card is flipped)
+                    // 3. FSRS-6 Rating Controls (Revealed when card is flipped)
                     AnimatedCrossFade(
                       duration: const Duration(milliseconds: 250),
                       crossFadeState: state.isFlipped
@@ -215,10 +224,10 @@ class _StudySessionView extends HookWidget {
                           ),
                         ),
                       ),
-                      secondChild: Sm2RatingActionBar(
-                        onRate: (quality) {
+                      secondChild: FsrsRatingActionBar(
+                        onRateRating: (rating) {
                           unawaited(
-                            context.read<StudySessionCubit>().rateCard(quality),
+                            context.read<StudySessionCubit>().rateCard(rating),
                           );
                         },
                       ),

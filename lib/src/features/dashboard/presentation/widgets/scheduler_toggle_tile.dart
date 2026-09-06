@@ -18,14 +18,11 @@ class SchedulerToggleTile extends StatelessWidget {
     final theme = context.theme;
     final colors = context.colors;
     final l10n = context.l10n;
-    final isFsrs = currentAlgorithm == SpacedRepetitionAlgorithm.fsrs;
 
     return Semantics(
       container: true,
-      label:
-          'Spaced Repetition Scheduler Setting: '
-          '${isFsrs ? "FSRS-4.5 Engine" : "SM-2 Algorithm"}',
-      hint: 'Toggle between classical SM-2 and adaptive FSRS spaced repetition',
+      label: 'Spaced Repetition Scheduler: FSRS-6 Neural Engine Active',
+      hint: 'Kortex uses the FSRS-6 21-parameter adaptive neural spaced repetition algorithm',
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -58,27 +55,38 @@ class SchedulerToggleTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Toggle Button Mode
+                // FSRS-6 Active Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(16),
+                    color: colors.primary.withAlpha(context.isDarkMode ? 50 : 25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(100),
+                    ),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _AlgorithmOptionButton(
-                        label: 'SM-2',
-                        isSelected: !isFsrs,
-                        onTap: () => onChanged(SpacedRepetitionAlgorithm.sm2),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.success,
+                        ),
                       ),
-                      _AlgorithmOptionButton(
-                        label: 'FSRS-4.5',
-                        isSelected: isFsrs,
-                        onTap: () => onChanged(SpacedRepetitionAlgorithm.fsrs),
+                      const SizedBox(width: 6),
+                      Text(
+                        'FSRS-6',
+                        style: context.typography.caption.bold.copyWith(
+                          fontSize: 11,
+                          color: colors.primary,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),
@@ -87,60 +95,13 @@ class SchedulerToggleTile extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              isFsrs ? l10n.fsrsModeDescription : l10n.sm2ModeDescription,
+              'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling for optimal retention.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
                 fontSize: 12,
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AlgorithmOptionButton extends StatelessWidget {
-  const _AlgorithmOptionButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    final colors = context.colors;
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: 'Select $label Algorithm',
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primary : colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label,
-            style: isSelected
-                ? context.typography.caption.bold.copyWith(
-                    fontSize: 11,
-                    color: colors.white,
-                  )
-                : context.typography.caption.medium.copyWith(
-                    fontSize: 11,
-                    color: colors.textSecondary,
-                  ),
-          ),
         ),
       ),
     );

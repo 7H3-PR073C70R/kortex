@@ -52,8 +52,8 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<GetDashboardFeedUseCase>(
       () => GetDashboardFeedUseCase(locator<DashboardRepository>()),
     )
-    ..registerLazySingleton<GetSm2ReviewQueueUseCase>(
-      () => GetSm2ReviewQueueUseCase(locator<DashboardRepository>()),
+    ..registerLazySingleton<GetReviewQueueUseCase>(
+      () => GetReviewQueueUseCase(locator<DashboardRepository>()),
     )
     ..registerLazySingleton<QuickStartMockExamUseCase>(
       () => QuickStartMockExamUseCase(locator<DashboardRepository>()),

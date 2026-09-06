@@ -1850,11 +1850,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fsrsModeDescription =>
-      'Adaptive Stability & Difficulty decay modeling for optimal study load';
+      'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling';
 
   @override
   String get sm2ModeDescription =>
-      'Classical SuperMemo-2 interval and ease factor spacing';
+      'Classical SuperMemo-2 interval spacing (Superseded by FSRS-6)';
 
   @override
   String get schedulerAlgorithmTitle => 'Spaced Repetition Scheduler';
