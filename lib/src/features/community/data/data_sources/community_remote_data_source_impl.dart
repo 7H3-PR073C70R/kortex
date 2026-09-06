@@ -4,6 +4,7 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_local_data_source.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/data/models/leaderboard_entry_model.dart';
@@ -16,12 +17,24 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     this._client, {
     UserStorageService? userStorage,
     RealtimeClient? realtimeClient,
+    CommunityLocalDataSource? localDataSource,
   })  : _userStorage = userStorage,
-        _realtime = realtimeClient ?? RealtimeClient.instance;
+        _realtime = realtimeClient ?? RealtimeClient.instance,
+        _localDataSourceOverride = localDataSource;
 
   final CommunityApiClient _client;
   final UserStorageService? _userStorage;
   final RealtimeClient _realtime;
+  final CommunityLocalDataSource? _localDataSourceOverride;
+
+  CommunityLocalDataSource? get _localDataSource {
+    if (_localDataSourceOverride != null) return _localDataSourceOverride;
+    try {
+      return locator<CommunityLocalDataSource>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
 
   CrashlyticsService? get _crashlyticsService {
     try {
@@ -111,11 +124,55 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       params['track'] = 'eq.$track';
     }
 
-    final res = await _client.fetchForumPosts(params);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-    return rawList
-        .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final res = await _client.fetchForumPosts(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final posts = rawList
+          .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      // Write-through caching to SQLite
+      if (_localDataSource != null && posts.isNotEmpty) {
+        unawaited(_localDataSource!.saveForumPosts(posts));
+      }
+
+      // Populate in-memory reply cache
+      for (final post in posts) {
+        if (post.replies.isNotEmpty) {
+          final cache = _replyCache.putIfAbsent(post.id, () => []);
+          for (final reply in post.replies) {
+            if (!cache.any((r) => r.id == reply.id)) {
+              cache.add(reply);
+            }
+          }
+        }
+      }
+
+      return posts;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason:
+                'CommunityRemoteDataSource.fetchForumPosts failed, checking SQLite cache',
+          ),
+        );
+      }
+
+      // Read-through fallback to local SQLite cache
+      if (_localDataSource != null) {
+        try {
+          final cachedPosts = await _localDataSource!.getForumPosts(track: track);
+          if (cachedPosts.isNotEmpty) {
+            return cachedPosts;
+          }
+        } on Object catch (_) {}
+      }
+
+      rethrow;
+    }
   }
 
   @override
@@ -144,7 +201,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to create forum post');
     }
-    return ForumPostModel.fromJson(rawList.first as Map<String, dynamic>);
+    final post = ForumPostModel.fromJson(rawList.first as Map<String, dynamic>);
+    unawaited(_localDataSource?.saveForumPost(post));
+    return post;
   }
 
   @override
@@ -177,6 +236,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (!cache.any((r) => r.id == reply.id)) {
       cache.add(reply);
     }
+    unawaited(_localDataSource?.saveForumReply(reply));
     final controller = _replyControllers[postId];
     if (controller != null && !controller.isClosed) {
       controller.add(List.unmodifiable(cache));
@@ -198,6 +258,21 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           streamController.add(List.unmodifiable(_replyCache[postId]!));
         }
       });
+    } else if (_localDataSource != null) {
+      // Seed from SQLite cache
+      _localDataSource!.getRepliesForPost(postId).then((cachedReplies) {
+        if (cachedReplies.isNotEmpty) {
+          final currentCache = _replyCache.putIfAbsent(postId, () => []);
+          for (final r in cachedReplies) {
+            if (!currentCache.any((c) => c.id == r.id)) {
+              currentCache.add(r);
+            }
+          }
+          if (!streamController.isClosed) {
+            streamController.add(List.unmodifiable(currentCache));
+          }
+        }
+      }).ignore();
     }
 
     // Seed or refresh cache via REST
@@ -222,6 +297,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
               for (final fetched in fetchedReplies) {
                 if (!currentCache.any((r) => r.id == fetched.id)) {
                   currentCache.add(fetched);
+                  unawaited(_localDataSource?.saveForumReply(fetched));
                 }
               }
               if (!streamController.isClosed) {
@@ -242,6 +318,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
               final cache = _replyCache.putIfAbsent(postId, () => []);
               if (!cache.any((r) => r.id == reply.id)) {
                 cache.add(reply);
+                unawaited(_localDataSource?.saveForumReply(reply));
               }
               if (!streamController.isClosed) {
                 streamController.add(List.unmodifiable(cache));

@@ -61,10 +61,16 @@ void _initDataSource() {
         userStorage: locator<UserStorageService>(),
       ),
     )
+    ..registerLazySingleton<CommunityLocalDataSource>(
+      () => CommunityLocalDataSourceImpl(
+        locator<CommunityDatabaseService>(),
+      ),
+    )
     ..registerLazySingleton<CommunityRemoteDataSource>(
       () => CommunityRemoteDataSourceImpl(
         locator<CommunityApiClient>(),
         userStorage: locator<UserStorageService>(),
+        localDataSource: locator<CommunityLocalDataSource>(),
       ),
     )
     ..registerLazySingleton<RagRemoteDataSource>(

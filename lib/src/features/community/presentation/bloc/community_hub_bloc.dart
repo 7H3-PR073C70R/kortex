@@ -45,28 +45,35 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       track: effectiveTrack,
     );
 
-    roomsRes.fold(
-      (failure) => emit(
+    final rooms = roomsRes.fold((_) => state.studyRooms, (r) => r);
+    final forumPosts = forumRes.fold((_) => state.forumPosts, (posts) => posts);
+    final sharedDecks = decksRes.fold((_) => state.sharedDecks, (decks) => decks);
+    final leaderboardEntries =
+        leaderboardRes.fold((_) => state.leaderboardEntries, (entries) => entries);
+
+    final hasAnyData = rooms.isNotEmpty ||
+        forumPosts.isNotEmpty ||
+        sharedDecks.isNotEmpty ||
+        leaderboardEntries.isNotEmpty;
+
+    if (roomsRes.isLeft && !hasAnyData) {
+      emit(
         state.copyWith(
           status: CommunityStatus.failure,
-          errorMessage: failure.message,
+          errorMessage: roomsRes.fold((f) => f.message, (_) => null),
         ),
-      ),
-      (rooms) {
-        emit(
-          state.copyWith(
-            status: CommunityStatus.loaded,
-            studyRooms: rooms,
-            forumPosts: forumRes.fold((_) => [], (posts) => posts),
-            sharedDecks: decksRes.fold((_) => [], (decks) => decks),
-            leaderboardEntries: leaderboardRes.fold(
-              (_) => [],
-              (entries) => entries,
-            ),
-          ),
-        );
-      },
-    );
+      );
+    } else {
+      emit(
+        state.copyWith(
+          status: CommunityStatus.loaded,
+          studyRooms: rooms,
+          forumPosts: forumPosts,
+          sharedDecks: sharedDecks,
+          leaderboardEntries: leaderboardEntries,
+        ),
+      );
+    }
 
     // Subscribe to live leaderboard stream
     await _leaderboardSubscription?.cancel();

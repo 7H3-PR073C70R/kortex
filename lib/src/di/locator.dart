@@ -35,8 +35,11 @@ import 'package:kortex/src/features/auth/presentation/bloc/chat_onboarding_bloc.
 import 'package:kortex/src/features/auth/presentation/guards/auth_route_guard.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_local_data_source.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_local_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
+import 'package:kortex/src/features/community/data/database/community_database_service.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/ephemeral_room_repository_impl.dart';
 import 'package:kortex/src/features/community/data/services/livekit_audio_service_impl.dart';

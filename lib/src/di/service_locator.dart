@@ -34,6 +34,9 @@ void _initServices() {
         localStorageService: locator<LocalStorageService>(),
       ),
     )
+    ..registerLazySingleton<CommunityDatabaseService>(
+      CommunityDatabaseService.new,
+    )
     ..registerLazySingleton<SubscriptionGuard>(
       () => SubscriptionGuard(
         userStorageService: locator<UserStorageService>(),

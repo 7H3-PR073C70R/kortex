@@ -64,6 +64,7 @@ class ForumPostModel {
       'upvotes': upvotes,
       'replies_count': repliesCount,
       'created_at': createdAt.toIso8601String(),
+      'forum_replies': replies.map((r) => r.toJson()).toList(),
     };
   }
 
