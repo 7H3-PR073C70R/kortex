@@ -4,9 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
-import 'package:kortex/src/features/decks/data/services/local_inference_isolate_manager.dart';
-import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
-import 'package:kortex/src/features/offline_ai/domain/logic/experimental_offline_guard.dart';
+import 'package:kortex/src/features/offline_ai/offline_ai.dart';
 
 enum StudyEngineExecutionMode {
   cloudRemote,
