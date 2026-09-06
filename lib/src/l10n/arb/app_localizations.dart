@@ -1742,11 +1742,11 @@ abstract class AppLocalizations {
   /// **'Card {current} of {total}'**
   String deckDetailCardProgress(int current, int total);
 
-  /// SM-2 queue badge label
+  /// FSRS-6 queue badge label
   ///
   /// In en, this message translates to:
-  /// **'SM-2 SPATIAL QUEUE'**
-  String get deckDetailSm2QueueBadge;
+  /// **'FSRS-6 ACTIVE QUEUE'**
+  String get deckDetailFsrsQueueBadge;
 
   /// Back of flashcard badge
   ///
@@ -3278,11 +3278,7 @@ abstract class AppLocalizations {
   /// **'Adaptive Stability & Difficulty decay modeling for optimal study load'**
   String get fsrsModeDescription;
 
-  /// Description of classical SM-2 scheduler
-  ///
-  /// In en, this message translates to:
-  /// **'Classical SuperMemo-2 interval and ease factor spacing'**
-  String get sm2ModeDescription;
+
 
   /// Title of spaced repetition algorithm settings section
   ///

@@ -54,7 +54,6 @@ class AppApiEndpoint {
   static const String decks = '/rest/v1/decks?select=*';
   static const String deckCards =
       '/rest/v1/flashcards?deck_id=eq.{id}&select=*';
-  static const String reviewCard = '/rest/v1/rpc/process_card_sm2_review';
   static const String sessionResults = '/rest/v1/rpc/record_study_session';
 
   // Syllabot AI Endpoints

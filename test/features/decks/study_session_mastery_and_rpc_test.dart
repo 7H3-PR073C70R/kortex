@@ -63,10 +63,6 @@ class MockDecksApiClient implements DecksApiClient {
     return HttpResponse(<String, dynamic>{}, Response(requestOptions: RequestOptions()));
   }
 
-  @override
-  Future<HttpResponse<dynamic>> processCardReview(String cardId, Map<String, dynamic> body) async {
-    return HttpResponse(<String, dynamic>{}, Response(requestOptions: RequestOptions()));
-  }
 }
 
 void main() {

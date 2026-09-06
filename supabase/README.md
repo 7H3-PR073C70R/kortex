@@ -75,7 +75,7 @@ supabase/
 
 | Function | Parameters | Description |
 | :--- | :--- | :--- |
-| `public.process_card_sm2_review` | `p_card_id UUID, p_quality INT` | Computes new interval & ease factor, updates card and refreshes deck due counts. |
+| `public.process_card_sm2_review` *(Legacy)* | `p_card_id UUID, p_quality INT` | Legacy review RPC superseded by client-side FSRS-6 adaptive engine. |
 | `public.record_study_session` | `p_deck_id UUID, p_cards_reviewed INT, p_duration_seconds INT, p_retention_score FLOAT` | Stores session results, increments daily heatmap, awards XP, and updates streaks. |
 | `public.get_dashboard_feed` | *(no args, uses `auth.uid()`)* | Returns aggregated dashboard JSON for `DashboardFeedModel`. |
 | `public.search_flashcards_semantic` | `p_query_embedding vector(1536), p_match_threshold FLOAT, p_match_count INT` | Cosine similarity HNSW vector search on user's flashcards. |

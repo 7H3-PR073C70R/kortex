@@ -28,11 +28,6 @@ abstract class DecksApiClient {
   @GET(AppApiEndpoint.deckCards)
   Future<List<FlashcardModel>> getDeckCards(@Path('id') String deckId);
 
-  @POST(AppApiEndpoint.reviewCard)
-  Future<HttpResponse<dynamic>> processCardReview(
-    @Path('cardId') String cardId,
-    @Body() Map<String, dynamic> body,
-  );
 
   @POST(AppApiEndpoint.sessionResults)
   Future<HttpResponse<dynamic>> saveSessionResults(

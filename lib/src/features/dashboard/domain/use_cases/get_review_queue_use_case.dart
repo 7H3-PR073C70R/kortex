@@ -15,6 +15,3 @@ class GetReviewQueueUseCase with UseCase<List<StudyDeckEntity>, NoParams> {
     return _repository.getReviewQueue();
   }
 }
-
-@Deprecated('Use GetReviewQueueUseCase with FSRS-6')
-typedef GetSm2ReviewQueueUseCase = GetReviewQueueUseCase;

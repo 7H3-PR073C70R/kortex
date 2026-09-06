@@ -5,10 +5,10 @@ import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/exam_countdown_widget.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
 
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
@@ -57,7 +57,7 @@ void main() {
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);
     });
 
-    testWidgets('Sm2ReviewDeckCard renders deck details and due badge', (
+    testWidgets('FsrsReviewDeckCard renders deck details and due badge', (
       tester,
     ) async {
       final deck = StudyDeckEntity(

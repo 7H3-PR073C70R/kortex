@@ -4,7 +4,6 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -45,16 +44,6 @@ class _FakeDecksRepository implements DecksRepository {
     return const Right([]);
   }
 
-  @override
-  Future<Either<Failure, Sm2CalculationResult>> processCardReview({
-    required String cardId,
-    required int quality,
-    required int previousInterval,
-    required int previousRepetitions,
-    required double previousEaseFactor,
-  }) async {
-    throw UnimplementedError();
-  }
 
   @override
   Future<Either<Failure, void>> updateDeckCards(

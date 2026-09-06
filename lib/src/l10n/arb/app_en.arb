@@ -1373,9 +1373,9 @@
             }
         }
     },
-    "deckDetailSm2QueueBadge": "SM-2 SPATIAL QUEUE",
-    "@deckDetailSm2QueueBadge": {
-        "description": "SM-2 queue badge label"
+    "deckDetailFsrsQueueBadge": "FSRS-6 ACTIVE QUEUE",
+    "@deckDetailFsrsQueueBadge": {
+        "description": "FSRS-6 queue badge label"
     },
     "deckDetailAnswerFormula": "ANSWER / FORMULA",
     "@deckDetailAnswerFormula": {
@@ -2623,10 +2623,7 @@
     "@fsrsModeDescription": {
         "description": "Description of FSRS-6 scheduler"
     },
-    "sm2ModeDescription": "Classical SuperMemo-2 interval spacing (Superseded by FSRS-6)",
-    "@sm2ModeDescription": {
-        "description": "Description of classical SM-2 scheduler"
-    },
+
     "schedulerAlgorithmTitle": "Spaced Repetition Scheduler",
     "@schedulerAlgorithmTitle": {
         "description": "Title of spaced repetition algorithm settings section"

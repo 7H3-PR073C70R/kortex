@@ -7,20 +7,14 @@ import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart'
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-@Deprecated('Use FsrsRatingActionBar with FSRS-6 ratings')
-typedef Sm2RatingActionBar = FsrsRatingActionBar;
-
 /// Tactile review rating bar powered by the FSRS-6 spaced repetition algorithm.
 class FsrsRatingActionBar extends StatelessWidget {
   const FsrsRatingActionBar({
-    void Function(FsrsRating rating)? onRateRating,
-    void Function(int quality)? onRate,
+    required this.onRateRating,
     super.key,
-  }) : _onRateRating = onRateRating,
-       _onRateQuality = onRate;
+  });
 
-  final void Function(FsrsRating rating)? _onRateRating;
-  final void Function(int quality)? _onRateQuality;
+  final void Function(FsrsRating rating) onRateRating;
 
   @override
   Widget build(BuildContext context) {
@@ -84,8 +78,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                     key: ValueKey('fsrs_rating_${b.rating.name}'),
                     onTap: () {
                       unawaited(HapticFeedback.mediumImpact());
-                      _onRateRating?.call(b.rating);
-                      _onRateQuality?.call(b.quality);
+                      onRateRating(b.rating);
                     },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),

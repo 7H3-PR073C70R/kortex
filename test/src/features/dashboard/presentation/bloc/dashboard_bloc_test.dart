@@ -59,9 +59,6 @@ class MockDashboardRepository implements DashboardRepository {
     return const Right([]);
   }
 
-  @override
-  Future<Either<Failure, List<StudyDeckEntity>>> getSm2ReviewQueue() =>
-      getReviewQueue();
 
   @override
   Future<Either<Failure, String>> quickStartMockExam({

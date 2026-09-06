@@ -954,7 +954,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get deckDetailSm2QueueBadge => 'SM-2 SPATIAL QUEUE';
+  String get deckDetailFsrsQueueBadge => 'FSRS-6 ACTIVE QUEUE';
 
   @override
   String get deckDetailAnswerFormula => 'ANSWER / FORMULA';
@@ -1852,9 +1852,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fsrsModeDescription =>
       'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling';
 
-  @override
-  String get sm2ModeDescription =>
-      'Classical SuperMemo-2 interval spacing (Superseded by FSRS-6)';
+
 
   @override
   String get schedulerAlgorithmTitle => 'Spaced Repetition Scheduler';

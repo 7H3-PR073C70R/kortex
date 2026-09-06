@@ -9,9 +9,6 @@ import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-@Deprecated('Use FsrsReviewDeckCard with FSRS-6')
-typedef Sm2ReviewDeckCard = FsrsReviewDeckCard;
-
 /// Dashboard active recall deck card powered by FSRS-6 memory scheduling.
 class FsrsReviewDeckCard extends StatelessWidget {
   const FsrsReviewDeckCard({

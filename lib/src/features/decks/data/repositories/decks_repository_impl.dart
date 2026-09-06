@@ -5,7 +5,6 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 
 class DecksRepositoryImpl implements DecksRepository {
@@ -28,25 +27,6 @@ class DecksRepositoryImpl implements DecksRepository {
     return _remoteDataSource
         .getDeckCards(deckId)
         .then((models) => models.map((m) => m.toEntity()).toList())
-        .makeRequest();
-  }
-
-  @override
-  Future<Either<Failure, Sm2CalculationResult>> processCardReview({
-    required String cardId,
-    required int quality,
-    required int previousInterval,
-    required int previousRepetitions,
-    required double previousEaseFactor,
-  }) {
-    return _remoteDataSource
-        .processCardReview(
-          cardId: cardId,
-          quality: quality,
-          previousInterval: previousInterval,
-          previousRepetitions: previousRepetitions,
-          previousEaseFactor: previousEaseFactor,
-        )
         .makeRequest();
   }
 

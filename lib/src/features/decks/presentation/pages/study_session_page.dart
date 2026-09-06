@@ -11,7 +11,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/sm2_rating_action_bar.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
 import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/l10n/l10n.dart';

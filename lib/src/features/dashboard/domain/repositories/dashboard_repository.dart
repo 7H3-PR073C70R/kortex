@@ -11,9 +11,6 @@ abstract class DashboardRepository {
   /// Fetches the active recall spaced repetition (FSRS-6) queue for today.
   Future<Either<Failure, List<StudyDeckEntity>>> getReviewQueue();
 
-  /// Legacy alias for [getReviewQueue].
-  @Deprecated('Use getReviewQueue() with FSRS-6 instead')
-  Future<Either<Failure, List<StudyDeckEntity>>> getSm2ReviewQueue();
 
   /// Initiates an interactive mock exam or test simulator session.
   Future<Either<Failure, String>> quickStartMockExam({

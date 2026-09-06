@@ -59,7 +59,7 @@ import 'package:kortex/src/features/dashboard/domain/use_cases/auto_curate_exam_
 import 'package:kortex/src/features/dashboard/domain/use_cases/delete_curated_course_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_curated_courses_catalog_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/get_dashboard_feed_use_case.dart';
-import 'package:kortex/src/features/dashboard/domain/use_cases/get_sm2_review_queue_use_case.dart';
+import 'package:kortex/src/features/dashboard/domain/use_cases/get_review_queue_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/quick_start_mock_exam_use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';

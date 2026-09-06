@@ -15,10 +15,10 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/curated_course_carousel.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/sm2_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
