@@ -156,5 +156,23 @@ void main() {
         expect(cubit.state.shouldShowBanner, isFalse);
       },
     );
+
+    blocTest<AutoCommunityCubit, AutoCommunityState>(
+      'reset sets state back to initial state',
+      build: buildCubit,
+      seed: () => const AutoCommunityState(
+        status: AutoCommunityStatus.provisioned,
+        community: tTrackCommunity,
+      ),
+      act: (cubit) => cubit.reset(),
+      expect: () => [
+        const AutoCommunityState(),
+      ],
+      verify: (cubit) {
+        expect(cubit.state.status, equals(AutoCommunityStatus.initial));
+        expect(cubit.state.community, isNull);
+        expect(cubit.state.shouldShowBanner, isFalse);
+      },
+    );
   });
 }

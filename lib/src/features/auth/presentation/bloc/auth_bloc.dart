@@ -19,6 +19,7 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 
@@ -604,6 +605,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
     } on Object catch (_) {}
     await _authRepository.signOut();
+    if (locator.isRegistered<AutoCommunityCubit>()) {
+      locator<AutoCommunityCubit>().reset();
+    }
     emit(
       const AuthState(
         status: AuthStatus.unauthenticated,

@@ -39,8 +39,8 @@ class CommunityHubPage extends HookWidget {
           create: (_) =>
               locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
         ),
-        BlocProvider<AutoCommunityCubit>(
-          create: (_) => locator<AutoCommunityCubit>(),
+        BlocProvider<AutoCommunityCubit>.value(
+          value: locator<AutoCommunityCubit>(),
         ),
       ],
       child: const _CommunityHubView(),

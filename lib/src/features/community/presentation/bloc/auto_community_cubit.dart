@@ -97,4 +97,9 @@ class AutoCommunityCubit extends Cubit<AutoCommunityState> {
   void dismissBanner() {
     emit(state.copyWith(isBannerDismissed: true));
   }
+
+  /// Resets the cubit state back to initial state (e.g. on logout or user session switch).
+  void reset() {
+    emit(const AutoCommunityState());
+  }
 }

@@ -208,7 +208,7 @@ void _initUseCaseLocator() {
         repository: locator<CommunityRepository>(),
       ),
     )
-    ..registerFactory<AutoCommunityCubit>(
+    ..registerLazySingleton<AutoCommunityCubit>(
       () => AutoCommunityCubit(
         autoProvisionCommunityUseCase: locator<AutoProvisionCommunityUseCase>(),
         fetchCourseCommunityStatsUseCase:
