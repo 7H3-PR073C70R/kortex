@@ -20,8 +20,12 @@ class RagReferenceBadge extends StatelessWidget {
     final scorePercent = (chunk.similarityScore * 100).toInt();
     final badgeText = l10n.retrievedContextBadge(scorePercent);
     final title = chunk.documentTitle ?? 'Course Material';
-    final pageInfo = chunk.pageNumber != null
-        ? ' (p. ${chunk.pageNumber})'
+    final citationParts = [
+      if (chunk.pageNumber != null) 'p. ${chunk.pageNumber}',
+      if (chunk.paragraphNumber != null) 'para. ${chunk.paragraphNumber}',
+    ];
+    final pageInfo = citationParts.isNotEmpty
+        ? ' (${citationParts.join(', ')})'
         : '';
 
     final colors = context.colors;
@@ -55,7 +59,7 @@ class RagReferenceBadge extends StatelessWidget {
                 Text(
                   '$title$pageInfo',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.white,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

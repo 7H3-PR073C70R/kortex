@@ -31,13 +31,15 @@ class RagRepositoryImpl implements RagRepository {
   @override
   Future<Either<Failure, int>> generateDocumentEmbeddings({
     required String documentId,
-    required String rawText,
+    String? rawText,
+    List<Map<String, dynamic>>? chunks,
     Map<String, dynamic>? metadata,
   }) {
     return _remoteDataSource
         .generateDocumentEmbeddings(
           documentId: documentId,
           rawText: rawText,
+          chunks: chunks,
           metadata: metadata,
         )
         .makeRequest();

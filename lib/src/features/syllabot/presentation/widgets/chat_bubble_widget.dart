@@ -8,6 +8,8 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_badge.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -237,6 +239,22 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                           text: widget.message.text,
                           isDark: isDark,
                         ),
+
+                        // RAG Retrieved Context Badges
+                        if (widget.message.ragReferences.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: widget.message.ragReferences.map((chunk) {
+                              return RagReferenceBadge(
+                                chunk: chunk,
+                                onTap: () =>
+                                    RagSourceInspectionSheet.show(context, chunk),
+                              );
+                            }).toList(),
+                          ),
+                        ],
 
                         // Retry Button for error state
                         if (widget.message.isError) ...[

@@ -132,19 +132,16 @@ class _DocumentIngestionView extends HookWidget {
                 );
               }
 
-              // Background pgvector RAG embeddings generation
-              final combinedText = state.snippets
-                  .map((s) => s.rawText)
-                  .where((t) => t.trim().isNotEmpty)
-                  .join('\n\n');
-              if (combinedText.isNotEmpty &&
+              // Background pgvector RAG auto-chunking & embeddings generation
+              if (state.snippets.isNotEmpty &&
                   locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
                 unawaited(
                   locator<GenerateDocumentEmbeddingsUseCase>()(
                     documentId: doc.id,
-                    rawText: combinedText,
+                    snippets: state.snippets,
                     metadata: {
                       'filename': doc.filename,
+                      'documentTitle': doc.filename.split('.').first,
                       'courseCode': cleanCode.isNotEmpty
                           ? cleanCode
                           : (courseCode ?? 'GENERAL'),

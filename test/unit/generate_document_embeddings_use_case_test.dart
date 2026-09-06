@@ -23,6 +23,7 @@ void main() {
           documentId: 'doc_123',
           rawText: 'Photosynthesis converts light energy into chemical energy.',
           metadata: {'filename': 'biology_ch1.pdf'},
+          chunks: any(named: 'chunks'),
         ),
       ).thenAnswer((_) async => const Right(12));
 
@@ -40,6 +41,7 @@ void main() {
           documentId: 'doc_123',
           rawText: 'Photosynthesis converts light energy into chemical energy.',
           metadata: {'filename': 'biology_ch1.pdf'},
+          chunks: any(named: 'chunks'),
         ),
       ).called(1);
     });
@@ -49,6 +51,8 @@ void main() {
         () => mockRagRepository.generateDocumentEmbeddings(
           documentId: 'doc_456',
           rawText: 'Differential equations and boundary value problems.',
+          metadata: any(named: 'metadata'),
+          chunks: any(named: 'chunks'),
         ),
       ).thenAnswer(
         (_) async => const Left(ServerFailure(message: 'Edge function timeout')),

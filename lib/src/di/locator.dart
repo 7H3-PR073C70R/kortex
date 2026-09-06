@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/core/constants/app_env.dart';

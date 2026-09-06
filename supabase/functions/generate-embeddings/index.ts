@@ -8,9 +8,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+interface ChunkItem {
+  content: string;
+  chunk_index?: number;
+  page_number?: number;
+  paragraph_number?: number;
+  metadata?: Record<string, unknown>;
+}
+
 interface EmbedRequest {
   documentId: string;
-  rawText: string;
+  rawText?: string;
+  chunks?: ChunkItem[];
   metadata?: Record<string, unknown>;
   userId?: string;
   courseCode?: string;
@@ -70,12 +79,12 @@ serve(async (req) => {
     }
 
     const payload: EmbedRequest = await req.json();
-    const { documentId, rawText, metadata = {}, courseCode } = payload;
+    const { documentId, rawText, chunks, metadata = {}, courseCode } = payload;
     const userId = payload.userId || effectiveUserId;
 
-    if (!documentId || !rawText) {
+    if (!documentId || (!rawText && (!chunks || chunks.length === 0))) {
       return new Response(
-        JSON.stringify({ error: "documentId and rawText are required" }),
+        JSON.stringify({ error: "documentId and either rawText or chunks are required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -83,10 +92,11 @@ serve(async (req) => {
       );
     }
 
+    const cacheKey = `doc_embeddings:${documentId}:${rawText?.length ?? chunks?.length ?? 0}`;
     // 1. Check Semantic Cache for pre-computed document embeddings
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabase,
-      `doc_embeddings:${documentId}:${rawText.length}`,
+      cacheKey,
       { courseCode }
     );
 
@@ -109,24 +119,51 @@ serve(async (req) => {
       );
     }
 
-    const textChunks = chunkText(rawText);
     const recordsToInsert = [];
 
-    for (let i = 0; i < textChunks.length; i++) {
-      const chunk = textChunks[i];
-      const embedding = generateDeterministicVector(chunk, 1536);
+    if (chunks && chunks.length > 0) {
+      for (let i = 0; i < chunks.length; i++) {
+        const item = chunks[i];
+        const content = item.content.trim();
+        if (!content) continue;
+        const embedding = generateDeterministicVector(content, 1536);
 
-      recordsToInsert.push({
-        document_id: documentId,
-        user_id: userId,
-        content: chunk,
-        metadata: {
-          ...metadata,
-          chunk_index: i,
-          total_chunks: textChunks.length,
-        },
-        embedding: JSON.stringify(embedding),
-      });
+        recordsToInsert.push({
+          document_id: documentId,
+          user_id: userId,
+          content,
+          metadata: {
+            ...metadata,
+            ...item.metadata,
+            chunk_index: item.chunk_index ?? i,
+            total_chunks: chunks.length,
+            if_page: item.page_number,
+            page_number: item.page_number ?? item.metadata?.page_number,
+            paragraph_number: item.paragraph_number ?? item.metadata?.paragraph_number,
+            document_title: metadata.filename ?? metadata.documentTitle,
+          },
+          embedding: JSON.stringify(embedding),
+        });
+      }
+    } else if (rawText) {
+      const textChunks = chunkText(rawText);
+      for (let i = 0; i < textChunks.length; i++) {
+        const chunk = textChunks[i];
+        const embedding = generateDeterministicVector(chunk, 1536);
+
+        recordsToInsert.push({
+          document_id: documentId,
+          user_id: userId,
+          content: chunk,
+          metadata: {
+            ...metadata,
+            chunk_index: i,
+            total_chunks: textChunks.length,
+            document_title: metadata.filename ?? metadata.documentTitle,
+          },
+          embedding: JSON.stringify(embedding),
+        });
+      }
     }
 
     if (recordsToInsert.length > 0) {

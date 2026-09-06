@@ -1,57 +1,42 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockHive extends Mock implements HiveInterface {}
-
-class MockBox extends Mock implements Box<String> {}
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  late MockHive mockHive;
-  late MockBox mockBox;
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late LocalStorageServiceImpl service;
 
-  setUp(() {
-    mockHive = MockHive();
-    mockBox = MockBox();
-    service = LocalStorageServiceImpl(hive: mockHive);
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({
+      'existing_key': 'existing_value',
+    });
+    service = LocalStorageServiceImpl();
+    await service.initDB();
   });
-  group('local storage service ...', () {
-    test('initDB opens Hive box', () async {
-      when(
-        () => mockHive.openBox<String>('kortex_app_box'),
-      ).thenAnswer((_) async => mockBox);
 
-      await service.initDB();
-
-      verify(() => mockHive.openBox<String>('kortex_app_box')).called(1);
+  group('LocalStorageService (SharedPreferences) Test Suite', () {
+    test('initDB initializes underlying SharedPreferences', () async {
+      expect(service.getPreference(key: 'existing_key'), equals('existing_value'));
     });
 
-    test('savePreference calls put on box', () async {
-      service.setBox(mockBox);
-      when(() => mockBox.put('key', 'value')).thenAnswer((_) async {});
+    test('savePreference stores value and makes it accessible via getPreference', () async {
+      await service.savePreference(key: 'theme_mode', data: 'dark');
 
-      await service.savePreference(key: 'key', data: 'value');
-
-      verify(() => mockBox.put('key', 'value')).called(1);
+      expect(service.getPreference(key: 'theme_mode'), equals('dark'));
     });
 
-    test('getPreference retrieves value', () {
-      service.setBox(mockBox);
-      when(() => mockBox.get('key')).thenReturn('value');
-
-      final result = service.getPreference(key: 'key');
-      expect(result, equals('value'));
+    test('getPreference returns null for non-existent key', () {
+      final result = service.getPreference(key: 'non_existent_key');
+      expect(result, isNull);
     });
 
-    test('deletePreference deletes key', () async {
-      service.setBox(mockBox);
-      when(() => mockBox.delete('key')).thenAnswer((_) async {});
+    test('deletePreference removes key from storage', () async {
+      await service.savePreference(key: 'temp_key', data: 'temp_val');
+      expect(service.getPreference(key: 'temp_key'), equals('temp_val'));
 
-      await service.deletePreference(key: 'key');
-
-      verify(() => mockBox.delete('key')).called(1);
+      await service.deletePreference(key: 'temp_key');
+      expect(service.getPreference(key: 'temp_key'), isNull);
     });
   });
 }

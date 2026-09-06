@@ -30,17 +30,19 @@ class VectorSearchClient {
     return [];
   }
 
-  /// Dispatches document text to `generate-embeddings` Edge Function.
+  /// Dispatches document text or pre-split chunks to `generate-embeddings` Edge Function.
   Future<Map<String, dynamic>> generateEmbeddings({
     required String documentId,
-    required String rawText,
+    String? rawText,
+    List<Map<String, dynamic>>? chunks,
     Map<String, dynamic>? metadata,
   }) async {
     final response = await _dio.post<dynamic>(
       '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateEmbeddings}',
       data: {
         'documentId': documentId,
-        'rawText': rawText,
+        'rawText': ?rawText,
+        'chunks': ?chunks,
         'metadata': metadata ?? {},
       },
     );
@@ -48,6 +50,6 @@ class VectorSearchClient {
     if (response.data is Map<String, dynamic>) {
       return response.data as Map<String, dynamic>;
     }
-    return {'chunks_created': 1};
+    return {'chunks_created': chunks?.length ?? 1};
   }
 }

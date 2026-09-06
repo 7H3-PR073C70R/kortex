@@ -27,15 +27,17 @@ class RagRemoteDataSourceImpl implements RagRemoteDataSource {
   @override
   Future<int> generateDocumentEmbeddings({
     required String documentId,
-    required String rawText,
+    String? rawText,
+    List<Map<String, dynamic>>? chunks,
     Map<String, dynamic>? metadata,
   }) async {
     final res = await _client.generateEmbeddings(
       documentId: documentId,
       rawText: rawText,
+      chunks: chunks,
       metadata: metadata,
     );
 
-    return (res['chunks_created'] as num?)?.toInt() ?? 1;
+    return (res['chunks_created'] as num?)?.toInt() ?? chunks?.length ?? 1;
   }
 }

@@ -24,7 +24,10 @@ void _initServices() {
       () => AppRouter(authGuard: locator<AuthRouteGuard>()),
     )
     ..registerLazySingleton<UserStorageService>(
-      () => UserStorageServiceImpl(locator()),
+      () => UserStorageServiceImpl(
+        locator<LocalStorageService>(),
+        secureStorage: locator<FlutterSecureStorage>(),
+      ),
     )
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,

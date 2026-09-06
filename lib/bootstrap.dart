@@ -8,11 +8,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kortex/firebase_options.dart';
 import 'package:kortex/src/core/enums/environment.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -78,7 +78,7 @@ Future<void> bootstrap({
 
   // ! For envs
   await dotenv.load(fileName: environment.envFileName);
-  await Hive.initFlutter();
   await locator<LocalStorageService>().initDB();
+  await locator<UserStorageService>().initStorage();
   runApp(await builder());
 }

@@ -30,6 +30,9 @@ class _FakeUserStorageService implements UserStorageService {
   bool _pro = false;
 
   @override
+  Future<void> initStorage() async {}
+
+  @override
   bool isProSubscriber() => _pro;
 
   @override

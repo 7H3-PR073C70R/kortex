@@ -9,6 +9,7 @@ class DocumentChunkModel extends DocumentChunkEntity {
     super.metadata = const {},
     super.documentTitle,
     super.pageNumber,
+    super.paragraphNumber,
   });
 
   factory DocumentChunkModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +29,9 @@ class DocumentChunkModel extends DocumentChunkEntity {
       pageNumber:
           (json['page_number'] as num?)?.toInt() ??
           (meta['page_number'] as num?)?.toInt(),
+      paragraphNumber:
+          (json['paragraph_number'] as num?)?.toInt() ??
+          (meta['paragraph_number'] as num?)?.toInt(),
     );
   }
 

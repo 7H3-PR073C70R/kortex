@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class LocalStorageService {
   const LocalStorageService();
@@ -15,19 +15,19 @@ abstract class LocalStorageService {
 }
 
 class LocalStorageServiceImpl implements LocalStorageService {
-  LocalStorageServiceImpl({HiveInterface? hive}) : _hive = hive ?? Hive;
+  LocalStorageServiceImpl({SharedPreferences? preferences})
+      : _preferences = preferences;
 
-  final HiveInterface _hive;
-  late Box<String> _box;
+  SharedPreferences? _preferences;
 
   @override
   Future<void> initDB() async {
-    _box = await _hive.openBox<String>('kortex_app_box');
+    _preferences ??= await SharedPreferences.getInstance();
   }
 
   @override
   String? getPreference({required String key}) {
-    return _box.get(key);
+    return _preferences?.getString(key);
   }
 
   @override
@@ -35,13 +35,17 @@ class LocalStorageServiceImpl implements LocalStorageService {
     required String key,
     required String data,
   }) async {
-    await _box.put(key, data);
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    _preferences = prefs;
+    await prefs.setString(key, data);
   }
 
   @override
   Future<void> deletePreference({required String key}) async {
     try {
-      await _box.delete(key);
+      final prefs = _preferences ?? await SharedPreferences.getInstance();
+      _preferences = prefs;
+      await prefs.remove(key);
     } on Exception catch (e) {
       Logger().e(e);
     }
@@ -49,5 +53,6 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   @visibleForTesting
   // ignore: use_setters_to_change_properties, for testing dependency injection
-  void setBox(Box<String> box) => _box = box;
+  void setPreferences(SharedPreferences preferences) =>
+      _preferences = preferences;
 }

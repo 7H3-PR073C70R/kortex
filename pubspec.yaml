@@ -31,8 +31,8 @@ dependencies:
   freezed_annotation: ^3.1.0
   get_it: ^9.2.1
   google_fonts: ^8.2.1
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^11.0.0
+  shared_preferences: ^2.5.2
   image_picker: ^1.2.0
   intl: ^0.20.2
   json_annotation: ^4.12.0

@@ -6,6 +6,7 @@ import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
@@ -52,12 +53,14 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   final LocalStorageService? _localStorageService;
 
   StreamSubscription<String>? _streamSubscription;
+  List<DocumentChunkEntity> _currentRagReferences = [];
 
   Future<void> _onSubmitPrompt(
     SubmitPromptEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
     await _streamSubscription?.cancel();
+    _currentRagReferences = [];
 
     final isPro = !locator.isRegistered<SubscriptionGuard>() ||
         locator<SubscriptionGuard>().canAccessCloudAi();
@@ -121,6 +124,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         (_) {},
         (chunks) {
           if (chunks.isNotEmpty) {
+            _currentRagReferences = chunks;
             final snippets = chunks.map((c) => c.content).join('\n---\n');
             final ragContextMsg = ChatMessageEntity(
               id: 'rag_${DateTime.now().millisecondsSinceEpoch}',
@@ -181,7 +185,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       text: state.streamingText,
       timestamp: DateTime.now(),
       engineType: state.engineType,
+      ragReferences: List.unmodifiable(_currentRagReferences),
     );
+    _currentRagReferences = [];
 
     if (state.engineType == ExecutionEngineType.localOnDevice) {
       unawaited(_getChatHistory.cacheMessage(botMessage));

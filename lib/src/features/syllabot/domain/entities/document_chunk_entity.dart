@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Represents a semantically indexed course document chunk
-/// with similarity score.
+/// with similarity score, page number, and paragraph citation.
 class DocumentChunkEntity extends Equatable {
   const DocumentChunkEntity({
     required this.id,
@@ -11,6 +11,7 @@ class DocumentChunkEntity extends Equatable {
     this.metadata = const {},
     this.documentTitle,
     this.pageNumber,
+    this.paragraphNumber,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class DocumentChunkEntity extends Equatable {
   final Map<String, dynamic> metadata;
   final String? documentTitle;
   final int? pageNumber;
+  final int? paragraphNumber;
 
   @override
   List<Object?> get props => [
@@ -30,5 +32,6 @@ class DocumentChunkEntity extends Equatable {
     metadata,
     documentTitle,
     pageNumber,
+    paragraphNumber,
   ];
 }

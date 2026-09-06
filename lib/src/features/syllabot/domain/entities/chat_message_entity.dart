@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 
 enum MessageSender {
@@ -8,7 +9,7 @@ enum MessageSender {
 }
 
 /// Domain entity representing a rich chat message bubble with LaTeX snippets,
-/// engine origin, and streaming lifecycle states.
+/// engine origin, streaming lifecycle states, and retrieved RAG citations.
 class ChatMessageEntity extends Equatable {
   const ChatMessageEntity({
     required this.id,
@@ -17,6 +18,7 @@ class ChatMessageEntity extends Equatable {
     required this.text,
     required this.timestamp,
     this.latexSnippets = const [],
+    this.ragReferences = const [],
     this.engineType = ExecutionEngineType.cloudRemote,
     this.tokensCount = 0,
     this.isStreaming = false,
@@ -30,6 +32,7 @@ class ChatMessageEntity extends Equatable {
   final String text;
   final DateTime timestamp;
   final List<String> latexSnippets;
+  final List<DocumentChunkEntity> ragReferences;
   final ExecutionEngineType engineType;
   final int tokensCount;
   final bool isStreaming;
@@ -43,6 +46,7 @@ class ChatMessageEntity extends Equatable {
     String? text,
     DateTime? timestamp,
     List<String>? latexSnippets,
+    List<DocumentChunkEntity>? ragReferences,
     ExecutionEngineType? engineType,
     int? tokensCount,
     bool? isStreaming,
@@ -56,6 +60,7 @@ class ChatMessageEntity extends Equatable {
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
       latexSnippets: latexSnippets ?? this.latexSnippets,
+      ragReferences: ragReferences ?? this.ragReferences,
       engineType: engineType ?? this.engineType,
       tokensCount: tokensCount ?? this.tokensCount,
       isStreaming: isStreaming ?? this.isStreaming,
@@ -72,6 +77,7 @@ class ChatMessageEntity extends Equatable {
     text,
     timestamp,
     latexSnippets,
+    ragReferences,
     engineType,
     tokensCount,
     isStreaming,

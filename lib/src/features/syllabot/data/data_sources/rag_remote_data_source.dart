@@ -10,7 +10,8 @@ abstract class RagRemoteDataSource {
 
   Future<int> generateDocumentEmbeddings({
     required String documentId,
-    required String rawText,
+    String? rawText,
+    List<Map<String, dynamic>>? chunks,
     Map<String, dynamic>? metadata,
   });
 }
