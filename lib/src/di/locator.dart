@@ -68,8 +68,11 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_c
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source_impl.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
+import 'package:kortex/src/features/decks/data/database/decks_database_service.dart';
 import 'package:kortex/src/features/decks/data/repositories/decks_repository_impl.dart';
 import 'package:kortex/src/features/decks/domain/logic/crdt_deck_merger.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';

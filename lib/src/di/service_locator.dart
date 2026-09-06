@@ -29,6 +29,11 @@ void _initServices() {
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
     )
+    ..registerLazySingleton<DecksDatabaseService>(
+      () => DecksDatabaseService(
+        localStorageService: locator<LocalStorageService>(),
+      ),
+    )
     ..registerLazySingleton<SubscriptionGuard>(
       () => SubscriptionGuard(
         userStorageService: locator<UserStorageService>(),

@@ -65,6 +65,9 @@ dependencies:
   sign_in_with_apple: ^6.1.4
   flutter_local_notifications: ^18.0.1
   livekit_client: ^2.11.0
+  sqflite: ^2.4.2+1
+  sqflite_common_ffi: ^2.4.0+3
+  path: ^1.9.1
 
 dev_dependencies:
   auto_route_generator: ^10.5.0

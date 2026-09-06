@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
@@ -15,15 +16,27 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     this._client, {
     UserStorageService? userStorage,
     LocalStorageService? storageService,
+    DecksLocalDataSource? localDataSource,
   })  : _userStorage = userStorage,
-        _storageService = storageService;
+        _storageService = storageService,
+        _localDataSourceOverride = localDataSource;
 
   final DecksApiClient _client;
   final UserStorageService? _userStorage;
   final LocalStorageService? _storageService;
+  final DecksLocalDataSource? _localDataSourceOverride;
 
   final Map<String, List<FlashcardModel>> _localDeckCards = {};
   final List<DeckModel> _localCreatedDecks = [];
+
+  DecksLocalDataSource? get _localDataSource {
+    if (_localDataSourceOverride != null) return _localDataSourceOverride;
+    try {
+      return locator<DecksLocalDataSource>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
 
   LocalStorageService? get _localStorage {
     if (_storageService != null) return _storageService;
@@ -42,41 +55,12 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
   }
 
-  void _loadPersistedDecksIntoMemory() {
-    try {
-      final raw = _localStorage?.getPreference(key: PrefKeys.persistedUserDecks);
-      if (raw != null && raw.isNotEmpty) {
-        final list = jsonDecode(raw) as List<dynamic>;
-        final loaded = list
-            .map((e) => DeckModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        var didHealAny = false;
-        for (var deck in loaded) {
-          // Self-healing: if deck was studied (lastStudied != null, masteryRate >= 0.8)
-          // but dueCards was stuck at total cards because card review state wasn't updated,
-          // heal cards & due count.
-          if (deck.lastStudied != null && deck.masteryRate >= 0.8 && deck.cards.isNotEmpty) {
-            final hasUnreviewedCards = deck.cards.any((c) => c.repetitions == 0 && c.lastReviewed == null);
-            if (hasUnreviewedCards) {
-              final healedCards = deck.cards.map((c) {
-                if (c.repetitions == 0 && c.lastReviewed == null) {
-                  return c.copyWith(
-                    repetitions: 1,
-                    lastReviewed: deck.lastStudied,
-                    nextDueDate: deck.lastStudied!.add(Duration(days: c.interval > 0 ? c.interval : 1)),
-                  );
-                }
-                return c;
-              }).toList();
-              final actualDue = healedCards.where((c) => c.isDueToday).length;
-              deck = deck.copyWith(
-                cards: healedCards,
-                dueCards: actualDue,
-              );
-              _localDeckCards[deck.id] = healedCards;
-              didHealAny = true;
-            }
-          }
+  Future<void> _loadPersistedDecksIntoMemory() async {
+    // 1. Primary: load from local relational database (SQLite)
+    if (_localDataSource != null) {
+      try {
+        final localDecks = await _localDataSource!.getDecks();
+        for (final deck in localDecks) {
           final idx = _localCreatedDecks.indexWhere((d) => d.id == deck.id);
           if (idx < 0) {
             _localCreatedDecks.add(deck);
@@ -84,20 +68,30 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             _localCreatedDecks[idx] = deck;
           }
         }
-        if (didHealAny) {
-          unawaited(_persistDecksToStorage());
+        if (_localCreatedDecks.isNotEmpty) return;
+      } on Object catch (_) {}
+    }
+
+    // 2. Fallback: Legacy Hive / SharedPreferences loader for unmigrated sessions
+    try {
+      final raw = _localStorage?.getPreference(key: PrefKeys.persistedUserDecks);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        final loaded = list
+            .map((e) => DeckModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        for (final deck in loaded) {
+          final idx = _localCreatedDecks.indexWhere((d) => d.id == deck.id);
+          if (idx < 0) {
+            _localCreatedDecks.add(deck);
+          } else {
+            _localCreatedDecks[idx] = deck;
+          }
+          if (deck.cards.isNotEmpty) {
+            _localDeckCards[deck.id] = deck.cards;
+          }
         }
       }
-    } on Object catch (_) {}
-  }
-
-  Future<void> _persistDecksToStorage() async {
-    try {
-      final jsonStr = jsonEncode(_localCreatedDecks.map((d) => d.toJson()).toList());
-      await _localStorage?.savePreference(
-        key: PrefKeys.persistedUserDecks,
-        data: jsonStr,
-      );
     } on Object catch (_) {}
   }
 
@@ -112,17 +106,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       ..removeWhere((d) => d.id == deck.id)
       ..insert(0, deck.copyWith(cards: cards));
 
-    // 2. Resilient local disk persistence (Hive) across app restarts
-    unawaited(_persistDecksToStorage());
-    try {
-      final cardsJsonStr = jsonEncode(cards.map((c) => c.toJson()).toList());
-      unawaited(
-        _localStorage?.savePreference(
-          key: '${PrefKeys.persistedDeckCardsPrefix}${deck.id}',
-          data: cardsJsonStr,
-        ),
-      );
-    } on Object catch (_) {}
+    // 2. Resilient local relational persistence (SQLite)
+    unawaited(_localDataSource?.saveDeck(deck, cards: cards));
 
     // 3. Seamless Supabase Database Persistence
     final userId = _userStorage?.getUserId() ?? '';
@@ -196,7 +181,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
   @override
   Future<List<DeckModel>> getUserDecks() async {
-    _loadPersistedDecksIntoMemory();
+    await _loadPersistedDecksIntoMemory();
 
     try {
       final remoteDecks = await _client.getUserDecks();
@@ -249,7 +234,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       return inMemoryDeck.cards;
     }
 
-    // 1. Check local persistent storage first
+    // 1. Check local relational database (SQLite)
+    if (_localDataSource != null) {
+      try {
+        final localCards = await _localDataSource!.getCardsForDeck(deckId);
+        if (localCards.isNotEmpty) {
+          _localDeckCards[deckId] = localCards;
+          return localCards;
+        }
+      } on Object catch (_) {}
+    }
+
+    // 2. Check legacy persistent storage
     try {
       final raw = _localStorage?.getPreference(
         key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
@@ -261,16 +257,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             .toList();
         if (loaded.isNotEmpty) {
           _localDeckCards[deckId] = loaded;
+          unawaited(_localDataSource?.saveCards(deckId, loaded));
           return loaded;
         }
       }
     } on Object catch (_) {}
 
-    // 2. Fetch from remote if not cached locally
+    // 3. Fetch from remote if not cached locally
     try {
       final cards = await _client.getDeckCards(deckId);
       if (cards.isNotEmpty) {
         _localDeckCards[deckId] = cards;
+        unawaited(_localDataSource?.saveCards(deckId, cards));
         return cards;
       }
     } on Object catch (e, stack) {
@@ -286,7 +284,6 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
     return _localDeckCards[deckId] ?? const [];
   }
-
 
   @override
   Future<void> updateDeckCards(String deckId, List<FlashcardModel> cards) async {
@@ -307,18 +304,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             ? calculatedMasteryRate
             : old.masteryRate,
       );
-      unawaited(_persistDecksToStorage());
     }
 
-    try {
-      final cardsJsonStr = jsonEncode(cards.map((c) => c.toJson()).toList());
-      unawaited(
-        _localStorage?.savePreference(
-          key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
-          data: cardsJsonStr,
-        ),
-      );
-    } on Object catch (_) {}
+    // Direct, targeted update in SQLite: only cards for this deck updated
+    unawaited(_localDataSource?.saveCards(deckId, cards));
+    unawaited(
+      _localDataSource?.updateDeckStats(
+        deckId: deckId,
+        masteryRate: calculatedMasteryRate,
+        dueCards: dueCount,
+      ),
+    );
   }
 
   @override
@@ -331,18 +327,10 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     int? dueCards,
     List<FlashcardModel>? updatedCards,
   }) async {
+    // 1. Direct targeted SQLite update of reviewed flashcards (no monolithic re-serialization)
     if (updatedCards != null && updatedCards.isNotEmpty) {
       _localDeckCards[deckId] = updatedCards;
-      try {
-        final cardsJsonStr =
-            jsonEncode(updatedCards.map((c) => c.toJson()).toList());
-        unawaited(
-          _localStorage?.savePreference(
-            key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
-            data: cardsJsonStr,
-          ),
-        );
-      } on Object catch (_) {}
+      unawaited(_localDataSource?.batchUpdateCards(updatedCards));
     }
 
     final cards =
@@ -360,7 +348,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         dueCards ?? cards.where((c) => c.isDueToday).length;
     final now = DateTime.now();
 
-    // 1. Instant local state update
+    // 2. Instant local in-memory state update
     final deckIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
     if (deckIdx >= 0) {
       final old = _localCreatedDecks[deckIdx];
@@ -385,9 +373,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         ),
       );
     }
-    unawaited(_persistDecksToStorage());
 
-    // 2. Sync to Supabase RPC record_study_session with correct parameter names
+    // 3. Fast targeted SQLite update for deck stats
+    unawaited(
+      _localDataSource?.updateDeckStats(
+        deckId: deckId,
+        masteryRate: calculatedMasteryRate,
+        dueCards: calculatedDueCards,
+        lastStudied: now,
+      ),
+    );
+
+    // 4. Sync to Supabase RPC record_study_session with correct parameter names
     try {
       await _client.saveSessionResults({
         'p_deck_id': deckId,
@@ -399,7 +396,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       // Offline/Local continues gracefully
     }
 
-    // 3. Persist updated deck mastery and due status to Supabase decks table
+    // 5. Persist updated deck mastery and due status to Supabase decks table
     try {
       await _client.updateDeckRecord(deckId, {
         'mastery_rate': calculatedMasteryRate,
@@ -415,12 +412,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   Future<void> deleteDeck(String deckId) async {
     _localDeckCards.remove(deckId);
     _localCreatedDecks.removeWhere((d) => d.id == deckId);
-    unawaited(_persistDecksToStorage());
-    unawaited(
-      _localStorage?.deletePreference(
-        key: '${PrefKeys.persistedDeckCardsPrefix}$deckId',
-      ),
-    );
+    unawaited(_localDataSource?.deleteDeck(deckId));
 
     try {
       await _client.deleteDeck(deckId);
@@ -450,8 +442,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }).toList();
 
     for (final deck in toDelete) {
-      await deleteDeck(deck.id);
+      _localDeckCards.remove(deck.id);
+      _localCreatedDecks.removeWhere((d) => d.id == deck.id);
+      try {
+        await _client.deleteDeck(deck.id);
+      } on Object catch (_) {}
     }
+
+    await _localDataSource?.deleteDecksForCourse(
+      courseId,
+      courseCode: courseCode,
+      subject: subject,
+    );
   }
 
   @override
@@ -469,8 +471,16 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         courseCode: courseCode ?? old.courseCode,
         subject: subject ?? old.subject,
       );
-      unawaited(_persistDecksToStorage());
     }
+
+    unawaited(
+      _localDataSource?.linkDeckToCourse(
+        deckId: deckId,
+        courseId: courseId,
+        courseCode: courseCode,
+        subject: subject,
+      ),
+    );
 
     try {
       await _client.updateDeckRecord(deckId, {
@@ -485,14 +495,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     final allIds = _localCreatedDecks.map((d) => d.id).toList();
     _localDeckCards.clear();
     _localCreatedDecks.clear();
-    unawaited(_persistDecksToStorage());
+    unawaited(_localDataSource?.deleteAllDecks());
 
     for (final id in allIds) {
-      unawaited(
-        _localStorage?.deletePreference(
-          key: '${PrefKeys.persistedDeckCardsPrefix}$id',
-        ),
-      );
       try {
         await _client.deleteDeck(id);
       } on Object catch (_) {}

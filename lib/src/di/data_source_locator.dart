@@ -28,11 +28,17 @@ void _initDataSource() {
         storageService: locator<LocalStorageService>(),
       ),
     )
+    ..registerLazySingleton<DecksLocalDataSource>(
+      () => DecksLocalDataSourceImpl(
+        locator<DecksDatabaseService>(),
+      ),
+    )
     ..registerLazySingleton<DecksRemoteDataSource>(
       () => DecksRemoteDataSourceImpl(
         locator<DecksApiClient>(),
         userStorage: locator<UserStorageService>(),
         storageService: locator<LocalStorageService>(),
+        localDataSource: locator<DecksLocalDataSource>(),
       ),
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(
