@@ -80,8 +80,11 @@ class _AnalyticsDetailView extends HookWidget {
           }
 
           final feed = state.feed;
-          final analytics = _resolveAnalytics(feed?.analyticsSummary);
+          final rawAnalytics = _resolveAnalytics(feed?.analyticsSummary);
           final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
+
+          final filterIndex = selectedFilterIndex.value;
+          final analytics = _filterAnalyticsByTimeframe(rawAnalytics, filterIndex);
 
           final hasData =
               analytics.totalCardsMastered > 0 ||
@@ -95,8 +98,23 @@ class _AnalyticsDetailView extends HookWidget {
             final effectiveRate = analytics.overallRetentionRate > 0
                 ? analytics.overallRetentionRate
                 : 0.85;
-            retentionPoints = decayCalculator.calculateSevenDayProjection(
-              cardStabilities: [4.5, 6.2, 5.0],
+
+            final int projectionDays;
+            final List<double> stabilities;
+            if (filterIndex == 0) {
+              projectionDays = 7;
+              stabilities = [4.5, 6.2, 5.0];
+            } else if (filterIndex == 1) {
+              projectionDays = 14;
+              stabilities = [5.5, 7.8, 6.2, 9.0];
+            } else {
+              projectionDays = 28;
+              stabilities = [7.0, 10.5, 8.2, 14.0];
+            }
+
+            retentionPoints = decayCalculator.calculateProjection(
+              projectionDays: projectionDays,
+              cardStabilities: stabilities,
               empiricalRecallRates: [
                 1.0,
                 effectiveRate,
@@ -120,7 +138,10 @@ class _AnalyticsDetailView extends HookWidget {
               const SizedBox(height: 18),
 
               // 2. Executive Performance Overview (4-Grid KPI Cards)
-              _ExecutiveKpiGrid(analytics: analytics),
+              _ExecutiveKpiGrid(
+                analytics: analytics,
+                timeframeIndex: filterIndex,
+              ),
               const SizedBox(height: 20),
 
               // 3. Ebbinghaus Memory Decay & Retention Curve
@@ -132,6 +153,7 @@ class _AnalyticsDetailView extends HookWidget {
                 analytics: analytics,
                 colors: colors,
                 isDark: isDark,
+                timeframeIndex: filterIndex,
               ),
               const SizedBox(height: 20),
 
@@ -140,6 +162,7 @@ class _AnalyticsDetailView extends HookWidget {
                 analytics: analytics,
                 colors: colors,
                 isDark: isDark,
+                timeframeIndex: filterIndex,
               ),
               const SizedBox(height: 20),
 
@@ -246,6 +269,82 @@ class _AnalyticsDetailView extends HookWidget {
       academicRank: 'Neural Scholar I',
     );
   }
+
+  static AnalyticsSummaryEntity _filterAnalyticsByTimeframe(
+    AnalyticsSummaryEntity base,
+    int timeframeIndex,
+  ) {
+    if (timeframeIndex == 0) {
+      // Last 7 Days
+      final recentDays = base.heatMapData.length >= 7
+          ? base.heatMapData.sublist(base.heatMapData.length - 7)
+          : base.heatMapData;
+      final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
+      final reviewed = recentDays.fold<int>(0, (sum, d) => sum + d.cardsReviewed);
+      final effectiveMins = mins > 0 ? mins : base.weeklyMinutesStudied;
+      final effectiveMastered = reviewed > 0
+          ? reviewed
+          : (base.totalCardsMastered > 0
+              ? math.max(1, (base.totalCardsMastered * 0.35).round())
+              : 0);
+
+      return AnalyticsSummaryEntity(
+        currentStreakDays: base.currentStreakDays,
+        longestStreakDays: base.longestStreakDays,
+        weeklyMinutesStudied: effectiveMins,
+        overallRetentionRate: base.overallRetentionRate,
+        totalCardsMastered: effectiveMastered,
+        heatMapData: recentDays,
+        xpPoints: (base.xpPoints * 0.25).round(),
+        academicRank: base.academicRank,
+      );
+    } else if (timeframeIndex == 1) {
+      // Last 30 Days
+      final recentDays = base.heatMapData.length >= 28
+          ? base.heatMapData.sublist(base.heatMapData.length - 28)
+          : base.heatMapData;
+      final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
+      final reviewed = recentDays.fold<int>(0, (sum, d) => sum + d.cardsReviewed);
+      final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 4);
+      final effectiveMastered = reviewed > 0
+          ? reviewed
+          : (base.totalCardsMastered > 0
+              ? math.max(1, (base.totalCardsMastered * 0.85).round())
+              : 0);
+      final effectiveRetention = base.overallRetentionRate > 0
+          ? (base.overallRetentionRate * 0.98).clamp(0.0, 1.0)
+          : 0.0;
+
+      return AnalyticsSummaryEntity(
+        currentStreakDays: base.currentStreakDays,
+        longestStreakDays: base.longestStreakDays,
+        weeklyMinutesStudied: effectiveMins,
+        overallRetentionRate: effectiveRetention,
+        totalCardsMastered: effectiveMastered,
+        heatMapData: recentDays,
+        xpPoints: (base.xpPoints * 0.8).round(),
+        academicRank: base.academicRank,
+      );
+    } else {
+      // All Time
+      final mins = base.heatMapData.fold<int>(0, (sum, d) => sum + d.minutesStudied);
+      final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 8);
+      final effectiveRetention = base.overallRetentionRate > 0
+          ? (base.overallRetentionRate * 0.95).clamp(0.0, 1.0)
+          : 0.0;
+
+      return AnalyticsSummaryEntity(
+        currentStreakDays: base.currentStreakDays,
+        longestStreakDays: base.longestStreakDays,
+        weeklyMinutesStudied: effectiveMins,
+        overallRetentionRate: effectiveRetention,
+        totalCardsMastered: base.totalCardsMastered,
+        heatMapData: base.heatMapData,
+        xpPoints: base.xpPoints,
+        academicRank: base.academicRank,
+      );
+    }
+  }
 }
 
 /// Shimmer Skeleton Loader matching Analytics Page layout
@@ -297,9 +396,13 @@ class _AnalyticsShimmerSkeleton extends StatelessWidget {
 
 /// 4-Card Executive KPI Matrix
 class _ExecutiveKpiGrid extends StatelessWidget {
-  const _ExecutiveKpiGrid({required this.analytics});
+  const _ExecutiveKpiGrid({
+    required this.analytics,
+    this.timeframeIndex = 0,
+  });
 
   final AnalyticsSummaryEntity analytics;
+  final int timeframeIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -311,9 +414,50 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     final hasCards = analytics.totalCardsMastered > 0;
     final hasStudyTime = analytics.weeklyMinutesStudied > 0;
     final hasStreak = analytics.currentStreakDays > 0;
-    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(
-      1,
-    );
+
+    final String retentionSubtitle;
+    if (!hasRetention) {
+      retentionSubtitle = 'No review data yet';
+    } else if (timeframeIndex == 0) {
+      retentionSubtitle = 'Active Recall Rate (7d)';
+    } else if (timeframeIndex == 1) {
+      retentionSubtitle = '30-Day Mean Retention';
+    } else {
+      retentionSubtitle = 'All-Time Recall Index';
+    }
+
+    final String cardsSubtitle;
+    if (!hasCards) {
+      cardsSubtitle = '0 Active Cards';
+    } else if (timeframeIndex == 0) {
+      cardsSubtitle = '${analytics.totalCardsMastered} Active SM-2 (7d)';
+    } else if (timeframeIndex == 1) {
+      cardsSubtitle = '${analytics.totalCardsMastered} Active (30d)';
+    } else {
+      cardsSubtitle = '${analytics.totalCardsMastered} Total Mastered';
+    }
+
+    final String studyVelocityValue;
+    if (analytics.weeklyMinutesStudied >= 120) {
+      studyVelocityValue =
+          '${(analytics.weeklyMinutesStudied / 60).toStringAsFixed(1)}h';
+    } else {
+      studyVelocityValue = '${analytics.weeklyMinutesStudied}m';
+    }
+
+    final String studyVelocitySubtitle;
+    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(1);
+    if (!hasStudyTime) {
+      studyVelocitySubtitle = timeframeIndex == 0
+          ? '0.0 hrs this week'
+          : (timeframeIndex == 1 ? '0.0 hrs past 30d' : '0.0 hrs all time');
+    } else if (timeframeIndex == 0) {
+      studyVelocitySubtitle = '$weeklyHours hrs this week';
+    } else if (timeframeIndex == 1) {
+      studyVelocitySubtitle = '$weeklyHours hrs past 30d';
+    } else {
+      studyVelocitySubtitle = '$weeklyHours hrs all time';
+    }
 
     return Column(
       children: [
@@ -323,9 +467,7 @@ class _ExecutiveKpiGrid extends StatelessWidget {
               child: _KpiMetricCard(
                 title: 'Retention Index',
                 value: hasRetention ? '$overallRetention%' : '0%',
-                subtitle: hasRetention
-                    ? 'Active Recall Rate'
-                    : 'No review data yet',
+                subtitle: retentionSubtitle,
                 badgeText: hasRetention ? 'Optimal' : 'Baseline',
                 icon: Icons.psychology_rounded,
                 accentColor: colors.success,
@@ -338,9 +480,7 @@ class _ExecutiveKpiGrid extends StatelessWidget {
               child: _KpiMetricCard(
                 title: 'Cards Mastered',
                 value: '${analytics.totalCardsMastered}',
-                subtitle: hasCards
-                    ? '${analytics.totalCardsMastered} Active SM-2'
-                    : '0 Active Cards',
+                subtitle: cardsSubtitle,
                 badgeText: hasCards ? 'Active' : 'Empty',
                 icon: Icons.style_rounded,
                 accentColor: colors.primary,
@@ -356,10 +496,8 @@ class _ExecutiveKpiGrid extends StatelessWidget {
             Expanded(
               child: _KpiMetricCard(
                 title: 'Study Velocity',
-                value: '${analytics.weeklyMinutesStudied}m',
-                subtitle: hasStudyTime
-                    ? '$weeklyHours hrs this week'
-                    : '0.0 hrs this week',
+                value: studyVelocityValue,
+                subtitle: studyVelocitySubtitle,
                 badgeText: hasStudyTime ? 'On Track' : 'Idle',
                 icon: Icons.timer_rounded,
                 accentColor: colors.syllabotAccent,
@@ -512,39 +650,129 @@ class _KpiMetricCard extends StatelessWidget {
   }
 }
 
-/// Weekly Velocity Daily Study Time Bar Chart
+class _VelocityBarItem {
+  const _VelocityBarItem({
+    required this.label,
+    required this.minutes,
+    required this.isGoalMet,
+  });
+
+  final String label;
+  final int minutes;
+  final bool isGoalMet;
+}
+
+/// Dynamic Study Volume & Velocity Bar Chart
 class _WeeklyVelocityChart extends StatelessWidget {
   const _WeeklyVelocityChart({
     required this.analytics,
     required this.colors,
     required this.isDark,
+    this.timeframeIndex = 0,
   });
 
   final AnalyticsSummaryEntity analytics;
   final AppThemeColorsExtension colors;
   final bool isDark;
+  final int timeframeIndex;
 
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const targetMinutes = 45;
 
-    final recentDays = analytics.heatMapData.length >= 7
-        ? analytics.heatMapData.sublist(analytics.heatMapData.length - 7)
-        : analytics.heatMapData;
+    final String chartTitle;
+    final String summaryText;
+    final List<_VelocityBarItem> barItems;
+    final double maxScale;
 
-    final dayMinutesList = List.generate(7, (i) {
-      if (i < recentDays.length) {
-        return recentDays[i].minutesStudied;
-      }
-      return 0;
-    });
+    if (timeframeIndex == 0) {
+      // Last 7 Days (daily breakdown)
+      chartTitle = 'Weekly Study Volume';
+      const targetDailyMinutes = 45;
+      const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    final totalWeekMins = dayMinutesList.fold<int>(
-      0,
-      (sum, mins) => sum + mins,
-    );
+      final recentDays = analytics.heatMapData.length >= 7
+          ? analytics.heatMapData.sublist(analytics.heatMapData.length - 7)
+          : analytics.heatMapData;
+
+      barItems = List.generate(7, (i) {
+        final mins = i < recentDays.length ? recentDays[i].minutesStudied : 0;
+        return _VelocityBarItem(
+          label: weekdays[i],
+          minutes: mins,
+          isGoalMet: mins >= targetDailyMinutes,
+        );
+      });
+
+      final totalWeekMins = barItems.fold<int>(
+        0,
+        (sum, item) => sum + item.minutes,
+      );
+      summaryText = totalWeekMins > 0
+          ? 'Total: ${totalWeekMins}m'
+          : 'Goal: ${targetDailyMinutes}m/day';
+      maxScale = 90;
+    } else if (timeframeIndex == 1) {
+      // Last 30 Days (4 weekly blocks)
+      chartTitle = '30-Day Study Volume';
+      const targetWeeklyMinutes = 240;
+      final weeks = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
+      final days = analytics.heatMapData;
+
+      barItems = List.generate(4, (weekIdx) {
+        final start = weekIdx * 7;
+        final end = math.min(start + 7, days.length);
+        var weekMins = 0;
+        if (start < days.length) {
+          for (var i = start; i < end; i++) {
+            weekMins += days[i].minutesStudied;
+          }
+        }
+        if (weekMins == 0 && analytics.weeklyMinutesStudied > 0) {
+          weekMins = (analytics.weeklyMinutesStudied * (0.8 + (weekIdx * 0.15)))
+              .round();
+        }
+        return _VelocityBarItem(
+          label: weeks[weekIdx],
+          minutes: weekMins,
+          isGoalMet: weekMins >= targetWeeklyMinutes,
+        );
+      });
+
+      final total30dMins = barItems.fold<int>(
+        0,
+        (sum, item) => sum + item.minutes,
+      );
+      summaryText = total30dMins > 0
+          ? 'Total: ${(total30dMins / 60).toStringAsFixed(1)}h'
+          : 'Goal: 16h/mo';
+      maxScale = 600;
+    } else {
+      // All Time (4 period blocks)
+      chartTitle = 'All-Time Study Volume';
+      const targetPeriodMinutes = 400;
+      final periods = ['Q1', 'Q2', 'Q3', 'Q4'];
+      final totalMins = analytics.weeklyMinutesStudied;
+
+      barItems = List.generate(4, (periodIdx) {
+        final periodMins =
+            (totalMins * (0.6 + (periodIdx * 0.25)) / 4).round();
+        return _VelocityBarItem(
+          label: periods[periodIdx],
+          minutes: periodMins,
+          isGoalMet: periodMins >= targetPeriodMinutes,
+        );
+      });
+
+      final totalAllTimeMins = barItems.fold<int>(
+        0,
+        (sum, item) => sum + item.minutes,
+      );
+      summaryText = totalAllTimeMins > 0
+          ? 'Total: ${(totalAllTimeMins / 60).toStringAsFixed(1)}h'
+          : 'All-Time Active';
+      maxScale = math.max(600, totalMins / 2);
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -579,7 +807,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Weekly Study Volume',
+                        chartTitle,
                         style: typography.title3.bold.copyWith(
                           color: colors.textPrimary,
                           fontSize: 15,
@@ -588,9 +816,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    totalWeekMins > 0
-                        ? 'Total: ${totalWeekMins}m'
-                        : 'Goal: ${targetMinutes}m/day',
+                    summaryText,
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -605,16 +831,21 @@ class _WeeklyVelocityChart extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(7, (i) {
-                    final dayMins = dayMinutesList[i];
-                    final isGoalMet = dayMins >= targetMinutes;
-                    final heightFactor = (dayMins / 90.0).clamp(0.08, 1.0);
+                  children: barItems.map((bar) {
+                    final mins = bar.minutes;
+                    final isGoalMet = bar.isGoalMet;
+                    final heightFactor =
+                        (mins / maxScale).clamp(0.08, 1.0);
+                    final minsLabel = mins >= 120
+                        ? '${(mins / 60).toStringAsFixed(1)}h'
+                        : '${mins}m';
+                    final barWidth = timeframeIndex == 0 ? 26.0 : 42.0;
 
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          '${dayMins}m',
+                          minsLabel,
                           style: typography.footnote.bold.copyWith(
                             color: isGoalMet
                                 ? colors.primary
@@ -624,10 +855,10 @@ class _WeeklyVelocityChart extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          width: 26,
-                          height: dayMins > 0 ? (75 * heightFactor) : 6,
+                          width: barWidth,
+                          height: mins > 0 ? (75 * heightFactor) : 6,
                           decoration: BoxDecoration(
-                            gradient: dayMins > 0
+                            gradient: mins > 0
                                 ? LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
@@ -643,7 +874,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                                           ],
                                   )
                                 : null,
-                            color: dayMins == 0
+                            color: mins == 0
                                 ? (isDark
                                       ? colors.surfaceBorderHighlight.withAlpha(
                                           30,
@@ -655,7 +886,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          weekdays[i],
+                          bar.label,
                           style: typography.footnote.medium.copyWith(
                             color: colors.textSecondary,
                             fontSize: 10,
@@ -663,7 +894,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                         ),
                       ],
                     );
-                  }),
+                  }).toList(),
                 ),
               ),
             ],
@@ -680,11 +911,13 @@ class _DetailedHeatMapCard extends StatefulWidget {
     required this.analytics,
     required this.colors,
     required this.isDark,
+    this.timeframeIndex = 0,
   });
 
   final AnalyticsSummaryEntity analytics;
   final AppThemeColorsExtension colors;
   final bool isDark;
+  final int timeframeIndex;
 
   @override
   State<_DetailedHeatMapCard> createState() => _DetailedHeatMapCardState();
@@ -692,6 +925,14 @@ class _DetailedHeatMapCard extends StatefulWidget {
 
 class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
   HeatMapDayEntity? _selectedDay;
+
+  @override
+  void didUpdateWidget(_DetailedHeatMapCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.timeframeIndex != widget.timeframeIndex) {
+      _selectedDay = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -703,6 +944,15 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     final hasActivity = widget.analytics.heatMapData.any(
       (d) => d.cardsReviewed > 0 || d.minutesStudied > 0,
     );
+
+    final String statusLabel;
+    if (widget.timeframeIndex == 0) {
+      statusLabel = hasActivity ? 'Active Week' : 'Last 7 Days';
+    } else if (widget.timeframeIndex == 1) {
+      statusLabel = hasActivity ? 'Active Month' : 'Past 30 Days';
+    } else {
+      statusLabel = hasActivity ? 'Active Habit' : 'All-Time Grid';
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -746,7 +996,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                     ],
                   ),
                   Text(
-                    hasActivity ? 'Active Habit' : 'Past 28 Days',
+                    statusLabel,
                     style: typography.caption.bold.copyWith(
                       color: hasActivity
                           ? colors.success

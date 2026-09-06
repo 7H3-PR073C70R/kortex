@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/theme_state.dart';
@@ -27,6 +28,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   late final AppRouter _appRouter;
   StreamSubscription<String>? _sessionExpiredSubscription;
+  StreamSubscription<String>? _notificationPayloadSubscription;
 
   @override
   void initState() {
@@ -36,6 +38,12 @@ class _AppState extends State<App> {
     _sessionExpiredSubscription = locator<SessionExpiredService>()
         .onSessionExpired
         .listen(_handleSessionExpired);
+
+    if (locator.isRegistered<NotificationService>()) {
+      _notificationPayloadSubscription = locator<NotificationService>()
+          .onPayloadTapped
+          .listen(_handleNotificationPayload);
+    }
   }
 
   void _handleSessionExpired(String message) {
@@ -54,9 +62,75 @@ class _AppState extends State<App> {
     });
   }
 
+  void _handleNotificationPayload(String payload) {
+    if (payload.trim().isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final clean = payload.trim();
+      try {
+        if (clean == '/planner' ||
+            clean == 'planner' ||
+            clean.startsWith('/exam') ||
+            clean.startsWith('exam:')) {
+          unawaited(_appRouter.push(const ExamTimetableRoute()));
+          return;
+        }
+
+        if (clean == '/decks' || clean == 'decks') {
+          unawaited(_appRouter.push(const DecksRoute()));
+          return;
+        }
+
+        if (clean == '/past-questions' || clean == 'past-questions') {
+          unawaited(_appRouter.push(PastQuestionsBoardRoute()));
+          return;
+        }
+
+        if (clean == '/chat' || clean == 'syllabot' || clean == '/syllabot') {
+          unawaited(_appRouter.push(SyllabotChatRoute()));
+          return;
+        }
+
+        if (clean.startsWith('deck:')) {
+          final parts = clean.substring(5).split(':');
+          final deckId = parts.first;
+          final mode = parts.length > 1 ? parts[1] : '';
+          if (mode == 'study') {
+            unawaited(
+              _appRouter.push(
+                StudySessionRoute(deckId: deckId),
+              ),
+            );
+          } else {
+            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
+          }
+          return;
+        }
+
+        if (clean.startsWith('study:')) {
+          final deckId = clean.substring(6);
+          unawaited(
+            _appRouter.push(
+              StudySessionRoute(deckId: deckId),
+            ),
+          );
+          return;
+        }
+
+        // Generic named route fallback
+        if (clean.startsWith('/')) {
+          unawaited(_appRouter.pushPath(clean));
+        }
+      } on Object catch (e) {
+        debugPrint('[App] Failed to route notification payload "$payload": $e');
+      }
+    });
+  }
+
   @override
   void dispose() {
     unawaited(_sessionExpiredSubscription?.cancel());
+    unawaited(_notificationPayloadSubscription?.cancel());
     super.dispose();
   }
 

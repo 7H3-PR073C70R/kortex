@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
@@ -140,19 +144,64 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, DeckEntity>> cloneSharedDeck(
     String sharedDeckId,
   ) {
-    return _remoteDataSource.cloneSharedDeck(sharedDeckId).then((result) {
+    return _remoteDataSource.cloneSharedDeck(sharedDeckId).then((result) async {
       final newDeckId =
           result['new_deck_id'] as String? ?? 'cloned_$sharedDeckId';
-      return DeckEntity(
+      final clonedCount =
+          (result['cloned_cards_count'] as num?)?.toInt() ?? 10;
+      final deckTitle = result['title'] as String? ??
+          result['deck_title'] as String? ??
+          'Cloned Deck';
+      final deckSubject = result['subject'] as String? ??
+          result['deck_subject'] as String? ??
+          'Community Resource';
+
+      final clonedDeck = DeckEntity(
         id: newDeckId,
-        title: 'Cloned Deck',
-        subject: 'Community Resource',
-        totalCards: (result['cloned_cards_count'] as num?)?.toInt() ?? 10,
-        dueCards: (result['cloned_cards_count'] as num?)?.toInt() ?? 10,
+        title: deckTitle,
+        subject: deckSubject,
+        totalCards: clonedCount,
+        dueCards: clonedCount,
         masteryRate: 0,
         category: 'Community',
         description: 'Cloned from Community Marketplace',
       );
+
+      // Persist cloned deck locally directly into PrefKeys.persistedUserDecks
+      try {
+        final storage = locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null;
+        if (storage != null) {
+          final raw = storage.getPreference(key: PrefKeys.persistedUserDecks);
+          final existingList = raw != null && raw.isNotEmpty
+              ? (jsonDecode(raw) as List<dynamic>)
+              : <dynamic>[];
+
+          final deckMap = <String, dynamic>{
+            'id': clonedDeck.id,
+            'title': clonedDeck.title,
+            'subject': clonedDeck.subject,
+            'total_cards': clonedDeck.totalCards,
+            'due_cards': clonedDeck.dueCards,
+            'mastery_rate': clonedDeck.masteryRate,
+            'category': clonedDeck.category,
+            'description': clonedDeck.description,
+            'created_at': DateTime.now().toIso8601String(),
+          };
+
+          existingList
+            ..removeWhere((d) => d is Map && d['id'] == clonedDeck.id)
+            ..insert(0, deckMap);
+
+          await storage.savePreference(
+            key: PrefKeys.persistedUserDecks,
+            data: jsonEncode(existingList),
+          );
+        }
+      } on Object catch (_) {}
+
+      return clonedDeck;
     }).makeRequest();
   }
 

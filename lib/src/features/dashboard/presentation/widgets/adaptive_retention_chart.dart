@@ -193,65 +193,82 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final count = widget.points.length;
+                      final isCompact = count > 7;
                       const spacing = 4.0;
-                      final itemWidth =
-                          ((constraints.maxWidth - ((count - 1) * spacing)) /
+                      final itemWidth = isCompact
+                          ? 36.0
+                          : ((constraints.maxWidth - ((count - 1) * spacing)) /
                                   count)
                               .clamp(26.0, 50.0);
 
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(
-                          count,
-                          (index) => Semantics(
-                            button: true,
-                            label:
-                                'Day ${widget.points[index].day} '
-                                'Retention Point',
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedDayIndex = index;
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                width: itemWidth,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
+                      final dayItems = List.generate(
+                        count,
+                        (index) => Semantics(
+                          button: true,
+                          label:
+                              'Day ${widget.points[index].day} '
+                              'Retention Point',
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedDayIndex = index;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: itemWidth,
+                              margin: isCompact
+                                  ? const EdgeInsets.only(right: 6)
+                                  : EdgeInsets.zero,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _selectedDayIndex == index
+                                    ? colors.primary.withAlpha(
+                                        isDark ? 60 : 30,
+                                      )
+                                    : colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
                                   color: _selectedDayIndex == index
                                       ? colors.primary.withAlpha(
-                                          isDark ? 60 : 30,
+                                          isDark ? 120 : 70,
                                         )
                                       : colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: _selectedDayIndex == index
-                                        ? colors.primary.withAlpha(
-                                            isDark ? 120 : 70,
-                                          )
-                                        : colors.transparent,
-                                  ),
                                 ),
-                                child: Text(
-                                  'D${widget.points[index].day}',
-                                  textAlign: TextAlign.center,
-                                  style: typography.caption.medium.copyWith(
-                                    color: _selectedDayIndex == index
-                                        ? colors.primary
-                                        : colors.textSecondary,
-                                    fontWeight: _selectedDayIndex == index
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    fontSize: 11,
-                                  ),
+                              ),
+                              child: Text(
+                                'D${widget.points[index].day}',
+                                textAlign: TextAlign.center,
+                                style: typography.caption.medium.copyWith(
+                                  color: _selectedDayIndex == index
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                  fontWeight: _selectedDayIndex == index
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  fontSize: 11,
                                 ),
                               ),
                             ),
                           ),
                         ),
+                      );
+
+                      if (isCompact) {
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: dayItems,
+                          ),
+                        );
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: dayItems,
                       );
                     },
                   ),

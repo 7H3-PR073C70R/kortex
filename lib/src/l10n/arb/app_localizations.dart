@@ -3272,13 +3272,11 @@ abstract class AppLocalizations {
   /// **'Actual Recall Rate'**
   String get actualRetentionLabel;
 
-  /// Description of FSRS-4.5 scheduler
+  /// Description of FSRS-6 scheduler
   ///
   /// In en, this message translates to:
-  /// **'Adaptive Stability & Difficulty decay modeling for optimal study load'**
+  /// **'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling'**
   String get fsrsModeDescription;
-
-
 
   /// Title of spaced repetition algorithm settings section
   ///

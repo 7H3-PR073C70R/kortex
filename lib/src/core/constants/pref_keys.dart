@@ -18,4 +18,10 @@ class PrefKeys {
       '__kortex_persisted_exam_countdowns__';
   static const String hasCompletedInteractiveTour =
       '__kortex_has_completed_interactive_tour__';
+  static const String syllabotSocraticMode =
+      '__kortex_syllabot_socratic_mode__';
+  static const String syllabotVoiceGender = '__kortex_syllabot_voice_gender__';
+  static const String syllabotSpeechRate = '__kortex_syllabot_speech_rate__';
+  static const String pastQuestionBookmarks =
+      '__kortex_past_question_bookmarks__';
 }

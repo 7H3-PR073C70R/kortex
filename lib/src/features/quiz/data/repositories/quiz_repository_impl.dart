@@ -18,14 +18,17 @@ import 'package:kortex/src/features/decks/domain/services/study_engine_router.da
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_question_model.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_result_model.dart';
+import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 class QuizRepositoryImpl implements QuizRepository {
   const QuizRepositoryImpl({
     DecksRepository? decksRepository,
     IngestionRepository? ingestionRepository,
+    PastQuestionsRepository? pastQuestionsRepository,
     StudyEngineRouter? studyEngineRouter,
     Dio? dio,
     LocalStorageService? localStorageService,
@@ -33,6 +36,7 @@ class QuizRepositoryImpl implements QuizRepository {
     UserActivityService? userActivityService,
   })  : _decksRepository = decksRepository,
         _ingestionRepository = ingestionRepository,
+        _pastQuestionsRepository = pastQuestionsRepository,
         _studyEngineRouter = studyEngineRouter,
         _dio = dio,
         _localStorageService = localStorageService,
@@ -41,6 +45,7 @@ class QuizRepositoryImpl implements QuizRepository {
 
   final DecksRepository? _decksRepository;
   final IngestionRepository? _ingestionRepository;
+  final PastQuestionsRepository? _pastQuestionsRepository;
   final StudyEngineRouter? _studyEngineRouter;
   final Dio? _dio;
   final LocalStorageService? _localStorageService;
@@ -60,6 +65,12 @@ class QuizRepositoryImpl implements QuizRepository {
       _ingestionRepository ??
       (locator.isRegistered<IngestionRepository>()
           ? locator<IngestionRepository>()
+          : null);
+
+  PastQuestionsRepository? get _effectivePastQuestionsRepo =>
+      _pastQuestionsRepository ??
+      (locator.isRegistered<PastQuestionsRepository>()
+          ? locator<PastQuestionsRepository>()
           : null);
 
   StudyEngineRouter get _effectiveEngineRouter =>
@@ -173,6 +184,55 @@ class QuizRepositoryImpl implements QuizRepository {
     ) ?? <FlashcardEntity>[];
 
     if (deckCards.isEmpty) {
+      final isExam = deckId.toLowerCase().startsWith('exam') ||
+          deckId.toLowerCase().startsWith('cbt_') ||
+          (deckTitle != null &&
+              (deckTitle.toLowerCase().contains('exam') ||
+                  deckTitle.toLowerCase().contains('simulator') ||
+                  deckTitle.toLowerCase().contains('mock')));
+
+      if (_effectivePastQuestionsRepo != null) {
+        ExamCategory? matchedCat;
+        final query = '${deckTitle ?? ''} $deckId'.toLowerCase();
+        for (final cat in ExamCategory.values) {
+          if (query.contains(cat.name.toLowerCase()) ||
+              query.contains(cat.code.toLowerCase())) {
+            matchedCat = cat;
+            break;
+          }
+        }
+
+        try {
+          final pqResult = await _effectivePastQuestionsRepo!.getPastQuestions(
+            examCategory: matchedCat,
+            searchQuery: matchedCat == null ? (deckTitle ?? deckId) : null,
+          );
+          final pastQuestions = pqResult.fold(
+            (f) => <PastQuestionEntity>[],
+            (q) => q,
+          );
+
+          if (pastQuestions.isNotEmpty) {
+            final shuffled = List<PastQuestionEntity>.from(pastQuestions)
+              ..shuffle();
+            return shuffled
+                .take(min(questionCount, pastQuestions.length))
+                .map(QuizQuestionEntity.fromPastQuestion)
+                .toList();
+          }
+        } on Object catch (pqErr) {
+          debugPrint('[QuizRepository] Error loading past questions: $pqErr');
+        }
+      }
+
+      if (isExam) {
+        return _synthesizeExamSimulatorQuestions(
+          examTitle: deckTitle ?? 'Exam Simulator',
+          examId: deckId,
+          count: questionCount,
+        );
+      }
+
       throw const ServerException(
         message:
             'Cannot generate a quiz from an empty deck. Please add flashcards to this deck first.',
@@ -548,6 +608,94 @@ class QuizRepositoryImpl implements QuizRepository {
     }
 
     return result;
+  }
+
+  List<QuizQuestionModel> _synthesizeExamSimulatorQuestions({
+    required String examTitle,
+    required String examId,
+    int count = 10,
+  }) {
+    final cleanTitle =
+        examTitle.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+    final questions = <QuizQuestionModel>[];
+
+    final coreCompetencies = [
+      (
+        'Fundamental Principles',
+        'Which core principle is most critical to master in $cleanTitle?',
+        'Foundational domain comprehension and rigorous systematic application',
+        [
+          'Superficial memorization of edge cases without principles',
+          'Random sampling of unrelated tertiary concepts',
+          'Disregarding theoretical underpinnings in favor of guesswork',
+        ],
+        'High-yield exam performance depends on deep conceptual mastery rather than rote memorization.',
+      ),
+      (
+        'Analytical Problem Solving',
+        'When evaluating complex problem sets in $cleanTitle, what is the optimal first step?',
+        'Deconstruct the problem into constituent requirements and verify boundary conditions',
+        [
+          'Jump directly to conclusion based on first impression',
+          'Ignore question constraints and apply generic assumptions',
+          'Calculate outputs before defining variables or given constraints',
+        ],
+        'Systematic decomposition ensures all constraints are accounted for before synthesis.',
+      ),
+      (
+        'Critical Verification',
+        'In high-stakes examination settings for $cleanTitle, how should results be verified?',
+        'Dimensional analysis, reverse-verification, and sanity checking against baseline thresholds',
+        [
+          'Assuming the first computed value is always error-free',
+          'Skipping validation to preserve testing time regardless of margin',
+          'Changing answers at random without systematic evaluation',
+        ],
+        'Reverse verification and dimensional consistency catch common examination traps.',
+      ),
+      (
+        'Standard Methodology',
+        'What characterizes a standard rigorous methodology when approaching $cleanTitle assessments?',
+        'Evidence-based reasoning adhering to established standardized rubrics and guidelines',
+        [
+          'Unsubstantiated intuitive speculation',
+          'Disregarding established conventions for proprietary shortcuts',
+          'Inconsistent notation and unreferenced formulas',
+        ],
+        'Standardized examinations strictly score based on established rubrics and methodology.',
+      ),
+      (
+        'Error Minimization',
+        'Which technique is most effective for mitigating common cognitive traps in $cleanTitle?',
+        'Active elimination of demonstrably false distractors prior to selecting the target answer',
+        [
+          'Selecting the option with the most complex vocabulary regardless of fit',
+          'Relying solely on visual symmetry of answer keys',
+          'Ignoring negative qualifiers like NOT or EXCEPT in prompts',
+        ],
+        'Process of elimination actively isolates distractors with deceptive wording.',
+      ),
+    ];
+
+    for (var i = 0; i < count; i++) {
+      final comp = coreCompetencies[i % coreCompetencies.length];
+      final options = [comp.$3, ...comp.$4]..shuffle(Random(i * 17));
+
+      questions.add(
+        QuizQuestionModel(
+          id: 'sim-${examId.replaceAll(RegExp('[^a-zA-Z0-9]'), '_')}-$i',
+          prompt: i < coreCompetencies.length
+              ? comp.$2
+              : '[$cleanTitle Simulator - Q${i + 1}] ${comp.$2}',
+          type: QuizQuestionType.multipleChoice,
+          options: options,
+          correctAnswer: comp.$3,
+          explanation: comp.$5,
+          subTopic: comp.$1,
+        ),
+      );
+    }
+    return questions;
   }
 
   List<QuizQuestionModel> _mapGeneratedCardsToQuestions({

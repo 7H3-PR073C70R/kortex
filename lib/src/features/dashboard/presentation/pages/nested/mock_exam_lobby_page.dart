@@ -9,6 +9,9 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -31,6 +34,7 @@ class MockExamLobbyPage extends HookWidget {
     final isDark = context.isDarkMode;
 
     final selectedModeIndex = useState<int>(0);
+    final isStarting = useState<bool>(false);
 
     final simulationModes = [
       (
@@ -209,30 +213,77 @@ class MockExamLobbyPage extends HookWidget {
 
               // Start Simulation Button
               ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
-                  final selectedMode =
-                      simulationModes[selectedModeIndex.value];
-                  final duration = selectedModeIndex.value == 0
-                      ? 45
-                      : (selectedModeIndex.value == 1 ? 30 : 15);
-                  locator<DashboardBloc>().add(
-                    DashboardExamStarted(
-                      examId: examId,
-                      subject: examName,
-                    ),
-                  );
-                  unawaited(
-                    context.router.push(
-                      QuizWorkspaceRoute(
-                        deckId: examId,
-                        deckTitle: '$examName (${selectedMode.title})',
-                        subject: examName,
-                        durationMinutes: duration,
-                      ),
-                    ),
-                  );
-                },
+                onTap: isStarting.value
+                    ? null
+                    : () async {
+                        unawaited(HapticFeedback.lightImpact());
+                        isStarting.value = true;
+                        final selectedMode =
+                            simulationModes[selectedModeIndex.value];
+                        final duration = selectedModeIndex.value == 0
+                            ? 45
+                            : (selectedModeIndex.value == 1 ? 30 : 15);
+                        final questionCount = selectedModeIndex.value == 0
+                            ? 20
+                            : (selectedModeIndex.value == 1 ? 15 : 10);
+
+                        locator<DashboardBloc>().add(
+                          DashboardExamStarted(
+                            examId: examId,
+                            subject: examName,
+                          ),
+                        );
+
+                        List<QuizQuestionEntity>? initialQuestions;
+                        if (locator.isRegistered<PastQuestionsRepository>()) {
+                          try {
+                            ExamCategory? category;
+                            final query = '$examName $examId'.toLowerCase();
+                            for (final cat in ExamCategory.values) {
+                              if (query.contains(cat.name.toLowerCase()) ||
+                                  query.contains(cat.code.toLowerCase())) {
+                                category = cat;
+                                break;
+                              }
+                            }
+                            final result = await locator<PastQuestionsRepository>()
+                                .getPastQuestions(
+                              examCategory: category,
+                              searchQuery: category == null ? examName : null,
+                            );
+                            final questions = result.fold(
+                              (f) => <PastQuestionEntity>[],
+                              (list) => list,
+                            );
+                            if (questions.isNotEmpty) {
+                              final shuffled =
+                                  List<PastQuestionEntity>.from(questions)
+                                    ..shuffle();
+                              initialQuestions = shuffled
+                                  .take(questionCount)
+                                  .map(QuizQuestionEntity.fromPastQuestion)
+                                  .toList();
+                            }
+                          } on Object catch (_) {
+                            // Fallback handled by QuizRepositoryImpl or QuizWorkspace
+                          }
+                        }
+
+                        if (!context.mounted) return;
+                        isStarting.value = false;
+
+                        unawaited(
+                          context.router.push(
+                            QuizWorkspaceRoute(
+                              deckId: examId,
+                              deckTitle: '$examName (${selectedMode.title})',
+                              subject: examName,
+                              durationMinutes: duration,
+                              initialQuestions: initialQuestions,
+                            ),
+                          ),
+                        );
+                      },
                 child: Container(
                   width: double.infinity,
                   height: 50,
@@ -248,12 +299,23 @@ class MockExamLobbyPage extends HookWidget {
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    l10n.mockExamBeginButton,
-                    style: typography.callout.bold.copyWith(
-                      color: colors.white,
-                    ),
-                  ),
+                  child: isStarting.value
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          l10n.mockExamBeginButton,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),

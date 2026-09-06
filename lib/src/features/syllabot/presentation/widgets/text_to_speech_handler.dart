@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 
 /// Available synthesized voice gender for Syllabot AI speech.
 enum VoiceGender {
@@ -13,19 +16,54 @@ class TextToSpeechHandler {
   TextToSpeechHandler({
     this.onSpeakingChanged,
     this.onError,
-  }) {
+    LocalStorageService? localStorageService,
+  }) : _localStorageService = localStorageService {
+    _loadSavedPreferences();
     _initTts();
   }
 
   final ValueChanged<bool>? onSpeakingChanged;
   final ValueChanged<String>? onError;
+  final LocalStorageService? _localStorageService;
 
   final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
   VoiceGender _gender = VoiceGender.female;
+  double _speechRate = 1;
 
   bool get isSpeaking => _isSpeaking;
   VoiceGender get voiceGender => _gender;
+  double get speechRate => _speechRate;
+
+  LocalStorageService? get _effectiveLocalStorage =>
+      _localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
+
+  void _loadSavedPreferences() {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage != null) {
+        final savedGender =
+            storage.getPreference(key: PrefKeys.syllabotVoiceGender);
+        if (savedGender != null) {
+          _gender = VoiceGender.values.firstWhere(
+            (g) => g.name == savedGender,
+            orElse: () => VoiceGender.female,
+          );
+        }
+        final savedRate =
+            storage.getPreference(key: PrefKeys.syllabotSpeechRate);
+        if (savedRate != null) {
+          final parsed = double.tryParse(savedRate);
+          if (parsed != null && parsed > 0) {
+            _speechRate = parsed;
+          }
+        }
+      }
+    } on Object catch (_) {}
+  }
 
   void _initTts() {
     _flutterTts
@@ -53,12 +91,29 @@ class TextToSpeechHandler {
   Future<void> setVoiceGender(VoiceGender gender) async {
     _gender = gender;
     await _applyVoiceConfiguration();
+    try {
+      await _effectiveLocalStorage?.savePreference(
+        key: PrefKeys.syllabotVoiceGender,
+        data: gender.name,
+      );
+    } on Object catch (_) {}
+  }
+
+  Future<void> setSpeechRate(double rate) async {
+    _speechRate = rate;
+    await _applyVoiceConfiguration();
+    try {
+      await _effectiveLocalStorage?.savePreference(
+        key: PrefKeys.syllabotSpeechRate,
+        data: rate.toString(),
+      );
+    } on Object catch (_) {}
   }
 
   Future<void> _applyVoiceConfiguration() async {
     try {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.setSpeechRate(0.48);
+      await _flutterTts.setSpeechRate(0.48 * _speechRate);
       await _flutterTts.setVolume(1);
 
       // Explicitly configure audio session category for iOS speaker playback

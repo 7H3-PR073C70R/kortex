@@ -458,5 +458,35 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('generateQuizFromDeck synthesizes exam simulation questions when deckId is an exam identifier and cards are empty', () async {
+      when(
+        () => mockDio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/quizzes/generate'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      when(() => mockDecksRepo.getDeckCards('exam-waec-2025'))
+          .thenAnswer((_) async => const Right([]));
+
+      final result = await repository.generateQuizFromDeck(
+        deckId: 'exam-waec-2025',
+        deckTitle: 'WAEC Mathematics Mock Exam',
+        questionCount: 5,
+      );
+
+      expect(result.isRight, isTrue);
+      final questions = result.fold((l) => <QuizQuestionEntity>[], (r) => r);
+      expect(questions.length, equals(5));
+      expect(questions.first.options.length, equals(4));
+      expect(questions.first.options, contains(questions.first.correctAnswer));
+    });
   });
 }

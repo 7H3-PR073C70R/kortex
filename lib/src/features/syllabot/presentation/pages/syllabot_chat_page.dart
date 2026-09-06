@@ -62,7 +62,7 @@ class SyllabotChatPage extends HookWidget {
           SubmitPromptEvent(
             prompt: initialPrompt!.trim(),
             sessionId: sid,
-            socraticMode: initialMode ?? SocraticMode.stepByStep,
+            socraticMode: initialMode ?? bloc.state.socraticMode,
             engineType: ExecutionEngineType.cloudRemote,
           ),
         );

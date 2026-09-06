@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -25,9 +27,44 @@ class SyllabotAiSettingsPage extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
 
-    final socraticMode = useState<SocraticMode>(SocraticMode.stepByStep);
-    final voiceGender = useState<VoiceGender>(VoiceGender.female);
-    final speechRate = useState<double>(1);
+    final storage = locator.isRegistered<LocalStorageService>()
+        ? locator<LocalStorageService>()
+        : null;
+
+    final initialMode = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotSocraticMode);
+      if (raw != null) {
+        return SocraticMode.values.firstWhere(
+          (m) => m.name == raw,
+          orElse: () => SocraticMode.stepByStep,
+        );
+      }
+      return SocraticMode.stepByStep;
+    }();
+
+    final initialGender = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotVoiceGender);
+      if (raw != null) {
+        return VoiceGender.values.firstWhere(
+          (g) => g.name == raw,
+          orElse: () => VoiceGender.female,
+        );
+      }
+      return VoiceGender.female;
+    }();
+
+    final initialRate = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotSpeechRate);
+      if (raw != null) {
+        final parsed = double.tryParse(raw);
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return 1.0;
+    }();
+
+    final socraticMode = useState<SocraticMode>(initialMode);
+    final voiceGender = useState<VoiceGender>(initialGender);
+    final speechRate = useState<double>(initialRate);
     final offlineModelDownloaded = useState<bool>(
       locator<LocalLlmEngineClient>().isModelDownloaded,
     );
@@ -75,6 +112,12 @@ class SyllabotAiSettingsPage extends HookWidget {
                       child: ShrinkableButton(
                         onTap: () {
                           socraticMode.value = mode;
+                          unawaited(
+                            storage?.savePreference(
+                              key: PrefKeys.syllabotSocraticMode,
+                              data: mode.name,
+                            ),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
@@ -174,7 +217,14 @@ class SyllabotAiSettingsPage extends HookWidget {
                           ],
                           selected: {voiceGender.value},
                           onSelectionChanged: (set) {
-                            voiceGender.value = set.first;
+                            final g = set.first;
+                            voiceGender.value = g;
+                            unawaited(
+                              storage?.savePreference(
+                                key: PrefKeys.syllabotVoiceGender,
+                                data: g.name,
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -216,7 +266,14 @@ class SyllabotAiSettingsPage extends HookWidget {
                           ],
                           selected: {speechRate.value},
                           onSelectionChanged: (set) {
-                            speechRate.value = set.first;
+                            final r = set.first;
+                            speechRate.value = r;
+                            unawaited(
+                              storage?.savePreference(
+                                key: PrefKeys.syllabotSpeechRate,
+                                data: r.toString(),
+                              ),
+                            );
                           },
                         ),
                       ],

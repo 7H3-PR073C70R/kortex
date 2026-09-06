@@ -49,6 +49,7 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen>
     with SingleTickerProviderStateMixin {
+  Offerings? _offerings;
   Package? _selectedPackage;
   bool _isLoading = true;
   bool _isProcessing = false;
@@ -80,17 +81,42 @@ class _PaywallScreenState extends State<PaywallScreen>
     super.dispose();
   }
 
+  void _selectPlan(int index) {
+    setState(() {
+      _selectedPlanIndex = index;
+      final current = _offerings?.current;
+      if (current != null) {
+        if (index == 0) {
+          // Annual
+          _selectedPackage = current.annual ??
+              current.availablePackages.firstWhere(
+                (p) => p.packageType == PackageType.annual,
+                orElse: () => current.availablePackages.first,
+              );
+        } else {
+          // Monthly
+          _selectedPackage = current.monthly ??
+              current.availablePackages.firstWhere(
+                (p) => p.packageType == PackageType.monthly,
+                orElse: () => current.availablePackages.length > 1
+                    ? current.availablePackages[1]
+                    : current.availablePackages.first,
+              );
+        }
+      }
+    });
+  }
+
   Future<void> _fetchOfferings() async {
     setState(() => _isLoading = true);
     try {
       final offerings = await RevenueCatService.instance.fetchOfferings();
       if (mounted) {
         setState(() {
-          _selectedPackage =
-              offerings?.current?.annual ??
-              offerings?.current?.availablePackages.firstOrNull;
+          _offerings = offerings;
           _isLoading = false;
         });
+        _selectPlan(_selectedPlanIndex);
       }
     } on Object {
       if (mounted) {
@@ -446,7 +472,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       children: [
         // Annual Plan Card (Selected / Featured)
         ShrinkableButton(
-          onTap: () => setState(() => _selectedPlanIndex = 0),
+          onTap: () => _selectPlan(0),
           child: Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
@@ -548,7 +574,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
         // Monthly Plan Card
         ShrinkableButton(
-          onTap: () => setState(() => _selectedPlanIndex = 1),
+          onTap: () => _selectPlan(1),
           child: Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(

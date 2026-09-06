@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
@@ -41,29 +44,68 @@ class DeckMarketplaceDetailPage extends HookWidget {
         isCloning.value = false;
 
         if (!context.mounted) return;
-        res.fold(
-          (failure) {
+        final failureOrDeck = res;
+        await failureOrDeck.fold(
+          (failure) async {
+            if (!context.mounted) return;
             context.showSnackBar(
               message: failure.message ?? l10n.marketplaceCloneFailed,
               type: SnackBarType.error,
             );
           },
-          (clonedDeck) {
-            context.showSnackBar(
-              message: l10n.marketplaceCloneSuccess,
-            );
+          (clonedDeck) async {
+            try {
+              final storage = locator.isRegistered<LocalStorageService>()
+                  ? locator<LocalStorageService>()
+                  : null;
+              if (storage != null) {
+                final raw =
+                    storage.getPreference(key: PrefKeys.persistedUserDecks);
+                final existingList = raw != null && raw.isNotEmpty
+                    ? (jsonDecode(raw) as List<dynamic>)
+                    : <dynamic>[];
+
+                final deckMap = <String, dynamic>{
+                  'id': clonedDeck.id,
+                  'title': clonedDeck.title,
+                  'subject': clonedDeck.subject,
+                  'total_cards': clonedDeck.totalCards,
+                  'due_cards': clonedDeck.dueCards,
+                  'mastery_rate': clonedDeck.masteryRate,
+                  'category': clonedDeck.category,
+                  'description': clonedDeck.description,
+                  'created_at': DateTime.now().toIso8601String(),
+                };
+
+                existingList
+                  ..removeWhere((d) => d is Map && d['id'] == clonedDeck.id)
+                  ..insert(0, deckMap);
+
+                await storage.savePreference(
+                  key: PrefKeys.persistedUserDecks,
+                  data: jsonEncode(existingList),
+                );
+              }
+            } on Object catch (_) {}
+
             if (locator.isRegistered<DecksBloc>()) {
               locator<DecksBloc>().add(const DecksRefreshed());
             }
-            try {
-              context.read<DecksBloc>().add(const DecksRefreshed());
-            } on Object catch (_) {}
             if (locator.isRegistered<DashboardBloc>()) {
               locator<DashboardBloc>().add(const DashboardRefreshed());
             }
+
+            if (!context.mounted) return;
+            try {
+              context.read<DecksBloc>().add(const DecksRefreshed());
+            } on Object catch (_) {}
             try {
               context.read<DashboardBloc>().add(const DashboardRefreshed());
             } on Object catch (_) {}
+
+            context.showSnackBar(
+              message: l10n.marketplaceCloneSuccess,
+            );
           },
         );
       } on Object catch (_) {

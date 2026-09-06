@@ -36,11 +36,24 @@ class EbbinghausDecayCalculator {
     required List<double> cardStabilities,
     List<double>? empiricalRecallRates,
   }) {
+    return calculateProjection(
+      projectionDays: 7,
+      cardStabilities: cardStabilities,
+      empiricalRecallRates: empiricalRecallRates,
+    );
+  }
+
+  /// Calculates a projected vs actual memory retention curve over [projectionDays].
+  List<DailyRetentionPoint> calculateProjection({
+    required int projectionDays,
+    required List<double> cardStabilities,
+    List<double>? empiricalRecallRates,
+  }) {
     final points = <DailyRetentionPoint>[];
     final defaultRates =
         empiricalRecallRates ?? [1.0, 0.94, 0.89, 0.84, 0.81, 0.77, 0.74];
 
-    for (var day = 0; day < 7; day++) {
+    for (var day = 0; day < projectionDays; day++) {
       double avgPredicted;
       if (cardStabilities.isEmpty) {
         // Baseline decay curve
@@ -55,7 +68,7 @@ class EbbinghausDecayCalculator {
 
       final actual = day < defaultRates.length
           ? defaultRates[day]
-          : avgPredicted * 0.98;
+          : (avgPredicted * (0.98 - (day * 0.003))).clamp(0.0, 1.0);
 
       // Project due workload for that day
       final dueCount = cardStabilities

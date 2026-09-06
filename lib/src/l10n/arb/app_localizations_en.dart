@@ -1852,8 +1852,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fsrsModeDescription =>
       'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling';
 
-
-
   @override
   String get schedulerAlgorithmTitle => 'Spaced Repetition Scheduler';
 

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/get_chat_history_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/query_document_context_use_case.dart';
@@ -24,7 +26,11 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
        _generateDeck = generateDeckUseCase,
        _queryDocumentContext = queryDocumentContextUseCase,
        _localStorageService = localStorageService,
-       super(const SyllabotChatState()) {
+       super(
+         SyllabotChatState(
+           socraticMode: _resolveInitialSocraticMode(localStorageService),
+         ),
+       ) {
     on<SubmitPromptEvent>(_onSubmitPrompt);
     on<StreamTokenReceivedEvent>(_onStreamTokenReceived);
     on<StreamCompletedEvent>(_onStreamCompleted);
@@ -232,11 +238,30 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     );
   }
 
-  void _onChangeSocraticMode(
+  static SocraticMode _resolveInitialSocraticMode(
+    LocalStorageService? storage,
+  ) {
+    try {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotSocraticMode);
+      if (raw != null) {
+        return SocraticMode.values.firstWhere(
+          (m) => m.name == raw,
+          orElse: () => SocraticMode.stepByStep,
+        );
+      }
+    } on Object catch (_) {}
+    return SocraticMode.stepByStep;
+  }
+
+  Future<void> _onChangeSocraticMode(
     ChangeSocraticModeEvent event,
     Emitter<SyllabotChatState> emit,
-  ) {
+  ) async {
     emit(state.copyWith(socraticMode: event.mode));
+    await _localStorageService?.savePreference(
+      key: PrefKeys.syllabotSocraticMode,
+      data: event.mode.name,
+    );
   }
 
   void _onChangeEngineType(
