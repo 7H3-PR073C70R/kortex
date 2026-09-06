@@ -4,19 +4,25 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DecksDatabaseService {
   DecksDatabaseService({
+    AppDatabase? appDatabase,
     Database? database,
     LocalStorageService? localStorageService,
-  })  : _db = database,
+  })  : _appDatabase = appDatabase,
+        _db = database,
         _localStorage = localStorageService;
 
+  final AppDatabase? _appDatabase;
   Database? _db;
   final LocalStorageService? _localStorage;
+
+  AppDatabase? get appDatabase => _appDatabase;
   static bool _ffiInitialized = false;
 
   static void ensureFfiInitialized() {

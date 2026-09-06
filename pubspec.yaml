@@ -68,11 +68,15 @@ dependencies:
   sqflite: ^2.4.2+1
   sqflite_common_ffi: ^2.4.0+3
   path: ^1.9.1
+  drift: ^2.34.4
+  drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0+eol
 
 dev_dependencies:
   auto_route_generator: ^10.5.0
   bloc_test: ^10.0.0
   build_runner: ^2.7.1
+  drift_dev: ^2.34.0
   flutter_gen_runner: ^5.12.0
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.7

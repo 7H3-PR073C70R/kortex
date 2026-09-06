@@ -57,4 +57,7 @@ abstract class DecksLocalDataSource {
 
   /// Clears all decks and cards from the local database.
   Future<void> deleteAllDecks();
+
+  /// Sub-millisecond full-text search (FTS5) across cards.
+  Future<List<FlashcardModel>> searchCards(String query, {String? deckId});
 }

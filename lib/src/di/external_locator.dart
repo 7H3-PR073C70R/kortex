@@ -27,5 +27,8 @@ void _initExternal() {
     )
     ..registerLazySingleton<FlutterSecureStorage>(
       () => const FlutterSecureStorage(),
+    )
+    ..registerLazySingleton<AppDatabase>(
+      AppDatabase.new,
     );
 }

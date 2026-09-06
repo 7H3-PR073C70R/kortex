@@ -78,7 +78,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Credentials, password, 2FA, data export & cache',
             onTap: () {
               unawaited(
-                context.router.push(const SecuritySettingsRoute()),
+                context.router.push(SecuritySettingsRoute()),
               );
             },
             colors: colors,

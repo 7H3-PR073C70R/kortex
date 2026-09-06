@@ -113,6 +113,7 @@ void _initUseCaseLocator() {
         dio: locator<Dio>(),
         storageService: locator<LocalStorageService>(),
         userStorageService: locator<UserStorageService>(),
+        appDatabase: locator<AppDatabase>(),
       ),
     )
     ..registerFactory<StudySessionCubit>(

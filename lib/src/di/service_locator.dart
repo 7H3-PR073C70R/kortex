@@ -34,6 +34,7 @@ void _initServices() {
     )
     ..registerLazySingleton<DecksDatabaseService>(
       () => DecksDatabaseService(
+        appDatabase: locator<AppDatabase>(),
         localStorageService: locator<LocalStorageService>(),
       ),
     )

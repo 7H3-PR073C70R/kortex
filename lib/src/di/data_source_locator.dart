@@ -31,6 +31,7 @@ void _initDataSource() {
     ..registerLazySingleton<DecksLocalDataSource>(
       () => DecksLocalDataSourceImpl(
         locator<DecksDatabaseService>(),
+        appDatabase: locator<AppDatabase>(),
       ),
     )
     ..registerLazySingleton<DecksRemoteDataSource>(
@@ -90,7 +91,9 @@ void _initDataSource() {
       ),
     )
     ..registerLazySingleton<PastQuestionsLocalDataSource>(
-      PastQuestionsLocalDataSourceImpl.new,
+      () => PastQuestionsLocalDataSourceImpl(
+        appDatabase: locator<AppDatabase>(),
+      ),
     )
     ..registerLazySingleton<PastQuestionsRemoteDataSource>(
       () => PastQuestionsRemoteDataSourceImpl(

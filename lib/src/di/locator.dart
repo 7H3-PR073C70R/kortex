@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
 import 'package:kortex/src/core/services/analytics_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';

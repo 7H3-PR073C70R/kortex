@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
@@ -19,6 +21,7 @@ class CardSyncQueue {
     Connectivity? connectivity,
     LocalStorageService? storageService,
     UserStorageService? userStorageService,
+    AppDatabase? appDatabase,
     List<FsrsReviewLog>? initialBuffer,
     String? authToken,
   }) : _dio = dio ?? Dio(),
@@ -30,6 +33,10 @@ class CardSyncQueue {
        _userStorageService = userStorageService ??
            (locator.isRegistered<UserStorageService>()
                ? locator<UserStorageService>()
+               : null),
+       _appDatabase = appDatabase ??
+           (locator.isRegistered<AppDatabase>()
+               ? locator<AppDatabase>()
                : null),
        _authToken = authToken,
        _inMemoryLogBuffer = initialBuffer != null
@@ -45,6 +52,7 @@ class CardSyncQueue {
   final Connectivity _connectivity;
   final LocalStorageService? _storageService;
   final UserStorageService? _userStorageService;
+  final AppDatabase? _appDatabase;
   final List<FsrsReviewLog> _inMemoryLogBuffer;
   final String? _authToken;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -80,6 +88,9 @@ class CardSyncQueue {
   bool _isSyncing = false;
 
   void _loadPersistedLogs() {
+    if (_appDatabase != null) {
+      unawaited(_loadDriftLogs());
+    }
     try {
       final raw = _storageService?.getPreference(key: storageKey);
       if (raw != null && raw.isNotEmpty) {
@@ -108,8 +119,59 @@ class CardSyncQueue {
     }
   }
 
+  Future<void> _loadDriftLogs() async {
+    try {
+      final entries = await _appDatabase!.getUnsyncedReviewLogs();
+      final existingUuids =
+          _inMemoryLogBuffer.map((l) => l.transactionUuid).toSet();
+      for (final e in entries) {
+        if (!existingUuids.contains(e.transactionUuid)) {
+          _inMemoryLogBuffer.add(
+            FsrsReviewLog(
+              id: e.id,
+              transactionUuid: e.transactionUuid,
+              cardId: e.cardId,
+              rating: FsrsRating.fromValue(e.rating),
+              stability: e.stability,
+              difficulty: e.difficulty,
+              elapsedDays: e.elapsedDays,
+              scheduledDays: e.scheduledDays,
+              reviewedAtUtc: e.reviewedAtUtc,
+              reviewedAtEpoch: e.reviewedAtEpoch,
+              state: FsrsCardState.fromValue(e.state),
+              isSynced: e.isSynced,
+            ),
+          );
+        }
+      }
+    } on Object catch (e) {
+      debugPrint('[CardSyncQueue] Failed to load Drift review logs: $e');
+    }
+  }
+
   Future<void> _persistLogs() async {
     try {
+      if (_appDatabase != null) {
+        for (final log in _inMemoryLogBuffer) {
+          await _appDatabase.insertReviewLogEntry(
+            FsrsReviewLogsCompanion(
+              id: Value(log.id),
+              transactionUuid: Value(log.transactionUuid),
+              cardId: Value(log.cardId),
+              rating: Value(log.rating.value),
+              stability: Value(log.stability),
+              difficulty: Value(log.difficulty),
+              elapsedDays: Value(log.elapsedDays),
+              scheduledDays: Value(log.scheduledDays),
+              reviewedAtUtc: Value(log.reviewedAtUtc),
+              reviewedAtEpoch: Value(log.reviewedAtEpoch),
+              state: Value(log.state.value),
+              isSynced: Value(log.isSynced),
+            ),
+          );
+        }
+      }
+
       if (_storageService != null) {
         final pending = _inMemoryLogBuffer.where((l) => !l.isSynced).toList();
         if (pending.isEmpty) {
