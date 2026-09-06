@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
@@ -498,5 +499,21 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       courseCode: normalized,
       title: '$normalized Study Hub',
     );
+  }
+
+  @override
+  Future<String> fetchLiveKitToken({
+    required String roomId,
+    required String userId,
+  }) async {
+    final res = await _client.generateLiveKitToken({
+      'room_id': roomId,
+      'user_id': userId,
+    });
+    final dynamic data = res.data;
+    if (data is Map<String, dynamic> && data['token'] != null) {
+      return data['token'].toString();
+    }
+    throw const ServerException(message: 'Failed to mint LiveKit audio token');
   }
 }

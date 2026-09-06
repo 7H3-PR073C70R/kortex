@@ -67,6 +67,11 @@ abstract class CommunityApiClient {
     @Queries() Map<String, dynamic> query,
   );
 
+  @POST(AppApiEndpoint.generateLiveKitToken)
+  Future<HttpResponse<dynamic>> generateLiveKitToken(
+    @Body() Map<String, dynamic> body,
+  );
+
   @POST('/rest/v1/study_sessions')
   Future<HttpResponse<dynamic>> recordStudySession(
     @Body() Map<String, dynamic> body,

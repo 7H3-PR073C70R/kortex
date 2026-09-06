@@ -106,6 +106,12 @@ class MockCommunityRepository implements CommunityRepository {
     String courseCode,
   ) async => const Left(ServerFailure(message: 'Unimplemented'));
 
+  @override
+  Future<Either<Failure, String>> getLiveKitToken({
+    required String roomId,
+    required String userId,
+  }) async => const Right('authenticated_livekit_test_token');
+
   Future<void> dispose() async {
     await _roomController.close();
   }
@@ -351,9 +357,9 @@ void main() {
       expect(cubit.state.remainingSeconds, equals(1500));
       expect(cubit.state.room.title, equals('Advanced Calculus Focus Hub'));
       expect(mockEphemeralRepo.participants.length, equals(1));
-      expect(mockAudioService.isConnected, isTrue);
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(mockAudioService.isConnected, isTrue);
       expect(cubit.state.isAudioConnected, isTrue);
 
       await cubit.close();

@@ -13,6 +13,16 @@ class InferenceTimeoutException implements Exception {
   String toString() => 'InferenceTimeoutException: $message';
 }
 
+class InsufficientContentException implements Exception {
+  const InsufficientContentException([
+    this.message = 'Insufficient content to synthesize study cards on-device.',
+  ]);
+  final String message;
+
+  @override
+  String toString() => 'InsufficientContentException: $message';
+}
+
 class MemoryLimitConfig {
   const MemoryLimitConfig({
     required this.contextTokens,
@@ -134,6 +144,10 @@ class LocalInferenceIsolateManager {
       final resultJson = await runIsolatedInference(task);
       final cards = _parseCardsFromResult(resultJson);
       accumulatedResults.addAll(cards);
+    }
+
+    if (accumulatedResults.isEmpty) {
+      throw const InsufficientContentException();
     }
 
     return accumulatedResults;
@@ -274,9 +288,16 @@ class LocalInferenceIsolateManager {
               completer.complete(message);
             } else if (message is Map<String, dynamic> &&
                 message.containsKey('error')) {
-              completer.completeError(
-                Exception(message['error'] as String),
-              );
+              final errMsg = message['error'] as String;
+              if (errMsg.startsWith('Insufficient content')) {
+                completer.completeError(
+                  InsufficientContentException(errMsg),
+                );
+              } else {
+                completer.completeError(
+                  Exception(errMsg),
+                );
+              }
             } else {
               completer.complete(jsonEncode(message));
             }
@@ -366,34 +387,13 @@ class LocalInferenceIsolateManager {
         }
       }
 
-      // 3. Ensure at least 2 cards are always produced
-      if (cards.length < 2) {
-        final isPhysics = cleanTopic.toLowerCase().contains('lagrange') ||
-            cleanTopic.toLowerCase().contains('pendulum') ||
-            cleanTopic.toLowerCase().contains('physics') ||
-            cleanTopic.toLowerCase().contains('equation');
-
-        cards.add({
-          'front': isPhysics
-              ? 'Invariant Quantity in System'
-              : 'Governing Principles for $cleanTopic',
-          'back': isPhysics
-              ? r'$$\mathbf{F} = \frac{d\mathbf{p}}{dt}$$. Momentum conservation & Euler-Lagrange equations.'
-              : 'The governing principles dictate how inputs, variables, and state transitions interact to produce stable outputs in $cleanTopic.',
-          'explanation': 'Local hardware accelerated GGUF output.',
-          'maxTokens': maxTokens,
-          'isLocalInference': true,
+      // 3. If no concepts or sentences could be extracted, return insufficient content error
+      if (cards.isEmpty) {
+        sendPort.send({
+          'error':
+              'Insufficient content to synthesize study cards on-device. Please provide notes with clear definitions or bullet points.',
         });
-      }
-
-      if (cards.length < 2) {
-        cards.add({
-          'front': 'What is the foundational definition and scope of $cleanTopic?',
-          'back': '$cleanTopic establishes the core framework, axioms, and operational criteria within this subject area.',
-          'explanation': 'Synthesized via on-device neural model.',
-          'maxTokens': maxTokens,
-          'isLocalInference': true,
-        });
+        return;
       }
 
       sendPort.send(jsonEncode(cards));

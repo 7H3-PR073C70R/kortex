@@ -46,41 +46,6 @@ void main() {
       });
     });
 
-    group('Demo Tokens Behavior', () {
-      test('fetchGoogleClassroomCourses returns demo courses for demo token', () async {
-        final courses = await dataSource.fetchGoogleClassroomCourses(
-          oauthToken: 'demo_google_token',
-        );
-
-        expect(courses.isNotEmpty, isTrue);
-        expect(courses.first.platform, equals('google_classroom'));
-        verifyNever(() => mockDio.get<dynamic>(any(), options: any(named: 'options')));
-      });
-
-      test('fetchCanvasCourses returns demo courses for demo token', () async {
-        final courses = await dataSource.fetchCanvasCourses(
-          canvasDomain: 'canvas.instructure.com',
-          apiToken: 'demo_canvas_token',
-        );
-
-        expect(courses.isNotEmpty, isTrue);
-        expect(courses.first.platform, equals('canvas'));
-        verifyNever(() => mockDio.get<dynamic>(any(), options: any(named: 'options')));
-      });
-
-      test('importCourseData returns rich dynamic bundle for demo token', () async {
-        final bundle = await dataSource.importCourseData(
-          platform: 'canvas',
-          courseId: 'chem-301',
-          authToken: 'demo_canvas_token',
-        );
-
-        expect(bundle.course.id, equals('chem-301'));
-        expect(bundle.assignments.isNotEmpty, isTrue);
-        expect(bundle.syllabusContent, contains('Quantum Foundations'));
-      });
-    });
-
     group('Google Classroom Live API & Dynamic Aggregation', () {
       test('fetchGoogleClassroomCourses queries Google Classroom API and parses response', () async {
         when(

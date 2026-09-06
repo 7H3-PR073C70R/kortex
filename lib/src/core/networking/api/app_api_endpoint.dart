@@ -86,6 +86,8 @@ class AppApiEndpoint {
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
   static const String studyCommunities = '/rest/v1/study_communities';
+  static const String generateLiveKitToken =
+      '/functions/v1/generate-livekit-token';
 
   // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';

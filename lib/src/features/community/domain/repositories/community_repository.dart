@@ -84,4 +84,10 @@ abstract class CommunityRepository {
   Future<Either<Failure, StudyCommunityEntity>> fetchCourseCommunityStats(
     String courseCode,
   );
+
+  /// Generates a WebRTC audio access token for LiveKit voice room.
+  Future<Either<Failure, String>> getLiveKitToken({
+    required String roomId,
+    required String userId,
+  });
 }

@@ -97,7 +97,8 @@ void main() {
 
         const task = InferenceTask(
           modelPath: '/dummy/path/qwen.gguf',
-          prompt: 'Calculate Euler-Lagrange equations for double pendulum',
+          prompt:
+              'Topic: Analytical Mechanics\nContext: - Euler-Lagrange Equations: Dynamic differential equations derived from the principle of least stationary action.',
           config: MemoryLimitConfig(
             contextTokens: 1024,
             maxOutputTokens: 256,
@@ -109,13 +110,35 @@ void main() {
         final result = await manager.runIsolatedInference(task);
         frameTimer.cancel();
 
-        expect(result, contains('Momentum conservation'));
+        expect(result, contains('Euler-Lagrange Equations'));
         // Ensure UI thread was free to tick regularly during background isolate
         expect(frameTickCount, greaterThan(0));
 
         await manager.releaseContext();
       },
     );
+
+    test('Throws InsufficientContentException when text lacks extractable concepts', () async {
+      final manager = LocalInferenceIsolateManager();
+
+      const emptyTask = InferenceTask(
+        modelPath: '/dummy/path/qwen.gguf',
+        prompt: 'Hi',
+        config: MemoryLimitConfig(
+          contextTokens: 1024,
+          maxOutputTokens: 256,
+          maxChunkWords: 800,
+          isLowRamProfile: true,
+        ),
+      );
+
+      expect(
+        () => manager.runIsolatedInference(emptyTask),
+        throwsA(isA<InsufficientContentException>()),
+      );
+
+      await manager.releaseContext();
+    });
 
     test('Enforces 35-second wall clock timeout constant', () {
       expect(

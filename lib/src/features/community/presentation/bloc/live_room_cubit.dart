@@ -252,12 +252,32 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     });
 
     unawaited(
-      audio.connect(
-        url: AppEnv.liveKitUrl,
-        token: 'demo_livekit_token_${DateTime.now().millisecondsSinceEpoch}',
-        roomId: roomId,
-        userId: _currentUserId,
-      ),
+      () async {
+        final tokenResult = await _repository.getLiveKitToken(
+          roomId: roomId,
+          userId: _currentUserId,
+        );
+
+        tokenResult.fold(
+          (failure) {
+            if (!isClosed) {
+              emit(state.copyWith(isAudioConnected: false));
+            }
+          },
+          (token) {
+            if (token.isNotEmpty) {
+              audio.connect(
+                url: AppEnv.liveKitUrl,
+                token: token,
+                roomId: roomId,
+                userId: _currentUserId,
+              );
+            } else if (!isClosed) {
+              emit(state.copyWith(isAudioConnected: false));
+            }
+          },
+        );
+      }(),
     );
   }
 

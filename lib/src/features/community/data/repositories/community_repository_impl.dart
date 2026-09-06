@@ -356,4 +356,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
         .fetchCourseCommunityStats(courseCode)
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, String>> getLiveKitToken({
+    required String roomId,
+    required String userId,
+  }) {
+    return _remoteDataSource
+        .fetchLiveKitToken(roomId: roomId, userId: userId)
+        .makeRequest();
+  }
 }

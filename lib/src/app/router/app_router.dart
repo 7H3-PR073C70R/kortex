@@ -48,7 +48,6 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: SyllabotAiSettingsRoute.page),
     AutoRoute(page: SecuritySettingsRoute.page),
     AutoRoute(page: AppPreferencesRoute.page),
-    AutoRoute(page: AccountSecurityRoute.page),
     AutoRoute(page: AboutSupportRoute.page),
     AutoRoute(
       page: MainRoute.page,

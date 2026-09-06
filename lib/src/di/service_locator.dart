@@ -32,12 +32,6 @@ void _initServices() {
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
     )
-    ..registerLazySingleton<DecksDatabaseService>(
-      () => DecksDatabaseService(
-        appDatabase: locator<AppDatabase>(),
-        localStorageService: locator<LocalStorageService>(),
-      ),
-    )
     ..registerLazySingleton<CommunityDatabaseService>(
       CommunityDatabaseService.new,
     )
@@ -96,9 +90,6 @@ void _initServices() {
         getRecommendedContentUseCase: locator<GetRecommendedContentUseCase>(),
         getCalibrationProfileUseCase: locator<GetCalibrationProfileUseCase>(),
       ),
-    )
-    ..registerFactory<ChatOnboardingBloc>(
-      ChatOnboardingBloc.new,
     )
     ..registerLazySingleton<StudyEngineRouter>(
       StudyEngineRouter.new,

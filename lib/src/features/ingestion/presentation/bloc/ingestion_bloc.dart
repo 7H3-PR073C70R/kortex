@@ -131,39 +131,16 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     final isAi = state.synthesisMode.isAiSmart;
     final isDeduplicated = state.wasDeduplicated;
 
-    if (isDeduplicated) {
-      // Multi-stage simulated synthesis animation (illusion of active generation)
-      emit(
-        state.copyWith(
-          status: ProcessingStatus.parsingOcr,
-          stageMessage: 'Analyzing document structure...',
-        ),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      emit(
-        state.copyWith(
-          stageMessage: 'Extracting conceptual frameworks...',
-        ),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      emit(
-        state.copyWith(
-          stageMessage: 'Compiling synthesized study deck...',
-        ),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-    } else {
-      emit(
-        state.copyWith(
-          status: ProcessingStatus.parsingOcr,
-          stageMessage: isAi
-              ? 'Synthesizing with AI Smart Synthesis...'
-              : 'Reading document locally...',
-        ),
-      );
-    }
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage: isDeduplicated
+            ? 'Loading cached study deck...'
+            : (isAi
+                ? 'Synthesizing with AI Smart Synthesis...'
+                : 'Reading document locally...'),
+      ),
+    );
 
     final ocrResult = await _processOcr(
       documentId: event.documentId,

@@ -30,8 +30,7 @@ void _initDataSource() {
     )
     ..registerLazySingleton<DecksLocalDataSource>(
       () => DecksLocalDataSourceImpl(
-        locator<DecksDatabaseService>(),
-        appDatabase: locator<AppDatabase>(),
+        locator<AppDatabase>(),
       ),
     )
     ..registerLazySingleton<DecksRemoteDataSource>(

@@ -51,14 +51,13 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
 
     _connectionStateController.add(LiveAudioConnectionState.connecting);
 
-    // Fallback/sandbox connection if empty URL/token in development or offline mode
-    if (url.isEmpty || token.isEmpty || token.startsWith('demo_')) {
+    if (url.isEmpty || token.isEmpty) {
       developer.log(
-        'LiveKitAudioService: Using sandbox local audio loopback for room $roomId',
+        'LiveKitAudioService: Cannot connect to room $roomId with empty URL or token',
         name: 'LiveKitAudio',
       );
-      _isConnected = true;
-      _connectionStateController.add(LiveAudioConnectionState.connected);
+      _isConnected = false;
+      _connectionStateController.add(LiveAudioConnectionState.failed);
       return;
     }
 
@@ -94,10 +93,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
         name: 'LiveKitAudio',
       );
       _isConnected = false;
-      _connectionStateController
-        ..add(LiveAudioConnectionState.failed)
-        ..add(LiveAudioConnectionState.connected);
-      _isConnected = true;
+      _connectionStateController.add(LiveAudioConnectionState.failed);
     }
   }
 

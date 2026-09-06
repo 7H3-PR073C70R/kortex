@@ -60,4 +60,9 @@ abstract class CommunityRemoteDataSource {
   });
 
   Future<StudyCommunityModel> fetchCourseCommunityStats(String courseCode);
+ 
+  Future<String> fetchLiveKitToken({
+    required String roomId,
+    required String userId,
+  });
 }

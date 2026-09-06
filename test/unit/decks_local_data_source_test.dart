@@ -1,33 +1,30 @@
 import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source_impl.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
-import 'package:kortex/src/features/decks/data/database/decks_database_service.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockDecksApiClient extends Mock implements DecksApiClient {}
 
 void main() {
-  setUpAll(DecksDatabaseService.ensureFfiInitialized);
-
   group('DecksLocalDataSourceImpl', () {
-    late DecksDatabaseService dbService;
+    late AppDatabase appDatabase;
     late DecksLocalDataSource localDataSource;
 
-    setUp(() async {
-      dbService = DecksDatabaseService();
-      await dbService.initDatabase(customPath: inMemoryDatabasePath);
-      localDataSource = DecksLocalDataSourceImpl(dbService);
+    setUp(() {
+      appDatabase = AppDatabase(NativeDatabase.memory());
+      localDataSource = DecksLocalDataSourceImpl(appDatabase);
     });
 
     tearDown(() async {
-      await dbService.close();
+      await appDatabase.close();
     });
 
     test('saves and retrieves deck with its flashcards', () async {
@@ -136,15 +133,14 @@ void main() {
   });
 
   group('DecksRemoteDataSourceImpl with DecksLocalDataSource', () {
-    late DecksDatabaseService dbService;
+    late AppDatabase appDatabase;
     late DecksLocalDataSource localDataSource;
     late MockDecksApiClient mockApiClient;
     late DecksRemoteDataSourceImpl remoteDataSource;
 
-    setUp(() async {
-      dbService = DecksDatabaseService();
-      await dbService.initDatabase(customPath: inMemoryDatabasePath);
-      localDataSource = DecksLocalDataSourceImpl(dbService);
+    setUp(() {
+      appDatabase = AppDatabase(NativeDatabase.memory());
+      localDataSource = DecksLocalDataSourceImpl(appDatabase);
       mockApiClient = MockDecksApiClient();
 
       remoteDataSource = DecksRemoteDataSourceImpl(
@@ -154,7 +150,7 @@ void main() {
     });
 
     tearDown(() async {
-      await dbService.close();
+      await appDatabase.close();
     });
 
     test('saveSessionResults performs targeted card & stats updates without monolithic re-serialization', () async {

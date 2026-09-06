@@ -196,20 +196,6 @@ class _LmsOAuthDialogState extends State<LmsOAuthDialog> {
     AppFeedback.selection();
     unawaited(HapticFeedback.mediumImpact());
 
-    // Demo/mock token bypass for tests or offline evaluations
-    if (token.startsWith('demo_') || token == 'fake-token' || token == 'test-mock-token') {
-      if (!mounted) return;
-      Navigator.of(context).pop(
-        LmsOAuthResult(
-          platform: 'canvas',
-          accessToken: token,
-          accountEmail: 'student@$_cleanedCanvasDomain',
-          canvasDomain: widget.canvasDomain,
-        ),
-      );
-      return;
-    }
-
     // Live verification against Canvas API
     try {
       final response = await _dio.get<Map<String, dynamic>>(

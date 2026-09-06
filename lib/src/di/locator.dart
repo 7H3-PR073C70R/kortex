@@ -33,7 +33,6 @@ import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_us
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/chat_onboarding_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/guards/auth_route_guard.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
@@ -77,7 +76,6 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_sou
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source_impl.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
-import 'package:kortex/src/features/decks/data/database/decks_database_service.dart';
 import 'package:kortex/src/features/decks/data/repositories/decks_repository_impl.dart';
 import 'package:kortex/src/features/decks/domain/logic/crdt_deck_merger.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';

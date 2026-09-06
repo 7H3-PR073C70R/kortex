@@ -126,14 +126,6 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
 
   final Dio _dio;
 
-  bool _isMockToken(String token) {
-    return token.startsWith('demo_') ||
-        token.startsWith('mock_') ||
-        token == 'fake-token' ||
-        token == 'token-123' ||
-        token == 'test-mock-token';
-  }
-
   String _cleanDomain(String domain) {
     return domain
         .replaceAll(RegExp('^https?://'), '')
@@ -164,10 +156,6 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
   Future<List<LmsCourse>> fetchGoogleClassroomCourses({
     required String oauthToken,
   }) async {
-    if (_isMockToken(oauthToken)) {
-      return _mockGoogleClassroomCourses();
-    }
-
     final response = await _dio.get<Map<String, dynamic>>(
       'https://classroom.googleapis.com/v1/courses',
       queryParameters: {'courseStates': 'ACTIVE'},
@@ -188,10 +176,6 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
     required String canvasDomain,
     required String apiToken,
   }) async {
-    if (_isMockToken(apiToken)) {
-      return _mockCanvasCourses();
-    }
-
     final domain = _cleanDomain(canvasDomain);
     final response = await _dio.get<List<dynamic>>(
       'https://$domain/api/v1/courses',
@@ -219,10 +203,6 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
     required String authToken,
     String? canvasDomain,
   }) async {
-    if (_isMockToken(authToken)) {
-      return _mockImportBundle(platform: platform, courseId: courseId);
-    }
-
     if (platform == 'canvas') {
       return _importCanvasCourse(
         courseId: courseId,
@@ -432,104 +412,4 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
     );
   }
 
-  List<LmsCourse> _mockGoogleClassroomCourses() {
-    return const [
-      LmsCourse(
-        id: 'gc-phys-101',
-        name: 'General Physics: Mechanics & Thermodynamics',
-        section: 'PHY101',
-        platform: 'google_classroom',
-        description: 'Newtonian mechanics, planetary motion, thermodynamics',
-      ),
-      LmsCourse(
-        id: 'gc-calc-201',
-        name: 'Multivariable Calculus & Differential Forms',
-        section: 'MTH201',
-        platform: 'google_classroom',
-        description: 'Partial derivatives, Stokes theorem, vector fields',
-      ),
-    ];
-  }
-
-  List<LmsCourse> _mockCanvasCourses() {
-    return const [
-      LmsCourse(
-        id: 'canvas-chem-301',
-        name: 'Physical Chemistry & Quantum Kinetics',
-        section: 'CHM301',
-        platform: 'canvas',
-        description: 'Schrodinger equation, chemical equilibrium kinetics',
-      ),
-      LmsCourse(
-        id: 'canvas-bio-101',
-        name: 'Cellular Biology & Genetics',
-        section: 'BIO101',
-        platform: 'canvas',
-        description: 'Cell structure, mitosis, Mendelian genetics, gene expression',
-      ),
-    ];
-  }
-
-  LmsImportBundle _mockImportBundle({
-    required String platform,
-    required String courseId,
-  }) {
-    final isCanvas = platform == 'canvas';
-    final course = LmsCourse(
-      id: courseId,
-      name: isCanvas
-          ? 'Physical Chemistry & Quantum Kinetics'
-          : 'General Physics: Mechanics & Thermodynamics',
-      section: isCanvas ? 'CHM301' : 'PHY101',
-      platform: platform,
-      description: isCanvas
-          ? 'Comprehensive study of thermodynamics, quantum mechanics, and chemical kinetics.'
-          : 'Fundamental mechanics, Newton laws, rotational motion, and thermal physics.',
-    );
-
-    final assignments = [
-      LmsAssignment(
-        id: 'assign-1',
-        title: isCanvas
-            ? 'Problem Set 1: Schrodinger Wave Mechanics'
-            : 'Problem Set 1: Lagrangian Equations of Motion',
-        dueDate: DateTime.now().add(const Duration(days: 7)),
-        maxPoints: 100,
-        description: isCanvas
-            ? 'Solve 1D particle in a box and harmonic oscillator eigenstates.'
-            : 'Formulate generalized coordinates and solve Euler-Lagrange equations.',
-      ),
-      LmsAssignment(
-        id: 'assign-2',
-        title: isCanvas
-            ? 'Midterm Review: Chemical Equilibrium & Free Energy'
-            : 'Midterm Review: Rigid Body Dynamics & Torque',
-        dueDate: DateTime.now().add(const Duration(days: 21)),
-        maxPoints: 150,
-        description: 'Comprehensive review problems for midterm examination.',
-      ),
-    ];
-
-    final syllabus = isCanvas
-        ? '## Course Syllabus\n'
-          '### Module 1: Quantum Foundations\n'
-          'Wave-particle duality, de Broglie relations, Heisenberg uncertainty principle.\n\n'
-          '### Module 2: Chemical Thermodynamics\n'
-          'First and Second Laws, Gibbs Free Energy, Maxwell Relations.\n\n'
-          '### Module 3: Reaction Kinetics\n'
-          'Transition state theory, Arrhenius rate equations, enzyme kinetics.'
-        : '## Course Syllabus\n'
-          '### Module 1: Classical Mechanics\n'
-          'Kinematics, Newton laws, work-energy theorem, momentum conservation.\n\n'
-          '### Module 2: Oscillations & Gravitation\n'
-          'Simple harmonic motion, damped oscillations, Kepler laws of planetary motion.\n\n'
-          '### Module 3: Thermal Physics\n'
-          'Ideal gas laws, kinetic theory, heat transfer mechanisms, entropy.';
-
-    return LmsImportBundle(
-      course: course,
-      assignments: assignments,
-      syllabusContent: syllabus,
-    );
-  }
 }
