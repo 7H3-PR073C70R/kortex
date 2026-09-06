@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:path_provider/path_provider.dart';
 
 enum InstallerStep {
@@ -62,6 +64,18 @@ class OfflineModelInstaller {
   static const int minFreeDiskSpaceBytes = 4 * 1024 * 1024 * 1024; // 4.0 GB
 
   static const Map<String, ModelSpec> supportedModels = {
+    'smollm2-360m': ModelSpec(
+      fileName: 'smollm2-360m-instruct-q4_k_m.gguf',
+      downloadUrl:
+          'https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q4_k_m.gguf',
+      approxSizeBytes: 270000000, // ~270 MB
+    ),
+    'smollm2-135m': ModelSpec(
+      fileName: 'smollm2-135m-instruct-q4_k_m.gguf',
+      downloadUrl:
+          'https://huggingface.co/Segilmez06/SmolLM2-135M-Instruct-Q4_K_M-GGUF/resolve/main/smollm2-135m-instruct-q4_k_m.gguf',
+      approxSizeBytes: 100000000, // ~100 MB
+    ),
     'qwen2.5-1.5b': ModelSpec(
       fileName: 'Qwen2.5-1.5B-Instruct-Q4_K_M.gguf',
       downloadUrl:
@@ -77,6 +91,31 @@ class OfflineModelInstaller {
   };
 
   static const String defaultModelKey = 'qwen2.5-1.5b';
+  static const String baseTierModelKey = 'smollm2-360m';
+
+  /// Resolves required free disk space in bytes for downloading a specific model.
+  static int requiredDiskSpaceBytesForModel(String modelKey) {
+    final spec = supportedModels[modelKey];
+    if (spec != null) {
+      if (modelKey == 'smollm2-360m' || modelKey == 'smollm2-135m') {
+        return 1024 * 1024 * 1024; // 1.0 GB headroom for base tier
+      }
+    }
+    return minFreeDiskSpaceBytes;
+  }
+
+  /// Dynamically determines the recommended model based on device RAM and storage.
+  /// Constrained hardware (< 6 GB RAM or < 4 GB disk) uses SmolLM2-360M (~270MB).
+  /// Advanced hardware (>= 6 GB RAM and >= 4 GB disk) uses Qwen2.5-1.5B (~1.12GB).
+  static String resolveRecommendedModel({
+    double totalRamGb = 8.0,
+    int availableDiskBytes = minFreeDiskSpaceBytes,
+  }) {
+    if (totalRamGb < 6.0 || availableDiskBytes < minFreeDiskSpaceBytes) {
+      return baseTierModelKey;
+    }
+    return defaultModelKey;
+  }
 
   CancelToken? _cancelToken;
   final StreamController<InstallProgress> _progressController =
@@ -85,13 +124,30 @@ class OfflineModelInstaller {
   Stream<InstallProgress> get progressStream => _progressController.stream;
 
   /// Returns target absolute storage path for a model.
-  Future<String> getModelPath({String modelKey = defaultModelKey}) async {
-    final spec = supportedModels[modelKey] ?? supportedModels[defaultModelKey]!;
+  Future<String> getModelPath({String? modelKey}) async {
     final docs = await getApplicationDocumentsDirectory();
     final dir = Directory('${docs.path}/kortex_models');
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
+
+    if (modelKey != null) {
+      final spec = supportedModels[modelKey] ?? supportedModels[defaultModelKey]!;
+      return '${dir.path}/${spec.fileName}';
+    }
+
+    // If modelKey is not specified, check if any valid GGUF model exists in the shared directory
+    final existingModels = dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.gguf') && f.lengthSync() >= 50 * 1024 * 1024)
+        .toList();
+    if (existingModels.isNotEmpty) {
+      existingModels.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      return existingModels.first.path;
+    }
+
+    final spec = supportedModels[defaultModelKey]!;
     return '${dir.path}/${spec.fileName}';
   }
 
@@ -245,6 +301,21 @@ class OfflineModelInstaller {
         finalFile.deleteSync();
       }
       tempFile.renameSync(targetPath);
+
+      // Sync state with LocalStorageService for shared Syllabot & Decks discovery
+      try {
+        if (locator.isRegistered<LocalStorageService>()) {
+          final storage = locator<LocalStorageService>();
+          await storage.savePreference(
+            key: '__local_llm_model_downloaded',
+            data: 'true',
+          );
+          await storage.savePreference(
+            key: '__local_llm_model_path',
+            data: targetPath,
+          );
+        }
+      } on Object catch (_) {}
 
       _emitProgress(
         InstallerStep.ready,
