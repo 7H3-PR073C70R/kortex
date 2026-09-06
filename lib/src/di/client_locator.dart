@@ -29,12 +29,6 @@ void _initClients() {
     ..registerLazySingleton<LocalMlkitOcrClient>(
       LocalMlkitOcrClient.new,
     )
-    ..registerLazySingleton<SpeechToTextClient>(
-      SpeechToTextClient.new,
-    )
-    ..registerLazySingleton<TextToSpeechClient>(
-      TextToSpeechClient.new,
-    )
     ..registerLazySingleton<EphemeralPresenceClient>(
       EphemeralPresenceClientImpl.new,
     )

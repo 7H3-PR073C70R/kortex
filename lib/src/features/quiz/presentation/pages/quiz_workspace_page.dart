@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
@@ -68,6 +70,7 @@ class QuizWorkspacePage extends StatelessWidget {
             cubit.startQuizFromDeck(
               deckId: deckId,
               deckTitle: deckTitle ?? subject ?? 'Practice Quiz',
+              durationMinutes: durationMinutes,
             ),
           );
         }
@@ -265,39 +268,75 @@ class _QuizWorkspaceView extends HookWidget {
             elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.close_rounded, color: colors.textSecondary),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => _confirmExit(context, state),
             ),
             title: Text(
               state.quizTitle,
               style: typography.title3.bold.copyWith(
                 color: colors.textPrimary,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
             actions: [
-              // Live Session Timer Badge
+              // Flag toggle action
+              IconButton(
+                icon: Icon(
+                  state.isCurrentQuestionFlagged
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: state.isCurrentQuestionFlagged
+                      ? colors.warning
+                      : colors.textSecondary,
+                ),
+                tooltip: 'Flag Question for Review',
+                onPressed: () =>
+                    context.read<QuizSessionCubit>().toggleFlagCurrentQuestion(),
+              ),
+              // Question Navigation Palette
+              IconButton(
+                icon: Icon(Icons.grid_view_rounded, color: colors.textSecondary),
+                tooltip: 'Question Palette',
+                onPressed: () => _showQuestionPalette(
+                  context,
+                  context.read<QuizSessionCubit>(),
+                  state,
+                ),
+              ),
+              // Live Session Timer Badge (with time running low warning)
               Container(
                 margin: const EdgeInsets.only(right: 16),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
+                  horizontal: 10,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: colors.surfaceSecondary,
+                  color: state.isTimeRunningLow
+                      ? colors.error.withValues(alpha: 0.15)
+                      : colors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.surfaceBorder),
+                  border: Border.all(
+                    color: state.isTimeRunningLow
+                        ? colors.error.withValues(alpha: 0.5)
+                        : colors.surfaceBorder,
+                  ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.timer_outlined,
                       size: 16,
-                      color: colors.success,
+                      color: state.isTimeRunningLow
+                          ? colors.error
+                          : colors.success,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Text(
                       state.formattedTimer,
                       style: typography.caption.bold.copyWith(
-                        color: colors.success,
+                        color: state.isTimeRunningLow
+                            ? colors.error
+                            : colors.success,
                       ),
                     ),
                   ],
@@ -320,18 +359,54 @@ class _QuizWorkspaceView extends HookWidget {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                   children: [
-                    // Question Counter & Sub-Topic
+                    // Question Counter & Sub-Topic with Flag indicator
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          l10n.quizQuestionProgress(
-                            state.currentIndex + 1,
-                            state.totalQuestions,
-                          ),
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.quizQuestionProgress(
+                                state.currentIndex + 1,
+                                state.totalQuestions,
+                              ),
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            if (state.isCurrentQuestionFlagged) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.warning.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.bookmark_rounded,
+                                      size: 12,
+                                      color: colors.warning,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Flagged',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.warning,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -434,35 +509,57 @@ class _QuizWorkspaceView extends HookWidget {
               ),
             ],
           ),
-          bottomNavigationBar: current.isAnswered
-              ? Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary,
-                    border: Border(
-                      top: BorderSide(
-                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
-                      ),
-                    ),
+          bottomNavigationBar: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              border: Border(
+                top: BorderSide(
+                  color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
+                ),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  // Previous Question
+                  IconButton.outlined(
+                    onPressed: state.canGoPrevious
+                        ? () => context.read<QuizSessionCubit>().previousQuestion()
+                        : null,
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    tooltip: 'Previous Question',
                   ),
-                  child: SafeArea(
-                    top: false,
+                  const SizedBox(width: 8),
+                  // Question Palette
+                  IconButton.outlined(
+                    onPressed: () => _showQuestionPalette(
+                      context,
+                      context.read<QuizSessionCubit>(),
+                      state,
+                    ),
+                    icon: const Icon(Icons.grid_view_rounded),
+                    tooltip: 'Question Palette',
+                  ),
+                  const SizedBox(width: 12),
+                  // Next / Submit primary action
+                  Expanded(
                     child: SizedBox(
-                      width: double.infinity,
-                      height: 52,
+                      height: 48,
                       child: ElevatedButton(
                         onPressed: () {
                           if (state.isLastQuestion) {
-                            unawaited(
-                              context.read<QuizSessionCubit>().submitQuiz(),
-                            );
+                            _confirmSubmit(context, state);
                           } else {
                             context.read<QuizSessionCubit>().nextQuestion();
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
+                          backgroundColor: state.isLastQuestion
+                              ? colors.success
+                              : colors.primary,
                           foregroundColor: colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -478,10 +575,307 @@ class _QuizWorkspaceView extends HookWidget {
                       ),
                     ),
                   ),
-                )
-              : null,
+                ],
+              ),
+            ),
+          ),
         );
       },
+    );
+  }
+
+  void _confirmExit(BuildContext context, QuizSessionState state) {
+    if (state.status != QuizSessionStatus.inProgress &&
+        state.status != QuizSessionStatus.questionAnswered) {
+      Navigator.of(context).pop();
+      return;
+    }
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('Exit CBT Exam?'),
+          content: Text(
+            'You have answered ${state.answeredCount} of ${state.totalQuestions} questions.\n\n'
+            'Exiting now will discard your ongoing CBT simulator progress.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Resume'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.colors.error,
+                foregroundColor: context.colors.white,
+              ),
+              child: const Text('Exit Exam'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmSubmit(BuildContext context, QuizSessionState state) {
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('Submit CBT Mock Exam?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to finalize and grade your test answers?',
+              ),
+              const SizedBox(height: 14),
+              Text('• Answered: ${state.answeredCount} / ${state.totalQuestions}'),
+              Text('• Unanswered: ${state.unansweredCount}'),
+              if (state.flaggedCount > 0)
+                Text('• Flagged for review: ${state.flaggedCount}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Review Questions'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                unawaited(context.read<QuizSessionCubit>().submitQuiz());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.colors.primary,
+                foregroundColor: context.colors.white,
+              ),
+              child: const Text('Submit Now'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQuestionPalette(
+    BuildContext context,
+    QuizSessionCubit cubit,
+    QuizSessionState state,
+  ) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor:
+            isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Question Navigation Palette',
+                      style: typography.title3.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                      onPressed: () => Navigator.of(sheetCtx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _legendIndicator(
+                      label: 'Answered (${state.answeredCount})',
+                      color: colors.primary,
+                      colors: colors,
+                      typography: typography,
+                    ),
+                    _legendIndicator(
+                      label: 'Flagged (${state.flaggedCount})',
+                      color: colors.warning,
+                      colors: colors,
+                      typography: typography,
+                    ),
+                    _legendIndicator(
+                      label: 'Pending (${state.unansweredCount})',
+                      color: colors.surfaceBorder,
+                      colors: colors,
+                      typography: typography,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(sheetCtx).height * 0.45,
+                  ),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    itemCount: state.totalQuestions,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 1.15,
+                    ),
+                    itemBuilder: (gridCtx, index) {
+                      final q = state.questions[index];
+                      final isCurrent = index == state.currentIndex;
+                      final isAnswered = q.isAnswered;
+                      final isFlagged = state.isQuestionFlagged(q.id);
+
+                      Color bgColor;
+                      Color textColor;
+                      Border? border;
+
+                      if (isCurrent) {
+                        bgColor = colors.primary.withValues(alpha: 0.2);
+                        textColor = colors.primary;
+                        border = Border.all(color: colors.primary, width: 2);
+                      } else if (isFlagged) {
+                        bgColor = colors.warning.withValues(alpha: 0.15);
+                        textColor = colors.warning;
+                        border = Border.all(
+                          color: colors.warning.withValues(alpha: 0.5),
+                        );
+                      } else if (isAnswered) {
+                        bgColor = colors.primary;
+                        textColor = colors.white;
+                      } else {
+                        bgColor = colors.surfaceSecondary;
+                        textColor = colors.textPrimary;
+                        border = Border.all(color: colors.surfaceBorder);
+                      }
+
+                      return InkWell(
+                        onTap: () {
+                          Navigator.of(sheetCtx).pop();
+                          cubit.jumpToQuestion(index);
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: border,
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Text(
+                                '${index + 1}',
+                                style: typography.callout.bold.copyWith(
+                                  color: textColor,
+                                ),
+                              ),
+                              if (isFlagged)
+                                Positioned(
+                                  top: 3,
+                                  right: 3,
+                                  child: Icon(
+                                    Icons.bookmark_rounded,
+                                    size: 11,
+                                    color: isCurrent ? colors.warning : textColor,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(sheetCtx).pop();
+                      _confirmSubmit(context, state);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Submit Mock Exam (${state.answeredCount}/${state.totalQuestions} Answered)',
+                      style: typography.callout.bold.copyWith(color: colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ));
+  }
+
+  Widget _legendIndicator({
+    required String label,
+    required Color color,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: typography.caption.regular.copyWith(
+            color: colors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 }

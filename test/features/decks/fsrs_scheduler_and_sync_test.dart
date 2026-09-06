@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/features/flashcards/data/datasources/card_sync_queue.dart';
-import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}

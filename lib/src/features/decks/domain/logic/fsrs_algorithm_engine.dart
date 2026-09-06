@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:kortex/src/features/decks/domain/entities/fsrs_card_state.dart';
-import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart'
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart'
     as scheduler;
 
 /// Pure mathematical engine for Free Spaced Repetition Scheduler (FSRS-6).

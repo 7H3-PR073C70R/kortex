@@ -85,6 +85,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<PastQuestionsRepository>(
       () => PastQuestionsRepositoryImpl(
         locator<PastQuestionsRemoteDataSource>(),
+        localDataSource: locator<PastQuestionsLocalDataSource>(),
         localStorageService: locator<LocalStorageService>(),
       ),
     )

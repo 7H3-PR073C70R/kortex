@@ -65,11 +65,13 @@ import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
 import 'package:kortex/src/features/decks/data/repositories/decks_repository_impl.dart';
 import 'package:kortex/src/features/decks/domain/logic/crdt_deck_merger.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/logic/scheduler_factory.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
@@ -79,8 +81,6 @@ import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_ca
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
-import 'package:kortex/src/features/flashcards/data/datasources/card_sync_queue.dart';
-import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
@@ -144,6 +144,7 @@ import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_c
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
 import 'package:kortex/src/features/quiz/data/client/past_questions_api_client.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source_impl.dart';
 import 'package:kortex/src/features/quiz/data/repositories/past_questions_repository_impl.dart';
@@ -174,9 +175,6 @@ import 'package:kortex/src/features/syllabot/domain/use_cases/purge_expired_ai_c
 import 'package:kortex/src/features/syllabot/domain/use_cases/query_document_context_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_bloc.dart';
-import 'package:kortex/src/shared/audio/bloc/audio_workspace_cubit.dart';
-import 'package:kortex/src/shared/audio/client/speech_to_text_client.dart';
-import 'package:kortex/src/shared/audio/client/text_to_speech_client.dart';
 import 'package:kortex/src/shared/export/services/anki_export_service.dart';
 import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
 import 'package:kortex/src/shared/export/services/pdf_printable_generator.dart';

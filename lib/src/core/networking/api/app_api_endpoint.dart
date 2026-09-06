@@ -95,7 +95,6 @@ class AppApiEndpoint {
 
   // Planner & Exam Countdown Timetable
   static const String examEvents = '/rest/v1/exam_events';
-  static const String recalculateCramRpc = '/rest/v1/rpc/recalculate_cram_pacing';
 
   // Push Notifications & Device Tokens
   static const String registerDeviceTokenRpc =
@@ -104,6 +103,4 @@ class AppApiEndpoint {
       '/rest/v1/notification_preferences';
   static const String notificationsInbox =
       '/rest/v1/notifications?order=created_at.desc';
-  static const String triggerNotifications =
-      '/functions/v1/trigger-notifications';
 }

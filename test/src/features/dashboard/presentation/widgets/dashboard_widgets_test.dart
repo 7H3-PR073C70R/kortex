@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
-import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/exam_countdown_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
@@ -81,33 +79,6 @@ void main() {
       expect(find.text('Fourier Series & Boundary Values'), findsOneWidget);
       expect(find.text('8 DUE'), findsOneWidget);
       expect(find.text('85%'), findsOneWidget);
-    });
-
-    testWidgets('ExamCountdownWidget renders countdown and simulator action', (
-      tester,
-    ) async {
-      final countdown = ExamCountdownEntity(
-        id: 'utme_2025',
-        examName: 'JAMB / UTME Examination',
-        targetDate: DateTime.now().add(const Duration(days: 45, hours: 2)),
-        syllabusProgress: 0.75,
-        subjectTrack: 'Mathematics, Physics, Chemistry',
-        totalMockPapersAvailable: 25,
-        completedMocksCount: 10,
-        badgeTitle: 'HIGH YIELD PREP',
-      );
-
-      await tester.pumpWidget(
-        createTestApp(
-          ExamCountdownWidget(countdown: countdown),
-        ),
-      );
-
-      expect(find.text('HIGH YIELD PREP'), findsOneWidget);
-      expect(find.textContaining('DAYS LEFT'), findsOneWidget);
-      expect(find.text('JAMB / UTME Examination'), findsOneWidget);
-      expect(find.text('75% complete'), findsOneWidget);
-      expect(find.textContaining('Launch Mock Simulator'), findsOneWidget);
     });
 
     testWidgets('SyllabotQuickPromptBar renders prompt and daily insight', (

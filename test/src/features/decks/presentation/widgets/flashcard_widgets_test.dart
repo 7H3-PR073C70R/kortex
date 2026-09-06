@@ -3,11 +3,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
-import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 
 Widget _buildTestApp(Widget child) {

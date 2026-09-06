@@ -29,12 +29,15 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     required String deckId,
     String? deckTitle,
     int questionCount = 10,
+    int? durationMinutes,
   }) async {
     _timer?.cancel();
     emit(
       state.copyWith(
         status: QuizSessionStatus.loading,
         quizTitle: deckTitle ?? 'Practice Quiz',
+        durationMinutes: durationMinutes,
+        flaggedQuestionIds: const {},
       ),
     );
 
@@ -79,6 +82,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         questions: questions,
         currentIndex: 0,
         elapsedSeconds: 0,
+        durationMinutes: durationMinutes,
+        flaggedQuestionIds: const {},
       ),
     );
     _startTimer();
@@ -89,9 +94,59 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.status == QuizSessionStatus.inProgress ||
           state.status == QuizSessionStatus.questionAnswered) {
-        emit(state.copyWith(elapsedSeconds: state.elapsedSeconds + 1));
+        final newElapsed = state.elapsedSeconds + 1;
+        emit(state.copyWith(elapsedSeconds: newElapsed));
+
+        // Auto-submit when countdown expires in timed CBT exam
+        if (state.durationMinutes != null &&
+            newElapsed >= (state.durationMinutes! * 60)) {
+          _timer?.cancel();
+          unawaited(submitQuiz());
+        }
       }
     });
+  }
+
+  /// Toggles the flagged status of the current question.
+  void toggleFlagCurrentQuestion() {
+    final current = state.currentQuestion;
+    if (current == null) return;
+    toggleFlagQuestion(current.id);
+  }
+
+  /// Toggles the flagged status of a specific question for candidate review.
+  void toggleFlagQuestion(String questionId) {
+    final updatedFlags = Set<String>.from(state.flaggedQuestionIds);
+    if (updatedFlags.contains(questionId)) {
+      updatedFlags.remove(questionId);
+    } else {
+      updatedFlags.add(questionId);
+    }
+    emit(state.copyWith(flaggedQuestionIds: updatedFlags));
+  }
+
+  /// Jumps directly to any question by index in the CBT question palette.
+  void jumpToQuestion(int index) {
+    if (index < 0 || index >= state.questions.length) return;
+    final targetQuestion = state.questions[index];
+    emit(
+      state.copyWith(
+        currentIndex: index,
+        status: state.status == QuizSessionStatus.loading ||
+                state.status == QuizSessionStatus.completed
+            ? state.status
+            : (targetQuestion.isAnswered
+                ? QuizSessionStatus.questionAnswered
+                : QuizSessionStatus.inProgress),
+      ),
+    );
+  }
+
+  /// Navigates to the previous question.
+  void previousQuestion() {
+    if (state.canGoPrevious) {
+      jumpToQuestion(state.currentIndex - 1);
+    }
   }
 
   /// Selects an answer option for the current question.
@@ -125,12 +180,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   void nextQuestion() {
     if (state.isLastQuestion) return;
 
-    emit(
-      state.copyWith(
-        status: QuizSessionStatus.inProgress,
-        currentIndex: state.currentIndex + 1,
-      ),
-    );
+    jumpToQuestion(state.currentIndex + 1);
   }
 
   /// Submits all completed answers and computes result with topic weaknesses.

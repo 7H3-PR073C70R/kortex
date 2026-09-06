@@ -8,6 +8,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/data/repositories/past_questions_repository_impl.dart';
@@ -20,6 +21,9 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_blo
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_event.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:mocktail/mocktail.dart';
+
+class MockPastQuestionsLocalDataSource extends Mock
+    implements PastQuestionsLocalDataSource {}
 
 class MockPastQuestionsRemoteDataSource extends Mock
     implements PastQuestionsRemoteDataSource {}
@@ -152,6 +156,7 @@ void main() {
 
   group('Batch 2 Fix 2: Past Question Bookmarks Persistence', () {
     late MockPastQuestionsRemoteDataSource mockRemoteDataSource;
+    late MockPastQuestionsLocalDataSource mockLocalDataSource;
     late PastQuestionsRepositoryImpl repository;
 
     const testQuestionModel = PastQuestionModel(
@@ -170,6 +175,20 @@ void main() {
 
     setUp(() {
       mockRemoteDataSource = MockPastQuestionsRemoteDataSource();
+      mockLocalDataSource = MockPastQuestionsLocalDataSource();
+
+      when(() => mockLocalDataSource.initialize()).thenAnswer((_) async {});
+      when(() => mockLocalDataSource.isInitialized).thenReturn(true);
+      when(
+        () => mockLocalDataSource.getPastQuestions(
+          examCategory: any(named: 'examCategory'),
+          subject: any(named: 'subject'),
+          year: any(named: 'year'),
+          searchQuery: any(named: 'searchQuery'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [testQuestionModel]);
+
       when(
         () => mockRemoteDataSource.getPastQuestions(
           examCategory: any(named: 'examCategory'),
@@ -189,6 +208,7 @@ void main() {
 
       repository = PastQuestionsRepositoryImpl(
         mockRemoteDataSource,
+        localDataSource: mockLocalDataSource,
         localStorageService: memoryStorage,
       );
 
@@ -207,6 +227,7 @@ void main() {
     test('Toggling bookmark persists updated bookmark list to disk', () async {
       repository = PastQuestionsRepositoryImpl(
         mockRemoteDataSource,
+        localDataSource: mockLocalDataSource,
         localStorageService: memoryStorage,
       );
 

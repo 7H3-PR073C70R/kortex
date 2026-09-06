@@ -96,12 +96,6 @@ void _initServices() {
     ..registerLazySingleton<EbbinghausDecayCalculator>(
       EbbinghausDecayCalculator.new,
     )
-    ..registerLazySingleton<AudioWorkspaceCubit>(
-      () => AudioWorkspaceCubit(
-        sttClient: locator<SpeechToTextClient>(),
-        ttsClient: locator<TextToSpeechClient>(),
-      ),
-    )
     ..registerFactory<PastQuestionsBloc>(
       () => PastQuestionsBloc(
         repository: locator<PastQuestionsRepository>(),

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-export 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart'
+export 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart'
     show FsrsRating;
 
 /// Represents the mathematical memory state of a card in the FSRS-6 engine.

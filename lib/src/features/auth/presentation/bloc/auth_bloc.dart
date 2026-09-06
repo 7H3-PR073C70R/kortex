@@ -47,7 +47,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterRequested>(_onRegisterRequested);
     on<AuthVerifyOtpRequested>(_onVerifyOtpRequested);
     on<AuthSocialLoginRequested>(_onSocialLoginRequested);
-    on<AuthMagicLinkRequested>(_onMagicLinkRequested);
     on<AuthResetPasswordRequested>(_onResetPasswordRequested);
     on<AuthProfileFetchRequested>(_onProfileFetchRequested);
     on<AuthUpdateCourseTrackRequested>(_onUpdateCourseTrackRequested);
@@ -364,28 +363,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     }
-  }
-
-  Future<void> _onMagicLinkRequested(
-    AuthMagicLinkRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
-    final res = await _authRepository.sendMagicLink(email: event.email);
-    res.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: failure.message ?? 'Failed to send magic link.',
-        ),
-      ),
-      (_) => emit(
-        state.copyWith(
-          status: AuthStatus.magicLinkSent,
-          isMagicLinkSent: true,
-        ),
-      ),
-    );
   }
 
   Future<void> _onResetPasswordRequested(

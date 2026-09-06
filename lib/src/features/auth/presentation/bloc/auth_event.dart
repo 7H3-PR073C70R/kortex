@@ -86,18 +86,6 @@ class AuthSocialLoginRequested extends AuthEvent {
   List<Object?> get props => [provider, idToken, rawNonce];
 }
 
-/// Dispatched when a user requests a magic sign-in link.
-class AuthMagicLinkRequested extends AuthEvent {
-  const AuthMagicLinkRequested({
-    required this.email,
-  });
-
-  final String email;
-
-  @override
-  List<Object?> get props => [email];
-}
-
 /// Dispatched when a user requests a password reset link.
 class AuthResetPasswordRequested extends AuthEvent {
   const AuthResetPasswordRequested({

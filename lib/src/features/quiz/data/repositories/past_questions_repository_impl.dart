@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
@@ -5,6 +6,7 @@ import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -13,14 +15,26 @@ import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repo
 class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
   PastQuestionsRepositoryImpl(
     this._remoteDataSource, {
+    PastQuestionsLocalDataSource? localDataSource,
     LocalStorageService? localStorageService,
-  }) : _localStorageService = localStorageService {
+  })  : _localDataSource = localDataSource,
+        _localStorageService = localStorageService {
     _loadBookmarkedIds();
+    unawaited(_effectiveLocalDataSource.initialize());
   }
 
   final PastQuestionsRemoteDataSource _remoteDataSource;
+  final PastQuestionsLocalDataSource? _localDataSource;
   final LocalStorageService? _localStorageService;
   final Set<String> _bookmarkedIds = {};
+
+  PastQuestionsLocalDataSource? _fallbackLocalDataSource;
+
+  PastQuestionsLocalDataSource get _effectiveLocalDataSource =>
+      _localDataSource ??
+      (locator.isRegistered<PastQuestionsLocalDataSource>()
+          ? locator<PastQuestionsLocalDataSource>()
+          : (_fallbackLocalDataSource ??= PastQuestionsLocalDataSourceImpl()));
 
   LocalStorageService? get _effectiveLocalStorage =>
       _localStorageService ??
@@ -60,37 +74,70 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     int? year,
     String? searchQuery,
   }) {
-    return _remoteDataSource
-        .getPastQuestions(
+    return Future<List<PastQuestionEntity>>.sync(() async {
+      // 1. Instant sub-5ms lookup from local offline asset dataset
+      try {
+        final local = await _effectiveLocalDataSource.getPastQuestions(
           examCategory: examCategory,
           subject: subject,
           year: year,
           searchQuery: searchQuery,
-        )
-        .then((models) {
-          return models.map((m) {
+        );
+        if (local.isNotEmpty) {
+          return local.map((m) {
             final entity = m.toEntity();
             if (_bookmarkedIds.contains(entity.id)) {
               return entity.copyWith(isBookmarked: true);
             }
             return entity;
           }).toList();
-        })
-        .makeRequest();
+        }
+      } on Object catch (_) {}
+
+      // 2. Fallback to remote data source if offline asset yielded no match
+      final remote = await _remoteDataSource.getPastQuestions(
+        examCategory: examCategory,
+        subject: subject,
+        year: year,
+        searchQuery: searchQuery,
+      );
+
+      return remote.map((m) {
+        final entity = m.toEntity();
+        if (_bookmarkedIds.contains(entity.id)) {
+          return entity.copyWith(isBookmarked: true);
+        }
+        return entity;
+      }).toList();
+    }).makeRequest();
   }
 
   @override
   Future<Either<Failure, List<String>>> getAvailableSubjects(
     ExamCategory category,
   ) {
-    return _remoteDataSource.getAvailableSubjects(category).makeRequest();
+    return Future<List<String>>.sync(() async {
+      try {
+        final local =
+            await _effectiveLocalDataSource.getAvailableSubjects(category);
+        if (local.isNotEmpty) return local;
+      } on Object catch (_) {}
+      return _remoteDataSource.getAvailableSubjects(category);
+    }).makeRequest();
   }
 
   @override
   Future<Either<Failure, List<int>>> getAvailableYears(
     ExamCategory category,
   ) {
-    return _remoteDataSource.getAvailableYears(category).makeRequest();
+    return Future<List<int>>.sync(() async {
+      try {
+        final local =
+            await _effectiveLocalDataSource.getAvailableYears(category);
+        if (local.isNotEmpty) return local;
+      } on Object catch (_) {}
+      return _remoteDataSource.getAvailableYears(category);
+    }).makeRequest();
   }
 
   @override

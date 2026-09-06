@@ -8,7 +8,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 
 /// Local-first card review sync queue that buffers logs persistently and flushes
 /// them in batches of 50 via idempotent RPC `upsert_fsrs_review_batch`.

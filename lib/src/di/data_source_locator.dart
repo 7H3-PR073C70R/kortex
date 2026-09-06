@@ -77,6 +77,9 @@ void _initDataSource() {
         dio: locator<Dio>(),
       ),
     )
+    ..registerLazySingleton<PastQuestionsLocalDataSource>(
+      PastQuestionsLocalDataSourceImpl.new,
+    )
     ..registerLazySingleton<PastQuestionsRemoteDataSource>(
       () => PastQuestionsRemoteDataSourceImpl(
         locator<PastQuestionsApiClient>(),
