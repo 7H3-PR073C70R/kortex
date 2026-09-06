@@ -43,11 +43,25 @@ class AppGuidedTourOverlay extends StatefulWidget {
   final VoidCallback? onTourCompleted;
 
   /// Launches the full-screen interactive tour over the root navigator.
+  /// If [force] is false (default), the tour will only show if the user has
+  /// never completed or skipped it before.
   static Future<void> start(
     BuildContext context, {
     VoidCallback? onCompleted,
+    bool force = false,
   }) async {
-    final storage = locator<LocalStorageService>();
+    if (locator.isRegistered<LocalStorageService>()) {
+      final storage = locator<LocalStorageService>();
+      final hasCompleted =
+          storage.getPreference(key: PrefKeys.hasCompletedInteractiveTour) ==
+          'true';
+
+      // Tour should only show if user has never done or skipped it before.
+      if (!force && hasCompleted) {
+        return;
+      }
+    }
+
     unawaited(HapticFeedback.mediumImpact());
 
     await showGeneralDialog<void>(
@@ -59,12 +73,14 @@ class AppGuidedTourOverlay extends StatefulWidget {
           opacity: animation,
           child: AppGuidedTourOverlay(
             onTourCompleted: () {
-              unawaited(
-                storage.savePreference(
-                  key: PrefKeys.hasCompletedInteractiveTour,
-                  data: 'true',
-                ),
-              );
+              if (locator.isRegistered<LocalStorageService>()) {
+                unawaited(
+                  locator<LocalStorageService>().savePreference(
+                    key: PrefKeys.hasCompletedInteractiveTour,
+                    data: 'true',
+                  ),
+                );
+              }
               onCompleted?.call();
             },
           ),
@@ -290,6 +306,14 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
 
   void _finishTour() {
     unawaited(HapticFeedback.mediumImpact());
+    if (locator.isRegistered<LocalStorageService>()) {
+      unawaited(
+        locator<LocalStorageService>().savePreference(
+          key: PrefKeys.hasCompletedInteractiveTour,
+          data: 'true',
+        ),
+      );
+    }
     widget.onTourCompleted?.call();
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();

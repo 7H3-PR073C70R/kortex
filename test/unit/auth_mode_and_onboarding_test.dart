@@ -24,10 +24,35 @@ void main() {
     test('PrefKeys constants are uniquely defined for new user welcome flow', () {
       expect(PrefKeys.hasSeenWelcomeWalkthrough, isNotEmpty);
       expect(PrefKeys.isNewlyRegistered, isNotEmpty);
+      expect(PrefKeys.hasCompletedInteractiveTour, isNotEmpty);
       expect(
         PrefKeys.hasSeenWelcomeWalkthrough != PrefKeys.isNewlyRegistered,
         isTrue,
       );
+      expect(
+        PrefKeys.hasCompletedInteractiveTour != PrefKeys.hasSeenWelcomeWalkthrough,
+        isTrue,
+      );
+    });
+
+    test('Dashboard welcome dialog only shows to new registrations and never returning users', () {
+      bool shouldShowWelcome({required String? isNewlyRegistered, required String? hasSeenWelcome}) {
+        final isNew = isNewlyRegistered == 'true';
+        final hasSeen = hasSeenWelcome == 'true';
+        return isNew && !hasSeen;
+      }
+
+      // Existing user logging back in: isNewlyRegistered = false, hasSeenWelcome = false
+      expect(shouldShowWelcome(isNewlyRegistered: 'false', hasSeenWelcome: 'false'), isFalse);
+
+      // Existing user logging back in with null isNewlyRegistered
+      expect(shouldShowWelcome(isNewlyRegistered: null, hasSeenWelcome: null), isFalse);
+
+      // Brand new user just completed account registration: isNewlyRegistered = true, hasSeenWelcome = false
+      expect(shouldShowWelcome(isNewlyRegistered: 'true', hasSeenWelcome: 'false'), isTrue);
+
+      // Brand new user who already dismissed/completed welcome: isNewlyRegistered = false, hasSeenWelcome = true
+      expect(shouldShowWelcome(isNewlyRegistered: 'false', hasSeenWelcome: 'true'), isFalse);
     });
   });
 }

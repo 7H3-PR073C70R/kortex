@@ -81,11 +81,17 @@ class _DashboardView extends HookWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final storage = locator<LocalStorageService>();
+        final isNewlyRegistered =
+            storage.getPreference(key: PrefKeys.isNewlyRegistered) == 'true';
         final hasSeenWelcome =
             storage.getPreference(key: PrefKeys.hasSeenWelcomeWalkthrough) ==
             'true';
 
-        if (!hasSeenWelcome && context.mounted) {
+        // Welcome dialog should ONLY show to newly registered users who just created their account,
+        // and never to users who already own an account and are logging back in.
+        final shouldShowWelcome = isNewlyRegistered && !hasSeenWelcome;
+
+        if (shouldShowWelcome && context.mounted) {
           confettiController.play();
           unawaited(
             showDialog<void>(
@@ -98,6 +104,12 @@ class _DashboardView extends HookWidget {
                       data: 'true',
                     ),
                   );
+                  unawaited(
+                    storage.savePreference(
+                      key: PrefKeys.isNewlyRegistered,
+                      data: 'false',
+                    ),
+                  );
                 },
                 onEnterWorkspace: () {
                   unawaited(
@@ -106,11 +118,24 @@ class _DashboardView extends HookWidget {
                       data: 'true',
                     ),
                   );
+                  unawaited(
+                    storage.savePreference(
+                      key: PrefKeys.isNewlyRegistered,
+                      data: 'false',
+                    ),
+                  );
                   if (context.mounted) {
                     unawaited(AppGuidedTourOverlay.start(context));
                   }
                 },
               ),
+            ),
+          );
+        } else if (!isNewlyRegistered && !hasSeenWelcome) {
+          unawaited(
+            storage.savePreference(
+              key: PrefKeys.hasSeenWelcomeWalkthrough,
+              data: 'true',
             ),
           );
         }

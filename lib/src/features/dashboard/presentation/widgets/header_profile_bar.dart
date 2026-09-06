@@ -230,7 +230,12 @@ class HeaderProfileBar extends StatelessWidget {
                             builder: (_) => WelcomeWalkthroughDialog(
                               onEnterWorkspace: () {
                                 if (context.mounted) {
-                                  unawaited(AppGuidedTourOverlay.start(context));
+                                  unawaited(
+                                    AppGuidedTourOverlay.start(
+                                      context,
+                                      force: true,
+                                    ),
+                                  );
                                 }
                               },
                             ),

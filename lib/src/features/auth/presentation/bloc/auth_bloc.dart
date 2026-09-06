@@ -181,6 +181,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          unawaited(
+            locator<LocalStorageService>().savePreference(
+              key: PrefKeys.isNewlyRegistered,
+              data: 'false',
+            ),
+          );
+          unawaited(
+            locator<LocalStorageService>().savePreference(
+              key: PrefKeys.hasSeenWelcomeWalkthrough,
+              data: 'true',
+            ),
+          );
           emit(
             state.copyWith(
               status: AuthStatus.authenticated,
@@ -458,6 +470,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           } on Object catch (_) {}
         }
 
+        if (isOnboarded) {
+          unawaited(
+            locator<LocalStorageService>().savePreference(
+              key: PrefKeys.isNewlyRegistered,
+              data: 'false',
+            ),
+          );
+          unawaited(
+            locator<LocalStorageService>().savePreference(
+              key: PrefKeys.hasSeenWelcomeWalkthrough,
+              data: 'true',
+            ),
+          );
+        }
+
         emit(
           state.copyWith(
             userProfile: mergedProfile,
@@ -597,11 +624,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
-      await locator<LocalStorageService>().deletePreference(
-        key: PrefKeys.hasSeenWelcomeWalkthrough,
-      );
-      await locator<LocalStorageService>().deletePreference(
+      await locator<LocalStorageService>().savePreference(
         key: PrefKeys.isNewlyRegistered,
+        data: 'false',
       );
     } on Object catch (_) {}
     await _authRepository.signOut();
