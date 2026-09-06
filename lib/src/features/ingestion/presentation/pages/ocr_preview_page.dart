@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/ocr_latex_live_editor.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -56,6 +58,27 @@ class OcrPreviewPage extends HookWidget {
           (courseCode != null && courseCode!.isNotEmpty
               ? '$courseCode Review'
               : 'Study Review');
+
+      // Trigger background RAG vector embeddings indexing with curated/edited text
+      final combinedText = currentSnippets.value
+          .map((s) => s.rawText)
+          .where((t) => t.trim().isNotEmpty)
+          .join('\n\n');
+      if (combinedText.isNotEmpty &&
+          locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
+        unawaited(
+          locator<GenerateDocumentEmbeddingsUseCase>()(
+            documentId: documentId,
+            rawText: combinedText,
+            metadata: {
+              'filename': filename,
+              'courseCode': courseCode ?? 'GENERAL',
+              'courseTitle': resolvedSubject,
+              'extractedSnippetsCount': currentSnippets.value.length,
+            },
+          ),
+        );
+      }
 
       unawaited(
         context.router.push(
