@@ -51,10 +51,6 @@ abstract class AuthRepository {
     required String email,
   });
 
-  /// Sends passwordless magic link to email.
-  Future<Either<Failure, void>> sendMagicLink({
-    required String email,
-  });
 
   /// Verifies a 6-digit OTP token for account confirmation or login.
   Future<Either<Failure, UserEntity>> verifyOtp({

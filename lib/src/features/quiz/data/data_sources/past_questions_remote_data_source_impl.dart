@@ -1,7 +1,6 @@
 import 'package:kortex/src/features/quiz/data/client/past_questions_api_client.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
-import 'package:kortex/src/features/quiz/data/models/seed_past_questions.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 
 class PastQuestionsRemoteDataSourceImpl
@@ -103,21 +102,10 @@ class PastQuestionsRemoteDataSourceImpl
         ];
       }
     } on Object {
-      // Fallback gracefully to offline seed cache if remote is initializing
+      // Fallback gracefully to memory matches if remote query fails
     }
 
-    final seedMatches = SeedPastQuestions.filter(
-      examCategory: examCategory,
-      subject: subject,
-      year: year,
-      searchQuery: searchQuery,
-    );
-
-    final seenIds = memoryMatches.map((e) => e.id).toSet();
-    return [
-      ...memoryMatches,
-      ...seedMatches.where((q) => !seenIds.contains(q.id)),
-    ];
+    return memoryMatches;
   }
 
   @override
@@ -143,24 +131,19 @@ class PastQuestionsRemoteDataSourceImpl
       // Fallback
     }
 
-    final local = SeedPastQuestions.filter(examCategory: category);
-    final set = local.map((q) => q.subject).toSet().toList()..sort();
-    if (set.isEmpty) {
-      return const [
-        'English Language',
-        'Mathematics',
-        'Biology',
-        'Chemistry',
-        'Physics',
-        'Economics',
-        'Government',
-        'Literature in English',
-        'Commerce',
-        'Agricultural Science',
-        'Civic Education',
-      ];
-    }
-    return set;
+    return const [
+      'English Language',
+      'Mathematics',
+      'Biology',
+      'Chemistry',
+      'Physics',
+      'Economics',
+      'Government',
+      'Literature in English',
+      'Commerce',
+      'Agricultural Science',
+      'Civic Education',
+    ];
   }
 
   @override
@@ -188,12 +171,6 @@ class PastQuestionsRemoteDataSourceImpl
       // Fallback
     }
 
-    final local = SeedPastQuestions.filter(examCategory: category);
-    final set = local.map((q) => q.year).toSet().toList()
-      ..sort((a, b) => b.compareTo(a));
-    if (set.isEmpty) {
-      return const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
-    }
-    return set;
+    return const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
   }
 }

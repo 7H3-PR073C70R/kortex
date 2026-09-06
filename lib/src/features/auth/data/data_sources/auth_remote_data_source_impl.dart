@@ -57,10 +57,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await _authClient.resetPassword(request);
   }
 
-  @override
-  Future<void> sendMagicLink(String email) async {
-    await _authClient.sendMagicLink({'email': email});
-  }
 
   @override
   Future<UserModel> verifyOtp({

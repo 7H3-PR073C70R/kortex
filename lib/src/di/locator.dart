@@ -107,6 +107,7 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/process_local_cam
 import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
+import 'package:kortex/src/features/ingestion/presentation/controllers/onboarding_stream_controller.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source.dart';
@@ -170,6 +171,7 @@ import 'package:kortex/src/features/syllabot/domain/logic/execution_engine_route
 import 'package:kortex/src/features/syllabot/domain/repositories/rag_repository.dart';
 import 'package:kortex/src/features/syllabot/domain/repositories/syllabot_repository.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_deck_from_chat_use_case.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/get_chat_history_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/purge_expired_ai_cache_use_case.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/query_document_context_use_case.dart';

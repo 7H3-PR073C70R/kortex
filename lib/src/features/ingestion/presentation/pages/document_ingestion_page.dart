@@ -18,6 +18,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_mo
 import 'package:kortex/src/features/ingestion/presentation/widgets/synthesis_mode_toggle.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
@@ -127,6 +128,28 @@ class _DocumentIngestionView extends HookWidget {
                   locator<AutoCommunityCubit>().provisionForDocument(
                     courseCode: cleanCode,
                     title: '$cleanCode Study Hub',
+                  ),
+                );
+              }
+
+              // Background pgvector RAG embeddings generation
+              final combinedText = state.snippets
+                  .map((s) => s.rawText)
+                  .where((t) => t.trim().isNotEmpty)
+                  .join('\n\n');
+              if (combinedText.isNotEmpty &&
+                  locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
+                unawaited(
+                  locator<GenerateDocumentEmbeddingsUseCase>()(
+                    documentId: doc.id,
+                    rawText: combinedText,
+                    metadata: {
+                      'filename': doc.filename,
+                      'courseCode': cleanCode.isNotEmpty
+                          ? cleanCode
+                          : (courseCode ?? 'GENERAL'),
+                      'extractedSnippetsCount': state.snippets.length,
+                    },
                   ),
                 );
               }

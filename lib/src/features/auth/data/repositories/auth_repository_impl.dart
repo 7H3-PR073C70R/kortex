@@ -169,12 +169,6 @@ class AuthRepositoryImpl implements AuthRepository {
         .makeRequest();
   }
 
-  @override
-  Future<Either<Failure, void>> sendMagicLink({
-    required String email,
-  }) {
-    return _remoteDataSource.sendMagicLink(email).makeRequest();
-  }
 
   @override
   Future<Either<Failure, UserEntity>> verifyOtp({

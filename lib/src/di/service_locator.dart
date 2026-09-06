@@ -120,5 +120,8 @@ void _initServices() {
         imageOcr: locator<LocalImageOcrService>(),
         documentParser: locator<DocumentParserService>(),
       ),
+    )
+    ..registerFactory<OnboardingStreamController>(
+      () => OnboardingStreamController(dio: locator<Dio>()),
     );
 }

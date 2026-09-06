@@ -15,6 +15,7 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
+import 'package:kortex/src/features/ingestion/presentation/controllers/onboarding_stream_controller.dart';
 
 class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   IngestionBloc({
@@ -25,6 +26,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     ProcessLocalCameraOcrUseCase? processCameraOcrUseCase,
     FetchLmsCoursesUseCase? fetchLmsCoursesUseCase,
     ImportLmsCourseUseCase? importLmsCourseUseCase,
+    OnboardingStreamController? streamController,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
@@ -32,6 +34,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _processCameraOcr = processCameraOcrUseCase,
        _fetchLmsCourses = fetchLmsCoursesUseCase,
        _importLmsCourse = importLmsCourseUseCase,
+       _streamController = streamController,
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -53,6 +56,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final ProcessLocalCameraOcrUseCase? _processCameraOcr;
   final FetchLmsCoursesUseCase? _fetchLmsCourses;
   final ImportLmsCourseUseCase? _importLmsCourse;
+  final OnboardingStreamController? _streamController;
+
+  OnboardingStreamController? get streamController => _streamController;
 
   void _onSetSynthesisMode(
     SetSynthesisModeEvent event,
@@ -490,5 +496,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     Emitter<IngestionState> emit,
   ) {
     emit(const IngestionState());
+  }
+
+  @override
+  Future<void> close() async {
+    await _streamController?.dispose();
+    return super.close();
   }
 }

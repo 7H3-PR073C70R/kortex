@@ -22,9 +22,6 @@ abstract class AuthApiClient {
   @POST(AppApiEndpoint.resetPassword)
   Future<void> resetPassword(@Body() ResetPasswordRequestModel body);
 
-  @POST(AppApiEndpoint.magicLink)
-  Future<void> sendMagicLink(@Body() Map<String, dynamic> body);
-
   @POST(AppApiEndpoint.otpVerify)
   Future<UserModel> verifyOtp(@Body() Map<String, dynamic> body);
 

@@ -137,6 +137,9 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<QueryDocumentContextUseCase>(
       () => QueryDocumentContextUseCase(locator<RagRepository>()),
     )
+    ..registerLazySingleton<GenerateDocumentEmbeddingsUseCase>(
+      () => GenerateDocumentEmbeddingsUseCase(locator<RagRepository>()),
+    )
     ..registerLazySingleton<SyllabotChatBloc>(
       () => SyllabotChatBloc(
         streamResponseUseCase: locator<StreamSyllabotResponseUseCase>(),
@@ -178,6 +181,7 @@ void _initUseCaseLocator() {
         processCameraOcrUseCase: locator<ProcessLocalCameraOcrUseCase>(),
         fetchLmsCoursesUseCase: locator<FetchLmsCoursesUseCase>(),
         importLmsCourseUseCase: locator<ImportLmsCourseUseCase>(),
+        streamController: locator<OnboardingStreamController>(),
       ),
     )
     ..registerLazySingleton<JoinLiveStudyRoomUseCase>(

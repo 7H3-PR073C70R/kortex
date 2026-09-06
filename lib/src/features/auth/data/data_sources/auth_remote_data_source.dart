@@ -9,7 +9,6 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> register(RegisterRequestModel request);
   Future<UserModel> loginWithSocial(SocialAuthRequestModel request);
   Future<void> resetPassword(ResetPasswordRequestModel request);
-  Future<void> sendMagicLink(String email);
   Future<UserModel> verifyOtp({
     required String email,
     required String token,
