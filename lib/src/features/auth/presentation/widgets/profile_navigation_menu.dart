@@ -69,13 +69,13 @@ class ProfileNavigationMenu extends StatelessWidget {
             showDivider: true,
           ),
 
-          // 3. Security & Access Control
+          // 3. Account & Security
           _buildNavTile(
             context: context,
-            icon: Icons.lock_outline_rounded,
-            iconColor: colors.error,
-            title: 'Security & Access Control',
-            subtitle: 'Password change, active sessions & biometric lock',
+            icon: Icons.shield_outlined,
+            iconColor: colors.primary,
+            title: 'Account & Security',
+            subtitle: 'Credentials, password, 2FA, data export & cache',
             onTap: () {
               unawaited(
                 context.router.push(const SecuritySettingsRoute()),
@@ -113,23 +113,6 @@ class ProfileNavigationMenu extends StatelessWidget {
             onTap: () {
               unawaited(
                 context.router.push(const AppPreferencesRoute()),
-              );
-            },
-            colors: colors,
-            typography: typography,
-            showDivider: true,
-          ),
-
-          // 6. Account, Data & Export
-          _buildNavTile(
-            context: context,
-            icon: Icons.shield_outlined,
-            iconColor: colors.success,
-            title: 'Account, Data & Export',
-            subtitle: 'Export decks to Anki/PDF, manage storage cache',
-            onTap: () {
-              unawaited(
-                context.router.push(const AccountSecurityRoute()),
               );
             },
             colors: colors,
