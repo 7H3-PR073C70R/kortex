@@ -28,7 +28,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
        _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
-       _cardSyncQueue = cardSyncQueue ?? CardSyncQueue(),
+       _cardSyncQueue = cardSyncQueue ??
+           (locator.isRegistered<CardSyncQueue>()
+               ? locator<CardSyncQueue>()
+               : CardSyncQueue()),
        super(const StudySessionState());
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;

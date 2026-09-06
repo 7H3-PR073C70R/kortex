@@ -112,6 +112,7 @@ void _initUseCaseLocator() {
       () => CardSyncQueue(
         dio: locator<Dio>(),
         storageService: locator<LocalStorageService>(),
+        userStorageService: locator<UserStorageService>(),
       ),
     )
     ..registerFactory<StudySessionCubit>(

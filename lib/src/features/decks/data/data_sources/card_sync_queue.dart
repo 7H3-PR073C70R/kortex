@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
@@ -17,6 +18,7 @@ class CardSyncQueue {
     Dio? dio,
     Connectivity? connectivity,
     LocalStorageService? storageService,
+    UserStorageService? userStorageService,
     List<FsrsReviewLog>? initialBuffer,
     String? authToken,
   }) : _dio = dio ?? Dio(),
@@ -24,6 +26,10 @@ class CardSyncQueue {
        _storageService = storageService ??
            (locator.isRegistered<LocalStorageService>()
                ? locator<LocalStorageService>()
+               : null),
+       _userStorageService = userStorageService ??
+           (locator.isRegistered<UserStorageService>()
+               ? locator<UserStorageService>()
                : null),
        _authToken = authToken,
        _inMemoryLogBuffer = initialBuffer != null
@@ -38,12 +44,32 @@ class CardSyncQueue {
   final Dio _dio;
   final Connectivity _connectivity;
   final LocalStorageService? _storageService;
+  final UserStorageService? _userStorageService;
   final List<FsrsReviewLog> _inMemoryLogBuffer;
   final String? _authToken;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
-  Map<String, String> get _headers {
-    final token = _authToken?.isNotEmpty == true ? _authToken! : AppEnv.apiKey;
+  /// Resolves the active user authentication JWT.
+  /// Dynamic JWT from UserStorageService is prioritized to handle real-time sign-in
+  /// and token refreshes. Falls back to explicit constructor _authToken in unit tests.
+  String? get currentAuthToken {
+    final userToken = _userStorageService?.getToken();
+    if (userToken != null && userToken.trim().isNotEmpty) {
+      return userToken.trim();
+    }
+    final explicitToken = _authToken;
+    if (explicitToken != null && explicitToken.trim().isNotEmpty) {
+      return explicitToken.trim();
+    }
+    return null;
+  }
+
+  /// Headers for Supabase user-scoped RPC calls.
+  /// Returns null if no user JWT is present to prevent leaking AppEnv.apiKey as
+  /// an anonymous Bearer token or triggering RLS authorization failures.
+  Map<String, String>? get _headers {
+    final token = currentAuthToken;
+    if (token == null) return null;
     return {
       'apikey': AppEnv.apiKey,
       'Authorization': 'Bearer $token',
@@ -158,6 +184,15 @@ class CardSyncQueue {
         return 0;
       }
 
+      final headers = _headers;
+      if (headers == null) {
+        debugPrint(
+          '[CardSyncQueue] Postponing sync: No authenticated user session JWT found. '
+          'Retaining ${pendingLogs.length} review logs safely in local buffer until sign-in.',
+        );
+        return 0;
+      }
+
       for (var i = 0; i < pendingLogs.length; i += syncBatchSize) {
         final endIndex = (i + syncBatchSize < pendingLogs.length)
             ? i + syncBatchSize
@@ -179,7 +214,7 @@ class CardSyncQueue {
           await _dio.post<dynamic>(
             '${AppApiEndpoint.baseUri}/rest/v1/rpc/upsert_fsrs_review_batch',
             data: {'reviews': payload},
-            options: Options(headers: _headers),
+            options: Options(headers: headers),
           );
 
           for (final syncedLog in batch) {
@@ -218,7 +253,7 @@ class CardSyncQueue {
               data: payload,
               options: Options(
                 headers: {
-                  ..._headers,
+                  ...headers,
                   'Prefer': 'resolution=merge-duplicates',
                 },
               ),

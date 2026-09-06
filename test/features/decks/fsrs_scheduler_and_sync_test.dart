@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
+
+class MockDio extends Mock implements Dio {}
 
 class _FakeLocalStorageService implements LocalStorageService {
   final Map<String, String> _store = {};
@@ -28,6 +33,55 @@ class _FakeLocalStorageService implements LocalStorageService {
   @override
   Future<void> deletePreference({required String key}) async {
     _store.remove(key);
+  }
+}
+
+class _FakeUserStorageService implements UserStorageService {
+  String? token;
+  String? refreshToken;
+  bool isPro = false;
+
+  @override
+  String? getToken() => token;
+
+  @override
+  String? getRefreshToken() => refreshToken;
+
+  @override
+  Future<void> saveToken(String token) async => this.token = token;
+
+  @override
+  Future<void> saveRefreshToken(String refreshToken) async =>
+      this.refreshToken = refreshToken;
+
+  @override
+  Future<void> saveAuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    token = accessToken;
+    this.refreshToken = refreshToken;
+  }
+
+  @override
+  String? getUserId() => 'user_123';
+
+  @override
+  String? getUserDisplayName() => 'Scholar Adeola';
+
+  @override
+  String? getUserAvatarUrl() => null;
+
+  @override
+  Future<void> saveProStatus({required bool isPro}) async => this.isPro = isPro;
+
+  @override
+  bool isProSubscriber() => isPro;
+
+  @override
+  void clearStorage() {
+    token = null;
+    refreshToken = null;
   }
 }
 
@@ -228,6 +282,136 @@ void main() {
         expect(pending.first.rating, equals(FsrsRating.easy));
         expect(pending.first.stability, equals(4.0));
         await queue2.dispose();
+      },
+    );
+
+    test(
+      'currentAuthToken dynamically resolves from UserStorageService and prevents anon token leak',
+      () async {
+        final fakeUserStorage = _FakeUserStorageService();
+        final queue = CardSyncQueue(
+          connectivity: mockConnectivity,
+          userStorageService: fakeUserStorage,
+        );
+
+        // 1. Unauthenticated: currentAuthToken is null (never falls back to AppEnv.apiKey as Bearer)
+        expect(queue.currentAuthToken, isNull);
+
+        // 2. User logs in: token is updated in UserStorageService
+        fakeUserStorage.token = 'jwt_scholar_user_token_123';
+        expect(queue.currentAuthToken, equals('jwt_scholar_user_token_123'));
+
+        // 3. User logs out: token cleared, returns to null
+        fakeUserStorage.clearStorage();
+        expect(queue.currentAuthToken, isNull);
+
+        await queue.dispose();
+      },
+    );
+
+    test(
+      'flushPendingLogs postpones sync and keeps logs buffered safely when unauthenticated',
+      () async {
+        final mockDio = MockDio();
+        final fakeStorage = _FakeLocalStorageService();
+        final fakeUserStorage = _FakeUserStorageService(); // unauthenticated (token null)
+
+        final queue = CardSyncQueue(
+          dio: mockDio,
+          connectivity: mockConnectivity,
+          storageService: fakeStorage,
+          userStorageService: fakeUserStorage,
+        );
+
+        final log = FsrsReviewLog(
+          id: '1',
+          transactionUuid: 'uuid-unauth-1',
+          cardId: 'card-unauth-1',
+          rating: FsrsRating.good,
+          stability: 2.5,
+          difficulty: 4.8,
+          elapsedDays: 1,
+          scheduledDays: 3,
+          reviewedAtUtc: DateTime.now().toUtc(),
+          reviewedAtEpoch: DateTime.now().millisecondsSinceEpoch,
+          state: FsrsCardState.review,
+        );
+
+        await queue.enqueueReview(log);
+        expect(queue.getPendingCount(), equals(1));
+
+        // Attempt flush while unauthenticated
+        final syncedCount = await queue.flushPendingLogs();
+
+        // Verifies zero logs synced over wire, no HTTP calls dispatched, and log remains buffered locally
+        expect(syncedCount, equals(0));
+        expect(queue.getPendingCount(), equals(1));
+        verifyZeroInteractions(mockDio);
+
+        await queue.dispose();
+      },
+    );
+
+    test(
+      'flushPendingLogs uses Bearer user JWT when user is authenticated',
+      () async {
+        final mockDio = MockDio();
+        final fakeStorage = _FakeLocalStorageService();
+        final fakeUserStorage = _FakeUserStorageService()
+          ..token = 'authenticated_jwt_token_456';
+
+        final queue = CardSyncQueue(
+          dio: mockDio,
+          connectivity: mockConnectivity,
+          storageService: fakeStorage,
+          userStorageService: fakeUserStorage,
+        );
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response<dynamic>(
+            requestOptions: RequestOptions(),
+          ),
+        );
+
+        final log = FsrsReviewLog(
+          id: '1',
+          transactionUuid: 'uuid-auth-1',
+          cardId: 'card-auth-1',
+          rating: FsrsRating.good,
+          stability: 2.5,
+          difficulty: 4.8,
+          elapsedDays: 1,
+          scheduledDays: 3,
+          reviewedAtUtc: DateTime.now().toUtc(),
+          reviewedAtEpoch: DateTime.now().millisecondsSinceEpoch,
+          state: FsrsCardState.review,
+        );
+
+        await queue.enqueueReview(log);
+
+        // enqueueReview triggers auto-flush in background when authenticated
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(queue.getPendingCount(), equals(0));
+
+        final captured = verify(
+          () => mockDio.post<dynamic>(
+            any(that: contains('upsert_fsrs_review_batch')),
+            data: any(named: 'data'),
+            options: captureAny(named: 'options'),
+          ),
+        ).captured;
+
+        final options = captured.first as Options;
+        expect(options.headers?['Authorization'], equals('Bearer authenticated_jwt_token_456'));
+        expect(options.headers?['apikey'], equals(AppEnv.apiKey));
+
+        await queue.dispose();
       },
     );
   });
