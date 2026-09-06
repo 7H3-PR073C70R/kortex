@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_page.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -119,6 +120,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                     child: ShrinkableButton(
                       onTap: _expand,
                       child: Container(
+                        key: AppTourKeys.syllabotFabKey,
                         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

@@ -16,6 +16,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for Syllabot AI settings, reasoning preferences,
 /// and offline weights manager.
+@RoutePage()
 class SyllabotAiSettingsPage extends HookWidget {
   const SyllabotAiSettingsPage({super.key});
 

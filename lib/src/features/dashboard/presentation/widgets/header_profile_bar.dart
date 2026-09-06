@@ -11,6 +11,7 @@ import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
+import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -226,7 +227,13 @@ class HeaderProfileBar extends StatelessWidget {
                         unawaited(
                           showDialog<void>(
                             context: context,
-                            builder: (_) => const WelcomeWalkthroughDialog(),
+                            builder: (_) => WelcomeWalkthroughDialog(
+                              onEnterWorkspace: () {
+                                if (context.mounted) {
+                                  unawaited(AppGuidedTourOverlay.start(context));
+                                }
+                              },
+                            ),
                           ),
                         );
                       },

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -7,10 +8,12 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
+import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Subpage displaying app version, documentation, support, and legal links.
+@RoutePage()
 class AboutSupportPage extends StatelessWidget {
   const AboutSupportPage({super.key});
 
@@ -169,7 +172,13 @@ class AboutSupportPage extends StatelessWidget {
                 unawaited(
                   showDialog<void>(
                     context: context,
-                    builder: (_) => const WelcomeWalkthroughDialog(),
+                    builder: (_) => WelcomeWalkthroughDialog(
+                      onEnterWorkspace: () {
+                        if (context.mounted) {
+                          unawaited(AppGuidedTourOverlay.start(context));
+                        }
+                      },
+                    ),
                   ),
                 );
               },

@@ -27,9 +27,11 @@ class WelcomeWalkthroughDialog extends StatefulWidget {
   const WelcomeWalkthroughDialog({
     super.key,
     this.onDismissed,
+    this.onEnterWorkspace,
   });
 
   final VoidCallback? onDismissed;
+  final VoidCallback? onEnterWorkspace;
 
   @override
   State<WelcomeWalkthroughDialog> createState() =>
@@ -68,7 +70,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
         ),
       );
     } else {
-      _close();
+      _close(isEnterWorkspace: true);
     }
   }
 
@@ -93,9 +95,14 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
     }
   }
 
-  void _close() {
+  void _close({bool isEnterWorkspace = false}) {
     _notifyDismissed();
-    Navigator.of(context).pop();
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (isEnterWorkspace) {
+      widget.onEnterWorkspace?.call();
+    }
   }
 
   @override
@@ -176,33 +183,41 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '🎉 ',
-                              style: typography.title2.bold,
-                            ),
-                            Text(
-                              l10n.welcomeWalkthroughTitle,
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w800,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '🎉 ',
+                                style: typography.title2.bold,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.welcomeWalkthroughSubtitle,
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 12,
+                              Expanded(
+                                child: Text(
+                                  l10n.welcomeWalkthroughTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.welcomeWalkthroughSubtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -312,7 +327,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
 
               // Bottom Indicator & Actions
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -322,9 +337,9 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                         final isSelected = idx == _currentIndex;
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.only(right: 6),
-                          width: isSelected ? 22 : 6,
-                          height: 6,
+                          margin: const EdgeInsets.only(right: 4),
+                          width: isSelected ? 16 : 5,
+                          height: 5,
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? colors.primary
@@ -337,16 +352,28 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
 
                     // Navigation Action Buttons
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         if (_currentIndex > 0)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.only(right: 4),
                             child: TextButton(
                               onPressed: _handlePrevious,
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 4,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
                               child: Text(
                                 l10n.welcomeWalkthroughPrevious,
                                 style: typography.caption.bold.copyWith(
                                   color: colors.textSecondary,
+                                  fontSize: 11.5,
                                 ),
                               ),
                             ),
@@ -355,12 +382,12 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                           onTap: () => _handleNext(slides.length),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
+                              horizontal: 12,
+                              vertical: 7,
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(60),

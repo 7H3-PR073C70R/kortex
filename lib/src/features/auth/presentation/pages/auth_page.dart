@@ -131,6 +131,13 @@ class _AuthView extends HookWidget {
               }
             }
           }
+        } else if (state.status == AuthStatus.needsEmailVerification) {
+          final email = state.user?.email ?? '';
+          if (email.isNotEmpty) {
+            unawaited(
+              context.router.push(OtpVerificationRoute(email: email)),
+            );
+          }
         } else if (state.isResetSent) {
           if (!isChatMode) {
             context.showSnackBar(

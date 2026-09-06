@@ -153,6 +153,8 @@ class CreateDeckPage extends HookWidget {
         for (var i = 0; i < generatedCards.length; i++) {
           final card = generatedCards[i];
           final qId = 'pq_upload_${timestamp}_$i';
+          final (options, correctIdx, correctLabel) =
+              _buildCalibratedOptions(card, generatedCards, i);
 
           // Construct past question entity
           pqModels.add(
@@ -163,14 +165,9 @@ class CreateDeckPage extends HookWidget {
               year: year,
               questionNumber: i + 1,
               prompt: card.front,
-              options: const [
-                'Option A (Calibrated choice)',
-                'Option B (Calibrated choice)',
-                'Option C (Calibrated choice)',
-                'Option D (Calibrated choice)',
-              ],
-              correctOptionIndex: 0,
-              correctOptionLabel: 'A',
+              options: options,
+              correctOptionIndex: correctIdx,
+              correctOptionLabel: correctLabel,
               explanation: card.explanation.isNotEmpty ? card.explanation : card.back,
               topic: resolvedSubject,
             ),
@@ -532,6 +529,61 @@ class CreateDeckPage extends HookWidget {
   }
 
 
+
+  static (List<String>, int, String) _buildCalibratedOptions(
+    GeneratedFlashcard currentCard,
+    List<GeneratedFlashcard> allCards,
+    int index,
+  ) {
+    final lines = '${currentCard.front}\n${currentCard.back}'.split('\n');
+    final optionRegex = RegExp(r'^[A-Da-d][\.\)]\s*(.+)');
+    final parsedOptions = <String>[];
+    for (final line in lines) {
+      final match = optionRegex.firstMatch(line.trim());
+      if (match != null) {
+        parsedOptions.add(match.group(1)?.trim() ?? '');
+      }
+    }
+
+    if (parsedOptions.length >= 4) {
+      return (parsedOptions.take(4).toList(), 0, 'A');
+    }
+
+    final correctAnswer = currentCard.back.trim();
+    final candidateDistractors = allCards
+        .where((c) => c.back.trim() != correctAnswer && c.back.trim().isNotEmpty)
+        .map((c) => c.back.trim())
+        .toSet()
+        .toList();
+
+    final distractors = <String>[];
+    for (final d in candidateDistractors) {
+      if (distractors.length < 3) {
+        distractors.add(d);
+      }
+    }
+
+    var fallbackCounter = 1;
+    while (distractors.length < 3) {
+      final topicTag = currentCard.tags.isNotEmpty ? currentCard.tags.first : 'this concept';
+      distractors.add('Alternative formulation $fallbackCounter for $topicTag');
+      fallbackCounter++;
+    }
+
+    final targetIndex = index % 4;
+    final options = <String>[];
+    var distractorIdx = 0;
+    for (var pos = 0; pos < 4; pos++) {
+      if (pos == targetIndex) {
+        options.add(correctAnswer);
+      } else {
+        options.add(distractors[distractorIdx++]);
+      }
+    }
+
+    final labels = ['A', 'B', 'C', 'D'];
+    return (options, targetIndex, labels[targetIndex]);
+  }
 
   static ExamCategory _deriveExamCategory(String subjectOrTitle) {
     final lower = subjectOrTitle.toLowerCase();

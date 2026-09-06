@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -17,6 +18,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Subpage for managing account identity, data export, cache, and storage.
+@RoutePage()
 class AccountSecurityPage extends StatelessWidget {
   const AccountSecurityPage({super.key});
 

@@ -16,4 +16,6 @@ class PrefKeys {
       '__kortex_persisted_deck_cards_';
   static const String persistedExamCountdowns =
       '__kortex_persisted_exam_countdowns__';
+  static const String hasCompletedInteractiveTour =
+      '__kortex_has_completed_interactive_tour__';
 }

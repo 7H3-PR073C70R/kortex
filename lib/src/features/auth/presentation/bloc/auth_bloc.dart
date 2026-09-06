@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -6,6 +7,7 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/auth_verify_otp_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/login_with_email_use_case.dart';
@@ -97,16 +99,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
 
-        final session = profile.isOnboarded
+        final isOnboarded = _computeIsOnboarded(profile);
+        final effectiveProfile = isOnboarded && !profile.isOnboarded
+            ? profile.copyWith(isOnboarded: true)
+            : profile;
+        if (isOnboarded && !profile.isOnboarded) {
+          try {
+            unawaited(
+              _authRepository.completeOnboarding(
+                track: profile.targetTrack.isNotEmpty ? profile.targetTrack : 'WAEC',
+                dailyTarget: profile.dailyCardTarget > 0 ? profile.dailyCardTarget : 20,
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
+        final session = isOnboarded
             ? AuthSessionStatus.authenticatedComplete
             : AuthSessionStatus.authenticatedNeedsOnboarding;
         emit(
           state.copyWith(
-            status: profile.isOnboarded
+            status: isOnboarded
                 ? AuthStatus.authenticated
                 : AuthStatus.needsOnboarding,
             sessionStatus: session,
-            userProfile: profile,
+            userProfile: effectiveProfile,
           ),
         );
         if (profile.id.isNotEmpty) {
@@ -401,6 +418,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  bool _computeIsOnboarded(UserProfileEntity profile) {
+    if (profile.isOnboarded) return true;
+    try {
+      final storage = locator<LocalStorageService>();
+      if (storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true') {
+        return true;
+      }
+      final rawCalib = storage.getPreference(key: '__calibration_profile');
+      if (rawCalib != null && rawCalib.isNotEmpty) {
+        final map = jsonDecode(rawCalib) as Map<String, dynamic>;
+        if (map['isCalibrated'] == true) return true;
+      }
+    } on Object catch (_) {}
+    return false;
+  }
+
   Future<void> _onProfileFetchRequested(
     AuthProfileFetchRequested event,
     Emitter<AuthState> emit,
@@ -416,10 +449,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             mergedProfile = profile.copyWith(streakDays: liveStreak);
           }
         } on Object catch (_) {}
+
+        final isOnboarded = _computeIsOnboarded(mergedProfile);
+        if (isOnboarded && !mergedProfile.isOnboarded) {
+          mergedProfile = mergedProfile.copyWith(isOnboarded: true);
+          try {
+            unawaited(
+              _authRepository.completeOnboarding(
+                track: mergedProfile.targetTrack.isNotEmpty ? mergedProfile.targetTrack : 'WAEC',
+                dailyTarget: mergedProfile.dailyCardTarget > 0 ? mergedProfile.dailyCardTarget : 20,
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
         emit(
           state.copyWith(
             userProfile: mergedProfile,
-            sessionStatus: mergedProfile.isOnboarded
+            sessionStatus: isOnboarded
                 ? AuthSessionStatus.authenticatedComplete
                 : AuthSessionStatus.authenticatedNeedsOnboarding,
           ),

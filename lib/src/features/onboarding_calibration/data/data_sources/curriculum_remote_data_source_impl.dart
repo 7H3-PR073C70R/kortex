@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/domain/constants/subject_catalog.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/models/curriculum_metadata_model.dart';
 
@@ -29,19 +30,23 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
     try {
       final endpoint =
           '${AppApiEndpoint.baseUri}${AppApiEndpoint.curriculumMetadata}&category=eq.$category';
-      final response = await _dio.get<dynamic>(endpoint);
-      final rawList = response.data is List
-          ? response.data as List<dynamic>
-          : <dynamic>[];
-
-      if (rawList.isNotEmpty) {
-        return rawList
-            .map(
-              (item) => CurriculumMetadataModel.fromJson(
-                item as Map<String, dynamic>,
-              ),
-            )
-            .toList();
+      final response = await _dio.get<dynamic>(
+        endpoint,
+        options: Options(
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final rawList = response.data as List<dynamic>;
+        if (rawList.isNotEmpty) {
+          return rawList
+              .map(
+                (item) => CurriculumMetadataModel.fromJson(
+                  item as Map<String, dynamic>,
+                ),
+              )
+              .toList();
+        }
       }
       return getFallbackByCategory(category);
     } on Object catch (e, stack) {
@@ -65,19 +70,23 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
     try {
       final endpoint =
           '${AppApiEndpoint.baseUri}${AppApiEndpoint.curriculumMetadata}';
-      final response = await _dio.get<dynamic>(endpoint);
-      final rawList = response.data is List
-          ? response.data as List<dynamic>
-          : <dynamic>[];
-
-      if (rawList.isNotEmpty) {
-        return rawList
-            .map(
-              (item) => CurriculumMetadataModel.fromJson(
-                item as Map<String, dynamic>,
-              ),
-            )
-            .toList();
+      final response = await _dio.get<dynamic>(
+        endpoint,
+        options: Options(
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final rawList = response.data as List<dynamic>;
+        if (rawList.isNotEmpty) {
+          return rawList
+              .map(
+                (item) => CurriculumMetadataModel.fromJson(
+                  item as Map<String, dynamic>,
+                ),
+              )
+              .toList();
+        }
       }
       return getAllFallbackMetadata();
     } on Object catch (e, stack) {
@@ -425,195 +434,20 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
     ),
   ];
 
-  static const List<CurriculumMetadataModel> fallbackHighSchoolSubjects = [
-    CurriculumMetadataModel(
-      id: 'fb-sub-1',
-      category: 'high_school_subject',
-      key: 'core_math',
-      displayName: 'General Mathematics (Core)',
-      metadata: {
-        'track': 'core',
-        'subtitle': 'Algebra, Geometry, Trigonometry, Statistics',
-        'icon': 'calculate_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-2',
-      category: 'high_school_subject',
-      key: 'core_english',
-      displayName: 'English Language',
-      metadata: {
-        'track': 'core',
-        'subtitle':
-            'Comprehension, Grammar, Essay Writing, Oral English',
-        'icon': 'spellcheck_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-3',
-      category: 'high_school_subject',
-      key: 'science_physics',
-      displayName: 'Physics',
-      metadata: {
-        'track': 'science',
-        'subtitle':
-            'Mechanics, Optics, Waves, Electromagnetism, Modern Physics',
-        'icon': 'flash_on_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-4',
-      category: 'high_school_subject',
-      key: 'science_chemistry',
-      displayName: 'Chemistry',
-      metadata: {
-        'track': 'science',
-        'subtitle':
-            'Inorganic, Organic Reactions, Stoichiometry, Electrolysis',
-        'icon': 'science_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-5',
-      category: 'high_school_subject',
-      key: 'science_biology',
-      displayName: 'Biology',
-      metadata: {
-        'track': 'science',
-        'subtitle': 'Cell Structure, Genetics, Ecology, Human Physiology',
-        'icon': 'biotech_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-6',
-      category: 'high_school_subject',
-      key: 'science_further_math',
-      displayName: 'Further Mathematics',
-      metadata: {
-        'track': 'science',
-        'subtitle': 'Calculus, Vectors, Matrices, Complex Numbers',
-        'icon': 'functions_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-7',
-      category: 'high_school_subject',
-      key: 'comm_accounting',
-      displayName: 'Financial Accounting',
-      metadata: {
-        'track': 'commercial',
-        'subtitle':
-            'Final Accounts, Ledgers, Trial Balance, Ratio Analysis',
-        'icon': 'account_balance_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-8',
-      category: 'high_school_subject',
-      key: 'comm_economics',
-      displayName: 'Economics',
-      metadata: {
-        'track': 'commercial',
-        'subtitle':
-            'Micro & Macro Economics, Demand & Supply, Trade Theory',
-        'icon': 'trending_up_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-9',
-      category: 'high_school_subject',
-      key: 'comm_commerce',
-      displayName: 'Commerce',
-      metadata: {
-        'track': 'commercial',
-        'subtitle':
-            'Trade, Banking, Insurance, Transport, Warehousing',
-        'icon': 'store_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-10',
-      category: 'high_school_subject',
-      key: 'arts_literature',
-      displayName: 'Literature in English',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Prose, Poetry, Drama — Set Texts & Critical Analysis',
-        'icon': 'menu_book_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-11',
-      category: 'high_school_subject',
-      key: 'arts_government',
-      displayName: 'Government',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Constitutions, Political Systems, Electoral Processes',
-        'icon': 'account_balance_wallet_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-12',
-      category: 'high_school_subject',
-      key: 'arts_history',
-      displayName: 'History',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'West African, Nigerian & World History, Colonialism',
-        'icon': 'history_edu_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-13',
-      category: 'high_school_subject',
-      key: 'arts_crk',
-      displayName: 'Christian Religious Studies',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Old & New Testament Studies, Christian Ethics, Church History',
-        'icon': 'church_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-14',
-      category: 'high_school_subject',
-      key: 'arts_irk',
-      displayName: 'Islamic Studies',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Tawhid, Fiqh, Quranic Exegesis, Hadith Literature',
-        'icon': 'auto_stories_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-15',
-      category: 'high_school_subject',
-      key: 'arts_geography',
-      displayName: 'Geography',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Physical Geography, Map Reading, Settlement & Resources',
-        'icon': 'map_rounded',
-      },
-    ),
-    CurriculumMetadataModel(
-      id: 'fb-sub-16',
-      category: 'high_school_subject',
-      key: 'arts_civic',
-      displayName: 'Civic Education',
-      metadata: {
-        'track': 'arts',
-        'subtitle':
-            'Human Rights, Rule of Law, Democratic Values, National Values',
-        'icon': 'supervised_user_circle_rounded',
-      },
-    ),
-  ];
+  static List<CurriculumMetadataModel> get fallbackHighSchoolSubjects =>
+      kCuratedSubjectsCatalog.map((item) {
+        return CurriculumMetadataModel(
+          id: 'sub-${item.code.toLowerCase()}',
+          category: 'high_school_subject',
+          key: item.code.toLowerCase(),
+          displayName: item.title,
+          metadata: {
+            'track': item.stream.toLowerCase(),
+            'subtitle': item.description,
+            'icon': item.icon,
+            'code': item.code,
+            'color': item.colorHex,
+          },
+        );
+      }).toList();
 }

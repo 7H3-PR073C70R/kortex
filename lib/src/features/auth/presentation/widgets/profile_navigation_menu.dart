@@ -7,12 +7,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
-import 'package:kortex/src/features/profile/presentation/pages/about_support_page.dart';
-import 'package:kortex/src/features/profile/presentation/pages/academic_track_settings_page.dart';
-import 'package:kortex/src/features/profile/presentation/pages/account_security_page.dart';
-import 'package:kortex/src/features/profile/presentation/pages/app_preferences_page.dart';
-import 'package:kortex/src/features/profile/presentation/pages/security_settings_page.dart';
-import 'package:kortex/src/features/profile/presentation/pages/syllabot_ai_settings_page.dart';
+import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class ProfileNavigationMenu extends StatelessWidget {
@@ -32,28 +27,24 @@ class ProfileNavigationMenu extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: colors.surfaceBorder.withAlpha(80),
+          color: colors.surfaceBorder.withAlpha(50),
         ),
       ),
       child: Column(
         children: [
-          // 1. Academic Track & Target
+          // 1. Academic Track & Goal Calibration
           _buildNavTile(
             context: context,
             icon: Icons.school_rounded,
             iconColor: colors.primary,
-            title: 'Academic Track & Study Goals',
-            subtitle: '$targetTrack • $dailyTarget cards/day target',
+            title: 'Academic Track & Goals',
+            subtitle: '$targetTrack · $dailyTarget cards/day target',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AcademicTrackSettingsPage(),
-                  ),
-                ),
+                context.router.push(const AcademicTrackSettingsRoute()),
               );
             },
             colors: colors,
@@ -70,11 +61,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Socratic mode, voice persona & offline weights',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const SyllabotAiSettingsPage(),
-                  ),
-                ),
+                context.router.push(const SyllabotAiSettingsRoute()),
               );
             },
             colors: colors,
@@ -91,11 +78,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Password change, active sessions & biometric lock',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const SecuritySettingsPage(),
-                  ),
-                ),
+                context.router.push(const SecuritySettingsRoute()),
               );
             },
             colors: colors,
@@ -129,11 +112,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Dark mode, haptic feedback & notifications',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AppPreferencesPage(),
-                  ),
-                ),
+                context.router.push(const AppPreferencesRoute()),
               );
             },
             colors: colors,
@@ -150,11 +129,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Export decks to Anki/PDF, manage storage cache',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AccountSecurityPage(),
-                  ),
-                ),
+                context.router.push(const AccountSecurityRoute()),
               );
             },
             colors: colors,
@@ -173,7 +148,13 @@ class ProfileNavigationMenu extends StatelessWidget {
               unawaited(
                 showDialog<void>(
                   context: context,
-                  builder: (_) => const WelcomeWalkthroughDialog(),
+                  builder: (_) => WelcomeWalkthroughDialog(
+                    onEnterWorkspace: () {
+                      if (context.mounted) {
+                        unawaited(AppGuidedTourOverlay.start(context));
+                      }
+                    },
+                  ),
                 ),
               );
             },
@@ -191,11 +172,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             subtitle: 'Help center, documentation & version info',
             onTap: () {
               unawaited(
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AboutSupportPage(),
-                  ),
-                ),
+                context.router.push(const AboutSupportRoute()),
               );
             },
             colors: colors,

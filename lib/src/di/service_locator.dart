@@ -21,7 +21,7 @@ void _initServices() {
       SessionExpiredService.new,
     )
     ..registerLazySingleton<AppRouter>(
-      AppRouter.new,
+      () => AppRouter(authGuard: locator<AuthRouteGuard>()),
     )
     ..registerLazySingleton<UserStorageService>(
       () => UserStorageServiceImpl(locator()),
@@ -54,7 +54,10 @@ void _initServices() {
       ),
     )
     ..registerLazySingleton<AuthRouteGuard>(
-      () => AuthRouteGuard(locator<AuthBloc>()),
+      () => AuthRouteGuard(
+        locator<AuthBloc>(),
+        locator<UserStorageService>(),
+      ),
     )
     ..registerLazySingleton<AuthModeCubit>(
       AuthModeCubit.new,
@@ -67,17 +70,13 @@ void _initServices() {
         saveCalibrationProfileUseCase: locator<SaveCalibrationProfileUseCase>(),
         autoCurateExamCoursesUseCase: locator<AutoCurateExamCoursesUseCase>(),
         curriculumRepository: locator<CurriculumRepository>(),
+        getCuratedCoursesCatalogUseCase: locator<GetCuratedCoursesCatalogUseCase>(),
       ),
     )
     ..registerFactory<ContentRecommendationCubit>(
       () => ContentRecommendationCubit(
         getRecommendedContentUseCase: locator<GetRecommendedContentUseCase>(),
         getCalibrationProfileUseCase: locator<GetCalibrationProfileUseCase>(),
-      ),
-    )
-    ..registerFactory<OnboardingCubit>(
-      () => OnboardingCubit(
-        completeOnboardingUseCase: locator<CompleteOnboardingUseCase>(),
       ),
     )
     ..registerFactory<ChatOnboardingBloc>(

@@ -29,8 +29,15 @@ class AnalyticsDetailPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dashboardBloc = locator<DashboardBloc>();
+
+    useEffect(() {
+      dashboardBloc.add(const DashboardStarted());
+      return null;
+    }, const []);
+
     return BlocProvider<DashboardBloc>.value(
-      value: locator<DashboardBloc>()..add(const DashboardStarted()),
+      value: dashboardBloc,
       child: const _AnalyticsDetailView(),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:kortex/src/features/dashboard/domain/constants/subject_catalog.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/curriculum_metadata_entity.dart';
 
@@ -19,6 +21,7 @@ class CalibrationState extends Equatable {
     this.errorMessage,
     this.isForwardTrajectory = true,
     this.curriculumMetadata = const {},
+    this.catalogCourses = const [],
   });
 
   final CalibrationStatus status;
@@ -27,6 +30,7 @@ class CalibrationState extends Equatable {
   final String? errorMessage;
   final bool isForwardTrajectory;
   final Map<String, List<CurriculumMetadataEntity>> curriculumMetadata;
+  final List<CuratedCourseEntity> catalogCourses;
 
   List<CurriculumMetadataEntity> get standardizedExams =>
       curriculumMetadata['standardized_exam'] ?? const [];
@@ -48,34 +52,61 @@ class CalibrationState extends Equatable {
   bool get isSubmitting => status == CalibrationStatus.submitting;
   bool get isCompleted => status == CalibrationStatus.completed;
 
-  bool get canProceed {
-    switch (currentStepIndex) {
-      case 0:
-        return true;
-      case 1:
-        if (profile.focus == AcademicFocus.higherEducation) {
-          return profile.higherEdLevel != null;
-        } else {
-          return profile.highSchoolExam != null &&
-              profile.highSchoolExam!.isNotEmpty;
-        }
-      case 2:
-        if (profile.focus == AcademicFocus.higherEducation) {
-          return profile.higherEdField != null &&
-              profile.higherEdField!.isNotEmpty;
-        } else {
-          return profile.highSchoolSubjects.isNotEmpty;
-        }
-      case 3:
-        if (profile.focus == AcademicFocus.higherEducation) {
-          return profile.higherEdGoals.isNotEmpty;
-        } else {
-          return profile.highSchoolTimeline != null &&
-              profile.highSchoolTimeline!.isNotEmpty;
-        }
-      default:
-        return true;
+  /// Calibration is completely skippable and non-compulsory.
+  /// Users can navigate forward and backward freely at any step without being locked.
+  bool get canProceed => true;
+
+  List<CuratedCourseEntity> get highSchoolCatalogCourses {
+    final exam = (profile.highSchoolExam ?? '').toUpperCase();
+    final effectiveList = catalogCourses.isNotEmpty
+        ? catalogCourses
+        : kCuratedSubjectsCatalog.map((s) {
+            return CuratedCourseEntity(
+              id: 'curated-${s.code.toLowerCase()}',
+              courseCode: s.code,
+              title: s.title,
+              department: s.stream,
+              totalMaterials: s.materials,
+              hasActivePastPapers: true,
+              iconName: s.icon,
+              colorHex: s.colorHex,
+              syllabusCoverage: s.coverage,
+            );
+          }).toList();
+
+    if (exam.contains('SAT')) {
+      final satCourses = effectiveList
+          .where((c) =>
+              c.department.toUpperCase().contains('SAT') ||
+              c.id.startsWith('sat-') ||
+              c.title.toUpperCase().contains('SAT'))
+          .toList();
+      if (satCourses.isNotEmpty) return satCourses;
     }
+    if (exam.contains('JAMB') || exam.contains('UTME')) {
+      final jambCourses = effectiveList
+          .where((c) => c.id.startsWith('jamb-') || c.department.toUpperCase().contains('JAMB'))
+          .toList();
+      if (jambCourses.isNotEmpty) return jambCourses;
+    } else if (exam.contains('NECO') || exam.contains('SSCE')) {
+      final necoCourses = effectiveList
+          .where((c) => c.id.startsWith('neco-') || c.department.toUpperCase().contains('NECO'))
+          .toList();
+      if (necoCourses.isNotEmpty) return necoCourses;
+    } else if (exam.contains('WAEC') || exam.contains('WASSCE')) {
+      final waecCourses = effectiveList
+          .where((c) => c.id.startsWith('waec-') || c.department.toUpperCase().contains('WAEC'))
+          .toList();
+      if (waecCourses.isNotEmpty) return waecCourses;
+    }
+
+    return effectiveList
+        .where((c) =>
+            c.department.contains('Core') ||
+            c.department.contains('Sciences') ||
+            c.department.contains('Commercial') ||
+            c.department.contains('Arts'))
+        .toList();
   }
 
   CalibrationState copyWith({
@@ -85,6 +116,7 @@ class CalibrationState extends Equatable {
     String? errorMessage,
     bool? isForwardTrajectory,
     Map<String, List<CurriculumMetadataEntity>>? curriculumMetadata,
+    List<CuratedCourseEntity>? catalogCourses,
   }) {
     return CalibrationState(
       status: status ?? this.status,
@@ -93,6 +125,7 @@ class CalibrationState extends Equatable {
       errorMessage: errorMessage,
       isForwardTrajectory: isForwardTrajectory ?? this.isForwardTrajectory,
       curriculumMetadata: curriculumMetadata ?? this.curriculumMetadata,
+      catalogCourses: catalogCourses ?? this.catalogCourses,
     );
   }
 
@@ -104,5 +137,6 @@ class CalibrationState extends Equatable {
     errorMessage,
     isForwardTrajectory,
     curriculumMetadata,
+    catalogCourses,
   ];
 }

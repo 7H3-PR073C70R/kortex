@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -8,6 +9,8 @@ import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   DashboardRemoteDataSourceImpl(
@@ -35,9 +38,82 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final raw = _storage?.getPreference(key: PrefKeys.userCuratedCourses);
       if (raw != null && raw.isNotEmpty) {
         final list = jsonDecode(raw) as List<dynamic>;
-        return list
+        final courses = list
             .map((e) => CuratedCourseModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        if (courses.isNotEmpty) return courses;
+      }
+    } on Object catch (_) {}
+    return _getCoursesFromCalibrationProfile();
+  }
+
+  List<CuratedCourseModel> _getCoursesFromCalibrationProfile() {
+    try {
+      final raw = _storage?.getPreference(key: '__calibration_profile');
+      if (raw != null && raw.isNotEmpty) {
+        final jsonMap = jsonDecode(raw) as Map<String, dynamic>;
+        final subjects = (jsonMap['highSchoolSubjects'] as List<dynamic>?)
+            ?.map((e) => e.toString().trim())
+            .where((s) => s.isNotEmpty)
+            .toList() ?? [];
+        final examName = (jsonMap['highSchoolExam'] as String?) ?? 'WAEC';
+
+        if (subjects.isNotEmpty) {
+          final catalog = _generateDefaultCatalogCourses();
+          final matched = <CuratedCourseModel>[];
+
+          for (final subject in subjects) {
+            final lower = subject.toLowerCase().trim();
+            CuratedCourseModel? bestMatch;
+            for (final c in catalog) {
+              final cTitleLower = c.title.toLowerCase();
+              final isNameMatch = cTitleLower == lower ||
+                  cTitleLower.contains(lower) ||
+                  lower.contains(cTitleLower) ||
+                  c.courseCode.toLowerCase() == lower;
+
+              if (isNameMatch) {
+                if (c.department.toLowerCase().contains(examName.toLowerCase())) {
+                  bestMatch = c;
+                  break;
+                }
+                bestMatch ??= c;
+              }
+            }
+
+            if (bestMatch != null) {
+              if (!matched.any((m) => m.id == bestMatch!.id)) {
+                matched.add(bestMatch);
+              }
+            } else {
+              matched.add(
+                CuratedCourseModel(
+                  id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
+                  courseCode: subject.length > 4 ? subject.substring(0, 4).toUpperCase() : subject.toUpperCase(),
+                  title: subject,
+                  department: '$examName - General Studies',
+                  totalMaterials: 25,
+                  hasActivePastPapers: true,
+                  iconName: 'school',
+                  colorHex: '#6366F1',
+                ),
+              );
+            }
+          }
+
+          if (matched.isNotEmpty) {
+            try {
+              final jsonStr = jsonEncode(matched.map((c) => c.toJson()).toList());
+              unawaited(
+                _storage?.savePreference(
+                  key: PrefKeys.userCuratedCourses,
+                  data: jsonStr,
+                ),
+              );
+            } on Object catch (_) {}
+            return matched;
+          }
+        }
       }
     } on Object catch (_) {}
     return const [];
@@ -165,6 +241,69 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     required String examName,
     required List<String> subjects,
   }) async {
+    // 1. Immediately cache locally in Hive so dashboard renders instantly
+    try {
+      final catalog = _generateDefaultCatalogCourses();
+      final matched = <CuratedCourseModel>[];
+      for (final subject in subjects) {
+        final lower = subject.toLowerCase().trim();
+        CuratedCourseModel? bestMatch;
+        for (final c in catalog) {
+          final cTitleLower = c.title.toLowerCase();
+          final isNameMatch = cTitleLower == lower ||
+              cTitleLower.contains(lower) ||
+              lower.contains(cTitleLower) ||
+              c.courseCode.toLowerCase() == lower;
+
+          if (isNameMatch) {
+            if (c.department.toLowerCase().contains(examName.toLowerCase())) {
+              bestMatch = c;
+              break;
+            }
+            bestMatch ??= c;
+          }
+        }
+
+        if (bestMatch != null) {
+          if (!matched.any((m) => m.id == bestMatch!.id)) {
+            matched.add(bestMatch);
+          }
+        } else {
+          matched.add(
+            CuratedCourseModel(
+              id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
+              courseCode: subject.length > 4 ? subject.substring(0, 4).toUpperCase() : subject.toUpperCase(),
+              title: subject,
+              department: '$examName - General Studies',
+              totalMaterials: 25,
+              hasActivePastPapers: true,
+              iconName: 'school',
+              colorHex: '#6366F1',
+            ),
+          );
+        }
+      }
+      if (matched.isNotEmpty) {
+        final current = _getLocallySavedCourses();
+        final currentIds = {for (final c in current) c.id};
+        final merged = [
+          ...current,
+          ...matched.where((m) => !currentIds.contains(m.id)),
+        ];
+        final jsonStr = jsonEncode(merged.map((c) => c.toJson()).toList());
+        await _storage?.savePreference(
+          key: PrefKeys.userCuratedCourses,
+          data: jsonStr,
+        );
+
+        // Notify DashboardBloc immediately so UI reflects newly curated courses without waiting
+        try {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        } on Object catch (_) {}
+      }
+    } on Object catch (_) {}
+
+    // 2. Sync to Supabase RPC (gracefully non-blocking)
     try {
       await _client.autoCurateExamCourses({
         'p_exam_name': examName,

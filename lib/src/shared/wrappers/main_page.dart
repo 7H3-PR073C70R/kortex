@@ -17,6 +17,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -144,7 +145,10 @@ class MainPage extends HookWidget {
           if (width >= desktopBreakpoint) {
             return const SizedBox.shrink();
           }
-          return _AdaptiveBottomNavDock(tabsRouter: tabsRouter);
+          return _AdaptiveBottomNavDock(
+            key: AppTourKeys.dockKey,
+            tabsRouter: tabsRouter,
+          );
         },
       ),
     );
@@ -412,6 +416,7 @@ class _DesktopNavRailItem extends StatelessWidget {
 class _AdaptiveBottomNavDock extends StatelessWidget {
   const _AdaptiveBottomNavDock({
     required this.tabsRouter,
+    super.key,
   });
 
   final TabsRouter tabsRouter;

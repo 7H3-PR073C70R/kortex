@@ -1,14 +1,21 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/features/auth/presentation/guards/auth_route_guard.dart';
 
 @AutoRouterConfig(replaceInRouteName: 'Page,Route')
 class AppRouter extends RootStackRouter {
+  AppRouter({required AuthRouteGuard authGuard}) : _authGuard = authGuard;
+
+  final AuthRouteGuard _authGuard;
+
+  @override
+  List<AutoRouteGuard> get guards => [_authGuard];
+
   @override
   List<AutoRoute> get routes => [
     AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: OnboardingRoute.page),
     AutoRoute(page: AuthRoute.page),
-    AutoRoute(page: LoginRoute.page),
     AutoRoute(page: ForgotPasswordRoute.page),
     AutoRoute(page: OtpVerificationRoute.page),
     AutoRoute(page: OnboardingCalibrationRoute.page),
@@ -37,6 +44,12 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: PaywallRoute.page),
     AutoRoute(page: SyllabotChatRoute.page),
     AutoRoute(page: ExamTimetableRoute.page),
+    AutoRoute(page: AcademicTrackSettingsRoute.page),
+    AutoRoute(page: SyllabotAiSettingsRoute.page),
+    AutoRoute(page: SecuritySettingsRoute.page),
+    AutoRoute(page: AppPreferencesRoute.page),
+    AutoRoute(page: AccountSecurityRoute.page),
+    AutoRoute(page: AboutSupportRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [

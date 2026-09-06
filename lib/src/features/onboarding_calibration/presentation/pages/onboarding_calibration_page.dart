@@ -10,6 +10,9 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
@@ -62,8 +65,11 @@ class _CalibrationView extends StatelessWidget {
           previous.currentStepIndex != current.currentStepIndex,
       listener: (context, state) {
         if (state.status == CalibrationStatus.completed) {
+          locator<AuthBloc>().add(
+            const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
+          );
           unawaited(
-            context.router.replaceAll([const OnboardingContentRoute()]),
+            context.router.replaceAll([const MainRoute()]),
           );
         } else if (state.status == CalibrationStatus.error &&
             state.errorMessage != null) {
@@ -144,28 +150,34 @@ class _CalibrationView extends StatelessWidget {
                                   Semantics(
                                     button: true,
                                     label: l10n.calibrationSkipSemantics,
-                                    child: TextButton(
-                                      onPressed: () => unawaited(
+                                    child: GestureDetector(
+                                      onTap: () => unawaited(
                                         ctx
                                             .read<CalibrationCubit>()
                                             .skipCalibration(),
                                       ),
-                                      style: TextButton.styleFrom(
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 4,
+                                          horizontal: 10,
+                                          vertical: 5,
                                         ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        l10n.calibrationSkip,
-                                        style: typography.caption.semiBold
-                                            .copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 12,
-                                            ),
+                                        decoration: BoxDecoration(
+                                          color: colors.surfaceSecondary.withAlpha(context.isDarkMode ? 100 : 180),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: context.isDarkMode
+                                                ? colors.surfaceBorderHighlight.withAlpha(60)
+                                                : colors.surfaceBorder,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.calibrationSkip,
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -252,6 +264,8 @@ class _MobileCalibrationLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     final state = context.watch<CalibrationCubit>().state;
@@ -335,16 +349,36 @@ class _MobileCalibrationLayout extends StatelessWidget {
               Expanded(
                 flex: 5,
                 child: AppButton(
-                  text: l10n.calibrationContinue,
+                  text: state.currentStepIndex == state.totalSteps - 1
+                      ? 'Complete Setup'
+                      : l10n.calibrationContinue,
                   isLoading: state.isSubmitting,
-                  onPressed: state.canProceed
-                      ? () {
-                          context.read<CalibrationCubit>().nextStep();
-                        }
-                      : null,
+                  onPressed: () {
+                    context.read<CalibrationCubit>().nextStep();
+                  },
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: () => unawaited(
+                context.read<CalibrationCubit>().skipCalibration(),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Skip calibration setup',
+                style: typography.caption.semiBold.copyWith(
+                  color: colors.textSecondary.withAlpha(190),
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ),
         ],
       ),

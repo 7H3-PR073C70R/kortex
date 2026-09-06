@@ -6,9 +6,11 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -106,8 +108,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     final isAuthenticated = token != null && token.isNotEmpty;
 
     if (isAuthenticated) {
-      locator<AuthBloc>().add(const AuthProfileFetchRequested());
-
       final biometricService = locator<BiometricAuthService>();
       if (biometricService.isBiometricLockEnabled()) {
         setState(() {
@@ -122,7 +122,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     }
 
     if (!mounted) return;
-    await context.router.replaceAll([const OnboardingRoute()]);
+
+    // Determine whether user should see intro onboarding slides or auth screen
+    final onboardingLocal = locator<OnboardingLocalDataSource>();
+    final hasCompletedOnboarding = onboardingLocal.hasCompletedOnboarding();
+
+    if (!hasCompletedOnboarding) {
+      await context.router.replaceAll([const OnboardingRoute()]);
+    } else {
+      await context.router.replaceAll([const AuthRoute()]);
+    }
   }
 
   Future<void> _triggerBiometricAuth() async {
@@ -148,6 +157,17 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       (_) => false,
       (profile) => profile?.isCalibrated ?? false,
     );
+
+    // Sync AuthBloc session status immediately before navigation so guards agree
+    locator<AuthBloc>()
+      ..add(
+        AuthStatusChanged(
+          isCalibrated
+              ? AuthSessionStatus.authenticatedComplete
+              : AuthSessionStatus.authenticatedNeedsOnboarding,
+        ),
+      )
+      ..add(const AuthProfileFetchRequested());
 
     if (!mounted) return;
     if (isCalibrated) {

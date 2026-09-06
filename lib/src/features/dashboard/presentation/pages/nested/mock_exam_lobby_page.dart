@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -213,6 +216,12 @@ class MockExamLobbyPage extends HookWidget {
                   final duration = selectedModeIndex.value == 0
                       ? 45
                       : (selectedModeIndex.value == 1 ? 30 : 15);
+                  locator<DashboardBloc>().add(
+                    DashboardExamStarted(
+                      examId: examId,
+                      subject: examName,
+                    ),
+                  );
                   unawaited(
                     context.router.push(
                       QuizWorkspaceRoute(

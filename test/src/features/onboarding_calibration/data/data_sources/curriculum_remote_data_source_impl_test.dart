@@ -16,7 +16,12 @@ void main() {
 
   group('CurriculumRemoteDataSourceImpl', () {
     test('fetchMetadataByCategory returns parsed models on successful Dio response', () async {
-      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+      when(
+        () => mockDio.get<dynamic>(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(),
           statusCode: 200,
@@ -41,7 +46,12 @@ void main() {
     });
 
     test('fetchMetadataByCategory falls back to offline constants on Dio exception', () async {
-      when(() => mockDio.get<dynamic>(any())).thenThrow(
+      when(
+        () => mockDio.get<dynamic>(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(
         DioException(
           requestOptions: RequestOptions(),
           error: 'Connection refused',
@@ -56,7 +66,12 @@ void main() {
     });
 
     test('fetchAllMetadata returns parsed models on successful Dio response', () async {
-      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+      when(
+        () => mockDio.get<dynamic>(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(),
           statusCode: 200,
@@ -85,7 +100,12 @@ void main() {
     });
 
     test('fetchAllMetadata falls back to offline constants on network error', () async {
-      when(() => mockDio.get<dynamic>(any())).thenThrow(
+      when(
+        () => mockDio.get<dynamic>(
+          any(),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(
         DioException(
           requestOptions: RequestOptions(),
           error: 'Offline',

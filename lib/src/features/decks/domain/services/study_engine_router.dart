@@ -263,20 +263,88 @@ class StudyEngineRouter {
     return _createSyntheticCloudCards(topic, count);
   }
 
+  bool _isStemTopic(String topic) {
+    final lower = topic.toLowerCase();
+    return lower.contains('math') ||
+        lower.contains('phys') ||
+        lower.contains('chem') ||
+        lower.contains('calc') ||
+        lower.contains('algeb') ||
+        lower.contains('quantum') ||
+        lower.contains('eng');
+  }
+
+  static final List<({String front, String back, String explanation})> _academicTemplates = [
+    (
+      front: 'What is the foundational principle and scope of {topic}?',
+      back: '{topic} establishes the fundamental principles, taxonomies, and methodologies governing its domain.',
+      explanation: 'Core foundational definition and analytical scope for {topic}.',
+    ),
+    (
+      front: 'What is the primary governing framework or mechanism of {topic}?',
+      back: 'The governing mechanism of {topic} balances conceptual rules with empirical observations to predict outcomes.',
+      explanation: 'Primary operational framework and predictive model of {topic}.',
+    ),
+    (
+      front: 'What are the essential structural components of {topic}?',
+      back: 'The system structure of {topic} comprises core assumptions, mediating factors, and observable implications.',
+      explanation: 'Structural architecture and component analysis of {topic}.',
+    ),
+    (
+      front: 'How is {topic} practically applied to resolve domain problems?',
+      back: 'Practitioners apply {topic} to calibrate models, optimize decision-making, and diagnose operational anomalies.',
+      explanation: 'Real-world application and problem-solving methodology in {topic}.',
+    ),
+    (
+      front: 'What boundary conditions or limitations constrain {topic}?',
+      back: 'Limitations in {topic} emerge when environmental assumptions degrade or scale factors exceed baseline bounds.',
+      explanation: 'Critical evaluation of constraints and boundary limits in {topic}.',
+    ),
+  ];
+
+  static final List<({String front, String back, String explanation})> _stemTemplates = [
+    (
+      front: 'State the governing relation and dimensional formula in {topic}.',
+      back: r'$$\mathbf{F} = \frac{d\mathbf{p}}{dt} = m\mathbf{a}$$. Fundamental rate of change relation.',
+      explanation: 'Dynamical formulation and physical dimension analysis in {topic}.',
+    ),
+    (
+      front: 'State the conservation principle governing {topic}.',
+      back: r'$$\sum E_{\text{in}} = \sum E_{\text{out}}$$. Total energy and mass balance across boundary states.',
+      explanation: 'Thermodynamic and mechanistic balance laws for {topic}.',
+    ),
+    (
+      front: 'What is the integral formulation for boundary flux in {topic}?',
+      back: r'$$\oint_{\partial \Omega} \mathbf{v} \cdot d\mathbf{A} = \iiint_{\Omega} (\nabla \cdot \mathbf{v}) dV$$ (Gauss-Divergence).',
+      explanation: 'Vector field divergence theorem applied to boundary surfaces in {topic}.',
+    ),
+    (
+      front: 'Explain the steady-state equilibrium criterion in {topic}.',
+      back: r'$$\frac{\partial u}{\partial t} = \alpha \nabla^2 u = 0 \implies \nabla^2 u = 0$$. Laplace equilibrium condition.',
+      explanation: 'Harmonic balance and zero time-rate flux in {topic}.',
+    ),
+  ];
+
   List<GeneratedFlashcard> _createSyntheticCloudCards(
     String topic,
     int count,
   ) {
+    final isStem = _isStemTopic(topic);
+    final templates = isStem ? _stemTemplates : _academicTemplates;
+
     return List.generate(
       count,
-      (i) => GeneratedFlashcard(
-        id: 'cloud_card_${i + 1}',
-        front: 'Cloud Concept ${i + 1}: $topic',
-        back: r'$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$',
-        explanation: 'Derived from cloud API reasoning pipeline.',
-        isLocalInference: false,
-        tags: [topic],
-      ),
+      (i) {
+        final t = templates[i % templates.length];
+        return GeneratedFlashcard(
+          id: 'cloud_card_${i + 1}',
+          front: t.front.replaceAll('{topic}', topic),
+          back: t.back.replaceAll('{topic}', topic),
+          explanation: t.explanation.replaceAll('{topic}', topic),
+          isLocalInference: false,
+          tags: [topic],
+        );
+      },
     );
   }
 
@@ -284,17 +352,23 @@ class StudyEngineRouter {
     String topic,
     int count,
   ) {
+    final isStem = _isStemTopic(topic);
+    final templates = isStem ? _stemTemplates : _academicTemplates;
+
     return List.generate(
       count,
-      (i) => GeneratedFlashcard(
-        id: 'local_card_${i + 1}',
-        front: 'On-Device Concept ${i + 1}: $topic',
-        back: r'$$\nabla^2 \psi + \frac{2m}{\hbar^2}(E - V)\psi = 0$$',
-        explanation:
-            'Synthesized securely on-device without cloud connectivity.',
-        isLocalInference: true,
-        tags: [topic, 'OfflineOnDevice'],
-      ),
+      (i) {
+        final t = templates[i % templates.length];
+        return GeneratedFlashcard(
+          id: 'local_card_${i + 1}',
+          front: 'On-Device: ${t.front.replaceAll("{topic}", topic)}',
+          back: t.back.replaceAll('{topic}', topic),
+          explanation:
+              'Synthesized securely on-device for $topic without cloud connectivity.',
+          isLocalInference: true,
+          tags: [topic, 'OfflineOnDevice'],
+        );
+      },
     );
   }
 }

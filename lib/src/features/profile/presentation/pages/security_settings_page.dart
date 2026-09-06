@@ -29,6 +29,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 /// Comprehensive security and account control page.
 /// Supports password change, session invalidation, Supabase MFA 2FA,
 /// Biometric App Lock, and Danger Zone data purge through clean architecture.
+@RoutePage()
 class SecuritySettingsPage extends HookWidget {
   const SecuritySettingsPage({super.key});
 

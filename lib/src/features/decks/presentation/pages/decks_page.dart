@@ -23,8 +23,15 @@ class DecksPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final decksBloc = locator<DecksBloc>();
+
+    useEffect(() {
+      decksBloc.add(const DecksStarted());
+      return null;
+    }, const []);
+
     return BlocProvider<DecksBloc>.value(
-      value: locator<DecksBloc>()..add(const DecksStarted()),
+      value: decksBloc,
       child: const _DecksView(),
     );
   }
@@ -41,6 +48,8 @@ class _DecksView extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: isDark
             ? colors.surfaceSecondary
             : colors.surfacePrimary,
@@ -49,7 +58,8 @@ class _DecksView extends HookWidget {
         ),
         builder: (bottomSheetContext) {
           return SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

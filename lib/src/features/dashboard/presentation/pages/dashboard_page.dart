@@ -24,6 +24,8 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkt
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -35,12 +37,18 @@ class DashboardPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final cramPlannerCubit = locator<CramPlannerCubit>();
-    unawaited(cramPlannerCubit.loadExams());
+    final dashboardBloc = locator<DashboardBloc>();
+
+    useEffect(() {
+      unawaited(cramPlannerCubit.loadExams());
+      dashboardBloc.add(const DashboardStarted());
+      return null;
+    }, const []);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider<DashboardBloc>.value(
-          value: locator<DashboardBloc>()..add(const DashboardStarted()),
+          value: dashboardBloc,
         ),
         BlocProvider<CramPlannerCubit>.value(
           value: cramPlannerCubit,
@@ -91,6 +99,17 @@ class _DashboardView extends HookWidget {
                       data: 'true',
                     ),
                   );
+                },
+                onEnterWorkspace: () {
+                  unawaited(
+                    storage.savePreference(
+                      key: PrefKeys.hasSeenWelcomeWalkthrough,
+                      data: 'true',
+                    ),
+                  );
+                  if (context.mounted) {
+                    unawaited(AppGuidedTourOverlay.start(context));
+                  }
                 },
               ),
             ),
@@ -364,6 +383,7 @@ class _CompactDashboardLayout extends StatelessWidget {
       children: [
         // 1. Header Profile & Streak Bar
         HeaderProfileBar(
+          key: AppTourKeys.headerProfileKey,
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
           userName: userName,
@@ -374,17 +394,16 @@ class _CompactDashboardLayout extends StatelessWidget {
         // 2. Syllabot Floating Prompt Bar
 
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
-        const ExamCountdownBanner(),
-        if (feed.dueStudyDecks.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Sm2ReviewDeckCard(
-            deck: feed.dueStudyDecks.first,
-            isHero: true,
-          ),
-        ] else ...[
-          const SizedBox(height: 16),
-          _EmptyStudyDecksCard(l10n: l10n),
-        ],
+        ExamCountdownBanner(key: AppTourKeys.countdownKey),
+        KeyedSubtree(
+          key: AppTourKeys.reviewQueueKey,
+          child: feed.dueStudyDecks.isNotEmpty
+              ? Sm2ReviewDeckCard(
+                  deck: feed.dueStudyDecks.first,
+                  isHero: true,
+                )
+              : _EmptyStudyDecksCard(l10n: l10n),
+        ),
         const SizedBox(height: 20),
 
         // 4. Quick Action Speed Dial Bar
@@ -636,7 +655,10 @@ class _MediumDashboardLayout extends StatelessWidget {
                   const SizedBox(height: 16),
                   const QuickActionSpeedDial(),
                   const SizedBox(height: 20),
-                  CuratedCourseCarousel(courses: feed.curatedCourses),
+                  if (feed.curatedCourses.isNotEmpty)
+                    CuratedCourseCarousel(courses: feed.curatedCourses)
+                  else
+                    _EmptyCoursesCard(l10n: context.l10n),
                 ],
               ),
             ),
@@ -715,7 +737,10 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   const SizedBox(height: 20),
                   const QuickActionSpeedDial(),
                   const SizedBox(height: 24),
-                  CuratedCourseCarousel(courses: feed.curatedCourses),
+                  if (feed.curatedCourses.isNotEmpty)
+                    CuratedCourseCarousel(courses: feed.curatedCourses)
+                  else
+                    _EmptyCoursesCard(l10n: context.l10n),
                 ],
               ),
             ),
