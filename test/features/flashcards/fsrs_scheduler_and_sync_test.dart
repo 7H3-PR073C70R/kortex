@@ -43,21 +43,22 @@ void main() {
 
     test('Review generates UTC timestamps and unique transaction UUIDs', () {
       const initialCard = FsrsCard(cardId: 'card_math_101');
+      const customTxUuid = 'e8b7c4d2-1234-4567-89ab-cdef01234567';
 
       final review = scheduler.reviewCard(
         currentCard: initialCard,
         rating: FsrsRating.good,
         now: DateTime.utc(2026, 8, 31, 12),
-        transactionUuid: 'tx_custom_123',
+        transactionUuid: customTxUuid,
       );
 
       expect(review.card.reps, equals(1));
       expect(review.card.lastReviewedEpoch, equals(1788177600000));
-      expect(review.log.transactionUuid, equals('tx_custom_123'));
+      expect(review.log.transactionUuid, equals(customTxUuid));
       expect(review.log.reviewedAtUtc.isUtc, isTrue);
 
       final payload = review.log.toSupabasePayload();
-      expect(payload['transaction_uuid'], equals('tx_custom_123'));
+      expect(payload['transaction_uuid'], equals(customTxUuid));
       expect(payload['rating'], equals(3));
       expect(payload['stability'], equals(review.card.stability));
     });
@@ -195,9 +196,10 @@ void main() {
           storageService: fakeStorage,
         );
 
+        const persistTxUuid = 'f9c8d5e3-2345-4678-9abc-def012345678';
         final log = FsrsReviewLog(
-          id: 'log_persist',
-          transactionUuid: 'tx_persist_1',
+          id: '1',
+          transactionUuid: persistTxUuid,
           cardId: 'card_persist',
           rating: FsrsRating.easy,
           stability: 4,
@@ -221,7 +223,7 @@ void main() {
 
         expect(queue2.getPendingCount(), equals(1));
         final pending = queue2.pendingLogs;
-        expect(pending.first.transactionUuid, equals('tx_persist_1'));
+        expect(pending.first.transactionUuid, equals(persistTxUuid));
         expect(pending.first.cardId, equals('card_persist'));
         expect(pending.first.rating, equals(FsrsRating.easy));
         expect(pending.first.stability, equals(4.0));

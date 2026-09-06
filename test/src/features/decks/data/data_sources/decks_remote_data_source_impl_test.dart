@@ -156,8 +156,8 @@ void main() {
       when(() => mockClient.createDeckRecord(any())).thenAnswer(
         (_) async => HttpResponse({'id': 'deck_math'}, Response(requestOptions: RequestOptions())),
       );
-      when(() => mockClient.bulkInsertCards(any())).thenAnswer(
-        (_) async => HttpResponse([], Response(requestOptions: RequestOptions())),
+      when(() => mockClient.bulkInsertCards(any<dynamic>())).thenAnswer(
+        (_) async => HttpResponse<dynamic>(<dynamic>[], Response(requestOptions: RequestOptions())),
       );
 
       await dataSource.saveGeneratedDeck(deck: deck, cards: cards);
@@ -204,14 +204,14 @@ void main() {
       when(() => mockClient.createDeckRecord(any())).thenAnswer(
         (_) async => HttpResponse({'id': 'deck_physics'}, Response(requestOptions: RequestOptions())),
       );
-      when(() => mockClient.bulkInsertCards(any())).thenAnswer(
-        (_) async => HttpResponse([], Response(requestOptions: RequestOptions())),
+      when(() => mockClient.bulkInsertCards(any<dynamic>())).thenAnswer(
+        (_) async => HttpResponse<dynamic>(<dynamic>[], Response(requestOptions: RequestOptions())),
       );
       when(() => mockClient.saveSessionResults(any())).thenAnswer(
-        (_) async => HttpResponse(null, Response(requestOptions: RequestOptions())),
+        (_) async => HttpResponse({'status': 'ok'}, Response(requestOptions: RequestOptions())),
       );
       when(() => mockClient.updateDeckRecord(any(), any())).thenAnswer(
-        (_) async => HttpResponse(null, Response(requestOptions: RequestOptions())),
+        (_) async => HttpResponse({'status': 'ok'}, Response(requestOptions: RequestOptions())),
       );
 
       await dataSource.saveGeneratedDeck(deck: deck, cards: cards);
@@ -225,7 +225,7 @@ void main() {
         deckId: 'deck_physics',
         cardsReviewed: 2,
         durationSeconds: 30,
-        retentionScore: 1.0,
+        retentionScore: 1,
         updatedCards: updatedCards,
       );
 

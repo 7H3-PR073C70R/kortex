@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
@@ -92,14 +93,12 @@ class CreateCourseDeckModalSheet extends HookWidget {
       AppFeedback.medium();
 
       try {
-        final deckId = 'deck_${DateTime.now().millisecondsSinceEpoch}';
+        final deckId = UuidUtils.generate();
 
         final flashcards =
-            addedCards.value.asMap().entries.map<FlashcardModel>((entry) {
-          final idx = entry.key;
-          final item = entry.value;
+            addedCards.value.map<FlashcardModel>((item) {
           return FlashcardModel(
-            id: 'card_${deckId}_$idx',
+            id: UuidUtils.generate(),
             deckId: deckId,
             front: item['front']!,
             back: item['back']!,

@@ -11,11 +11,14 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
+import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Subpage for managing account identity, data export, cache, and storage.
 @RoutePage()
@@ -106,37 +109,10 @@ class AccountSecurityPage extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildExportOption(
-                          icon: Icons.style_rounded,
-                          title: 'Export as Anki Deck (.apkg / JSON)',
-                          subtitle: 'Full spaced repetition schedule preserved',
-                          onTap: () => _exportAnkiDeck(
-                            context,
-                            profile?.targetTrack ?? 'WAEC',
-                          ),
-                          colors: colors,
-                          typography: typography,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildExportOption(
-                          icon: Icons.table_chart_rounded,
-                          title: 'Export Flashcards (CSV)',
-                          subtitle: 'Plain spreadsheet with terms and answers',
-                          onTap: () => _exportCsv(
-                            context,
-                            profile?.targetTrack ?? 'WAEC',
-                          ),
-                          colors: colors,
-                          typography: typography,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildExportOption(
-                          icon: Icons.picture_as_pdf_rounded,
-                          title: 'Export Study Sheets (Markdown / Text)',
-                          subtitle: 'Printable summary cheat sheets',
-                          onTap: () => _exportStudySheets(
-                            context,
-                            profile?.targetTrack ?? 'WAEC',
-                          ),
+                          icon: Icons.ios_share_rounded,
+                          title: 'Export Study Decks (Anki, CSV, PDF)',
+                          subtitle: 'Export active decks with full SRS intervals',
+                          onTap: () => _exportDeckFlow(context),
                           colors: colors,
                           typography: typography,
                         ),
@@ -393,67 +369,107 @@ class AccountSecurityPage extends StatelessWidget {
     );
   }
 
-  Future<void> _exportAnkiDeck(BuildContext context, String track) async {
+  Future<void> _exportDeckFlow(BuildContext context) async {
     AppFeedback.light();
-    final content =
-        '''
-{
-  "deckName": "Kortexify - $track Mastery",
-  "generator": "Kortexify Neural Spaced Repetition",
-  "cards": [
-    {
-      "front": "What is the primary formulation of FSRS retention?",
-      "back": "R(t, S) = (1 + Factor * t / S)^(-Power)",
-      "tags": ["$track", "FSRS", "active-recall"]
-    },
-    {
-      "front": "How does Syllabot Socratic Mode calibrate mastery?",
-      "back": "Through iterative question scaffolding and zero-shot error diagnosis.",
-      "tags": ["$track", "Syllabot", "Socratic"]
+    if (!locator.isRegistered<GetUserDecksUseCase>()) {
+      context.showSnackBar(
+        message: 'Deck export service unavailable',
+        type: SnackBarType.error,
+      );
+      return;
     }
-  ]
-}''';
-    await SharePlus.instance.share(
-      ShareParams(
-        text: content,
-        subject: 'Kortexify_${track}_Anki_Deck.json',
-      ),
+
+    final decksRes = await locator<GetUserDecksUseCase>()();
+    var decks = <DeckEntity>[];
+    decksRes.fold(
+      (_) {},
+      (list) => decks = list,
+    );
+
+    if (decks.isEmpty) {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'No study decks found to export. Create a deck first!',
+        );
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    if (decks.length == 1) {
+      await _openExportSheet(context, decks.first);
+      return;
+    }
+
+    // Multiple decks - show selection bottom sheet
+    final colors = context.colors;
+    final typography = context.typography;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: sheetContext.colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select Deck to Export',
+                style: typography.title3.bold.copyWith(color: colors.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: decks.length,
+                  separatorBuilder: (_, index) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final d = decks[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.style_rounded, color: colors.primary),
+                      title: Text(
+                        d.title,
+                        style: typography.body.bold.copyWith(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        '${d.totalCards} cards • ${d.subject}',
+                        style: typography.footnote.regular.copyWith(color: colors.textSecondary),
+                      ),
+                      trailing: Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        unawaited(_openExportSheet(context, d));
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Future<void> _exportCsv(BuildContext context, String track) async {
-    AppFeedback.light();
-    const csvContent = '''
-"Front / Question","Back / Answer","Track","Difficulty"
-"What is the primary formula of FSRS retention?","R(t, S) = (1 + Factor * t / S)^(-Power)","STEM","Hard"
-"What does Syllabot Socratic reasoning foster?","Active recall and deep conceptual synthesis.","STEM","Medium"
-''';
-    await SharePlus.instance.share(
-      ShareParams(
-        text: csvContent,
-        subject: 'Kortexify_${track}_Flashcards.csv',
-      ),
-    );
-  }
-
-  Future<void> _exportStudySheets(BuildContext context, String track) async {
-    AppFeedback.light();
-    final summary =
-        '''
-# Kortexify Study Sheet ($track)
-
-## Core Active Concepts
-1. **FSRS Retention Algorithm**: Adaptive spaced repetition model with stability calibration.
-2. **Socratic AI Tutoring**: Guided question discovery for deep conceptual anchoring.
-
-Generated from Kortexify Scholar Workspace.
-''';
-    await SharePlus.instance.share(
-      ShareParams(
-        text: summary,
-        subject: 'Kortexify_${track}_Study_Sheet.txt',
-      ),
-    );
+  Future<void> _openExportSheet(BuildContext context, DeckEntity deck) async {
+    var populatedDeck = deck;
+    if (populatedDeck.cards.isEmpty && locator.isRegistered<GetDeckCardsUseCase>()) {
+      final res = await locator<GetDeckCardsUseCase>()(deck.id);
+      res.fold((_) {}, (cards) {
+        populatedDeck = populatedDeck.copyWith(cards: cards);
+      });
+    }
+    if (context.mounted) {
+      await ExportDeckModalSheet.show(context, deck: populatedDeck);
+    }
   }
 
   void _showEditNameDialog(BuildContext context, String currentName) {

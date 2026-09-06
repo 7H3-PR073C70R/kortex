@@ -6,6 +6,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -142,8 +143,7 @@ class CreateDeckPage extends HookWidget {
         calibrationStatus.value = 'Registering calibrated set into global Past Question Bank...';
 
         final generatedCards = studyResult.cards;
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final deckId = 'deck_pq_${resolvedCourseCode.toLowerCase()}_$timestamp';
+        final deckId = UuidUtils.generate();
 
         // 3. Register into global Past Question Bank
         final examCat = _deriveExamCategory(courseTitle ?? resolvedCourseCode);
@@ -152,7 +152,7 @@ class CreateDeckPage extends HookWidget {
 
         for (var i = 0; i < generatedCards.length; i++) {
           final card = generatedCards[i];
-          final qId = 'pq_upload_${timestamp}_$i';
+          final qId = UuidUtils.generate();
           final (options, correctIdx, correctLabel) =
               _buildCalibratedOptions(card, generatedCards, i);
 
@@ -176,7 +176,7 @@ class CreateDeckPage extends HookWidget {
           // Construct flashcard
           flashcards.add(
             FlashcardModel(
-              id: 'card_${deckId}_$i',
+              id: UuidUtils.generate(),
               deckId: deckId,
               front: card.front,
               back: '${card.back}${card.explanation.isNotEmpty ? "\n\n💡 Explanation:\n${card.explanation}" : ""}',
@@ -320,8 +320,7 @@ class CreateDeckPage extends HookWidget {
       AppFeedback.medium();
 
       try {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final deckId = 'deck_manual_${resolvedCourseCode.toLowerCase()}_$timestamp';
+        final deckId = UuidUtils.generate();
 
         final flashcards = <FlashcardModel>[];
         final pqQuestions = <PastQuestionModel>[];
@@ -335,7 +334,7 @@ class CreateDeckPage extends HookWidget {
 
           flashcards.add(
             FlashcardModel(
-              id: 'card_${deckId}_$i',
+              id: UuidUtils.generate(),
               deckId: deckId,
               front: front,
               back: back,
@@ -351,7 +350,7 @@ class CreateDeckPage extends HookWidget {
 
             pqQuestions.add(
               PastQuestionModel(
-                id: 'pq_manual_${timestamp}_$i',
+                id: UuidUtils.generate(),
                 examType: examCat,
                 subject: resolvedSubject,
                 year: year,

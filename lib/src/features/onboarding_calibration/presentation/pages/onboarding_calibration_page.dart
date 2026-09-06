@@ -69,7 +69,7 @@ class _CalibrationView extends StatelessWidget {
             const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
           );
           unawaited(
-            context.router.replaceAll([const MainRoute()]),
+            context.router.replaceAll([const OnboardingContentRoute()]),
           );
         } else if (state.status == CalibrationStatus.error &&
             state.errorMessage != null) {

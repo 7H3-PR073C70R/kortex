@@ -9,8 +9,11 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -54,24 +57,32 @@ class _DeckDetailContent extends HookWidget {
       }
     }
 
-    final dynamicCards = (deck != null && deck.cards.isNotEmpty)
-        ? deck.cards.map((c) => (front: c.front, back: c.back)).toList()
-        : const [
-            (
-              front:
-                  'What is the definition of Laplace Transform of a function f(t)?',
-              back: 'L{f(t)} = F(s) = ∫[0 to ∞] e^(-st) f(t) dt for s > 0',
-            ),
-            (
-              front: 'State the Fourier Transform inversion theorem.',
-              back: 'f(t) = (1/2π) ∫[-∞ to ∞] F(ω) e^(iωt) dω',
-            ),
-            (
-              front:
-                  'What does the Convolution Theorem state for Laplace Transforms?',
-              back: 'L{f(t) * g(t)} = F(s) · G(s)',
-            ),
-          ];
+    final loadedCards = useState<List<FlashcardEntity>>(deck?.cards ?? []);
+    final isLoadingCards = useState<bool>(false);
+
+    useEffect(() {
+      if (deck != null && deck.cards.isNotEmpty) {
+        loadedCards.value = deck.cards;
+      } else if (locator.isRegistered<GetDeckCardsUseCase>()) {
+        isLoadingCards.value = true;
+        unawaited(
+          locator<GetDeckCardsUseCase>()(deckId).then((res) {
+            res.fold(
+              (_) {},
+              (cards) {
+                loadedCards.value = cards;
+              },
+            );
+            isLoadingCards.value = false;
+          }),
+        );
+      }
+      return null;
+    }, [deckId, deck?.cards]);
+
+    final dynamicCards = loadedCards.value
+        .map((c) => (front: c.front, back: c.back))
+        .toList();
 
     final isFlipped = useState<bool>(false);
 
@@ -98,6 +109,25 @@ class _DeckDetailContent extends HookWidget {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Icons.ios_share_rounded, color: colors.textPrimary),
+            tooltip: 'Export Deck',
+            onPressed: () {
+              final populatedDeck = (deck ??
+                      DeckEntity(
+                        id: deckId,
+                        title: 'Study Deck',
+                        subject: 'Review',
+                        totalCards: loadedCards.value.length,
+                        dueCards: loadedCards.value.length,
+                        masteryRate: 0,
+                        category: 'General',
+                        cards: loadedCards.value,
+                      ))
+                  .copyWith(cards: loadedCards.value);
+              unawaited(ExportDeckModalSheet.show(context, deck: populatedDeck));
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: ShrinkableButton(
@@ -139,39 +169,71 @@ class _DeckDetailContent extends HookWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(
-            children: [
-              // Progress Tracker
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    l10n.deckDetailCardProgress(
-                      currentCardIndex.value + 1,
-                      dynamicCards.length,
-                    ),
-                    style: typography.footnote.bold.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      l10n.deckDetailSm2QueueBadge,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
+          child: isLoadingCards.value
+              ? Center(
+                  child: CircularProgressIndicator(color: colors.primary),
+                )
+              : dynamicCards.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.style_outlined,
+                            size: 56,
+                            color: colors.textMuted.withAlpha(120),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Flashcards Found',
+                            style: typography.callout.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This deck does not have any active cards yet.',
+                            textAlign: TextAlign.center,
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    )
+                  : Column(
+                      children: [
+                        // Progress Tracker
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              l10n.deckDetailCardProgress(
+                                currentCardIndex.value + 1,
+                                dynamicCards.length,
+                              ),
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'FSRS ACTIVE QUEUE',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
               const SizedBox(height: 16),
 
               // Flashcard Surface

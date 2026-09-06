@@ -7,10 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -45,6 +48,23 @@ class DeckListTileCard extends StatelessWidget {
         }
       }),
     );
+  }
+
+  Future<void> _exportDeck(BuildContext context) async {
+    var populatedDeck = deck;
+    if (populatedDeck.cards.isEmpty &&
+        locator.isRegistered<GetDeckCardsUseCase>()) {
+      final res = await locator<GetDeckCardsUseCase>()(deck.id);
+      res.fold(
+        (_) {},
+        (cards) {
+          populatedDeck = populatedDeck.copyWith(cards: cards);
+        },
+      );
+    }
+    if (context.mounted) {
+      await ExportDeckModalSheet.show(context, deck: populatedDeck);
+    }
   }
 
   @override
@@ -185,6 +205,22 @@ class DeckListTileCard extends StatelessWidget {
                               ),
                             ),
                           const SizedBox(width: 6),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              unawaited(_exportDeck(context));
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.ios_share_rounded,
+                                size: 16,
+                                color: colors.textMuted.withAlpha(180),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () {

@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
@@ -104,18 +105,14 @@ class IngestionRepositoryImpl implements IngestionRepository {
     String? courseCode,
   }) {
     return Future<DeckEntity>.sync(() async {
-      final prefix = documentId.substring(
-        0,
-        documentId.length > 8 ? 8 : documentId.length,
-      );
-      final deckId = 'deck_$prefix';
+      final deckId = UuidUtils.generate();
       final cards = <FlashcardEntity>[];
 
       for (var i = 0; i < snippets.length; i++) {
         final snippet = snippets[i];
         cards.add(
           FlashcardEntity(
-            id: 'ocr_card_${documentId}_$i',
+            id: UuidUtils.generate(),
             deckId: deckId,
             front: snippet.topic.isNotEmpty
                 ? snippet.topic

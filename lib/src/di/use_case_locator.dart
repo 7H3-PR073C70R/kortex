@@ -90,9 +90,6 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<GetDeckCardsUseCase>(
       () => GetDeckCardsUseCase(locator<DecksRepository>()),
     )
-    ..registerLazySingleton<ProcessCardReviewUseCase>(
-      () => ProcessCardReviewUseCase(locator<DecksRepository>()),
-    )
     ..registerLazySingleton<SaveSessionResultsUseCase>(
       () => SaveSessionResultsUseCase(locator<DecksRepository>()),
     )

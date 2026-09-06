@@ -193,10 +193,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     List<ChatMessageEntity> messages = const [],
   }) {
     return Future<DeckEntity>.sync(() async {
+      final deckId = UuidUtils.generate();
       final cards = <FlashcardEntity>[];
       final flashcardModels = <FlashcardModel>[];
       final seenQuestions = <String>{};
-      var cardIndex = 0;
 
       // 1. Scan entire chat and collect strictly AI assistant responses (exclude user prompts)
       final aiResponses = messages
@@ -236,10 +236,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                   !isGenericMock &&
                   !seenQuestions.contains(normQ)) {
                 seenQuestions.add(normQ);
-                final cardId = 'card_${sessionId}_${cardIndex++}';
+                final cardId = UuidUtils.generate();
                 final cardEntity = FlashcardEntity(
                   id: cardId,
-                  deckId: 'deck_$sessionId',
+                  deckId: deckId,
                   front: frontText.endsWith('?') ? frontText : '$frontText?',
                   back: genCard.explanation.isNotEmpty && !backText.contains(genCard.explanation)
                       ? '$backText\n\n${genCard.explanation}'
@@ -275,10 +275,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
-              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final cardId = UuidUtils.generate();
               final card = FlashcardEntity(
                 id: cardId,
-                deckId: 'deck_$sessionId',
+                deckId: deckId,
                 front: question,
                 back: detail,
                 sourceTopic: deckTitle,
@@ -304,10 +304,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
-              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final cardId = UuidUtils.generate();
               final card = FlashcardEntity(
                 id: cardId,
-                deckId: 'deck_$sessionId',
+                deckId: deckId,
                 front: question,
                 back: detail,
                 sourceTopic: deckTitle,
@@ -350,10 +350,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
-              final cardId = 'card_${sessionId}_${cardIndex++}';
+              final cardId = UuidUtils.generate();
               final card = FlashcardEntity(
                 id: cardId,
-                deckId: 'deck_$sessionId',
+                deckId: deckId,
                 front: question,
                 back: sectionBody.length > 500 ? '${sectionBody.substring(0, 500)}...' : sectionBody,
                 sourceTopic: deckTitle,
@@ -370,14 +370,14 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           for (final fMatch in formulaMatches) {
             if (cards.length >= 15) break;
             final formula = fMatch.group(1)!.trim();
-            final cardId = 'card_${sessionId}_${cardIndex++}';
+            final cardId = UuidUtils.generate();
             final question = 'What is the governing equation for "$deckTitle" in this context?';
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
               final card = FlashcardEntity(
                 id: cardId,
-                deckId: 'deck_$sessionId',
+                deckId: deckId,
                 front: question,
                 back: formula,
                 backLatex: formula.replaceAll(RegExp(r'^\$\$|\$\$$|^\\\[|\\\]$'), '').trim(),
@@ -396,10 +396,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         final fallbackBack = aiResponses.isNotEmpty
             ? aiResponses.first
             : 'Study deck generated from Syllabot AI responses on $deckTitle';
-        final cardId = 'card_${sessionId}_0';
+        final cardId = UuidUtils.generate();
         final cardEntity = FlashcardEntity(
           id: cardId,
-          deckId: 'deck_$sessionId',
+          deckId: deckId,
           front: 'What are the principal insights explained for $deckTitle?',
           back: fallbackBack.length > 400 ? '${fallbackBack.substring(0, 400)}...' : fallbackBack,
           sourceTopic: deckTitle,
@@ -409,7 +409,6 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         flashcardModels.add(FlashcardModel.fromEntity(cardEntity));
       }
 
-      final deckId = 'deck_$sessionId';
       final deckEntity = DeckEntity(
         id: deckId,
         title: deckTitle,

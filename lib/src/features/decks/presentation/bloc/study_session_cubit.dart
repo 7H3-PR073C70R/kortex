@@ -12,7 +12,6 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
-import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -26,8 +25,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     required SaveSessionResultsUseCase saveSessionResultsUseCase,
     FsrsScheduler? fsrsScheduler,
     CardSyncQueue? cardSyncQueue,
-    @Deprecated('Decoupled in Batch 2 in favor of FSRS v4.5 scheduler')
-    ProcessCardReviewUseCase? processCardReviewUseCase,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
        _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
