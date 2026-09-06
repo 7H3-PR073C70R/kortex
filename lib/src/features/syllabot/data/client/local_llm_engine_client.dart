@@ -244,6 +244,11 @@ class LocalLlmEngineClient {
 
     // 1. If native model is loaded in memory, stream directly from llama.cpp
     if (FlutterLlama.instance.isModelLoaded) {
+      var yieldedCharCount = 0;
+      final specialTokenRegex = RegExp(
+        r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>',
+      );
+
       try {
         final stream = FlutterLlama.instance.generateStream(
           GenerationParams(
@@ -254,8 +259,19 @@ class LocalLlmEngineClient {
             stopSequences: const ['<|im_end|>', '<|endoftext|>', '<|im_start|>'],
           ),
         );
-        yield* stream;
-        return;
+
+        await for (final token in stream) {
+          final cleanToken = token.replaceAll(specialTokenRegex, '');
+          if (cleanToken.isNotEmpty) {
+            yieldedCharCount += cleanToken.trim().length;
+            yield cleanToken;
+          }
+        }
+
+        // Return if native llama generated a complete valid response
+        if (yieldedCharCount >= 15) {
+          return;
+        }
       } on Object catch (e) {
         if (kDebugMode) {
           print(
@@ -265,7 +281,7 @@ class LocalLlmEngineClient {
       }
     }
 
-    // 2. Direct fallback for testing/offline environments
+    // 2. Direct fallback for testing/offline environments or when native yields empty content
     final dynamicResponse = _generateDynamicFallback(
       prompt,
       socraticMode,
@@ -403,22 +419,37 @@ class LocalLlmEngineClient {
           '---\n*Socratic Practice:* Can you construct a single sentence that successfully incorporates at least **five** of these eight parts of speech?';
     }
 
-    // 2. Parts of Speech Overview
+    // 2. Parts of Speech Overview & Count
     if (lower.contains('parts of speech') ||
         lower.contains('part of speech') ||
         lower.contains('part of speach') ||
         lower.contains('parts of speach')) {
-      return 'The **parts of speech** are the primary grammatical categories of words based on their syntactic and semantic functions in a sentence.\n\n'
-          '### The 8 Essential Parts of Speech:\n'
-          '1. **Noun:** Names a person, place, thing, or concept (*laboratory*, *entropy*).\n'
-          '2. **Pronoun:** Replaces a noun to avoid repetition (*it*, *they*, *who*).\n'
-          '3. **Verb:** Expresses an action or state of being (*synthesize*, *radiate*).\n'
-          '4. **Adjective:** Modifies or describes a noun (*conductive*, *dense*).\n'
-          '5. **Adverb:** Modifies a verb, adjective, or another adverb (*precisely*, *rapidly*).\n'
-          '6. **Preposition:** Indicates spatial or temporal relationships (*across*, *within*).\n'
-          '7. **Conjunction:** Connects clauses or words (*and*, *because*, *although*).\n'
-          '8. **Interjection:** Expresses emotion or exclamation (*eureka!*, *indeed*).\n\n'
-          '*Socratic Check:* Which specific part of speech would you like to explore deeper?';
+      final isCountQuery = lower.contains('how many') ||
+          lower.contains('number of') ||
+          lower.contains('count');
+
+      return isCountQuery
+          ? 'There are **8 traditional parts of speech** in the English language:\n\n'
+              '1. **Noun:** Names a person, place, thing, or concept (*laboratory*, *entropy*).\n'
+              '2. **Pronoun:** Replaces a noun to avoid repetition (*it*, *they*, *who*).\n'
+              '3. **Verb:** Expresses an action or state of being (*synthesize*, *radiate*).\n'
+              '4. **Adjective:** Modifies or describes a noun (*conductive*, *dense*).\n'
+              '5. **Adverb:** Modifies a verb, adjective, or another adverb (*precisely*, *rapidly*).\n'
+              '6. **Preposition:** Indicates spatial or temporal relationships (*across*, *within*).\n'
+              '7. **Conjunction:** Connects clauses or words (*and*, *because*, *although*).\n'
+              '8. **Interjection:** Expresses emotion or exclamation (*eureka!*, *indeed*).\n\n'
+              '*Socratic Practice:* Which specific part of speech would you like to explore or analyze with examples?'
+          : 'The **parts of speech** are the primary grammatical categories of words based on their syntactic and semantic functions in a sentence.\n\n'
+              '### The 8 Essential Parts of Speech:\n'
+              '1. **Noun:** Names a person, place, thing, or concept (*laboratory*, *entropy*).\n'
+              '2. **Pronoun:** Replaces a noun to avoid repetition (*it*, *they*, *who*).\n'
+              '3. **Verb:** Expresses an action or state of being (*synthesize*, *radiate*).\n'
+              '4. **Adjective:** Modifies or describes a noun (*conductive*, *dense*).\n'
+              '5. **Adverb:** Modifies a verb, adjective, or another adverb (*precisely*, *rapidly*).\n'
+              '6. **Preposition:** Indicates spatial or temporal relationships (*across*, *within*).\n'
+              '7. **Conjunction:** Connects clauses or words (*and*, *because*, *although*).\n'
+              '8. **Interjection:** Expresses emotion or exclamation (*eureka!*, *indeed*).\n\n'
+              '*Socratic Check:* Which specific part of speech would you like to explore deeper?';
     }
 
     // 3. Pronouns

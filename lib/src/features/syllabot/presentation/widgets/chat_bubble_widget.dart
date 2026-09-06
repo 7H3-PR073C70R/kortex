@@ -21,6 +21,7 @@ class ChatBubbleWidget extends StatefulWidget {
     this.ttsHandler,
     this.onRetry,
     this.onConvertToCard,
+    this.isStreaming = false,
     super.key,
   });
 
@@ -28,6 +29,7 @@ class ChatBubbleWidget extends StatefulWidget {
   final TextToSpeechHandler? ttsHandler;
   final VoidCallback? onRetry;
   final VoidCallback? onConvertToCard;
+  final bool isStreaming;
 
   @override
   State<ChatBubbleWidget> createState() => _ChatBubbleWidgetState();
@@ -181,55 +183,80 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                 ),
                               ),
                             ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // 1. Read Aloud TTS button
-                                if (!widget.message.isError)
+                            if (widget.isStreaming)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        colors.syllabotAccent,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Typing...',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.syllabotAccent,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // 1. Read Aloud TTS button
+                                  if (!widget.message.isError)
+                                    IconButton(
+                                      tooltip: _isSpeakingThis
+                                          ? l10n.syllabotStopReading
+                                          : l10n.syllabotReadAloud,
+                                      icon: Icon(
+                                        _isSpeakingThis
+                                            ? Icons.stop_circle_rounded
+                                            : Icons.volume_up_rounded,
+                                        size: 17,
+                                        color: _isSpeakingThis
+                                            ? colors.syllabotAccent
+                                            : colors.textSecondary,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: _toggleSpeak,
+                                    ),
+                                  const SizedBox(width: 8),
+
+                                  // 2. Copy button
                                   IconButton(
-                                    tooltip: _isSpeakingThis
-                                        ? l10n.syllabotStopReading
-                                        : l10n.syllabotReadAloud,
+                                    tooltip: l10n.copiedToClipboard,
                                     icon: Icon(
-                                      _isSpeakingThis
-                                          ? Icons.stop_circle_rounded
-                                          : Icons.volume_up_rounded,
-                                      size: 17,
-                                      color: _isSpeakingThis
-                                          ? colors.syllabotAccent
-                                          : colors.textSecondary,
+                                      Icons.copy_rounded,
+                                      size: 15,
+                                      color: colors.textSecondary,
                                     ),
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    onPressed: _toggleSpeak,
-                                  ),
-                                const SizedBox(width: 8),
-
-                                // 2. Copy button
-                                IconButton(
-                                  tooltip: l10n.copiedToClipboard,
-                                  icon: Icon(
-                                    Icons.copy_rounded,
-                                    size: 15,
-                                    color: colors.textSecondary,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    unawaited(
-                                      Clipboard.setData(
-                                        ClipboardData(
-                                          text: widget.message.text,
+                                    onPressed: () {
+                                      unawaited(
+                                        Clipboard.setData(
+                                          ClipboardData(
+                                            text: widget.message.text,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                    context.showSnackBar(
-                                      message: context.l10n.copiedToClipboard,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
+                                      );
+                                      context.showSnackBar(
+                                        message: context.l10n.copiedToClipboard,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -238,6 +265,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                         _FormattedMessageBody(
                           text: widget.message.text,
                           isDark: isDark,
+                          isStreaming: widget.isStreaming,
                         ),
 
                         // RAG Retrieved Context Badges
@@ -310,18 +338,72 @@ class _FormattedMessageBody extends StatelessWidget {
   const _FormattedMessageBody({
     required this.text,
     required this.isDark,
+    this.isStreaming = false,
   });
 
   final String text;
   final bool isDark;
+  final bool isStreaming;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
 
+    // Sanitize any model prompt template leakage (e.g. <|im_start|>, <think>)
+    final sanitizedText = text
+        .replaceAll(
+          RegExp(r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>'),
+          '',
+        )
+        .trim();
+
+    if (sanitizedText.isEmpty) {
+      if (isStreaming) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    colors.syllabotAccent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Thinking...',
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          'No content generated. Tap retry.',
+          style: typography.caption.medium.copyWith(
+            color: colors.textSecondary,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    // Append blinking/typewriter cursor during active token streaming
+    final displayText = isStreaming ? '$sanitizedText ▌' : sanitizedText;
+
     // Parse $$math$$ blocks and render standard markdown for everything else
-    final parts = text.split(r'$$');
+    final parts = displayText.split(r'$$');
 
     final markdownStyleSheet = MarkdownStyleSheet(
       p: typography.body.regular.copyWith(
@@ -379,7 +461,7 @@ class _FormattedMessageBody extends StatelessWidget {
 
     if (parts.length <= 1) {
       return MarkdownBody(
-        data: text,
+        data: displayText,
         selectable: true,
         styleSheet: markdownStyleSheet,
       );

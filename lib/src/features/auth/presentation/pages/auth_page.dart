@@ -18,6 +18,8 @@ import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dar
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -50,11 +52,11 @@ Future<void> _handleGoogleSignIn(BuildContext context) async {
     final result = await locator<SocialAuthService>().signInWithGoogle();
     if (result != null && context.mounted) {
       context.read<AuthBloc>().add(
-            AuthSocialLoginRequested(
-              provider: result.provider,
-              idToken: result.idToken,
-            ),
-          );
+        AuthSocialLoginRequested(
+          provider: result.provider,
+          idToken: result.idToken,
+        ),
+      );
     }
   } on Object catch (e) {
     if (context.mounted) {
@@ -71,12 +73,12 @@ Future<void> _handleAppleSignIn(BuildContext context) async {
     final result = await locator<SocialAuthService>().signInWithApple();
     if (result != null && context.mounted) {
       context.read<AuthBloc>().add(
-            AuthSocialLoginRequested(
-              provider: result.provider,
-              idToken: result.idToken,
-              rawNonce: result.rawNonce,
-            ),
-          );
+        AuthSocialLoginRequested(
+          provider: result.provider,
+          idToken: result.idToken,
+          rawNonce: result.rawNonce,
+        ),
+      );
     }
   } on Object catch (e) {
     if (context.mounted) {
@@ -115,14 +117,35 @@ class _AuthView extends HookWidget {
         } else if (state.isAuthenticated) {
           if (!isChatMode) {
             context.showSnackBar(message: l10n.authSuccessMessage);
-            final calibRepo = locator<CalibrationRepository>();
-            final calibResult = await calibRepo.getCalibrationProfile();
-            final isCalibrated = calibResult.fold(
-              (_) => false,
-              (profile) => profile?.isCalibrated ?? false,
-            );
+
+            // 1. Fast path: check if server-verified profile says user is onboarded
+            final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+
+            // 2. Local pref key set by CalibrationLocalDataSourceImpl.saveCalibrationProfile
+            var localSaysOnboarded = false;
+            try {
+              final storage = locator<LocalStorageService>();
+              localSaysOnboarded =
+                  storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
+                  'true';
+            } on Object catch (_) {}
+
+            // 3. Fallback: read calibration profile from local storage
+            var calibSaysOnboarded = false;
+            if (!serverSaysOnboarded && !localSaysOnboarded) {
+              final calibRepo = locator<CalibrationRepository>();
+              final calibResult = await calibRepo.getCalibrationProfile();
+              calibSaysOnboarded = calibResult.fold(
+                (_) => false,
+                (profile) => profile?.isCalibrated ?? false,
+              );
+            }
+
+            final shouldGoToMain =
+                serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
+
             if (context.mounted) {
-              if (isCalibrated) {
+              if (shouldGoToMain) {
                 unawaited(context.router.replaceAll([const MainRoute()]));
               } else {
                 unawaited(

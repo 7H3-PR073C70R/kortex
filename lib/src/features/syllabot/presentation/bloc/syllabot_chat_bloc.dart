@@ -173,8 +173,20 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     StreamCompletedEvent event,
     Emitter<SyllabotChatState> emit,
   ) {
-    if (state.streamingText.trim().isEmpty) {
-      emit(state.copyWith(status: SyllabotStatus.idle));
+    final sanitizedText = state.streamingText
+        .replaceAll(
+          RegExp(r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>'),
+          '',
+        )
+        .trim();
+
+    if (sanitizedText.isEmpty) {
+      emit(
+        state.copyWith(
+          status: SyllabotStatus.idle,
+          streamingText: '',
+        ),
+      );
       return;
     }
 
@@ -182,7 +194,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       id: 'msg_bot_${DateTime.now().millisecondsSinceEpoch}',
       sessionId: state.sessionId,
       sender: MessageSender.syllabot,
-      text: state.streamingText,
+      text: sanitizedText,
       timestamp: DateTime.now(),
       engineType: state.engineType,
       ragReferences: List.unmodifiable(_currentRagReferences),

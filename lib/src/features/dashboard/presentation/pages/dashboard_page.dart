@@ -418,6 +418,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         const ExamCountdownBanner(),
+        const SizedBox(height: 8),
         if (feed.dueStudyDecks.isNotEmpty)
           FsrsReviewDeckCard(
             deck: feed.dueStudyDecks.first,

@@ -19,6 +19,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -624,12 +626,26 @@ class AuthChatView extends HookWidget {
           lastRetryDescription.value = '';
           final name = state.user?.displayName ?? 'Scholar';
 
-          final calibRepo = locator<CalibrationRepository>();
-          final calibResult = await calibRepo.getCalibrationProfile();
-          final isCalibrated = calibResult.fold(
-            (_) => false,
-            (profile) => profile?.isCalibrated ?? false,
-          );
+          // Multi-fallback onboarding check for returning users
+          final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+          var localSaysOnboarded = false;
+          try {
+            final storage = locator<LocalStorageService>();
+            localSaysOnboarded =
+                storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true';
+          } on Object catch (_) {}
+
+          var calibSaysOnboarded = false;
+          if (!serverSaysOnboarded && !localSaysOnboarded) {
+            final calibRepo = locator<CalibrationRepository>();
+            final calibResult = await calibRepo.getCalibrationProfile();
+            calibSaysOnboarded = calibResult.fold(
+              (_) => false,
+              (profile) => profile?.isCalibrated ?? false,
+            );
+          }
+          final isCalibrated =
+              serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
 
           if (isCalibrated) {
             addBotMessage(

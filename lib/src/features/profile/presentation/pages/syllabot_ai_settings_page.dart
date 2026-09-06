@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -281,6 +283,44 @@ class SyllabotAiSettingsPage extends HookWidget {
                   ],
                 ),
               ),
+              if (!kIsWeb && Platform.isIOS) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(18),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(50),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.tips_and_updates_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'For the most natural voice, go to Settings → '
+                          'Accessibility → Spoken Content → Voices → English '
+                          'and download an Enhanced or Premium voice.',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // 3. Offline Neural Weights Storage

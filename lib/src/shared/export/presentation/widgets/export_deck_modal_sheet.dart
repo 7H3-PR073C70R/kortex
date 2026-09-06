@@ -194,13 +194,13 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               Text(
                 l10n.exportDeckTitle,
                 style: typography.title3.bold.copyWith(
-                  color: colors.white,
+                  color: colors.textPrimary,
                 ),
               ),
               IconButton(
                 icon: Icon(
                   Icons.close_rounded,
-                  color: colors.white.withAlpha(138),
+                  color: colors.textSecondary,
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -218,7 +218,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
                   Text(
                     _exportMessage ?? l10n.exportingFile,
                     style: typography.body.regular.copyWith(
-                      color: colors.white.withAlpha(178),
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -290,7 +290,7 @@ class _ExportOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.white.withAlpha(30)),
+          border: Border.all(color: colors.textMuted.withAlpha(40)),
         ),
         child: Row(
           children: [
@@ -310,14 +310,14 @@ class _ExportOptionTile extends StatelessWidget {
                   Text(
                     title,
                     style: typography.callout.bold.copyWith(
-                      color: colors.white,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: typography.caption.regular.copyWith(
-                      color: colors.white.withAlpha(153),
+                      color: colors.textSecondary,
                       height: 1.3,
                     ),
                   ),
@@ -326,7 +326,7 @@ class _ExportOptionTile extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: colors.white.withAlpha(97),
+              color: colors.textMuted,
               size: 20,
             ),
           ],

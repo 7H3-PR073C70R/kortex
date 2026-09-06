@@ -11,6 +11,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -151,15 +153,34 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _proceedToApp() async {
-    final calibRepo = locator<CalibrationRepository>();
-    final calibResult = await calibRepo.getCalibrationProfile();
-    final isCalibrated = calibResult.fold(
-      (_) => false,
-      (profile) => profile?.isCalibrated ?? false,
-    );
+    // 1. Fast check: server-verified auth bloc user profile
+    final authBloc = locator<AuthBloc>();
+    final serverSaysOnboarded = authBloc.state.userProfile?.isOnboarded ?? false;
+
+    // 2. Local pref key (persisted by CalibrationLocalDataSourceImpl.saveCalibrationProfile)
+    var localSaysOnboarded = false;
+    try {
+      final storage = locator<LocalStorageService>();
+      localSaysOnboarded =
+          storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true';
+    } on Object catch (_) {}
+
+    // 3. Calibration profile object from local storage
+    var calibSaysOnboarded = false;
+    if (!serverSaysOnboarded && !localSaysOnboarded) {
+      final calibRepo = locator<CalibrationRepository>();
+      final calibResult = await calibRepo.getCalibrationProfile();
+      calibSaysOnboarded = calibResult.fold(
+        (_) => false,
+        (profile) => profile?.isCalibrated ?? false,
+      );
+    }
+
+    final isCalibrated =
+        serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
 
     // Sync AuthBloc session status immediately before navigation so guards agree
-    locator<AuthBloc>()
+    authBloc
       ..add(
         AuthStatusChanged(
           isCalibrated

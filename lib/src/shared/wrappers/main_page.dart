@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/num_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -132,7 +133,10 @@ class MainPage extends HookWidget {
                   bottom: false,
                   child: FadeTransition(
                     opacity: animation,
-                    child: child,
+                    child: Padding(
+                      padding:  EdgeInsets.only(bottom: 60.height),
+                      child: child,
+                    ),
                   ),
                 );
               },

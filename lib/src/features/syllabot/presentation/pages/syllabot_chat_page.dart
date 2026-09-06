@@ -135,16 +135,21 @@ class _SyllabotChatView extends HookWidget {
       [ttsHandler],
     );
 
-    void scrollToBottom() {
+    void scrollToBottom({bool animate = true}) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (scrollController.hasClients) {
-          unawaited(
-            scrollController.animateTo(
-              scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-            ),
-          );
+          final maxExtent = scrollController.position.maxScrollExtent;
+          if (animate) {
+            unawaited(
+              scrollController.animateTo(
+                maxExtent,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+              ),
+            );
+          } else {
+            scrollController.jumpTo(maxExtent);
+          }
         }
       });
     }
@@ -302,18 +307,43 @@ class _SyllabotChatView extends HookWidget {
           .map((m) => m.text.trim())
           .toList();
 
+      final fullConversationText = state.messages
+          .map((m) => m.text.toLowerCase())
+          .join(' ');
+
       var derivedTitle = 'Study Notes';
       var derivedCourseCode = 'GEN 101';
 
       if (userPrompts.isNotEmpty) {
-        final firstPrompt = userPrompts.first;
-        final clean = firstPrompt.replaceAll(RegExp(r'[?!.]+$'), '').trim();
-        derivedTitle = clean.length > 38
-            ? '${clean.substring(0, 35)}...'
-            : clean;
+        if (userPrompts.length == 1) {
+          final clean = userPrompts.first.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+          derivedTitle = clean.length > 38
+              ? '${clean.substring(0, 35)}...'
+              : clean;
+        } else {
+          final clean1 = userPrompts.first.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+          final cleanLast = userPrompts.last.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+          if (clean1.toLowerCase() == cleanLast.toLowerCase()) {
+            derivedTitle = clean1.length > 38 ? '${clean1.substring(0, 35)}...' : clean1;
+          } else {
+            final combined = '$clean1 & $cleanLast';
+            derivedTitle = combined.length > 42 ? '${combined.substring(0, 39)}...' : combined;
+          }
+        }
 
-        final lower = firstPrompt.toLowerCase();
-        if (lower.contains('circle') ||
+        final lower = fullConversationText;
+        if (lower.contains('part of speech') ||
+            lower.contains('parts of speech') ||
+            lower.contains('grammar') ||
+            lower.contains('noun') ||
+            lower.contains('verb') ||
+            lower.contains('adjective') ||
+            lower.contains('preposition')) {
+          derivedCourseCode = 'ENG 101';
+          if (lower.contains('part of speech') || lower.contains('parts of speech')) {
+            derivedTitle = 'Parts of Speech & Grammar';
+          }
+        } else if (lower.contains('circle') ||
             lower.contains('theorem') ||
             lower.contains('geometry') ||
             lower.contains('angle') ||
@@ -368,9 +398,17 @@ class _SyllabotChatView extends HookWidget {
     }
 
     return BlocListener<SyllabotChatBloc, SyllabotChatState>(
+      listenWhen: (previous, current) {
+        return previous.messages.length != current.messages.length ||
+            previous.streamingText != current.streamingText ||
+            previous.status != current.status ||
+            previous.generatedDeck != current.generatedDeck;
+      },
       listener: (context, state) {
         if (state.status == SyllabotStatus.streaming) {
-          scrollToBottom();
+          scrollToBottom(animate: false);
+        } else {
+          scrollToBottom(animate: true);
         }
 
         if (state.generatedDeck != null) {
@@ -732,6 +770,7 @@ class _SyllabotChatView extends HookWidget {
                                   engineType: state.engineType,
                                 ),
                               );
+                              scrollToBottom(animate: true);
                             },
                           ),
                   );
@@ -881,7 +920,23 @@ class _SyllabotChatView extends HookWidget {
         }
 
         // Live typing typewriter stream indicator
-        return const StreamingTextTypingIndicator();
+        if (state.streamingText.isEmpty) {
+          return const StreamingTextTypingIndicator();
+        }
+
+        final streamingMessage = ChatMessageEntity(
+          id: 'msg_bot_streaming',
+          sessionId: state.sessionId,
+          sender: MessageSender.syllabot,
+          text: state.streamingText,
+          timestamp: DateTime.now(),
+          engineType: state.engineType,
+        );
+
+        return ChatBubbleWidget(
+          message: streamingMessage,
+          isStreaming: true,
+        );
       },
     );
   }

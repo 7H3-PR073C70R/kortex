@@ -207,16 +207,18 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
 
       final aiTranscript = aiResponses.join('\n\n---\n\n');
 
-      // 2. AI Synthesis: Route AI explanations through StudyEngineRouter (Cloud or Local GGUF)
+      // 2. AI Synthesis: Route cumulative AI explanations through StudyEngineRouter (Cloud or Local GGUF)
       if (aiTranscript.isNotEmpty) {
         try {
           final router = _studyEngineRouter ?? StudyEngineRouter();
           final studyPack = await router.generateStudyPack(
             topic: deckTitle,
-            count: 10,
-            sourceText: 'AI Study Explanations for "$deckTitle":\n\n$aiTranscript\n\n'
-                'Synthesize unique, concept-specific flashcards from the above AI explanations. '
-                'Formulate distinct questions and in-depth answers. Do not duplicate questions.',
+            count: 12,
+            sourceText: 'Cumulative AI Educational Explanations across Entire Conversation:\n\n'
+                '$aiTranscript\n\n'
+                'Instructions: Analyze the WHOLE response history from the AI tutor in the entire chat above. '
+                'Synthesize comprehensive flashcards covering key definitions, rules, formulas, classifications, and examples from EACH discussion turn. '
+                'Formulate distinct, standalone questions and detailed answers without restricting cards to only the initial prompt.',
           );
 
           if (studyPack.cards.isNotEmpty) {
@@ -257,21 +259,26 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         }
       }
 
-      // 3. In-depth Semantic AI Extraction: Parse unique conceptual Q&As strictly from AI content
-      if (cards.length < 5 && aiResponses.isNotEmpty) {
+      // 3. In-depth Multi-Turn Semantic AI Extraction across the ENTIRE conversation
+      // Iterates through every AI response turn so flashcards reflect the cumulative dialogue
+      if (cards.length < 15 && aiResponses.isNotEmpty) {
+        final perResponseTarget = ((20 - cards.length) / aiResponses.length).ceil().clamp(2, 6);
+
         for (final resp in aiResponses) {
+          var responseCardsAdded = 0;
+
           // 3a. Bullet points with bold concepts: - **Concept**: Explanation
           final bulletRegex = RegExp(
             r'^\s*[-*•]\s+\*\*([^*:\n]{2,60})\*\*\s*[:\-–]?\s*(.+)$',
             multiLine: true,
           );
           for (final match in bulletRegex.allMatches(resp)) {
-            if (cards.length >= 15) break;
+            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) break;
             final concept = match.group(1)!.trim();
             final detail = match.group(2)!.trim();
             if (detail.length < 15) continue;
 
-            final question = 'What is the definition and role of "$concept" in $deckTitle?';
+            final question = 'What is the definition and grammatical/academic role of "$concept"?';
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
@@ -281,11 +288,12 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                 deckId: deckId,
                 front: question,
                 back: detail,
-                sourceTopic: deckTitle,
+                sourceTopic: concept,
                 nextDueDate: DateTime.now().add(const Duration(days: 1)),
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
+              responseCardsAdded++;
             }
           }
 
@@ -295,12 +303,12 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             multiLine: true,
           );
           for (final match in numberedRegex.allMatches(resp)) {
-            if (cards.length >= 15) break;
+            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) break;
             final concept = match.group(1)!.trim();
             final detail = match.group(2)!.trim();
             if (detail.length < 15) continue;
 
-            final question = 'How does "$concept" apply to the study of $deckTitle?';
+            final question = 'Explain "$concept" and its key characteristics:';
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
@@ -310,11 +318,12 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                 deckId: deckId,
                 front: question,
                 back: detail,
-                sourceTopic: deckTitle,
+                sourceTopic: concept,
                 nextDueDate: DateTime.now().add(const Duration(days: 1)),
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
+              responseCardsAdded++;
             }
           }
 
@@ -325,7 +334,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           );
           final sectionMatches = sectionRegex.allMatches(resp).toList();
           for (var i = 0; i < sectionMatches.length; i++) {
-            if (cards.length >= 15) break;
+            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) break;
             final sectionTitle = sectionMatches[i].group(1)!.trim();
             final start = sectionMatches[i].end;
             final end = (i + 1 < sectionMatches.length) ? sectionMatches[i + 1].start : resp.length;
@@ -336,15 +345,17 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             final lowerTitle = sectionTitle.toLowerCase();
             String question;
             if (lowerTitle.contains('theorem') || lowerTitle.contains('law')) {
-              question = 'State and explain the "$sectionTitle" for $deckTitle:';
+              question = 'State and explain the "$sectionTitle":';
             } else if (lowerTitle.contains('proof') || lowerTitle.contains('derivation')) {
               question = 'What are the key steps in the derivation for "$sectionTitle"?';
             } else if (lowerTitle.contains('formula') || lowerTitle.contains('equation')) {
               question = 'What mathematical formulation defines "$sectionTitle"?';
-            } else if (lowerTitle.contains('summary') || lowerTitle.contains('conclusion')) {
-              question = 'What are the core conclusions reached regarding "$sectionTitle"?';
+            } else if (lowerTitle.contains('rule') || lowerTitle.contains('principle')) {
+              question = 'What core rules or principles govern "$sectionTitle"?';
+            } else if (lowerTitle.contains('category') || lowerTitle.contains('classification') || lowerTitle.contains('role')) {
+              question = 'How is "$sectionTitle" categorized and explained?';
             } else {
-              question = 'In $deckTitle, how is "$sectionTitle" structured and explained?';
+              question = 'Explain the key principles and concepts of "$sectionTitle":';
             }
 
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
@@ -356,11 +367,12 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                 deckId: deckId,
                 front: question,
                 back: sectionBody.length > 500 ? '${sectionBody.substring(0, 500)}...' : sectionBody,
-                sourceTopic: deckTitle,
+                sourceTopic: sectionTitle,
                 nextDueDate: DateTime.now().add(const Duration(days: 1)),
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
+              responseCardsAdded++;
             }
           }
 
@@ -368,10 +380,10 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           final formulaRegex = RegExp(r'(\$\$.*?\$\$|\\\[.*?\\\])', dotAll: true);
           final formulaMatches = formulaRegex.allMatches(resp);
           for (final fMatch in formulaMatches) {
-            if (cards.length >= 15) break;
+            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) break;
             final formula = fMatch.group(1)!.trim();
             final cardId = UuidUtils.generate();
-            final question = 'What is the governing equation for "$deckTitle" in this context?';
+            final question = 'Explain the mathematical formulation and physical meaning of: $formula';
             final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
@@ -386,6 +398,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
+              responseCardsAdded++;
             }
           }
         }
@@ -413,6 +426,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         id: deckId,
         title: deckTitle,
         subject: courseCode,
+        courseCode: courseCode,
         totalCards: cards.length,
         dueCards: cards.where((c) => c.isDueToday).length,
         masteryRate: 0,
