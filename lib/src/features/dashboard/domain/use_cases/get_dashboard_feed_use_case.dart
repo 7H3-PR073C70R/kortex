@@ -4,6 +4,15 @@ import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 
+class GetDashboardFeedParams extends NoParams {
+  const GetDashboardFeedParams({this.forceRefresh = false});
+
+  final bool forceRefresh;
+
+  @override
+  List<Object> get props => [forceRefresh];
+}
+
 class GetDashboardFeedUseCase with UseCase<DashboardFeedEntity, NoParams> {
   const GetDashboardFeedUseCase(this._repository);
 
@@ -11,6 +20,8 @@ class GetDashboardFeedUseCase with UseCase<DashboardFeedEntity, NoParams> {
 
   @override
   Future<Either<Failure, DashboardFeedEntity>> call(NoParams params) {
-    return _repository.getDashboardFeed();
+    final forceRefresh =
+        params is GetDashboardFeedParams && params.forceRefresh;
+    return _repository.getDashboardFeed(forceRefresh: forceRefresh);
   }
 }

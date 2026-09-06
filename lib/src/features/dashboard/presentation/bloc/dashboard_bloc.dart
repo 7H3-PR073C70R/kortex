@@ -46,7 +46,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     DashboardRefreshed event,
     Emitter<DashboardState> emit,
   ) async {
-    final result = await getDashboardFeedUseCase(const NoParams());
+    final result = await getDashboardFeedUseCase(
+      const GetDashboardFeedParams(forceRefresh: true),
+    );
 
     result.fold(
       (failure) => emit(

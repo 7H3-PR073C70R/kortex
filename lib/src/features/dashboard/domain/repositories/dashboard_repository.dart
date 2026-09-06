@@ -6,7 +6,15 @@ import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.
 /// Abstract Domain Repository Contract for Kortex Dashboard operations.
 abstract class DashboardRepository {
   /// Fetches the personalized dashboard feed based on active user calibration.
-  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed();
+  ///
+  /// Results are cached in-memory with a 5-minute TTL. Set [forceRefresh] to
+  /// `true` to bypass cache and fetch fresh feed data.
+  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed({
+    bool forceRefresh = false,
+  });
+
+  /// Clears any cached in-memory dashboard feed.
+  void clearFeedCache();
 
   /// Fetches the active recall spaced repetition (FSRS-6) queue for today.
   Future<Either<Failure, List<StudyDeckEntity>>> getReviewQueue();

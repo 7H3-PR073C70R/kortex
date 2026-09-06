@@ -17,7 +17,12 @@ class MockDashboardRepository implements DashboardRepository {
   bool shouldFail = false;
 
   @override
-  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed() async {
+  void clearFeedCache() {}
+
+  @override
+  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed({
+    bool forceRefresh = false,
+  }) async {
     if (shouldFail) {
       return const Left(ServerFailure(message: 'Network Timeout'));
     }

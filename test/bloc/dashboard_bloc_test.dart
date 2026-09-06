@@ -104,7 +104,9 @@ void main() {
       'DashboardRefreshed updates feed without changing to loading state',
       build: () {
         when(
-          () => mockGetDashboardFeedUseCase(const NoParams()),
+          () => mockGetDashboardFeedUseCase(
+            const GetDashboardFeedParams(forceRefresh: true),
+          ),
         ).thenAnswer((_) async => const Right(tFeedHighSchool));
         return buildBloc();
       },

@@ -9,17 +9,41 @@ import 'package:kortex/src/features/onboarding_calibration/domain/entities/calib
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
-  const DashboardRepositoryImpl({
+  DashboardRepositoryImpl({
     required this.remoteDataSource,
     required this.calibrationRepository,
-  });
+    this.feedTtl = const Duration(minutes: 5),
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final DashboardRemoteDataSource remoteDataSource;
   final CalibrationRepository calibrationRepository;
+  final Duration feedTtl;
+  final DateTime Function() _clock;
+
+  DashboardFeedEntity? _cachedFeed;
+  DateTime? _feedCachedAt;
 
   @override
-  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed() {
-    return remoteDataSource.getDashboardFeed().then((feedModel) async {
+  void clearFeedCache() {
+    _cachedFeed = null;
+    _feedCachedAt = null;
+  }
+
+  @override
+  Future<Either<Failure, DashboardFeedEntity>> getDashboardFeed({
+    bool forceRefresh = false,
+  }) async {
+    final now = _clock();
+    if (!forceRefresh &&
+        _cachedFeed != null &&
+        _feedCachedAt != null &&
+        now.difference(_feedCachedAt!) < feedTtl) {
+      return Right(_cachedFeed!);
+    }
+
+    final result = await (() async {
+      final feedModel = await remoteDataSource.getDashboardFeed();
       var userProfile = const CalibrationProfile();
 
       final profileResult = await calibrationRepository.getCalibrationProfile();
@@ -33,7 +57,16 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
 
       return feedModel.toEntity(calibrationProfile: userProfile);
-    }).makeRequest();
+    })().makeRequest();
+
+    return result.fold(
+      Left.new,
+      (feed) {
+        _cachedFeed = feed;
+        _feedCachedAt = now;
+        return Right(feed);
+      },
+    );
   }
 
   @override
@@ -70,6 +103,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<Either<Failure, void>> syncUserCourses(
     List<Map<String, dynamic>> courses,
   ) {
+    clearFeedCache();
     return remoteDataSource.syncUserCourses(courses).makeRequest();
   }
 
@@ -78,6 +112,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required String examName,
     required List<String> subjects,
   }) {
+    clearFeedCache();
     return remoteDataSource
         .autoCurateExamCourses(
           examName: examName,
@@ -88,6 +123,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
   @override
   Future<Either<Failure, void>> deleteCuratedCourse(String courseId) {
+    clearFeedCache();
     return remoteDataSource.deleteCuratedCourse(courseId).makeRequest();
   }
 }
