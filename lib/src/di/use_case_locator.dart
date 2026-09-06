@@ -114,6 +114,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<CardSyncQueue>(
       () => CardSyncQueue(
         dio: locator<Dio>(),
+        storageService: locator<LocalStorageService>(),
       ),
     )
     ..registerFactory<StudySessionCubit>(
@@ -122,7 +123,6 @@ void _initUseCaseLocator() {
         saveSessionResultsUseCase: locator<SaveSessionResultsUseCase>(),
         fsrsScheduler: locator<FsrsScheduler>(),
         cardSyncQueue: locator<CardSyncQueue>(),
-        processCardReviewUseCase: locator<ProcessCardReviewUseCase>(),
       ),
     )
     ..registerLazySingleton<StreamSyllabotResponseUseCase>(
@@ -219,7 +219,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<CreateExamCountdownUseCase>(
       () => CreateExamCountdownUseCase(locator<PlannerRepository>()),
     )
-    ..registerFactory<CramPlannerCubit>(
+    ..registerLazySingleton<CramPlannerCubit>(
       () => CramPlannerCubit(
         plannerRepository: locator<PlannerRepository>(),
         calculateTargetUseCase: locator<CalculateDailyCramTargetUseCase>(),

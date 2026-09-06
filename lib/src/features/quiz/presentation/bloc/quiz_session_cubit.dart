@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
@@ -178,6 +182,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             ..setMetric('correct_answers', quizResult.correctAnswers)
             ..setMetric('duration_seconds', quizResult.durationSeconds);
           unawaited(trace.start().then((_) => trace.stop()));
+        } on Object catch (_) {}
+
+        // Live UI state refresh for Auth streak and Dashboard
+        try {
+          locator<AuthBloc>().add(const AuthStreakIncremented());
+        } on Object catch (_) {}
+        try {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
         } on Object catch (_) {}
 
         emit(

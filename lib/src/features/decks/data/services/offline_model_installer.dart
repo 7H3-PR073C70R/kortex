@@ -100,8 +100,22 @@ class OfflineModelInstaller {
     try {
       final path = await getModelPath(modelKey: modelKey);
       final file = File(path);
-      if (!file.existsSync()) return false;
-      return file.lengthSync() >= 200 * 1024 * 1024;
+      if (file.existsSync() && file.lengthSync() >= 50 * 1024 * 1024) {
+        return true;
+      }
+      // Check if any valid on-device GGUF model exists in the shared kortex_models directory
+      final docs = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docs.path}/kortex_models');
+      if (dir.existsSync()) {
+        final existingModels = dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.gguf') && f.lengthSync() >= 50 * 1024 * 1024);
+        if (existingModels.isNotEmpty) {
+          return true;
+        }
+      }
+      return false;
     } on Object catch (err) {
       debugPrint('[OfflineModelInstaller] Model verification note: $err');
       return false;
@@ -147,6 +161,16 @@ class OfflineModelInstaller {
     final spec = supportedModels[modelKey] ?? supportedModels[defaultModelKey]!;
     final targetPath = await getModelPath(modelKey: modelKey);
     final tempPath = '$targetPath.part';
+
+    // Prevent duplicate model download if already installed
+    if (await isModelInstalled(modelKey: modelKey)) {
+      _emitProgress(
+        InstallerStep.ready,
+        1,
+        modelName: spec.fileName,
+      );
+      return true;
+    }
 
     _emitProgress(
       InstallerStep.checkingPrerequisites,

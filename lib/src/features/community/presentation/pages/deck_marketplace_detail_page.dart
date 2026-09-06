@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -54,9 +55,15 @@ class DeckMarketplaceDetailPage extends HookWidget {
             if (locator.isRegistered<DecksBloc>()) {
               locator<DecksBloc>().add(const DecksRefreshed());
             }
+            try {
+              context.read<DecksBloc>().add(const DecksRefreshed());
+            } on Object catch (_) {}
             if (locator.isRegistered<DashboardBloc>()) {
               locator<DashboardBloc>().add(const DashboardRefreshed());
             }
+            try {
+              context.read<DashboardBloc>().add(const DashboardRefreshed());
+            } on Object catch (_) {}
           },
         );
       } on Object catch (_) {

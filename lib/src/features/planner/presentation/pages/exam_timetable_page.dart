@@ -98,94 +98,104 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final colors = context.colors;
     final typography = context.typography;
 
-    return Scaffold(
-      backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
-        backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Exam Timetable',
-          style: typography.headline.bold.copyWith(color: colors.textPrimary),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline_rounded, color: colors.primary),
-            tooltip: 'Add Exam',
-            onPressed: () => AddExamModalSheet.show(context),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: BlocBuilder<CramPlannerCubit, CramPlannerState>(
-        builder: (context, state) {
-          final exams = state.activeExams;
-          final primaryExam = state.selectedExam ??
-              (exams.isNotEmpty ? exams.first : null);
+    final cubit = locator<CramPlannerCubit>();
+    unawaited(cubit.loadExams());
 
-          if (exams.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            children: [
-              // Hero Active Countdown Display
-              if (primaryExam != null) ...[
-                _buildHeroCountdownCard(context, primaryExam),
-                const SizedBox(height: 24),
-                StudyCalibrationGraphWidget(
-                  exam: primaryExam,
-                  onStartStudySession: () {
-                    Navigator.of(context).pop();
-                  },
+    return BlocProvider<CramPlannerCubit>.value(
+      value: cubit,
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: colors.backgroundPrimary,
+            appBar: AppBar(
+              backgroundColor: colors.backgroundPrimary,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Exam Timetable',
+                style: typography.headline.bold.copyWith(color: colors.textPrimary),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline_rounded, color: colors.primary),
+                  tooltip: 'Add Exam',
+                  onPressed: () => AddExamModalSheet.show(context),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(width: 8),
               ],
+            ),
+            body: BlocBuilder<CramPlannerCubit, CramPlannerState>(
+              builder: (context, state) {
+                final exams = state.activeExams;
+                final primaryExam = state.selectedExam ??
+                    (exams.isNotEmpty ? exams.first : null);
 
-              // Timetable Section Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'All Scheduled Exams (${exams.length})',
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
+                if (exams.isEmpty) {
+                  return _buildEmptyState(context);
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  children: [
+                    // Hero Active Countdown Display
+                    if (primaryExam != null) ...[
+                      _buildHeroCountdownCard(context, primaryExam),
+                      const SizedBox(height: 24),
+                      StudyCalibrationGraphWidget(
+                        exam: primaryExam,
+                        onStartStudySession: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      const SizedBox(height: 28),
+                    ],
+
+                    // Section Heading: All Tracked Exams
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Tracked Exams (${exams.length})',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => AddExamModalSheet.show(context),
+                          icon: Icon(Icons.add, size: 18, color: colors.primary),
+                          label: Text(
+                            'Add Exam',
+                            style: typography.callout.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => AddExamModalSheet.show(context),
-                    icon: Icon(Icons.add, size: 18, color: colors.primary),
-                    label: Text(
-                      'Add Exam',
-                      style: typography.callout.bold.copyWith(
-                        color: colors.primary,
+                    const SizedBox(height: 12),
+
+                    // Chronological Exam Cards
+                    ...exams.map(
+                      (exam) => _buildExamRowCard(
+                        context,
+                        exam: exam,
+                        isSelected: exam.id == primaryExam?.id,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
 
-              // Chronological Exam Cards
-              ...exams.map(
-                (exam) => _buildExamRowCard(
-                  context,
-                  exam: exam,
-                  isSelected: exam.id == primaryExam?.id,
-                ),
-              ),
+                    const SizedBox(height: 28),
 
-              const SizedBox(height: 28),
+                    // Notification Preferences Section
+                    _buildNotificationPreferencesCard(context, primaryExam),
 
-              // Notification Preferences Section
-              _buildNotificationPreferencesCard(context, primaryExam),
-
-              const SizedBox(height: 40),
-            ],
+                    const SizedBox(height: 40),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),

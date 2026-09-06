@@ -2,18 +2,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
-import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockGetDeckCardsUseCase extends Mock implements GetDeckCardsUseCase {}
-
-class MockProcessCardReviewUseCase extends Mock
-    implements ProcessCardReviewUseCase {}
 
 class MockSaveSessionResultsUseCase extends Mock
     implements SaveSessionResultsUseCase {}
@@ -23,7 +18,6 @@ void main() {
 
   group('StudySessionCubit Card Flipping & Rating Test Suite', () {
     late MockGetDeckCardsUseCase mockGetDeckCardsUseCase;
-    late MockProcessCardReviewUseCase mockProcessCardReviewUseCase;
     late MockSaveSessionResultsUseCase mockSaveSessionResultsUseCase;
 
     const tCards = [
@@ -43,15 +37,6 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(
-        const ProcessCardReviewParams(
-          cardId: 'card_1',
-          quality: 4,
-          previousInterval: 1,
-          previousRepetitions: 0,
-          previousEaseFactor: 2.5,
-        ),
-      );
-      registerFallbackValue(
         const SaveSessionResultsParams(
           deckId: 'deck_100',
           cardsReviewed: 2,
@@ -63,13 +48,11 @@ void main() {
 
     setUp(() {
       mockGetDeckCardsUseCase = MockGetDeckCardsUseCase();
-      mockProcessCardReviewUseCase = MockProcessCardReviewUseCase();
       mockSaveSessionResultsUseCase = MockSaveSessionResultsUseCase();
     });
 
     StudySessionCubit buildCubit() => StudySessionCubit(
       getDeckCardsUseCase: mockGetDeckCardsUseCase,
-      processCardReviewUseCase: mockProcessCardReviewUseCase,
       saveSessionResultsUseCase: mockSaveSessionResultsUseCase,
     );
 
@@ -121,20 +104,8 @@ void main() {
     );
 
     blocTest<StudySessionCubit, StudySessionState>(
-      'rateCard advances to next card and invokes SM-2 processing',
-      build: () {
-        when(() => mockProcessCardReviewUseCase(any())).thenAnswer(
-          (_) async => Right(
-            Sm2CalculationResult(
-              nextInterval: 1,
-              newEaseFactor: 2.6,
-              newRepetitions: 1,
-              nextDueDate: DateTime.now(),
-            ),
-          ),
-        );
-        return buildCubit();
-      },
+      'rateCard advances to next card and enqueues FSRS review',
+      build: buildCubit,
       seed: () => const StudySessionState(
         status: StudySessionStatus.studying,
         deckId: 'deck_100',
@@ -152,6 +123,9 @@ void main() {
           goodCount: 1,
         ),
       ],
+      verify: (cubit) {
+        expect(cubit.cardSyncQueue.getPendingCount(), equals(1));
+      },
     );
   });
 }

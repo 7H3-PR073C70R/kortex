@@ -7,7 +7,6 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
-import 'package:kortex/src/features/decks/domain/use_cases/process_card_review_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
@@ -88,7 +87,6 @@ void main() {
       fakeRepo = _FakeDecksRepository();
       cubit = StudySessionCubit(
         getDeckCardsUseCase: GetDeckCardsUseCase(fakeRepo),
-        processCardReviewUseCase: ProcessCardReviewUseCase(fakeRepo),
         saveSessionResultsUseCase: SaveSessionResultsUseCase(fakeRepo),
       );
     });

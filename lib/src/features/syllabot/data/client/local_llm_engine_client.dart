@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Intelligent on-device local LLM client for Syllabot AI.
 ///
@@ -17,26 +18,83 @@ class LocalLlmEngineClient {
 
   static const String _modelStorageKey = '__local_llm_model_downloaded';
   static const String _modelPathKey = '__local_llm_model_path';
+  static const String modelsDirectoryName = 'kortex_models';
   bool _isInitialized = false;
+
+  /// Returns the shared on-device models directory used across Syllabot and Decks.
+  static Future<Directory> getSharedModelsDirectory() async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/$modelsDirectoryName');
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Scans the shared `kortex_models` directory for an existing valid GGUF model.
+  static Future<String?> findSharedModelPath() async {
+    try {
+      final dir = await getSharedModelsDirectory();
+      if (dir.existsSync()) {
+        final ggufFiles = dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.gguf') && f.lengthSync() >= 50 * 1024 * 1024)
+            .toList();
+        if (ggufFiles.isNotEmpty) {
+          ggufFiles.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+          return ggufFiles.first.path;
+        }
+      }
+    } on Object catch (_) {
+      // Ignored
+    }
+    return null;
+  }
 
   /// Checks if the on-device model weights are downloaded and exist locally on disk.
   bool get isModelDownloaded {
     try {
       final storage = locator<LocalStorageService>();
       final isMarked = storage.getPreference(key: _modelStorageKey) == 'true';
-      if (!isMarked) return false;
       final path = storage.getPreference(key: _modelPathKey);
-      if (path == null || path.isEmpty) return false;
-      return File(path).existsSync();
+      if (isMarked && path != null && path.isNotEmpty && File(path).existsSync()) {
+        return true;
+      }
+      if (path != null && path.isNotEmpty && File(path).existsSync() && File(path).lengthSync() >= 50 * 1024 * 1024) {
+        return true;
+      }
+      return false;
     } on Object {
       return false;
     }
   }
 
+  /// Asynchronously checks if a model exists in local preferences or the unified directory.
+  Future<bool> checkModelDownloaded() async {
+    if (isModelDownloaded) return true;
+    final sharedPath = await findSharedModelPath();
+    if (sharedPath != null) {
+      final storage = locator<LocalStorageService>();
+      await storage.savePreference(key: _modelStorageKey, data: 'true');
+      await storage.savePreference(key: _modelPathKey, data: sharedPath);
+      return true;
+    }
+    return false;
+  }
+
   /// Streams real model weight download progress from 0.0 to 1.0.
+  /// Skips downloading if model weights already exist in unified storage.
   Stream<double> downloadModel({
     PresetModel preset = PresetModels.smolLM2Q4K,
   }) async* {
+    // Prevent duplicate model download if already present
+    if (await checkModelDownloaded()) {
+      _isInitialized = true;
+      yield 1.0;
+      return;
+    }
+
     final controller = StreamController<double>();
 
     unawaited(() async {
@@ -54,10 +112,26 @@ class LocalLlmEngineClient {
           _isInitialized = true;
           final storage = locator<LocalStorageService>();
           await storage.savePreference(key: _modelStorageKey, data: 'true');
-          if (FlutterLlama.instance.modelPath != null) {
+          final originalPath = FlutterLlama.instance.modelPath;
+          if (originalPath != null && File(originalPath).existsSync()) {
+            var finalPath = originalPath;
+            try {
+              final sharedDir = await getSharedModelsDirectory();
+              final fileName = originalPath.split(Platform.pathSeparator).last;
+              final targetUnifiedPath = '${sharedDir.path}/$fileName';
+              if (originalPath != targetUnifiedPath) {
+                final sourceFile = File(originalPath);
+                final destFile = await sourceFile.copy(targetUnifiedPath);
+                finalPath = destFile.path;
+              }
+            } on Object catch (copyErr) {
+              if (kDebugMode) {
+                print('[LocalLlmEngineClient] Unified dir copy note: $copyErr');
+              }
+            }
             await storage.savePreference(
               key: _modelPathKey,
-              data: FlutterLlama.instance.modelPath!,
+              data: finalPath,
             );
           }
         } else {
@@ -119,7 +193,15 @@ class LocalLlmEngineClient {
 
     try {
       final storage = locator<LocalStorageService>();
-      final savedPath = storage.getPreference(key: _modelPathKey);
+      var savedPath = storage.getPreference(key: _modelPathKey);
+
+      if (savedPath == null || savedPath.isEmpty || !File(savedPath).existsSync()) {
+        savedPath = await findSharedModelPath();
+        if (savedPath != null) {
+          await storage.savePreference(key: _modelStorageKey, data: 'true');
+          await storage.savePreference(key: _modelPathKey, data: savedPath);
+        }
+      }
 
       if (savedPath != null &&
           savedPath.isNotEmpty &&

@@ -18,7 +18,6 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 @Deprecated(
   'Use OnboardingCalibrationPage instead. Deprecated as part of Phase 4 Onboarding Unification.',
 )
-@RoutePage()
 class OnboardingStepperPage extends StatelessWidget {
   @Deprecated(
     'Use OnboardingCalibrationPage instead. Deprecated as part of Phase 4 Onboarding Unification.',

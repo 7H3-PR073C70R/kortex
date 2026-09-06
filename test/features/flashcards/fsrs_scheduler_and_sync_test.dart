@@ -1,11 +1,35 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/flashcards/data/datasources/card_sync_queue.dart';
 import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
+
+class _FakeLocalStorageService implements LocalStorageService {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<void> initDB() async {}
+
+  @override
+  String? getPreference({required String key}) => _store[key];
+
+  @override
+  Future<void> savePreference({
+    required String key,
+    required String data,
+  }) async {
+    _store[key] = data;
+  }
+
+  @override
+  Future<void> deletePreference({required String key}) async {
+    _store.remove(key);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -161,5 +185,48 @@ void main() {
       expect(queue.getPendingCount(), equals(2));
       await queue.dispose();
     });
+
+    test(
+      'Persists queued review logs to LocalStorageService and reloads on startup',
+      () async {
+        final fakeStorage = _FakeLocalStorageService();
+        final queue1 = CardSyncQueue(
+          connectivity: mockConnectivity,
+          storageService: fakeStorage,
+        );
+
+        final log = FsrsReviewLog(
+          id: 'log_persist',
+          transactionUuid: 'tx_persist_1',
+          cardId: 'card_persist',
+          rating: FsrsRating.easy,
+          stability: 4,
+          difficulty: 3,
+          elapsedDays: 2,
+          scheduledDays: 7,
+          reviewedAtUtc: DateTime.utc(2026, 9, 1, 12),
+          reviewedAtEpoch: 1788264000000,
+          state: FsrsCardState.review,
+        );
+
+        await queue1.enqueueReview(log);
+        expect(queue1.getPendingCount(), equals(1));
+        await queue1.dispose();
+
+        // Instantiate a second queue instance reading from the same storage
+        final queue2 = CardSyncQueue(
+          connectivity: mockConnectivity,
+          storageService: fakeStorage,
+        );
+
+        expect(queue2.getPendingCount(), equals(1));
+        final pending = queue2.pendingLogs;
+        expect(pending.first.transactionUuid, equals('tx_persist_1'));
+        expect(pending.first.cardId, equals('card_persist'));
+        expect(pending.first.rating, equals(FsrsRating.easy));
+        expect(pending.first.stability, equals(4.0));
+        await queue2.dispose();
+      },
+    );
   });
 }

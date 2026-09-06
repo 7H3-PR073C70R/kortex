@@ -32,8 +32,7 @@ class AuthRouteGuard extends AutoRouteGuard {
       case AuthSessionStatus.authenticatedNeedsOnboarding:
         if (currentRouteName == OnboardingCalibrationRoute.name ||
             currentRouteName == OnboardingContentRoute.name ||
-            currentRouteName == PermissionsRoute.name ||
-            currentRouteName == OnboardingWrapperRoute.name) {
+            currentRouteName == PermissionsRoute.name) {
           resolver.next();
         } else {
           resolver.next(false);
@@ -42,11 +41,9 @@ class AuthRouteGuard extends AutoRouteGuard {
       case AuthSessionStatus.authenticatedComplete:
         if (currentRouteName == LoginRoute.name ||
             currentRouteName == AuthRoute.name ||
-            currentRouteName == OnboardingWrapperRoute.name ||
             currentRouteName == OnboardingCalibrationRoute.name ||
             currentRouteName == OnboardingContentRoute.name ||
-            currentRouteName == PermissionsRoute.name ||
-            currentRouteName == OnboardingStepperRoute.name) {
+            currentRouteName == PermissionsRoute.name) {
           resolver.next(false);
           unawaited(router.replace(const MainRoute()));
         } else {

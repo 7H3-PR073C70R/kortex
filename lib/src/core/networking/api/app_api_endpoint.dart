@@ -92,6 +92,7 @@ class AppApiEndpoint {
   static const String pastQuestions = '/rest/v1/past_questions';
   static const String generateQuizQuestions =
       '/functions/v1/generate-quiz-questions';
+  static const String quizzes = '/rest/v1/quizzes';
 
   // Planner & Exam Countdown Timetable
   static const String examEvents = '/rest/v1/exam_events';

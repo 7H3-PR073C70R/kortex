@@ -77,6 +77,9 @@ void _initRepositoryLocator() {
         ingestionRepository: locator<IngestionRepository>(),
         studyEngineRouter: locator<StudyEngineRouter>(),
         dio: locator<Dio>(),
+        localStorageService: locator<LocalStorageService>(),
+        userStorageService: locator<UserStorageService>(),
+        userActivityService: locator<UserActivityService>(),
       ),
     )
     ..registerLazySingleton<PastQuestionsRepository>(

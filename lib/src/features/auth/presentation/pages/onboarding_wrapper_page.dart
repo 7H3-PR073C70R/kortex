@@ -16,7 +16,6 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
-@RoutePage()
 class OnboardingWrapperPage extends StatelessWidget {
   const OnboardingWrapperPage({super.key});
 

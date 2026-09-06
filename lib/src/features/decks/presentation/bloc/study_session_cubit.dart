@@ -23,19 +23,18 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     required SaveSessionResultsUseCase saveSessionResultsUseCase,
     FsrsScheduler? fsrsScheduler,
     CardSyncQueue? cardSyncQueue,
+    @Deprecated('Decoupled in Batch 2 in favor of FSRS v4.5 scheduler')
     ProcessCardReviewUseCase? processCardReviewUseCase,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
        _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
        _cardSyncQueue = cardSyncQueue ?? CardSyncQueue(),
-       _processCardReviewUseCase = processCardReviewUseCase,
        super(const StudySessionState());
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
   final SaveSessionResultsUseCase _saveSessionResultsUseCase;
   final FsrsScheduler _fsrsScheduler;
   final CardSyncQueue _cardSyncQueue;
-  final ProcessCardReviewUseCase? _processCardReviewUseCase;
 
   /// Exposes active FsrsScheduler for testing and metrics.
   FsrsScheduler get fsrsScheduler => _fsrsScheduler;
@@ -198,21 +197,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     // 4. Enqueue into CardSyncQueue for robust offline persistence & automatic flush
     unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));
-
-    // 5. Invoke legacy ProcessCardReviewUseCase if supplied for backward compatibility
-    if (_processCardReviewUseCase != null) {
-      unawaited(
-        _processCardReviewUseCase(
-          ProcessCardReviewParams(
-            cardId: currentCard.id,
-            quality: quality,
-            previousInterval: currentCard.interval,
-            previousRepetitions: currentCard.repetitions,
-            previousEaseFactor: currentCard.easeFactor,
-          ),
-        ),
-      );
-    }
 
     if (state.isLastCard) {
       _timer?.cancel();

@@ -11,18 +11,24 @@ import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/sm2_calculation_result.dart';
 import 'package:kortex/src/features/decks/domain/logic/sm2_algorithm_engine.dart';
+import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 
 class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   DecksRemoteDataSourceImpl(
     this._client, {
+    @Deprecated('Decoupled in Batch 2 in favor of FsrsScheduler')
     this.sm2Engine = const Sm2AlgorithmEngine(),
+    FsrsScheduler? fsrsScheduler,
     UserStorageService? userStorage,
     LocalStorageService? storageService,
-  })  : _userStorage = userStorage,
+  })  : _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
+        _userStorage = userStorage,
         _storageService = storageService;
 
   final DecksApiClient _client;
+  @Deprecated('Decoupled in Batch 2 in favor of FsrsScheduler')
   final Sm2AlgorithmEngine sm2Engine;
+  final FsrsScheduler _fsrsScheduler;
   final UserStorageService? _userStorage;
   final LocalStorageService? _storageService;
 
@@ -260,12 +266,45 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     required int previousRepetitions,
     required double previousEaseFactor,
   }) async {
-    // 1. Execute local SM-2 algorithm immediately for 0ms UI latency
-    final localResult = sm2Engine.calculate(
-      quality: quality,
-      previousRepetitions: previousRepetitions,
-      previousInterval: previousInterval,
-      previousEaseFactor: previousEaseFactor,
+    // 1. Execute FSRS v4.5 scheduler instead of legacy SM-2
+    final fsrsRating = switch (quality) {
+      < 3 => FsrsRating.again,
+      3 => FsrsRating.hard,
+      4 => FsrsRating.good,
+      _ => FsrsRating.easy,
+    };
+    final nowUtc = DateTime.now().toUtc();
+    final initialStability =
+        previousInterval > 0 ? previousInterval.toDouble() : 0.0;
+    final initialDifficulty =
+        ((3.0 - previousEaseFactor) * 5.0).clamp(1.0, 10.0);
+
+    final fsrsCard = FsrsCard(
+      cardId: cardId,
+      stability: initialStability,
+      difficulty: initialDifficulty,
+      scheduledDays: previousInterval,
+      reps: previousRepetitions,
+      state: previousRepetitions == 0
+          ? FsrsCardState.newCard
+          : FsrsCardState.review,
+      lastReview: nowUtc,
+      lastReviewedEpoch: nowUtc.millisecondsSinceEpoch,
+    );
+
+    final reviewResult = _fsrsScheduler.reviewCard(
+      currentCard: fsrsCard,
+      rating: fsrsRating,
+      now: nowUtc,
+    );
+
+    final localResult = Sm2CalculationResult(
+      nextInterval: reviewResult.card.scheduledDays,
+      newRepetitions: reviewResult.card.reps,
+      newEaseFactor:
+          (3.0 - (reviewResult.card.difficulty / 5.0)).clamp(1.3, 2.5),
+      nextDueDate: reviewResult.card.due ??
+          nowUtc.add(Duration(days: reviewResult.card.scheduledDays)),
     );
 
     // 2. Sync to Supabase RPC process_card_sm2_review with correct parameter names

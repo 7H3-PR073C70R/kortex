@@ -1,30 +1,42 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/flashcards/domain/logic/fsrs_scheduler.dart';
 
-/// Local-first card review sync queue that buffers logs locally and flushes
+/// Local-first card review sync queue that buffers logs persistently and flushes
 /// them in batches of 50 via idempotent RPC `upsert_fsrs_review_batch`.
 class CardSyncQueue {
   CardSyncQueue({
     Dio? dio,
     Connectivity? connectivity,
+    LocalStorageService? storageService,
     List<FsrsReviewLog>? initialBuffer,
     String? authToken,
   }) : _dio = dio ?? Dio(),
        _connectivity = connectivity ?? Connectivity(),
+       _storageService = storageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null),
        _authToken = authToken,
        _inMemoryLogBuffer = initialBuffer != null
            ? List<FsrsReviewLog>.from(initialBuffer)
            : <FsrsReviewLog>[] {
+    _loadPersistedLogs();
     _initConnectivityListener();
   }
 
+  static const String storageKey = 'kortex_offline_fsrs_review_queue';
+
   final Dio _dio;
   final Connectivity _connectivity;
+  final LocalStorageService? _storageService;
   final List<FsrsReviewLog> _inMemoryLogBuffer;
   final String? _authToken;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -39,6 +51,54 @@ class CardSyncQueue {
 
   static const int syncBatchSize = 50;
   bool _isSyncing = false;
+
+  void _loadPersistedLogs() {
+    try {
+      final raw = _storageService?.getPreference(key: storageKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final existingUuids =
+              _inMemoryLogBuffer.map((l) => l.transactionUuid).toSet();
+          for (final item in decoded) {
+            if (item is Map<String, dynamic>) {
+              final log = FsrsReviewLog.fromMap(item);
+              if (!existingUuids.contains(log.transactionUuid) && !log.isSynced) {
+                _inMemoryLogBuffer.add(log);
+              }
+            } else if (item is Map) {
+              final log =
+                  FsrsReviewLog.fromMap(Map<String, dynamic>.from(item));
+              if (!existingUuids.contains(log.transactionUuid) && !log.isSynced) {
+                _inMemoryLogBuffer.add(log);
+              }
+            }
+          }
+        }
+      }
+    } on Object catch (e) {
+      debugPrint('[CardSyncQueue] Failed to load persisted logs: $e');
+    }
+  }
+
+  Future<void> _persistLogs() async {
+    try {
+      if (_storageService != null) {
+        final pending = _inMemoryLogBuffer.where((l) => !l.isSynced).toList();
+        if (pending.isEmpty) {
+          await _storageService.deletePreference(key: storageKey);
+        } else {
+          final encoded = jsonEncode(pending.map((l) => l.toMap()).toList());
+          await _storageService.savePreference(
+            key: storageKey,
+            data: encoded,
+          );
+        }
+      }
+    } on Object catch (e) {
+      debugPrint('[CardSyncQueue] Failed to persist review logs: $e');
+    }
+  }
 
   void _initConnectivityListener() {
     try {
@@ -59,9 +119,10 @@ class CardSyncQueue {
     }
   }
 
-  /// Appends a new review log to the local queue.
+  /// Appends a new review log to the local queue and persists to storage.
   Future<void> enqueueReview(FsrsReviewLog log) async {
     _inMemoryLogBuffer.add(log);
+    await _persistLogs();
     debugPrint(
       '[CardSyncQueue] Log enqueued: ${log.transactionUuid}. '
       'Total pending: ${getPendingCount()}',
@@ -74,6 +135,10 @@ class CardSyncQueue {
   int getPendingCount() {
     return _inMemoryLogBuffer.where((log) => !log.isSynced).length;
   }
+
+  /// Returns an unmodifiable list of currently pending (unsynced) review logs.
+  List<FsrsReviewLog> get pendingLogs =>
+      List.unmodifiable(_inMemoryLogBuffer.where((log) => !log.isSynced));
 
   /// Flushes pending logs to database using the idempotent RPC
   /// in batches of 50.
@@ -178,6 +243,7 @@ class CardSyncQueue {
           }
         }
       }
+      await _persistLogs();
     } finally {
       _isSyncing = false;
     }
@@ -188,6 +254,7 @@ class CardSyncQueue {
   /// Clears synced records from memory buffer.
   void pruneSyncedLogs() {
     _inMemoryLogBuffer.removeWhere((log) => log.isSynced);
+    unawaited(_persistLogs());
   }
 
   Future<void> dispose() async {

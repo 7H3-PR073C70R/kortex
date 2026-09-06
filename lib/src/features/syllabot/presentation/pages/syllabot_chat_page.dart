@@ -39,7 +39,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
-class SyllabotChatPage extends StatelessWidget {
+class SyllabotChatPage extends HookWidget {
   const SyllabotChatPage({
     this.initialPrompt,
     this.initialMode,
@@ -53,18 +53,22 @@ class SyllabotChatPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = locator<SyllabotChatBloc>();
-    if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
-      final sid = UuidUtils.generate();
-      bloc.add(
-        SubmitPromptEvent(
-          prompt: initialPrompt!.trim(),
-          sessionId: sid,
-          socraticMode: initialMode ?? SocraticMode.stepByStep,
-          engineType: ExecutionEngineType.cloudRemote,
-        ),
-      );
-    }
+    final bloc = useMemoized(locator.call<SyllabotChatBloc>);
+
+    useEffect(() {
+      if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
+        final sid = UuidUtils.generate();
+        bloc.add(
+          SubmitPromptEvent(
+            prompt: initialPrompt!.trim(),
+            sessionId: sid,
+            socraticMode: initialMode ?? SocraticMode.stepByStep,
+            engineType: ExecutionEngineType.cloudRemote,
+          ),
+        );
+      }
+      return null;
+    }, const []);
 
     return BlocProvider<SyllabotChatBloc>.value(
       value: bloc,

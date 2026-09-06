@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,9 @@ import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -24,15 +28,27 @@ class QuizRepositoryImpl implements QuizRepository {
     IngestionRepository? ingestionRepository,
     StudyEngineRouter? studyEngineRouter,
     Dio? dio,
+    LocalStorageService? localStorageService,
+    UserStorageService? userStorageService,
+    UserActivityService? userActivityService,
   })  : _decksRepository = decksRepository,
         _ingestionRepository = ingestionRepository,
         _studyEngineRouter = studyEngineRouter,
-        _dio = dio;
+        _dio = dio,
+        _localStorageService = localStorageService,
+        _userStorageService = userStorageService,
+        _userActivityService = userActivityService;
 
   final DecksRepository? _decksRepository;
   final IngestionRepository? _ingestionRepository;
   final StudyEngineRouter? _studyEngineRouter;
   final Dio? _dio;
+  final LocalStorageService? _localStorageService;
+  final UserStorageService? _userStorageService;
+  final UserActivityService? _userActivityService;
+
+  static const String cbtSubmissionsStorageKey =
+      'kortex_cbt_test_submissions';
 
   DecksRepository? get _effectiveDecksRepo =>
       _decksRepository ??
@@ -54,6 +70,24 @@ class QuizRepositoryImpl implements QuizRepository {
 
   Dio get _effectiveDio =>
       _dio ?? (locator.isRegistered<Dio>() ? locator<Dio>() : Dio());
+
+  LocalStorageService? get _effectiveLocalStorage =>
+      _localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
+
+  UserStorageService? get _effectiveUserStorage =>
+      _userStorageService ??
+      (locator.isRegistered<UserStorageService>()
+          ? locator<UserStorageService>()
+          : null);
+
+  UserActivityService? get _effectiveUserActivity =>
+      _userActivityService ??
+      (locator.isRegistered<UserActivityService>()
+          ? locator<UserActivityService>()
+          : null);
 
   @override
   Future<Either<Failure, List<QuizQuestionEntity>>> generateQuizFromDeck({
@@ -138,56 +172,57 @@ class QuizRepositoryImpl implements QuizRepository {
       (cards) => cards,
     ) ?? <FlashcardEntity>[];
 
-    if (deckCards.isNotEmpty) {
-      final content = deckCards
-          .map((c) => 'Concept: ${c.front}\nDetail: ${c.back}')
-          .join('\n\n');
-
-      try {
-        final packResult = await _effectiveEngineRouter.processDirectAsset(
-          assetId: deckId,
-          content: content,
-          topic: deckTitle ?? 'Deck $deckId',
-          count: questionCount,
-        );
-
-        if (packResult.cards.isNotEmpty) {
-          final mapped = _mapGeneratedCardsToQuestions(
-            cards: packResult.cards,
-            topic: deckTitle,
-            count: questionCount,
-          );
-          if (mapped.isNotEmpty) return mapped;
-        }
-
-        if (packResult.isOfflineModelMissing) {
-          // Model pack is missing, but we have deck cards. Synthesize directly from cards.
-          final cardQuestions = _synthesizeQuestionsFromCards(
-            cards: deckCards,
-            deckTitle: deckTitle,
-            count: questionCount,
-          );
-          if (cardQuestions.isNotEmpty) return cardQuestions;
-        }
-      } on Object catch (err) {
-        debugPrint('[QuizRepository] StudyEngineRouter direct asset error: $err');
-      }
-
-      // Fallback: direct synthesis from cards
-      final synthesized = _synthesizeQuestionsFromCards(
-        cards: deckCards,
-        deckTitle: deckTitle,
-        count: questionCount,
+    if (deckCards.isEmpty) {
+      throw const ServerException(
+        message:
+            'Cannot generate a quiz from an empty deck. Please add flashcards to this deck first.',
       );
-      if (synthesized.isNotEmpty) return synthesized;
     }
 
-    // 3. Graceful fallback for mock/demo cards
-    final mocks = _generateMockQuestions(count: questionCount);
-    if (mocks.isNotEmpty) return mocks;
+    final content = deckCards
+        .map((c) => 'Concept: ${c.front}\nDetail: ${c.back}')
+        .join('\n\n');
+
+    try {
+      final packResult = await _effectiveEngineRouter.processDirectAsset(
+        assetId: deckId,
+        content: content,
+        topic: deckTitle ?? 'Deck $deckId',
+        count: questionCount,
+      );
+
+      if (packResult.cards.isNotEmpty) {
+        final mapped = _mapGeneratedCardsToQuestions(
+          cards: packResult.cards,
+          topic: deckTitle,
+          count: questionCount,
+        );
+        if (mapped.isNotEmpty) return mapped;
+      }
+
+      if (packResult.isOfflineModelMissing) {
+        // Model pack is missing, but we have deck cards. Synthesize directly from cards.
+        final cardQuestions = _synthesizeQuestionsFromCards(
+          cards: deckCards,
+          deckTitle: deckTitle,
+          count: questionCount,
+        );
+        if (cardQuestions.isNotEmpty) return cardQuestions;
+      }
+    } on Object catch (err) {
+      debugPrint('[QuizRepository] StudyEngineRouter direct asset error: $err');
+    }
+
+    // Fallback: direct dynamic synthesis from cards
+    final synthesized = _synthesizeQuestionsFromCards(
+      cards: deckCards,
+      deckTitle: deckTitle,
+      count: questionCount,
+    );
+    if (synthesized.isNotEmpty) return synthesized;
 
     throw const ServerException(
-      message: 'Failed to generate quiz questions for this deck.',
+      message: 'Failed to synthesize quiz questions from the provided deck cards.',
     );
   }
 
@@ -264,28 +299,26 @@ class QuizRepositoryImpl implements QuizRepository {
 
     // 2. Offline / local fallback using IngestionRepository and StudyEngineRouter
     try {
-      var documentTitle = 'Document $documentId';
-      var documentContent = '';
-
       final docsResult = await _effectiveIngestionRepo?.fetchUserDocuments();
       final docs = docsResult?.fold(
         (failure) => null,
         (list) => list,
       );
-      if (docs != null && docs.isNotEmpty) {
-        final matching = docs.where((d) => d.id == documentId).firstOrNull;
-        if (matching != null) {
-          documentTitle = matching.filename;
-          documentContent =
-              'Document: ${matching.filename}, type: ${matching.fileType}';
-        }
+
+      final matching = docs?.where((d) => d.id == documentId).firstOrNull;
+      if (matching == null) {
+        throw ServerException(
+          message: 'Unable to locate document "$documentId" for quiz generation.',
+        );
       }
+
+      final documentTitle = matching.filename;
+      final documentContent =
+          'Document: ${matching.filename}, type: ${matching.fileType}';
 
       final packResult = await _effectiveEngineRouter.processDirectAsset(
         assetId: documentId,
-        content: documentContent.isNotEmpty
-            ? documentContent
-            : 'Study material for $documentTitle',
+        content: documentContent,
         topic: documentTitle,
         count: questionCount,
       );
@@ -306,14 +339,11 @@ class QuizRepositoryImpl implements QuizRepository {
       }
     } on Object catch (err) {
       debugPrint('[QuizRepository] StudyEngineRouter document error: $err');
+      if (err is ServerException || err is StateError) rethrow;
     }
 
-    // 3. Fallback
-    final mocks = _generateMockQuestions(count: questionCount);
-    if (mocks.isNotEmpty) return mocks;
-
     throw const ServerException(
-      message: 'Failed to generate quiz questions from this document.',
+      message: 'Failed to generate quiz questions from this document. Please ensure the document contains readable study material.',
     );
   }
 
@@ -323,9 +353,12 @@ class QuizRepositoryImpl implements QuizRepository {
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
   }) {
-    return Future<QuizResultEntity>.sync(() {
+    return Future<QuizResultEntity>.sync(() async {
       final total = questions.length;
       final correctCount = questions.where((q) => q.isCorrect).length;
+      final scorePercent =
+          total > 0 ? ((correctCount / total) * 100).round() : 0;
+      final completedAt = DateTime.now();
 
       final topicGroups = <String, List<QuizQuestionEntity>>{};
       for (final q in questions) {
@@ -343,15 +376,107 @@ class QuizRepositoryImpl implements QuizRepository {
         );
       }).toList();
 
-      return QuizResultModel(
-        id: 'quiz-res-${DateTime.now().millisecondsSinceEpoch}',
+      final weakSubtopics = weaknesses
+          .where((w) => w.accuracy < 0.75)
+          .map((w) => w.subTopic)
+          .toList();
+
+      final resultModel = QuizResultModel(
+        id: 'quiz-res-${completedAt.millisecondsSinceEpoch}',
         quizTitle: quizTitle,
         totalQuestions: total,
         correctAnswers: correctCount,
         durationSeconds: durationSeconds,
         weaknesses: weaknesses,
-        completedAt: DateTime.now(),
+        completedAt: completedAt,
       );
+
+      // 1. Persist to LocalStorageService for robust offline availability
+      try {
+        final storage = _effectiveLocalStorage;
+        if (storage != null) {
+          final existingJson =
+              storage.getPreference(key: cbtSubmissionsStorageKey);
+          final submissionsList =
+              (existingJson != null && existingJson.isNotEmpty
+                  ? (jsonDecode(existingJson) as List<dynamic>)
+                  : <dynamic>[])
+                ..add(resultModel.toJson());
+          // Keep up to 200 persistent CBT submissions
+          if (submissionsList.length > 200) {
+            submissionsList.removeRange(0, submissionsList.length - 200);
+          }
+          await storage.savePreference(
+            key: cbtSubmissionsStorageKey,
+            data: jsonEncode(submissionsList),
+          );
+        }
+      } on Object catch (localErr) {
+        debugPrint(
+          '[QuizRepository] Failed to persist quiz result locally: $localErr',
+        );
+      }
+
+      // 2. Record learning activity in UserActivityService
+      try {
+        final activity = _effectiveUserActivity;
+        if (activity != null) {
+          await activity.recordStudySession(
+            cardsReviewed: total,
+            durationSeconds: durationSeconds,
+            retentionScore:
+                total > 0 ? (correctCount / total).clamp(0.0, 1.0) : 0.0,
+            masteredCards: correctCount,
+          );
+        }
+      } on Object catch (activityErr) {
+        debugPrint(
+          '[QuizRepository] Failed to record user activity: $activityErr',
+        );
+      }
+
+      // 3. Persist to Remote Database table public.quizzes
+      try {
+        final userStorage = _effectiveUserStorage;
+        final token = userStorage?.getToken();
+        final userId = userStorage?.getUserId();
+        final authHeader = token != null && token.isNotEmpty
+            ? 'Bearer $token'
+            : 'Bearer ${AppEnv.apiKey}';
+
+        final payload = <String, dynamic>{
+          'title': quizTitle,
+          'total_questions': total,
+          'correct_answers': correctCount,
+          'score_percent': scorePercent,
+          'duration_seconds': durationSeconds,
+          'weak_subtopics': weakSubtopics,
+          'completed_at': completedAt.toUtc().toIso8601String(),
+        };
+        if (userId != null && userId.isNotEmpty) {
+          payload['user_id'] = userId;
+        }
+
+        await _effectiveDio.post<dynamic>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
+          data: payload,
+          options: Options(
+            headers: {
+              'apikey': AppEnv.apiKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation',
+            },
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 20),
+          ),
+        );
+      } on Object catch (remoteErr) {
+        debugPrint(
+          '[QuizRepository] Remote quiz submission sync postponed/failed: $remoteErr',
+        );
+      }
+
+      return resultModel;
     }).makeRequest();
   }
 
@@ -374,7 +499,7 @@ class QuizRepositoryImpl implements QuizRepository {
             (c) =>
                 c.id != card.id &&
                 c.back.trim().isNotEmpty &&
-                c.back.trim() != correctAnswer,
+                c.back.trim().toLowerCase() != correctAnswer.toLowerCase(),
           )
           .map((c) => c.back.trim())
           .toSet()
@@ -386,13 +511,19 @@ class QuizRepositoryImpl implements QuizRepository {
         options.add(distractor);
       }
 
-      var fallbackIndex = 1;
-      while (options.length < 4) {
-        final filler = 'Alternative definition $fallbackIndex';
-        if (!options.contains(filler)) {
-          options.add(filler);
+      if (options.length < 4) {
+        final semanticDistractors = _generateSemanticDistractors(
+          correctAnswer: correctAnswer,
+          prompt: card.front.trim(),
+          topic: card.sourceTopic ?? deckTitle,
+          count: 4 - options.length,
+        );
+        for (final distractor in semanticDistractors) {
+          if (options.length >= 4) break;
+          if (!options.contains(distractor)) {
+            options.add(distractor);
+          }
         }
-        fallbackIndex++;
       }
 
       options.shuffle(Random(card.id.hashCode));
@@ -438,7 +569,7 @@ class QuizRepositoryImpl implements QuizRepository {
             (c) =>
                 c.id != card.id &&
                 c.back.trim().isNotEmpty &&
-                c.back.trim() != correctAnswer,
+                c.back.trim().toLowerCase() != correctAnswer.toLowerCase(),
           )
           .map((c) => c.back.trim())
           .toSet()
@@ -450,10 +581,19 @@ class QuizRepositoryImpl implements QuizRepository {
         options.add(distractor);
       }
 
-      var fallbackIndex = 1;
-      while (options.length < 4) {
-        options.add('Concept Alternative $fallbackIndex');
-        fallbackIndex++;
+      if (options.length < 4) {
+        final semanticDistractors = _generateSemanticDistractors(
+          correctAnswer: correctAnswer,
+          prompt: card.front.trim(),
+          topic: card.tags.firstOrNull ?? topic,
+          count: 4 - options.length,
+        );
+        for (final distractor in semanticDistractors) {
+          if (options.length >= 4) break;
+          if (!options.contains(distractor)) {
+            options.add(distractor);
+          }
+        }
       }
 
       options.shuffle(Random(card.id.hashCode));
@@ -481,84 +621,124 @@ class QuizRepositoryImpl implements QuizRepository {
     return result;
   }
 
-  List<QuizQuestionModel> _generateMockQuestions({
+  /// Synthesizes semantically grounded, domain-relevant distractors for MCQ choices
+  /// when peer flashcards in the set are fewer than 4. Replaces generic placeholder strings.
+  List<String> _generateSemanticDistractors({
+    required String correctAnswer,
+    required String prompt,
     required int count,
+    String? topic,
   }) {
-    final list = <QuizQuestionModel>[
-      const QuizQuestionModel(
-        id: 'q-1',
-        prompt:
-            'What is the fundamental relationship between Gibbs free energy, '
-            'enthalpy, and entropy?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\Delta G = \Delta H - T\Delta S',
-          r'\Delta G = \Delta H + T\Delta S',
-          r'\Delta G = \frac{\Delta H}{T\Delta S}',
-          r'\Delta G = T\Delta S - \Delta H',
-        ],
-        correctAnswer: r'\Delta G = \Delta H - T\Delta S',
-        explanation:
-            r'Gibbs free energy change \Delta G is given by '
-            r'\Delta H - T\Delta S. A negative \Delta G indicates a '
-            'spontaneous reaction.',
-        subTopic: 'Chemical Thermodynamics',
-        latexFormula: r'\Delta G = \Delta H - T\Delta S',
-      ),
-      const QuizQuestionModel(
-        id: 'q-2',
-        prompt:
-            'According to Newton second law of motion, force is directly '
-            'proportional to what?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'Rate of change of momentum',
-          'Velocity of the body',
-          'Displacement per unit time',
-          'Total mechanical energy',
-        ],
-        correctAnswer: 'Rate of change of momentum',
-        explanation:
-            r'Newton 2nd law: \vec{F} = \frac{d\vec{p}}{dt} = m\vec{a} '
-            'for constant mass.',
-        subTopic: 'Classical Mechanics',
-        latexFormula: r'\vec{F} = m\vec{a}',
-      ),
-      const QuizQuestionModel(
-        id: 'q-3',
-        prompt:
-            'True or False: In an adiabatic process, heat transfer into or '
-            'out of the system is zero (Q = 0).',
-        type: QuizQuestionType.trueFalse,
-        options: ['True', 'False'],
-        correctAnswer: 'True',
-        explanation:
-            'An adiabatic process occurs without transfer of heat or mass '
-            'between a system and its surroundings (dQ = 0).',
-        subTopic: 'Thermodynamic Processes',
-      ),
-      const QuizQuestionModel(
-        id: 'q-4',
-        prompt: 'What is the derivative of f(x) = e^{2x} with respect to x?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          '2e^{2x}',
-          'e^{2x}',
-          '4e^{2x}',
-          r'\frac{1}{2}e^{2x}',
-        ],
-        correctAnswer: '2e^{2x}',
-        explanation:
-            r'By the chain rule: \frac{d}{dx}[e^{u}] = e^{u}\frac{du}{dx}. '
-            r'Thus \frac{d}{dx}[e^{2x}] = 2e^{2x}.',
-        subTopic: 'Calculus & Derivatives',
-        latexFormula: r'\frac{d}{dx}(e^{2x}) = 2e^{2x}',
-      ),
-    ];
+    if (count <= 0) return const [];
 
-    if (count <= list.length) {
-      return list.sublist(0, count);
+    final normalizedTopic = (topic ?? '').toLowerCase();
+    final normalizedPrompt = prompt.toLowerCase();
+    final normalizedAns = correctAnswer.toLowerCase();
+
+    final List<String> domainPool;
+    if (normalizedTopic.contains('bio') ||
+        normalizedTopic.contains('med') ||
+        normalizedTopic.contains('cell') ||
+        normalizedPrompt.contains('cell') ||
+        normalizedPrompt.contains('organ') ||
+        normalizedPrompt.contains('protein')) {
+      domainPool = [
+        'Passive diffusion regulated by transmembrane concentration gradient',
+        'Post-transcriptional modification within the eukaryotic cell nucleus',
+        'Enzymatic inhibition via allosteric binding and conformation shift',
+        'Membrane repolarization via voltage-gated potassium ion efflux',
+        'Signal transduction pathway mediated by cyclic AMP second messengers',
+        'Active transport catalyzed by transmembrane ATPase pumps',
+        'Phosphorylation cascade initiated by transmembrane receptor kinases',
+      ];
+    } else if (normalizedTopic.contains('phys') ||
+        normalizedTopic.contains('chem') ||
+        normalizedTopic.contains('thermo') ||
+        normalizedTopic.contains('force') ||
+        normalizedPrompt.contains('energy') ||
+        normalizedPrompt.contains('law') ||
+        normalizedPrompt.contains('motion')) {
+      domainPool = [
+        'Conservation of angular momentum in an isolated reference frame',
+        'Second law of thermodynamics operating in non-equilibrium states',
+        'Rate of change of kinetic energy with respect to spatial displacement',
+        'Adiabatic expansion occurring strictly without thermal dissipation',
+        'Dynamic equilibrium condition governed by Le Chatelier principle',
+        'Wave packet dispersion through an anisotropic transmission medium',
+        'Induced electromotive force opposing the change in magnetic flux',
+      ];
+    } else if (normalizedTopic.contains('math') ||
+        normalizedTopic.contains('calc') ||
+        normalizedTopic.contains('comp') ||
+        normalizedTopic.contains('code') ||
+        normalizedTopic.contains('data') ||
+        normalizedPrompt.contains('function') ||
+        normalizedPrompt.contains('matrix') ||
+        normalizedPrompt.contains('derivative')) {
+      domainPool = [
+        'Logarithmic traversal over a balanced binary search tree',
+        'Deterministic finite-state automaton transition under input tape',
+        'Idempotent transactional mutation with linearizable consistency',
+        'Asynchronous non-blocking event loop dispatch with bounded priority queue',
+        'Polynomial-time reduction to an equivalent canonical decision problem',
+        'Orthogonal projection onto the invariant subspace of the transformation',
+        'Uniform convergence of sequence governed by the Cauchy criterion',
+      ];
+    } else if (normalizedTopic.contains('econ') ||
+        normalizedTopic.contains('bus') ||
+        normalizedTopic.contains('fin') ||
+        normalizedTopic.contains('law') ||
+        normalizedPrompt.contains('market') ||
+        normalizedPrompt.contains('cost') ||
+        normalizedPrompt.contains('price')) {
+      domainPool = [
+        'Diminishing marginal returns in a competitive market equilibrium',
+        'Statutory interpretation adhering strictly to the literal rule',
+        'Opportunity cost of capital allocation under budget constraints',
+        'Institutional checks and balances within decentralized governance',
+        'Inelastic consumer demand curve with monotonic substitution',
+        'Counter-cyclical fiscal stimulus dampened by interest rate volatility',
+      ];
+    } else {
+      domainPool = [
+        'Inverse relationship where the dependent variable decreases monotonically',
+        'Static equilibrium maintained without external energy dissipation',
+        'Complementary state governed strictly by initial boundary conditions',
+        'Dynamic steady-state observed predominantly in open thermodynamic systems',
+        'Differential rate of change evaluated at asymptotic boundary limits',
+        'Homogeneous distribution across the entire domain of observation',
+      ];
     }
-    return list;
+
+    final pool = domainPool
+        .where(
+          (d) =>
+              d.toLowerCase() != normalizedAns &&
+              d.toLowerCase() != normalizedPrompt,
+        )
+        .toList();
+
+    final rand = Random((prompt.hashCode ^ correctAnswer.hashCode).abs());
+    pool.shuffle(rand);
+
+    final selected = <String>[];
+    for (final distractor in pool) {
+      if (selected.length >= count) break;
+      if (!selected.contains(distractor)) {
+        selected.add(distractor);
+      }
+    }
+
+    var idx = 1;
+    while (selected.length < count) {
+      final fallback =
+          'Contrasting condition $idx: inverted boundary state without external perturbation';
+      if (!selected.contains(fallback)) {
+        selected.add(fallback);
+      }
+      idx++;
+    }
+
+    return selected;
   }
 }

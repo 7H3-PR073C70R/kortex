@@ -20,15 +20,34 @@ void main() {
     });
 
     test(
-      'returns default STEM mathematical blocks when bytes are raw',
+      'throws OcrProcessingException when bytes are corrupted or zero-filled',
       () async {
         final emptyBytes = Uint8List.fromList([0, 0, 0, 0]);
 
-        final blocks = await client.processImageBytes(emptyBytes);
-
-        expect(blocks.length, equals(2));
-        expect(blocks.first.text, contains(r'\int_{0}^{\infty}'));
+        expect(
+          () => client.processImageBytes(emptyBytes),
+          throwsA(
+            isA<OcrProcessingException>().having(
+              (e) => e.message,
+              'message',
+              contains('Corrupted image data'),
+            ),
+          ),
+        );
       },
     );
+
+    test('throws OcrProcessingException when bytes are empty', () async {
+      expect(
+        () => client.processImageBytes(Uint8List(0)),
+        throwsA(
+          isA<OcrProcessingException>().having(
+            (e) => e.message,
+            'message',
+            contains('Empty document payload'),
+          ),
+        ),
+      );
+    });
   });
 }

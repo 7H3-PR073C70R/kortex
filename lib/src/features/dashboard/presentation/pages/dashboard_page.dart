@@ -34,17 +34,16 @@ class DashboardPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cramPlannerCubit = locator<CramPlannerCubit>();
+    unawaited(cramPlannerCubit.loadExams());
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<DashboardBloc>.value(
           value: locator<DashboardBloc>()..add(const DashboardStarted()),
         ),
-        BlocProvider<CramPlannerCubit>(
-          create: (_) {
-            final cubit = locator<CramPlannerCubit>();
-            unawaited(cubit.loadExams());
-            return cubit;
-          },
+        BlocProvider<CramPlannerCubit>.value(
+          value: cramPlannerCubit,
         ),
       ],
       child: const _DashboardView(),

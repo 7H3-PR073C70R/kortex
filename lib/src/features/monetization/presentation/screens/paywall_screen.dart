@@ -102,6 +102,15 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _handlePurchase() async {
+    final package = _selectedPackage;
+    if (package == null) {
+      context.showSnackBar(
+        message: 'Please select a subscription plan.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
     AppFeedback.medium();
     setState(() {
       _isProcessing = true;
@@ -109,22 +118,31 @@ class _PaywallScreenState extends State<PaywallScreen>
     });
 
     try {
-      if (_selectedPackage != null) {
-        await RevenueCatService.instance.purchasePackage(_selectedPackage!);
-      }
+      final success = await RevenueCatService.instance.purchasePackage(package);
 
       if (mounted) {
-        context.read<AuthBloc>().add(const AuthProfileFetchRequested());
-        context.showSnackBar(
-          message: 'Welcome to Kortexify Pro Unlimited! 🎉',
-          type: SnackBarType.success,
-        );
-        widget.onPurchaseSuccess?.call();
-        await Navigator.of(context).maybePop(true);
+        if (success) {
+          context.read<AuthBloc>().add(const AuthProfileFetchRequested());
+          context.showSnackBar(
+            message: 'Welcome to Kortexify Pro Unlimited! 🎉',
+            type: SnackBarType.success,
+          );
+          widget.onPurchaseSuccess?.call();
+          await Navigator.of(context).maybePop(true);
+        } else {
+          context.showSnackBar(
+            message: 'Purchase was cancelled or could not be completed.',
+            type: SnackBarType.error,
+          );
+        }
       }
     } on Object catch (e) {
       if (mounted) {
         setState(() => _errorMessage = e.toString());
+        context.showSnackBar(
+          message: 'Purchase failed: $e',
+          type: SnackBarType.error,
+        );
       }
     } finally {
       if (mounted) {
