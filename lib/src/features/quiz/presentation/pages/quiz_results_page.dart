@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -240,6 +241,14 @@ class QuizResultsPage extends StatelessWidget {
 
   Future<void> _handlePracticeWeakFlashcards(BuildContext context) async {
     unawaited(HapticFeedback.lightImpact());
+
+    if (locator.isRegistered<SubscriptionGuard>()) {
+      final isPro = await locator<SubscriptionGuard>().requirePro(
+        context,
+        featureName: 'AI Exam Weakness Remediation',
+      );
+      if (!isPro || !context.mounted) return;
+    }
 
     // Prioritize questions that were answered incorrectly; fallback to all questions
     final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();

@@ -24,4 +24,7 @@ class PrefKeys {
   static const String syllabotSpeechRate = '__kortex_syllabot_speech_rate__';
   static const String pastQuestionBookmarks =
       '__kortex_past_question_bookmarks__';
+  static const String isProSubscriber = '__kortex_is_pro_subscriber__';
+  static const String dailyUploadCount = '__kortex_daily_upload_count__';
+  static const String lastUploadDate = '__kortex_last_upload_date__';
 }

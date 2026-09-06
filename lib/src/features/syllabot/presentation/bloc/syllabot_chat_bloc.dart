@@ -4,6 +4,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
@@ -58,6 +59,13 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   ) async {
     await _streamSubscription?.cancel();
 
+    final isPro = locator.isRegistered<SubscriptionGuard>() &&
+        locator<SubscriptionGuard>().canAccessCloudAi();
+    final effectiveEngine =
+        (!isPro && event.engineType == ExecutionEngineType.cloudRemote)
+            ? ExecutionEngineType.localOnDevice
+            : event.engineType;
+
     final effectiveSessionId = event.sessionId.isNotEmpty
         ? event.sessionId
         : (state.sessionId.isNotEmpty ? state.sessionId : UuidUtils.generate());
@@ -68,12 +76,12 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       sender: MessageSender.user,
       text: event.prompt,
       timestamp: DateTime.now(),
-      engineType: event.engineType,
+      engineType: effectiveEngine,
     );
 
     final updatedMessages = [...state.messages, userMessage];
 
-    final isOffline = event.engineType == ExecutionEngineType.localOnDevice;
+    final isOffline = effectiveEngine == ExecutionEngineType.localOnDevice;
 
     // Automatically create and register conversation session if starting new dialogue
     if (state.messages.isEmpty) {
@@ -134,7 +142,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       prompt: event.prompt,
       sessionId: effectiveSessionId,
       socraticMode: event.socraticMode,
-      preferredEngine: event.engineType,
+      preferredEngine: effectiveEngine,
       contextHistory: contextWithRag,
     );
 

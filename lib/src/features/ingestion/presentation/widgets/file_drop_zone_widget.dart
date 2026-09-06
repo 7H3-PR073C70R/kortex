@@ -17,6 +17,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -127,6 +128,74 @@ class FileDropZoneWidget extends HookWidget {
         ),
         content: Text(
           'The selected file "$filename" is $sizeMb MB, which exceeds the 50MB free tier limit.\n\nUpgrade to Kortexify Pro to upload documents up to 200MB with unlimited AI flashcard synthesis.',
+          style: typography.callout.regular.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(
+              'Dismiss',
+              style: TextStyle(color: colors.textSecondary),
+            ),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.star_rounded, size: 18),
+            label: const Text('Upgrade Tier'),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              unawaited(
+                context.router.push(PaywallRoute()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDailyLimitDialog(BuildContext context) async {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: colors.surfacePrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: colors.primary.withAlpha(60)),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colors.warning.withAlpha(30),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.hourglass_top_rounded,
+                color: colors.warning,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Daily Limit Reached',
+                style: typography.title3.bold.copyWith(color: colors.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'You have reached your free daily limit of 3 document uploads.\n\nUpgrade to Kortexify Pro for unlimited document uploads, 200MB file limit, and high-speed cloud AI card generation.',
           style: typography.callout.regular.copyWith(color: colors.textSecondary),
         ),
         actions: [
@@ -303,8 +372,17 @@ class FileDropZoneWidget extends HookWidget {
         final doc = await filePickerService.pickStudyDocument();
 
         if (doc != null && doc.bytes.isNotEmpty) {
-          // 1. 50MB Limit Enforcement (Item 9)
-          if (doc.bytes.lengthInBytes > 50 * 1024 * 1024) {
+          final guard = locator.isRegistered<SubscriptionGuard>()
+              ? locator<SubscriptionGuard>()
+              : null;
+          final isPro = guard?.isPro ?? false;
+
+          // 1. File Limit Enforcement (50MB Free, 200MB Pro)
+          final maxBytes = isPro
+              ? SubscriptionGuard.proMaxSizeBytes
+              : SubscriptionGuard.freeMaxSizeBytes;
+
+          if (doc.bytes.lengthInBytes > maxBytes) {
             if (context.mounted) {
               await _show50MbUpgradeDialog(
                 context,
@@ -315,7 +393,19 @@ class FileDropZoneWidget extends HookWidget {
             return;
           }
 
-          // 2. Document Deduplication Check (Item 7)
+          // 2. Daily Document Upload Limit (Free: 3/day, Pro: Unlimited)
+          if (!isPro &&
+              guard != null &&
+              !guard.canUploadDocument(
+                fileSizeBytes: doc.bytes.lengthInBytes,
+              )) {
+            if (context.mounted) {
+              await _showDailyLimitDialog(context);
+            }
+            return;
+          }
+
+          // 3. Document Deduplication Check (Item 7)
           final existingDeck = _checkExistingExtractedDeck(
             doc.name,
             doc.bytes,
@@ -326,6 +416,7 @@ class FileDropZoneWidget extends HookWidget {
               deckTitle: existingDeck['deckTitle']!,
               deckId: existingDeck['deckId']!,
               onReExtract: () {
+                unawaited(guard?.recordDocumentUpload());
                 onFilePicked(
                   filename: doc.name,
                   fileType: doc.extension,
@@ -335,6 +426,8 @@ class FileDropZoneWidget extends HookWidget {
             );
             return;
           }
+
+          unawaited(guard?.recordDocumentUpload());
 
           onFilePicked(
             filename: doc.name,

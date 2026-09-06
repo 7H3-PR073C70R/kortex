@@ -108,6 +108,7 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/controllers/onboarding_stream_controller.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source.dart';

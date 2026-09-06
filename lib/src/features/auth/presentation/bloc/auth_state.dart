@@ -45,6 +45,7 @@ class AuthState extends Equatable {
       sessionStatus == AuthSessionStatus.authenticatedNeedsOnboarding;
   bool get isResetSent => status == AuthStatus.resetSent;
   bool get requiresOtp => status == AuthStatus.needsEmailVerification;
+  bool get isPro => userProfile?.isPro ?? false;
 
   AuthState copyWith({
     AuthStatus? status,

@@ -148,3 +148,13 @@ class AuthStreakIncremented extends AuthEvent {
 class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();
 }
+
+/// Dispatched when RevenueCat or local purchase updates Pro subscription status.
+class AuthSubscriptionUpdated extends AuthEvent {
+  const AuthSubscriptionUpdated({required this.isPro});
+
+  final bool isPro;
+
+  @override
+  List<Object?> get props => [isPro];
+}

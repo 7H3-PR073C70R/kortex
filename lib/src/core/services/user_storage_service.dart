@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 
 abstract class UserStorageService {
@@ -21,6 +22,10 @@ abstract class UserStorageService {
   String? getUserDisplayName();
 
   String? getUserAvatarUrl();
+
+  Future<void> saveProStatus({required bool isPro});
+
+  bool isProSubscriber();
 
   void clearStorage();
 }
@@ -139,8 +144,35 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
+  Future<void> saveProStatus({required bool isPro}) async {
+    try {
+      await _localStorageService.savePreference(
+        key: PrefKeys.isProSubscriber,
+        data: isPro ? 'true' : 'false',
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  @override
+  bool isProSubscriber() {
+    try {
+      final value = _localStorageService.getPreference(
+        key: PrefKeys.isProSubscriber,
+      );
+      return value == 'true';
+    } on Object {
+      return false;
+    }
+  }
+
+  @override
   void clearStorage() {
     unawaited(_localStorageService.deletePreference(key: _tokenKey));
     unawaited(_localStorageService.deletePreference(key: _refreshTokenKey));
+    unawaited(
+      _localStorageService.deletePreference(key: PrefKeys.isProSubscriber),
+    );
   }
 }

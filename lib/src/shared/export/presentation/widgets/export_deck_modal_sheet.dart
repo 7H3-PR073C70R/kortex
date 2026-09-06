@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/services/anki_export_service.dart';
 import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
@@ -46,6 +48,14 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
   String? _exportMessage;
 
   Future<void> _exportAnki() async {
+    if (locator.isRegistered<SubscriptionGuard>()) {
+      final canExport = await locator<SubscriptionGuard>().requirePro(
+        context,
+        featureName: 'Anki Deck Export',
+      );
+      if (!canExport || !mounted) return;
+    }
+
     setState(() {
       _isExporting = true;
       _exportMessage = 'Formatting Anki package...';
@@ -81,6 +91,14 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
   }
 
   Future<void> _exportPdf() async {
+    if (locator.isRegistered<SubscriptionGuard>()) {
+      final canExport = await locator<SubscriptionGuard>().requirePro(
+        context,
+        featureName: 'Printable PDF Cram Sheets',
+      );
+      if (!canExport || !mounted) return;
+    }
+
     setState(() {
       _isExporting = true;
       _exportMessage = 'Rendering printable flashcards PDF...';

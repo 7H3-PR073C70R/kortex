@@ -29,6 +29,12 @@ void _initServices() {
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
     )
+    ..registerLazySingleton<SubscriptionGuard>(
+      () => SubscriptionGuard(
+        userStorageService: locator<UserStorageService>(),
+        localStorageService: locator<LocalStorageService>(),
+      ),
+    )
     ..registerLazySingleton<UserActivityService>(
       () => UserActivityServiceImpl(locator<LocalStorageService>()),
     )

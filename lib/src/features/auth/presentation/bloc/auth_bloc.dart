@@ -5,6 +5,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
@@ -54,6 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthDisplayNameUpdated>(_onDisplayNameUpdated);
     on<AuthStreakIncremented>(_onStreakIncremented);
     on<AuthSignOutRequested>(_onSignOutRequested);
+    on<AuthSubscriptionUpdated>(_onSubscriptionUpdated);
 
     _authSubscription = _observeAuthStateUseCase().listen((status) {
       if (!isClosed) {
@@ -98,10 +100,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
 
+        final isCachedPro = locator.isRegistered<UserStorageService>() &&
+            locator<UserStorageService>().isProSubscriber();
         final isOnboarded = _computeIsOnboarded(profile);
-        final effectiveProfile = isOnboarded && !profile.isOnboarded
+        var effectiveProfile = isOnboarded && !profile.isOnboarded
             ? profile.copyWith(isOnboarded: true)
             : profile;
+        if (isCachedPro && effectiveProfile.subscriptionTier.toLowerCase() != 'pro') {
+          effectiveProfile = effectiveProfile.copyWith(subscriptionTier: 'pro');
+        }
         if (isOnboarded && !profile.isOnboarded) {
           try {
             unawaited(
@@ -127,7 +134,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
         if (profile.id.isNotEmpty) {
           try {
-            unawaited(RevenueCatService.instance.init(profile.id));
+            unawaited(
+              RevenueCatService.instance.init(profile.id).then((_) {
+                unawaited(RevenueCatService.instance.syncCustomerEntitlements());
+              }),
+            );
           } on Object catch (_) {}
         }
       },
@@ -427,6 +438,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
         } on Object catch (_) {}
 
+        final isCachedPro = locator.isRegistered<UserStorageService>() &&
+            locator<UserStorageService>().isProSubscriber();
+        if (isCachedPro && mergedProfile.subscriptionTier.toLowerCase() != 'pro') {
+          mergedProfile = mergedProfile.copyWith(subscriptionTier: 'pro');
+        }
+
         final isOnboarded = _computeIsOnboarded(mergedProfile);
         if (isOnboarded && !mergedProfile.isOnboarded) {
           mergedProfile = mergedProfile.copyWith(isOnboarded: true);
@@ -456,7 +473,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } on Object catch (_) {}
         if (profile.id.isNotEmpty) {
           try {
-            unawaited(RevenueCatService.instance.init(profile.id));
+            unawaited(
+              RevenueCatService.instance.init(profile.id).then((_) {
+                unawaited(RevenueCatService.instance.syncCustomerEntitlements());
+              }),
+            );
           } on Object catch (_) {}
         }
       },
@@ -588,6 +609,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         status: AuthStatus.unauthenticated,
       ),
     );
+  }
+
+  Future<void> _onSubscriptionUpdated(
+    AuthSubscriptionUpdated event,
+    Emitter<AuthState> emit,
+  ) async {
+    final updatedTier = event.isPro ? 'pro' : 'free';
+    if (state.userProfile != null) {
+      emit(
+        state.copyWith(
+          userProfile: state.userProfile!.copyWith(
+            subscriptionTier: updatedTier,
+          ),
+        ),
+      );
+    }
   }
 
   @override

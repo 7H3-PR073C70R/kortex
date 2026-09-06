@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/offline_ai/offline_ai.dart';
 
 enum StudyEngineExecutionMode {
@@ -74,26 +76,34 @@ class StudyEngineRouter {
     LocalInferenceIsolateManager? isolateManager,
     ExperimentalOfflineGuard? offlineGuard,
     Dio? dio,
+    SubscriptionGuard? subscriptionGuard,
   }) : _connectivity = connectivity ?? Connectivity(),
        _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
        _offlineGuard = offlineGuard ??
            ExperimentalOfflineGuard(connectivity: connectivity),
-       _dio = dio ?? Dio();
+       _dio = dio ?? Dio(),
+       _subscriptionGuard = subscriptionGuard;
 
   final Connectivity _connectivity;
   final OfflineModelInstaller _modelInstaller;
   final LocalInferenceIsolateManager _isolateManager;
   final ExperimentalOfflineGuard _offlineGuard;
   final Dio _dio;
+  final SubscriptionGuard? _subscriptionGuard;
 
   static const String offlineModelMissingPrompt =
       'Offline mode requires the offline model pack. '
       'Download it on Wi-Fi to study offline.';
 
+  static const String cloudAiRequiresProPrompt =
+      'Cloud AI synthesis requires Kortexify Pro. '
+      'Download the free offline model pack on Wi-Fi for 100% free on-device '
+      'flashcard generation, or upgrade to Pro for cloud AI.';
+
   /// Inspects connectivity and model presence to determine active execution
   /// mode.
-  Future<StudyEngineExecutionMode> getExecutionMode() async {
+  Future<StudyEngineExecutionMode> getExecutionMode({bool? isPro}) async {
     final connectivityList = await _connectivity.checkConnectivity();
     final isOnline = connectivityList.any(
       (c) =>
@@ -102,7 +112,18 @@ class StudyEngineRouter {
           c == ConnectivityResult.ethernet,
     );
 
-    if (isOnline) {
+    final bool userHasPro;
+    if (isPro != null) {
+      userHasPro = isPro;
+    } else if (_subscriptionGuard != null) {
+      userHasPro = _subscriptionGuard.canAccessCloudAi();
+    } else if (locator.isRegistered<SubscriptionGuard>()) {
+      userHasPro = locator<SubscriptionGuard>().canAccessCloudAi();
+    } else {
+      userHasPro = true;
+    }
+
+    if (isOnline && userHasPro) {
       return StudyEngineExecutionMode.cloudRemote;
     }
 
@@ -181,12 +202,23 @@ class StudyEngineRouter {
       );
     }
 
-    debugPrint('[StudyEngineRouter] Offline without model: Prompting user...');
-    return const StudyPackResult(
+    debugPrint('[StudyEngineRouter] Engine unavailable: Prompting user...');
+    final connectivityList = await _connectivity.checkConnectivity();
+    final isOnline = connectivityList.any(
+      (c) =>
+          c == ConnectivityResult.wifi ||
+          c == ConnectivityResult.mobile ||
+          c == ConnectivityResult.ethernet,
+    );
+    final userMessage = isOnline
+        ? cloudAiRequiresProPrompt
+        : offlineModelMissingPrompt;
+
+    return StudyPackResult(
       cards: [],
       executionMode: StudyEngineExecutionMode.unavailable,
       isOfflineModelMissing: true,
-      userMessage: offlineModelMissingPrompt,
+      userMessage: userMessage,
     );
   }
 

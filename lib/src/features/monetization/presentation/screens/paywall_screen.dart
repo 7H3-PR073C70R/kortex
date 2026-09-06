@@ -148,6 +148,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
       if (mounted) {
         if (success) {
+          context.read<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
           context.read<AuthBloc>().add(const AuthProfileFetchRequested());
           context.showSnackBar(
             message: 'Welcome to Kortexify Pro Unlimited! 🎉',
@@ -187,6 +188,7 @@ class _PaywallScreenState extends State<PaywallScreen>
         setState(() => _isProcessing = false);
         if (success) {
           if (mounted) {
+            context.read<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
             context.read<AuthBloc>().add(const AuthProfileFetchRequested());
             context.showSnackBar(
               message: context.l10n.paywallRestoreSuccess,

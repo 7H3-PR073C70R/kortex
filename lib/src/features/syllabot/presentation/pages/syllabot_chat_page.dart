@@ -8,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -16,6 +17,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
@@ -58,12 +60,16 @@ class SyllabotChatPage extends HookWidget {
     useEffect(() {
       if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
         final sid = UuidUtils.generate();
+        final isPro = locator.isRegistered<SubscriptionGuard>() &&
+            locator<SubscriptionGuard>().canAccessCloudAi();
         bloc.add(
           SubmitPromptEvent(
             prompt: initialPrompt!.trim(),
             sessionId: sid,
             socraticMode: initialMode ?? bloc.state.socraticMode,
-            engineType: ExecutionEngineType.cloudRemote,
+            engineType: isPro
+                ? ExecutionEngineType.cloudRemote
+                : ExecutionEngineType.localOnDevice,
           ),
         );
       }
@@ -148,6 +154,30 @@ class _SyllabotChatView extends HookWidget {
       ExecutionEngineType targetEngine,
     ) {
       if (targetEngine == ExecutionEngineType.cloudRemote) {
+        final isPro = locator.isRegistered<SubscriptionGuard>() &&
+            locator<SubscriptionGuard>().canAccessCloudAi();
+        if (!isPro) {
+          AppFeedback.medium();
+          if (locator.isRegistered<SubscriptionGuard>()) {
+            unawaited(
+              locator<SubscriptionGuard>()
+                  .requirePro(pageContext, featureName: 'Cloud AI Reasoning')
+                  .then((upgraded) {
+                if (upgraded && pageContext.mounted) {
+                  pageContext.read<SyllabotChatBloc>().add(
+                    const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+                  );
+                  pageContext.showSnackBar(
+                    message: l10n.engineCloudSupabase,
+                    type: SnackBarType.success,
+                  );
+                }
+              }),
+            );
+          }
+          return;
+        }
+
         pageContext.read<SyllabotChatBloc>().add(
           const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
         );
