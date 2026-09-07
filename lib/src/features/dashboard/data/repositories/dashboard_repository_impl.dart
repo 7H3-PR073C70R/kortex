@@ -126,4 +126,12 @@ class DashboardRepositoryImpl implements DashboardRepository {
     clearFeedCache();
     return remoteDataSource.deleteCuratedCourse(courseId).makeRequest();
   }
+
+  @override
+  Future<Either<Failure, List<CuratedCourseEntity>>> getUserCuratedCourses() {
+    return remoteDataSource
+        .getUserCuratedCourses()
+        .then((models) => models.map((e) => e.toEntity()).toList())
+        .makeRequest();
+  }
 }

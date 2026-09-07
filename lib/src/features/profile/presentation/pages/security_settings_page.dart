@@ -152,6 +152,13 @@ class SecuritySettingsPage extends HookWidget {
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        ?currentChild,
+                      ],
+                    ),
                     child: selectedTabIndex.value == 0
                         ? _buildSecurityTab(
                             context: context,
@@ -928,7 +935,7 @@ class SecuritySettingsPage extends HookWidget {
   }) {
     return SingleChildScrollView(
       key: const ValueKey('account_data_tab'),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 36),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

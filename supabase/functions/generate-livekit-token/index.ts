@@ -37,8 +37,14 @@ serve(async (req: Request) => {
       );
     }
 
-    const apiKey = Deno.env.get("LIVEKIT_API_KEY") || Deno.env.get("LIVEKIT_KEY") || "devkey";
-    const apiSecret = Deno.env.get("LIVEKIT_API_SECRET") || Deno.env.get("LIVEKIT_SECRET") || "secret";
+    const apiKey =
+      Deno.env.get("LIVEKIT_API_KEY") ||
+      Deno.env.get("LIVEKIT_KEY") ||
+      "API4koii3DrgtqG";
+    const apiSecret =
+      Deno.env.get("LIVEKIT_API_SECRET") ||
+      Deno.env.get("LIVEKIT_SECRET") ||
+      "R6eBpJNJqD4nnCzDxAJyn7fFQPAb2Hw0MkemmBHgDreD";
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,

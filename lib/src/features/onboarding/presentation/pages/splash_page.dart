@@ -1,18 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -176,8 +179,44 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       );
     }
 
-    final isCalibrated =
-        serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
+    // 4. Remote/local curated courses check (for new devices or restored sessions)
+    var coursesSayOnboarded = false;
+    if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
+      try {
+        final storage = locator<LocalStorageService>();
+        final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+        if (rawCourses != null && rawCourses.isNotEmpty) {
+          final list = jsonDecode(rawCourses) as List<dynamic>;
+          if (list.isNotEmpty) coursesSayOnboarded = true;
+        }
+      } on Object catch (_) {}
+
+      if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
+        try {
+          final dashRepo = locator<DashboardRepository>();
+          final coursesRes = await dashRepo.getUserCuratedCourses();
+          coursesSayOnboarded =
+              coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+        } on Object catch (_) {}
+      }
+    }
+
+    final isCalibrated = serverSaysOnboarded ||
+        localSaysOnboarded ||
+        calibSaysOnboarded ||
+        coursesSayOnboarded;
+
+    if (isCalibrated) {
+      try {
+        final storage = locator<LocalStorageService>();
+        unawaited(
+          storage.savePreference(
+            key: PrefKeys.hasCompletedOnboarding,
+            data: 'true',
+          ),
+        );
+      } on Object catch (_) {}
+    }
 
     // Sync AuthBloc session status immediately before navigation so guards agree
     authBloc

@@ -119,15 +119,15 @@ class ProfileApiClient {
     );
   }
 
-  /// Lists active MFA factors via Auth REST API.
+  /// Lists active MFA factors via Auth REST API (user endpoint returns factors list).
   Future<List<MfaFactorModel>> listMfaFactors() async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '${AppApiEndpoint.baseUri}/auth/v1/factors',
+      final response = await _dio.get<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}/auth/v1/user',
       );
-      final list = response.data;
-      if (list == null) return const [];
-      return list
+      final factors = response.data?['factors'] as List<dynamic>?;
+      if (factors == null) return const [];
+      return factors
           .whereType<Map<String, dynamic>>()
           .map(MfaFactorModel.fromJson)
           .toList();

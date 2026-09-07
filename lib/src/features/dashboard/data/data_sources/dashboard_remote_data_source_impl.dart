@@ -152,7 +152,24 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
     try {
       var feed = await _client.getDashboardFeed(const {});
-      if (feed.curatedCourses.isEmpty && localCourses.isNotEmpty) {
+      if (feed.curatedCourses.isNotEmpty) {
+        try {
+          final jsonStr =
+              jsonEncode(feed.curatedCourses.map((c) => c.toJson()).toList());
+          unawaited(
+            _storage?.savePreference(
+              key: PrefKeys.userCuratedCourses,
+              data: jsonStr,
+            ),
+          );
+          unawaited(
+            _storage?.savePreference(
+              key: PrefKeys.hasCompletedOnboarding,
+              data: 'true',
+            ),
+          );
+        } on Object catch (_) {}
+      } else if (localCourses.isNotEmpty) {
         feed = feed.copyWith(curatedCourses: localCourses);
       }
       if (feed.dueStudyDecks.isNotEmpty) {
@@ -199,6 +216,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   @override
+  Future<List<CuratedCourseModel>> getUserCuratedCourses() async {
+    try {
+      final remoteCourses = await _client.getUserCuratedCourses();
+      if (remoteCourses.isNotEmpty) {
+        final jsonStr =
+            jsonEncode(remoteCourses.map((c) => c.toJson()).toList());
+        await _storage?.savePreference(
+          key: PrefKeys.userCuratedCourses,
+          data: jsonStr,
+        );
+        await _storage?.savePreference(
+          key: PrefKeys.hasCompletedOnboarding,
+          data: 'true',
+        );
+        return remoteCourses;
+      }
+    } on Object catch (_) {}
+
+    return _getLocallySavedCourses();
+  }
+
+  @override
   Future<void> syncUserCourses(List<Map<String, dynamic>> courses) async {
     // 1. Instantly persist to Hive local storage for resilient offline/restart capability
     try {
@@ -214,11 +253,11 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           courseCode: (m['courseCode'] as String?) ?? catalogMatch?.courseCode ?? 'CRS',
           title: (m['title'] as String?) ?? catalogMatch?.title ?? '',
           department: (m['department'] as String?) ?? catalogMatch?.department ?? 'General Studies',
-          totalMaterials: catalogMatch?.totalMaterials ?? 15,
-          hasActivePastPapers: catalogMatch?.hasActivePastPapers ?? true,
-          iconName: catalogMatch?.iconName ?? 'school',
-          colorHex: catalogMatch?.colorHex ?? '#6366F1',
-          syllabusCoverage: catalogMatch?.syllabusCoverage ?? 0.70,
+          totalMaterials: (m['totalMaterials'] as int?) ?? catalogMatch?.totalMaterials ?? 15,
+          hasActivePastPapers: (m['hasActivePastPapers'] as bool?) ?? catalogMatch?.hasActivePastPapers ?? true,
+          iconName: (m['iconName'] as String?) ?? catalogMatch?.iconName ?? 'school',
+          colorHex: (m['colorHex'] as String?) ?? catalogMatch?.colorHex ?? '#6366F1',
+          syllabusCoverage: (m['syllabusCoverage'] as num?)?.toDouble() ?? catalogMatch?.syllabusCoverage ?? 0.70,
         );
       }).toList();
 
@@ -227,6 +266,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         key: PrefKeys.userCuratedCourses,
         data: jsonStr,
       );
+      if (models.isNotEmpty) {
+        await _storage?.savePreference(
+          key: PrefKeys.hasCompletedOnboarding,
+          data: 'true',
+        );
+      }
     } on Object catch (_) {}
 
     // 2. Sync to Supabase RPC

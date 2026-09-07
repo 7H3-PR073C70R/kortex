@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -19,8 +23,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -644,10 +647,44 @@ class AuthChatView extends HookWidget {
               (profile) => profile?.isCalibrated ?? false,
             );
           }
-          final isCalibrated =
-              serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
+
+          // Remote/local curated courses check for new device logins
+          var coursesSayOnboarded = false;
+          if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
+            try {
+              final storage = locator<LocalStorageService>();
+              final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+              if (rawCourses != null && rawCourses.isNotEmpty) {
+                final list = jsonDecode(rawCourses) as List<dynamic>;
+                if (list.isNotEmpty) coursesSayOnboarded = true;
+              }
+            } on Object catch (_) {}
+
+            if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
+              try {
+                final dashRepo = locator<DashboardRepository>();
+                final coursesRes = await dashRepo.getUserCuratedCourses();
+                coursesSayOnboarded =
+                    coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+              } on Object catch (_) {}
+            }
+          }
+
+          final isCalibrated = serverSaysOnboarded ||
+              localSaysOnboarded ||
+              calibSaysOnboarded ||
+              coursesSayOnboarded;
 
           if (isCalibrated) {
+            try {
+              final storage = locator<LocalStorageService>();
+              unawaited(
+                storage.savePreference(
+                  key: PrefKeys.hasCompletedOnboarding,
+                  data: 'true',
+                ),
+              );
+            } on Object catch (_) {}
             addBotMessage(
               '✨ Welcome back, **$name**! Redirecting to your Dashboard...',
             );

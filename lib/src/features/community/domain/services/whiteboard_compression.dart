@@ -15,11 +15,11 @@ class WhiteboardCompression {
     if (points.length <= 2) return points;
 
     // Find the point with the maximum distance from line between first and last point
-    double dmax = 0.0;
-    int index = 0;
+    double dmax = 0;
+    var index = 0;
     final end = points.length - 1;
 
-    for (int i = 1; i < end; i++) {
+    for (var i = 1; i < end; i++) {
       final d = _perpendicularDistance(points[i], points[0], points[end]);
       if (d > dmax) {
         index = i;
@@ -79,13 +79,13 @@ class WhiteboardCompression {
     if (points.isEmpty) return const [];
 
     final encoded = <double>[];
-    double prevX = _round(points[0].x);
-    double prevY = _round(points[0].y);
+    var prevX = _round(points[0].x);
+    var prevY = _round(points[0].y);
 
     encoded.add(prevX);
     encoded.add(prevY);
 
-    for (int i = 1; i < points.length; i++) {
+    for (var i = 1; i < points.length; i++) {
       final currentX = _round(points[i].x);
       final currentY = _round(points[i].y);
       final dx = _round(currentX - prevX);
@@ -106,11 +106,11 @@ class WhiteboardCompression {
     if (raw.length < 2) return const [];
 
     final points = <WhiteboardPoint>[];
-    double curX = (raw[0] as num).toDouble();
-    double curY = (raw[1] as num).toDouble();
+    var curX = (raw[0] as num).toDouble();
+    var curY = (raw[1] as num).toDouble();
     points.add(WhiteboardPoint(x: curX, y: curY));
 
-    for (int i = 2; i + 1 < raw.length; i += 2) {
+    for (var i = 2; i + 1 < raw.length; i += 2) {
       final dx = (raw[i] as num).toDouble();
       final dy = (raw[i + 1] as num).toDouble();
       curX = _round(curX + dx);

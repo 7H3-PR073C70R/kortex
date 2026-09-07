@@ -195,7 +195,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
         final entries = await db.getSyllabotMessagesForSession(sessionId);
         if (entries.isNotEmpty) {
           return entries.map((e) {
-            List<String> latex = const [];
+            var latex = const <String>[];
             if (e.latexSnippets != null && e.latexSnippets!.isNotEmpty) {
               try {
                 latex = (jsonDecode(e.latexSnippets!) as List<dynamic>)

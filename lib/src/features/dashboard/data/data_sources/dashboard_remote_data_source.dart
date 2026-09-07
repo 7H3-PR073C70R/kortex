@@ -20,6 +20,8 @@ abstract class DashboardRemoteDataSource {
     required List<String> subjects,
   });
 
+  Future<List<CuratedCourseModel>> getUserCuratedCourses();
+
   Future<void> deleteCuratedCourse(String courseId);
 
   Future<void> deleteAllCuratedCourses();

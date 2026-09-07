@@ -42,4 +42,7 @@ abstract class DashboardRepository {
 
   /// Deletes a specific curated course by ID.
   Future<Either<Failure, void>> deleteCuratedCourse(String courseId);
+
+  /// Fetches the user's enrolled curated courses from remote backend (with local fallback).
+  Future<Either<Failure, List<CuratedCourseEntity>>> getUserCuratedCourses();
 }

@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/domain/use_cases/delete_curated_course_use_case.dart';
@@ -150,6 +156,38 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
       ),
       (_) {
         dashboardBloc?.add(const DashboardRefreshed());
+
+        if (coursesToSync.isNotEmpty) {
+          try {
+            final storage = locator<LocalStorageService>();
+            unawaited(
+              storage.savePreference(
+                key: PrefKeys.hasCompletedOnboarding,
+                data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
+
+          try {
+            final authBloc = locator<AuthBloc>();
+            final profile = authBloc.state.userProfile;
+            if (profile != null && !profile.isOnboarded) {
+              unawaited(
+                locator<AuthRepository>().completeOnboarding(
+                  track: profile.targetTrack.isNotEmpty
+                      ? profile.targetTrack
+                      : (state.activeTrack.isNotEmpty ? state.activeTrack : 'WAEC'),
+                  dailyTarget:
+                      profile.dailyCardTarget > 0 ? profile.dailyCardTarget : 20,
+                ),
+              );
+            }
+            authBloc.add(
+              const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
+            );
+          } on Object catch (_) {}
+        }
+
         emit(state.copyWith(status: CurateCoursesStatus.success));
       },
     );

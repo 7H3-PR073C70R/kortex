@@ -73,9 +73,8 @@ void main() {
         totalCards: 100,
         masteredCards: 100,
         averageStability: 30,
-        averageDifficulty: 3.0,
+        averageDifficulty: 3,
         daysRemaining: 5,
-        totalLapses: 0,
       );
       expect(highScore > 90.0, isTrue);
 
@@ -84,7 +83,7 @@ void main() {
         totalCards: 100,
         masteredCards: 0,
         averageStability: 0,
-        averageDifficulty: 8.0,
+        averageDifficulty: 8,
         daysRemaining: 5,
         totalLapses: 20,
       );

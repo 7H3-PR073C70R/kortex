@@ -14,7 +14,7 @@ void main() {
         const WhiteboardPoint(x: 50, y: 50),
       ];
 
-      final simplified = WhiteboardCompression.simplify(straightLine, epsilon: 1.0);
+      final simplified = WhiteboardCompression.simplify(straightLine, epsilon: 1);
       expect(simplified.length, equals(2));
       expect(simplified.first.x, equals(0));
       expect(simplified.last.x, equals(50));
@@ -29,7 +29,7 @@ void main() {
         const WhiteboardPoint(x: 20, y: 40),
       ];
 
-      final simplified = WhiteboardCompression.simplify(cornerStroke, epsilon: 1.0);
+      final simplified = WhiteboardCompression.simplify(cornerStroke, epsilon: 1);
       expect(simplified.length, equals(3));
       expect(simplified[0].x, equals(0));
       expect(simplified[1].x, equals(20));
@@ -42,7 +42,7 @@ void main() {
         const WhiteboardPoint(x: 105.4, y: 200.2),
         const WhiteboardPoint(x: 110.8, y: 205.7),
         const WhiteboardPoint(x: 115.3, y: 210.1),
-        const WhiteboardPoint(x: 120.0, y: 215.0),
+        const WhiteboardPoint(x: 120, y: 215),
       ];
 
       final deltas = WhiteboardCompression.encodeDelta(points);
@@ -53,23 +53,23 @@ void main() {
 
       final reconstructed = WhiteboardCompression.decodeDelta(deltas);
       expect(reconstructed.length, equals(points.length));
-      for (int i = 0; i < points.length; i++) {
+      for (var i = 0; i < points.length; i++) {
         expect((reconstructed[i].x - points[i].x).abs() < 0.15, isTrue);
         expect((reconstructed[i].y - points[i].y).abs() < 0.15, isTrue);
       }
     });
 
     test('WhiteboardStroke serializes to delta-encoded format and deserializes faithfully', () {
-      final stroke = WhiteboardStroke(
+      const stroke = WhiteboardStroke(
         id: 'stroke_1',
         userId: 'user_test',
         userName: 'Scholar Marie',
         colorHex: 0xFFFFFFFF,
-        strokeWidth: 4.0,
-        points: const [
-          WhiteboardPoint(x: 10.0, y: 20.0),
-          WhiteboardPoint(x: 15.0, y: 25.0),
-          WhiteboardPoint(x: 22.0, y: 30.0),
+        strokeWidth: 4,
+        points: [
+          WhiteboardPoint(x: 10, y: 20),
+          WhiteboardPoint(x: 15, y: 25),
+          WhiteboardPoint(x: 22, y: 30),
         ],
       );
 

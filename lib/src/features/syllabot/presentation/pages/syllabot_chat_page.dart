@@ -408,7 +408,7 @@ class _SyllabotChatView extends HookWidget {
         if (state.status == SyllabotStatus.streaming) {
           scrollToBottom(animate: false);
         } else {
-          scrollToBottom(animate: true);
+          scrollToBottom();
         }
 
         if (state.generatedDeck != null) {
@@ -770,7 +770,7 @@ class _SyllabotChatView extends HookWidget {
                                   engineType: state.engineType,
                                 ),
                               );
-                              scrollToBottom(animate: true);
+                              scrollToBottom();
                             },
                           ),
                   );

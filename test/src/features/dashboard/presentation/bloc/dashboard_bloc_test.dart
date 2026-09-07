@@ -100,6 +100,11 @@ class MockDashboardRepository implements DashboardRepository {
   Future<Either<Failure, void>> deleteCuratedCourse(String courseId) async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, List<CuratedCourseEntity>>> getUserCuratedCourses() async {
+    return const Right([]);
+  }
 }
 
 void main() {

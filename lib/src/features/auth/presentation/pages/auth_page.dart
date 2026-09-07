@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -18,8 +22,7 @@ import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dar
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -141,8 +144,44 @@ class _AuthView extends HookWidget {
               );
             }
 
-            final shouldGoToMain =
-                serverSaysOnboarded || localSaysOnboarded || calibSaysOnboarded;
+            // 4. Remote/local curated courses check for new device logins
+            var coursesSayOnboarded = false;
+            if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
+              try {
+                final storage = locator<LocalStorageService>();
+                final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+                if (rawCourses != null && rawCourses.isNotEmpty) {
+                  final list = jsonDecode(rawCourses) as List<dynamic>;
+                  if (list.isNotEmpty) coursesSayOnboarded = true;
+                }
+              } on Object catch (_) {}
+
+              if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
+                try {
+                  final dashRepo = locator<DashboardRepository>();
+                  final coursesRes = await dashRepo.getUserCuratedCourses();
+                  coursesSayOnboarded =
+                      coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+                } on Object catch (_) {}
+              }
+            }
+
+            final shouldGoToMain = serverSaysOnboarded ||
+                localSaysOnboarded ||
+                calibSaysOnboarded ||
+                coursesSayOnboarded;
+
+            if (shouldGoToMain) {
+              try {
+                final storage = locator<LocalStorageService>();
+                unawaited(
+                  storage.savePreference(
+                    key: PrefKeys.hasCompletedOnboarding,
+                    data: 'true',
+                  ),
+                );
+              } on Object catch (_) {}
+            }
 
             if (context.mounted) {
               if (shouldGoToMain) {

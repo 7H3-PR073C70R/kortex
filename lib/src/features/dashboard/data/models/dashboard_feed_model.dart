@@ -26,7 +26,30 @@ abstract class CuratedCourseModel with _$CuratedCourseModel {
   const CuratedCourseModel._();
 
   factory CuratedCourseModel.fromJson(Map<String, dynamic> json) =>
-      _$CuratedCourseModelFromJson(json);
+      CuratedCourseModel(
+        id: (json['id'] as String?) ?? '',
+        courseCode:
+            (json['courseCode'] ?? json['course_code'] ?? '') as String,
+        title: (json['title'] ?? '') as String,
+        department:
+            (json['department'] ?? 'General Studies') as String,
+        totalMaterials:
+            (json['totalMaterials'] ?? json['total_materials'] as num?)?.toInt() ??
+                15,
+        hasActivePastPapers:
+            (json['hasActivePastPapers'] ?? json['has_active_past_papers'] as bool?) ??
+                true,
+        iconName:
+            (json['iconName'] ?? json['icon_name'] ?? 'school') as String,
+        colorHex:
+            (json['colorHex'] ?? json['color_hex'] ?? '#6366F1') as String,
+        pdfDownloadUrl:
+            (json['pdfDownloadUrl'] ?? json['pdf_download_url']) as String?,
+        syllabusCoverage:
+            (json['syllabusCoverage'] ?? json['syllabus_coverage'] as num?)
+                    ?.toDouble() ??
+                0.75,
+      );
 
   CuratedCourseEntity toEntity() => CuratedCourseEntity(
     id: id,

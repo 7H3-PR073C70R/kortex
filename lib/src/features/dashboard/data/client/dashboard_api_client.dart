@@ -35,4 +35,7 @@ abstract class DashboardApiClient {
   Future<HttpResponse<dynamic>> startMockExam(
     @Body() Map<String, dynamic> body,
   );
+
+  @POST(AppApiEndpoint.getUserCuratedCoursesRpc)
+  Future<List<CuratedCourseModel>> getUserCuratedCourses();
 }

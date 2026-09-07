@@ -54,8 +54,8 @@ class CramWorkloadCalculator {
     required double stability,
     required int elapsedDays,
   }) {
-    if (stability <= 0) return 0.0;
-    if (elapsedDays <= 0) return 1.0;
+    if (stability <= 0) return 0;
+    if (elapsedDays <= 0) return 1;
     return math
         .pow(1.0 + _factor * (elapsedDays / stability), -decayExponent)
         .toDouble()
@@ -69,11 +69,10 @@ class CramWorkloadCalculator {
     required int totalCards,
     required int masteredCards,
     required double averageStability,
-    double averageDifficulty = 5.0,
-    required int daysRemaining,
+    required int daysRemaining, double averageDifficulty = 5.0,
     int totalLapses = 0,
   }) {
-    if (totalCards <= 0) return 0.0;
+    if (totalCards <= 0) return 0;
 
     // 1. Coverage Component (0.0 to 1.0)
     final coverage = (masteredCards / totalCards).clamp(0.0, 1.0);

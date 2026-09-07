@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/database/app_database.dart';
@@ -62,7 +62,7 @@ void main() {
     });
 
     test('getForumPosts filters by track and sorts by createdAt desc', () async {
-      final t1 = DateTime(2026, 9, 1);
+      final t1 = DateTime(2026, 9);
       final t2 = DateTime(2026, 9, 2);
       final t3 = DateTime(2026, 9, 3);
 

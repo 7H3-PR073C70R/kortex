@@ -20,6 +20,7 @@ import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_us
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 
@@ -83,14 +84,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
 
     final profileRes = await _authRepository.getUserProfile();
-    profileRes.fold(
-      (failure) => emit(
+    await profileRes.fold(
+      (failure) async => emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
           sessionStatus: AuthSessionStatus.unauthenticated,
         ),
       ),
-      (profile) {
+      (profile) async {
         if (profile.id.isEmpty && profile.email.isEmpty) {
           emit(
             state.copyWith(
@@ -103,7 +104,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         final isCachedPro = locator.isRegistered<UserStorageService>() &&
             locator<UserStorageService>().isProSubscriber();
-        final isOnboarded = _computeIsOnboarded(profile);
+        var isOnboarded = _computeIsOnboarded(profile);
+        if (!isOnboarded && locator.isRegistered<DashboardRepository>()) {
+          try {
+            final dashRepo = locator<DashboardRepository>();
+            final coursesRes = await dashRepo.getUserCuratedCourses();
+            final hasRemoteCourses =
+                coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+            if (hasRemoteCourses) {
+              isOnboarded = true;
+            }
+          } on Object catch (_) {}
+        }
         var effectiveProfile = isOnboarded && !profile.isOnboarded
             ? profile.copyWith(isOnboarded: true)
             : profile;
@@ -181,18 +193,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
-          unawaited(
-            locator<LocalStorageService>().savePreference(
-              key: PrefKeys.isNewlyRegistered,
-              data: 'false',
-            ),
-          );
-          unawaited(
-            locator<LocalStorageService>().savePreference(
-              key: PrefKeys.hasSeenWelcomeWalkthrough,
-              data: 'true',
-            ),
-          );
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.isNewlyRegistered,
+                data: 'false',
+              ),
+            );
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.hasSeenWelcomeWalkthrough,
+                data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
           emit(
             state.copyWith(
               status: AuthStatus.authenticated,
@@ -244,17 +258,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final hasActiveSession =
               user.token != null && user.token!.trim().isNotEmpty;
           if (hasActiveSession) {
-            unawaited(
-              locator<LocalStorageService>().savePreference(
-                key: PrefKeys.isNewlyRegistered,
-                data: 'true',
-              ),
-            );
-            unawaited(
-              locator<LocalStorageService>().deletePreference(
-                key: PrefKeys.hasSeenWelcomeWalkthrough,
-              ),
-            );
+            try {
+              unawaited(
+                locator<LocalStorageService>().savePreference(
+                  key: PrefKeys.isNewlyRegistered,
+                  data: 'true',
+                ),
+              );
+              unawaited(
+                locator<LocalStorageService>().deletePreference(
+                  key: PrefKeys.hasSeenWelcomeWalkthrough,
+                ),
+              );
+            } on Object catch (_) {}
             emit(
               state.copyWith(
                 status: AuthStatus.needsOnboarding,
@@ -431,6 +447,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final map = jsonDecode(rawCalib) as Map<String, dynamic>;
         if (map['isCalibrated'] == true) return true;
       }
+      final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+      if (rawCourses != null && rawCourses.isNotEmpty) {
+        final list = jsonDecode(rawCourses) as List<dynamic>;
+        if (list.isNotEmpty) return true;
+      }
     } on Object catch (_) {}
     return false;
   }
@@ -440,9 +461,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     final res = await _authRepository.getUserProfile();
-    res.fold(
-      (_) {},
-      (profile) {
+    await res.fold(
+      (_) async {},
+      (profile) async {
         var mergedProfile = profile;
         try {
           final liveStreak = locator<UserActivityService>().getCurrentStreak();
@@ -457,7 +478,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           mergedProfile = mergedProfile.copyWith(subscriptionTier: 'pro');
         }
 
-        final isOnboarded = _computeIsOnboarded(mergedProfile);
+        var isOnboarded = _computeIsOnboarded(mergedProfile);
+        if (!isOnboarded && locator.isRegistered<DashboardRepository>()) {
+          try {
+            final dashRepo = locator<DashboardRepository>();
+            final coursesRes = await dashRepo.getUserCuratedCourses();
+            final hasRemoteCourses =
+                coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+            if (hasRemoteCourses) {
+              isOnboarded = true;
+            }
+          } on Object catch (_) {}
+        }
+
         if (isOnboarded && !mergedProfile.isOnboarded) {
           mergedProfile = mergedProfile.copyWith(isOnboarded: true);
           try {
@@ -471,18 +504,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
 
         if (isOnboarded) {
-          unawaited(
-            locator<LocalStorageService>().savePreference(
-              key: PrefKeys.isNewlyRegistered,
-              data: 'false',
-            ),
-          );
-          unawaited(
-            locator<LocalStorageService>().savePreference(
-              key: PrefKeys.hasSeenWelcomeWalkthrough,
-              data: 'true',
-            ),
-          );
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.hasCompletedOnboarding,
+                data: 'true',
+              ),
+            );
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.isNewlyRegistered,
+                data: 'false',
+              ),
+            );
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.hasSeenWelcomeWalkthrough,
+                data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
         }
 
         emit(

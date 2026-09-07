@@ -697,7 +697,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(forumReplies)
           ..where((t) => t.postId.equals(postId))
           ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc),
+            (t) => OrderingTerm(expression: t.createdAt),
           ]))
         .get();
   }
@@ -757,7 +757,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(syllabotMessages)
           ..where((t) => t.sessionId.equals(sessionId))
           ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc),
+            (t) => OrderingTerm(expression: t.createdAt),
           ]))
         .get();
   }

@@ -59,6 +59,11 @@ class AuthRouteGuard extends AutoRouteGuard {
               final map = jsonDecode(rawCalib) as Map<String, dynamic>;
               if (map['isCalibrated'] == true) return true;
             }
+            final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+            if (rawCourses != null && rawCourses.isNotEmpty) {
+              final list = jsonDecode(rawCourses) as List<dynamic>;
+              if (list.isNotEmpty) return true;
+            }
           } on Object catch (_) {}
           return false;
         }();
