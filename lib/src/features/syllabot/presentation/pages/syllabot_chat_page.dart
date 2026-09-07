@@ -106,6 +106,7 @@ class _SyllabotChatView extends HookWidget {
     final textController = useTextEditingController();
     final scrollController = useScrollController();
     final ttsHandler = useMemoized(TextToSpeechHandler.new);
+    final isAiSpeaking = useValueListenable(ttsHandler.isSpeakingNotifier);
 
     final calibrationProfileState = useState<CalibrationProfile?>(null);
     final isDownloadingModel = useState<bool>(false);
@@ -769,6 +770,8 @@ class _SyllabotChatView extends HookWidget {
                             socraticMode: state.socraticMode,
                             engineType: state.engineType,
                             isLoading: state.status == SyllabotStatus.streaming,
+                            isAiSpeaking: isAiSpeaking,
+                            onInterruptAi: ttsHandler.stop,
                             onVoiceDialogueTap: () =>
                                 openVoiceDialogue(context, state),
                             onModeChanged: (mode) {
@@ -779,6 +782,7 @@ class _SyllabotChatView extends HookWidget {
                             onEngineChanged: (engine) =>
                                 handleEngineSwitch(context, engine),
                             onSubmit: (prompt) {
+                              unawaited(ttsHandler.stop());
                               final sid = UuidUtils.isValidUuid(state.sessionId)
                                   ? state.sessionId
                                   : UuidUtils.generate();

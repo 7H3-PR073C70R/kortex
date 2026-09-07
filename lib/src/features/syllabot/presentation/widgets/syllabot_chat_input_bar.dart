@@ -26,6 +26,8 @@ class SyllabotChatInputBar extends StatefulWidget {
     required this.onSubmit,
     this.onVoiceDialogueTap,
     this.isLoading = false,
+    this.isAiSpeaking = false,
+    this.onInterruptAi,
     super.key,
   });
 
@@ -37,6 +39,8 @@ class SyllabotChatInputBar extends StatefulWidget {
   final ValueChanged<String> onSubmit;
   final VoidCallback? onVoiceDialogueTap;
   final bool isLoading;
+  final bool isAiSpeaking;
+  final VoidCallback? onInterruptAi;
 
   @override
   State<SyllabotChatInputBar> createState() => _SyllabotChatInputBarState();
@@ -103,6 +107,23 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(SyllabotChatInputBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isAiSpeaking != oldWidget.isAiSpeaking) {
+      if (widget.isAiSpeaking) {
+        if (_isListening) {
+          unawaited(_speechHandler.stopListening());
+        }
+        unawaited(_micPulseController.repeat(reverse: true));
+      } else if (!_isListening) {
+        _micPulseController
+          ..stop()
+          ..reset();
+      }
+    }
+  }
+
   void _onTextChanged() {
     final hasText = widget.controller.text.trim().isNotEmpty;
     if (hasText != _hasInput) {
@@ -116,12 +137,22 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     final text = widget.controller.text.trim();
     if (text.isEmpty || widget.isLoading) return;
 
+    if (widget.isAiSpeaking) {
+      widget.onInterruptAi?.call();
+    }
+
     unawaited(HapticFeedback.lightImpact());
     widget.onSubmit(text);
     widget.controller.clear();
   }
 
   void _toggleListening() {
+    if (widget.isAiSpeaking) {
+      // Tap while AI is speaking -> Instant Barge-in Interruption
+      unawaited(HapticFeedback.mediumImpact());
+      widget.onInterruptAi?.call();
+      return;
+    }
     if (_isListening) {
       unawaited(_speechHandler.stopListening());
     } else {
@@ -427,63 +458,105 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                             animation: _micPulseController,
                             builder: (context, _) {
                               final pulse = _micPulseController.value;
-                              return ShrinkableButton(
-                                key: const ValueKey('voice_action'),
-                                onTap: _toggleListening,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    if (_isListening)
-                                      Container(
-                                        width: 36 + (pulse * 12),
-                                        height: 36 + (pulse * 12),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: colors.error.withAlpha(
-                                            (90 * (1 - pulse)).toInt(),
+                              final isAiSpeaking = widget.isAiSpeaking;
+                              return Tooltip(
+                                message: isAiSpeaking
+                                    ? 'Syllabot is speaking • Tap to interrupt'
+                                    : (_isListening
+                                        ? 'Listening...'
+                                        : 'Voice Input'),
+                                child: ShrinkableButton(
+                                  key: ValueKey(
+                                    isAiSpeaking
+                                        ? 'ai_speaking_action'
+                                        : 'voice_action',
+                                  ),
+                                  onTap: _toggleListening,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      if (_isListening || isAiSpeaking)
+                                        Container(
+                                          width: 36 + (pulse * 12),
+                                          height: 36 + (pulse * 12),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isAiSpeaking
+                                                ? colors.syllabotAccent.withAlpha(
+                                                    (70 * (1 - pulse)).toInt(),
+                                                  )
+                                                : colors.error.withAlpha(
+                                                    (90 * (1 - pulse)).toInt(),
+                                                  ),
                                           ),
                                         ),
-                                      ),
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: _isListening
-                                            ? colors.error
-                                            : colors.surfaceSecondary,
-                                        shape: BoxShape.circle,
-                                        boxShadow: _isListening
-                                            ? [
-                                                BoxShadow(
-                                                  color: colors.error.withAlpha(
-                                                    (140 + (pulse * 100))
-                                                        .toInt()
-                                                        .clamp(0, 255),
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: isAiSpeaking
+                                              ? colors.syllabotAccent.withAlpha(45)
+                                              : (_isListening
+                                                  ? colors.error
+                                                  : colors.surfaceSecondary),
+                                          shape: BoxShape.circle,
+                                          boxShadow: isAiSpeaking
+                                              ? [
+                                                  BoxShadow(
+                                                    color: colors.syllabotAccent
+                                                        .withAlpha(
+                                                      (130 + (pulse * 90))
+                                                          .toInt()
+                                                          .clamp(0, 255),
+                                                    ),
+                                                    blurRadius: 8 + (pulse * 6),
+                                                    spreadRadius:
+                                                        1 + (pulse * 2),
                                                   ),
-                                                  blurRadius: 10 + (pulse * 6),
-                                                  spreadRadius: 1 + (pulse * 2),
-                                                ),
-                                              ]
-                                            : null,
-                                        border: Border.all(
-                                          color: _isListening
-                                              ? colors.white.withAlpha(180)
-                                              : colors.surfaceBorder.withAlpha(
-                                                  80,
-                                                ),
+                                                ]
+                                              : (_isListening
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: colors.error
+                                                            .withAlpha(
+                                                          (140 + (pulse * 100))
+                                                              .toInt()
+                                                              .clamp(0, 255),
+                                                        ),
+                                                        blurRadius:
+                                                            10 + (pulse * 6),
+                                                        spreadRadius:
+                                                            1 + (pulse * 2),
+                                                      ),
+                                                    ]
+                                                  : null),
+                                          border: Border.all(
+                                            color: isAiSpeaking
+                                                ? colors.syllabotAccent
+                                                : (_isListening
+                                                    ? colors.white
+                                                        .withAlpha(180)
+                                                    : colors.surfaceBorder
+                                                        .withAlpha(80)),
+                                            width: isAiSpeaking ? 1.5 : 1,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          isAiSpeaking
+                                              ? Icons.graphic_eq_rounded
+                                              : (_isListening
+                                                  ? Icons.mic_rounded
+                                                  : Icons.mic_none_rounded),
+                                          color: isAiSpeaking
+                                              ? colors.syllabotAccent
+                                              : (_isListening
+                                                  ? colors.white
+                                                  : colors.textSecondary),
+                                          size: 20,
                                         ),
                                       ),
-                                      child: Icon(
-                                        _isListening
-                                            ? Icons.mic_rounded
-                                            : Icons.mic_none_rounded,
-                                        color: _isListening
-                                            ? colors.white
-                                            : colors.textSecondary,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },

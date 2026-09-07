@@ -5,21 +5,21 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
 
-/// Available synthesized voice gender for Syllabot AI speech.
-enum VoiceGender {
-  female,
-  male,
-}
+export 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
+export 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
 
 /// Cross-platform Text-To-Speech (TTS) engine for Syllabot AI spoken responses.
 ///
-/// Tuned for maximum naturalness and warmth:
-/// - Prioritises iOS Enhanced/Premium neural voices (Samantha Enhanced, Ava Enhanced, etc.)
-/// - Targets Google Speech Services neural voices on Android
-/// - Keeps pitch at 1.0 to avoid the robotic "shifted" sound
-/// - Runs at a relaxed conversational speech rate
-/// - Injects micro-pauses via punctuation for natural prosody
+/// Features:
+/// - Natural conversational delivery using platform-calibrated [TtsConfig].
+/// - Intact vocal formants (pitch 1.0) to eliminate robotic/vocoder distortion.
+/// - Full reactive state tracking via [isSpeakingNotifier] for UI synchronization.
+/// - Intelligent speech normalization (LaTeX, Markdown, educational acronyms, times).
+/// - Atomic session ID tracking for instantaneous, glitch-free barge-in interruption.
+/// - Prioritises iOS Siri Enhanced/Premium neural voices and Android Google Speech Services.
 class TextToSpeechHandler {
   TextToSpeechHandler({
     this.onSpeakingChanged,
@@ -35,19 +35,26 @@ class TextToSpeechHandler {
   final LocalStorageService? _localStorageService;
 
   final FlutterTts _flutterTts = FlutterTts();
+
+  /// Reactive notifier for UI widgets (e.g. Chat Input Bar mic lock-out).
+  final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
+
   bool _isSpeaking = false;
   VoiceGender _gender = VoiceGender.female;
-
-  /// Base multiplier the user sets (1.0 = normal). Stored in prefs.
   double _speechRate = 1;
+  late TtsConfig _config;
 
   final List<String> _sentenceQueue = [];
   bool _isProcessingQueue = false;
   Completer<void>? _queueDrainedCompleter;
 
+  /// Atomic token incremented on every stop/speak to invalidate stale async callbacks.
+  int _activeSessionId = 0;
+
   bool get isSpeaking => _isSpeaking;
   VoiceGender get voiceGender => _gender;
   double get speechRate => _speechRate;
+  TtsConfig get config => _config;
   bool get hasQueuedSentences => _sentenceQueue.isNotEmpty || _isProcessingQueue;
 
   LocalStorageService? get _effectiveLocalStorage =>
@@ -57,58 +64,53 @@ class TextToSpeechHandler {
           : null);
 
   // ---------------------------------------------------------------------------
-  // iOS Enhanced/Premium neural voices: most human-sounding on-device.
-  // We try Enhanced/Premium/Natural first, then Standard as fallback.
+  // Priority Voice Lists: High-fidelity on-device Neural Voices
   // ---------------------------------------------------------------------------
   static const List<String> _iosFemaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Ava',      // Neural, warm: top pick
+    'com.apple.voice.enhanced.en-US.Ava',      // Siri Neural Ava
     'com.apple.voice.premium.en-US.Ava',
     'com.apple.voice.enhanced.en-US.Allison',  // Clear, warm
     'com.apple.voice.premium.en-US.Allison',
-    'com.apple.voice.enhanced.en-US.Samantha', // Classic but enhanced
-    'com.apple.voice.enhanced.en-AU.Karen',    // Natural Australian
-    'com.apple.voice.enhanced.en-GB.Kate',     // Natural British
+    'com.apple.voice.enhanced.en-US.Samantha',
+    'com.apple.voice.enhanced.en-GB.Kate',     // British natural
+    'com.apple.voice.enhanced.en-AU.Karen',
     'com.apple.voice.compact.en-US.Ava',
-    'samantha',                                 // Standard fallback
+    'samantha',
     'karen',
   ];
 
   static const List<String> _iosMaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Aaron',    // Very natural warm male
+    'com.apple.voice.enhanced.en-US.Aaron',    // Siri Neural Aaron
     'com.apple.voice.premium.en-US.Aaron',
-    'com.apple.voice.enhanced.en-US.Tom',      // Clear, authentic male
+    'com.apple.voice.enhanced.en-US.Tom',      // Authentic male
     'com.apple.voice.premium.en-US.Tom',
-    'com.apple.voice.enhanced.en-GB.Daniel',   // British articulate male
+    'com.apple.voice.enhanced.en-GB.Daniel',   // British articulate
     'com.apple.voice.premium.en-GB.Daniel',
-    'com.apple.voice.enhanced.en-AU.Lee',      // Natural Australian male
+    'com.apple.voice.enhanced.en-AU.Lee',
     'com.apple.voice.compact.en-US.Aaron',
-    'daniel',                                   // Standard fallback
+    'daniel',
     'alex',
   ];
 
-  // ---------------------------------------------------------------------------
-  // Android Google Speech Services neural voice identifiers.
-  // These are the highest-quality neural voices on stock Android / Google devices.
-  // ---------------------------------------------------------------------------
   static const List<String> _androidFemaleVoicesPriority = [
-    'en-us-x-sfg-network', // Google Neural TTS (high quality)
-    'en-us-x-sfg-local',   // Google Neural TTS (offline)
+    'en-us-x-sfg-network', // Google Neural TTS
+    'en-us-x-sfg-local',   // Google Neural Offline
     'en-us-x-iob-network',
     'en-us-x-iob-local',
     'en-us-x-iol-network',
     'en-us-x-iol-local',
-    'en-gb-x-rjs-network', // British natural female
+    'en-gb-x-rjs-network',
     'en-US-language',
   ];
 
   static const List<String> _androidMaleVoicesPriority = [
-    'en-us-x-tpc-network',  // Google Neural TTS male (high quality)
-    'en-us-x-tpc-local',    // Google Neural TTS male (offline)
+    'en-us-x-tpc-network', // Google Neural TTS male
+    'en-us-x-tpc-local',   // Google Neural Offline male
     'en-us-x-tpd-network',
     'en-us-x-tpd-local',
-    'en-us-x-iom-network',  // Natural deep male
+    'en-us-x-iom-network',
     'en-us-x-iom-local',
-    'en-gb-x-fis-network',  // British natural male
+    'en-gb-x-fis-network',
     'en-US-language',
   ];
 
@@ -137,58 +139,68 @@ class TextToSpeechHandler {
         }
       }
     } on Object catch (_) {}
+
+    _config = TtsConfig.forCurrentPlatform(
+      gender: _gender,
+      speechRateMultiplier: _speechRate,
+    );
   }
 
   void _initTts() {
     _flutterTts
       ..setStartHandler(() {
-        _isSpeaking = true;
-        onSpeakingChanged?.call(true);
+        _setSpeakingState(true);
       })
-      ..setCompletionHandler(() {
-        if (_sentenceQueue.isNotEmpty) {
-          final nextSentence = _sentenceQueue.removeAt(0);
-          unawaited(_flutterTts.speak(nextSentence));
-        } else {
-          _isSpeaking = false;
-          _isProcessingQueue = false;
-          onSpeakingChanged?.call(false);
-          if (_queueDrainedCompleter != null &&
-              !_queueDrainedCompleter!.isCompleted) {
-            _queueDrainedCompleter!.complete();
-            _queueDrainedCompleter = null;
-          }
-        }
-      })
-      ..setCancelHandler(() {
-        _sentenceQueue.clear();
-        _isSpeaking = false;
-        _isProcessingQueue = false;
-        onSpeakingChanged?.call(false);
-        if (_queueDrainedCompleter != null &&
-            !_queueDrainedCompleter!.isCompleted) {
-          _queueDrainedCompleter!.complete();
-          _queueDrainedCompleter = null;
-        }
-      })
+      ..setCompletionHandler(_handleChunkCompletion)
+      ..setCancelHandler(_handleCancellation)
       ..setErrorHandler((dynamic msg) {
-        _sentenceQueue.clear();
-        _isSpeaking = false;
-        _isProcessingQueue = false;
-        onSpeakingChanged?.call(false);
-        if (_queueDrainedCompleter != null &&
-            !_queueDrainedCompleter!.isCompleted) {
-          _queueDrainedCompleter!.complete();
-          _queueDrainedCompleter = null;
-        }
+        _handleCancellation();
         onError?.call(msg.toString());
       });
 
     unawaited(_applyVoiceConfiguration());
   }
 
+  void _setSpeakingState(bool speaking) {
+    if (_isSpeaking == speaking) return;
+    _isSpeaking = speaking;
+    isSpeakingNotifier.value = speaking;
+    onSpeakingChanged?.call(speaking);
+  }
+
+  void _handleChunkCompletion() {
+    final sessionId = _activeSessionId;
+    if (_sentenceQueue.isNotEmpty) {
+      final nextSentence = _sentenceQueue.removeAt(0);
+      // Ensure in-flight session was not aborted
+      if (sessionId == _activeSessionId) {
+        unawaited(_flutterTts.speak(nextSentence));
+      }
+    } else {
+      _setSpeakingState(false);
+      _isProcessingQueue = false;
+      if (_queueDrainedCompleter != null &&
+          !_queueDrainedCompleter!.isCompleted) {
+        _queueDrainedCompleter!.complete();
+        _queueDrainedCompleter = null;
+      }
+    }
+  }
+
+  void _handleCancellation() {
+    _sentenceQueue.clear();
+    _setSpeakingState(false);
+    _isProcessingQueue = false;
+    if (_queueDrainedCompleter != null &&
+        !_queueDrainedCompleter!.isCompleted) {
+      _queueDrainedCompleter!.complete();
+      _queueDrainedCompleter = null;
+    }
+  }
+
   Future<void> setVoiceGender(VoiceGender gender) async {
     _gender = gender;
+    _config = _config.copyWith(gender: gender);
     _cachedSelectedVoice = null;
     _isConfigured = false;
     await _applyVoiceConfiguration();
@@ -202,6 +214,7 @@ class TextToSpeechHandler {
 
   Future<void> setSpeechRate(double rate) async {
     _speechRate = rate;
+    _config = _config.copyWith(speechRateMultiplier: rate);
     _isConfigured = false;
     await _applyVoiceConfiguration();
     try {
@@ -215,26 +228,12 @@ class TextToSpeechHandler {
   Future<void> _applyVoiceConfiguration() async {
     if (_isConfigured) return;
     try {
-      await _flutterTts.setLanguage('en-US');
+      await _flutterTts.setLanguage(_config.language);
+      await _flutterTts.setSpeechRate(_config.effectiveSpeechRate);
+      await _flutterTts.setPitch(_config.pitch);
+      await _flutterTts.setVolume(_config.volume);
 
-      // Human-like acoustic profiling by gender
-      final isMale = _gender == VoiceGender.male;
       final isIos = !kIsWeb && Platform.isIOS;
-
-      // Male voice: pitch 0.94 gives a deeper, natural chest resonance.
-      // Female voice: pitch 1.02 gives warm, melodic inflection.
-      final pitch = isMale ? 0.94 : 1.02;
-
-      // Conversational speaking pace: smooth and natural without dragging
-      final baseRate = isIos
-          ? (isMale ? 0.46 : 0.48)
-          : (isMale ? 0.88 : 0.92);
-
-      await _flutterTts.setSpeechRate(baseRate * _speechRate);
-      await _flutterTts.setPitch(pitch);
-      await _flutterTts.setVolume(1);
-
-      // iOS audio session: route to speaker, allow Bluetooth
       if (isIos) {
         try {
           await _flutterTts.setIosAudioCategory(
@@ -246,11 +245,13 @@ class TextToSpeechHandler {
               IosTextToSpeechAudioCategoryOptions.mixWithOthers,
             ],
           );
-          await _flutterTts.awaitSpeakCompletion(true);
         } on Object catch (_) {}
       }
 
-      // Select and apply the best available voice
+      try {
+        await _flutterTts.awaitSpeakCompletion(true);
+      } on Object catch (_) {}
+
       await _selectBestVoice();
       _isConfigured = true;
     } on Object catch (e) {
@@ -258,7 +259,7 @@ class TextToSpeechHandler {
     }
   }
 
-  /// Selects the most human-sounding available voice from priority list and neural matches.
+  /// Selects the most human-sounding available voice.
   Future<void> _selectBestVoice() async {
     try {
       if (_cachedSelectedVoice != null) {
@@ -272,7 +273,6 @@ class TextToSpeechHandler {
       );
       if (rawVoices is! List) return;
 
-      // Build normalised voice map
       final voiceList = <Map<String, String>>[];
       for (final dynamic v in rawVoices) {
         if (v is Map) {
@@ -291,7 +291,8 @@ class TextToSpeechHandler {
       for (final candidate in priorities) {
         final lower = candidate.toLowerCase();
         final match = voiceList.firstWhere(
-          (v) => v['name']!.toLowerCase() == lower ||
+          (v) =>
+              v['name']!.toLowerCase() == lower ||
               v['name']!.toLowerCase().contains(lower) ||
               lower.contains(v['name']!.toLowerCase()),
           orElse: () => const {},
@@ -304,7 +305,13 @@ class TextToSpeechHandler {
       }
 
       // 2. Search for any voice with high-quality neural identifiers
-      final qualityKeywords = ['neural', 'natural', 'enhanced', 'premium', 'wavenet'];
+      final qualityKeywords = [
+        'neural',
+        'natural',
+        'enhanced',
+        'premium',
+        'wavenet',
+      ];
       final genderKeywords = _gender == VoiceGender.female
           ? ['ava', 'allison', 'samantha', 'karen', 'kate', 'victoria', 'female', 'woman']
           : ['aaron', 'daniel', 'tom', 'alex', 'oliver', 'lee', 'male', 'man'];
@@ -324,7 +331,7 @@ class TextToSpeechHandler {
         }
       }
 
-      // 3. Fallback: English voice matching gender
+      // 3. Fallback: English voice matching requested gender
       for (final v in voiceList) {
         final nameLower = v['name']!.toLowerCase();
         final localeLower = v['locale']!.toLowerCase();
@@ -337,152 +344,29 @@ class TextToSpeechHandler {
         }
       }
     } on Object catch (_) {
-      // Best-effort
+      // Best effort fallback
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Text cleaning & naturalisation
+  // Backward-compatible Text Preprocessing Delegates
   // ---------------------------------------------------------------------------
 
-  /// Cleans LaTeX and markdown, expands common contractions, and injects
-  /// natural micro-pauses so the TTS engine has proper prosody cues.
-  static String cleanTextForSpeech(String markdown) {
-    var text = markdown;
+  /// Normalizes markdown, LaTeX, acronyms, and formatting for speech.
+  static String cleanTextForSpeech(String markdown) =>
+      SpeechTextNormalizer.normalize(markdown);
 
-    // Remove LaTeX blocks
-    text = text.replaceAll(
-      RegExp(r'\$\$[\s\S]*?\$\$'),
-      ', and a mathematical expression follows, ',
-    );
-    text = text.replaceAll(RegExp(r'\$[\s\S]*?\$'), ' formula ');
-
-    // Expand common LaTeX commands to spoken equivalents
-    text = text
-        .replaceAll(r'\frac', 'over')
-        .replaceAll(r'\sqrt', 'square root of')
-        .replaceAll(r'\Delta', 'Delta')
-        .replaceAll(r'\pm', 'plus or minus')
-        .replaceAll(r'\to', 'to')
-        .replaceAll(r'\neq', 'is not equal to')
-        .replaceAll(r'\geq', 'is greater than or equal to')
-        .replaceAll(r'\leq', 'is less than or equal to')
-        .replaceAll(r'\lim', 'the limit')
-        .replaceAll(r'\int', 'the integral of')
-        .replaceAll(r'\partial', 'the partial derivative of')
-        .replaceAll(r'\infty', 'infinity')
-        .replaceAll(r'\alpha', 'alpha')
-        .replaceAll(r'\beta', 'beta')
-        .replaceAll(r'\gamma', 'gamma')
-        .replaceAll(r'\theta', 'theta')
-        .replaceAll(r'\pi', 'pi');
-
-    // Remove markdown code blocks
-    text = text.replaceAll(
-      RegExp(r'```[\s\S]*?```'),
-      ', here is a code example, ',
-    );
-    text = text.replaceAll(RegExp('`[^`]+`'), '');
-
-    // Remove markdown headers: preserve the text, just strip #
-    text = text.replaceAll(RegExp(r'#{1,6}\s*'), '');
-
-    // Bold / italic: strip markers, keep words
-    text = text.replaceAll(RegExp(r'\*{1,3}|_{1,3}'), '');
-
-    // Bullet points / numbered lists: natural pause before each item
-    text = text.replaceAll(RegExp(r'\n\s*[-•*]\s+'), ', ');
-    text = text.replaceAll(RegExp(r'\n\s*\d+\.\s+'), ', ');
-
-    // Markdown links: keep link text only
-    text = text.replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1');
-
-    // Remove URLs
-    text = text.replaceAll(RegExp(r'https?://\S+'), '');
-
-    // Convert common symbols to spoken words
-    text = text
-        .replaceAll(' & ', ' and ')
-        .replaceAll('&', ' and ')
-        .replaceAll('%', ' percent')
-        .replaceAll(' > ', ' is greater than ')
-        .replaceAll(' < ', ' is less than ')
-        .replaceAll(' = ', ' equals ')
-        .replaceAll('...', ', ')
-        .replaceAll('—', ', ')
-        .replaceAll(' – ', ', ')
-        .replaceAll('(', ', ')
-        .replaceAll(')', ', ');
-
-    // Inject a short pause after colons (e.g. "Note: this means…")
-    text = text.replaceAll(RegExp(r':\s+'), ': ');
-
-    // Collapse multiple whitespace/newlines
-    text = text.replaceAll(RegExp(r'\n+'), '. ');
-    text = text.replaceAll(RegExp(r'\s{2,}'), ' ');
-
-    // Collapse multiple punctuation marks
-    text = text.replaceAll(RegExp(r'[,\s]+,'), ',');
-    text = text.replaceAll(RegExp(r'\.\s+\.'), '.');
-
-    return text.trim();
-  }
-
-
-  /// Splits text into natural speech chunks at sentence and clause boundaries
-  /// so the TTS engine maintains good prosody throughout a long response.
-  static List<String> splitIntoChunks(String text) {
-    if (text.isEmpty) return [];
-
-    // Split on sentence-ending punctuation, keeping the delimiter
-    final sentencePattern = RegExp(r'(?<=[.!?])\s+');
-    final sentences = text.split(sentencePattern);
-
-    final chunks = <String>[];
-    final buffer = StringBuffer();
-
-    for (final sentence in sentences) {
-      final trimmed = sentence.trim();
-      if (trimmed.isEmpty) continue;
-
-      // If a single sentence is already long, split on commas too
-      if (trimmed.length > 180) {
-        final parts = trimmed.split(RegExp(r',\s+'));
-        for (final part in parts) {
-          if (part.trim().isNotEmpty) {
-            if (buffer.isNotEmpty) {
-              chunks.add('$buffer, ${part.trim()}');
-              buffer.clear();
-            } else {
-              chunks.add(part.trim());
-            }
-          }
-        }
-      } else {
-        if (buffer.isNotEmpty) buffer.write(' ');
-        buffer.write(trimmed);
-        // Flush chunk when we have a comfortable speaking length
-        if (buffer.length >= 120) {
-          chunks.add(buffer.toString());
-          buffer.clear();
-        }
-      }
-    }
-
-    if (buffer.isNotEmpty) {
-      chunks.add(buffer.toString());
-    }
-
-    return chunks.where((c) => c.trim().isNotEmpty).toList();
-  }
+  /// Splits normalized text into natural speech chunks.
+  static List<String> splitIntoChunks(String text) =>
+      SpeechTextNormalizer.splitIntoChunks(text);
 
   // ---------------------------------------------------------------------------
-  // Public API
+  // Public Control API
   // ---------------------------------------------------------------------------
 
-  /// Enqueues a single sentence for immediate or sequential speech synthesis.
+  /// Enqueues a single sentence for immediate or sequential synthesis.
   Future<void> enqueueSentence(String rawSentence) async {
-    final clean = cleanTextForSpeech(rawSentence);
+    final clean = SpeechTextNormalizer.normalize(rawSentence);
     if (clean.isEmpty) return;
 
     if (_queueDrainedCompleter == null ||
@@ -491,16 +375,16 @@ class TextToSpeechHandler {
     }
 
     if (!_isSpeaking && !_isProcessingQueue) {
-      _isSpeaking = true;
+      final sessionId = ++_activeSessionId;
+      _setSpeakingState(true);
       _isProcessingQueue = true;
-      onSpeakingChanged?.call(true);
       try {
         await _applyVoiceConfiguration();
-        await _flutterTts.speak(clean);
+        if (sessionId == _activeSessionId) {
+          await _flutterTts.speak(clean);
+        }
       } on Object catch (e) {
-        _isSpeaking = false;
-        _isProcessingQueue = false;
-        onSpeakingChanged?.call(false);
+        _handleCancellation();
         onError?.call(e.toString());
       }
     } else {
@@ -508,36 +392,38 @@ class TextToSpeechHandler {
     }
   }
 
-  /// Reads out a full text block cleanly (clears existing queue first).
-  /// Splits the text into natural chunks for better prosody.
+  /// Synthesizes speech for [rawText], clearing any prior queued speech.
   Future<void> speak(String rawText) async {
-    final clean = cleanTextForSpeech(rawText);
+    final clean = SpeechTextNormalizer.normalize(rawText);
     if (clean.isEmpty) return;
 
     await stop();
 
-    final chunks = splitIntoChunks(clean);
+    final chunks = SpeechTextNormalizer.splitIntoChunks(clean);
     if (chunks.isEmpty) return;
 
+    final sessionId = ++_activeSessionId;
     _queueDrainedCompleter = Completer<void>();
-    _isSpeaking = true;
+    _setSpeakingState(true);
     _isProcessingQueue = true;
-    onSpeakingChanged?.call(true);
 
     try {
       await _applyVoiceConfiguration();
-      // Speak first chunk immediately; remaining go to queue
       if (chunks.length > 1) {
         _sentenceQueue.addAll(chunks.skip(1));
       }
-      await _flutterTts.speak(chunks.first);
+      if (sessionId == _activeSessionId) {
+        await _flutterTts.speak(chunks.first);
+      }
     } on Object catch (e) {
-      _isSpeaking = false;
-      _isProcessingQueue = false;
-      _sentenceQueue.clear();
-      onSpeakingChanged?.call(false);
+      _handleCancellation();
       onError?.call(e.toString());
     }
+  }
+
+  /// Clears any pending speech in the queue without interrupting active playback.
+  void clearQueue() {
+    _sentenceQueue.clear();
   }
 
   /// Waits until all queued sentences have completed synthesis and playback.
@@ -548,10 +434,13 @@ class TextToSpeechHandler {
     await _queueDrainedCompleter?.future;
   }
 
-  /// Stops ongoing speech and clears all buffered sentences.
+  /// Immediately interrupts ongoing speech, flushes queue, and updates state.
   Future<void> stop() async {
+    // Invalidate any in-flight async speak callbacks
+    _activeSessionId++;
     _sentenceQueue.clear();
     _isProcessingQueue = false;
+
     if (_queueDrainedCompleter != null &&
         !_queueDrainedCompleter!.isCompleted) {
       _queueDrainedCompleter!.complete();
@@ -560,15 +449,16 @@ class TextToSpeechHandler {
 
     try {
       await _flutterTts.stop();
-      _isSpeaking = false;
-      onSpeakingChanged?.call(false);
     } on Object catch (e) {
       onError?.call(e.toString());
+    } finally {
+      _setSpeakingState(false);
     }
   }
 
   /// Releases resources.
   void dispose() {
+    isSpeakingNotifier.dispose();
     unawaited(stop());
   }
 }
