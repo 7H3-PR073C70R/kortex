@@ -62,7 +62,7 @@ dependencies:
   firebase_performance: ^0.10.1+4
   firebase_messaging: ^15.2.4
   google_sign_in: ^6.2.2
-  sign_in_with_apple: ^6.1.4
+  sign_in_with_apple: ^8.2.0
   flutter_local_notifications: ^18.0.1
   livekit_client: ^2.11.0
   sqflite: ^2.4.2+1
