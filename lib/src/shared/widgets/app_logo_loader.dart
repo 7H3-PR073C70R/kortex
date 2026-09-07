@@ -14,11 +14,13 @@ class AppLogoLoader extends StatefulWidget {
     this.size = 64,
     this.message,
     this.showMessage = true,
+    this.color,
   });
 
   final double size;
   final String? message;
   final bool showMessage;
+  final Color? color;
 
   @override
   State<AppLogoLoader> createState() => _AppLogoLoaderState();
@@ -52,7 +54,15 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
-    final logoSize = widget.size * 0.58;
+    final logoSize = widget.size * 0.56;
+    final haloPrimary = widget.color ?? colors.primary;
+    final haloAccent = widget.color ?? colors.syllabotAccent;
+    final inset = widget.size < 32
+        ? (widget.size * 0.12).clamp(1.5, 3.0)
+        : 6.0;
+    final innerSize = math.max(4.0, widget.size - (inset * 2));
+    final blurRadius = (widget.size * 0.25).clamp(2.0, 16.0);
+    final spreadRadius = widget.size > 32 ? 2.0 : 0.5;
 
     return Semantics(
       label: widget.message ?? 'Loading, please wait...',
@@ -86,12 +96,10 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
                           shape: BoxShape.circle,
                           gradient: SweepGradient(
                             colors: [
-                              colors.primary.withAlpha(0),
-                              colors.primary.withAlpha(isDark ? 140 : 100),
-                              colors.syllabotAccent.withAlpha(
-                                isDark ? 220 : 180,
-                              ),
-                              colors.primary,
+                              haloPrimary.withAlpha(0),
+                              haloPrimary.withAlpha(isDark ? 140 : 100),
+                              haloAccent.withAlpha(isDark ? 220 : 180),
+                              haloPrimary,
                             ],
                             stops: const [0.0, 0.45, 0.8, 1.0],
                           ),
@@ -101,8 +109,8 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
 
                     // Inner frosted background disc
                     Container(
-                      width: widget.size - 6,
-                      height: widget.size - 6,
+                      width: innerSize,
+                      height: innerSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
@@ -110,11 +118,11 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
                             : colors.surfacePrimary,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withAlpha(
+                            color: haloPrimary.withAlpha(
                               isDark ? 60 : 30,
                             ),
-                            blurRadius: 16,
-                            spreadRadius: 2,
+                            blurRadius: blurRadius,
+                            spreadRadius: spreadRadius,
                           ),
                         ],
                       ),

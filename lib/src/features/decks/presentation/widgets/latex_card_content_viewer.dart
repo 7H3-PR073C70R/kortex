@@ -5,6 +5,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 class LatexCardContentViewer extends StatelessWidget {
   const LatexCardContentViewer({
@@ -88,7 +89,7 @@ class LatexCardContentViewer extends StatelessWidget {
                           return Container(
                             height: 250,
                             alignment: Alignment.center,
-                            child: const CircularProgressIndicator(),
+                            child: const AppLogoLoader(size: 48),
                           );
                         },
                         errorBuilder: (ctx, err, stack) => Container(
@@ -206,9 +207,7 @@ class LatexCardContentViewer extends StatelessWidget {
                               height: 120,
                               color: colors.surfaceSecondary,
                               child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: AppLogoLoader(size: 32),
                               ),
                             );
                           },

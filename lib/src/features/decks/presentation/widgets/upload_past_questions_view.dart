@@ -3,6 +3,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class UploadPastQuestionsView extends StatelessWidget {
@@ -164,13 +165,9 @@ class UploadPastQuestionsView extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colors.primary,
-                      ),
+                    AppLogoLoader(
+                      size: 18,
+                      color: colors.primary,
                     ),
                     const SizedBox(width: 10),
                     Expanded(

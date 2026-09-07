@@ -16,6 +16,7 @@ import 'package:kortex/src/features/onboarding_utility/presentation/widgets/perm
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -378,13 +379,9 @@ class _PermissionCard extends StatelessWidget {
                         ),
                       ),
                       child: isRequesting
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colors.primary,
-                              ),
+                          ? AppLogoLoader(
+                              size: 16,
+                              color: colors.primary,
                             )
                           : Text(
                               allowLabel,

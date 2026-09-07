@@ -12,6 +12,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -187,15 +188,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  SizedBox(
-                                    width: 10,
-                                    height: 10,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        colors.syllabotAccent,
-                                      ),
-                                    ),
+                                  AppLogoLoader(
+                                    size: 14,
+                                    color: colors.syllabotAccent,
+                                    showMessage: false,
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
@@ -365,15 +361,10 @@ class _FormattedMessageBody extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    colors.syllabotAccent,
-                  ),
-                ),
+              AppLogoLoader(
+                size: 16,
+                color: colors.syllabotAccent,
+                showMessage: false,
               ),
               const SizedBox(width: 8),
               Text(

@@ -16,6 +16,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accord
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 @RoutePage()
 class QuizWorkspacePage extends StatelessWidget {
@@ -136,7 +137,7 @@ class _QuizWorkspaceView extends HookWidget {
           return Scaffold(
             backgroundColor: colors.transparent,
             body: const Center(
-              child: CircularProgressIndicator(),
+              child: AppLogoLoader(size: 64),
             ),
           );
         }

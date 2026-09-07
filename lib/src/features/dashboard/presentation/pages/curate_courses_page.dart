@@ -14,6 +14,7 @@ import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_ent
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -502,11 +503,8 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                   // 4. Course Cards List
                   Expanded(
                     child: state.isLoading
-                        ? Center(
-                            child: CircularProgressIndicator(
-                              color: colors.primary,
-                              strokeWidth: 2.5,
-                            ),
+                        ? const Center(
+                            child: AppLogoLoader(size: 56),
                           )
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(18, 6, 18, 100),
@@ -580,13 +578,10 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                             ),
                             child: Center(
                               child: state.isSubmitting
-                                  ? SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        color: colors.white,
-                                        strokeWidth: 2.2,
-                                      ),
+                                  ? AppLogoLoader(
+                                      size: 20,
+                                      color: colors.white,
+                                      showMessage: false,
                                     )
                                   : Row(
                                       mainAxisAlignment:

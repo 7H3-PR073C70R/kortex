@@ -15,6 +15,7 @@ import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -244,7 +245,7 @@ class TwoFactorSetupPage extends HookWidget {
                                 : const SizedBox(
                                     height: 190,
                                     child: Center(
-                                      child: CircularProgressIndicator(),
+                                      child: AppLogoLoader(size: 48),
                                     ),
                                   ),
                           ),
@@ -537,13 +538,10 @@ class TwoFactorSetupPage extends HookWidget {
                         ),
                         child: Center(
                           child: isVerifying.value
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: colors.white,
-                                    strokeWidth: 2.2,
-                                  ),
+                              ? AppLogoLoader(
+                                  size: 20,
+                                  color: colors.white,
+                                  showMessage: false,
                                 )
                               : Text(
                                   'Verify & Enable 2FA',

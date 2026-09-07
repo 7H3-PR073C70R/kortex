@@ -6,6 +6,7 @@ export 'app_dialog.dart';
 export 'app_divider.dart';
 export 'app_empty_state.dart';
 export 'app_text_field.dart';
+export 'app_logo_loader.dart';
 export 'dismiss_keyboard.dart';
 export 'lonely_teddy_bear_widget.dart';
 export 'shimmer_placeholder.dart';

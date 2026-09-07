@@ -16,6 +16,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -158,13 +159,10 @@ class DeckMarketplaceDetailPage extends HookWidget {
               ),
               child: Center(
                 child: isCloning.value
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.white,
-                        ),
+                    ? AppLogoLoader(
+                        size: 20,
+                        color: colors.white,
+                        showMessage: false,
                       )
                     : Row(
                         mainAxisSize: MainAxisSize.min,

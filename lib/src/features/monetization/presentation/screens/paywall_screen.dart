@@ -13,6 +13,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -84,23 +85,31 @@ class _PaywallScreenState extends State<PaywallScreen>
   void _selectPlan(int index) {
     setState(() {
       _selectedPlanIndex = index;
-      final current = _offerings?.current;
-      if (current != null) {
+      final offerings = _offerings;
+      final offering = offerings?.current ??
+          (offerings?.all.isNotEmpty == true ? offerings!.all.values.first : null);
+
+      if (offering != null && offering.availablePackages.isNotEmpty) {
         if (index == 0) {
           // Annual
-          _selectedPackage = current.annual ??
-              current.availablePackages.firstWhere(
-                (p) => p.packageType == PackageType.annual,
-                orElse: () => current.availablePackages.first,
+          _selectedPackage = offering.annual ??
+              offering.availablePackages.firstWhere(
+                (p) =>
+                    p.packageType == PackageType.annual ||
+                    p.identifier.toLowerCase().contains('annual') ||
+                    p.identifier.toLowerCase().contains('year'),
+                orElse: () => offering.availablePackages.first,
               );
         } else {
           // Monthly
-          _selectedPackage = current.monthly ??
-              current.availablePackages.firstWhere(
-                (p) => p.packageType == PackageType.monthly,
-                orElse: () => current.availablePackages.length > 1
-                    ? current.availablePackages[1]
-                    : current.availablePackages.first,
+          _selectedPackage = offering.monthly ??
+              offering.availablePackages.firstWhere(
+                (p) =>
+                    p.packageType == PackageType.monthly ||
+                    p.identifier.toLowerCase().contains('month'),
+                orElse: () => offering.availablePackages.length > 1
+                    ? offering.availablePackages[1]
+                    : offering.availablePackages.first,
               );
         }
       }
@@ -128,8 +137,34 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _handlePurchase() async {
+    // Ensure package is mapped to currently selected plan index
+    if (_selectedPackage == null) {
+      _selectPlan(_selectedPlanIndex);
+    }
+
     final package = _selectedPackage;
     if (package == null) {
+      // If store offerings could not be loaded (e.g. dev/sandbox or network error)
+      if (!RevenueCatService.instance.isInitialized || _offerings == null) {
+        if (kDebugMode) {
+          context.read<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
+          context.read<AuthBloc>().add(const AuthProfileFetchRequested());
+          context.showSnackBar(
+            message: 'Pro Unlimited activated in sandbox mode 🎉',
+            type: SnackBarType.success,
+          );
+          widget.onPurchaseSuccess?.call();
+          await Navigator.of(context).maybePop(true);
+          return;
+        }
+
+        context.showSnackBar(
+          message: 'Unable to connect to app store products. Please try again.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
       context.showSnackBar(
         message: 'Please select a subscription plan.',
         type: SnackBarType.error,
@@ -256,8 +291,8 @@ class _PaywallScreenState extends State<PaywallScreen>
       ),
       body: SafeArea(
         child: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(color: colors.primary),
+            ? const Center(
+                child: AppLogoLoader(size: 56),
               )
             : SingleChildScrollView(
                 padding: EdgeInsets.symmetric(
@@ -689,13 +724,9 @@ class _PaywallScreenState extends State<PaywallScreen>
             ),
             child: Center(
               child: _isProcessing
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colors.white,
-                      ),
+                  ? const AppLogoLoader(
+                      size: 20,
+                      showMessage: false,
                     )
                   : Text(
                       'Unlock Kortexify Pro Access',

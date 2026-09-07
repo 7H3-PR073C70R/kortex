@@ -8,6 +8,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -409,16 +410,10 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                               ),
                               child: widget.isLoading
                                   ? Center(
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                colors.white,
-                                              ),
-                                        ),
+                                      child: AppLogoLoader(
+                                        size: 18,
+                                        color: colors.white,
+                                        showMessage: false,
                                       ),
                                     )
                                   : Icon(

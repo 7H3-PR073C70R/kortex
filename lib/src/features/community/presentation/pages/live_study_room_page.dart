@@ -639,6 +639,11 @@ class _BottomActionBar extends StatelessWidget {
           ShrinkableButton(
             onTap: () {
               unawaited(HapticFeedback.mediumImpact());
+              if (!state.isAudioConnected && state.isMuted) {
+                context.showSnackBar(
+                  message: 'Connecting to room audio...',
+                );
+              }
               context.read<LiveRoomCubit>().toggleMicMute();
             },
             child: AnimatedContainer(

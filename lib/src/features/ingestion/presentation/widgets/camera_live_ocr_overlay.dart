@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 class CameraLiveOcrOverlay extends StatelessWidget {
   const CameraLiveOcrOverlay({
@@ -111,15 +112,9 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                       ),
                       child: isProcessing
                           ? Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    colors.white,
-                                  ),
-                                ),
+                              child: AppLogoLoader(
+                                size: 24,
+                                color: colors.white,
                               ),
                             )
                           : Icon(

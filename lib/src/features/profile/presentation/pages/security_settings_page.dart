@@ -30,6 +30,7 @@ import 'package:kortex/src/features/profile/domain/use_cases/update_display_name
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -445,13 +446,10 @@ class SecuritySettingsPage extends HookWidget {
                           ),
                           child: Center(
                             child: isUpdatingPassword.value
-                                ? SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      color: colors.white,
-                                      strokeWidth: 2,
-                                    ),
+                                ? AppLogoLoader(
+                                    size: 18,
+                                    color: colors.white,
+                                    showMessage: false,
                                   )
                                 : Text(
                                     'Update Password',

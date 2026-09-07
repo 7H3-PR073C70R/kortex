@@ -13,6 +13,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -300,15 +301,10 @@ class MockExamLobbyPage extends HookWidget {
                   ),
                   alignment: Alignment.center,
                   child: isStarting.value
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colors.white,
-                            ),
-                          ),
+                      ? AppLogoLoader(
+                          size: 20,
+                          color: colors.white,
+                          showMessage: false,
                         )
                       : Text(
                           l10n.mockExamBeginButton,

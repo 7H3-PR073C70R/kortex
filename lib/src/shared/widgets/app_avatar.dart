@@ -4,6 +4,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 /// Sizing presets for [AppAvatar].
 enum AppAvatarSize {
@@ -143,13 +144,10 @@ class AppAvatar extends StatelessWidget {
             return Container(
               color: effectiveBg,
               alignment: Alignment.center,
-              child: SizedBox(
-                width: _dimension * 0.4,
-                height: _dimension * 0.4,
-                child: CircularProgressIndicator.adaptive(
-                  strokeWidth: 1.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(effectiveFg),
-                ),
+              child: AppLogoLoader(
+                size: _dimension * 0.5,
+                color: effectiveFg,
+                showMessage: false,
               ),
             );
           },

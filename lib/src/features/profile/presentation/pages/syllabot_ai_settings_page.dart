@@ -16,6 +16,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for Syllabot AI settings, reasoning preferences,
@@ -362,13 +363,9 @@ class SyllabotAiSettingsPage extends HookWidget {
                           ],
                         ),
                         if (isDownloadingOfflineModel.value)
-                          SizedBox(
-                            width: 26,
-                            height: 26,
-                            child: CircularProgressIndicator(
-                              value: offlineDownloadProgress.value,
-                              strokeWidth: 2.5,
-                            ),
+                          const AppLogoLoader(
+                            size: 26,
+                            showMessage: false,
                           )
                         else
                           ShrinkableButton(

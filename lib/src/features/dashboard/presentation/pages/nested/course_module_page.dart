@@ -23,6 +23,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -849,7 +850,7 @@ class _CourseModuleView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
-                  child: CircularProgressIndicator.adaptive(),
+                  child: AppLogoLoader(size: 36, showMessage: false),
                 ),
               )
             else if (hasQuestions) ...[

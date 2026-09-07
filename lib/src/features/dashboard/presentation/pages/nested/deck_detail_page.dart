@@ -14,6 +14,7 @@ import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_ca
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -170,8 +171,8 @@ class _DeckDetailContent extends HookWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: isLoadingCards.value
-              ? Center(
-                  child: CircularProgressIndicator(color: colors.primary),
+              ? const Center(
+                  child: AppLogoLoader(size: 56),
                 )
               : dynamicCards.isEmpty
                   ? Center(

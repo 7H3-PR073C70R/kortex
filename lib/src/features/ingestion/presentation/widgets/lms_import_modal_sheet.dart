@@ -11,6 +11,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/lms_oauth_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -431,8 +432,8 @@ class LmsImportModalSheet extends HookWidget {
                     child: Center(
                       child: Column(
                         children: [
-                          CircularProgressIndicator(
-                            strokeWidth: 2.5,
+                          AppLogoLoader(
+                            size: 40,
                             color: colors.primary,
                           ),
                           const SizedBox(height: 12),
@@ -627,13 +628,9 @@ class _LmsCourseCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: isImporting
-                  ? SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colors.white,
-                      ),
+                  ? AppLogoLoader(
+                      size: 16,
+                      color: colors.white,
                     )
                   : Text(
                       'Import',

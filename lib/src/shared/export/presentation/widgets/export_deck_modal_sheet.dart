@@ -10,6 +10,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/services/anki_export_service.dart';
 import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
 import 'package:kortex/src/shared/export/services/pdf_printable_generator.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -213,7 +214,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Column(
                 children: [
-                  const CircularProgressIndicator(),
+                  const AppLogoLoader(size: 48),
                   const SizedBox(height: 16),
                   Text(
                     _exportMessage ?? l10n.exportingFile,

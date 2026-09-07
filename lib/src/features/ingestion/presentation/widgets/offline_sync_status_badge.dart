@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 class OfflineSyncStatusBadge extends StatelessWidget {
   const OfflineSyncStatusBadge({
@@ -49,13 +50,9 @@ class OfflineSyncStatusBadge extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isSyncing)
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.warning),
-                    ),
+                  AppLogoLoader(
+                    size: 14,
+                    color: colors.warning,
                   )
                 else
                   Container(

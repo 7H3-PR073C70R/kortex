@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Visual style variants for [AppButton].
@@ -293,14 +294,11 @@ class _AppButtonState extends State<AppButton> {
     final content = AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: widget.isLoading
-          ? SizedBox(
+          ? AppLogoLoader(
               key: const ValueKey('button_loading'),
-              width: widget.size.iconSize,
-              height: widget.size.iconSize,
-              child: CircularProgressIndicator.adaptive(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(resolvedFg),
-              ),
+              size: widget.size.iconSize > 18 ? widget.size.iconSize : 20,
+              color: resolvedFg,
+              showMessage: false,
             )
           : Row(
               key: const ValueKey('button_content'),

@@ -9,6 +9,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -439,13 +440,10 @@ class ForumThreadDetailPage extends HookWidget {
                         color: colors.primary,
                       ),
                       child: isSubmitting.value
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colors.white,
-                              ),
+                          ? AppLogoLoader(
+                              size: 18,
+                              color: colors.white,
+                              showMessage: false,
                             )
                           : Icon(
                               Icons.send_rounded,

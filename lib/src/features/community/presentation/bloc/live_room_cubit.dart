@@ -237,7 +237,29 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
     _micSubscription = audio.microphoneStateStream.listen((enabled) {
       if (!isClosed) {
-        emit(state.copyWith(isMuted: !enabled));
+        final isMuted = !enabled;
+        final updatedList = state.ephemeralParticipants.map((p) {
+          if (p.userId == _currentUserId) {
+            return p.copyWith(isMuted: isMuted);
+          }
+          return p;
+        }).toList();
+
+        emit(state.copyWith(
+          isMuted: isMuted,
+          ephemeralParticipants: updatedList,
+        ));
+
+        // If the hardware mic reverted to muted (e.g. permission denied), broadcast
+        if (isMuted && _ephemeralRepository != null) {
+          unawaited(
+            _ephemeralRepository.broadcastMuteState(
+              roomId: state.room.id,
+              userId: _currentUserId,
+              isMuted: true,
+            ),
+          );
+        }
       }
     });
 
@@ -266,11 +288,13 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           },
           (token) {
             if (token.isNotEmpty) {
-              audio.connect(
-                url: AppEnv.liveKitUrl,
-                token: token,
-                roomId: roomId,
-                userId: _currentUserId,
+              unawaited(
+                audio.connect(
+                  url: AppEnv.liveKitUrl,
+                  token: token,
+                  roomId: roomId,
+                  userId: _currentUserId,
+                ),
               );
             } else if (!isClosed) {
               emit(state.copyWith(isAudioConnected: false));

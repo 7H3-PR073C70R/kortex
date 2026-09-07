@@ -15,6 +15,7 @@ import 'package:kortex/src/features/onboarding_calibration/domain/repositories/c
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 @RoutePage()
 class OtpVerificationPage extends HookWidget {
@@ -272,13 +273,9 @@ class _OtpGlassCard extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: state.isLoading
-                            ? SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: colors.white,
-                                ),
+                            ? AppLogoLoader(
+                                size: 22,
+                                color: colors.white,
                               )
                             : Text(
                                 l10n.otpVerifyButton,
