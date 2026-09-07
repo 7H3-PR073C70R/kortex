@@ -267,73 +267,73 @@ document.addEventListener('DOMContentLoaded', () => {
     el.className = `waitlist-feedback ${type}`;
   }
 
-  // 3. Multi-Level Interactive Flashcard Demo (WAEC to PhD)
+  // 3. Multi-Level Interactive CBT & Flashcard Demo (WAEC, NECO, JAMB, University)
   const demoCards = [
     {
-      deckTitle: 'waec_biology_past_questions.deck',
-      level: 'WAEC • Senior Secondary',
-      subject: 'Biology • Cell Transport & Osmosis',
-      question: 'What is the primary role of the semi-permeable membrane in plant root hair cells during water absorption from the soil?',
-      answer: '<strong>Selective Osmosis:</strong> Allows water molecules to enter root cells down a water potential gradient from hypotonic soil to hypertonic cell sap, while preventing essential internal solutes and minerals from leaking out.',
+      deckTitle: 'jamb_utme_cbt_physics.cbt',
+      level: 'JAMB UTME CBT Practice',
+      subject: 'Physics: Uniform Acceleration & Motion',
+      question: 'JAMB CBT Question: A car starts from rest and accelerates uniformly at 2.5 m/s² for 8 seconds. Calculate the total distance covered by the car.',
+      answer: '<strong>Option C (80m) is Correct:</strong><br>Using s = ut + ½at² where initial speed u = 0, acceleration a = 2.5 m/s², and time t = 8s:<br>s = 0(8) + ½(2.5)(8)² = ½(2.5)(64) = 80 meters.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Failed in CBT mode? Kortexify automatically adds this to your Weak Spots Flashcard Deck for spaced review.</span>',
+      interval: 'Interval: 2d',
+      mastery: 'Mastery: 91%',
+      difficulty: 'Difficulty: CBT High-Yield',
+      nextIntervals: { again: '10m', hard: '1d', good: '2d', easy: '5d' }
+    },
+    {
+      deckTitle: 'waec_neco_biology_past_questions.cbt',
+      level: 'WAEC / NECO Senior Secondary',
+      subject: 'Biology: Cell Transport & Digestion',
+      question: 'WAEC Past Question: Which of the following organelles contains hydrolytic enzymes primarily responsible for intracellular digestion in animal cells?',
+      answer: '<strong>Option B (Lysosome) is Correct:</strong><br>Lysosomes store acidic hydrolytic enzymes that break down worn-out cellular parts and engulfed pathogens. Ribosomes synthesize proteins, and chloroplasts conduct photosynthesis.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Mastered answer: Next recall test scheduled right before your memory curve decays.</span>',
       interval: 'Interval: 3d',
-      mastery: 'Mastery: 92%',
-      difficulty: 'Difficulty: Moderate',
+      mastery: 'Mastery: 94%',
+      difficulty: 'Difficulty: Standard',
       nextIntervals: { again: '10m', hard: '1d', good: '3d', easy: '7d' }
     },
     {
-      deckTitle: 'jamb_utme_use_of_english.deck',
-      level: 'JAMB / UTME • Use of English',
-      subject: 'Lexis & Structure • Subject-Verb Concord',
-      question: 'Choose the correct option: "Neither the principal nor the subject teachers _____ present at yesterday\'s emergency briefing." (was / were)',
-      answer: '<strong>Rule of Proximity:</strong> <em>"were"</em>. When subjects are joined by "neither... nor", the verb agrees with the nearer subject ("teachers", which is plural).',
+      deckTitle: 'jamb_utme_use_of_english.cbt',
+      level: 'JAMB UTME CBT Practice',
+      subject: 'Use of English: Lexis & Structure Concord',
+      question: 'JAMB CBT Question: Choose the option opposite in meaning to the underlined word: "The key witness gave a candid statement during the emergency briefing."',
+      answer: '<strong>Option B (Deceitful) is Correct:</strong><br>"Candid" means completely truthful and frank. Its direct opposite is "deceitful" (untruthful or misleading). Blunt, open, and sincere are close synonyms.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Weak Spot Detected: Automatically queued into your English Vocabulary Flashcards.</span>',
       interval: 'Interval: 2d',
       mastery: 'Mastery: 88%',
       difficulty: 'Difficulty: Tricky',
       nextIntervals: { again: '10m', hard: '1d', good: '2d', easy: '5d' }
     },
     {
-      deckTitle: 'law302_constitutional_jurisprudence.deck',
-      level: 'Undergraduate • Faculty of Law',
-      subject: 'Constitutional Law • Separation of Powers',
-      question: 'What is the core distinction between the doctrine of "Separation of Powers" and the mechanism of "Checks and Balances"?',
-      answer: '<strong>Functional Independence vs. Oversight:</strong> Separation of Powers divides governance into three independent arms (Executive, Legislative, Judiciary). Checks and Balances grants each arm constitutional authority (e.g. judicial review, legislative vetos) to prevent authoritarian abuse.',
-      interval: 'Interval: 5d',
-      mastery: 'Mastery: 95%',
-      difficulty: 'Difficulty: Analytical',
-      nextIntervals: { again: '15m', hard: '2d', good: '5d', easy: '12d' }
-    },
-    {
-      deckTitle: 'med401_cardiovascular_physiology.deck',
-      level: 'Clinical Medicine • MBBS / Pre-Med',
-      subject: 'Physiology • Cardiac Hemodynamics',
-      question: 'Explain the Frank-Starling mechanism of the heart and its direct impact on stroke volume.',
-      answer: '<strong>Length-Tension Relationship:</strong> An increase in end-diastolic volume (preload) stretches ventricular myocytes, increasing troponin C sensitivity to calcium and generating greater contractile force for higher stroke volume.',
-      interval: 'Interval: 7d',
-      mastery: 'Mastery: 96%',
-      difficulty: 'Difficulty: High-Yield',
-      nextIntervals: { again: '20m', hard: '3d', good: '7d', easy: '18d' }
-    },
-    {
-      deckTitle: 'phd_deep_learning_attention.deck',
-      level: 'PhD Research • Machine Learning & AI',
-      subject: 'Neural Architectures • Attention Mechanisms',
-      question: 'Why does Scaled Dot-Product Attention divide the query-key matrix multiplication by √d_k?',
-      answer: '<strong>Gradient Variance Stabilization:</strong> For large key dimensions d_k, dot products grow large in magnitude, pushing the softmax function into regions with vanishingly small gradients. Scaling by 1/√d_k ensures stable unit variance.',
-      interval: 'Interval: 14d',
-      mastery: 'Mastery: 98%',
-      difficulty: 'Difficulty: Advanced',
-      nextIntervals: { again: '30m', hard: '5d', good: '14d', easy: '30d' }
-    },
-    {
-      deckTitle: 'waec_econ_microeconomics.deck',
-      level: 'WAEC / A-Level • Economics',
-      subject: 'Microeconomics • Elasticity of Demand',
-      question: 'What happens to a firm\'s total revenue if it increases price when price elasticity of demand is elastic (E_d > 1)?',
-      answer: '<strong>Total Revenue Decreases:</strong> Because demand is price-sensitive, the percentage decline in quantity demanded exceeds the percentage increase in price, reducing total receipts.',
+      deckTitle: 'waec_financial_accounting.cbt',
+      level: 'Commercial & Secondary Accounting',
+      subject: 'Financial Accounting: Double Entry Principles',
+      question: 'NECO / WAEC Question: What is the correct double-entry record when cash is withdrawn from the bank for office running expenses?',
+      answer: '<strong>Option B (Debit Cash, Credit Bank) is Correct:</strong><br>Cash at hand increases (asset increase: Debit), while bank funds decrease (asset decrease: Credit). In a three-column cash book, this is entered as a Contra entry (C).<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Added to Weak Spot Deck: Scheduled for quick review tomorrow at 4:00 PM.</span>',
       interval: 'Interval: 4d',
       mastery: 'Mastery: 90%',
       difficulty: 'Difficulty: Moderate',
       nextIntervals: { again: '10m', hard: '1d', good: '4d', easy: '9d' }
+    },
+    {
+      deckTitle: 'neco_literature_in_english.cbt',
+      level: 'Arts & Literature in English',
+      subject: 'Literature: Literary Devices & Drama',
+      question: 'WAEC / NECO Question: What is the literary term for a speech made by an actor alone on stage that reveals their deepest private motives directly to the audience?',
+      answer: '<strong>Option B (Soliloquy) is Correct:</strong><br>A soliloquy is delivered by a solitary character disclosing inner secrets to the audience. An aside is heard by viewers while other characters are present, and a monologue addresses other characters.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Flashcard Generated: Ready for spaced repetition drill in your Drama Deck.</span>',
+      interval: 'Interval: 5d',
+      mastery: 'Mastery: 92%',
+      difficulty: 'Difficulty: Analytical',
+      nextIntervals: { again: '15m', hard: '2d', good: '5d', easy: '12d' }
+    },
+    {
+      deckTitle: 'university_degree_syllabus.deck',
+      level: 'University & Higher Education',
+      subject: 'Universal Course Deck: Research Methodology',
+      question: 'University Exam Question: What is the fundamental difference between deductive logic and inductive reasoning in academic research?',
+      answer: '<strong>Top-Down Testing vs Bottom-Up Discovery:</strong><br>Deductive logic begins with an established theory and tests specific hypotheses. Inductive reasoning observes patterns first to generate new broader concepts.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Curated from Lecture PDF: Formatted instantly with clean definitions and zero typing.</span>',
+      interval: 'Interval: 7d',
+      mastery: 'Mastery: 96%',
+      difficulty: 'Difficulty: High-Yield',
+      nextIntervals: { again: '20m', hard: '3d', good: '7d', easy: '18d' }
     }
   ];
 

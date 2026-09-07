@@ -101,6 +101,7 @@
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: textShimmer 8s ease infinite;
   display: inline-block;
@@ -109,6 +110,7 @@
 .gradient-text-cyan {
   background: linear-gradient(135deg, #FFFFFF 0%, #00C2FF 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

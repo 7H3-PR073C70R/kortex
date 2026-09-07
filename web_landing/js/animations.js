@@ -3,8 +3,21 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Scroll-Triggered Reveal Animations using IntersectionObserver
+  // 1. Scroll-Triggered Reveal Animations with Safari Resilience
   const revealElements = document.querySelectorAll('.reveal-on-scroll');
+
+  function revealVisibleElements() {
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    revealElements.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= windowHeight * 0.96 && rect.bottom >= 0) {
+        el.classList.add('is-revealed');
+      }
+    });
+  }
+
+  // Immediate check on load so hero content is immediately visible
+  revealVisibleElements();
 
   if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver(
@@ -18,17 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       {
         root: null,
-        threshold: 0.05, // Trigger as soon as 5% of element is visible on mobile
-        rootMargin: '0px 0px -20px 0px',
+        threshold: 0.01,
+        rootMargin: '0px 0px 40px 0px',
       }
     );
 
     revealElements.forEach((el) => revealObserver.observe(el));
 
-    // Fallback safety: ensure all elements are visible within 2.5s regardless of scroll state
+    // Fallback safety for Safari or quick scrolls
+    window.addEventListener('scroll', revealVisibleElements, { passive: true });
+
     setTimeout(() => {
       revealElements.forEach((el) => el.classList.add('is-revealed'));
-    }, 2500);
+    }, 1200);
   } else {
     // Fallback for older browsers
     revealElements.forEach((el) => el.classList.add('is-revealed'));
@@ -69,11 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotateX = ((y - centerY) / centerY) * -4;
       const rotateY = ((x - centerX) / centerX) * 4;
 
-      mockupCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      const transformStr = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      mockupCard.style.transform = transformStr;
+      mockupCard.style.webkitTransform = transformStr;
     });
 
     mockupWrapper.addEventListener('mouseleave', () => {
-      mockupCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      const resetStr = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      mockupCard.style.transform = resetStr;
+      mockupCard.style.webkitTransform = resetStr;
     });
   }
 
