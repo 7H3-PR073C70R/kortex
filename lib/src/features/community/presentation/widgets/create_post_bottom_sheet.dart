@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -9,6 +11,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class CreatePostBottomSheet extends HookWidget {
   const CreatePostBottomSheet({
     required this.onSubmit,
+    this.lockedTrack,
     super.key,
   });
 
@@ -20,6 +23,8 @@ class CreatePostBottomSheet extends HookWidget {
   })
   onSubmit;
 
+  final String? lockedTrack;
+
   static Future<void> show(
     BuildContext context, {
     required void Function({
@@ -29,6 +34,7 @@ class CreatePostBottomSheet extends HookWidget {
       String? latexContent,
     })
     onSubmit,
+    String? lockedTrack,
   }) {
     final colors = context.colors;
     final isDark = context.isDarkMode;
@@ -41,7 +47,10 @@ class CreatePostBottomSheet extends HookWidget {
       barrierColor: colors.black.withAlpha(isDark ? 160 : 100),
       builder: (sheetContext) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: CreatePostBottomSheet(onSubmit: onSubmit),
+        child: CreatePostBottomSheet(
+          onSubmit: onSubmit,
+          lockedTrack: lockedTrack,
+        ),
       ),
     );
   }
@@ -56,16 +65,14 @@ class CreatePostBottomSheet extends HookWidget {
     final titleController = useTextEditingController();
     final contentController = useTextEditingController();
     final latexController = useTextEditingController();
-    final selectedTrack = useState<String>('WAEC');
 
-    final tracks = [
-      'WAEC',
-      'JAMB',
-      'SAT',
-      'Engineering',
-      'Medicine',
-      'General',
-    ];
+    final authState = context.watch<AuthBloc?>()?.state;
+    final userTrack = authState?.userProfile?.targetTrack;
+    final activeTrack = (lockedTrack != null && lockedTrack!.trim().isNotEmpty)
+        ? lockedTrack!.trim()
+        : ((userTrack != null && userTrack.trim().isNotEmpty)
+            ? userTrack.trim()
+            : 'General');
 
     return Container(
       padding: EdgeInsets.only(
@@ -109,32 +116,74 @@ class CreatePostBottomSheet extends HookWidget {
                 color: colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Track Selection Chips
-            Text(
-              l10n.selectTrackHint,
-              style: typography.footnote.bold.copyWith(
-                color: colors.textSecondary,
+            // Locked Enrolled Track Indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: colors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.primary.withAlpha(40),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: tracks.map((track) {
-                final isSelected = selectedTrack.value == track;
-                return ChoiceChip(
-                  label: Text(track),
-                  selected: isSelected,
-                  onSelected: (val) {
-                    if (val) selectedTrack.value = track;
-                  },
-                  selectedColor: colors.primary.withAlpha(50),
-                  labelStyle: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.primary : colors.textSecondary,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(30),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.school_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
                   ),
-                );
-              }).toList(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Posting to ${activeTrack.toUpperCase()} Forum',
+                      style: typography.footnote.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lock_rounded,
+                          size: 11,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Locked',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -170,7 +219,7 @@ class CreatePostBottomSheet extends HookWidget {
                 onSubmit(
                   title: titleController.text.trim(),
                   content: contentController.text.trim(),
-                  track: selectedTrack.value,
+                  track: activeTrack,
                   latexContent: latexController.text.trim().isNotEmpty
                       ? latexController.text.trim()
                       : null,

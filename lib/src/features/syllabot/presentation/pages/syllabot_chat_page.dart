@@ -25,6 +25,7 @@ import 'package:kortex/src/features/syllabot/data/models/prompt_suggestion_model
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_bloc.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_event.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
@@ -135,16 +136,34 @@ class _SyllabotChatView extends HookWidget {
       [ttsHandler],
     );
 
-    void scrollToBottom({bool animate = true}) {
+    final lastAutoScrollTime = useRef(0);
+    final userIsAtBottom = useRef(true);
+
+    void scrollToBottom({bool animate = true, bool force = false}) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      // Throttle rapid streaming calls to at most once every 120ms to keep UI at 60fps
+      if (!force && now - lastAutoScrollTime.value < 120) {
+        return;
+      }
+      lastAutoScrollTime.value = now;
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (scrollController.hasClients) {
           final maxExtent = scrollController.position.maxScrollExtent;
+          final currentOffset = scrollController.offset;
+          final isNearBottom = (maxExtent - currentOffset) < 90;
+
+          // If the user manually scrolled up, do not force-jump down unless force is true
+          if (!force && !isNearBottom && !userIsAtBottom.value) {
+            return;
+          }
+
           if (animate) {
             unawaited(
               scrollController.animateTo(
                 maxExtent,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutQuad,
               ),
             );
           } else {
@@ -271,12 +290,13 @@ class _SyllabotChatView extends HookWidget {
               ),
             );
 
-            // Stream response tokens directly to sentence-buffered speech synthesizer
-            final localLlm = locator<LocalLlmEngineClient>();
-            return localLlm.generate(
+            // Stream response tokens through the active engine pipeline
+            final streamUseCase = locator<StreamSyllabotResponseUseCase>();
+            return streamUseCase(
               prompt: voicePrompt,
-              systemInstruction: '',
+              sessionId: sid,
               socraticMode: state.socraticMode,
+              preferredEngine: state.engineType,
             );
           },
         ),
@@ -408,7 +428,7 @@ class _SyllabotChatView extends HookWidget {
         if (state.status == SyllabotStatus.streaming) {
           scrollToBottom(animate: false);
         } else {
-          scrollToBottom();
+          scrollToBottom(force: true);
         }
 
         if (state.generatedDeck != null) {
@@ -575,6 +595,7 @@ class _SyllabotChatView extends HookWidget {
                       typography,
                       scrollController,
                       ttsHandler,
+                      userIsAtBottom,
                     );
                   },
                 ),
@@ -896,48 +917,59 @@ class _SyllabotChatView extends HookWidget {
     TypographyThemeExtension typography,
     ScrollController scrollController,
     TextToSpeechHandler ttsHandler,
+    ObjectRef<bool> userIsAtBottom,
   ) {
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      itemCount:
-          state.messages.length +
-          (state.status == SyllabotStatus.streaming ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index < state.messages.length) {
-          final message = state.messages[index];
-          return ChatBubbleWidget(
-            message: message,
-            ttsHandler: ttsHandler,
-            onRetry: message.sender == MessageSender.syllabot
-                ? () {
-                    context.read<SyllabotChatBloc>().add(
-                      const RetryLastMessageEvent(),
-                    );
-                  }
-                : null,
-          );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (scrollController.hasClients) {
+          final maxExtent = scrollController.position.maxScrollExtent;
+          userIsAtBottom.value = (maxExtent - scrollController.offset) < 90;
         }
-
-        // Live typing typewriter stream indicator
-        if (state.streamingText.isEmpty) {
-          return const StreamingTextTypingIndicator();
-        }
-
-        final streamingMessage = ChatMessageEntity(
-          id: 'msg_bot_streaming',
-          sessionId: state.sessionId,
-          sender: MessageSender.syllabot,
-          text: state.streamingText,
-          timestamp: DateTime.now(),
-          engineType: state.engineType,
-        );
-
-        return ChatBubbleWidget(
-          message: streamingMessage,
-          isStreaming: true,
-        );
+        return false;
       },
+      child: ListView.builder(
+        controller: scrollController,
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        itemCount:
+            state.messages.length +
+            (state.status == SyllabotStatus.streaming ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index < state.messages.length) {
+            final message = state.messages[index];
+            return ChatBubbleWidget(
+              message: message,
+              ttsHandler: ttsHandler,
+              onRetry: message.sender == MessageSender.syllabot
+                  ? () {
+                      context.read<SyllabotChatBloc>().add(
+                        const RetryLastMessageEvent(),
+                      );
+                    }
+                  : null,
+            );
+          }
+
+          // Live typing typewriter stream indicator
+          if (state.streamingText.isEmpty) {
+            return const StreamingTextTypingIndicator();
+          }
+
+          final streamingMessage = ChatMessageEntity(
+            id: 'msg_bot_streaming',
+            sessionId: state.sessionId,
+            sender: MessageSender.syllabot,
+            text: state.streamingText,
+            timestamp: DateTime.now(),
+            engineType: state.engineType,
+          );
+
+          return ChatBubbleWidget(
+            message: streamingMessage,
+            isStreaming: true,
+          );
+        },
+      ),
     );
   }
 }

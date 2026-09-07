@@ -132,22 +132,28 @@ class ForumThreadDetailPage extends HookWidget {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    post.authorName,
-                                    style: typography.footnote.bold.copyWith(
-                                      color: colors.textPrimary,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      post.authorName,
+                                      style: typography.footnote.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  Text(
-                                    _formatTime(post.createdAt, l10n),
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
+                                    Text(
+                                      _formatTime(post.createdAt, l10n),
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),

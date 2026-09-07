@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/offline_sync_status_badge.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 
 void main() {
   group('OfflineSyncStatusBadge Widget Test Suite', () {
@@ -65,7 +66,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Syncing offline notes...'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(AppLogoLoader), findsOneWidget);
     });
   });
 }

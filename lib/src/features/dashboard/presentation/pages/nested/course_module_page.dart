@@ -23,8 +23,8 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -384,32 +384,38 @@ class _CourseModuleView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Metrics Row
+              // Metrics Row with responsive Expanded wrapping
               Row(
                 children: [
-                  _buildHeaderMetric(
-                    label: 'Study Decks',
-                    value: '$deckCount',
-                    icon: Icons.layers_outlined,
-                    colors: colors,
-                    typography: typography,
+                  Expanded(
+                    child: _buildHeaderMetric(
+                      label: 'Study Decks',
+                      value: '$deckCount',
+                      icon: Icons.layers_outlined,
+                      colors: colors,
+                      typography: typography,
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  _buildHeaderMetric(
-                    label: 'Flashcards',
-                    value: '$cardCount',
-                    icon: Icons.style_outlined,
-                    colors: colors,
-                    typography: typography,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildHeaderMetric(
+                      label: 'Flashcards',
+                      value: '$cardCount',
+                      icon: Icons.style_outlined,
+                      colors: colors,
+                      typography: typography,
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  _buildHeaderMetric(
-                    label: 'Due Today',
-                    value: '$dueCount',
-                    icon: Icons.alarm_outlined,
-                    colors: colors,
-                    typography: typography,
-                    isAlert: dueCount > 0,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildHeaderMetric(
+                      label: 'Due Today',
+                      value: '$dueCount',
+                      icon: Icons.alarm_outlined,
+                      colors: colors,
+                      typography: typography,
+                      isAlert: dueCount > 0,
+                    ),
                   ),
                 ],
               ),
@@ -459,6 +465,8 @@ class _CourseModuleView extends StatelessWidget {
             color: colors.textSecondary,
             fontSize: 10.5,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -566,13 +574,18 @@ class _CourseModuleView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Associated Study Decks',
-              style: typography.callout.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 15,
+            Expanded(
+              child: Text(
+                'Associated Study Decks',
+                style: typography.callout.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             ShrinkableButton(
               onTap: () {
                 AppFeedback.light();
@@ -811,13 +824,18 @@ class _CourseModuleView extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Official Past Papers & Q-Bank',
-                  style: typography.callout.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 15,
+                Expanded(
+                  child: Text(
+                    'Official Past Papers & Q-Bank',
+                    style: typography.callout.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 if (hasQuestions)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -917,27 +935,34 @@ class _CourseModuleView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 50 : 25),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.verified_rounded, size: 12, color: colors.primary),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${examCategory.displayName} • $mappedSubject',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 11,
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_rounded, size: 12, color: colors.primary),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    '${examCategory.displayName} • $mappedSubject',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Icon(
                           Icons.menu_book_rounded,
                           size: 20,

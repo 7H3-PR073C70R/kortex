@@ -60,7 +60,7 @@ class _AppLogoLoaderState extends State<AppLogoLoader>
     final inset = widget.size < 32
         ? (widget.size * 0.12).clamp(1.5, 3.0)
         : 6.0;
-    final innerSize = math.max(4.0, widget.size - (inset * 2));
+    final innerSize = math.max<double>(4, widget.size - (inset * 2));
     final blurRadius = (widget.size * 0.25).clamp(2.0, 16.0);
     final spreadRadius = widget.size > 32 ? 2.0 : 0.5;
 

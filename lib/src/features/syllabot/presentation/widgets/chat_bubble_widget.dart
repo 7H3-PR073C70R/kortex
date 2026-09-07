@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -130,34 +129,32 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
             const SyllabotAvatar(size: 32),
             const SizedBox(width: 8),
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(6),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(200)
-                          : colors.surfacePrimary.withAlpha(220),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(6),
-                        topRight: Radius.circular(20),
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
-                      ),
-                      border: Border.all(
-                        color: widget.message.isError
-                            ? colors.error.withAlpha(120)
-                            : colors.primary.withAlpha(isDark ? 50 : 30),
-                      ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfacePrimary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(6),
+                    topRight: Radius.circular(20),
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                  border: Border.all(
+                    color: widget.message.isError
+                        ? colors.error.withAlpha(120)
+                        : colors.primary.withAlpha(isDark ? 50 : 30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 30 : 8),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Column(
+                  ],
+                ),
+                child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Engine badge tag & Actions (Copy & TTS)
@@ -321,12 +318,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
   }
 }
 
@@ -453,7 +448,6 @@ class _FormattedMessageBody extends StatelessWidget {
     if (parts.length <= 1) {
       return MarkdownBody(
         data: displayText,
-        selectable: true,
         styleSheet: markdownStyleSheet,
       );
     }
@@ -503,7 +497,6 @@ class _FormattedMessageBody extends StatelessWidget {
         children.add(
           MarkdownBody(
             data: part.trim(),
-            selectable: true,
             styleSheet: markdownStyleSheet,
           ),
         );

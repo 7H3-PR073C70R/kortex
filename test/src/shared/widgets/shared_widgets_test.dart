@@ -62,7 +62,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(AppLogoLoader), findsOneWidget);
       expect(find.text('Submit'), findsNothing);
     });
 

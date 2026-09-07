@@ -158,29 +158,44 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     try {
       if (widget.onStreamPrompt != null) {
         final stream = widget.onStreamPrompt!(prompt);
+        // Triggers immediate speech on the first clause, comma, colon, or question
+        final firstClauseDelimiters = RegExp(r'([,;:!?\n]+)\s*');
         final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
         var accumulated = '';
         var firstSentenceSpoken = false;
 
         await for (final chunk in stream) {
           if (!mounted) break;
-          accumulated += chunk;
+          accumulated = '$accumulated$chunk';
 
-          Match? match;
-          while ((match = sentenceDelimiters.firstMatch(accumulated)) != null) {
-            final sentence = accumulated.substring(0, match!.end).trim();
-            accumulated = accumulated.substring(match.end);
+          if (!firstSentenceSpoken) {
+            final match = firstClauseDelimiters.firstMatch(accumulated);
+            final wordCount = accumulated.trim().split(RegExp(r'\s+')).length;
+            // Early break on comma/clause OR if 5 words reached
+            if (match != null || wordCount >= 5) {
+              final splitIndex = match != null ? match.end : accumulated.length;
+              final firstClause = accumulated.substring(0, splitIndex).trim();
+              accumulated = accumulated.substring(splitIndex);
 
-            if (sentence.isNotEmpty) {
-              if (!firstSentenceSpoken) {
+              if (firstClause.isNotEmpty) {
                 firstSentenceSpoken = true;
                 if (mounted) {
                   setState(() {
                     _state = DialogueState.speaking;
                   });
                 }
+                await widget.ttsHandler.enqueueSentence(firstClause);
               }
-              await widget.ttsHandler.enqueueSentence(sentence);
+            }
+          } else {
+            Match? match;
+            while ((match = sentenceDelimiters.firstMatch(accumulated)) != null) {
+              final sentence = accumulated.substring(0, match!.end).trim();
+              accumulated = accumulated.substring(match.end);
+
+              if (sentence.isNotEmpty) {
+                await widget.ttsHandler.enqueueSentence(sentence);
+              }
             }
           }
 

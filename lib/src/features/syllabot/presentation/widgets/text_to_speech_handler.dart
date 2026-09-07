@@ -57,56 +57,63 @@ class TextToSpeechHandler {
           : null);
 
   // ---------------------------------------------------------------------------
-  // iOS Enhanced/Premium neural voices — most human-sounding on-device.
-  // These require the user to have downloaded the Enhanced pack in
-  // Settings → Accessibility → Spoken Content → Voices → English.
-  // We try Enhanced first, then Standard as fallback.
+  // iOS Enhanced/Premium neural voices: most human-sounding on-device.
+  // We try Enhanced/Premium/Natural first, then Standard as fallback.
   // ---------------------------------------------------------------------------
   static const List<String> _iosFemaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Ava',      // Neural, warm — top pick
+    'com.apple.voice.enhanced.en-US.Ava',      // Neural, warm: top pick
     'com.apple.voice.premium.en-US.Ava',
     'com.apple.voice.enhanced.en-US.Allison',  // Clear, warm
     'com.apple.voice.premium.en-US.Allison',
     'com.apple.voice.enhanced.en-US.Samantha', // Classic but enhanced
-    'com.apple.voice.enhanced.en-AU.Karen',    // Australian, very natural
-    'com.apple.voice.enhanced.en-GB.Kate',     // British option
+    'com.apple.voice.enhanced.en-AU.Karen',    // Natural Australian
+    'com.apple.voice.enhanced.en-GB.Kate',     // Natural British
+    'com.apple.voice.compact.en-US.Ava',
     'samantha',                                 // Standard fallback
     'karen',
   ];
 
   static const List<String> _iosMaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Aaron',    // Very natural male
+    'com.apple.voice.enhanced.en-US.Aaron',    // Very natural warm male
     'com.apple.voice.premium.en-US.Aaron',
-    'com.apple.voice.enhanced.en-US.Tom',      // Clear, warm male
+    'com.apple.voice.enhanced.en-US.Tom',      // Clear, authentic male
     'com.apple.voice.premium.en-US.Tom',
-    'com.apple.voice.enhanced.en-GB.Daniel',   // British, articulate
+    'com.apple.voice.enhanced.en-GB.Daniel',   // British articulate male
     'com.apple.voice.premium.en-GB.Daniel',
-    'com.apple.voice.enhanced.en-AU.Lee',      // Australian male
+    'com.apple.voice.enhanced.en-AU.Lee',      // Natural Australian male
+    'com.apple.voice.compact.en-US.Aaron',
     'daniel',                                   // Standard fallback
     'alex',
   ];
 
   // ---------------------------------------------------------------------------
   // Android Google Speech Services neural voice identifiers.
-  // These are the highest-quality local voices on stock Android / Google devices.
+  // These are the highest-quality neural voices on stock Android / Google devices.
   // ---------------------------------------------------------------------------
   static const List<String> _androidFemaleVoicesPriority = [
-    'en-us-x-sfg-network', // Google Neural TTS (requires network)
+    'en-us-x-sfg-network', // Google Neural TTS (high quality)
     'en-us-x-sfg-local',   // Google Neural TTS (offline)
     'en-us-x-iob-network',
     'en-us-x-iob-local',
+    'en-us-x-iol-network',
     'en-us-x-iol-local',
+    'en-gb-x-rjs-network', // British natural female
     'en-US-language',
   ];
 
   static const List<String> _androidMaleVoicesPriority = [
-    'en-us-x-tpc-network',  // Google Neural TTS (requires network)
-    'en-us-x-tpc-local',    // Google Neural TTS (offline)
-    'en-us-x-sfg-network',  // Acceptable fallback
+    'en-us-x-tpc-network',  // Google Neural TTS male (high quality)
+    'en-us-x-tpc-local',    // Google Neural TTS male (offline)
     'en-us-x-tpd-network',
     'en-us-x-tpd-local',
+    'en-us-x-iom-network',  // Natural deep male
+    'en-us-x-iom-local',
+    'en-gb-x-fis-network',  // British natural male
     'en-US-language',
   ];
+
+  bool _isConfigured = false;
+  Map<String, String>? _cachedSelectedVoice;
 
   void _loadSavedPreferences() {
     try {
@@ -182,6 +189,8 @@ class TextToSpeechHandler {
 
   Future<void> setVoiceGender(VoiceGender gender) async {
     _gender = gender;
+    _cachedSelectedVoice = null;
+    _isConfigured = false;
     await _applyVoiceConfiguration();
     try {
       await _effectiveLocalStorage?.savePreference(
@@ -193,6 +202,7 @@ class TextToSpeechHandler {
 
   Future<void> setSpeechRate(double rate) async {
     _speechRate = rate;
+    _isConfigured = false;
     await _applyVoiceConfiguration();
     try {
       await _effectiveLocalStorage?.savePreference(
@@ -203,21 +213,29 @@ class TextToSpeechHandler {
   }
 
   Future<void> _applyVoiceConfiguration() async {
+    if (_isConfigured) return;
     try {
       await _flutterTts.setLanguage('en-US');
 
-      // Conversational pace — 0.44 is warm and easy to follow without dragging.
-      // User's multiplier shifts it slightly above or below that baseline.
-      await _flutterTts.setSpeechRate(0.44 * _speechRate);
+      // Human-like acoustic profiling by gender
+      final isMale = _gender == VoiceGender.male;
+      final isIos = !kIsWeb && Platform.isIOS;
+
+      // Male voice: pitch 0.94 gives a deeper, natural chest resonance.
+      // Female voice: pitch 1.02 gives warm, melodic inflection.
+      final pitch = isMale ? 0.94 : 1.02;
+
+      // Conversational speaking pace: smooth and natural without dragging
+      final baseRate = isIos
+          ? (isMale ? 0.46 : 0.48)
+          : (isMale ? 0.88 : 0.92);
+
+      await _flutterTts.setSpeechRate(baseRate * _speechRate);
+      await _flutterTts.setPitch(pitch);
       await _flutterTts.setVolume(1);
 
-      // Pitch 1.0 = natural. ANY deviation from 1.0 is the #1 cause of the
-      // "robotic" sound. Keeping it flat lets the neural voice model control
-      // its own natural intonation curve.
-      await _flutterTts.setPitch(1);
-
-      // iOS audio session — route to speaker, allow Bluetooth
-      if (!kIsWeb && Platform.isIOS) {
+      // iOS audio session: route to speaker, allow Bluetooth
+      if (isIos) {
         try {
           await _flutterTts.setIosAudioCategory(
             IosTextToSpeechAudioCategory.playAndRecord,
@@ -232,30 +250,35 @@ class TextToSpeechHandler {
         } on Object catch (_) {}
       }
 
-      // Try to select the best available voice
+      // Select and apply the best available voice
       await _selectBestVoice();
+      _isConfigured = true;
     } on Object catch (e) {
       onError?.call(e.toString());
     }
   }
 
-  /// Selects the most human-sounding available voice from a priority list.
-  /// On iOS, Enhanced/Premium neural voices are dramatically better.
-  /// On Android, Google's neural voice identifiers follow a predictable pattern.
+  /// Selects the most human-sounding available voice from priority list and neural matches.
   Future<void> _selectBestVoice() async {
     try {
+      if (_cachedSelectedVoice != null) {
+        await _flutterTts.setVoice(_cachedSelectedVoice!);
+        return;
+      }
+
       final rawVoices = await _flutterTts.getVoices.timeout(
-        const Duration(milliseconds: 1200),
+        const Duration(milliseconds: 900),
         onTimeout: () => null,
       );
       if (rawVoices is! List) return;
 
-      // Build a normalised map: lowercased name → original map
-      final voiceMap = <String, Map<dynamic, dynamic>>{};
+      // Build normalised voice map
+      final voiceList = <Map<String, String>>[];
       for (final dynamic v in rawVoices) {
         if (v is Map) {
           final name = v['name']?.toString() ?? '';
-          voiceMap[name.toLowerCase()] = v;
+          final locale = v['locale']?.toString() ?? 'en-US';
+          voiceList.add({'name': name, 'locale': locale});
         }
       }
 
@@ -264,51 +287,57 @@ class TextToSpeechHandler {
           ? (isIos ? _iosFemaleVoicesPriority : _androidFemaleVoicesPriority)
           : (isIos ? _iosMaleVoicesPriority : _androidMaleVoicesPriority);
 
-      // Walk priority list — pick first one that is actually installed
+      // 1. Walk explicit neural priority list
       for (final candidate in priorities) {
         final lower = candidate.toLowerCase();
-        // Exact match
-        if (voiceMap.containsKey(lower)) {
-          final v = voiceMap[lower]!;
-          await _flutterTts.setVoice({
-            'name': v['name'].toString(),
-            'locale': v['locale']?.toString() ?? 'en-US',
-          });
-          return;
-        }
-        // Partial match (handles variant suffixes like "#ava")
-        final partialMatch = voiceMap.keys
-            .where((k) => k.contains(lower) || lower.contains(k))
-            .firstOrNull;
-        if (partialMatch != null) {
-          final v = voiceMap[partialMatch]!;
-          await _flutterTts.setVoice({
-            'name': v['name'].toString(),
-            'locale': v['locale']?.toString() ?? 'en-US',
-          });
+        final match = voiceList.firstWhere(
+          (v) => v['name']!.toLowerCase() == lower ||
+              v['name']!.toLowerCase().contains(lower) ||
+              lower.contains(v['name']!.toLowerCase()),
+          orElse: () => const {},
+        );
+        if (match.isNotEmpty) {
+          _cachedSelectedVoice = match;
+          await _flutterTts.setVoice(match);
           return;
         }
       }
 
-      // Fallback: pick any English voice that matches the gender by keyword
+      // 2. Search for any voice with high-quality neural identifiers
+      final qualityKeywords = ['neural', 'natural', 'enhanced', 'premium', 'wavenet'];
       final genderKeywords = _gender == VoiceGender.female
-          ? ['ava', 'allison', 'samantha', 'karen', 'kate', 'victoria', 'female']
-          : ['aaron', 'daniel', 'tom', 'alex', 'oliver', 'lee', 'male'];
+          ? ['ava', 'allison', 'samantha', 'karen', 'kate', 'victoria', 'female', 'woman']
+          : ['aaron', 'daniel', 'tom', 'alex', 'oliver', 'lee', 'male', 'man'];
 
-      for (final entry in voiceMap.entries) {
-        final locale = entry.value['locale']?.toString().toLowerCase() ?? '';
-        if (!locale.startsWith('en')) continue;
-        if (genderKeywords.any(entry.key.contains)) {
-          final v = entry.value;
-          await _flutterTts.setVoice({
-            'name': v['name'].toString(),
-            'locale': v['locale']?.toString() ?? 'en-US',
-          });
+      for (final v in voiceList) {
+        final nameLower = v['name']!.toLowerCase();
+        final localeLower = v['locale']!.toLowerCase();
+        if (!localeLower.startsWith('en')) continue;
+
+        final hasQuality = qualityKeywords.any(nameLower.contains);
+        final hasGender = genderKeywords.any(nameLower.contains);
+
+        if (hasQuality && hasGender) {
+          _cachedSelectedVoice = v;
+          await _flutterTts.setVoice(v);
+          return;
+        }
+      }
+
+      // 3. Fallback: English voice matching gender
+      for (final v in voiceList) {
+        final nameLower = v['name']!.toLowerCase();
+        final localeLower = v['locale']!.toLowerCase();
+        if (!localeLower.startsWith('en')) continue;
+
+        if (genderKeywords.any(nameLower.contains)) {
+          _cachedSelectedVoice = v;
+          await _flutterTts.setVoice(v);
           return;
         }
       }
     } on Object catch (_) {
-      // Voice selection is best-effort — silently fall back to system default
+      // Best-effort
     }
   }
 
@@ -355,24 +384,21 @@ class TextToSpeechHandler {
     );
     text = text.replaceAll(RegExp('`[^`]+`'), '');
 
-    // Remove markdown headers — preserve the text, just strip #
+    // Remove markdown headers: preserve the text, just strip #
     text = text.replaceAll(RegExp(r'#{1,6}\s*'), '');
 
-    // Bold / italic — strip markers, keep words
+    // Bold / italic: strip markers, keep words
     text = text.replaceAll(RegExp(r'\*{1,3}|_{1,3}'), '');
 
-    // Bullet points / numbered lists → natural pause before each item
+    // Bullet points / numbered lists: natural pause before each item
     text = text.replaceAll(RegExp(r'\n\s*[-•*]\s+'), ', ');
     text = text.replaceAll(RegExp(r'\n\s*\d+\.\s+'), ', ');
 
-    // Markdown links → keep link text only
+    // Markdown links: keep link text only
     text = text.replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1');
 
     // Remove URLs
     text = text.replaceAll(RegExp(r'https?://\S+'), '');
-
-    // Expand common contractions so the engine doesn't stumble
-    text = _expandContractions(text);
 
     // Convert common symbols to spoken words
     text = text
@@ -382,9 +408,9 @@ class TextToSpeechHandler {
         .replaceAll(' > ', ' is greater than ')
         .replaceAll(' < ', ' is less than ')
         .replaceAll(' = ', ' equals ')
-        .replaceAll('...', ', ')         // ellipsis → natural pause
-        .replaceAll('—', ', ')           // em dash → short pause
-        .replaceAll(' – ', ', ')         // en dash
+        .replaceAll('...', ', ')
+        .replaceAll('—', ', ')
+        .replaceAll(' – ', ', ')
         .replaceAll('(', ', ')
         .replaceAll(')', ', ');
 
@@ -402,56 +428,6 @@ class TextToSpeechHandler {
     return text.trim();
   }
 
-  /// Expands common English contractions to their full form for clearer
-  /// pronunciation by the TTS engine.
-  static String _expandContractions(String text) {
-    const contractions = {
-      "won't": 'will not',
-      "can't": 'cannot',
-      "don't": 'do not',
-      "doesn't": 'does not',
-      "didn't": 'did not',
-      "isn't": 'is not',
-      "aren't": 'are not',
-      "wasn't": 'was not',
-      "weren't": 'were not',
-      "hasn't": 'has not',
-      "haven't": 'have not',
-      "hadn't": 'had not',
-      "wouldn't": 'would not',
-      "couldn't": 'could not',
-      "shouldn't": 'should not',
-      "mustn't": 'must not',
-      "that's": 'that is',
-      "it's": 'it is',
-      "I'm": 'I am',
-      "I've": 'I have',
-      "I'll": 'I will',
-      "I'd": 'I would',
-      "you're": 'you are',
-      "you've": 'you have',
-      "you'll": 'you will',
-      "you'd": 'you would',
-      "he's": 'he is',
-      "she's": 'she is',
-      "they're": 'they are',
-      "they've": 'they have',
-      "they'll": 'they will',
-      "we're": 'we are',
-      "we've": 'we have',
-      "we'll": 'we will',
-      "let's": 'let us',
-      "there's": 'there is',
-      "here's": 'here is',
-      "what's": 'what is',
-      "who's": 'who is',
-    };
-    var result = text;
-    for (final entry in contractions.entries) {
-      result = result.replaceAll(entry.key, entry.value);
-    }
-    return result;
-  }
 
   /// Splits text into natural speech chunks at sentence and clause boundaries
   /// so the TTS engine maintains good prosody throughout a long response.

@@ -501,97 +501,110 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // 1. Socratic Mode Selector Pill
-                  ShrinkableButton(
-                    onTap: _showSocraticModeSheet,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(90),
+                  Flexible(
+                    child: ShrinkableButton(
+                      onTap: _showSocraticModeSheet,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _getModeDetails(widget.socraticMode, l10n).$1,
-                            style: const TextStyle(fontSize: 13),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(90),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _getModeShortLabel(widget.socraticMode, l10n),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 11.5,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _getModeDetails(widget.socraticMode, l10n).$1,
+                              style: const TextStyle(fontSize: 13),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: colors.textSecondary,
-                            size: 15,
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                _getModeShortLabel(widget.socraticMode, l10n),
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 11.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: colors.textSecondary,
+                              size: 15,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
 
                   // 2. AI Engine Switcher Pill
-                  ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      final next = isCloud
-                          ? ExecutionEngineType.localOnDevice
-                          : ExecutionEngineType.cloudRemote;
-                      widget.onEngineChanged(next);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(90),
+                  Flexible(
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        final next = isCloud
+                            ? ExecutionEngineType.localOnDevice
+                            : ExecutionEngineType.cloudRemote;
+                        widget.onEngineChanged(next);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isCloud
-                                  ? colors.success
-                                  : colors.warning,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(90),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCloud
+                                    ? colors.success
+                                    : colors.warning,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            isCloud
-                                ? l10n.engineCloudSupabase
-                                : l10n.engineLocalOnDevice,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 11.5,
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                isCloud
+                                    ? l10n.engineCloudSupabase
+                                    : l10n.engineLocalOnDevice,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 11.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.swap_horiz_rounded,
-                            color: colors.textSecondary,
-                            size: 15,
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.swap_horiz_rounded,
+                              color: colors.textSecondary,
+                              size: 15,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -64,11 +64,14 @@ class _CommunityHubView extends HookWidget {
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
 
-    // Auto provision / join community for user's academic track on launch
+    // Auto provision / join community for user's academic track on launch & lock forum
     useEffect(() {
       if (targetTrack != null && targetTrack.trim().isNotEmpty) {
         unawaited(
           context.read<AutoCommunityCubit>().provisionForTrack(targetTrack),
+        );
+        context.read<CommunityHubBloc>().add(
+          ChangeTrackFilterEvent(targetTrack),
         );
       }
       return null;
@@ -108,6 +111,7 @@ class _CommunityHubView extends HookWidget {
                 unawaited(
                   CreatePostBottomSheet.show(
                     context,
+                    lockedTrack: targetTrack,
                     onSubmit: ({
                       required title,
                       required content,
@@ -489,46 +493,97 @@ class _ForumPostsList extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    const filterTracks = [
-      'All',
-      'WAEC',
-      'JAMB',
-      'SAT',
-      'Engineering',
-      'Medicine',
-      'General',
-    ];
+    final authState = context.watch<AuthBloc?>()?.state;
+    final userTrack = authState?.userProfile?.targetTrack;
+    final activeTrack = (userTrack != null && userTrack.trim().isNotEmpty)
+        ? userTrack.trim()
+        : (state.selectedTrack.isNotEmpty && state.selectedTrack != 'All'
+            ? state.selectedTrack
+            : 'General');
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
-        // Track Filter Chips Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        // Dedicated Track Header Banner (Locked to enrolled academic curriculum)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 50 : 30),
+            ),
+          ),
           child: Row(
-            children: filterTracks.map((track) {
-              final isSelected = state.selectedTrack == track ||
-                  (state.selectedTrack.isEmpty && track == 'All');
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(track),
-                  selected: isSelected,
-                  onSelected: (val) {
-                    if (val) {
-                      unawaited(HapticFeedback.lightImpact());
-                      context.read<CommunityHubBloc>().add(
-                        ChangeTrackFilterEvent(track),
-                      );
-                    }
-                  },
-                  selectedColor: colors.primary.withAlpha(isDark ? 60 : 40),
-                  labelStyle: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.primary : colors.textSecondary,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(25),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.school_rounded,
+                  size: 18,
+                  color: colors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${activeTrack.toUpperCase()} Academic Forum',
+                      style: typography.footnote.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tailored strictly to your enrolled academic curriculum',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(45),
                   ),
                 ),
-              );
-            }).toList(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 11,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Enrolled',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),
