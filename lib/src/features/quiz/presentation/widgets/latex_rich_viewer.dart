@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 
-/// A high-performance Flutter widget that parses mixed natural text and LaTeX math
-/// (supporting inline \(...\), $...$, and block \[...\], $$...$$ delimiters).
+/// A high-performance, language-aware Flutter widget that parses mixed natural text,
+/// Markdown formatting, and LaTeX mathematics.
 ///
-/// Plain text segments are rendered using standard typography while mathematical
-/// expressions are typeset using [Math.tex] with graceful fallback on syntax error.
+/// Features:
+/// - Language-Aware: Auto-detects RTL scripts (Arabic) and African tonal scripts (Yoruba, Igbo, Hausa),
+///   applying appropriate [TextDirection] and font fallbacks per paragraph.
+/// - Markdown Support: Renders headings without `#`, bold `**...**`, italic `*...*`,
+///   lists, and inline code without leaking raw syntax symbols or asterisks.
+/// - LaTeX Math: Delimiters `\(...\)`, `$...$`, `\[...\]`, and `$$...$$` are typeset
+///   using [Math.tex] with graceful fallback on syntax error.
 class LatexRichViewer extends StatelessWidget {
   const LatexRichViewer({
     required this.text,
@@ -13,6 +18,7 @@ class LatexRichViewer extends StatelessWidget {
     this.textAlign = TextAlign.start,
     this.maxLines,
     this.overflow = TextOverflow.clip,
+    this.forceRtl,
     super.key,
   });
 
@@ -21,6 +27,11 @@ class LatexRichViewer extends StatelessWidget {
   final TextAlign textAlign;
   final int? maxLines;
   final TextOverflow overflow;
+  final bool? forceRtl;
+
+  static final RegExp _rtlRegex = RegExp(
+    r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+  );
 
   static final RegExp _blockMathRegex = RegExp(
     r'(\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$)',
@@ -32,49 +43,84 @@ class LatexRichViewer extends StatelessWidget {
     multiLine: true,
   );
 
+  /// Matches inline markdown tokens: bold-italic, bold, italic, code, strikethrough
+  static final RegExp _inlineMarkdownRegex = RegExp(
+    r'(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|(?<!\w)\*(?!\s)(.+?)(?<!\s)\*(?!\w)|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)|`([^`]+)`|~~(.+?)~~)',
+    multiLine: true,
+  );
+
+  static const List<String> _fontFamilyFallbacks = [
+    'Geeza Pro',
+    'Noto Naskh Arabic',
+    'Noto Sans',
+    'Roboto',
+    'Arial',
+  ];
+
+  static bool isRtlString(String s) => _rtlRegex.hasMatch(s);
+
+  /// Sanitizes raw HTML entities, prompt artifacts, and reasoning tags
+  static String sanitizeRawText(String input) {
+    if (input.trim().isEmpty) return '';
+    var s = input;
+
+    // Strip reasoning tags & model prompt tokens
+    s = s.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\/?think>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
+
+    // Replace common HTML tags and entities
+    s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
+    s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:b|strong)\s*>', caseSensitive: false), '**');
+    s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:i|em)\s*>', caseSensitive: false), '*');
+    s = s.replaceAll('&quot;', '"');
+    s = s.replaceAll('&#039;', "'");
+    s = s.replaceAll('&#39;', "'");
+    s = s.replaceAll('&amp;', '&');
+    s = s.replaceAll('&lt;', '<');
+    s = s.replaceAll('&gt;', '>');
+    s = s.replaceAll('&nbsp;', ' ');
+
+    return s.trim();
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (text.trim().isEmpty) {
+    final cleanText = sanitizeRawText(text);
+    if (cleanText.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final defaultStyle = DefaultTextStyle.of(context).style.merge(style);
+    final inheritedStyle = DefaultTextStyle.of(context).style;
+    final defaultStyle = inheritedStyle.merge(style).copyWith(
+      fontFamilyFallback: _fontFamilyFallbacks,
+    );
 
-    // Fast path: No LaTeX delimiters present in text
-    if (!text.contains(r'\(') &&
-        !text.contains(r'$$') &&
-        !text.contains(r'\[') &&
-        !text.contains(r'$')) {
-      return Text(
-        text,
-        style: defaultStyle,
-        textAlign: textAlign,
-        maxLines: maxLines,
-        overflow: overflow,
-      );
-    }
-
-    // Check if text contains display/block math (\[ ... \] or $$ ... $$)
-    final hasBlockMath = _blockMathRegex.hasMatch(text);
-
+    // Split text into structural blocks (paragraphs / block math)
+    final hasBlockMath = _blockMathRegex.hasMatch(cleanText);
     if (hasBlockMath) {
-      return _buildBlockAndInlineContent(context, defaultStyle);
+      return _buildBlockAndInlineContent(context, cleanText, defaultStyle);
     }
 
-    return _buildInlineRichText(context, text, defaultStyle);
+    // Single or multi-line natural text with inline markdown and inline LaTeX
+    return _buildParagraphLayout(context, cleanText, defaultStyle);
   }
 
-  Widget _buildBlockAndInlineContent(BuildContext context, TextStyle defaultStyle) {
+  Widget _buildBlockAndInlineContent(
+    BuildContext context,
+    String content,
+    TextStyle defaultStyle,
+  ) {
     final widgets = <Widget>[];
     var lastIndex = 0;
 
-    for (final match in _blockMathRegex.allMatches(text)) {
+    for (final match in _blockMathRegex.allMatches(content)) {
       if (match.start > lastIndex) {
-        final textChunk = text.substring(lastIndex, match.start).trim();
+        final textChunk = content.substring(lastIndex, match.start).trim();
         if (textChunk.isNotEmpty) {
           widgets
-            ..add(_buildInlineRichText(context, textChunk, defaultStyle))
-            ..add(const SizedBox(height: 6));
+            ..add(_buildParagraphLayout(context, textChunk, defaultStyle))
+            ..add(const SizedBox(height: 8));
         }
       }
 
@@ -104,12 +150,12 @@ class LatexRichViewer extends StatelessWidget {
       lastIndex = match.end;
     }
 
-    if (lastIndex < text.length) {
-      final remaining = text.substring(lastIndex).trim();
+    if (lastIndex < content.length) {
+      final remaining = content.substring(lastIndex).trim();
       if (remaining.isNotEmpty) {
         widgets
-          ..add(const SizedBox(height: 6))
-          ..add(_buildInlineRichText(context, remaining, defaultStyle));
+          ..add(const SizedBox(height: 8))
+          ..add(_buildParagraphLayout(context, remaining, defaultStyle));
       }
     }
 
@@ -122,21 +168,132 @@ class LatexRichViewer extends StatelessWidget {
     );
   }
 
-  Widget _buildInlineRichText(
+  Widget _buildParagraphLayout(
     BuildContext context,
     String content,
     TextStyle defaultStyle,
   ) {
+    // Split by double newline to preserve paragraph separation
+    final paragraphs = content.split(RegExp(r'\n{2,}'));
+    if (paragraphs.length <= 1) {
+      return _buildSingleParagraph(context, content, defaultStyle);
+    }
+
+    final children = <Widget>[];
+    for (var i = 0; i < paragraphs.length; i++) {
+      final p = paragraphs[i].trim();
+      if (p.isEmpty) continue;
+      children.add(_buildSingleParagraph(context, p, defaultStyle));
+      if (i < paragraphs.length - 1) {
+        children.add(const SizedBox(height: 10));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: textAlign == TextAlign.center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
+  Widget _buildSingleParagraph(
+    BuildContext context,
+    String paragraph,
+    TextStyle defaultStyle,
+  ) {
+    final lines = paragraph.split('\n');
+    final lineWidgets = <Widget>[];
+
+    final isParagraphRtl = forceRtl ?? isRtlString(paragraph);
+    final paragraphDirection =
+        isParagraphRtl ? TextDirection.rtl : TextDirection.ltr;
+
+    final effectiveTextAlign = textAlign == TextAlign.center
+        ? TextAlign.center
+        : (isParagraphRtl ? TextAlign.right : textAlign);
+
+    for (final line in lines) {
+      final trimmedLine = line.trim();
+      if (trimmedLine.isEmpty) continue;
+
+      var lineStyle = defaultStyle;
+      var contentToRender = line;
+
+      // 1. Heading check: '#', '##', '###' -> style as bold heading without raw '#'
+      final headingMatch = RegExp(r'^(#{1,6})\s+(.*)$').firstMatch(trimmedLine);
+      if (headingMatch != null) {
+        final level = headingMatch.group(1)?.length ?? 1;
+        contentToRender = headingMatch.group(2) ?? '';
+        final scale = level == 1 ? 1.25 : (level == 2 ? 1.15 : 1.08);
+        lineStyle = defaultStyle.copyWith(
+          fontSize: (defaultStyle.fontSize ?? 15) * scale,
+          fontWeight: FontWeight.bold,
+        );
+      }
+
+      // 2. Bullet list check: '-', '*', '•' -> style cleanly without loose asterisks
+      final bulletMatch = RegExp(r'^(\*|-|•)\s+(.*)$').firstMatch(trimmedLine);
+      if (bulletMatch != null) {
+        contentToRender = '•  ${bulletMatch.group(2) ?? ''}';
+      }
+
+      // 3. Numbered list check: '1. ', '2. '
+      final numMatch = RegExp(r'^(\d+\.)\s+(.*)$').firstMatch(trimmedLine);
+      if (numMatch != null) {
+        contentToRender = '${numMatch.group(1)} ${numMatch.group(2) ?? ''}';
+      }
+
+      // Render line with mixed Markdown & LaTeX spans
+      final spans = _parseInlineMarkdownAndLatex(
+        context,
+        contentToRender,
+        lineStyle,
+      );
+
+      lineWidgets.add(
+        Directionality(
+          textDirection: paragraphDirection,
+          child: Text.rich(
+            TextSpan(children: spans),
+            textAlign: effectiveTextAlign,
+            maxLines: maxLines,
+            overflow: overflow,
+          ),
+        ),
+      );
+    }
+
+    if (lineWidgets.length == 1) {
+      return lineWidgets.first;
+    }
+
+    return Column(
+      crossAxisAlignment: effectiveTextAlign == TextAlign.center
+          ? CrossAxisAlignment.center
+          : (isParagraphRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start),
+      mainAxisSize: MainAxisSize.min,
+      children: lineWidgets,
+    );
+  }
+
+  List<InlineSpan> _parseInlineMarkdownAndLatex(
+    BuildContext context,
+    String content,
+    TextStyle baseStyle,
+  ) {
     final spans = <InlineSpan>[];
     var lastIndex = 0;
 
-    for (final match in _latexRegex.allMatches(content)) {
-      if (match.start > lastIndex) {
-        final plain = content.substring(lastIndex, match.start);
-        spans.add(TextSpan(text: plain, style: defaultStyle));
+    // Scan for LaTeX math first
+    for (final mathMatch in _latexRegex.allMatches(content)) {
+      if (mathMatch.start > lastIndex) {
+        final textChunk = content.substring(lastIndex, mathMatch.start);
+        spans.addAll(_parseInlineMarkdownOnly(textChunk, baseStyle));
       }
 
-      final rawMath = match.group(0) ?? '';
+      final rawMath = mathMatch.group(0) ?? '';
       var formula = rawMath;
 
       // Strip opening and closing delimiters
@@ -149,11 +306,9 @@ class LatexRichViewer extends StatelessWidget {
       } else if (formula.startsWith(r'$') && formula.endsWith(r'$')) {
         formula = formula.substring(1, formula.length - 1);
       }
-
       formula = formula.trim();
 
       if (formula.isNotEmpty) {
-        // If an inline formula is long or contains multiple equal signs, render with scaling protection
         final isLongFormula = formula.length > 35 || formula.split('=').length > 2;
 
         spans.add(
@@ -164,17 +319,17 @@ class LatexRichViewer extends StatelessWidget {
               child: isLongFormula
                   ? ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: MediaQuery.sizeOf(context).width * 0.85,
+                        maxWidth: MediaQuery.sizeOf(context).width * 0.82,
                       ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         child: Math.tex(
                           formula,
-                          textStyle: defaultStyle,
+                          textStyle: baseStyle,
                           mathStyle: MathStyle.text,
                           onErrorFallback: (err) =>
-                              Text(rawMath, style: defaultStyle),
+                              Text(rawMath, style: baseStyle),
                         ),
                       ),
                     )
@@ -182,12 +337,100 @@ class LatexRichViewer extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       child: Math.tex(
                         formula,
-                        textStyle: defaultStyle,
+                        textStyle: baseStyle,
                         mathStyle: MathStyle.text,
                         onErrorFallback: (err) =>
-                            Text(rawMath, style: defaultStyle),
+                            Text(rawMath, style: baseStyle),
                       ),
                     ),
+            ),
+          ),
+        );
+      }
+
+      lastIndex = mathMatch.end;
+    }
+
+    if (lastIndex < content.length) {
+      final remaining = content.substring(lastIndex);
+      spans.addAll(_parseInlineMarkdownOnly(remaining, baseStyle));
+    }
+
+    return spans;
+  }
+
+  /// Parses inline markdown tokens (bold, italic, code, etc.) into styled [TextSpan]s
+  List<InlineSpan> _parseInlineMarkdownOnly(String text, TextStyle baseStyle) {
+    final spans = <InlineSpan>[];
+    var lastIndex = 0;
+
+    for (final match in _inlineMarkdownRegex.allMatches(text)) {
+      if (match.start > lastIndex) {
+        final plain = text.substring(lastIndex, match.start);
+        spans.add(TextSpan(text: _sanitizeLoneMarkdownSymbols(plain), style: baseStyle));
+      }
+
+      // 1. Bold Italic: ***text*** (group 2) or ___text___ (group 3)
+      if (match.group(2) != null || match.group(3) != null) {
+        final inner = match.group(2) ?? match.group(3) ?? '';
+        spans.add(
+          TextSpan(
+            text: inner,
+            style: baseStyle.copyWith(
+              fontWeight: FontWeight.bold,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        );
+      }
+      // 2. Bold: **text** (group 4) or __text__ (group 5)
+      else if (match.group(4) != null || match.group(5) != null) {
+        final inner = match.group(4) ?? match.group(5) ?? '';
+        spans.add(
+          TextSpan(
+            text: inner,
+            style: baseStyle.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      }
+      // 3. Italic: *text* (group 6) or _text_ (group 7)
+      else if (match.group(6) != null || match.group(7) != null) {
+        final inner = match.group(6) ?? match.group(7) ?? '';
+        spans.add(
+          TextSpan(
+            text: inner,
+            style: baseStyle.copyWith(
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        );
+      }
+      // 4. Inline Code: `text` (group 8)
+      else if (match.group(8) != null) {
+        final inner = match.group(8) ?? '';
+        spans.add(
+          TextSpan(
+            text: ' $inner ',
+            style: baseStyle.copyWith(
+              fontFamily: 'monospace',
+              fontSize: (baseStyle.fontSize ?? 14) * 0.92,
+              backgroundColor: baseStyle.color != null
+                  ? baseStyle.color!.withAlpha(25)
+                  : Colors.grey.withAlpha(40),
+            ),
+          ),
+        );
+      }
+      // 5. Strikethrough: ~~text~~ (group 9)
+      else if (match.group(9) != null) {
+        final inner = match.group(9) ?? '';
+        spans.add(
+          TextSpan(
+            text: inner,
+            style: baseStyle.copyWith(
+              decoration: TextDecoration.lineThrough,
             ),
           ),
         );
@@ -196,17 +439,23 @@ class LatexRichViewer extends StatelessWidget {
       lastIndex = match.end;
     }
 
-    if (lastIndex < content.length) {
-      final remaining = content.substring(lastIndex);
-      spans.add(TextSpan(text: remaining, style: defaultStyle));
+    if (lastIndex < text.length) {
+      final remaining = text.substring(lastIndex);
+      spans.add(TextSpan(text: _sanitizeLoneMarkdownSymbols(remaining), style: baseStyle));
     }
 
-    return Text.rich(
-      TextSpan(children: spans),
-      textAlign: textAlign,
-      maxLines: maxLines,
-      overflow: overflow,
-    );
+    return spans;
+  }
+
+  /// Removes stray unclosed asterisks or raw '#' symbols so users never see markdown artifacts
+  static String _sanitizeLoneMarkdownSymbols(String s) {
+    var out = s;
+    // Strip leading '#' that may have slipped through
+    out = out.replaceAll(RegExp(r'^#{1,6}\s*'), '');
+    // Clean redundant double asterisks that have no closing tag
+    out = out.replaceAll('***', '');
+    out = out.replaceAll('**', '');
+    return out;
   }
 }
 

@@ -137,7 +137,7 @@ class _QuizWorkspaceView extends HookWidget {
           return Scaffold(
             backgroundColor: colors.transparent,
             body: const Center(
-              child: AppLogoLoader(size: 64),
+              child: AppLogoLoader(),
             ),
           );
         }

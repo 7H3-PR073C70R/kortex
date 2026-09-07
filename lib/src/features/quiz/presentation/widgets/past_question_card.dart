@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class PastQuestionCard extends StatelessWidget {
@@ -124,8 +125,8 @@ class PastQuestionCard extends StatelessWidget {
                   color: colors.surfaceBorder.withAlpha(80),
                 ),
               ),
-              child: Text(
-                question.passage!,
+              child: LatexRichViewer(
+                text: question.passage!,
                 style: typography.subhead.regular.copyWith(
                   color: colors.textSecondary,
                   fontStyle: FontStyle.italic,
@@ -137,8 +138,8 @@ class PastQuestionCard extends StatelessWidget {
           ],
 
           // Question Prompt
-          Text(
-            question.prompt,
+          LatexRichViewer(
+            text: question.prompt,
             style: typography.body.bold.copyWith(
               color: colors.textPrimary,
               height: 1.4,
@@ -237,8 +238,8 @@ class PastQuestionCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          optionText,
+                        child: LatexRichViewer(
+                          text: optionText,
                           style: typography.subhead.medium.copyWith(
                             color: optionTextColor,
                           ),
@@ -297,8 +298,8 @@ class PastQuestionCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    question.explanation,
+                  LatexRichViewer(
+                    text: question.explanation,
                     style: typography.footnote.regular.copyWith(
                       color: colors.textSecondary,
                       height: 1.4,

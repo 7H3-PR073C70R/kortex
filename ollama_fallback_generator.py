@@ -321,35 +321,174 @@ def check_ollama_available(model: str = "qwen2.5:14b", endpoint: str = "http://l
 
 _EXPLANATION_CACHE: Dict[str, str] = {}
 
+NON_ENGLISH_LANGUAGES = {
+    "french": {
+        "name": "French",
+        "prompt_template": (
+            "Tu es un professeur expert de la langue française pour les examens du secondaire (WAEC, JAMB, NECO).\n"
+            "Sujet: Français (French)\n"
+            "Question: {prompt}\n"
+            "Options:\n{options_formatted}\n"
+            "Option correcte vérifiée: {correct_label}\n\n"
+            "Tâche: Rédige une explication pédagogique rigoureuse en français, suivie d'une traduction complète en anglais.\n"
+            "Consignes:\n"
+            "1. Fournis d'abord l'explication en français (2 à 3 phrases claires expliquant les règles grammaticales, le vocabulaire ou le contexte littéraire).\n"
+            "2. Fournis ensuite la traduction en anglais sous la forme exacte:\n"
+            "**Translation:** [English translation of the above explanation]\n"
+            "3. Conclus en confirmant que l'option {correct_label} est la bonne réponse.\n"
+            "4. Utilise un formatage Markdown propre. N'inclus aucun titre avec '#', aucune salutation ni bavardage superflu."
+        ),
+        "fallback_template": (
+            "L'option {correct_label} {opt_suffix}est la réponse correcte selon le programme officiel de français.\n\n"
+            "**Translation:** Option {correct_label} {opt_suffix}is the verified correct answer in accordance with the official French curriculum."
+        )
+    },
+    "arabic": {
+        "name": "Arabic",
+        "prompt_template": (
+            "أنت معلم خبير في اللغة العربية لمناهج امتحانات المرحلة الثانوية (JAMB, WAEC, NECO).\n"
+            "المادة: اللغة العربية (Arabic)\n"
+            "السؤال: {prompt}\n"
+            "الخيارات:\n{options_formatted}\n"
+            "الخيار الصحيح المعتمد: {correct_label}\n\n"
+            "المهمة: اكتب شرحاً لغوياً دقيقاً باللغة العربية يوضح سبب صحة هذا الخيار، متبوعاً بترجمة كاملة باللغة الإنجليزية.\n"
+            "الشروط:\n"
+            "1. اكتب الشرح أولاً باللغة العربية (جملتان أو ثلاث تشرح القاعدة والسياق بدقة).\n"
+            "2. أضف ترجمة واضحة للشرح باللغة الإنجليزية بالتنسيق التالي:\n"
+            "**Translation:** [English translation of the above explanation]\n"
+            "3. أكد أن الخيار {correct_label} هو الإجابة الصحيحة.\n"
+            "4. استخدم تنسيق Markdown أنيق. لا تضع علامات '#' ولا أي عبارات ترحيبية أو مقدمات."
+        ),
+        "fallback_template": (
+            "الخيار {correct_label} {opt_suffix}هو الإجابة الصحيحة وفقاً للمنهج الرسمي لمادة اللغة العربية.\n\n"
+            "**Translation:** Option {correct_label} {opt_suffix}is the verified correct answer in accordance with the official Arabic curriculum."
+        )
+    },
+    "yoruba": {
+        "name": "Yoruba",
+        "prompt_template": (
+            "O jẹ́ olùkọ́ àgbà àti akọ́ṣẹ́mọṣẹ́ lédè Yorùbá fún àwọn ìdánwò WAEC, JAMB, àti NECO.\n"
+            "Kókó Ẹ̀kọ́: Èdè Yorùbá (Yoruba)\n"
+            "Ìbéèrè: {prompt}\n"
+            "Àwọn Àṣàyàn:\n{options_formatted}\n"
+            "Àṣàyàn Tí Ó Tọ́: {correct_label}\n\n"
+            "Iṣẹ́: Kọ àlàyé kíkún tí ó ṣe kedere ní èdè Yorùbá láti ṣàlàyé ìdí tí àṣàyàn yìí fi tọ́ pẹ̀lú ìtumọ̀ rẹ̀ ní èdè Gẹ̀ẹ́sì (English).\n"
+            "Àwọn Ìtọ́sọ́nà:\n"
+            "1. Kọ àlàyé náà ní èdè Yorùbá pẹ̀lú àmì ohùn tí ó péye (gbólóhùn 2 sí 3 tí ó ṣàlàyé gírámà, àṣà, tàbí ìtumọ̀ ọ̀rọ̀ náà).\n"
+            "2. Kọ ìtumọ̀ kíkún sí èdè Gẹ̀ẹ́sì ní ìsàlẹ̀ báyìí:\n"
+            "**Translation:** [English translation of the above explanation]\n"
+            "3. Tọ́ka sí àṣàyàn {correct_label} gẹ́gẹ́ bí ìdáhùn tí ó tọ́.\n"
+            "4. Lo Markdown tí ó mọ́ tónítóní. Má fi àmì '#' kankan kọ àkọlé, má sì fi kíkí tàbí ọ̀rọ̀ àbùkù kankan kún un."
+        ),
+        "fallback_template": (
+            "Àṣàyàn {correct_label} {opt_suffix}ni ìdáhùn tó tọ́ gẹ́gẹ́ bí ètò ẹ̀kọ́ èdè Yorùbá.\n\n"
+            "**Translation:** Option {correct_label} {opt_suffix}is the verified correct answer in accordance with the official Yoruba curriculum."
+        )
+    },
+    "hausa": {
+        "name": "Hausa",
+        "prompt_template": (
+            "Kai gogaggen malamin koyar da Harshen Hausa ne na jarrabawar WAEC, JAMB, da NECO.\n"
+            "Darasi: Harshen Hausa (Hausa)\n"
+            "Tambaya: {prompt}\n"
+            "Zaɓuɓɓuka:\n{options_formatted}\n"
+            "Daidai Zaɓi: {correct_label}\n\n"
+            "Aiki: Rubuta cikakken bayani mai gamsarwa da harshen Hausa da ke bayyana dalilin da ya sa wannan zaɓi ya zama daidai, sannan ka ba da fassarar bayanin da harshen Turanci (English).\n"
+            "Sharuɗɗa:\n"
+            "1. Fara rubuta bayanin a harshen Hausa na asali mai kyau (jumla 2 zuwa 3 da ke bayyana ƙa'idojin nahawu ko ma'ana).\n"
+            "2. Ƙara fassarar bayanin da harshen Turanci a ƙasa kamar haka:\n"
+            "**Translation:** [English translation of the above explanation]\n"
+            "3. Tabbatar da cewa zaɓi na {correct_label} shine amsar da ta dace.\n"
+            "4. Yi amfani da tsarin Markdown mai tsafta. Kada ka saka alamun '#', gaisuwa ko wata magana daban."
+        ),
+        "fallback_template": (
+            "Zaɓi na {correct_label} {opt_suffix}shine amsar da ta dace bisa tsarin koyarwar Harshen Hausa.\n\n"
+            "**Translation:** Option {correct_label} {opt_suffix}is the verified correct answer in accordance with the official Hausa curriculum."
+        )
+    },
+    "igbo": {
+        "name": "Igbo",
+        "prompt_template": (
+            "Ị bụ ọkachamara onye nkụzi Asụsụ Igbo maka ule WAEC, JAMB, na NECO.\n"
+            "Isiokwu: Asụsụ Igbo (Igbo)\n"
+            "Ajụjụ: {prompt}\n"
+            "Nhọrọ dị iche iche:\n{options_formatted}\n"
+            "Nhọrọ Ziri Ezi: {correct_label}\n\n"
+            "Ọrụ: Dee nkọwa zuru ezu n'Asụsụ Igbo na-akọwapụta ihe mere nhọrọ a ji bụrụ nke ziri ezi, ma tụgharịa nkọwa ahụ n'asụsụ Bekee (English).\n"
+            "Usoro:\n"
+            "1. Buru ụzọ dee nkọwa ahụ n'Asụsụ Igbo ziri ezi (ahịrịokwu 2 ma ọ bụ 3 na-akọwa usoro ụtọasụsụ ma ọ bụ nghọta).\n"
+            "2. Tinye ntụgharị n'asụsụ Bekee n'okpuru ya dịka nke a:\n"
+            "**Translation:** [English translation of the above explanation]\n"
+            "3. Kọwaa na nhọrọ {correct_label} bụ azịza ziri ezi.\n"
+            "4. Jiri usoro Markdown dị mma. Etinyela '#' maka isiokwu, etinyela ekele ma ọ bụ mkparịta ụka na-abaghị uru."
+        ),
+        "fallback_template": (
+            "Nhọrọ {correct_label} {opt_suffix}bụ azịza ziri ezi dabere na usoro ọmụmụ Asụsụ Igbo.\n\n"
+            "**Translation:** Option {correct_label} {opt_suffix}is the verified correct answer in accordance with the official Igbo curriculum."
+        )
+    }
+}
+
+
+def clean_llm_explanation(text: str) -> str:
+    """Sanitizes raw LLM output, stripping model artifacts, greeting chatter, and raw '#' headings."""
+    if not text:
+        return ""
+    # Strip <think>...</think> reasoning tags
+    text = re.sub(r'<think>[\s\S]*?<\/think>', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'<\/?think>', '', text, flags=re.IGNORECASE)
+    # Strip prompt tags like <|im_start|>, <|im_end|>
+    text = re.sub(r'<\|[a-zA-Z0-9_\-]+\|>', '', text)
+    # Strip conversational greetings
+    text = re.sub(r'^(Sure!?|Certainly!?|Here is (the|an) explanation:?|Here is the step-by-step solution:?)\s*', '', text, flags=re.IGNORECASE)
+    # Replace markdown headings like '### Explanation' or '# Solution' with clean bold text so raw '#' doesn't clutter
+    text = re.sub(r'^#{1,6}\s*(.+)$', r'**\1**', text, flags=re.MULTILINE)
+    # Clean up double bolding or excess empty lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
 
 def generate_ollama_explanation(
     prompt: str,
     options: List[str],
     correct_label: str,
+    subject_slug: str,
     subject_name: str,
     model: str = "qwen2.5:14b",
     endpoint: str = "http://localhost:11434",
     timeout: int = 40
 ) -> Optional[str]:
-    """Queries local Ollama (e.g. qwen2.5:14b) for a step-by-step curriculum solution with LaTeX."""
-    cache_key = f"{prompt[:60]}_{correct_label}"
+    """Queries local Ollama for a step-by-step curriculum solution with language-aware context and LaTeX."""
+    cache_key = f"{subject_slug}_{prompt[:50]}_{correct_label}"
     if cache_key in _EXPLANATION_CACHE:
         return _EXPLANATION_CACHE[cache_key]
 
     options_formatted = "\n".join(options)
-    prompt_body = (
-        "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
-        f"Subject: {subject_name}\n"
-        f"Question: {prompt}\n"
-        f"Options:\n{options_formatted}\n"
-        f"Verified Correct Option: {correct_label}\n\n"
-        "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
-        "Guidelines:\n"
-        "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
-        "2. For mathematics, physics, and chemistry, write all equations using standard LaTeX with \\( ... \\).\n"
-        "3. Conclude by confirming the correct option letter.\n"
-        "4. Output ONLY the solution text. No greetings or chit-chat."
-    )
+    lang_info = NON_ENGLISH_LANGUAGES.get(subject_slug.lower())
+
+    if lang_info:
+        # Switch model context directly into the target non-English language
+        prompt_body = lang_info["prompt_template"].format(
+            prompt=prompt,
+            options_formatted=options_formatted,
+            correct_label=correct_label
+        )
+    else:
+        # Standard English curriculum tutor prompt
+        prompt_body = (
+            "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+            f"Subject: {subject_name}\n"
+            f"Question: {prompt}\n"
+            f"Options:\n{options_formatted}\n"
+            f"Verified Correct Option: {correct_label}\n\n"
+            "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
+            "Guidelines:\n"
+            "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
+            "2. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+            "3. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+            "4. Conclude by confirming the correct option letter.\n"
+            "5. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+        )
 
     payload = {
         "model": model,
@@ -357,7 +496,7 @@ def generate_ollama_explanation(
         "stream": False,
         "options": {
             "temperature": 0.2,
-            "num_predict": 320
+            "num_predict": 360
         }
     }
 
@@ -369,7 +508,8 @@ def generate_ollama_explanation(
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
-            res = (data.get("response") or "").strip()
+            raw_res = (data.get("response") or "").strip()
+            res = clean_llm_explanation(raw_res)
             if res and len(res) > 20:
                 _EXPLANATION_CACHE[cache_key] = res
                 return res
@@ -392,6 +532,7 @@ def generate_explanation(
             prompt=prompt,
             options=options,
             correct_label=correct_label,
+            subject_slug=subject_slug,
             subject_name=subject_name,
             model=ollama_model
         )
@@ -402,8 +543,8 @@ def generate_explanation(
     if "market women" in prompt.lower() and "yam" in prompt.lower():
         return (
             "Using the principle of inclusion-exclusion for three sets (Y, P, M):\n"
-            "n(Y ∪ P ∪ M) = n(Y) + n(P) + n(M) - [n(Y ∩ P) + n(Y ∩ M) + n(P ∩ M)] + n(Y ∩ P ∩ M)\n"
-            "Total women = 10 + 14 + 12 - (5 + 4 + 5) + 3 = 36 - 14 + 3 = 25. Option A is correct."
+            "\\(n(Y \\cup P \\cup M) = n(Y) + n(P) + n(M) - [n(Y \\cap P) + n(Y \\cap M) + n(P \\cap M)] + n(Y \\cap P \\cap M)\\)\n"
+            "Total women = \\(10 + 14 + 12 - (5 + 4 + 5) + 3 = 36 - 14 + 3 = 25\\). Option A is correct."
         )
     elif "log" in prompt.lower() and "x" in prompt.lower():
         return (
@@ -420,17 +561,27 @@ def generate_explanation(
             "Hence \\(T = \\begin{pmatrix} -2 & -1 \\\\ -1 & -1 \\end{pmatrix}\\). Option A is correct."
         )
     elif "dark horse" in prompt.lower():
-        return "The idiomatic expression 'dark horse' refers to a competitor who unexpectedly wins or succeeds. Option C is correct."
+        return "The idiomatic expression **'dark horse'** refers to a competitor who unexpectedly wins or succeeds. Option C is correct."
     elif "small fry" in prompt.lower():
-        return "The idiom 'small fry' refers to unimportant or insignificant people. Option B is correct."
+        return "The idiom **'small fry'** refers to unimportant or insignificant people. Option B is correct."
     elif "heart in his mouth" in prompt.lower():
-        return "To speak with one's 'heart in one's mouth' describes speaking in a state of severe fright or agitation. Option D is correct."
+        return "To speak with one's **'heart in one's mouth'** describes speaking in a state of severe fright or agitation. Option D is correct."
     else:
         opt_text = ""
         for opt in options:
             if opt.startswith(f"{correct_label}."):
                 opt_text = opt[len(correct_label) + 2:].strip()
                 break
+        opt_suffix = f"({opt_text}) " if opt_text else ""
+
+        # Language-specific bilingual fallbacks
+        lang_info = NON_ENGLISH_LANGUAGES.get(subject_slug.lower())
+        if lang_info and "fallback_template" in lang_info:
+            return lang_info["fallback_template"].format(
+                correct_label=correct_label,
+                opt_suffix=opt_suffix
+            )
+
         if opt_text:
             return f"Option {correct_label} ({opt_text}) is the verified correct answer in accordance with the official {subject_name} syllabus."
         return f"Option {correct_label} is the verified correct answer based on official {subject_name} curriculum standards."
