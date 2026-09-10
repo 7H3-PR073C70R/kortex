@@ -29,7 +29,7 @@ class HighSchoolTimelineStep extends StatelessWidget {
       ),
       (
         l10n.calibrationTimeline3Months,
-        'Balanced SM-2 interval pacing & weekly mock exams',
+        'Balanced FSRS-6 interval pacing & weekly mock exams',
         Icons.speed_rounded,
       ),
       (

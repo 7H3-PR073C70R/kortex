@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Spaced Repetition Active Recall Deck entity adhering to SM-2 memory
+/// Spaced Repetition Active Recall Deck entity adhering to FSRS-6 memory
 /// retention metrics.
 class StudyDeckEntity extends Equatable {
   const StudyDeckEntity({

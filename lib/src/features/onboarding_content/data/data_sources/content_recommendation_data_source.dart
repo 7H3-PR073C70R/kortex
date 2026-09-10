@@ -72,7 +72,7 @@ class ContentRecommendationDataSourceImpl
       tagline: flashcardsTagline,
       description: flashcardsDesc,
       formulaChips: const [
-        'SM-2 Active Recall',
+        'FSRS-6 Active Recall',
         'Spaced Repetition',
         'High-Yield Decks',
         'Mastery Retention Curve',

@@ -60,7 +60,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Extract complex equations, integral bounds, and chemical formulas with exact LaTeX precision—no broken characters.';
 
   @override
-  String get onboardingSlide3Badge => 'EBBINGHAUS SM-2';
+  String get onboardingSlide3Badge => 'FSRS-6 RECALL';
 
   @override
   String get onboardingSlide3Title => 'Forget About Forgetting';
@@ -289,7 +289,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authDesktopFeature1 => 'Zero-latency multimodal Document OCR';
 
   @override
-  String get authDesktopFeature2 => 'Adaptive SM-2 spaced repetition schedules';
+  String get authDesktopFeature2 =>
+      'Adaptive FSRS-6 spaced repetition schedules';
 
   @override
   String get authDesktopFeature3 => 'Socratic AI dialogue & calibration';
@@ -450,7 +451,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calibrationGoalSocratic => 'Deep-Dive Socratic AI Tutor';
 
   @override
-  String get calibrationGoalSpacedRep => 'Spaced Repetition (SM-2) Mastery';
+  String get calibrationGoalSpacedRep => 'Spaced Repetition (FSRS-6) Mastery';
 
   @override
   String get calibrationGoalMockExams => 'Comprehensive Mock Exams';
@@ -614,7 +615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String contentFlashcardsDesc(String field) {
-    return 'Dive into structured flashcards for core topics in $field. Master key concepts instantly with SM-2 Spaced Repetition.';
+    return 'Dive into structured flashcards for core topics in $field. Master key concepts instantly with FSRS-6 Spaced Repetition.';
   }
 
   @override
@@ -645,7 +646,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contentFeature1 => 'Pre-indexed exam question banks';
 
   @override
-  String get contentFeature2 => 'Automated SM-2 spaced repetition decks';
+  String get contentFeature2 => 'Automated FSRS-6 spaced repetition decks';
 
   @override
   String get contentFeature3 => 'Dedicated 24/7 Syllabot AI course assistants';
@@ -1024,8 +1025,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your record is 28 days. Keep studying to reach Neural Master rank!';
 
   @override
-  String get analyticsRetentionCurveTitle =>
-      'Memory Retention Curve (Ebbinghaus SM-2)';
+  String get analyticsRetentionCurveTitle => 'Memory Retention Curve (FSRS-6)';
 
   @override
   String analyticsMasteredCountSubtitle(int count) {
@@ -1069,7 +1069,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get decksEmptyStateSubtitle =>
-      'Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.';
+      'Ingest lecture notes or past papers to generate FSRS-6 spaced repetition decks automatically.';
 
   @override
   String get decksCreateDeckButton => 'Create New Deck';
@@ -1208,7 +1208,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionSummarySubtitle =>
-      'Your neural pathways have been reinforced. SM-2 intervals updated.';
+      'Your neural pathways have been reinforced. FSRS-6 intervals updated.';
 
   @override
   String get sessionSummaryCardsReviewed => 'Cards Reviewed';
@@ -1357,7 +1357,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get generateCardsAction => 'Generate SM-2 Cards';
+  String get generateCardsAction => 'Generate FSRS-6 Cards';
 
   @override
   String get reviewCardsTitle => 'Review Generated Flashcards';
@@ -2391,7 +2391,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeWalkthroughSlide3Title =>
-      'Adaptive Spaced Repetition (SM-2)';
+      'Adaptive Spaced Repetition (FSRS-6)';
 
   @override
   String get welcomeWalkthroughSlide3Desc =>

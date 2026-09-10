@@ -86,6 +86,12 @@ class DeckListTileCard extends StatelessWidget {
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
           unawaited(
+            context.router.push(StudySessionRoute(deckId: deck.id)),
+          );
+        },
+        onLongPress: () {
+          unawaited(HapticFeedback.mediumImpact());
+          unawaited(
             context.router.push(DeckDetailRoute(deckId: deck.id)),
           );
         },

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,47 +9,30 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class PastQuestionCard extends StatelessWidget {
   const PastQuestionCard({
     required this.question,
     required this.isInstantFeedback,
+    this.onOptionSelected,
+    this.onBookmarkToggle,
+    this.onAskAi,
     super.key,
   });
 
   final PastQuestionEntity question;
   final bool isInstantFeedback;
+  final void Function(int optionIndex)? onOptionSelected;
+  final VoidCallback? onBookmarkToggle;
+  final VoidCallback? onAskAi;
 
   Widget _buildQuestionImage(String imagePath) {
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return Image.network(
-        imagePath,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-      );
-    } else if (imagePath.startsWith('data:image')) {
-      try {
-        final base64Str = imagePath.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-        );
-      } on Exception {
-        return const SizedBox.shrink();
-      }
-    } else {
-      final file = File(imagePath);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-        );
-      }
-      return const SizedBox.shrink();
-    }
+    return AppMultimodalImage(
+      imageUrl: imagePath,
+      borderRadius: BorderRadius.circular(10),
+    );
   }
 
   @override

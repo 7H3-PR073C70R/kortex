@@ -46,7 +46,7 @@ class HigherEdGoalsStep extends StatelessWidget {
             ),
             (
               l10n.calibrationGoalSpacedRep,
-              'Automated SM-2 review scheduling for lecture decks',
+              'Automated FSRS-6 review scheduling for lecture decks',
               Icons.schedule_rounded,
             ),
             (

@@ -193,7 +193,7 @@ abstract class AppLocalizations {
   /// Badge for slide 3
   ///
   /// In en, this message translates to:
-  /// **'EBBINGHAUS SM-2'**
+  /// **'FSRS-6 RECALL'**
   String get onboardingSlide3Badge;
 
   /// Title for slide 3
@@ -589,7 +589,7 @@ abstract class AppLocalizations {
   /// Hero bullet feature 2
   ///
   /// In en, this message translates to:
-  /// **'Adaptive SM-2 spaced repetition schedules'**
+  /// **'Adaptive FSRS-6 spaced repetition schedules'**
   String get authDesktopFeature2;
 
   /// Hero bullet feature 3
@@ -883,7 +883,7 @@ abstract class AppLocalizations {
   /// Spaced repetition goal
   ///
   /// In en, this message translates to:
-  /// **'Spaced Repetition (SM-2) Mastery'**
+  /// **'Spaced Repetition (FSRS-6) Mastery'**
   String get calibrationGoalSpacedRep;
 
   /// Mock exams goal
@@ -1175,7 +1175,7 @@ abstract class AppLocalizations {
   /// Description for flashcards slide
   ///
   /// In en, this message translates to:
-  /// **'Dive into structured flashcards for core topics in {field}. Master key concepts instantly with SM-2 Spaced Repetition.'**
+  /// **'Dive into structured flashcards for core topics in {field}. Master key concepts instantly with FSRS-6 Spaced Repetition.'**
   String contentFlashcardsDesc(String field);
 
   /// Tagline for Socratic AI tutoring slide
@@ -1229,7 +1229,7 @@ abstract class AppLocalizations {
   /// Content recommendation feature 2
   ///
   /// In en, this message translates to:
-  /// **'Automated SM-2 spaced repetition decks'**
+  /// **'Automated FSRS-6 spaced repetition decks'**
   String get contentFeature2;
 
   /// Content recommendation feature 3
@@ -1766,19 +1766,19 @@ abstract class AppLocalizations {
   /// **'Tap card to flip'**
   String get deckDetailTapToFlip;
 
-  /// Hard rating button for SM-2
+  /// Hard rating button for FSRS-6
   ///
   /// In en, this message translates to:
   /// **'Hard'**
   String get deckDetailHard;
 
-  /// Good rating button for SM-2
+  /// Good rating button for FSRS-6
   ///
   /// In en, this message translates to:
   /// **'Good'**
   String get deckDetailGood;
 
-  /// Easy rating button for SM-2
+  /// Easy rating button for FSRS-6
   ///
   /// In en, this message translates to:
   /// **'Easy'**
@@ -1871,7 +1871,7 @@ abstract class AppLocalizations {
   /// Title for Ebbinghaus retention breakdown
   ///
   /// In en, this message translates to:
-  /// **'Memory Retention Curve (Ebbinghaus SM-2)'**
+  /// **'Memory Retention Curve (FSRS-6)'**
   String get analyticsRetentionCurveTitle;
 
   /// Count of mastered concept cards
@@ -1931,7 +1931,7 @@ abstract class AppLocalizations {
   /// Empty state subtitle for decks
   ///
   /// In en, this message translates to:
-  /// **'Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.'**
+  /// **'Ingest lecture notes or past papers to generate FSRS-6 spaced repetition decks automatically.'**
   String get decksEmptyStateSubtitle;
 
   /// Button to create a new deck
@@ -2012,49 +2012,49 @@ abstract class AppLocalizations {
   /// **'EXPLANATION / DERIVATION'**
   String get studySessionBackBadge;
 
-  /// SM-2 Again button label
+  /// FSRS-6 Again button label
   ///
   /// In en, this message translates to:
   /// **'Again'**
   String get studyRatingAgain;
 
-  /// SM-2 Again interval
+  /// FSRS-6 Again interval
   ///
   /// In en, this message translates to:
   /// **'< 10m'**
   String get studyRatingAgainInterval;
 
-  /// SM-2 Hard button label
+  /// FSRS-6 Hard button label
   ///
   /// In en, this message translates to:
   /// **'Hard'**
   String get studyRatingHard;
 
-  /// SM-2 Hard interval
+  /// FSRS-6 Hard interval
   ///
   /// In en, this message translates to:
   /// **'1d'**
   String get studyRatingHardInterval;
 
-  /// SM-2 Good button label
+  /// FSRS-6 Good button label
   ///
   /// In en, this message translates to:
   /// **'Good'**
   String get studyRatingGood;
 
-  /// SM-2 Good interval
+  /// FSRS-6 Good interval
   ///
   /// In en, this message translates to:
   /// **'6d'**
   String get studyRatingGoodInterval;
 
-  /// SM-2 Easy button label
+  /// FSRS-6 Easy button label
   ///
   /// In en, this message translates to:
   /// **'Easy'**
   String get studyRatingEasy;
 
-  /// SM-2 Easy interval
+  /// FSRS-6 Easy interval
   ///
   /// In en, this message translates to:
   /// **'12d'**
@@ -2159,7 +2159,7 @@ abstract class AppLocalizations {
   /// Subtitle on session summary page
   ///
   /// In en, this message translates to:
-  /// **'Your neural pathways have been reinforced. SM-2 intervals updated.'**
+  /// **'Your neural pathways have been reinforced. FSRS-6 intervals updated.'**
   String get sessionSummarySubtitle;
 
   /// Stat label for reviewed cards
@@ -2429,7 +2429,7 @@ abstract class AppLocalizations {
   /// Action button in OCR preview
   ///
   /// In en, this message translates to:
-  /// **'Generate SM-2 Cards'**
+  /// **'Generate FSRS-6 Cards'**
   String get generateCardsAction;
 
   /// Title for generated flashcards review page
@@ -4217,7 +4217,7 @@ abstract class AppLocalizations {
   /// Title for slide 3 of welcome walkthrough
   ///
   /// In en, this message translates to:
-  /// **'Adaptive Spaced Repetition (SM-2)'**
+  /// **'Adaptive Spaced Repetition (FSRS-6)'**
   String get welcomeWalkthroughSlide3Title;
 
   /// Description for slide 3 of welcome walkthrough

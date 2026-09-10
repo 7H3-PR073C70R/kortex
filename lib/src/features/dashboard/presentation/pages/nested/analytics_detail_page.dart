@@ -430,7 +430,7 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     if (!hasCards) {
       cardsSubtitle = '0 Active Cards';
     } else if (timeframeIndex == 0) {
-      cardsSubtitle = '${analytics.totalCardsMastered} Active SM-2 (7d)';
+      cardsSubtitle = '${analytics.totalCardsMastered} Active FSRS-6 (7d)';
     } else if (timeframeIndex == 1) {
       cardsSubtitle = '${analytics.totalCardsMastered} Active (30d)';
     } else {

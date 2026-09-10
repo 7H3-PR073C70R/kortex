@@ -38,7 +38,7 @@ class OnboardingIllustrations {
     );
   }
 
-  /// Slide 3: Live Spaced Repetition (SM-2) memory retention tracker.
+  /// Slide 3: Live Spaced Repetition (FSRS-6) memory retention tracker.
   static Widget spacedRepetition({
     BuildContext? context,
     double? width,
@@ -350,7 +350,7 @@ class _OcrLivePainter extends CustomPainter {
 }
 
 // =========================================================================
-// 3. LIVE RETENTION SCENE (SM-2 Wave pulse & Milestone ripple)
+// 3. LIVE RETENTION SCENE (FSRS-6 Wave pulse & Milestone ripple)
 // =========================================================================
 class _LiveRetentionScene extends StatefulWidget {
   const _LiveRetentionScene({

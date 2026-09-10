@@ -64,7 +64,7 @@
     "@onboardingSlide2Desc": {
         "description": "Description for slide 2"
     },
-    "onboardingSlide3Badge": "EBBINGHAUS SM-2",
+    "onboardingSlide3Badge": "FSRS-6 RECALL",
     "@onboardingSlide3Badge": {
         "description": "Badge for slide 3"
     },
@@ -412,7 +412,7 @@
     "@authDesktopFeature1": {
         "description": "Hero bullet feature 1"
     },
-    "authDesktopFeature2": "Adaptive SM-2 spaced repetition schedules",
+    "authDesktopFeature2": "Adaptive FSRS-6 spaced repetition schedules",
     "@authDesktopFeature2": {
         "description": "Hero bullet feature 2"
     },
@@ -622,7 +622,7 @@
     "@calibrationGoalSocratic": {
         "description": "Socratic AI goal"
     },
-    "calibrationGoalSpacedRep": "Spaced Repetition (SM-2) Mastery",
+    "calibrationGoalSpacedRep": "Spaced Repetition (FSRS-6) Mastery",
     "@calibrationGoalSpacedRep": {
         "description": "Spaced repetition goal"
     },
@@ -856,7 +856,7 @@
             }
         }
     },
-    "contentFlashcardsDesc": "Dive into structured flashcards for core topics in {field}. Master key concepts instantly with SM-2 Spaced Repetition.",
+    "contentFlashcardsDesc": "Dive into structured flashcards for core topics in {field}. Master key concepts instantly with FSRS-6 Spaced Repetition.",
     "@contentFlashcardsDesc": {
         "description": "Description for flashcards slide",
         "placeholders": {
@@ -908,7 +908,7 @@
     "@contentFeature1": {
         "description": "Content recommendation feature 1"
     },
-    "contentFeature2": "Automated SM-2 spaced repetition decks",
+    "contentFeature2": "Automated FSRS-6 spaced repetition decks",
     "@contentFeature2": {
         "description": "Content recommendation feature 2"
     },
@@ -1391,15 +1391,15 @@
     },
     "deckDetailHard": "Hard",
     "@deckDetailHard": {
-        "description": "Hard rating button for SM-2"
+        "description": "Hard rating button for FSRS-6"
     },
     "deckDetailGood": "Good",
     "@deckDetailGood": {
-        "description": "Good rating button for SM-2"
+        "description": "Good rating button for FSRS-6"
     },
     "deckDetailEasy": "Easy",
     "@deckDetailEasy": {
-        "description": "Easy rating button for SM-2"
+        "description": "Easy rating button for FSRS-6"
     },
     "deckDetailBackSemantics": "Back to Dashboard",
     "@deckDetailBackSemantics": {
@@ -1463,7 +1463,7 @@
     "@analyticsStreakRecord": {
         "description": "Streak record encouragement subtitle"
     },
-    "analyticsRetentionCurveTitle": "Memory Retention Curve (Ebbinghaus SM-2)",
+    "analyticsRetentionCurveTitle": "Memory Retention Curve (FSRS-6)",
     "@analyticsRetentionCurveTitle": {
         "description": "Title for Ebbinghaus retention breakdown"
     },
@@ -1521,7 +1521,7 @@
     "@decksEmptyStateTitle": {
         "description": "Empty state title for decks"
     },
-    "decksEmptyStateSubtitle": "Ingest lecture notes or past papers to generate SM-2 spaced repetition decks automatically.",
+    "decksEmptyStateSubtitle": "Ingest lecture notes or past papers to generate FSRS-6 spaced repetition decks automatically.",
     "@decksEmptyStateSubtitle": {
         "description": "Empty state subtitle for decks"
     },
@@ -1595,35 +1595,35 @@
     },
     "studyRatingAgain": "Again",
     "@studyRatingAgain": {
-        "description": "SM-2 Again button label"
+        "description": "FSRS-6 Again button label"
     },
     "studyRatingAgainInterval": "< 10m",
     "@studyRatingAgainInterval": {
-        "description": "SM-2 Again interval"
+        "description": "FSRS-6 Again interval"
     },
     "studyRatingHard": "Hard",
     "@studyRatingHard": {
-        "description": "SM-2 Hard button label"
+        "description": "FSRS-6 Hard button label"
     },
     "studyRatingHardInterval": "1d",
     "@studyRatingHardInterval": {
-        "description": "SM-2 Hard interval"
+        "description": "FSRS-6 Hard interval"
     },
     "studyRatingGood": "Good",
     "@studyRatingGood": {
-        "description": "SM-2 Good button label"
+        "description": "FSRS-6 Good button label"
     },
     "studyRatingGoodInterval": "6d",
     "@studyRatingGoodInterval": {
-        "description": "SM-2 Good interval"
+        "description": "FSRS-6 Good interval"
     },
     "studyRatingEasy": "Easy",
     "@studyRatingEasy": {
-        "description": "SM-2 Easy button label"
+        "description": "FSRS-6 Easy button label"
     },
     "studyRatingEasyInterval": "12d",
     "@studyRatingEasyInterval": {
-        "description": "SM-2 Easy interval"
+        "description": "FSRS-6 Easy interval"
     },
     "decksCreateSheetTitle": "Create or Ingest Deck",
     "@decksCreateSheetTitle": {
@@ -1725,7 +1725,7 @@
     "@sessionSummaryTitle": {
         "description": "Title on session summary page"
     },
-    "sessionSummarySubtitle": "Your neural pathways have been reinforced. SM-2 intervals updated.",
+    "sessionSummarySubtitle": "Your neural pathways have been reinforced. FSRS-6 intervals updated.",
     "@sessionSummarySubtitle": {
         "description": "Subtitle on session summary page"
     },
@@ -1923,7 +1923,7 @@
             }
         }
     },
-    "generateCardsAction": "Generate SM-2 Cards",
+    "generateCardsAction": "Generate FSRS-6 Cards",
     "@generateCardsAction": {
         "description": "Action button in OCR preview"
     },
@@ -3348,7 +3348,7 @@
     "@welcomeWalkthroughSlide2Desc": {
         "description": "Description for slide 2 of welcome walkthrough"
     },
-    "welcomeWalkthroughSlide3Title": "Adaptive Spaced Repetition (SM-2)",
+    "welcomeWalkthroughSlide3Title": "Adaptive Spaced Repetition (FSRS-6)",
     "@welcomeWalkthroughSlide3Title": {
         "description": "Title for slide 3 of welcome walkthrough"
     },

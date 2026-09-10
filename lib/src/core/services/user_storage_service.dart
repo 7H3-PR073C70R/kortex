@@ -35,6 +35,8 @@ abstract class UserStorageService {
   void clearStorage();
 
   Future<void> initStorage();
+
+  bool isTokenExpired();
 }
 
 class UserStorageServiceImpl implements UserStorageService {
@@ -106,6 +108,24 @@ class UserStorageServiceImpl implements UserStorageService {
       return null;
     }
     return null;
+  }
+
+  @override
+  bool isTokenExpired() {
+    final token = getToken();
+    if (token == null || token.isEmpty) return true;
+    final map = _decodeJwtPayload();
+    if (map == null) {
+      // If token exists but is not a valid JWT (or cannot be decoded), consider it invalid/expired
+      return true;
+    }
+    final exp = map['exp'];
+    if (exp == null) return false;
+    final expSeconds = exp is int ? exp : int.tryParse(exp.toString());
+    if (expSeconds == null) return false;
+    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expSeconds * 1000);
+    // Allow a 15-second grace window to prevent edge-case expirations during routing
+    return DateTime.now().isAfter(expiryTime.subtract(const Duration(seconds: 15)));
   }
 
   @override

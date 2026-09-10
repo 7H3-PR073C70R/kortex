@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -286,6 +287,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           ..setMetric('cards_reviewed', totalReviewed)
           ..setMetric('duration_seconds', state.elapsedSeconds);
         unawaited(trace.start().then((_) => trace.stop()));
+      } on Object catch (_) {}
+
+      // 7. Re-evaluate deck review and streak reminders
+      try {
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(locator<NotificationService>().checkAndTriggerDueReminders());
+        }
       } on Object catch (_) {}
 
       // 7. Trigger flush of queued card reviews upon session completion

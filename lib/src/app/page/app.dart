@@ -43,6 +43,10 @@ class _AppState extends State<App> {
       _notificationPayloadSubscription = locator<NotificationService>()
           .onPayloadTapped
           .listen(_handleNotificationPayload);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(locator<NotificationService>().checkAndTriggerDueReminders());
+      });
     }
   }
 

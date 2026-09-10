@@ -13,6 +13,7 @@ class ShrinkableButton extends StatefulWidget {
     required this.child,
     required this.onTap,
     super.key,
+    this.onLongPress,
     this.shrinkScale = 0.96,
     this.duration = const Duration(milliseconds: 100),
     this.enableHaptics = true,
@@ -24,6 +25,7 @@ class ShrinkableButton extends StatefulWidget {
 
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double shrinkScale;
   final Duration duration;
   final bool enableHaptics;
@@ -145,6 +147,7 @@ class _ShrinkableButtonState extends State<ShrinkableButton>
             onTapUp: _onTapUp,
             onTapCancel: _onTapCancel,
             onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
             child: Center(
               widthFactor: 1,
               heightFactor: 1,

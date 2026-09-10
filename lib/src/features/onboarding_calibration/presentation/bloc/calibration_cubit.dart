@@ -152,7 +152,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
       defaultProfile = const CalibrationProfile(
         higherEdLevel: HigherEdLevel.bsc,
         higherEdField: 'General Studies',
-        higherEdGoals: ['Spaced Repetition (SM-2) Mastery'],
+        higherEdGoals: ['Spaced Repetition (FSRS-6) Mastery'],
         isCalibrated: true,
       );
     } else {

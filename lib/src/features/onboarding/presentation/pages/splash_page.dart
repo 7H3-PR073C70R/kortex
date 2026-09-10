@@ -11,6 +11,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -109,8 +110,19 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   Future<void> _navigateNext() async {
     if (!mounted) return;
 
-    final token = locator<UserStorageService>().getToken();
-    final isAuthenticated = token != null && token.isNotEmpty;
+    final userStorage = locator<UserStorageService>();
+    final token = userStorage.getToken();
+    final hasToken = token != null && token.isNotEmpty;
+    final isExpired = userStorage.isTokenExpired();
+    final isAuthenticated = hasToken && !isExpired;
+
+    if (hasToken && isExpired) {
+      // Proactively clear expired token to prevent dashboard flash
+      userStorage.clearStorage();
+      if (locator.isRegistered<AuthBloc>()) {
+        locator<AuthBloc>().add(const AuthSignOutRequested());
+      }
+    }
 
     if (isAuthenticated) {
       final biometricService = locator<BiometricAuthService>();
@@ -156,8 +168,42 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _proceedToApp() async {
-    // 1. Fast check: server-verified auth bloc user profile
     final authBloc = locator<AuthBloc>();
+
+    // Pre-flight check: verify token against server if auth repository is available
+    if (locator.isRegistered<AuthRepository>()) {
+      try {
+        final profileResult = await locator<AuthRepository>().getUserProfile();
+        final isSessionInvalid = profileResult.fold(
+          (failure) {
+            final msg = (failure.message ?? '').toLowerCase();
+            return msg.contains('jwt') ||
+                msg.contains('expired') ||
+                msg.contains('unauthorized') ||
+                msg.contains('invalid token') ||
+                msg.contains('401');
+          },
+          (_) => false,
+        );
+
+        if (isSessionInvalid) {
+          locator<UserStorageService>().clearStorage();
+          authBloc.add(const AuthSignOutRequested());
+          if (!mounted) return;
+          final onboardingLocal = locator<OnboardingLocalDataSource>();
+          if (!onboardingLocal.hasCompletedOnboarding()) {
+            await context.router.replaceAll([const OnboardingRoute()]);
+          } else {
+            await context.router.replaceAll([const AuthRoute()]);
+          }
+          return;
+        }
+      } on Object catch (_) {
+        // Offline or connection glitch: allow proceeding with local cached state
+      }
+    }
+
+    // 1. Fast check: server-verified auth bloc user profile
     final serverSaysOnboarded = authBloc.state.userProfile?.isOnboarded ?? false;
 
     // 2. Local pref key (persisted by CalibrationLocalDataSourceImpl.saveCalibrationProfile)

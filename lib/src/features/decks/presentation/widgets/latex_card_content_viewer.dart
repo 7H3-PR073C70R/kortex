@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 
 class LatexCardContentViewer extends StatelessWidget {
   const LatexCardContentViewer({
@@ -29,25 +29,13 @@ class LatexCardContentViewer extends StatelessWidget {
     Widget Function(BuildContext, Widget, ImageChunkEvent?)? loadingBuilder,
     Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
   }) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: fit,
-        width: width,
-        height: height,
-        loadingBuilder: loadingBuilder,
-        errorBuilder: errorBuilder,
-      );
-    } else {
-      final cleanPath = url.replaceFirst(RegExp('^file://'), '');
-      return Image.file(
-        File(cleanPath),
-        fit: fit,
-        width: width,
-        height: height,
-        errorBuilder: errorBuilder,
-      );
-    }
+    return AppMultimodalImage(
+      imageUrl: url,
+      fit: fit,
+      width: width,
+      height: height,
+      enableZoomOnTap: false,
+    );
   }
 
   void _showExpandedImage(BuildContext context, String url) {

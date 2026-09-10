@@ -22,6 +22,7 @@ abstract class UserActivityService {
   int getXpPoints();
   String getAcademicRank();
   List<HeatMapDayModel> getHeatMapData();
+  bool hasStudiedToday();
   AnalyticsSummaryModel getAnalyticsSummary();
 }
 
@@ -132,6 +133,13 @@ class UserActivityServiceImpl implements UserActivityService {
     }
 
     return streak;
+  }
+
+  @override
+  bool hasStudiedToday() {
+    final lastDateStr = _localStorageService.getPreference(key: _lastStudyDateKey);
+    if (lastDateStr == null || lastDateStr.isEmpty) return false;
+    return lastDateStr == _toDateKey(DateTime.now());
   }
 
   @override

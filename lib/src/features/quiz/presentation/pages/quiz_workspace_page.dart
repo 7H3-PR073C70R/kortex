@@ -17,6 +17,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 
 @RoutePage()
 class QuizWorkspacePage extends StatelessWidget {
@@ -456,13 +457,10 @@ class _QuizWorkspaceView extends HookWidget {
                           ),
                           if (current.imageUrl != null && current.imageUrl!.trim().isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            ClipRRect(
+                            AppMultimodalImage(
+                              imageUrl: current.imageUrl!,
+                              fit: BoxFit.contain,
                               borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                current.imageUrl!,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                              ),
                             ),
                           ],
                           if (current.latexFormula != null &&

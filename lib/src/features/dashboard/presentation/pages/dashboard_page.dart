@@ -441,7 +441,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 24),
         ],
 
-        // 6. Active Recall SM-2 Review Queue (Remaining Decks)
+        // 6. Active Recall FSRS-6 Review Queue (Remaining Decks)
         if (feed.dueStudyDecks.length > 1) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),

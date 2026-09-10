@@ -707,7 +707,7 @@ class _CourseModuleView extends StatelessWidget {
                               AppFeedback.light();
                               unawaited(
                                 context.router.push(
-                                  DeckDetailRoute(deckId: deck.id),
+                                  StudySessionRoute(deckId: deck.id),
                                 ),
                               );
                             },

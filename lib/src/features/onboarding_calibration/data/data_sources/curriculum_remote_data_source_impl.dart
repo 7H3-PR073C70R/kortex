@@ -405,9 +405,9 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       id: 'fb-goal-4',
       category: 'study_goal',
       key: 'spaced_rep',
-      displayName: 'Spaced Repetition (SM-2) Flashcards',
+      displayName: 'Spaced Repetition (FSRS-6) Flashcards',
       metadata: {
-        'subtitle': 'Automated SM-2 review scheduling for lecture decks',
+        'subtitle': 'Automated FSRS-6 review scheduling for lecture decks',
         'icon': 'schedule_rounded',
       },
     ),

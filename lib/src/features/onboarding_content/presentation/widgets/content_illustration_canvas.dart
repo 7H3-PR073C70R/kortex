@@ -98,7 +98,7 @@ class ContentIllustrationCanvas extends StatelessWidget {
             colors.syllabotAccent,
             colors.syllabotAccent.withAlpha(200),
           ],
-          title: 'SM-2 SPACED REPETITION',
+          title: 'FSRS-6 SPACED REPETITION',
           badgeText: 'Curated Topic Decks',
           isDark: isDark,
         );
