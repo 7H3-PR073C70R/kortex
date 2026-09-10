@@ -8,6 +8,8 @@ abstract class PastQuestionsRepository {
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
   });
 
   Future<Either<Failure, List<String>>> getAvailableSubjects(

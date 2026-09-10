@@ -177,10 +177,12 @@ class StudyEngineRouter {
             sourceText: sourceText,
           );
 
-          final cards = rawCards
+          final mappedCards = rawCards
               .map(GeneratedFlashcard.fromJson)
-              .take(count)
               .toList();
+          final cards = (count > 0 && (sourceText == null || sourceText.isEmpty))
+              ? mappedCards.take(count).toList()
+              : mappedCards;
 
           return StudyPackResult(
             cards: cards.isNotEmpty

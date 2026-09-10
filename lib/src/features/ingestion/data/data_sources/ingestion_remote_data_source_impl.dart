@@ -11,6 +11,7 @@ import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 
 class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   IngestionRemoteDataSourceImpl(
@@ -18,13 +19,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     this._dio, {
     UserStorageService? userStorage,
     DocumentParserService parserService = const DocumentParserService(),
+    LocalPdfParserService pdfParserService = const LocalPdfParserService(),
   }) : _userStorage = userStorage,
-       _parserService = parserService;
+       _parserService = parserService,
+       _pdfParserService = pdfParserService;
 
   final IngestionApiClient _client;
   final Dio _dio;
   final UserStorageService? _userStorage;
   final DocumentParserService _parserService;
+  final LocalPdfParserService _pdfParserService;
 
   PerformanceService? get _performanceService {
     try {
@@ -306,11 +310,18 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       final isPdf = fileType.toLowerCase().contains('pdf') ||
           storagePath.toLowerCase().endsWith('.pdf') ||
           filename.toLowerCase().endsWith('.pdf');
-      initialText = _parserService.extractTextFromBytes(
-        fileBytes,
-        fileType: isPdf ? 'pdf' : fileType,
-        filename: filename,
-      );
+      if (isPdf) {
+        initialText = await _pdfParserService.extractText(
+          fileBytes,
+          filename: filename,
+        );
+      } else {
+        initialText = _parserService.extractTextFromBytes(
+          fileBytes,
+          fileType: fileType,
+          filename: filename,
+        );
+      }
     }
 
     // 1. Try remote Edge Function (AI Smart Synthesis)
@@ -389,9 +400,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           storagePath.toLowerCase().endsWith('.pdf') ||
           filename.toLowerCase().endsWith('.pdf');
       if (isPdf) {
-        text = _parserService.extractTextFromBytes(
+        text = await _pdfParserService.extractText(
           fileBytes,
-          fileType: 'pdf',
           filename: filename,
         );
       } else {

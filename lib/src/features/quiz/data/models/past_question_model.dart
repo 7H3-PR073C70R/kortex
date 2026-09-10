@@ -17,6 +17,9 @@ class PastQuestionModel {
     this.latexFormula,
     this.imageUrl,
     this.difficulty = 'Medium',
+    this.isUserAdded = false,
+    this.courseId,
+    this.courseCode,
   });
 
   factory PastQuestionModel.fromJson(Map<String, dynamic> json) {
@@ -79,6 +82,12 @@ class PastQuestionModel {
       latexFormula: json['latex_formula'] as String?,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       difficulty: json['difficulty'] as String? ?? 'Medium',
+      isUserAdded: json['is_user_added'] as bool? ??
+          json['isUserAdded'] as bool? ??
+          false,
+      courseId: json['course_id'] as String? ?? json['courseId'] as String?,
+      courseCode:
+          json['course_code'] as String? ?? json['courseCode'] as String?,
     );
   }
 
@@ -97,6 +106,9 @@ class PastQuestionModel {
   final String? latexFormula;
   final String? imageUrl;
   final String difficulty;
+  final bool isUserAdded;
+  final String? courseId;
+  final String? courseCode;
 
   Map<String, dynamic> toJson() {
     return {
@@ -115,6 +127,9 @@ class PastQuestionModel {
       'latex_formula': latexFormula,
       'image_url': imageUrl,
       'difficulty': difficulty,
+      'is_user_added': isUserAdded,
+      'course_id': courseId,
+      'course_code': courseCode,
     };
   }
 
@@ -135,6 +150,9 @@ class PastQuestionModel {
       latexFormula: latexFormula,
       imageUrl: imageUrl,
       difficulty: difficulty,
+      isUserAdded: isUserAdded,
+      courseId: courseId,
+      courseCode: courseCode,
     );
   }
 }

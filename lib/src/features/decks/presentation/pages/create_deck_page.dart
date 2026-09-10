@@ -133,9 +133,13 @@ class CreateDeckPage extends HookWidget {
             ? locator<StudyEngineRouter>()
             : StudyEngineRouter();
 
+        final targetCount = extractedText.length > 30000
+            ? (extractedText.length ~/ 2500).clamp(20, 300)
+            : 15;
+
         final studyResult = await studyEngine.generateStudyPack(
           topic: '$resolvedCourseCode $resolvedSubject Exam $year',
-          count: 15,
+          count: targetCount,
           sourceText: extractedText.isNotEmpty ? extractedText : null,
         );
 
@@ -170,6 +174,9 @@ class CreateDeckPage extends HookWidget {
               correctOptionLabel: correctLabel,
               explanation: card.explanation.isNotEmpty ? card.explanation : card.back,
               topic: resolvedSubject,
+              isUserAdded: true,
+              courseId: courseId,
+              courseCode: resolvedCourseCode,
             ),
           );
 
@@ -232,7 +239,12 @@ class CreateDeckPage extends HookWidget {
           locator<DashboardBloc>().add(const DashboardRefreshed());
         }
         if (locator.isRegistered<PastQuestionsBloc>()) {
-          locator<PastQuestionsBloc>().add(const LoadPastQuestionsEvent());
+          locator<PastQuestionsBloc>().add(
+            LoadPastQuestionsEvent(
+              courseId: courseId,
+              courseCode: resolvedCourseCode,
+            ),
+          );
         }
 
         calibrationProgress.value = 1.0;
@@ -361,6 +373,29 @@ class CreateDeckPage extends HookWidget {
                 correctOptionLabel: correctOpt,
                 explanation: back,
                 topic: resolvedSubject,
+                isUserAdded: true,
+                courseId: courseId,
+                courseCode: resolvedCourseCode,
+              ),
+            );
+          } else {
+            // Theory / essay question
+            pqQuestions.add(
+              PastQuestionModel(
+                id: UuidUtils.generate(),
+                examType: examCat,
+                subject: resolvedSubject,
+                year: year,
+                questionNumber: i + 1,
+                prompt: front,
+                options: const [],
+                correctOptionIndex: 0,
+                correctOptionLabel: '',
+                explanation: back,
+                topic: resolvedSubject,
+                isUserAdded: true,
+                courseId: courseId,
+                courseCode: resolvedCourseCode,
               ),
             );
           }
@@ -403,7 +438,12 @@ class CreateDeckPage extends HookWidget {
           locator<DashboardBloc>().add(const DashboardRefreshed());
         }
         if (locator.isRegistered<PastQuestionsBloc>()) {
-          locator<PastQuestionsBloc>().add(const LoadPastQuestionsEvent());
+          locator<PastQuestionsBloc>().add(
+            LoadPastQuestionsEvent(
+              courseId: courseId,
+              courseCode: resolvedCourseCode,
+            ),
+          );
         }
 
         if (context.mounted) {

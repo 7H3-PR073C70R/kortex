@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,37 @@ class PastQuestionCard extends StatelessWidget {
   final PastQuestionEntity question;
   final bool isInstantFeedback;
 
+  Widget _buildQuestionImage(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      );
+    } else if (imagePath.startsWith('data:image')) {
+      try {
+        final base64Str = imagePath.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        );
+      } on Exception {
+        return const SizedBox.shrink();
+      }
+    } else {
+      final file = File(imagePath);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -30,19 +63,17 @@ class PastQuestionCard extends StatelessWidget {
     final optionLetters = ['A', 'B', 'C', 'D', 'E'];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(60)
-              : colors.surfaceBorder.withAlpha(120),
+          color: isDark ? colors.surfaceBorderHighlight : colors.surfaceBorder,
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.black.withAlpha(isDark ? 40 : 8),
+            color: colors.black.withAlpha(isDark ? 30 : 8),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -51,48 +82,107 @@ class PastQuestionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Badge Row
+          // Header: Category, Badges, Subject, Year, Topic, Bookmark
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 40 : 20),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${question.subject} • ${question.year} • Q${question.questionNumber}',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11,
+              Flexible(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (question.isUserAdded)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 45 : 20),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(70),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 11,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'User Added',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (question.isTheory)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.syllabotAccent.withAlpha(isDark ? 45 : 20),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color: colors.syllabotAccent.withAlpha(70),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'Theory / Essay',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.syllabotAccent,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${question.subject} • ${question.year} • Q${question.questionNumber}',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10.5,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      question.topic,
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 10.5,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        question.topic,
+                        style: typography.caption.medium.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               IconButton(
                 icon: Icon(
@@ -149,165 +239,168 @@ class PastQuestionCard extends StatelessWidget {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                question.imageUrl!,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
-              ),
+              child: _buildQuestionImage(question.imageUrl!),
             ),
           ],
           const SizedBox(height: 14),
 
-          // Multiple Choice Options
-          ...question.options.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final optionText = entry.value;
-            final letter = idx < optionLetters.length
-                ? optionLetters[idx]
-                : '$idx';
-            final isSelected = question.userSelectedOptionIndex == idx;
-            final isCorrect = idx == question.correctOptionIndex;
+          // Theory Question View vs Multiple Choice Options
+          if (question.isTheory) ...[
+            _TheoryModelAnswerWidget(
+              explanation: question.explanation,
+            ),
+          ] else ...[
+            // Multiple Choice Options
+            ...question.options.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final optionText = entry.value;
+              final letter = idx < optionLetters.length
+                  ? optionLetters[idx]
+                  : '$idx';
+              final isSelected = question.userSelectedOptionIndex == idx;
+              final isCorrect = idx == question.correctOptionIndex;
 
-            var optionBgColor = isDark
-                ? colors.backgroundPrimary
-                : colors.surfaceSecondary.withAlpha(50);
-            var optionBorderColor = colors.surfaceBorder.withAlpha(90);
-            var optionTextColor = colors.textPrimary;
+              var optionBgColor = isDark
+                  ? colors.backgroundPrimary
+                  : colors.surfaceSecondary.withAlpha(50);
+              var optionBorderColor = colors.surfaceBorder.withAlpha(90);
+              var optionTextColor = colors.textPrimary;
 
-            if (question.isAnswered && isInstantFeedback) {
-              if (isCorrect) {
-                optionBgColor = colors.success.withAlpha(isDark ? 50 : 25);
-                optionBorderColor = colors.success.withAlpha(180);
-                optionTextColor = colors.success;
+              if (question.isAnswered && isInstantFeedback) {
+                if (isCorrect) {
+                  optionBgColor = colors.success.withAlpha(isDark ? 50 : 25);
+                  optionBorderColor = colors.success.withAlpha(180);
+                  optionTextColor = colors.success;
+                } else if (isSelected) {
+                  optionBgColor = colors.error.withAlpha(isDark ? 50 : 25);
+                  optionBorderColor = colors.error.withAlpha(180);
+                  optionTextColor = colors.error;
+                }
               } else if (isSelected) {
-                optionBgColor = colors.error.withAlpha(isDark ? 50 : 25);
-                optionBorderColor = colors.error.withAlpha(180);
-                optionTextColor = colors.error;
+                optionBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
+                optionBorderColor = colors.primary;
+                optionTextColor = colors.primary;
               }
-            } else if (isSelected) {
-              optionBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
-              optionBorderColor = colors.primary;
-              optionTextColor = colors.primary;
-            }
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.selectionClick());
-                  context.read<PastQuestionsBloc>().add(
-                        SelectOptionEvent(
-                          questionId: question.id,
-                          optionIndex: idx,
-                        ),
-                      );
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 11,
-                  ),
-                  decoration: BoxDecoration(
-                    color: optionBgColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: optionBorderColor, width: 1.2),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected
-                              ? colors.primary
-                              : colors.surfaceSecondary,
-                        ),
-                        child: Center(
-                          child: Text(
-                            letter,
-                            style: typography.caption.bold.copyWith(
-                              color: isSelected
-                                  ? colors.white
-                                  : colors.textSecondary,
-                              fontSize: 11,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.selectionClick());
+                    context.read<PastQuestionsBloc>().add(
+                          SelectOptionEvent(
+                            questionId: question.id,
+                            optionIndex: idx,
+                          ),
+                        );
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: optionBgColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: optionBorderColor, width: 1.2),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? colors.primary
+                                : colors.surfaceSecondary,
+                          ),
+                          child: Center(
+                            child: Text(
+                              letter,
+                              style: typography.caption.bold.copyWith(
+                                color: isSelected
+                                    ? colors.white
+                                    : colors.textSecondary,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: LatexRichViewer(
-                          text: optionText,
-                          style: typography.subhead.medium.copyWith(
-                            color: optionTextColor,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: LatexRichViewer(
+                            text: optionText,
+                            style: typography.subhead.medium.copyWith(
+                              color: optionTextColor,
+                            ),
                           ),
                         ),
-                      ),
-                      if (question.isAnswered && isInstantFeedback) ...[
-                        if (isCorrect)
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: colors.success,
-                            size: 20,
-                          )
-                        else if (isSelected)
-                          Icon(
-                            Icons.cancel_rounded,
-                            color: colors.error,
-                            size: 20,
-                          ),
+                        if (question.isAnswered && isInstantFeedback) ...[
+                          if (isCorrect)
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: colors.success,
+                              size: 20,
+                            )
+                          else if (isSelected)
+                            Icon(
+                              Icons.cancel_rounded,
+                              color: colors.error,
+                              size: 20,
+                            ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-
-          // Explanation Box (shown once answered)
-          if (question.isAnswered && isInstantFeedback) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.primary.withAlpha(isDark ? 30 : 15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.primary.withAlpha(isDark ? 70 : 40),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_rounded,
-                        color: colors.syllabotAccent,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Explanation & Concept',
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  LatexRichViewer(
-                    text: question.explanation,
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary,
-                      height: 1.4,
                     ),
                   ),
-                ],
+                ),
+              );
+            }),
+
+            // Explanation Box (shown once answered for MCQ)
+            if (question.isAnswered && isInstantFeedback) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 30 : 15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 70 : 40),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lightbulb_rounded,
+                          color: colors.syllabotAccent,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Explanation & Solution',
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    LatexRichViewer(
+                      text: question.explanation,
+                      style: typography.footnote.regular.copyWith(
+                        color: colors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
 
           const SizedBox(height: 10),
@@ -362,6 +455,121 @@ class PastQuestionCard extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TheoryModelAnswerWidget extends StatefulWidget {
+  const _TheoryModelAnswerWidget({
+    required this.explanation,
+  });
+
+  final String? explanation;
+
+  @override
+  State<_TheoryModelAnswerWidget> createState() => _TheoryModelAnswerWidgetState();
+}
+
+class _TheoryModelAnswerWidgetState extends State<_TheoryModelAnswerWidget> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final explanation = widget.explanation;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.primary.withAlpha(isDark ? 28 : 12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: colors.primary.withAlpha(isDark ? 65 : 35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 50 : 25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.menu_book_rounded,
+                      color: colors.primary,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Model Solution & Verified Answer',
+                          style: typography.subhead.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          _isExpanded
+                              ? 'Tap to hide model answer'
+                              : 'Tap to view model solution and detailed reasoning',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: colors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded) ...[
+            Divider(
+              height: 1,
+              color: colors.primary.withAlpha(isDark ? 40 : 25),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: explanation != null && explanation.trim().isNotEmpty
+                  ? LatexRichViewer(
+                      text: explanation,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textPrimary,
+                        height: 1.5,
+                      ),
+                    )
+                  : Text(
+                      'No model solution or detailed explanation available for this question yet.',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+            ),
+          ],
         ],
       ),
     );

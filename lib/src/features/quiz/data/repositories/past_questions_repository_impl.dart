@@ -73,15 +73,19 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
   }) {
     return Future<List<PastQuestionEntity>>.sync(() async {
-      // 1. Instant sub-5ms lookup from local offline asset dataset
+      // 1. Instant lookup from local offline asset and user-added dataset
       try {
         final local = await _effectiveLocalDataSource.getPastQuestions(
           examCategory: examCategory,
           subject: subject,
           year: year,
           searchQuery: searchQuery,
+          courseId: courseId,
+          courseCode: courseCode,
         );
         if (local.isNotEmpty) {
           return local.map((m) {
@@ -100,6 +104,8 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         subject: subject,
         year: year,
         searchQuery: searchQuery,
+        courseId: courseId,
+        courseCode: courseCode,
       );
 
       return remote.map((m) {
@@ -175,9 +181,22 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         latexFormula: e.latexFormula,
         imageUrl: e.imageUrl,
         difficulty: e.difficulty,
+        isUserAdded: e.isUserAdded,
+        courseId: e.courseId,
+        courseCode: e.courseCode,
       );
     }).toList();
 
-    return _remoteDataSource.savePastQuestions(models).makeRequest();
+    return Future<void>.sync(() async {
+      // 1. Save to local data source
+      try {
+        await _effectiveLocalDataSource.savePastQuestions(models);
+      } on Object catch (_) {}
+
+      // 2. Sync to remote data source
+      try {
+        await _remoteDataSource.savePastQuestions(models);
+      } on Object catch (_) {}
+    }).makeRequest();
   }
 }

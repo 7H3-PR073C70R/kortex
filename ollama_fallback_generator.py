@@ -619,9 +619,13 @@ def transform_question(
     fingerprint = compute_fingerprint(raw_exam, subject_name, year, prompt_text)
 
     # Note: image_url is stored in metadata for backward-compatibility with current table schema
+    image_url = raw_q.get("image") or None
+    image_base_url = "https://myschool.ng/storage/classroom/"
+    if image_url:
+        image_url = image_base_url + image_url
     metadata = {
         "raw_id": raw_id,
-        "image_url": raw_q.get("image") or None,
+        "image_url": image_url,
         "is_synthetic": False,
         "verification_status": "verified",
         "comments_count": raw_q.get("comments_count", 0)
@@ -643,7 +647,8 @@ def transform_question(
         "passage": None,
         "latex_formula": formula,
         "difficulty": "Medium",
-        "metadata": metadata
+        "metadata": metadata,
+        "image_url": image_url,
     }
 
 

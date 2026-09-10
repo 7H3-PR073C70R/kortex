@@ -14,15 +14,34 @@ class LoadPastQuestionsEvent extends PastQuestionsEvent {
     this.subject,
     this.year,
     this.searchQuery,
+    this.courseId,
+    this.courseCode,
   });
 
   final ExamCategory? examCategory;
   final String? subject;
   final int? year;
   final String? searchQuery;
+  final String? courseId;
+  final String? courseCode;
 
   @override
-  List<Object?> get props => [examCategory, subject, year, searchQuery];
+  List<Object?> get props => [
+        examCategory,
+        subject,
+        year,
+        searchQuery,
+        courseId,
+        courseCode,
+      ];
+}
+
+class AddPastQuestionsEvent extends PastQuestionsEvent {
+  const AddPastQuestionsEvent(this.questions);
+  final List<PastQuestionEntity> questions;
+
+  @override
+  List<Object?> get props => [questions];
 }
 
 class ChangeExamCategoryEvent extends PastQuestionsEvent {

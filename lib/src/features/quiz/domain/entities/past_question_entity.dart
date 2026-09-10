@@ -94,6 +94,9 @@ class PastQuestionEntity extends Equatable {
     this.difficulty = 'Medium',
     this.userSelectedOptionIndex,
     this.isBookmarked = false,
+    this.isUserAdded = false,
+    this.courseId,
+    this.courseCode,
   });
 
   final String id;
@@ -113,9 +116,13 @@ class PastQuestionEntity extends Equatable {
   final String difficulty;
   final int? userSelectedOptionIndex;
   final bool isBookmarked;
+  final bool isUserAdded;
+  final String? courseId;
+  final String? courseCode;
 
   bool get isAnswered => userSelectedOptionIndex != null;
   bool get isCorrect => userSelectedOptionIndex == correctOptionIndex;
+  bool get isTheory => options.isEmpty;
 
   PastQuestionEntity copyWith({
     String? id,
@@ -135,6 +142,9 @@ class PastQuestionEntity extends Equatable {
     String? difficulty,
     int? userSelectedOptionIndex,
     bool? isBookmarked,
+    bool? isUserAdded,
+    String? courseId,
+    String? courseCode,
   }) {
     return PastQuestionEntity(
       id: id ?? this.id,
@@ -155,6 +165,9 @@ class PastQuestionEntity extends Equatable {
       userSelectedOptionIndex:
           userSelectedOptionIndex ?? this.userSelectedOptionIndex,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      isUserAdded: isUserAdded ?? this.isUserAdded,
+      courseId: courseId ?? this.courseId,
+      courseCode: courseCode ?? this.courseCode,
     );
   }
 
@@ -177,5 +190,8 @@ class PastQuestionEntity extends Equatable {
     difficulty,
     userSelectedOptionIndex,
     isBookmarked,
+    isUserAdded,
+    courseId,
+    courseCode,
   ];
 }

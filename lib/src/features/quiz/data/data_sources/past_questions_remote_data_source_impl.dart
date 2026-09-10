@@ -62,8 +62,17 @@ class PastQuestionsRemoteDataSourceImpl
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
   }) async {
+    final cleanCode = courseCode?.trim().toLowerCase();
     final memoryMatches = _inMemoryQuestions.where((q) {
+      final matchCourse = (courseId != null && q.courseId == courseId) ||
+          (cleanCode != null &&
+              q.courseCode != null &&
+              q.courseCode!.trim().toLowerCase() == cleanCode);
+      if (matchCourse) return true;
+
       if (examCategory != null && q.examType != examCategory) return false;
       if (subject != null &&
           subject != 'All' &&

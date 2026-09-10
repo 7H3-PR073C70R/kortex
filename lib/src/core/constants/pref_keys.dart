@@ -27,4 +27,6 @@ class PrefKeys {
   static const String isProSubscriber = '__kortex_is_pro_subscriber__';
   static const String dailyUploadCount = '__kortex_daily_upload_count__';
   static const String lastUploadDate = '__kortex_last_upload_date__';
+  static const String userAddedPastQuestions =
+      '__kortex_user_added_past_questions__';
 }

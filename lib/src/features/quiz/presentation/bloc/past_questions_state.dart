@@ -14,6 +14,8 @@ class PastQuestionsState extends Equatable {
     this.availableYears = const [],
     this.isInstantFeedbackMode = true,
     this.searchQuery = '',
+    this.courseId,
+    this.courseCode,
     this.errorMessage,
   });
 
@@ -26,11 +28,22 @@ class PastQuestionsState extends Equatable {
   final List<int> availableYears;
   final bool isInstantFeedbackMode;
   final String searchQuery;
+  final String? courseId;
+  final String? courseCode;
   final String? errorMessage;
 
   int get totalQuestions => questions.length;
   int get answeredQuestions => questions.where((q) => q.isAnswered).length;
   int get correctAnswers => questions.where((q) => q.isCorrect).length;
+
+  List<PastQuestionEntity> get officialQuestions =>
+      questions.where((q) => !q.isUserAdded).toList();
+  List<PastQuestionEntity> get userAddedQuestions =>
+      questions.where((q) => q.isUserAdded).toList();
+  List<PastQuestionEntity> get theoryQuestions =>
+      questions.where((q) => q.isTheory).toList();
+  List<PastQuestionEntity> get mcqQuestions =>
+      questions.where((q) => !q.isTheory).toList();
 
   PastQuestionsState copyWith({
     PastQuestionsStatus? status,
@@ -43,6 +56,8 @@ class PastQuestionsState extends Equatable {
     List<int>? availableYears,
     bool? isInstantFeedbackMode,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
     String? errorMessage,
   }) {
     return PastQuestionsState(
@@ -58,6 +73,8 @@ class PastQuestionsState extends Equatable {
       isInstantFeedbackMode:
           isInstantFeedbackMode ?? this.isInstantFeedbackMode,
       searchQuery: searchQuery ?? this.searchQuery,
+      courseId: courseId ?? this.courseId,
+      courseCode: courseCode ?? this.courseCode,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -73,6 +90,8 @@ class PastQuestionsState extends Equatable {
     availableYears,
     isInstantFeedbackMode,
     searchQuery,
+    courseId,
+    courseCode,
     errorMessage,
   ];
 }

@@ -144,5 +144,31 @@ void main() {
         ),
       ],
     );
+
+    blocTest<PastQuestionsBloc, PastQuestionsState>(
+      'AddPastQuestionsEvent saves questions and updates userAddedQuestions',
+      build: () {
+        when(
+          () => mockRepository.savePastQuestions(any()),
+        ).thenAnswer((_) async => const Right(null));
+        return bloc;
+      },
+      act: (b) => b.add(
+        AddPastQuestionsEvent([
+          tQuestion.copyWith(isUserAdded: true, courseCode: 'MTH 101'),
+        ]),
+      ),
+      verify: (_) {
+        verify(() => mockRepository.savePastQuestions(any())).called(1);
+      },
+      expect: () => [
+        PastQuestionsState(
+          status: PastQuestionsStatus.loaded,
+          questions: [
+            tQuestion.copyWith(isUserAdded: true, courseCode: 'MTH 101'),
+          ],
+        ),
+      ],
+    );
   });
 }

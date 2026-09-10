@@ -78,9 +78,15 @@ serve(async (req: Request) => {
       return quotaCheck.errorResponse;
     }
 
-    const body: GenerateFlashcardsRequest = await req.json().catch(() => ({}));
-    const topic = body.topic || "Advanced Calculus & Linear Algebra";
-    const totalCount = Math.min(Math.max(body.count ?? 10, 3), 30);
+    const requestedCount = body.count;
+    const dynamicCount =
+      sourceText && sourceText.length > 5000
+        ? Math.max(10, Math.ceil(sourceText.length / 2000))
+        : 10;
+    const totalCount =
+      requestedCount && requestedCount > 0
+        ? Math.max(requestedCount, 3)
+        : dynamicCount;
     const deckId = body.deckId || `deck_${Date.now()}`;
     const difficulty = body.difficulty || "intermediate";
     const sourceText = body.sourceText;
@@ -150,7 +156,7 @@ serve(async (req: Request) => {
 Generate high-quality, rigorous flashcards for the student.
 Topic: "${topic}"
 Difficulty: ${difficulty}
-${sourceText ? `Source Material: ${sourceText.slice(0, 3000)}` : ""}
+${sourceText ? `Source Material:\n${sourceText.length > 50000 ? sourceText.slice(0, 50000) : sourceText}` : ""}
 
 CRITICAL OUTPUT INSTRUCTIONS:
 - You must output exactly ${remainingCount} unique academic flashcards.

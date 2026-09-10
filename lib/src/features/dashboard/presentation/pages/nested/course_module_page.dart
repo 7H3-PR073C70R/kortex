@@ -21,6 +21,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
@@ -109,6 +110,8 @@ class CourseModulePage extends StatelessWidget {
           LoadPastQuestionsEvent(
             examCategory: examCategory,
             subject: mappedSubject,
+            courseId: courseId,
+            courseCode: sanitizedCode,
           ),
         ),
       child: _CourseModuleView(
@@ -826,7 +829,7 @@ class _CourseModuleView extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Official Past Papers & Q-Bank',
+                    'Past Questions & Q-Bank',
                     style: typography.callout.bold.copyWith(
                       color: colors.textPrimary,
                       fontSize: 15,
@@ -836,26 +839,111 @@ class _CourseModuleView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (hasQuestions)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
+                ShrinkableButton(
+                  onTap: () {
+                    AppFeedback.light();
+                    unawaited(
+                      AddPastQuestionModalSheet.show(
+                        context,
+                        courseId: courseId,
+                        courseCode: courseCode,
+                        defaultSubject: mappedSubject,
+                        onAdded: (newQuestions) {
+                          context.read<PastQuestionsBloc>().add(
+                                AddPastQuestionsEvent(newQuestions),
+                              );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: colors.success.withAlpha(30),
+                      color: colors.primary.withAlpha(isDark ? 45 : 25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14, color: colors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Add Question',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (hasQuestions) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceSecondary,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${questions.length} Questions',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.success,
+                      '${pqState.officialQuestions.length} Official',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
                         fontSize: 10.5,
                       ),
                     ),
                   ),
-              ],
-            ),
+                  if (pqState.userAddedQuestions.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 45 : 22),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(60),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '${pqState.userAddedQuestions.length} User Added',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ),
+                  if (pqState.theoryQuestions.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: colors.syllabotAccent.withAlpha(60),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '${pqState.theoryQuestions.length} Theory',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.syllabotAccent,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
 
             if (pqState.status == PastQuestionsStatus.loading)
@@ -904,6 +992,25 @@ class _CourseModuleView extends StatelessWidget {
                 typography: typography,
                 isDark: isDark,
               ),
+
+              // User Added Past Questions Card (if any)
+              if (pqState.userAddedQuestions.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _buildCbtPaperCard(
+                  context: context,
+                  title: 'User Added Questions',
+                  subtitle:
+                      'Practice ${pqState.userAddedQuestions.length} custom / uploaded questions for $courseCode',
+                  badgeText: 'USER ADDED',
+                  icon: Icons.person_pin_rounded,
+                  accentColor: colors.primary,
+                  questions: pqState.userAddedQuestions,
+                  isTimed: false,
+                  colors: colors,
+                  typography: typography,
+                  isDark: isDark,
+                ),
+              ],
             ] else ...[
               Container(
                 width: double.infinity,
@@ -1074,6 +1181,49 @@ class _CourseModuleView extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 10),
+                    ShrinkableButton(
+                      onTap: () {
+                        AppFeedback.light();
+                        unawaited(
+                          AddPastQuestionModalSheet.show(
+                            context,
+                            courseId: courseId,
+                            courseCode: courseCode,
+                            defaultSubject: mappedSubject,
+                            onAdded: (newQuestions) {
+                              context.read<PastQuestionsBloc>().add(
+                                    AddPastQuestionsEvent(newQuestions),
+                                  );
+                            },
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 75 : 45),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.upload_file_rounded, size: 16, color: colors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Upload or Add Past Questions',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

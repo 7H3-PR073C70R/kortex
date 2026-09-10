@@ -24,6 +24,24 @@ class QuizQuestionEntity extends Equatable {
   });
 
   factory QuizQuestionEntity.fromPastQuestion(PastQuestionEntity q) {
+    if (q.isTheory) {
+      return QuizQuestionEntity(
+        id: q.id,
+        prompt: q.passage != null && q.passage!.isNotEmpty
+            ? '${q.passage}\n\n${q.prompt}'
+            : q.prompt,
+        type: QuizQuestionType.shortAnswer,
+        options: const [],
+        correctAnswer: q.explanation,
+        explanation: q.explanation.isNotEmpty
+            ? q.explanation
+            : 'Review the model answer and key marking rubrics above.',
+        subTopic: '${q.subject} (${q.year} • Q${q.questionNumber}) [Theory]',
+        latexFormula: q.latexFormula,
+        imageUrl: q.imageUrl,
+      );
+    }
+
     final optionLetters = ['A', 'B', 'C', 'D', 'E'];
     final correctAns = q.correctOptionIndex < q.options.length
         ? q.options[q.correctOptionIndex]

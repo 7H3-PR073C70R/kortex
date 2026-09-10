@@ -7,6 +7,8 @@ abstract class PastQuestionsRemoteDataSource {
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
   });
 
   Future<List<String>> getAvailableSubjects(ExamCategory category);

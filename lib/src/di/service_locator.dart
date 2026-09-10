@@ -132,5 +132,12 @@ void _initServices() {
     )
     ..registerLazySingleton<LiveKitAudioService>(
       LiveKitAudioServiceImpl.new,
+    )
+    ..registerLazySingleton<PastQuestionAiExtractorService>(
+      () => PastQuestionAiExtractorService(
+        ingestionService: locator<LocalIngestionService>(),
+        studyEngineRouter: locator<StudyEngineRouter>(),
+        dio: locator<Dio>(),
+      ),
     );
 }

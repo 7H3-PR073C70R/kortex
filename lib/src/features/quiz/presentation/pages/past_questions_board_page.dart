@@ -13,6 +13,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_filter_bar.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_test_config_sheet.dart';
@@ -118,6 +119,27 @@ class _PastQuestionsBoardView extends HookWidget {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Icons.add_circle_outline_rounded, color: colors.primary, size: 22),
+            tooltip: 'Add Past Question',
+            onPressed: () {
+              AppFeedback.light();
+              final state = context.read<PastQuestionsBloc>().state;
+              unawaited(
+                AddPastQuestionModalSheet.show(
+                  context,
+                  defaultSubject: state.selectedSubject.isNotEmpty
+                      ? state.selectedSubject
+                      : initialSubject,
+                  onAdded: (newQuestions) {
+                    context.read<PastQuestionsBloc>().add(
+                          AddPastQuestionsEvent(newQuestions),
+                        );
+                  },
+                ),
+              );
+            },
+          ),
           BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
             builder: (context, state) {
               return Padding(

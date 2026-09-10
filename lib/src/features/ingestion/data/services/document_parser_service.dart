@@ -564,19 +564,27 @@ class DocumentParserService {
     var clean = rawTitle.trim();
 
     // 1. Strip leading hierarchical numbering and structural prefixes
-    clean = clean
+    final stripped = clean
         .replaceAll(
           RegExp(
-            r'^(?:Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|(?:\d+\.)+\d*\s*|\b(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Z0-9\.]+\s*:?\s*|[A-Z]\.\s*|[•\-–—*#]+\s*)',
+            r'^(?:Q(?:uestion)?\s*:\s*|Concept\s*:\s*|Key Concept\s*\d*\s*:?\s*|(?:\d+\.)+\d*\s*|\b(?:Chapter|Section|Part|Step|Rule|Unit|Module|Theorem|Lemma|Definition|Topic)\s+[A-Za-z0-9\.]+\s*:?\s*|[A-Z]\.\s*|[•\-–—*#]+\s*)',
             caseSensitive: false,
           ),
           '',
         )
         .trim();
 
-    // Reject unparseable noise or micro-fragments
-    if (clean.length < 3 || _isCorruptedBinaryString(clean)) {
+    if (stripped.length >= 3 && !_isCorruptedBinaryString(stripped)) {
+      clean = stripped;
+    } else if (clean.length >= 3 && !_isCorruptedBinaryString(clean)) {
+      // Retain structural label (e.g. "Step 1", "Rule 1.2.1")
+    } else {
       return null;
+    }
+
+    if (RegExp(r'^(?:Step|Rule|Procedure|Part|Phase|Action)\s+[A-Za-z0-9\.]+$', caseSensitive: false).hasMatch(clean)) {
+      final firstWords = cleanBody.split(RegExp(r'\s+')).take(6).join(' ');
+      return 'What does $clean specify regarding $firstWords...?';
     }
 
     final lower = clean.toLowerCase();
@@ -1126,12 +1134,13 @@ class DocumentParserService {
 
       // 2. Check for Header: Description on the same line
       final colonMatch = RegExp(
-        r'^((?:(?:Part\s+\d+|Step\s+\d+|\d+\.|\d+\.\d+|[A-Z]\.)\s+[^:]+|[A-Za-z\s\-/]{3,40})):\s+(.+)$',
+        r'^((?:(?:Part|Step|Rule|Section|Chapter|Unit|Module)\s+[A-Za-z0-9\.]+(?:\s+[^:]+)?|(?:\d+\.)+\d*\s+[^:]+|[A-Za-z\s\-/]{3,40})):\s+(.+)$',
+        caseSensitive: false,
       ).firstMatch(line);
       if (colonMatch != null &&
           colonMatch.group(2)!.split(' ').length >= 3 &&
           (structuralHeaderRegex.hasMatch(colonMatch.group(1)!) ||
-              colonMatch.group(1)!.split(' ').length <= 4)) {
+              colonMatch.group(1)!.split(' ').length <= 6)) {
         commitCurrentSection();
         currentTitle = colonMatch.group(1)!.trim();
         currentLines.add(colonMatch.group(2)!.trim());
@@ -1168,8 +1177,13 @@ class DocumentParserService {
               RegExp('^[A-Z0-9]').hasMatch(w));
 
       if (isStructuralHeader || isColonHeader || isAllCapsHeader || isTitleCase) {
-        commitCurrentSection();
-        currentTitle = line.replaceAll(':', '').trim();
+        if (currentTitle != null && currentLines.isEmpty) {
+          // Chain hierarchical header context (e.g. Chapter 1 - Section 1.1)
+          currentTitle = '$currentTitle - ${line.replaceAll(':', '').trim()}';
+        } else {
+          commitCurrentSection();
+          currentTitle = line.replaceAll(':', '').trim();
+        }
         continue;
       }
 

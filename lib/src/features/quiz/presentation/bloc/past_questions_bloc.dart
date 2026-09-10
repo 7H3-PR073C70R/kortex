@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
@@ -10,6 +11,7 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
   }) : _repository = repository,
        super(const PastQuestionsState()) {
     on<LoadPastQuestionsEvent>(_onLoadPastQuestions);
+    on<AddPastQuestionsEvent>(_onAddPastQuestions);
     on<ChangeExamCategoryEvent>(_onChangeExamCategory);
     on<ChangeSubjectEvent>(_onChangeSubject);
     on<ChangeYearEvent>(_onChangeYear);
@@ -29,6 +31,8 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
     final exam = event.examCategory ?? state.selectedExam;
     final subject = event.subject ?? state.selectedSubject;
     final year = event.year ?? state.selectedYear;
+    final courseId = event.courseId ?? state.courseId;
+    final courseCode = event.courseCode ?? state.courseCode;
 
     final subjectsRes = await _repository.getAvailableSubjects(exam);
     final yearsRes = await _repository.getAvailableYears(exam);
@@ -38,6 +42,8 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
       subject: subject == 'All' ? null : subject,
       year: year,
       searchQuery: event.searchQuery ?? state.searchQuery,
+      courseId: courseId,
+      courseCode: courseCode,
     );
 
     questionsRes.fold(
@@ -60,11 +66,38 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
             selectedExam: exam,
             selectedSubject: subject,
             selectedYear: year,
+            courseId: courseId,
+            courseCode: courseCode,
             availableSubjects: availSubjects,
             availableYears: yearsRes.fold((_) => [], (list) => list),
           ),
         );
       },
+    );
+  }
+
+  Future<void> _onAddPastQuestions(
+    AddPastQuestionsEvent event,
+    Emitter<PastQuestionsState> emit,
+  ) async {
+    if (event.questions.isEmpty) return;
+    await _repository.savePastQuestions(event.questions);
+
+    final existingIds = state.questions.map((q) => q.id).toSet();
+    final newQuestions = <PastQuestionEntity>[];
+    for (final q in event.questions) {
+      if (!existingIds.contains(q.id)) {
+        newQuestions.add(q);
+        existingIds.add(q.id);
+      }
+    }
+
+    final updatedQuestions = [...newQuestions, ...state.questions];
+    emit(
+      state.copyWith(
+        status: PastQuestionsStatus.loaded,
+        questions: updatedQuestions,
+      ),
     );
   }
 

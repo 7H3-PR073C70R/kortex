@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -16,12 +18,16 @@ abstract class PastQuestionsLocalDataSource {
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
     int limit = 100,
   });
 
   Future<List<String>> getAvailableSubjects(ExamCategory category);
 
   Future<List<int>> getAvailableYears(ExamCategory category);
+
+  Future<void> savePastQuestions(List<PastQuestionModel> questions);
 }
 
 class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
@@ -29,18 +35,25 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     AssetBundle? assetBundle,
     String assetPath = 'assets/data/past_questions.json',
     AppDatabase? appDatabase,
+    LocalStorageService? localStorageService,
   })  : _assetBundle = assetBundle ?? rootBundle,
         _assetPath = assetPath,
         _appDatabase = appDatabase ??
             (locator.isRegistered<AppDatabase>()
                 ? locator<AppDatabase>()
+                : null),
+        _localStorageService = localStorageService ??
+            (locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
                 : null);
 
   final AssetBundle _assetBundle;
   final String _assetPath;
   final AppDatabase? _appDatabase;
+  final LocalStorageService? _localStorageService;
 
   List<PastQuestionModel>? _cachedQuestions;
+  final List<PastQuestionModel> _userAddedQuestions = [];
   final Map<ExamCategory, List<PastQuestionModel>> _byCategory = {};
   final Map<ExamCategory, List<String>> _subjectsByCategory = {};
   final Map<ExamCategory, List<int>> _yearsByCategory = {};
@@ -52,6 +65,8 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
   Future<void> initialize() async {
     if (_cachedQuestions != null) return;
 
+    final allQuestions = <PastQuestionModel>[];
+
     try {
       final jsonString = await _assetBundle.loadString(_assetPath);
       final dynamic decoded = jsonDecode(jsonString);
@@ -62,8 +77,7 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
             .map(PastQuestionModel.fromJson)
             .toList();
 
-        _cachedQuestions = parsed;
-        _buildIndices(parsed);
+        allQuestions.addAll(parsed);
 
         // Seed to SQLite Drift database if empty
         if (_appDatabase != null) {
@@ -77,11 +91,100 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
             // Ignore if DB is closed or testing without DB
           }
         }
-      } else {
-        _cachedQuestions = const [];
       }
-    } on Object {
-      _cachedQuestions = const [];
+    } on Object {}
+
+    // Load persisted user-added past questions
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      final raw = storage?.getPreference(key: PrefKeys.userAddedPastQuestions);
+      if (raw != null && raw.trim().isNotEmpty) {
+        final dynamic decodedUser = jsonDecode(raw);
+        if (decodedUser is List) {
+          final userParsed = decodedUser
+              .whereType<Map<String, dynamic>>()
+              .map(PastQuestionModel.fromJson)
+              .toList();
+          _userAddedQuestions
+            ..clear()
+            ..addAll(userParsed);
+          allQuestions.insertAll(0, userParsed);
+        }
+      }
+    } on Object {}
+
+    _cachedQuestions = allQuestions;
+    _buildIndices(allQuestions);
+  }
+
+  @override
+  Future<void> savePastQuestions(List<PastQuestionModel> questions) async {
+    if (questions.isEmpty) return;
+    if (_cachedQuestions == null) {
+      await initialize();
+    }
+
+    final newQuestions = questions.map((q) {
+      return PastQuestionModel(
+        id: q.id,
+        examType: q.examType,
+        subject: q.subject,
+        year: q.year,
+        questionNumber: q.questionNumber,
+        prompt: q.prompt,
+        options: q.options,
+        correctOptionIndex: q.correctOptionIndex,
+        correctOptionLabel: q.correctOptionLabel,
+        explanation: q.explanation,
+        topic: q.topic,
+        passage: q.passage,
+        latexFormula: q.latexFormula,
+        imageUrl: q.imageUrl,
+        difficulty: q.difficulty,
+        isUserAdded: true,
+        courseId: q.courseId,
+        courseCode: q.courseCode,
+      );
+    }).toList();
+
+    // Prevent duplicates by ID
+    final existingIds = _userAddedQuestions.map((q) => q.id).toSet();
+    for (final q in newQuestions) {
+      if (!existingIds.contains(q.id)) {
+        _userAddedQuestions.insert(0, q);
+        _cachedQuestions?.insert(0, q);
+        existingIds.add(q.id);
+      }
+    }
+
+    _buildIndices(_cachedQuestions ?? _userAddedQuestions);
+
+    // Persist to LocalStorageService
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage != null) {
+        final payload = jsonEncode(
+          _userAddedQuestions.map((q) => q.toJson()).toList(),
+        );
+        await storage.savePreference(
+          key: PrefKeys.userAddedPastQuestions,
+          data: payload,
+        );
+      }
+    } on Object {}
+
+    // Optionally insert to AppDatabase if available
+    if (_appDatabase != null) {
+      try {
+        final companions = newQuestions.map(_modelToCompanion).toList();
+        await _appDatabase.batchInsertPastQuestions(companions);
+      } on Object {}
     }
   }
 
@@ -116,33 +219,30 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     String? subject,
     int? year,
     String? searchQuery,
+    String? courseId,
+    String? courseCode,
     int limit = 100,
   }) async {
     if (_cachedQuestions == null) {
       await initialize();
     }
 
-    // High-performance Drift query with SQLite FTS5 if database is available
-    if (_appDatabase != null) {
-      try {
-        final entries = await _appDatabase.getPastQuestionsList(
-          examType: examCategory?.code,
-          subject: subject,
-          year: year,
-          searchQuery: searchQuery,
-          limit: limit,
-        );
-        if (entries.isNotEmpty) {
-          return entries.map(_entryToModel).toList();
-        }
-      } on Object {
-        // Fallback to in-memory filter
-      }
-    }
+    final allList = _cachedQuestions ?? const <PastQuestionModel>[];
+    final cleanCode = courseCode?.trim().toLowerCase();
 
-    final candidates = examCategory != null
-        ? (_byCategory[examCategory] ?? const <PastQuestionModel>[])
-        : (_cachedQuestions ?? const <PastQuestionModel>[]);
+    // If courseId or courseCode is specified, find matching questions
+    final candidates = allList.where((q) {
+      final matchCourse = (courseId != null && q.courseId == courseId) ||
+          (cleanCode != null &&
+              q.courseCode != null &&
+              q.courseCode!.trim().toLowerCase() == cleanCode);
+      if (matchCourse) return true;
+
+      if (examCategory != null && q.examType != examCategory) {
+        return false;
+      }
+      return true;
+    }).toList();
 
     final normalizedSubject = subject?.trim().toLowerCase();
     final normalizedQuery = searchQuery?.trim().toLowerCase();
@@ -154,10 +254,16 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         normalizedQuery != null && normalizedQuery.isNotEmpty;
 
     final filtered = candidates.where((q) {
-      if (hasSubjectFilter) {
+      final isExactCourseMatch = (courseId != null && q.courseId == courseId) ||
+          (cleanCode != null &&
+              q.courseCode != null &&
+              q.courseCode!.trim().toLowerCase() == cleanCode);
+
+      if (!isExactCourseMatch && hasSubjectFilter) {
         final itemSubject = q.subject.toLowerCase();
         if (itemSubject != normalizedSubject &&
-            !itemSubject.contains(normalizedSubject)) {
+            !itemSubject.contains(normalizedSubject) &&
+            !normalizedSubject.contains(itemSubject)) {
           return false;
         }
       }
@@ -255,62 +361,6 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
       difficulty: Value(model.difficulty),
     );
   }
-
-  PastQuestionModel _entryToModel(PastQuestionEntry entry) {
-    ExamCategory category;
-    final rawExam = entry.examType.toLowerCase();
-    if (rawExam.contains('waec') || rawExam.contains('wassce')) {
-      category = ExamCategory.waec;
-    } else if (rawExam.contains('jamb') || rawExam.contains('utme')) {
-      category = ExamCategory.jamb;
-    } else if (rawExam.contains('neco')) {
-      category = ExamCategory.neco;
-    } else if (rawExam.contains('sat')) {
-      category = ExamCategory.sat;
-    } else if (rawExam.contains('toefl')) {
-      category = ExamCategory.toefl;
-    } else if (rawExam.contains('ielts')) {
-      category = ExamCategory.ielts;
-    } else if (rawExam.contains('med')) {
-      category = ExamCategory.medicine;
-    } else if (rawExam.contains('law')) {
-      category = ExamCategory.law;
-    } else if (rawExam.contains('eng')) {
-      category = ExamCategory.engineering;
-    } else if (rawExam.contains('bus') || rawExam.contains('acc')) {
-      category = ExamCategory.business;
-    } else if (rawExam.contains('cs') || rawExam.contains('comp')) {
-      category = ExamCategory.computerScience;
-    } else {
-      category = ExamCategory.general;
-    }
-
-    var optionsList = <String>[];
-    try {
-      final dynamic decoded = jsonDecode(entry.optionsJson);
-      if (decoded is List) {
-        optionsList = decoded.map((e) => e.toString()).toList();
-      }
-    } on Object {
-      // Fallback
-    }
-
-    return PastQuestionModel(
-      id: entry.id,
-      examType: category,
-      subject: entry.subject,
-      year: entry.year,
-      questionNumber: entry.questionNumber,
-      prompt: entry.prompt,
-      options: optionsList,
-      correctOptionIndex: entry.correctOptionIndex,
-      correctOptionLabel: entry.correctOptionLabel,
-      explanation: entry.explanation,
-      topic: entry.topic,
-      passage: entry.passage,
-      latexFormula: entry.latexFormula,
-      imageUrl: entry.imageUrl,
-      difficulty: entry.difficulty,
-    );
-  }
 }
+
+

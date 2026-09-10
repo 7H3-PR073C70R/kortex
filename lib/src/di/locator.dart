@@ -160,6 +160,7 @@ import 'package:kortex/src/features/quiz/data/repositories/past_questions_reposi
 import 'package:kortex/src/features/quiz/data/repositories/quiz_repository_impl.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
+import 'package:kortex/src/features/quiz/domain/services/past_question_ai_extractor_service.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
