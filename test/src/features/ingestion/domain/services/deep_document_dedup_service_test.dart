@@ -55,7 +55,7 @@ void main() {
       const existingHash = 'hash_existing';
 
       // Mock cached fingerprint for existing doc with 5 pages
-      final existingFingerprint = DocumentFingerprint(
+      const existingFingerprint = DocumentFingerprint(
         contentHash: existingHash,
         pageCount: 5,
         sampledPages: {0: 'introduction to physics', 2: 'thermodynamics'},

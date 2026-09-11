@@ -160,24 +160,23 @@ void main() {
       expect(synced, isFalse);
     });
 
-    test('scheduleDailyStudyReminder executes safely in test environment', () async {
+    test('showLocalNotification executes safely in test environment', () async {
       await expectLater(
-        notificationService.scheduleDailyStudyReminder(
+        notificationService.showLocalNotification(
           id: 101,
-          title: 'Daily Review',
-          body: 'Time to study!',
-          payload: '/study-session',
+          title: 'Remote Push',
+          body: 'Content',
+          payload: '/dashboard',
         ),
         completes,
       );
     });
 
-    test('requestBackendNotification executes safely without crashing', () async {
-      final res = await notificationService.requestBackendNotification(
-        action: 'welcome_user',
-        userId: 'test-user-id',
+    test('cancelAllNotifications executes safely in test environment', () async {
+      await expectLater(
+        notificationService.cancelAllNotifications(),
+        completes,
       );
-      expect(res, isFalse);
     });
 
     test('setupTokenRefreshListener executes safely with empty or valid userId', () {

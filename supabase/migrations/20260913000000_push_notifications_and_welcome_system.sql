@@ -278,3 +278,127 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 GRANT EXECUTE ON FUNCTION public.send_tailored_notification(UUID, TEXT, TEXT, TEXT, JSONB) TO authenticated, service_role;
+
+-- ==============================================================================
+-- 6. Trigger: Automatically notify user when an exam is scheduled/calibrated
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.trg_notify_on_exam_event_created()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_days_left INT;
+BEGIN
+    v_days_left := (NEW.target_date - CURRENT_DATE)::INT;
+
+    INSERT INTO public.notifications (
+        user_id,
+        title,
+        body,
+        category,
+        data
+    ) VALUES (
+        NEW.user_id,
+        '🎯 Exam Calibrated: ' || NEW.exam_name,
+        CASE 
+            WHEN v_days_left > 0 THEN format('%s days left. Daily target: %s cards to stay on track!', v_days_left, NEW.daily_target)
+            ELSE 'Your exam is scheduled for today! Good luck!'
+        END,
+        'exam_countdown',
+        jsonb_build_object(
+            'examId', NEW.id,
+            'examName', NEW.exam_name,
+            'daysRemaining', v_days_left,
+            'dailyTarget', NEW.daily_target,
+            'route', '/planner'
+        )
+    );
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+DROP TRIGGER IF EXISTS trg_exam_event_created_notification ON public.exam_events;
+CREATE TRIGGER trg_exam_event_created_notification
+    AFTER INSERT ON public.exam_events
+    FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_exam_event_created();
+
+-- ==============================================================================
+-- 7. Automated Welcome Push Dispatch on Device Token Registration
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.register_device_token(
+    p_fcm_token TEXT,
+    p_platform TEXT,
+    p_device_name TEXT DEFAULT NULL
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_device_id UUID;
+    v_display_name TEXT;
+    v_welcome_notif RECORD;
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'User must be authenticated to register device token';
+    END IF;
+
+    -- Upsert the token for this user
+    INSERT INTO public.user_devices (user_id, fcm_token, platform, device_name, is_active, updated_at)
+    VALUES (v_user_id, p_fcm_token, p_platform, p_device_name, true, now())
+    ON CONFLICT (fcm_token) DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        platform = EXCLUDED.platform,
+        device_name = COALESCE(EXCLUDED.device_name, public.user_devices.device_name),
+        is_active = true,
+        updated_at = now()
+    RETURNING id INTO v_device_id;
+
+    -- Ensure default notification preferences exist for user
+    INSERT INTO public.notification_preferences (user_id)
+    VALUES (v_user_id)
+    ON CONFLICT (user_id) DO NOTHING;
+
+    -- Check if a welcome notification exists that has not been pushed yet
+    SELECT id, title, body, category, data INTO v_welcome_notif
+    FROM public.notifications
+    WHERE user_id = v_user_id 
+      AND (data->>'type') = 'welcome'
+      AND (data->>'pushed') IS NULL
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    IF v_welcome_notif.id IS NOT NULL THEN
+        -- Mark as pushed to avoid duplicate deliveries
+        UPDATE public.notifications
+        SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{pushed}', 'true'::jsonb)
+        WHERE id = v_welcome_notif.id;
+
+        -- Dispatch through Edge Function via pg_net if available
+        IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
+            BEGIN
+                PERFORM net.http_post(
+                    url := 'http://localhost:54321/functions/v1/send-push-notification',
+                    headers := jsonb_build_object('Content-Type', 'application/json'),
+                    body := jsonb_build_object(
+                        'userId', v_user_id,
+                        'title', v_welcome_notif.title,
+                        'body', v_welcome_notif.body,
+                        'category', v_welcome_notif.category,
+                        'data', v_welcome_notif.data
+                    )
+                );
+            EXCEPTION WHEN OTHERS THEN
+                -- Non-blocking pg_net dispatch error
+                RAISE WARNING 'pg_net welcome push dispatch failed: %', SQLERRM;
+            END;
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'deviceId', v_device_id,
+        'registeredAt', now()
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+GRANT EXECUTE ON FUNCTION public.register_device_token(TEXT, TEXT, TEXT) TO authenticated, service_role;
+

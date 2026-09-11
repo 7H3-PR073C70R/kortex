@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
@@ -294,18 +293,6 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
         ),
       );
     }
-
-    try {
-      if (locator.isRegistered<NotificationService>()) {
-        unawaited(
-          locator<NotificationService>().sendExamCalibrationNotification(
-            examName: examName,
-            daysRemaining: _daysRemaining,
-            dailyTarget: _dailyTarget,
-          ),
-        );
-      }
-    } on Object catch (_) {}
 
     Navigator.of(context).pop();
   }

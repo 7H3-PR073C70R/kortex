@@ -19,8 +19,6 @@ void main() {
     final mockNotification = MockNotificationService();
     when(() => mockNotification.onPayloadTapped)
         .thenAnswer((_) => const Stream.empty());
-    when(mockNotification.checkAndTriggerDueReminders)
-        .thenAnswer((_) async {});
     locator.registerSingleton<NotificationService>(mockNotification);
   });
 

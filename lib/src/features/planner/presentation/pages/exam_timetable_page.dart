@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
@@ -24,28 +23,6 @@ class ExamTimetablePage extends StatefulWidget {
 class _ExamTimetablePageState extends State<ExamTimetablePage> {
   bool _dailyReminderEnabled = true;
   bool _milestoneAlertsEnabled = true;
-
-  void _testNotification(ExamEventEntity? exam) {
-    if (exam == null) return;
-    try {
-      if (locator.isRegistered<NotificationService>()) {
-        unawaited(
-          locator<NotificationService>().sendExamCalibrationNotification(
-            examName: exam.examName,
-            daysRemaining: exam.daysRemaining,
-            dailyTarget: exam.dailyTarget,
-          ),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Test alert sent for "${exam.examName}"!'),
-            backgroundColor: context.colors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } on Object catch (_) {}
-  }
 
   Future<void> _confirmDelete(BuildContext context, ExamEventEntity exam) async {
     final colors = context.colors;
@@ -563,25 +540,6 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               setState(() => _milestoneAlertsEnabled = val);
             },
           ),
-
-          if (exam != null) ...[
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: colors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                minimumSize: const Size.fromHeight(44),
-              ),
-              onPressed: () => _testNotification(exam),
-              icon: Icon(Icons.send_rounded, size: 16, color: colors.primary),
-              label: Text(
-                'Send Test Notification',
-                style: typography.callout.bold.copyWith(color: colors.primary),
-              ),
-            ),
-          ],
         ],
       ),
     );

@@ -1,19 +1,14 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io' show Platform;
-import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_background_handler.dart';
-import 'package:kortex/src/core/services/user_activity_service.dart';
-import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 
 /// Service managing push notifications, device token synchronization,
 /// and local notification display.
@@ -220,175 +215,6 @@ class NotificationService {
     } on Object catch (e) {
       developer.log('Failed to sync device token with Supabase: $e');
       return false;
-    }
-  }
-
-  /// Dispatches a tailored notification request to the backend so Firebase delivers it.
-  Future<bool> requestBackendNotification({
-    required String action,
-    required String userId,
-    Map<String, dynamic>? extraData,
-  }) async {
-    if (userId.isEmpty) return false;
-    try {
-      final client = _effectiveDio;
-      if (client == null) return false;
-      final response = await client.post<dynamic>(
-        '${AppApiEndpoint.baseUri}${AppApiEndpoint.triggerNotifications}',
-        data: {
-          'action': action,
-          'userId': userId,
-          ...?extraData,
-        },
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
-    } on Object catch (e) {
-      developer.log('Backend notification request failed: $e');
-      return false;
-    }
-  }
-
-  /// Schedule a study reminder or push alert.
-  Future<void> scheduleDailyStudyReminder({
-    required int id,
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
-    await showLocalNotification(
-      id: id,
-      title: title,
-      body: body,
-      payload: payload,
-    );
-  }
-
-  /// Sends an immediate calibration notification when an exam countdown is scheduled or modified.
-  Future<void> sendExamCalibrationNotification({
-    required String examName,
-    required int daysRemaining,
-    required int dailyTarget,
-  }) async {
-    final title = '🎯 Exam Calibrated: $examName';
-    final body = daysRemaining > 0
-        ? '$daysRemaining days left. Review $dailyTarget cards daily to stay on track!'
-        : 'Exam is scheduled for today! Good luck!';
-    await showLocalNotification(
-      id: examName.hashCode.abs() % 100000,
-      title: title,
-      body: body,
-      payload: '/planner',
-    );
-  }
-
-  /// Notify the user that flashcards in a deck are due for review before memory retention decays.
-  Future<void> notifyDeckReviewDue({
-    required String deckId,
-    required String deckTitle,
-    required int dueCount,
-  }) async {
-    final title = '🧠 Review Due: $deckTitle';
-    final cardText = dueCount == 1 ? '1 card is' : '$dueCount cards are';
-    final body = '$cardText ready for review. Practice now before memory retention decays!';
-    await showLocalNotification(
-      id: ('deck_due_$deckId').hashCode.abs() % 100000,
-      title: title,
-      body: body,
-      payload: 'study:$deckId',
-    );
-  }
-
-  /// Notify the user when their active study streak is about to expire.
-  Future<void> notifyStreakAtRisk({
-    required int currentStreak,
-    required int hoursRemaining,
-  }) async {
-    final title = '🔥 Streak at Risk! ($currentStreak Day${currentStreak == 1 ? '' : 's'})';
-    final hourText = hoursRemaining == 1 ? '1 hour' : '$hoursRemaining hours';
-    final body = 'Only $hourText left today to protect your streak. Complete a quick review session before midnight!';
-    await showLocalNotification(
-      id: 99998,
-      title: title,
-      body: body,
-      payload: '/decks',
-    );
-  }
-
-  /// Evaluates active study streaks and due decks, sending proactive notifications if needed.
-  Future<void> checkAndTriggerDueReminders() async {
-    final now = DateTime.now();
-    final todayKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    // 1. Streak reminder check
-    try {
-      if (locator.isRegistered<UserActivityService>() &&
-          locator.isRegistered<LocalStorageService>()) {
-        final activityService = locator<UserActivityService>();
-        final storage = locator<LocalStorageService>();
-        final streak = activityService.getCurrentStreak();
-
-        if (streak > 0 && !activityService.hasStudiedToday()) {
-          // Check hours remaining today until midnight
-          final midnight = DateTime(now.year, now.month, now.day + 1);
-          final hoursRemaining = midnight.difference(now).inHours;
-
-          if (hoursRemaining <= 7) {
-            final lastStreakNotifKey = '__kortex_streak_notif_$todayKey';
-            final alreadyNotified = storage.getPreference(key: lastStreakNotifKey) == 'true';
-            if (!alreadyNotified) {
-              await notifyStreakAtRisk(
-                currentStreak: streak,
-                hoursRemaining: math.max(1, hoursRemaining),
-              );
-              await storage.savePreference(key: lastStreakNotifKey, data: 'true');
-            }
-          }
-        }
-      }
-    } on Object catch (e) {
-      developer.log('Error checking streak reminder: $e');
-    }
-
-    // 2. Due decks reminder check (only for authenticated users)
-    try {
-      if (locator.isRegistered<DecksRepository>() &&
-          locator.isRegistered<LocalStorageService>() &&
-          locator.isRegistered<UserStorageService>()) {
-        final userStorage = locator<UserStorageService>();
-        final token = userStorage.getToken();
-        if (token == null || token.trim().isEmpty) {
-          // User is not authenticated; skip querying remote user-scoped decks
-          return;
-        }
-
-        final decksRepo = locator<DecksRepository>();
-        final storage = locator<LocalStorageService>();
-        final decksRes = await decksRepo.getUserDecks();
-
-        await decksRes.fold(
-          (_) async {},
-          (decks) async {
-            final dueDecks = decks.where((d) => d.dueCards > 0).toList();
-            if (dueDecks.isNotEmpty) {
-              // Sort by highest due cards first
-              dueDecks.sort((a, b) => b.dueCards.compareTo(a.dueCards));
-              final topDeck = dueDecks.first;
-              final deckNotifKey = '__kortex_deck_due_${topDeck.id}_$todayKey';
-              final alreadyNotified = storage.getPreference(key: deckNotifKey) == 'true';
-              if (!alreadyNotified) {
-                await notifyDeckReviewDue(
-                  deckId: topDeck.id,
-                  deckTitle: topDeck.title,
-                  dueCount: topDeck.dueCards,
-                );
-                await storage.savePreference(key: deckNotifKey, data: 'true');
-              }
-            }
-          },
-        );
-      }
-    } on Object catch (e) {
-      developer.log('Error checking due decks reminder: $e');
     }
   }
 

@@ -114,6 +114,4 @@ class AppApiEndpoint {
       '/rest/v1/notification_preferences';
   static const String notificationsInbox =
       '/rest/v1/notifications?order=created_at.desc';
-  static const String triggerNotifications =
-      '/functions/v1/trigger-notifications';
 }
