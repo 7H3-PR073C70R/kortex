@@ -81,6 +81,7 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dar
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/logic/scheduler_factory.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/domain/services/past_question_deck_factory.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';

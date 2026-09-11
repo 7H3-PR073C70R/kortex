@@ -5,11 +5,14 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/services/past_question_deck_factory.dart';
 
 class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   DecksRemoteDataSourceImpl(
@@ -53,6 +56,38 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     } on Object catch (_) {
       return null;
     }
+  }
+
+  PastQuestionDeckFactory? get _pastQuestionDeckFactory {
+    try {
+      if (locator.isRegistered<PastQuestionDeckFactory>()) {
+        return locator<PastQuestionDeckFactory>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  List<CuratedCourseModel> _getRegisteredCourses() {
+    try {
+      final raw = _localStorage?.getPreference(key: PrefKeys.userCuratedCourses);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(CuratedCourseModel.fromJson)
+            .toList();
+      }
+    } on Object catch (_) {}
+    return const [];
+  }
+
+  String? _getUserTrack() {
+    try {
+      if (locator.isRegistered<AuthBloc>()) {
+        return locator<AuthBloc>().state.userProfile?.targetTrack;
+      }
+    } on Object catch (_) {}
+    return null;
   }
 
   Future<void> _loadPersistedDecksIntoMemory() async {
@@ -203,7 +238,30 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         ..._localCreatedDecks.where((d) => !remoteIds.contains(d.id)),
         ...updatedRemote,
       ];
-      return merged;
+
+      final resultList = <DeckModel>[...merged];
+
+      // Merge canonical 2-year past questions study decks for registered courses in WAEC, JAMB, or NECO
+      try {
+        final track = _getUserTrack();
+        final factory = _pastQuestionDeckFactory;
+        if (factory != null && factory.isSecondaryTrack(track)) {
+          final registeredCourses = _getRegisteredCourses();
+          if (registeredCourses.isNotEmpty) {
+            final canonicalDecks = await factory.generateCanonicalDecksForCourses(
+              courses: registeredCourses,
+              track: track,
+            );
+            for (final cd in canonicalDecks) {
+              if (!resultList.any((d) => d.id == cd.id)) {
+                resultList.add(cd);
+              }
+            }
+          }
+        }
+      } on Object catch (_) {}
+
+      return resultList;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
@@ -215,7 +273,28 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           ),
         );
       }
-      return _localCreatedDecks;
+
+      final fallbackList = <DeckModel>[..._localCreatedDecks];
+      try {
+        final track = _getUserTrack();
+        final factory = _pastQuestionDeckFactory;
+        if (factory != null && factory.isSecondaryTrack(track)) {
+          final registeredCourses = _getRegisteredCourses();
+          if (registeredCourses.isNotEmpty) {
+            final canonicalDecks = await factory.generateCanonicalDecksForCourses(
+              courses: registeredCourses,
+              track: track,
+            );
+            for (final cd in canonicalDecks) {
+              if (!fallbackList.any((d) => d.id == cd.id)) {
+                fallbackList.add(cd);
+              }
+            }
+          }
+        }
+      } on Object catch (_) {}
+
+      return fallbackList;
     }
   }
 
@@ -224,6 +303,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     if (_localDeckCards.containsKey(deckId) &&
         _localDeckCards[deckId]!.isNotEmpty) {
       return _localDeckCards[deckId]!;
+    }
+
+    // Check if this is a canonical past questions study deck
+    if (deckId.startsWith(PastQuestionDeckFactory.canonicalPrefix)) {
+      final factory = _pastQuestionDeckFactory;
+      if (factory != null) {
+        final cards = await factory.generateCardsForCanonicalDeck(deckId);
+        if (cards.isNotEmpty) {
+          _localDeckCards[deckId] = cards;
+          return cards;
+        }
+      }
     }
 
     // 0. Check in-memory created decks

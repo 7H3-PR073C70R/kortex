@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -17,6 +18,10 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
@@ -104,16 +109,24 @@ class CourseModulePage extends StatelessWidget {
     final sanitizedCode = cleanCode(courseCode);
     final mappedSubject = _mapCourseToSubject(courseTitle, sanitizedCode);
 
-    return BlocProvider<PastQuestionsBloc>(
-      create: (_) => locator<PastQuestionsBloc>()
-        ..add(
-          LoadPastQuestionsEvent(
-            examCategory: examCategory,
-            subject: mappedSubject,
-            courseId: courseId,
-            courseCode: sanitizedCode,
-          ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PastQuestionsBloc>(
+          create: (_) => locator<PastQuestionsBloc>()
+            ..add(
+              LoadPastQuestionsEvent(
+                examCategory: examCategory,
+                subject: mappedSubject,
+                courseId: courseId,
+                courseCode: sanitizedCode,
+              ),
+            ),
         ),
+        if (locator.isRegistered<CramPlannerCubit>())
+          BlocProvider<CramPlannerCubit>.value(
+            value: locator<CramPlannerCubit>(),
+          ),
+      ],
       child: _CourseModuleView(
         courseId: courseId,
         courseCode: sanitizedCode,
@@ -257,7 +270,16 @@ class _CourseModuleView extends StatelessWidget {
                     totalCards,
                     totalDue,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // 1.5. Course Exam Countdown
+                  _buildCourseExamCountdown(
+                    context,
+                    colors,
+                    typography,
+                    isDark,
+                  ),
+                  const SizedBox(height: 20),
 
                   // 2. Document Ingestion Section (Accurate copy)
                   _buildDocumentIngestionCard(
@@ -287,6 +309,187 @@ class _CourseModuleView extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCourseExamCountdown(
+    BuildContext context,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    bool isDark,
+  ) {
+    return BlocBuilder<CramPlannerCubit, CramPlannerState>(
+      builder: (context, plannerState) {
+        if (plannerState.status == CramPlannerStatus.initial) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            unawaited(context.read<CramPlannerCubit>().loadExams());
+          });
+        }
+        final cleanCode = courseCode.toLowerCase();
+        final cleanTitle = courseTitle.toLowerCase();
+        final matchingExam = plannerState.activeExams.where((e) {
+          final track = e.subjectTrack.toLowerCase();
+          final name = e.examName.toLowerCase();
+          return track.contains(cleanCode) ||
+              track.contains(cleanTitle) ||
+              name.contains(cleanCode) ||
+              name.contains(cleanTitle);
+        }).firstOrNull;
+
+        if (matchingExam != null) {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final target = DateTime(
+            matchingExam.targetDate.year,
+            matchingExam.targetDate.month,
+            matchingExam.targetDate.day,
+          );
+          final daysLeft = target.difference(today).inDays;
+          final formattedDate =
+              DateFormat('MMM d, y').format(matchingExam.targetDate);
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [
+                        colors.primary.withAlpha(50),
+                        colors.surfaceSecondary,
+                      ]
+                    : [
+                        colors.primary.withAlpha(25),
+                        colors.surfacePrimary,
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 90 : 50),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${daysLeft < 0 ? 0 : daysLeft}',
+                      style: typography.title3.bold.copyWith(
+                        color: colors.white,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        daysLeft == 1
+                            ? '1 Day Until Exam'
+                            : '$daysLeft Days Until Exam',
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$formattedDate • ~${matchingExam.dailyTarget} items/day',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ShrinkableButton(
+                  onTap: () => ManageExamModalSheet.show(context),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 50 : 25),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      ),
+                    ),
+                    child: Text(
+                      'Manage',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // If no countdown set yet, show an inviting prompt
+        return InkWell(
+          onTap: () => AddExamModalSheet.show(
+            context,
+            preselectedCourseCode: courseCode,
+            preselectedCourseTitle: courseTitle,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary.withAlpha(isDark ? 100 : 70),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.surfaceBorder.withAlpha(100),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.alarm_add_rounded,
+                  size: 20,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Set Exam Countdown',
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Couples automated study workload to your exam date',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: colors.textSecondary,
+                ),
+              ],
             ),
           ),
         );

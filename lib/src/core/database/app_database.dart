@@ -475,6 +475,12 @@ class AppDatabase extends _$AppDatabase {
     return row.read(countExp) ?? 0;
   }
 
+  Future<int> deleteMockPastQuestions() {
+    return (delete(pastQuestions)
+          ..where((t) => t.id.like('jamb_1999_%') | t.id.like('mock_%')))
+        .go();
+  }
+
   Future<void> batchInsertPastQuestions(
     List<PastQuestionsCompanion> questionsList,
   ) async {
@@ -609,6 +615,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteCourseModuleById(String id) {
     return (delete(courseModules)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> deleteAllCourseModules() {
+    return delete(courseModules).go();
   }
 
   // ==========================================

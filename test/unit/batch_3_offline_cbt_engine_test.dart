@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
+import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/data/models/quiz_question_model.dart';
 import 'package:kortex/src/features/quiz/data/repositories/past_questions_repository_impl.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -26,20 +27,36 @@ class MockGenerateQuizFromDeckUseCase extends Mock
 class MockSubmitQuizAnswersUseCase extends Mock
     implements SubmitQuizAnswersUseCase {}
 
-class TestAssetBundle extends CachingAssetBundle {
-  TestAssetBundle(this.content);
-  final String content;
-
-  @override
-  Future<String> loadString(String key, {bool cache = true}) async {
-    return content;
+List<PastQuestionModel> _buildTestQuestions() {
+  final subjects = ['Mathematics', 'English Language', 'Chemistry', 'Physics'];
+  final list = <PastQuestionModel>[];
+  int idCounter = 1;
+  for (final cat in [ExamCategory.waec, ExamCategory.jamb]) {
+    for (final sub in subjects) {
+      for (final yr in [2023, 2022]) {
+        for (int q = 1; q <= 5; q++) {
+          list.add(
+            PastQuestionModel(
+              id: 'test-q-${idCounter++}',
+              examType: cat,
+              subject: sub,
+              year: yr,
+              questionNumber: q,
+              prompt: sub == 'Chemistry'
+                  ? 'What is the conjugate acid of NH3 in question $q?'
+                  : 'What is the answer for $sub $yr question $q?',
+              options: const ['Option A', 'Option B', 'Option C', 'Option D'],
+              correctOptionIndex: 0,
+              correctOptionLabel: 'A',
+              explanation: 'Explanation for question $q',
+              topic: sub == 'Chemistry' ? 'Acids and Bases' : 'General',
+            ),
+          );
+        }
+      }
+    }
   }
-
-  @override
-  Future<ByteData> load(String key) async {
-    final bytes = utf8.encode(content);
-    return ByteData.view(Uint8List.fromList(bytes).buffer);
-  }
+  return list;
 }
 
 class InMemoryLocalStorageService implements LocalStorageService {
@@ -68,27 +85,16 @@ class InMemoryLocalStorageService implements LocalStorageService {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late String realAssetJson;
-  late TestAssetBundle testAssetBundle;
+  late List<PastQuestionModel> testQuestions;
   late PastQuestionsLocalDataSource localDataSource;
   late MockPastQuestionsRemoteDataSource mockRemoteDataSource;
   late InMemoryLocalStorageService storageService;
   late PastQuestionsRepositoryImpl repository;
 
-  setUpAll(() {
-    final assetFile = File('assets/data/past_questions.json');
-    expect(
-      assetFile.existsSync(),
-      isTrue,
-      reason: 'assets/data/past_questions.json must exist in project assets',
-    );
-    realAssetJson = assetFile.readAsStringSync();
-  });
-
   setUp(() async {
-    testAssetBundle = TestAssetBundle(realAssetJson);
+    testQuestions = _buildTestQuestions();
     localDataSource = PastQuestionsLocalDataSourceImpl(
-      assetBundle: testAssetBundle,
+      initialQuestions: testQuestions,
     );
     mockRemoteDataSource = MockPastQuestionsRemoteDataSource();
     storageService = InMemoryLocalStorageService();
@@ -103,18 +109,16 @@ void main() {
   });
 
   group('Batch 3 - Offline Past Question Asset & Dataset Bundling', () {
-    test('Assets file exists and parses exactly 600 verified questions', () {
-      final decoded = jsonDecode(realAssetJson);
-      expect(decoded, isA<List<dynamic>>());
-      final list = decoded as List<dynamic>;
-      expect(list.length, equals(600));
+    test('In-memory test dataset parses verified questions correctly', () {
+      expect(testQuestions, isNotEmpty);
+      expect(testQuestions.length, equals(80));
 
-      final first = list.first as Map<String, dynamic>;
-      expect(first['id'], isNotNull);
-      expect(first['subject'], isNotNull);
-      expect(first['prompt'], isNotNull);
-      expect(first['options'], isA<List<dynamic>>());
-      expect(first['correct_option_index'], isNotNull);
+      final first = testQuestions.first;
+      expect(first.id, isNotNull);
+      expect(first.subject, isNotNull);
+      expect(first.prompt, isNotNull);
+      expect(first.options, isNotEmpty);
+      expect(first.correctOptionIndex, isNotNull);
     });
 
     test('Loads on cold startup and builds instant in-memory lookup indices', () async {

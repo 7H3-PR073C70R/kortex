@@ -29,4 +29,6 @@ class PrefKeys {
   static const String lastUploadDate = '__kortex_last_upload_date__';
   static const String userAddedPastQuestions =
       '__kortex_user_added_past_questions__';
+  static const String syncedSecondarySubjects =
+      '__kortex_synced_secondary_subjects__';
 }

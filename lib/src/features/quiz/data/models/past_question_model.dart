@@ -22,34 +22,36 @@ class PastQuestionModel {
     this.courseCode,
   });
 
-  factory PastQuestionModel.fromJson(Map<String, dynamic> json) {
-    final rawExam = (json['exam_type'] as String? ?? 'waec').toLowerCase();
-    ExamCategory category;
+  static ExamCategory parseExamCategory(String? raw) {
+    final rawExam = (raw ?? 'general').toLowerCase();
     if (rawExam.contains('waec') || rawExam.contains('wassce')) {
-      category = ExamCategory.waec;
+      return ExamCategory.waec;
     } else if (rawExam.contains('jamb') || rawExam.contains('utme')) {
-      category = ExamCategory.jamb;
+      return ExamCategory.jamb;
     } else if (rawExam.contains('neco')) {
-      category = ExamCategory.neco;
+      return ExamCategory.neco;
     } else if (rawExam.contains('sat')) {
-      category = ExamCategory.sat;
+      return ExamCategory.sat;
     } else if (rawExam.contains('toefl')) {
-      category = ExamCategory.toefl;
+      return ExamCategory.toefl;
     } else if (rawExam.contains('ielts')) {
-      category = ExamCategory.ielts;
+      return ExamCategory.ielts;
     } else if (rawExam.contains('med')) {
-      category = ExamCategory.medicine;
+      return ExamCategory.medicine;
     } else if (rawExam.contains('law')) {
-      category = ExamCategory.law;
+      return ExamCategory.law;
     } else if (rawExam.contains('eng')) {
-      category = ExamCategory.engineering;
+      return ExamCategory.engineering;
     } else if (rawExam.contains('bus') || rawExam.contains('acc')) {
-      category = ExamCategory.business;
+      return ExamCategory.business;
     } else if (rawExam.contains('cs') || rawExam.contains('comp')) {
-      category = ExamCategory.computerScience;
-    } else {
-      category = ExamCategory.general;
+      return ExamCategory.computerScience;
     }
+    return ExamCategory.general;
+  }
+
+  factory PastQuestionModel.fromJson(Map<String, dynamic> json) {
+    final category = parseExamCategory(json['exam_type'] as String?);
 
     final rawOptions = json['options'];
     List<String> optionsList = [];

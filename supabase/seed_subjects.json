@@ -1,0 +1,224 @@
+[
+  {
+    "id": 1,
+    "title": "Mathematics",
+    "slug": "mathematics",
+    "image": "g0EIsp1kxxoMimU5LUWvAHK8K5NSbhZkZgQcYbEq.png"
+  },
+  {
+    "id": 2,
+    "title": "English Language",
+    "slug": "english-language",
+    "image": "Sf4XQWLgVpI7SYaKRjTE1x44fO6tXVSsHXZCV5gB.png"
+  },
+  {
+    "id": 3,
+    "title": "Chemistry",
+    "slug": "chemistry",
+    "image": "TEpNrAfaKL62XPcB0OsnKE5tYic8xYSXYa4g6024.png"
+  },
+  {
+    "id": 4,
+    "title": "Physics",
+    "slug": "physics",
+    "image": "bIP47kC52KAhznuq8FYb7njtel0voPIeMXVIGUjb.png"
+  },
+  {
+    "id": 5,
+    "title": "Biology",
+    "slug": "biology",
+    "image": "n8rStIIDGOOufsGZYokpkihU3D4d63tYJznVewQ1.png"
+  },
+  {
+    "id": 6,
+    "title": "Geography",
+    "slug": "geography",
+    "image": "vpqubDTHsNsvUVePS8gKdT5jUMSdKJZedAaw5nH6.png"
+  },
+  {
+    "id": 7,
+    "title": "Literature in English",
+    "slug": "literature-in-english",
+    "image": "DKZfTHLzRHKoOlrG7fVX88nDvEyXLHUIu7kiVNMx.png"
+  },
+  {
+    "id": 8,
+    "title": "Economics",
+    "slug": "economics",
+    "image": "jboAfzMssshtbBtuvYpldf5JKYVk5I9j41MD2BWY.png"
+  },
+  {
+    "id": 9,
+    "title": "Commerce",
+    "slug": "commerce",
+    "image": "k51AJ2Q3lRbA3l9nBxQoXuxlwiHAfeFI5B8fPEDz.png"
+  },
+  {
+    "id": 10,
+    "title": "Accounts - Principles of Accounts",
+    "slug": "accounts-principles-of-accounts",
+    "image": "Z7Sse5uDZwYthjMOO7tiaKeQSmlSvxPAp803CX6f.png"
+  },
+  {
+    "id": 11,
+    "title": "Government",
+    "slug": "government",
+    "image": "UbRxyxBmSKwsZaQ5VWstIw0bQmSJjcqQw08aumnK.png"
+  },
+  {
+    "id": 12,
+    "title": "Christian Religious Knowledge (CRK)",
+    "slug": "christian-religious-knowledge-crk",
+    "image": "hmope6hYLvz7NlWC4QG4iZ0xwBOysswzWDjTneOE.png"
+  },
+  {
+    "id": 14,
+    "title": "Agricultural Science",
+    "slug": "agricultural-science",
+    "image": "92ZVkGFjv8y1eFzDp4up5qJvQXbbJhQPTrbbTz8F.png"
+  },
+  {
+    "id": 16,
+    "title": "Islamic Religious Knowledge (IRK)",
+    "slug": "islamic-religious-knowledge-irk",
+    "image": "SYnuey1Ep7eNfOw4xR9jScWhUCFurHaLlFWTvOYf.png"
+  },
+  {
+    "id": 17,
+    "title": "History",
+    "slug": "history",
+    "image": "po8YdqV7ksySBpyb4fL7WKBvZaaFfdTvWFBu3EZp.png"
+  },
+  {
+    "id": 22,
+    "title": "Fine Arts",
+    "slug": "fine-arts",
+    "image": "m5XpqszKfiEIhdIFxGeh7TH27iZMIEzHve7zbDuG.png"
+  },
+  {
+    "id": 23,
+    "title": "Music",
+    "slug": "music",
+    "image": "atDp92KIfaj2ZL9PJZAwOfDN0v5BWdQHM326voUK.png"
+  },
+  {
+    "id": 24,
+    "title": "French",
+    "slug": "french",
+    "image": "jBgdCjaEneCHVqwelJy89lC58EwQ17HwHfhuLEvg.png"
+  },
+  {
+    "id": 25,
+    "title": "Animal Husbandry",
+    "slug": "animal-husbandry",
+    "image": "iYlNRmXATbe2O0MGCD4HcRrrlDMi72qzddDbYwjB.png"
+  },
+  {
+    "id": 26,
+    "title": "Insurance",
+    "slug": "insurance",
+    "image": "KiwnCKQkFRxyBSfwpbArZv8jaznhedc1rRaTRP2c.png"
+  },
+  {
+    "id": 27,
+    "title": "Civic Education",
+    "slug": "civic-education",
+    "image": "dL2oBTsPNd8dMdLzPYDNT2jQPDDGBIXOhDyV1io7.png"
+  },
+  {
+    "id": 28,
+    "title": "Further Mathematics",
+    "slug": "further-mathematics",
+    "image": "xETFDpaRMyqLl6DIagyQCR50Uq2HsyMylHTHDjCm.png"
+  },
+  {
+    "id": 29,
+    "title": "Yoruba",
+    "slug": "yoruba",
+    "image": "515G2hhcjoa0UuNxCbMbSAd2ZgJLn0egesMpfRhd.png"
+  },
+  {
+    "id": 30,
+    "title": "Igbo",
+    "slug": "igbo",
+    "image": "f9Cm67hzJwL9pthH6Pkh1NW8H0foxzGvQdUCynQO.png"
+  },
+  {
+    "id": 31,
+    "title": "Arabic",
+    "slug": "arabic",
+    "image": "aYCY9oQXyg24hOCWq6Gbw7U1qRVFjLZoJj0QvRlS.png"
+  },
+  {
+    "id": 32,
+    "title": "Home Economics",
+    "slug": "home-economics",
+    "image": "bmILNcRuMAYKzcsx2NvyWj8uDdn0nUPbHN3pMMFN.png"
+  },
+  {
+    "id": 33,
+    "title": "Hausa",
+    "slug": "hausa",
+    "image": "sQdSg7PnBga8aIrQkeDQtJ3IOubjv7rYXvIj4qDT.png"
+  },
+  {
+    "id": 34,
+    "title": "Book Keeping",
+    "slug": "book-keeping",
+    "image": "3FSLbADbVLm9BxUdR73VBvx9PZxvDlqlV0vakD5V.png"
+  },
+  {
+    "id": 36,
+    "title": "Data Processing",
+    "slug": "data-processing",
+    "image": "bjqji0xmDuefKZaJ6MeYbKpO8fcHVDpzk6prKIjZ.png"
+  },
+  {
+    "id": 37,
+    "title": "Catering Craft Practice",
+    "slug": "catering-craft-practice",
+    "image": "9CjJjVSkUf2vufNiT294YUbKi9SlE7a5HQWzEj2x.png"
+  },
+  {
+    "id": 38,
+    "title": "Computer Studies",
+    "slug": "computer-studies",
+    "image": "FwSdszzsXPYomgJayj3GSF8WJn1FhOTjT0xWAmBX.png"
+  },
+  {
+    "id": 39,
+    "title": "Marketing",
+    "slug": "marketing",
+    "image": "IahVyIBJ7mVXN2CLYTTqQcEssvSNp8bdavSv8ERZ.png"
+  },
+  {
+    "id": 40,
+    "title": "Physical Education",
+    "slug": "physical-education",
+    "image": "2err20WYo0Jh9glO3v0h8z7WBQ3gjqMMOInYu6If.png"
+  },
+  {
+    "id": 41,
+    "title": "Office Practice",
+    "slug": "office-practice",
+    "image": "Al5j42ysSy6mwuHvGtCHCzlbK6UlBMzLCd9x50Bj.png"
+  },
+  {
+    "id": 42,
+    "title": "Technical Drawing",
+    "slug": "technical-drawing",
+    "image": "gSTPBEhgAcQKkejCCHr7AEezHzgInQqV14Vg82Sz.png"
+  },
+  {
+    "id": 43,
+    "title": "Food and Nutrition",
+    "slug": "food-and-nutrition",
+    "image": "5ofPETLrhyT7fbp0gtPuIdQ9zHILKoQ3Hokzlams.png"
+  },
+  {
+    "id": 44,
+    "title": "Home Management",
+    "slug": "home-management",
+    "image": "rrG59xoKttjGL8jogsZBdNb4cZ0pghizLDxY1rwc.png"
+  }
+]

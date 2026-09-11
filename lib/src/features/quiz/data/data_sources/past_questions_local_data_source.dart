@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/services.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -32,25 +31,22 @@ abstract class PastQuestionsLocalDataSource {
 
 class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
   PastQuestionsLocalDataSourceImpl({
-    AssetBundle? assetBundle,
-    String assetPath = 'assets/data/past_questions.json',
     AppDatabase? appDatabase,
     LocalStorageService? localStorageService,
-  })  : _assetBundle = assetBundle ?? rootBundle,
-        _assetPath = assetPath,
-        _appDatabase = appDatabase ??
+    List<PastQuestionModel>? initialQuestions,
+  })  : _appDatabase = appDatabase ??
             (locator.isRegistered<AppDatabase>()
                 ? locator<AppDatabase>()
                 : null),
         _localStorageService = localStorageService ??
             (locator.isRegistered<LocalStorageService>()
                 ? locator<LocalStorageService>()
-                : null);
+                : null),
+        _seedQuestions = initialQuestions;
 
-  final AssetBundle _assetBundle;
-  final String _assetPath;
   final AppDatabase? _appDatabase;
   final LocalStorageService? _localStorageService;
+  final List<PastQuestionModel>? _seedQuestions;
 
   List<PastQuestionModel>? _cachedQuestions;
   final List<PastQuestionModel> _userAddedQuestions = [];
@@ -67,32 +63,23 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
 
     final allQuestions = <PastQuestionModel>[];
 
-    try {
-      final jsonString = await _assetBundle.loadString(_assetPath);
-      final dynamic decoded = jsonDecode(jsonString);
+    // Purge any legacy mock questions from local SQLite database
+    if (_appDatabase != null) {
+      try {
+        await _appDatabase.deleteMockPastQuestions();
+        final dbEntries = await _appDatabase.getPastQuestionsList(limit: 0);
+        allQuestions.addAll(dbEntries.map(_entryToModel));
+      } on Object {}
+    }
 
-      if (decoded is List) {
-        final parsed = decoded
-            .whereType<Map<String, dynamic>>()
-            .map(PastQuestionModel.fromJson)
-            .toList();
-
-        allQuestions.addAll(parsed);
-
-        // Seed to SQLite Drift database if empty
-        if (_appDatabase != null) {
-          try {
-            final count = await _appDatabase.countPastQuestions();
-            if (count == 0) {
-              final companions = parsed.map(_modelToCompanion).toList();
-              await _appDatabase.batchInsertPastQuestions(companions);
-            }
-          } on Object {
-            // Ignore if DB is closed or testing without DB
-          }
+    // Injected seed questions (e.g. for testing)
+    if (_seedQuestions != null && _seedQuestions.isNotEmpty) {
+      for (final q in _seedQuestions) {
+        if (!allQuestions.any((item) => item.id == q.id)) {
+          allQuestions.add(q);
         }
       }
-    } on Object {}
+    }
 
     // Load persisted user-added past questions
     try {
@@ -111,7 +98,11 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           _userAddedQuestions
             ..clear()
             ..addAll(userParsed);
-          allQuestions.insertAll(0, userParsed);
+          for (final uq in userParsed) {
+            if (!allQuestions.any((item) => item.id == uq.id)) {
+              allQuestions.insert(0, uq);
+            }
+          }
         }
       }
     } on Object {}
@@ -302,24 +293,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         final dbSubjects =
             await _appDatabase.getAvailableSubjectsForExam(category.code);
         if (dbSubjects.isNotEmpty) return dbSubjects;
-      } on Object {
-        // Fallback
-      }
+      } on Object {}
     }
-    return _subjectsByCategory[category] ??
-        const [
-          'English Language',
-          'Mathematics',
-          'Biology',
-          'Chemistry',
-          'Physics',
-          'Economics',
-          'Government',
-          'Literature in English',
-          'Commerce',
-          'Agricultural Science',
-          'Civic Education',
-        ];
+    return _subjectsByCategory[category] ?? const [];
   }
 
   @override
@@ -332,15 +308,39 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         final dbYears =
             await _appDatabase.getAvailableYearsForExam(category.code);
         if (dbYears.isNotEmpty) return dbYears;
-      } on Object {
-        // Fallback
-      }
+      } on Object {}
     }
-    return _yearsByCategory[category] ??
-        const [2024, 2023, 2022, 2021, 2020, 2019, 1999];
+    return _yearsByCategory[category] ?? const [];
   }
 
   // --- Drift Helpers ---
+
+  PastQuestionModel _entryToModel(PastQuestionEntry entry) {
+    List<String> options = [];
+    try {
+      final decoded = jsonDecode(entry.optionsJson);
+      if (decoded is List) {
+        options = decoded.map((e) => e.toString()).toList();
+      }
+    } on Object {}
+    return PastQuestionModel(
+      id: entry.id,
+      examType: PastQuestionModel.parseExamCategory(entry.examType),
+      subject: entry.subject,
+      year: entry.year,
+      questionNumber: entry.questionNumber,
+      prompt: entry.prompt,
+      options: options,
+      correctOptionIndex: entry.correctOptionIndex,
+      correctOptionLabel: entry.correctOptionLabel,
+      explanation: entry.explanation,
+      topic: entry.topic,
+      passage: entry.passage,
+      latexFormula: entry.latexFormula,
+      imageUrl: entry.imageUrl,
+      difficulty: entry.difficulty,
+    );
+  }
 
   PastQuestionsCompanion _modelToCompanion(PastQuestionModel model) {
     return PastQuestionsCompanion(
@@ -362,5 +362,3 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     );
   }
 }
-
-

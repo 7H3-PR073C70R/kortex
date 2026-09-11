@@ -91,6 +91,9 @@ void _initServices() {
     ..registerLazySingleton<StudyEngineRouter>(
       StudyEngineRouter.new,
     )
+    ..registerLazySingleton<PastQuestionDeckFactory>(
+      PastQuestionDeckFactory.new,
+    )
     ..registerLazySingleton<FsrsAlgorithmEngine>(
       FsrsAlgorithmEngine.new,
     )

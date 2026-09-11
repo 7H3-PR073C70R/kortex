@@ -92,15 +92,47 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
 
   void addCustomCourse({
     required String courseCode,
-    required String title,
-    required String department,
+    String? title,
+    String? department,
   }) {
-    final newId = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+    final cleanCode = courseCode.trim().toUpperCase().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleanCode.isEmpty) return;
+
+    final codeKey = cleanCode.replaceAll(RegExp('[^A-Z0-9]'), '');
+
+    // Check if course with this course code already exists to maintain uniqueness
+    final existingIndex = state.allCourses.indexWhere(
+      (c) => c.courseCode.replaceAll(RegExp('[^A-Z0-9]'), '') == codeKey,
+    );
+
+    if (existingIndex != -1) {
+      final existingCourse = state.allCourses[existingIndex];
+      final updatedSelected = Set<String>.from(state.selectedCourseIds)
+        ..add(existingCourse.id);
+      emit(
+        state.copyWith(
+          selectedCourseIds: updatedSelected,
+          searchQuery: '',
+        ),
+      );
+      return;
+    }
+
+    final resolvedTitle = (title != null && title.trim().isNotEmpty)
+        ? title.trim()
+        : cleanCode;
+    final resolvedDept = (department != null && department.trim().isNotEmpty)
+        ? department.trim()
+        : (state.activeTrack.isNotEmpty ? '${state.activeTrack} Studies' : 'University Studies');
+
+    final deterministicId =
+        'course_${cleanCode.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}';
+
     final customCourse = CuratedCourseEntity(
-      id: newId,
-      courseCode: courseCode.trim().toUpperCase(),
-      title: title.trim(),
-      department: department.trim().isEmpty ? 'General Studies' : department.trim(),
+      id: deterministicId,
+      courseCode: cleanCode,
+      title: resolvedTitle,
+      department: resolvedDept,
       totalMaterials: 1,
       hasActivePastPapers: false,
       iconName: 'school',
@@ -111,7 +143,7 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     final updatedCustom = List<CuratedCourseEntity>.from(state.customCourses)
       ..insert(0, customCourse);
     final updatedSelected = Set<String>.from(state.selectedCourseIds)
-      ..add(newId);
+      ..add(deterministicId);
 
     emit(
       state.copyWith(

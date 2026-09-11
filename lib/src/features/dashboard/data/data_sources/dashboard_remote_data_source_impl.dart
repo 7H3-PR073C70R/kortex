@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -208,7 +210,30 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   Future<List<CuratedCourseModel>> getCatalogCourses() async {
     try {
       final courses = await _client.getCuratedCoursesCatalog();
-      if (courses.isNotEmpty) return courses;
+      if (courses.isNotEmpty) {
+        if (locator.isRegistered<AppDatabase>()) {
+          try {
+            final now = DateTime.now();
+            final companions = courses.map((c) {
+              return CourseModulesCompanion(
+                id: Value(c.id),
+                courseCode: Value(c.courseCode),
+                title: Value(c.title),
+                department: Value(c.department),
+                totalMaterials: Value(c.totalMaterials),
+                hasActivePastPapers: Value(c.hasActivePastPapers),
+                iconName: Value(c.iconName),
+                colorHex: Value(c.colorHex),
+                pdfDownloadUrl: Value(c.pdfDownloadUrl),
+                syllabusCoverage: Value(c.syllabusCoverage),
+                updatedAt: Value(now),
+              );
+            }).toList();
+            await locator<AppDatabase>().batchUpsertCourseModules(companions);
+          } on Object catch (_) {}
+        }
+        return courses;
+      }
       return _generateDefaultCatalogCourses();
     } on Object catch (_) {
       return _generateDefaultCatalogCourses();
@@ -378,6 +403,13 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   Future<void> deleteAllCuratedCourses() async {
     try {
       await _storage?.deletePreference(key: PrefKeys.userCuratedCourses);
+      await _storage?.deletePreference(key: PrefKeys.syncedSecondarySubjects);
+      await _storage?.deletePreference(key: '__calibration_profile');
+      if (locator.isRegistered<AppDatabase>()) {
+        try {
+          await locator<AppDatabase>().deleteAllCourseModules();
+        } on Object catch (_) {}
+      }
       await _client.syncUserCourses({
         'p_courses': <Map<String, dynamic>>[],
       });
@@ -654,6 +686,72 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         iconName: 'corporate_fare',
         colorHex: '#2563EB',
         syllabusCoverage: 0.74,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-gst-101',
+        courseCode: 'GST 101',
+        title: 'Use of English & Communication Skills',
+        department: 'General University Studies',
+        totalMaterials: 35,
+        hasActivePastPapers: true,
+        iconName: 'auto_stories',
+        colorHex: '#F59E0B',
+        syllabusCoverage: 0.90,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-mth-101',
+        courseCode: 'MTH 101',
+        title: 'Elementary Mathematics I (Calculus & Algebra)',
+        department: 'University Sciences',
+        totalMaterials: 40,
+        hasActivePastPapers: true,
+        iconName: 'calculate',
+        colorHex: '#6366F1',
+        syllabusCoverage: 0.92,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-phy-101',
+        courseCode: 'PHY 101',
+        title: 'General Physics I (Mechanics & Properties of Matter)',
+        department: 'University Sciences',
+        totalMaterials: 38,
+        hasActivePastPapers: true,
+        iconName: 'bolt',
+        colorHex: '#06B6D4',
+        syllabusCoverage: 0.89,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-chm-101',
+        courseCode: 'CHM 101',
+        title: 'General Chemistry I (Physical & Inorganic Chemistry)',
+        department: 'University Sciences',
+        totalMaterials: 36,
+        hasActivePastPapers: true,
+        iconName: 'biotech',
+        colorHex: '#EC4899',
+        syllabusCoverage: 0.88,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-bio-101',
+        courseCode: 'BIO 101',
+        title: 'General Biology I (Cell Biology & Genetics)',
+        department: 'University Sciences',
+        totalMaterials: 34,
+        hasActivePastPapers: true,
+        iconName: 'eco',
+        colorHex: '#10B981',
+        syllabusCoverage: 0.87,
+      ),
+      const CuratedCourseModel(
+        id: 'univ-ecn-101',
+        courseCode: 'ECN 101',
+        title: 'Introduction to Microeconomics & Macroeconomics',
+        department: 'Social Sciences',
+        totalMaterials: 32,
+        hasActivePastPapers: true,
+        iconName: 'trending_up',
+        colorHex: '#3B82F6',
+        syllabusCoverage: 0.85,
       ),
       const CuratedCourseModel(
         id: 'soc-soc-101',

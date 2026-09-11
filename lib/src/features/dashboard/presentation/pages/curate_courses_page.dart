@@ -150,25 +150,25 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
             const SizedBox(height: 8),
             AppTextField(
               controller: codeController,
-              label: 'Course Code / Subject Code',
-              hintText: 'e.g. BIO 201, ECN 102, LIT 301',
+              label: 'Course Code (e.g. CSC 201, MTH 101)',
+              hintText: 'Enter course code (e.g. CSC 201)',
               textCapitalization: TextCapitalization.characters,
             ),
             const SizedBox(height: 12),
             AppTextField(
               controller: titleController,
-              label: 'Course Title',
-              hintText: 'e.g. Molecular Genetics & Cytology',
+              label: 'Course Title (Optional)',
+              hintText: 'e.g. Data Structures & Algorithms',
             ),
             const SizedBox(height: 12),
             AppTextField(
               controller: deptController,
-              label: 'Faculty / Department (Optional)',
-              hintText: 'e.g. Biological Sciences',
+              label: 'Department / Faculty (Optional)',
+              hintText: 'e.g. Computer Science',
             ),
           ],
         ),
-        primaryActionText: 'Add to Curriculum',
+        primaryActionText: 'Add Course',
         onPrimaryAction: () {
           final code = codeController.text.trim();
           final title = titleController.text.trim();

@@ -1,24 +1,41 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
+import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
 class AddExamModalSheet extends StatefulWidget {
-  const AddExamModalSheet({this.initialExam, super.key});
+  const AddExamModalSheet({
+    this.initialExam,
+    this.preselectedCourseCode,
+    this.preselectedCourseTitle,
+    super.key,
+  });
 
   final ExamEventEntity? initialExam;
+  final String? preselectedCourseCode;
+  final String? preselectedCourseTitle;
 
   static Future<void> show(
     BuildContext context, {
     ExamEventEntity? initialExam,
+    String? preselectedCourseCode,
+    String? preselectedCourseTitle,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -26,7 +43,11 @@ class AddExamModalSheet extends StatefulWidget {
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: context.read<CramPlannerCubit>(),
-        child: AddExamModalSheet(initialExam: initialExam),
+        child: AddExamModalSheet(
+          initialExam: initialExam,
+          preselectedCourseCode: preselectedCourseCode,
+          preselectedCourseTitle: preselectedCourseTitle,
+        ),
       ),
     );
   }
@@ -38,10 +59,14 @@ class AddExamModalSheet extends StatefulWidget {
 class _AddExamModalSheetState extends State<AddExamModalSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _cardsController;
-  late String _selectedTrack;
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
+
+  List<CuratedCourseModel> _registeredCourses = [];
+  CuratedCourseModel? _selectedCourse;
+  int _deckCardsCount = 0;
+  int _pastQuestionsCount = 0;
+  bool _isCalculatingWorkload = false;
 
   @override
   void initState() {
@@ -49,10 +74,6 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
     _nameController = TextEditingController(
       text: widget.initialExam?.examName ?? '',
     );
-    _cardsController = TextEditingController(
-      text: (widget.initialExam?.totalCardsCount ?? 150).toString(),
-    );
-    _selectedTrack = widget.initialExam?.subjectTrack ?? 'WAEC';
     _selectedDate =
         widget.initialExam?.targetDate ??
         DateTime.now().add(const Duration(days: 30));
@@ -62,14 +83,133 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
             minute: widget.initialExam!.targetDate.minute,
           )
         : const TimeOfDay(hour: 9, minute: 0);
+
+    _loadRegisteredCourses();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _cardsController.dispose();
     super.dispose();
   }
+
+  void _loadRegisteredCourses() {
+    try {
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      final raw = storage?.getPreference(key: PrefKeys.userCuratedCourses);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        _registeredCourses = list
+            .whereType<Map<String, dynamic>>()
+            .map(CuratedCourseModel.fromJson)
+            .toList();
+      }
+    } on Object catch (_) {}
+
+    // Preselect course if matching code/title or initialExam
+    if (_registeredCourses.isNotEmpty) {
+      final targetCode = widget.preselectedCourseCode ??
+          widget.initialExam?.subjectTrack;
+      if (targetCode != null && targetCode.isNotEmpty) {
+        _selectedCourse = _registeredCourses.firstWhere(
+          (c) =>
+              c.courseCode.toLowerCase() == targetCode.toLowerCase() ||
+              c.title.toLowerCase() == targetCode.toLowerCase(),
+          orElse: () => _registeredCourses.first,
+        );
+      } else {
+        _selectedCourse = _registeredCourses.first;
+      }
+    }
+
+    if (_nameController.text.trim().isEmpty && _selectedCourse != null) {
+      _nameController.text = '${_selectedCourse!.courseCode} Final Exam';
+    }
+
+    _calculateWorkload();
+  }
+
+  Future<void> _calculateWorkload() async {
+    if (!mounted) return;
+    setState(() {
+      _isCalculatingWorkload = true;
+    });
+
+    int deckCards = 0;
+    int pastQuestions = 0;
+
+    final course = _selectedCourse;
+    if (course != null) {
+      // 1. Sum cards in study decks available under this course
+      try {
+        if (locator.isRegistered<DecksBloc>()) {
+          final decks = locator<DecksBloc>().state.allDecks;
+          for (final d in decks) {
+            final matchCourse = (d.courseId != null && d.courseId == course.id) ||
+                (d.courseCode != null &&
+                    d.courseCode!.toLowerCase() ==
+                        course.courseCode.toLowerCase()) ||
+                d.subject.toLowerCase() == course.title.toLowerCase();
+            if (matchCourse) {
+              deckCards += d.totalCards;
+            }
+          }
+        }
+      } on Object catch (_) {}
+
+      // 2. For secondary school exams (WAEC, JAMB, NECO), take past questions into account
+      try {
+        final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
+        final track = (authBloc?.state.userProfile?.targetTrack ?? 'WAEC').toUpperCase();
+        final isSecondary = track.contains('WAEC') ||
+            track.contains('JAMB') ||
+            track.contains('NECO');
+
+        if (isSecondary && locator.isRegistered<PastQuestionsLocalDataSource>()) {
+          final pds = locator<PastQuestionsLocalDataSource>();
+          if (!pds.isInitialized) {
+            await pds.initialize();
+          }
+          final examCategory = track.contains('JAMB')
+              ? ExamCategory.jamb
+              : (track.contains('NECO') ? ExamCategory.neco : ExamCategory.waec);
+
+          final questions = await pds.getPastQuestions(
+            examCategory: examCategory,
+            subject: course.title,
+            courseCode: course.courseCode,
+            limit: 1000,
+          );
+          pastQuestions = questions.length;
+        }
+      } on Object catch (_) {}
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _deckCardsCount = deckCards;
+      _pastQuestionsCount = pastQuestions;
+      _isCalculatingWorkload = false;
+    });
+  }
+
+  int get _totalWorkload => _deckCardsCount + _pastQuestionsCount;
+
+  int get _daysRemaining {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+    final diff = target.difference(today).inDays;
+    return diff < 1 ? 1 : diff;
+  }
+
+  int get _dailyTarget => (_totalWorkload / _daysRemaining).ceil();
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -126,9 +266,13 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       _selectedTime.minute,
     );
 
-    final totalCards = int.tryParse(_cardsController.text.trim()) ?? 150;
     final cubit = context.read<CramPlannerCubit>();
     final examName = _nameController.text.trim();
+    final courseIdentifier = _selectedCourse != null
+        ? '${_selectedCourse!.courseCode} - ${_selectedCourse!.title}'
+        : (widget.initialExam?.subjectTrack ?? 'Registered Course');
+
+    final workload = _totalWorkload > 0 ? _totalWorkload : 100;
 
     if (widget.initialExam != null) {
       unawaited(
@@ -136,8 +280,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
           examId: widget.initialExam!.id,
           examName: examName,
           targetDate: targetDateTime,
-          subjectTrack: _selectedTrack,
-          totalCardsCount: totalCards,
+          subjectTrack: courseIdentifier,
+          totalCardsCount: workload,
         ),
       );
     } else {
@@ -145,20 +289,19 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
         cubit.addExamCountdown(
           examName: examName,
           targetDate: targetDateTime,
-          subjectTrack: _selectedTrack,
-          totalCardsCount: totalCards,
+          subjectTrack: courseIdentifier,
+          totalCardsCount: workload,
         ),
       );
     }
 
     try {
       if (locator.isRegistered<NotificationService>()) {
-        final days = targetDateTime.difference(DateTime.now()).inDays;
         unawaited(
           locator<NotificationService>().sendExamCalibrationNotification(
             examName: examName,
-            daysRemaining: days < 0 ? 0 : days,
-            dailyTarget: (totalCards / (days < 1 ? 1 : days)).ceil(),
+            daysRemaining: _daysRemaining,
+            dailyTarget: _dailyTarget,
           ),
         );
       }
@@ -202,7 +345,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 children: [
                   Text(
                     widget.initialExam != null
-                        ? 'Edit Exam Timetable'
+                        ? 'Edit Exam Countdown'
                         : l10n.addExamTitle,
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
@@ -220,13 +363,69 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
               const SizedBox(height: 16),
 
+              // Registered Course Dropdown
+              if (_registeredCourses.isNotEmpty) ...[
+                DropdownButtonFormField<CuratedCourseModel>(
+                  initialValue: _selectedCourse,
+                  dropdownColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfacePrimary,
+                  style: typography.body.regular.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Registered Course / Subject',
+                    labelStyle: typography.subhead.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.school_rounded,
+                      color: colors.primary,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: colors.surfaceBorder,
+                      ),
+                    ),
+                  ),
+                  items: _registeredCourses.map((c) {
+                    return DropdownMenuItem<CuratedCourseModel>(
+                      value: c,
+                      child: Text(
+                        '${c.courseCode} - ${c.title}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (course) {
+                    if (course != null) {
+                      setState(() {
+                        _selectedCourse = course;
+                        if (_nameController.text.isEmpty ||
+                            _nameController.text.endsWith('Final Exam')) {
+                          _nameController.text = '${course.courseCode} Final Exam';
+                        }
+                      });
+                      _calculateWorkload();
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+              ],
+
               // Exam Name Field
               AppTextField(
                 controller: _nameController,
                 label: l10n.examNameLabel,
                 hintText: l10n.examModalExamTitleHint,
                 prefixIcon: Icon(
-                  Icons.school_rounded,
+                  Icons.assignment_outlined,
                   color: colors.textSecondary,
                 ),
                 validator: (value) {
@@ -239,84 +438,95 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
               const SizedBox(height: 14),
 
-              // Subject Track Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: _selectedTrack,
-                dropdownColor: isDark
-                    ? colors.surfaceSecondary
-                    : colors.surfacePrimary,
-                style: typography.body.regular.copyWith(
-                  color: colors.textPrimary,
+              // Automatic Internal Workload Calculation Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 30 : 15),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 80 : 40),
+                  ),
                 ),
-                decoration: InputDecoration(
-                  labelText: l10n.examSubjectLabel,
-                  labelStyle: typography.subhead.regular.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.category_rounded,
-                    color: colors.textSecondary,
-                  ),
-                  filled: true,
-                  fillColor: isDark
-                      ? colors.surfaceSecondary
-                      : colors.surfacePrimary,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: colors.surfaceBorder,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.auto_graph_rounded,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Estimated Exam Workload',
+                          style: typography.callout.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_isCalculatingWorkload)
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(colors.primary),
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _totalWorkload > 0
+                          ? '$_totalWorkload total study items'
+                          : 'No study items detected yet',
+                      style: typography.title3.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• $_deckCardsCount cards across course study decks\n'
+                      '• $_pastQuestionsCount past questions included',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const Divider(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recommended Daily Pace:',
+                          style: typography.footnote.medium.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 60 : 30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '~$_dailyTarget items / day',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                items: [
-                  DropdownMenuItem(
-                    value: 'WAEC',
-                    child: Text(l10n.examTrackWaecStem),
-                  ),
-                  DropdownMenuItem(
-                    value: 'JAMB',
-                    child: Text(l10n.examTrackJambUtme),
-                  ),
-                  DropdownMenuItem(
-                    value: 'SAT',
-                    child: Text(l10n.examTrackSatDigital),
-                  ),
-                  DropdownMenuItem(
-                    value: 'University',
-                    child: Text(l10n.examTrackUniversityStem),
-                  ),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedTrack = val;
-                    });
-                  }
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              // Total Cards Target
-              AppTextField(
-                controller: _cardsController,
-                label: 'Total Flashcards to Complete',
-                hintText: 'e.g. 150',
-                keyboardType: TextInputType.number,
-                prefixIcon: Icon(
-                  Icons.style_rounded,
-                  color: colors.textSecondary,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter total cards to complete';
-                  }
-                  final count = int.tryParse(value.trim());
-                  if (count == null || count <= 0) {
-                    return 'Enter a valid positive number';
-                  }
-                  return null;
-                },
               ),
 
               const SizedBox(height: 14),
@@ -349,8 +559,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                               children: [
                                 Icon(
                                   Icons.calendar_today_rounded,
-                                  size: 16,
-                                  color: colors.primary,
+                                  size: 14,
+                                  color: colors.textSecondary,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -361,21 +571,20 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               formattedDate,
                               style: typography.callout.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
+
                   // Time Picker Tile
                   Expanded(
                     flex: 4,
@@ -401,26 +610,24 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                               children: [
                                 Icon(
                                   Icons.access_time_rounded,
-                                  size: 16,
-                                  color: colors.primary,
+                                  size: 14,
+                                  color: colors.textSecondary,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Start Time',
+                                  'Time',
                                   style: typography.caption.regular.copyWith(
                                     color: colors.textSecondary,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               formattedTime,
                               style: typography.callout.bold.copyWith(
-                                color: colors.primary,
+                                color: colors.textPrimary,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -432,13 +639,28 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
               const SizedBox(height: 24),
 
-              // Save Button
-              AppButton(
-                text: widget.initialExam != null
-                    ? 'Update Exam Timetable'
-                    : l10n.saveExamCountdown,
-                onPressed: _submit,
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      text: l10n.cancelAction,
+                      onPressed: () => Navigator.of(context).pop(),
+                      variant: AppButtonVariant.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AppButton(
+                      text: widget.initialExam != null
+                          ? 'Update Exam'
+                          : l10n.saveExamCountdown,
+                      onPressed: _submit,
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
