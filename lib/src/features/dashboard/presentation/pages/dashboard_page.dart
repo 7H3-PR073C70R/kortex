@@ -345,21 +345,21 @@ class _DashboardShimmerLoading extends StatelessWidget {
         ),
         const SizedBox(height: 18),
 
-        // 2. Syllabot Insight Pill Skeleton
-        const ShimmerPlaceholder(height: 38, borderRadius: 12),
-        const SizedBox(height: 10),
-
-        // 3. Prompt Bar Skeleton
-        const ShimmerPlaceholder(height: 52, borderRadius: 24),
+        // 2. Exam Countdown Banner Skeleton
+        const ShimmerPlaceholder(height: 72, borderRadius: 18),
         const SizedBox(height: 18),
 
-        // 4. Hero Card / Exam Countdown Skeleton
+        // 3. Next Best Action / Hero Deck Skeleton
         const ShimmerPlaceholder(height: 130, borderRadius: 22),
+        const SizedBox(height: 18),
+
+        // 4. Quick Actions Speed Dial Skeleton
+        const ShimmerPlaceholder(height: 48, borderRadius: 22),
         const SizedBox(height: 20),
 
-        // 5. Quick Actions Speed Dial Skeleton
-        const ShimmerPlaceholder(height: 48, borderRadius: 22),
-        const SizedBox(height: 24),
+        // 5. Prompt Bar Skeleton
+        const ShimmerPlaceholder(height: 52, borderRadius: 24),
+        const SizedBox(height: 22),
 
         // 6. Curated Courses Skeleton
         const Row(
@@ -384,7 +384,7 @@ class _DashboardShimmerLoading extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
 
         // 7. Retention Heatmap Skeleton
         const ShimmerPlaceholder(height: 160, borderRadius: 22),
@@ -422,7 +422,7 @@ class _CompactDashboardLayout extends StatelessWidget {
       ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
-        // 1. Header Profile & Streak Bar
+        // 1. Header Profile & Streak Bar (Identity & Retention Anchor)
         HeaderProfileBar(
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
@@ -431,15 +431,17 @@ class _CompactDashboardLayout extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // 2. Backlog Debt Triage (if review debt accumulated)
+        // 2. Exam Countdown Banner (Target Urgency & Stakes)
+        if (feed.curatedCourses.isNotEmpty) ...[
+          const ExamCountdownBanner(),
+          const SizedBox(height: 20),
+        ],
+
+        // 3. Backlog Debt Triage (Emergency catch-up when >= 30 cards overdue)
         if (heavyDebtDeck != null) ...[
           _StudyDebtTriageBanner(deck: heavyDebtDeck),
           const SizedBox(height: 20),
         ],
-
-        // 3. Pod & Cohort Pulse (Community co-presence)
-        _StudyCirclePodPulseCard(targetTrack: targetTrack),
-        const SizedBox(height: 20),
 
         // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
         if (feed.dueStudyDecks.isNotEmpty) ...[
@@ -449,25 +451,61 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 20),
         ],
 
-        // 5. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
-        if (feed.curatedCourses.isNotEmpty) ...[
-          const ExamCountdownBanner(),
-          const SizedBox(height: 20),
-        ],
-        if (feed.dueStudyDecks.isNotEmpty)
+        // 5. Active Recall FSRS-6 Review Engine (Hero Deck + Spaced Repetition Queue)
+        if (feed.dueStudyDecks.isNotEmpty) ...[
           FsrsReviewDeckCard(
             deck: feed.dueStudyDecks.first,
             isHero: true,
-          )
-        else
+          ),
+          if (feed.dueStudyDecks.length > 1) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.dashboardSpacedRepetitionQueue,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 16.5,
+                    ),
+                  ),
+                  Text(
+                    l10n.dashboardDecksCount(feed.dueStudyDecks.length),
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...feed.dueStudyDecks.skip(1).map((deck) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: FsrsReviewDeckCard(deck: deck),
+              );
+            }),
+          ],
+          const SizedBox(height: 20),
+        ] else ...[
           _EmptyStudyDecksCard(l10n: l10n),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
+        ],
 
-        // 4. Quick Action Speed Dial Bar
+        // 6. Quick Action Speed Dial Bar (Scan Document, Add Question, Create Deck, Live Pod)
         const QuickActionSpeedDial(),
         const SizedBox(height: 24),
 
-        // 5. Curated Course Carousel
+        // 7. Syllabot AI Daily Insight & Quick Prompt Bar
+        SyllabotQuickPromptBar(
+          insightText: feed.syllabotDailyInsight,
+        ),
+        const SizedBox(height: 24),
+
+        // 8. Curated Courses Carousel (Subject Progress & Syllabus)
         if (feed.curatedCourses.isNotEmpty) ...[
           CuratedCourseCarousel(courses: feed.curatedCourses),
           const SizedBox(height: 24),
@@ -476,41 +514,11 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 24),
         ],
 
-        // 6. Active Recall FSRS-6 Review Queue (Remaining Decks)
-        if (feed.dueStudyDecks.length > 1) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n.dashboardSpacedRepetitionQueue,
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 16.5,
-                  ),
-                ),
-                Text(
-                  l10n.dashboardDecksCount(feed.dueStudyDecks.length),
-                  style: typography.caption.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...feed.dueStudyDecks.skip(1).map((deck) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: FsrsReviewDeckCard(deck: deck),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
+        // 9. Study Circle Pod & Cohort Pulse (Social Proof & Live Co-Working)
+        _StudyCirclePodPulseCard(targetTrack: targetTrack),
+        const SizedBox(height: 24),
 
-        // 7. Retention Heat Map & Stats
+        // 10. Retention Heat Map & Mastery Stats (Long-Term Proof of Progress)
         RetentionHeatMapWidget(analytics: feed.analyticsSummary),
       ],
     );
@@ -696,42 +704,51 @@ class _MediumDashboardLayout extends StatelessWidget {
           userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 18),
+        if (feed.curatedCourses.isNotEmpty) ...[
+          const ExamCountdownBanner(),
+          const SizedBox(height: 16),
+        ],
         if (heavyDebtDeck != null) ...[
           _StudyDebtTriageBanner(deck: heavyDebtDeck),
           const SizedBox(height: 16),
         ],
-        _StudyCirclePodPulseCard(targetTrack: targetTrack),
-        const SizedBox(height: 16),
         if (feed.dueStudyDecks.isNotEmpty) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.first,
           ),
           const SizedBox(height: 16),
         ],
-        if (feed.curatedCourses.isNotEmpty) ...[
-          const ExamCountdownBanner(),
-          const SizedBox(height: 20),
-        ],
 
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left Column
+            // Left Column (Core Study & Quick Actions)
             Expanded(
               flex: 6,
               child: Column(
                 children: [
-                  SyllabotQuickPromptBar(
-                    insightText: feed.syllabotDailyInsight,
-                  ),
-                  const SizedBox(height: 16),
                   if (feed.dueStudyDecks.isNotEmpty)
                     FsrsReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,
-                    ),
+                    )
+                  else
+                    _EmptyStudyDecksCard(l10n: context.l10n),
                   const SizedBox(height: 16),
+                  if (feed.dueStudyDecks.length > 1) ...[
+                    ...feed.dueStudyDecks.skip(1).map((deck) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FsrsReviewDeckCard(deck: deck),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                  ],
                   const QuickActionSpeedDial(),
+                  const SizedBox(height: 16),
+                  SyllabotQuickPromptBar(
+                    insightText: feed.syllabotDailyInsight,
+                  ),
                   const SizedBox(height: 20),
                   if (feed.curatedCourses.isNotEmpty)
                     CuratedCourseCarousel(courses: feed.curatedCourses)
@@ -742,19 +759,14 @@ class _MediumDashboardLayout extends StatelessWidget {
             ),
             const SizedBox(width: 20),
 
-            // Right Column
+            // Right Column (Social Cohort & Analytics)
             Expanded(
               flex: 4,
               child: Column(
                 children: [
-                  RetentionHeatMapWidget(analytics: feed.analyticsSummary),
+                  _StudyCirclePodPulseCard(targetTrack: targetTrack),
                   const SizedBox(height: 16),
-                  ...feed.dueStudyDecks.skip(1).map((deck) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: FsrsReviewDeckCard(deck: deck),
-                    );
-                  }),
+                  RetentionHeatMapWidget(analytics: feed.analyticsSummary),
                 ],
               ),
             ),
@@ -807,25 +819,33 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     userPhotoUrl: userPhotoUrl,
                   ),
                   const SizedBox(height: 20),
-                  if (heavyDebtDeck != null) ...[
-                    _StudyDebtTriageBanner(deck: heavyDebtDeck),
-                    const SizedBox(height: 20),
-                  ],
                   if (feed.curatedCourses.isNotEmpty) ...[
                     const ExamCountdownBanner(),
                     const SizedBox(height: 20),
                   ],
-                  SyllabotQuickPromptBar(
-                    insightText: feed.syllabotDailyInsight,
-                  ),
-                  const SizedBox(height: 20),
+                  if (heavyDebtDeck != null) ...[
+                    _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                    const SizedBox(height: 20),
+                  ],
+                  if (feed.dueStudyDecks.isNotEmpty) ...[
+                    _NextBestActionCard(
+                      topDeck: feed.dueStudyDecks.first,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   if (feed.dueStudyDecks.isNotEmpty)
                     FsrsReviewDeckCard(
                       deck: feed.dueStudyDecks.first,
                       isHero: true,
-                    ),
+                    )
+                  else
+                    _EmptyStudyDecksCard(l10n: context.l10n),
                   const SizedBox(height: 20),
                   const QuickActionSpeedDial(),
+                  const SizedBox(height: 20),
+                  SyllabotQuickPromptBar(
+                    insightText: feed.syllabotDailyInsight,
+                  ),
                   const SizedBox(height: 24),
                   if (feed.curatedCourses.isNotEmpty)
                     CuratedCourseCarousel(courses: feed.curatedCourses)
@@ -835,7 +855,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
               ),
             ),
 
-            // Right Utility Panel (Stats & Extra Decks)
+            // Right Utility Panel (Stats & Remaining Due Decks)
             Expanded(
               flex: 4,
               child: ListView(
@@ -844,16 +864,18 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 24, 32, 100),
                 children: [
+                  if (feed.dueStudyDecks.length > 1) ...[
+                    ...feed.dueStudyDecks.skip(1).map((deck) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FsrsReviewDeckCard(deck: deck),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                  ],
                   _StudyCirclePodPulseCard(targetTrack: targetTrack),
                   const SizedBox(height: 20),
                   RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-                  const SizedBox(height: 20),
-                  ...feed.dueStudyDecks.skip(1).map((deck) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: FsrsReviewDeckCard(deck: deck),
-                    );
-                  }),
                 ],
               ),
             ),
