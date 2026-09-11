@@ -237,6 +237,17 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     this.isMuted = isMuted;
   }
 
+  bool isAway = false;
+
+  @override
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
+  }) async {
+    this.isAway = isAway;
+  }
+
   @override
   Future<void> joinRoomPresence({
     required String roomId,
@@ -355,6 +366,7 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('LiveRoomCubit Realtime Broadcast & Handshake Test Suite', () {
     late MockCommunityRepository mockCommunityRepo;
     late MockEphemeralRoomRepository mockEphemeralRepo;

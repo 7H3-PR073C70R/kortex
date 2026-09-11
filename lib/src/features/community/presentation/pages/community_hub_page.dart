@@ -346,6 +346,15 @@ class _LiveRoomsList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
+        // ⚡ 1-Tap Instant Study Double Pairing Card
+        _InstantStudyDoubleCard(
+          state: state,
+          onMatch: (matchedRoom) {
+            unawaited(context.router.push(LiveStudyRoomRoute(room: matchedRoom)));
+          },
+        ),
+        const SizedBox(height: 14),
+
         // Study Circles (Micro-Accountability Pods of 3-6) Section
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -1059,6 +1068,157 @@ class _MarketplaceDecksList extends StatelessWidget {
             );
           }),
       ],
+    );
+  }
+}
+
+class _InstantStudyDoubleCard extends StatelessWidget {
+  const _InstantStudyDoubleCard({
+    required this.state,
+    required this.onMatch,
+  });
+
+  final CommunityState state;
+  final ValueChanged<StudyRoomEntity> onMatch;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colors.primary.withAlpha(isDark ? 55 : 30),
+            colors.syllabotAccent.withAlpha(isDark ? 35 : 18),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colors.primary.withAlpha(isDark ? 80 : 45),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withAlpha(isDark ? 30 : 15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 60 : 35),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.flash_on_rounded,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Instant Study Double',
+                      style: typography.subhead.bold.copyWith(
+                        color: colors.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Jump into focus immediately with peers or Syllabot AI buddy',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              final targetTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+
+              StudyRoomEntity? match;
+              try {
+                match = state.studyRooms.firstWhere(
+                  (r) => r.activeParticipantsCount > 0 &&
+                      (targetTrack == null || r.category == targetTrack || r.subject == targetTrack),
+                );
+              } on Object catch (_) {
+                try {
+                  match = state.studyRooms.firstWhere(
+                    (r) => r.activeParticipantsCount > 0,
+                  );
+                } on Object catch (_) {
+                  match = state.studyRooms.isNotEmpty
+                      ? state.studyRooms.first
+                      : StudyRoomEntity(
+                          id: 'instant_focus_room',
+                          title: '${targetTrack ?? "General"} Instant Focus Room',
+                          subject: targetTrack ?? 'General Study',
+                          category: targetTrack ?? 'General',
+                        );
+                }
+              }
+
+              onMatch(match);
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colors.primary, colors.primary.withAlpha(210)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.primary.withAlpha(isDark ? 90 : 60),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Match Me Now (25m Focus)',
+                    style: typography.caption.bold.copyWith(
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

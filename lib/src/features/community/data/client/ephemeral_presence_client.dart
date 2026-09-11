@@ -11,6 +11,8 @@ class EphemeralParticipant {
     required this.avatarUrl,
     this.isHandRaised = false,
     this.isMuted = true,
+    this.isAway = false,
+    this.isAiBuddy = false,
     this.joinedAt,
   });
 
@@ -21,6 +23,8 @@ class EphemeralParticipant {
       avatarUrl: json['avatarUrl'] as String? ?? '',
       isHandRaised: json['isHandRaised'] as bool? ?? false,
       isMuted: json['isMuted'] as bool? ?? true,
+      isAway: json['isAway'] as bool? ?? false,
+      isAiBuddy: json['isAiBuddy'] as bool? ?? false,
       joinedAt: json['joinedAt'] != null
           ? DateTime.tryParse(json['joinedAt'] as String)
           : null,
@@ -32,6 +36,8 @@ class EphemeralParticipant {
   final String avatarUrl;
   final bool isHandRaised;
   final bool isMuted;
+  final bool isAway;
+  final bool isAiBuddy;
   final DateTime? joinedAt;
 
   Map<String, dynamic> toJson() {
@@ -41,6 +47,8 @@ class EphemeralParticipant {
       'avatarUrl': avatarUrl,
       'isHandRaised': isHandRaised,
       'isMuted': isMuted,
+      'isAway': isAway,
+      'isAiBuddy': isAiBuddy,
       'joinedAt': (joinedAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -51,6 +59,8 @@ class EphemeralParticipant {
     String? avatarUrl,
     bool? isHandRaised,
     bool? isMuted,
+    bool? isAway,
+    bool? isAiBuddy,
     DateTime? joinedAt,
   }) {
     return EphemeralParticipant(
@@ -59,6 +69,8 @@ class EphemeralParticipant {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       isHandRaised: isHandRaised ?? this.isHandRaised,
       isMuted: isMuted ?? this.isMuted,
+      isAway: isAway ?? this.isAway,
+      isAiBuddy: isAiBuddy ?? this.isAiBuddy,
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
@@ -267,6 +279,12 @@ abstract class EphemeralPresenceClient {
     required String roomId,
     required String userId,
     required bool isMuted,
+  });
+
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
   });
 
   Future<void> broadcastWhiteboardStroke({
@@ -523,6 +541,30 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           avatarUrl: '',
         );
     final updated = existing.copyWith(isMuted: isMuted);
+    _roomParticipants[roomId]![userId] = updated;
+    _notifyParticipants(roomId);
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'data': {'action': 'update', ...updated.toJson()},
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
+  }) async {
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    final existing = _roomParticipants[roomId]?[userId] ??
+        EphemeralParticipant(
+          userId: userId,
+          displayName: 'Scholar',
+          avatarUrl: '',
+        );
+    final updated = existing.copyWith(isAway: isAway);
     _roomParticipants[roomId]![userId] = updated;
     _notifyParticipants(roomId);
     _realtime.broadcastPresence(

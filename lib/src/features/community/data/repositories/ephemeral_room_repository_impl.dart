@@ -77,6 +77,19 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
+  }) async {
+    await _presenceClient.broadcastAwayState(
+      roomId: roomId,
+      userId: userId,
+      isAway: isAway,
+    );
+  }
+
+  @override
   Future<void> broadcastWhiteboardStroke({
     required String roomId,
     required WhiteboardStroke stroke,

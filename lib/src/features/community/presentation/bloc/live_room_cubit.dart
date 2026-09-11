@@ -42,6 +42,10 @@ class LiveRoomState extends Equatable {
     this.coOpSprintTargetCards = 10,
     this.coOpSprintRemainingSeconds = 180,
     this.coOpSprintCompletedParticipants = const {},
+    this.isSyllabotBuddyActive = false,
+    this.isLocalUserAway = false,
+    this.isGoalAchieved = false,
+    this.showGoalVerificationModal = false,
   });
 
   final StudyRoomEntity room;
@@ -72,6 +76,10 @@ class LiveRoomState extends Equatable {
   final int coOpSprintTargetCards;
   final int coOpSprintRemainingSeconds;
   final Map<String, int> coOpSprintCompletedParticipants;
+  final bool isSyllabotBuddyActive;
+  final bool isLocalUserAway;
+  final bool isGoalAchieved;
+  final bool showGoalVerificationModal;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -120,6 +128,10 @@ class LiveRoomState extends Equatable {
     int? coOpSprintTargetCards,
     int? coOpSprintRemainingSeconds,
     Map<String, int>? coOpSprintCompletedParticipants,
+    bool? isSyllabotBuddyActive,
+    bool? isLocalUserAway,
+    bool? isGoalAchieved,
+    bool? showGoalVerificationModal,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -158,6 +170,12 @@ class LiveRoomState extends Equatable {
       coOpSprintCompletedParticipants:
           coOpSprintCompletedParticipants ??
           this.coOpSprintCompletedParticipants,
+      isSyllabotBuddyActive:
+          isSyllabotBuddyActive ?? this.isSyllabotBuddyActive,
+      isLocalUserAway: isLocalUserAway ?? this.isLocalUserAway,
+      isGoalAchieved: isGoalAchieved ?? this.isGoalAchieved,
+      showGoalVerificationModal:
+          showGoalVerificationModal ?? this.showGoalVerificationModal,
     );
   }
 
@@ -191,6 +209,10 @@ class LiveRoomState extends Equatable {
     coOpSprintTargetCards,
     coOpSprintRemainingSeconds,
     coOpSprintCompletedParticipants,
+    isSyllabotBuddyActive,
+    isLocalUserAway,
+    isGoalAchieved,
+    showGoalVerificationModal,
   ];
 }
 
@@ -224,6 +246,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     _initEphemeralPresence(initialRoom.id);
     _initAudioRtc(initialRoom.id);
     unawaited(_initAmbientAudio());
+    _startSyllabotBuddyCheck();
   }
 
   final CommunityRepository _repository;
@@ -247,6 +270,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   Timer? _timer;
   Timer? _sprintTimer;
+  Timer? _buddyTimer;
   StreamSubscription<StudyRoomEntity>? _roomSubscription;
   StreamSubscription<List<EphemeralParticipant>>? _presenceSubscription;
   StreamSubscription<PomodoroSyncEvent>? _syncSubscription;
@@ -297,6 +321,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       );
     }
 
+    final hasGoal = state.activeGoal != null && state.activeGoal!.trim().isNotEmpty;
     emit(
       state.copyWith(
         room: state.room.copyWith(pomodoroState: nextState),
@@ -304,6 +329,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         completedPomodoros: state.room.isFocusing
             ? state.completedPomodoros + 1
             : state.completedPomodoros,
+        showGoalVerificationModal: hasGoal && state.room.isFocusing,
       ),
     );
   }
@@ -415,11 +441,33 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         .watchParticipants(roomId)
         .listen((participants) {
           if (!isClosed) {
-            final names = participants.map((p) => p.displayName).toList();
+            var updated = List<EphemeralParticipant>.from(participants);
+            final otherHumans = updated.where(
+              (p) => p.userId != _currentUserId && !p.isAiBuddy,
+            );
+
+            if (state.isSyllabotBuddyActive && otherHumans.isEmpty) {
+              if (!updated.any((p) => p.isAiBuddy)) {
+                updated.add(
+                  EphemeralParticipant(
+                    userId: 'syllabot_buddy_${state.room.id}',
+                    displayName: 'Syllabot AI (Study Buddy)',
+                    avatarUrl: 'https://api.dicebear.com/7.x/bottts/png?seed=syllabot',
+                    isAiBuddy: true,
+                    joinedAt: DateTime.now(),
+                  ),
+                );
+              }
+            } else if (otherHumans.isNotEmpty && state.isSyllabotBuddyActive) {
+              updated = updated.where((p) => !p.isAiBuddy).toList();
+            }
+
+            final names = updated.map((p) => p.displayName).toList();
             emit(
               state.copyWith(
-                ephemeralParticipants: participants,
+                ephemeralParticipants: updated,
                 participants: names.isNotEmpty ? names : state.participants,
+                isSyllabotBuddyActive: otherHumans.isEmpty && state.isSyllabotBuddyActive,
               ),
             );
           }
@@ -822,10 +870,97 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     }
   }
 
+  void _startSyllabotBuddyCheck() {
+    _buddyTimer?.cancel();
+    _buddyTimer = Timer(const Duration(seconds: 4), () {
+      if (isClosed) return;
+      final otherHumans = state.ephemeralParticipants.where(
+        (p) => p.userId != _currentUserId && !p.isAiBuddy,
+      );
+      if (otherHumans.isEmpty && !state.isSyllabotBuddyActive) {
+        final buddy = EphemeralParticipant(
+          userId: 'syllabot_buddy_${state.room.id}',
+          displayName: 'Syllabot AI (Study Buddy)',
+          avatarUrl: 'https://api.dicebear.com/7.x/bottts/png?seed=syllabot',
+          isAiBuddy: true,
+          joinedAt: DateTime.now(),
+        );
+
+        final updatedList = [...state.ephemeralParticipants, buddy];
+        final tickerMsg = '🤖 Syllabot joined as your study buddy! Let’s focus on ${state.room.subject}.';
+        final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+
+        emit(state.copyWith(
+          isSyllabotBuddyActive: true,
+          ephemeralParticipants: updatedList,
+          recentActivityTicker: updatedTicker,
+        ));
+      }
+    });
+  }
+
+  Future<void> setLocalAwayState({required bool isAway}) async {
+    if (isClosed || state.isLocalUserAway == isAway) return;
+
+    emit(state.copyWith(isLocalUserAway: isAway));
+
+    final updatedList = state.ephemeralParticipants.map((p) {
+      if (p.userId == _currentUserId) {
+        return p.copyWith(isAway: isAway);
+      }
+      return p;
+    }).toList();
+
+    emit(state.copyWith(ephemeralParticipants: updatedList));
+
+    if (_ephemeralRepository != null) {
+      unawaited(
+        _ephemeralRepository.broadcastAwayState(
+          roomId: state.room.id,
+          userId: _currentUserId,
+          isAway: isAway,
+        ),
+      );
+    }
+
+    final tickerMsg = isAway
+        ? '⏳ You stepped away (focus paused)'
+        : '⚡ Welcome back! Focus session resumed.';
+    final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(recentActivityTicker: updatedTicker));
+  }
+
+  void promptGoalVerification() {
+    if (state.activeGoal != null && state.activeGoal!.trim().isNotEmpty) {
+      emit(state.copyWith(showGoalVerificationModal: true));
+    }
+  }
+
+  void verifyMicroGoal({required bool completed, required String goal}) {
+    final tickerMsg = completed
+        ? '🎯 Micro-Goal Achieved: "$goal" (+50 XP) 🔥'
+        : '💪 Good progress on: "$goal". Next round awaits!';
+    final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+
+    emit(state.copyWith(
+      isGoalAchieved: completed,
+      showGoalVerificationModal: false,
+      recentActivityTicker: updatedTicker,
+      lastReactionEmoji: completed ? '🎉' : '👏',
+    ));
+
+    sendChatMessage(tickerMsg, isReaction: true);
+  }
+
+  void dismissGoalVerification() {
+    emit(state.copyWith(showGoalVerificationModal: false));
+  }
+
   @override
   Future<void> close() async {
     _timer?.cancel();
     _sprintTimer?.cancel();
+    _buddyTimer?.cancel();
     await _roomSubscription?.cancel();
     await _presenceSubscription?.cancel();
     await _syncSubscription?.cancel();

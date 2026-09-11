@@ -68,7 +68,8 @@ class _LiveStudyRoomView extends StatefulWidget {
   State<_LiveStudyRoomView> createState() => _LiveStudyRoomViewState();
 }
 
-class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
+class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
+    with WidgetsBindingObserver {
   final Set<String> _announcedHandRaises = {};
   final FloatingReactionController _reactionController =
       FloatingReactionController();
@@ -77,6 +78,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final currentGoal = context.read<LiveRoomCubit>().state.activeGoal;
@@ -84,6 +86,116 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
         _showGoalEditDialog(context, null);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!mounted) return;
+    final isAway = state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden;
+    unawaited(context.read<LiveRoomCubit>().setLocalAwayState(isAway: isAway));
+  }
+
+  void _showGoalVerificationDialog(BuildContext context, String goal) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final cubit = context.read<LiveRoomCubit>();
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Text('🎯', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Micro-Goal Reflection',
+                  style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Focus block completed! Did you finish your micro-goal?',
+                style: typography.caption.regular.copyWith(color: colors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.primary.withAlpha(50)),
+                ),
+                child: Text(
+                  '"$goal"',
+                  style: typography.body.bold.copyWith(color: colors.primary),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.green.withAlpha(60)),
+                ),
+                tileColor: Colors.green.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: const Icon(Icons.check_circle_rounded, color: Colors.green),
+                title: Text('Completed (100%)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
+                subtitle: Text('Earn +50 Pod XP & celebrate with peers', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                onTap: () {
+                  Navigator.of(dialogCtx).pop();
+                  cubit.verifyMicroGoal(completed: true, goal: goal);
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.amber.withAlpha(60)),
+                ),
+                tileColor: Colors.amber.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: const Icon(Icons.timelapse_rounded, color: Colors.amber),
+                title: Text('Partially Finished', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
+                subtitle: Text('Good momentum! Roll over to next block', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                onTap: () {
+                  Navigator.of(dialogCtx).pop();
+                  cubit.verifyMicroGoal(completed: false, goal: goal);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                cubit.dismissGoalVerification();
+              },
+              child: Text('Dismiss', style: TextStyle(color: colors.textSecondary)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showGoalEditDialog(BuildContext context, String? currentGoal) {
@@ -265,6 +377,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
             _announcedHandRaises.remove(p.userId);
           }
         }
+
+        if (state.showGoalVerificationModal &&
+            state.activeGoal != null &&
+            state.activeGoal!.trim().isNotEmpty) {
+          _showGoalVerificationDialog(context, state.activeGoal!);
+        }
       },
       builder: (context, state) {
         final audience = state.ephemeralParticipants
@@ -284,7 +402,15 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
             elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
-              onPressed: () => unawaited(context.router.maybePop()),
+              onPressed: () {
+                if (state.activeGoal != null &&
+                    state.activeGoal!.trim().isNotEmpty &&
+                    !state.isGoalAchieved) {
+                  _showGoalVerificationDialog(context, state.activeGoal!);
+                } else {
+                  unawaited(context.router.maybePop());
+                }
+              },
             ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1188,6 +1314,23 @@ class _FocusParticipantTile extends StatelessWidget {
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
 
+    final String statusLabel;
+    final Color statusColor;
+
+    if (participant.isAway) {
+      statusLabel = 'Away';
+      statusColor = cColors.warning;
+    } else if (participant.isAiBuddy) {
+      statusLabel = 'AI Buddy';
+      statusColor = cColors.syllabotAccent;
+    } else if (isSpeaking) {
+      statusLabel = 'Speaking';
+      statusColor = cColors.recallEasy;
+    } else {
+      statusLabel = 'Deep Flow';
+      statusColor = cColors.primary;
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1199,10 +1342,10 @@ class _FocusParticipantTile extends StatelessWidget {
               colors: cColors,
               typography: cTypography,
               size: 56,
-              isGlowing: true,
+              isGlowing: !participant.isAway,
               isDark: cIsDark,
             ),
-            if (isVoicePodEnabled && !participant.isMuted)
+            if (isVoicePodEnabled && !participant.isMuted && !participant.isAway)
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
@@ -1210,6 +1353,15 @@ class _FocusParticipantTile extends StatelessWidget {
                   color: cColors.recallEasy,
                 ),
                 child: const Icon(Icons.mic_rounded, size: 9, color: Colors.white),
+              ),
+            if (participant.isAway)
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: cColors.warning,
+                ),
+                child: const Icon(Icons.pause_rounded, size: 9, color: Colors.white),
               ),
           ],
         ),
@@ -1224,15 +1376,28 @@ class _FocusParticipantTile extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: (isSpeaking ? cColors.recallEasy : cColors.primary).withAlpha(25),
+            color: statusColor.withAlpha(25),
             borderRadius: BorderRadius.circular(6),
+            border: participant.isAiBuddy
+                ? Border.all(color: statusColor.withAlpha(60), width: 0.8)
+                : null,
           ),
-          child: Text(
-            isSpeaking ? 'Speaking' : 'Deep Flow',
-            style: cTypography.caption.bold.copyWith(
-              color: isSpeaking ? cColors.recallEasy : cColors.primary,
-              fontSize: 9.5,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (participant.isAiBuddy) ...[
+                const Text('🤖 ', style: TextStyle(fontSize: 8)),
+              ] else if (participant.isAway) ...[
+                const Text('⏳ ', style: TextStyle(fontSize: 8)),
+              ],
+              Text(
+                statusLabel,
+                style: cTypography.caption.bold.copyWith(
+                  color: statusColor,
+                  fontSize: 9.5,
+                ),
+              ),
+            ],
           ),
         ),
         if (activeGoal != null && activeGoal!.trim().isNotEmpty) ...[

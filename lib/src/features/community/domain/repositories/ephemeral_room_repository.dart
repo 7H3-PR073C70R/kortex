@@ -31,6 +31,12 @@ abstract class EphemeralRoomRepository {
     required bool isMuted,
   });
 
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
+  });
+
   Future<void> broadcastWhiteboardStroke({
     required String roomId,
     required WhiteboardStroke stroke,

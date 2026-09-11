@@ -224,15 +224,41 @@ serve(async (req: Request) => {
             .eq("id", roomId)
             .single();
 
-          if (room) {
-            // Find peers interested in this category
-            const { data: peers } = await supabase
-              .from("profiles")
-              .select("id")
-              .neq("id", room.created_by)
-              .limit(20);
+            // Target peers matching this academic track or enrolled in this course community
+            const categoryFilter = room.category || room.subject;
+            let peerIds: string[] = [];
 
-            const peerIds = (peers ?? []).map((p) => p.id);
+            // 1. Query members enrolled in the associated study community
+            const { data: community } = await supabase
+              .from("study_communities")
+              .select("id")
+              .or(`course_code.eq.${room.subject},department.eq.${categoryFilter}`)
+              .limit(1)
+              .maybeSingle();
+
+            if (community?.id) {
+              const { data: members } = await supabase
+                .from("community_members")
+                .select("user_id")
+                .eq("community_id", community.id)
+                .neq("user_id", room.created_by)
+                .limit(25);
+              peerIds = (members ?? []).map((m: any) => m.user_id);
+            }
+
+            // 2. Supplement with peers whose academic track matches this subject/category
+            if (peerIds.length < 15 && categoryFilter) {
+              const { data: trackPeers } = await supabase
+                .from("profiles")
+                .select("id")
+                .or(`target_track.eq.${categoryFilter},target_track.eq.${room.subject}`)
+                .neq("id", room.created_by)
+                .limit(25);
+
+              const additionalIds = (trackPeers ?? []).map((p: any) => p.id);
+              peerIds = Array.from(new Set([...peerIds, ...additionalIds])).slice(0, 25);
+            }
+
             if (peerIds.length > 0) {
               await fetch(sendPushUrl, {
                 method: "POST",
@@ -240,7 +266,7 @@ serve(async (req: Request) => {
                 body: JSON.stringify({
                   userIds: peerIds,
                   title: `👥 Live Study Room: ${room.title}`,
-                  body: `A new study session in ${room.subject} just started. Join your peers now!`,
+                  body: `A synchronized focus session in ${room.subject} just started. Join your peers now!`,
                   category: "room_invite",
                   data: {
                     route: "/study-room",

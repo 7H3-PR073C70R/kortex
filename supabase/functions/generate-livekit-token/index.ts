@@ -39,12 +39,27 @@ serve(async (req: Request) => {
 
     const apiKey =
       Deno.env.get("LIVEKIT_API_KEY") ||
-      Deno.env.get("LIVEKIT_KEY") ||
-      "API4koii3DrgtqG";
+      Deno.env.get("LIVEKIT_KEY");
     const apiSecret =
       Deno.env.get("LIVEKIT_API_SECRET") ||
-      Deno.env.get("LIVEKIT_SECRET") ||
-      "R6eBpJNJqD4nnCzDxAJyn7fFQPAb2Hw0MkemmBHgDreD";
+      Deno.env.get("LIVEKIT_SECRET");
+
+    if (!apiKey || !apiSecret) {
+      return new Response(
+        JSON.stringify({
+          error: "LiveKit server credentials (LIVEKIT_API_KEY / LIVEKIT_API_SECRET) are not configured.",
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Determine audio publishing permissions:
+    // Silent focus rooms restrict microphone publishing unless voice pod mode is explicitly toggled
+    const isVoicePod = body.isVoicePodEnabled === true || body.is_voice_pod === true;
+    const canPublishAudio = body.canPublish ?? isVoicePod;
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,
@@ -55,7 +70,7 @@ serve(async (req: Request) => {
     at.addGrant({
       roomJoin: true,
       room: roomId,
-      canPublish: true,
+      canPublish: canPublishAudio,
       canSubscribe: true,
       canPublishData: true,
     });

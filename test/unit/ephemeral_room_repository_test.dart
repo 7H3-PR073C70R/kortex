@@ -80,6 +80,17 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
     this.isMuted = isMuted;
   }
 
+  bool isAway = false;
+
+  @override
+  Future<void> broadcastAwayState({
+    required String roomId,
+    required String userId,
+    required bool isAway,
+  }) async {
+    this.isAway = isAway;
+  }
+
   @override
   Stream<List<EphemeralParticipant>> watchParticipants(String roomId) {
     return _participantsController.stream;
@@ -212,6 +223,16 @@ void main() {
       );
 
       expect(fakePresenceClient.handRaised, isTrue);
+    });
+
+    test('broadcastAwayState updates participant away state', () async {
+      await repository.broadcastAwayState(
+        roomId: 'room-101',
+        userId: 'user-adeola',
+        isAway: true,
+      );
+
+      expect(fakePresenceClient.isAway, isTrue);
     });
   });
 }
