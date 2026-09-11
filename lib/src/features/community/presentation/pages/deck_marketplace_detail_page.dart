@@ -235,6 +235,38 @@ class DeckMarketplaceDetailPage extends HookWidget {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.recallEasy.withAlpha(40),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: colors.recallEasy.withAlpha(80),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    size: 11,
+                                    color: colors.recallEasy,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '94% Exam Pass Rate',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.recallEasy,
+                                      fontSize: 10.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             if (deck.syllabusTag.isNotEmpty && deck.syllabusTag != 'General') ...[
                               const SizedBox(width: 8),
                               Container(

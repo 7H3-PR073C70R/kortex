@@ -5,9 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
@@ -16,6 +20,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_actio
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
@@ -224,12 +229,79 @@ class _StudySessionView extends HookWidget {
                           ),
                         ),
                       ),
-                      secondChild: FsrsRatingActionBar(
-                        onRateRating: (rating) {
-                          unawaited(
-                            context.read<StudySessionCubit>().rateCard(rating),
-                          );
-                        },
+                      secondChild: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FsrsRatingActionBar(
+                            onRateRating: (rating) {
+                              unawaited(
+                                context
+                                    .read<StudySessionCubit>()
+                                    .rateCard(rating),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              unawaited(
+                                CreatePostBottomSheet.show(
+                                  context,
+                                  lockedTrack: (currentCard.sourceTopic?.isNotEmpty ?? false)
+                                      ? currentCard.sourceTopic
+                                      : null,
+                                  onSubmit: ({
+                                    required title,
+                                    required content,
+                                    required track,
+                                    latexContent,
+                                    isQuestion = true,
+                                    syllabusTag = 'Flashcards',
+                                  }) {
+                                  if (locator.isRegistered<CommunityHubBloc>()) {
+                                    locator<CommunityHubBloc>().add(
+                                      CreateForumPostEvent(
+                                        title: title,
+                                        content: content,
+                                        track: track,
+                                        latexContent: latexContent,
+                                        isQuestion: true,
+                                        syllabusTag: syllabusTag,
+                                      ),
+                                    );
+                                    context.showSnackBar(
+                                      message:
+                                          'Question bounty posted to class cohort! 🎯',
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.help_outline_rounded,
+                                    size: 13,
+                                    color: colors.warning,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Stuck on this card? Post Bounty to Cohort',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.warning,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

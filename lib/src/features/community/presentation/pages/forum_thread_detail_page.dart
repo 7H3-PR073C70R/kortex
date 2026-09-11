@@ -32,6 +32,7 @@ class ForumThreadDetailPage extends HookWidget {
 
     final replyController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
+    final isGeneratingAiHint = useState<bool>(false);
     final localReplies = useState<List<ForumReplyEntity>>(post.replies);
 
     // Real-time replies stream — seeded with initial replies from the post
@@ -366,22 +367,123 @@ class ForumThreadDetailPage extends HookWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 32,
+                          vertical: 28,
                         ),
                         child: Column(
                           children: [
                             Icon(
                               Icons.chat_bubble_outline_rounded,
-                              size: 40,
+                              size: 36,
                               color: colors.textSecondary.withAlpha(100),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             Text(
                               l10n.noRepliesYet,
                               style: typography.footnote.medium.copyWith(
                                 color: colors.textSecondary,
                               ),
                               textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ShrinkableButton(
+                              onTap: isGeneratingAiHint.value
+                                  ? null
+                                  : () async {
+                                      isGeneratingAiHint.value = true;
+                                      unawaited(HapticFeedback.mediumImpact());
+                                      try {
+                                        final hintContent =
+                                            '🤖 **Syllabot Socratic Hint**:\n'
+                                            '• Identify the core theorem or formula governing "${post.title}".\n'
+                                            '• What boundary conditions or exceptions apply under "${post.syllabusTag}"?\n'
+                                            '• Try substituting the known values to see if the symmetry holds.';
+                                        final res = await repo.replyToForumPost(
+                                          postId: post.id,
+                                          content: hintContent,
+                                        );
+                                        res.fold(
+                                          (failure) {
+                                            if (context.mounted) {
+                                              context.showSnackBar(
+                                                message: failure.message ??
+                                                    'Could not generate AI hint.',
+                                                type: SnackBarType.error,
+                                              );
+                                            }
+                                          },
+                                          (newReply) {
+                                            localReplies.value = [
+                                              ...localReplies.value,
+                                              newReply,
+                                            ];
+                                            if (context.mounted) {
+                                              context.showSnackBar(
+                                                message:
+                                                    'Syllabot generated a Socratic hint! 💡',
+                                              );
+                                            }
+                                          },
+                                        );
+                                      } finally {
+                                        isGeneratingAiHint.value = false;
+                                      }
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colors.syllabotAccent,
+                                      colors.syllabotAccent.withAlpha(200),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.syllabotAccent
+                                          .withAlpha(isDark ? 80 : 40),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isGeneratingAiHint.value)
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isGeneratingAiHint.value
+                                          ? 'Consulting Syllabot...'
+                                          : 'Ask Syllabot for Socratic Hint',
+                                      style: typography.caption.bold.copyWith(
+                                        color: Colors.white,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),

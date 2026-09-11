@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
@@ -18,6 +23,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.da
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class QuizWorkspacePage extends StatelessWidget {
@@ -459,7 +465,6 @@ class _QuizWorkspaceView extends HookWidget {
                             const SizedBox(height: 12),
                             AppMultimodalImage(
                               imageUrl: current.imageUrl!,
-                              fit: BoxFit.contain,
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ],
@@ -498,11 +503,70 @@ class _QuizWorkspaceView extends HookWidget {
                     }),
 
                     // Solution Accordion (Appears after answering)
-                    if (current.isAnswered)
+                    if (current.isAnswered) ...[
                       ExplanationAccordion(
                         explanation: current.explanation,
                         latexFormula: current.latexFormula,
                       ),
+                      const SizedBox(height: 8),
+                      ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          unawaited(
+                            CreatePostBottomSheet.show(
+                              context,
+                              lockedTrack: effectiveCourseCode ?? deckTitle,
+                              onSubmit: ({
+                                required title,
+                                required content,
+                                required track,
+                                latexContent,
+                                isQuestion = true,
+                                syllabusTag = 'Quiz Solution',
+                              }) {
+                                if (locator.isRegistered<CommunityHubBloc>()) {
+                                  locator<CommunityHubBloc>().add(
+                                    CreateForumPostEvent(
+                                      title: title,
+                                      content: content,
+                                      track: track,
+                                      latexContent: latexContent,
+                                      isQuestion: true,
+                                      syllabusTag: syllabusTag,
+                                    ),
+                                  );
+                                  context.showSnackBar(
+                                    message:
+                                        'Question bounty posted to class cohort! 🎯',
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.help_outline_rounded,
+                                size: 13,
+                                color: colors.warning,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Confused by this solution? Ask Class Cohort',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.warning,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

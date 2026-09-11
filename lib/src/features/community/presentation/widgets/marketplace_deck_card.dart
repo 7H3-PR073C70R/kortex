@@ -54,21 +54,58 @@ class MarketplaceDeckCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(30),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    deck.category.toUpperCase(),
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        deck.category.toUpperCase(),
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colors.recallEasy.withAlpha(isDark ? 90 : 60),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 11,
+                            color: colors.recallEasy,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Verified Vault',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.recallEasy,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 Row(
                   children: [

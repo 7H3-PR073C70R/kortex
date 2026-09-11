@@ -33,6 +33,9 @@ class LiveRoomState extends Equatable {
     this.whiteboardRedoStack = const [],
     this.chatMessages = const [],
     this.unreadChatCount = 0,
+    this.cardsReviewedInSprint = 0,
+    this.recentActivityTicker = const [],
+    this.lastReactionEmoji,
   });
 
   final StudyRoomEntity room;
@@ -55,6 +58,9 @@ class LiveRoomState extends Equatable {
   final List<WhiteboardStroke> whiteboardRedoStack;
   final List<RoomChatMessage> chatMessages;
   final int unreadChatCount;
+  final int cardsReviewedInSprint;
+  final List<String> recentActivityTicker;
+  final String? lastReactionEmoji;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -89,6 +95,9 @@ class LiveRoomState extends Equatable {
     List<WhiteboardStroke>? whiteboardRedoStack,
     List<RoomChatMessage>? chatMessages,
     int? unreadChatCount,
+    int? cardsReviewedInSprint,
+    List<String>? recentActivityTicker,
+    String? lastReactionEmoji,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -113,6 +122,11 @@ class LiveRoomState extends Equatable {
       whiteboardRedoStack: whiteboardRedoStack ?? this.whiteboardRedoStack,
       chatMessages: chatMessages ?? this.chatMessages,
       unreadChatCount: unreadChatCount ?? this.unreadChatCount,
+      cardsReviewedInSprint:
+          cardsReviewedInSprint ?? this.cardsReviewedInSprint,
+      recentActivityTicker:
+          recentActivityTicker ?? this.recentActivityTicker,
+      lastReactionEmoji: lastReactionEmoji ?? this.lastReactionEmoji,
     );
   }
 
@@ -138,6 +152,9 @@ class LiveRoomState extends Equatable {
     whiteboardRedoStack,
     chatMessages,
     unreadChatCount,
+    cardsReviewedInSprint,
+    recentActivityTicker,
+    lastReactionEmoji,
   ];
 }
 
@@ -403,18 +420,53 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       chatMsg,
     ) {
       if (!isClosed && chatMsg.senderId != _currentUserId) {
+        final tickerMsg = chatMsg.isReaction
+            ? '${chatMsg.senderName}: ${chatMsg.text}'
+            : '${chatMsg.senderName}: ${chatMsg.text}';
+        final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
         emit(
           state.copyWith(
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
+            recentActivityTicker: updatedTicker,
           ),
         );
       }
     });
   }
 
+  void logCardReviewed([int count = 1]) {
+    final updatedCount = state.cardsReviewedInSprint + count;
+    final message = '🎯 You completed $updatedCount flashcards in this sprint!';
+    final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(
+      cardsReviewedInSprint: updatedCount,
+      recentActivityTicker: updatedTicker,
+    ));
+    sendChatMessage(
+      'Reviewed $updatedCount cards in this sprint 🔥',
+      isReaction: true,
+    );
+  }
+
+  void triggerMicroReaction(String emoji) {
+    final message = 'You sent $emoji';
+    final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(
+      lastReactionEmoji: emoji,
+      recentActivityTicker: updatedTicker,
+    ));
+    sendChatMessage(emoji, isReaction: true);
+  }
+
   void updateActiveGoal(String goal) {
-    emit(state.copyWith(activeGoal: goal));
+    final message = '🎯 Goal set: $goal';
+    final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(
+      activeGoal: goal,
+      recentActivityTicker: updatedTicker,
+    ));
+    sendChatMessage('Target: $goal', isReaction: true);
   }
 
   void setAmbientSoundTrack(String track) {

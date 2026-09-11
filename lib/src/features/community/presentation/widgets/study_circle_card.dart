@@ -230,6 +230,52 @@ class StudyCircleCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (isJoined) ...[
+                const SizedBox(width: 8),
+                ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Sent 1-tap study nudge to your pod members! ⚡️',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 40 : 25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(80),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.bolt_rounded,
+                          size: 14,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Nudge',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ],

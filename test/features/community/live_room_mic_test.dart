@@ -131,6 +131,16 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   @override
   Stream<void> watchWhiteboardClear(String roomId) => const Stream.empty();
 
+  final List<RoomChatMessage> sentChatMessages = [];
+
+  @override
+  Future<void> broadcastChatMessage({
+    required String roomId,
+    required RoomChatMessage message,
+  }) async {
+    sentChatMessages.add(message);
+  }
+
   @override
   Stream<RoomChatMessage> watchChatMessages(String roomId) =>
       const Stream.empty();
@@ -304,6 +314,48 @@ void main() {
 
       // Check broadcast was sent so peers are informed
       expect(mockEphemeralRepo.broadcastMuteCalls.last['isMuted'], isTrue);
+
+      await cubit.close();
+    });
+
+    test('logCardReviewed increments sprint count and updates ticker', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-ade',
+        currentUserName: 'Adekunle',
+      );
+
+      expect(cubit.state.cardsReviewedInSprint, 0);
+
+      cubit.logCardReviewed(5);
+
+      expect(cubit.state.cardsReviewedInSprint, 5);
+      expect(cubit.state.recentActivityTicker.first, contains('5 flashcards'));
+      expect(mockEphemeralRepo.sentChatMessages.length, 1);
+      expect(mockEphemeralRepo.sentChatMessages.first.text, contains('Reviewed 5 cards'));
+
+      await cubit.close();
+    });
+
+    test('triggerMicroReaction sets last emoji and broadcasts reaction', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-ade',
+        currentUserName: 'Adekunle',
+      );
+
+      cubit.triggerMicroReaction('🔥');
+
+      expect(cubit.state.lastReactionEmoji, '🔥');
+      expect(cubit.state.recentActivityTicker.first, contains('You sent 🔥'));
+      expect(mockEphemeralRepo.sentChatMessages.length, 1);
+      expect(mockEphemeralRepo.sentChatMessages.first.text, '🔥');
 
       await cubit.close();
     });

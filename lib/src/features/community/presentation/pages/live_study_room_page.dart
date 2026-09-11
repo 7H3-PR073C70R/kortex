@@ -71,6 +71,18 @@ class _LiveStudyRoomView extends StatefulWidget {
 class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   final Set<String> _announcedHandRaises = {};
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentGoal = context.read<LiveRoomCubit>().state.activeGoal;
+      if (currentGoal == null || currentGoal.trim().isEmpty) {
+        _showGoalEditDialog(context, null);
+      }
+    });
+  }
+
   void _showGoalEditDialog(BuildContext context, String? currentGoal) {
     final controller = TextEditingController(text: currentGoal ?? '');
     final colors = context.colors;
@@ -243,6 +255,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                     isDark: isDark,
                   ),
                   const SizedBox(height: 6),
+                  _AmbientActivityTicker(
+                    tickerItems: state.recentActivityTicker,
+                    cardsReviewed: state.cardsReviewedInSprint,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 6),
                 ],
 
                 // Main body: Whiteboard or Silent Focus Cockpit
@@ -308,7 +326,15 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                         ),
                 ),
 
-                // Bottom action bar with Voice Pod, Whiteboard, Chat, Timer, Leave
+                // Floating Micro-Reaction Rail for Silent Focus
+                _MicroReactionRail(
+                  onReact: (emoji) {
+                    context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
+                  },
+                  isDark: isDark,
+                ),
+
+                // Bottom action bar with Voice Pod, Fast Card Logger, Whiteboard, Chat, Timer, Leave
                 _BottomActionBar(
                   state: state,
                   currentUserId: widget.currentUserId,
@@ -384,6 +410,67 @@ class _MicroGoalPill extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Ambient Activity Ticker ───────────────────────────────────────────────────
+
+class _AmbientActivityTicker extends StatelessWidget {
+  const _AmbientActivityTicker({
+    required this.tickerItems,
+    required this.cardsReviewed,
+    required this.isDark,
+  });
+
+  final List<String> tickerItems;
+  final int cardsReviewed;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final latestMessage = tickerItems.isNotEmpty
+        ? tickerItems.first
+        : (cardsReviewed > 0
+            ? '⚡️ You completed $cardsReviewed cards in this sprint!'
+            : '🌱 Silent focus active. Set a goal and start reviewing.');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: colors.primary.withAlpha(isDark ? 25 : 12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: colors.primary.withAlpha(isDark ? 50 : 25),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.bolt_rounded, size: 14, color: Colors.amber),
+            const SizedBox(width: 6),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Text(
+                  latestMessage,
+                  key: ValueKey(latestMessage),
+                  style: typography.caption.medium.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -774,6 +861,26 @@ class _FocusParticipantTile extends StatelessWidget {
             ),
           ),
         ),
+        if (activeGoal != null && activeGoal!.trim().isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 90),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: cColors.primary.withAlpha(20),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              '🎯 $activeGoal',
+              style: cTypography.caption.regular.copyWith(
+                color: cColors.textSecondary,
+                fontSize: 8.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -882,6 +989,56 @@ class _AudienceSection extends StatelessWidget {
   }
 }
 
+// ── Micro Reaction Rail ──────────────────────────────────────────────────────
+
+class _MicroReactionRail extends StatelessWidget {
+  const _MicroReactionRail({
+    required this.onReact,
+    required this.isDark,
+  });
+
+  final ValueChanged<String> onReact;
+  final bool isDark;
+
+  static const List<String> _reactions = ['👏', '🔥', '☕️', '🧠', '🎯', '✨'];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(160)
+            : colors.surfacePrimary.withAlpha(220),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colors.primary.withAlpha(isDark ? 40 : 20),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: _reactions.map((emoji) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              onReact(emoji);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Text(
+                emoji,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 // ── Bottom action bar ─────────────────────────────────────────────────────────
 
 class _BottomActionBar extends StatelessWidget {
@@ -919,6 +1076,42 @@ class _BottomActionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Fast Sprint Card Logger (+5 Cards)
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              context.read<LiveRoomCubit>().logCardReviewed(5);
+              context.showSnackBar(
+                message: 'Logged 5 cards in sprint! 🎯 Total: ${state.cardsReviewedInSprint + 5}',
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+              decoration: BoxDecoration(
+                color: cColors.syllabotAccent.withAlpha(cIsDark ? 40 : 20),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: cColors.syllabotAccent.withAlpha(cIsDark ? 90 : 50),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.flash_on_rounded, size: 16, color: Colors.amber),
+                  const SizedBox(width: 4),
+                  Text(
+                    '+5 Cards',
+                    style: cTypography.caption.bold.copyWith(
+                      color: cColors.textPrimary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // Voice Pod Toggle Button (Silent Mode vs Audio Discussion)
           Expanded(
             child: ShrinkableButton(
