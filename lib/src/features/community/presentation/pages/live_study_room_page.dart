@@ -160,6 +160,80 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   );
 }
 
+  void _showStartCoOpSprintDialog(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final cubit = context.read<LiveRoomCubit>();
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Text('⚡', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                'Launch Co-Op Sprint',
+                style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Rally everyone in this room for a synchronized 3-minute study sprint! All members review concurrently and earn Pod XP.',
+                style: typography.caption.regular.copyWith(color: colors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: colors.primary.withAlpha(50)),
+                ),
+                tileColor: colors.primary.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: const Icon(Icons.flash_on_rounded, color: Colors.amber),
+                title: Text('10-Card Sprint (3 min)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
+                subtitle: Text('Fast-paced rapid recall challenge', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                onTap: () {
+                  Navigator.of(dialogCtx).pop();
+                  cubit.startCoOpSprint(deckTitle: 'Rapid Flashcard Sprint');
+                },
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: colors.syllabotAccent.withAlpha(50)),
+                ),
+                tileColor: colors.syllabotAccent.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: const Icon(Icons.quiz_rounded, color: Colors.cyan),
+                title: Text('Past Questions Battle (5 min)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
+                subtitle: Text('Review 15 CBT past questions together', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                onTap: () {
+                  Navigator.of(dialogCtx).pop();
+                  cubit.startCoOpSprint(deckTitle: 'CBT Past Questions Sprint', targetCards: 15);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -249,6 +323,13 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                   cardsReviewed: state.cardsReviewedInSprint,
                   isDark: isDark,
                 ),
+                if (state.isCoOpSprintActive) ...[
+                  const SizedBox(height: 6),
+                  _CoOpSprintBanner(
+                    state: state,
+                    isDark: isDark,
+                  ),
+                ],
                 if (state.activeSpeakerIds.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   _ActiveSpeakersBanner(
@@ -318,12 +399,153 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                   typography: typography,
                   isDark: isDark,
                   l10n: l10n,
+                  onLaunchSprint: () => _showStartCoOpSprintDialog(context),
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+// ── Co-Op Sprint Banner ───────────────────────────────────────────────────────
+
+class _CoOpSprintBanner extends StatelessWidget {
+  const _CoOpSprintBanner({
+    required this.state,
+    required this.isDark,
+  });
+
+  final LiveRoomState state;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colors.warning.withAlpha(isDark ? 60 : 35),
+            colors.primary.withAlpha(isDark ? 50 : 25),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.warning.withAlpha(isDark ? 120 : 80),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.warning.withAlpha(isDark ? 30 : 15),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.warning.withAlpha(isDark ? 60 : 40),
+            ),
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Colors.amber,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'CO-OP SPRINT',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.warning,
+                        fontSize: 9.5,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: colors.warning.withAlpha(40),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        state.formattedSprintTimer,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.warning,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.coOpSprintDeckTitle ?? '3-Min Focus Sprint',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              context.read<LiveRoomCubit>().logCardReviewed();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.warning,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                  const SizedBox(width: 3),
+                  Text(
+                    '+1 Card',
+                    style: typography.caption.bold.copyWith(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            icon: Icon(Icons.close_rounded, size: 18, color: colors.textSecondary),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => context.read<LiveRoomCubit>().endCoOpSprint(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1025,6 +1247,7 @@ class _BottomActionBar extends StatelessWidget {
     required this.typography,
     required this.isDark,
     required this.l10n,
+    this.onLaunchSprint,
   });
 
   final LiveRoomState state;
@@ -1033,6 +1256,7 @@ class _BottomActionBar extends StatelessWidget {
   final dynamic typography;
   final bool isDark;
   final AppLocalizations l10n;
+  final VoidCallback? onLaunchSprint;
 
   @override
   Widget build(BuildContext context) {
@@ -1050,6 +1274,44 @@ class _BottomActionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Launch Co-Op Sprint Button
+          ShrinkableButton(
+            onTap: onLaunchSprint,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+              decoration: BoxDecoration(
+                color: state.isCoOpSprintActive
+                    ? cColors.warning.withAlpha(cIsDark ? 50 : 30)
+                    : cColors.primary.withAlpha(cIsDark ? 40 : 20),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: state.isCoOpSprintActive
+                      ? cColors.warning
+                      : cColors.primary.withAlpha(cIsDark ? 90 : 50),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.bolt_rounded,
+                    size: 16,
+                    color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    state.isCoOpSprintActive ? state.formattedSprintTimer : 'Sprint',
+                    style: cTypography.caption.bold.copyWith(
+                      color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // Fast Sprint Card Logger (+5 Cards)
           ShrinkableButton(
             onTap: () {

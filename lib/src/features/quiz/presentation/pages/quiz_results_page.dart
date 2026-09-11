@@ -6,6 +6,9 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -280,27 +283,92 @@ class QuizResultsPage extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
-              label: Text(
-                l10n.practiceWeakCards,
-                style: typography.callout.bold.copyWith(color: colors.white),
-              ),
-              onPressed: () => _handlePracticeWeakFlashcards(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
+                  label: Text(
+                    l10n.practiceWeakCards,
+                    style: typography.callout.bold.copyWith(color: colors.white),
+                  ),
+                  onPressed: () => _handlePracticeWeakFlashcards(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton.icon(
+                  icon: Icon(Icons.help_outline_rounded, size: 18, color: colors.warning),
+                  label: Text(
+                    'Ask Pod for Help (+100 XP Bounty)',
+                    style: typography.caption.bold.copyWith(color: colors.warning),
+                  ),
+                  onPressed: () => _handleAskPodForHelp(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: colors.warning.withAlpha(isDark ? 100 : 70)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _handleAskPodForHelp(BuildContext context) {
+    unawaited(HapticFeedback.lightImpact());
+    final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
+    final questionToAsk = incorrectQuestions.isNotEmpty ? incorrectQuestions.first : questions.firstOrNull;
+
+    unawaited(
+      CreatePostBottomSheet.show(
+        context,
+        lockedTrack: courseCode,
+        onSubmit: ({
+          required title,
+          required content,
+          required track,
+          latexContent,
+          isQuestion = true,
+          syllabusTag = 'General',
+          isAnonymous = true,
+        }) {
+          if (locator.isRegistered<CommunityHubBloc>()) {
+            final effectiveTag = questionToAsk?.subTopic ?? syllabusTag;
+            locator<CommunityHubBloc>().add(
+              CreateForumPostEvent(
+                title: title,
+                content: content,
+                track: track,
+                latexContent: latexContent,
+                isQuestion: true,
+                syllabusTag: effectiveTag,
+                isAnonymous: isAnonymous,
+              ),
+            );
+          }
+          context.showSnackBar(
+            message: 'Question bounty posted to class cohort! 🎯 (+100 XP Bounty)',
+            type: SnackBarType.success,
+          );
+        },
       ),
     );
   }

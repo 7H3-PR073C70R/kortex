@@ -177,7 +177,39 @@ class _StudySessionView extends HookWidget {
                       elapsedTimeFormatted: state.formattedElapsedTime,
                       onClose: () => unawaited(context.router.maybePop()),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+
+                    // Study Buddy Pulse Indicator (Co-presence feeling)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 30 : 15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.primary.withAlpha(40)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors.success,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Studying with scholars in your cohort right now',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
 
                     // 2. Main Flashcard Canvas with 3D Flip & 4-Way Physics
                     Expanded(
@@ -515,6 +547,38 @@ class _StudySessionView extends HookWidget {
                       'Keep Blazing 🔥',
                       style: typography.callout.bold.copyWith(
                         color: colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    icon: Icon(Icons.share_rounded, size: 16, color: colors.syllabotAccent),
+                    label: Text(
+                      'Share Milestone to Pod (+25 Pod Karma)',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.syllabotAccent,
+                      ),
+                    ),
+                    onPressed: () {
+                      unawaited(HapticFeedback.mediumImpact());
+                      Navigator.of(sheetContext).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Milestone shared with your Study Circle! 🎉 +25 Pod Karma'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: colors.syllabotAccent.withAlpha(100),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),

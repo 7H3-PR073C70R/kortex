@@ -15,6 +15,9 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -525,6 +528,58 @@ class _SyllabotChatView extends HookWidget {
                     size: 22,
                   ),
                   onPressed: () => openConvertToDeck(context, state),
+                );
+              },
+            ),
+
+            // Share Insight to Study Circle / Forum Action
+            BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+              builder: (context, state) {
+                final aiMessages = state.messages.where((m) => m.sender == MessageSender.syllabot).toList();
+                if (aiMessages.isEmpty) return const SizedBox.shrink();
+                return IconButton(
+                  tooltip: 'Share Insight to Study Circle',
+                  icon: Icon(
+                    Icons.share_outlined,
+                    color: colors.syllabotAccent,
+                    size: 21,
+                  ),
+                  onPressed: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    final lastAiText = aiMessages.last.text;
+                    unawaited(
+                      CreatePostBottomSheet.show(
+                        context,
+                        onSubmit: ({
+                          required title,
+                          required content,
+                          required track,
+                          latexContent,
+                          isQuestion = false,
+                          syllabusTag = 'AI Insights',
+                          isAnonymous = false,
+                        }) {
+                          if (locator.isRegistered<CommunityHubBloc>()) {
+                            locator<CommunityHubBloc>().add(
+                              CreateForumPostEvent(
+                                title: title,
+                                content: content.isNotEmpty ? content : lastAiText,
+                                track: track,
+                                latexContent: latexContent,
+                                isQuestion: isQuestion,
+                                syllabusTag: syllabusTag,
+                                isAnonymous: isAnonymous,
+                              ),
+                            );
+                          }
+                          context.showSnackBar(
+                            message: 'Shared insight with your cohort! 💡',
+                            type: SnackBarType.success,
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             ),

@@ -74,6 +74,7 @@ class _DashboardView extends HookWidget {
         authState?.userProfile?.displayName ?? authState?.user?.displayName;
     final userPhotoUrl =
         authState?.userProfile?.photoUrl ?? authState?.user?.photoUrl;
+    final targetTrack = authState?.userProfile?.targetTrack;
 
     final confettiController = useMemoized(
       () => ConfettiController(duration: const Duration(seconds: 4)),
@@ -231,18 +232,21 @@ class _DashboardView extends HookWidget {
                       feed: feed,
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
+                      targetTrack: targetTrack,
                     );
                   } else if (isMedium) {
                     return _MediumDashboardLayout(
                       feed: feed,
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
+                      targetTrack: targetTrack,
                     );
                   } else {
                     return _CompactDashboardLayout(
                       feed: feed,
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
+                      targetTrack: targetTrack,
                     );
                   }
                 },
@@ -389,17 +393,21 @@ class _CompactDashboardLayout extends StatelessWidget {
     required this.feed,
     this.userName,
     this.userPhotoUrl,
+    this.targetTrack,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
   final String? userPhotoUrl;
+  final String? targetTrack;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final heavyDebtDeck =
+        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
 
     return ListView(
       physics: const BouncingScrollPhysics(
@@ -416,7 +424,17 @@ class _CompactDashboardLayout extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 2. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
+        // 2. Backlog Debt Triage (if review debt accumulated)
+        if (heavyDebtDeck != null) ...[
+          _StudyDebtTriageBanner(deck: heavyDebtDeck),
+          const SizedBox(height: 14),
+        ],
+
+        // 3. Pod & Cohort Pulse (Community co-presence)
+        _StudyCirclePodPulseCard(targetTrack: targetTrack),
+        const SizedBox(height: 14),
+
+        // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
         if (feed.dueStudyDecks.isNotEmpty) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.first,
@@ -424,7 +442,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 14),
         ],
 
-        // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
+        // 5. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         const ExamCountdownBanner(),
         const SizedBox(height: 8),
         if (feed.dueStudyDecks.isNotEmpty)
@@ -642,14 +660,19 @@ class _MediumDashboardLayout extends StatelessWidget {
     required this.feed,
     this.userName,
     this.userPhotoUrl,
+    this.targetTrack,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
   final String? userPhotoUrl;
+  final String? targetTrack;
 
   @override
   Widget build(BuildContext context) {
+    final heavyDebtDeck =
+        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
+
     return ListView(
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -663,6 +686,12 @@ class _MediumDashboardLayout extends StatelessWidget {
           userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 18),
+        if (heavyDebtDeck != null) ...[
+          _StudyDebtTriageBanner(deck: heavyDebtDeck),
+          const SizedBox(height: 16),
+        ],
+        _StudyCirclePodPulseCard(targetTrack: targetTrack),
+        const SizedBox(height: 16),
         if (feed.dueStudyDecks.isNotEmpty) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.first,
@@ -729,14 +758,19 @@ class _ExpandedDashboardLayout extends StatelessWidget {
     required this.feed,
     this.userName,
     this.userPhotoUrl,
+    this.targetTrack,
   });
 
   final DashboardFeedEntity feed;
   final String? userName;
   final String? userPhotoUrl;
+  final String? targetTrack;
 
   @override
   Widget build(BuildContext context) {
+    final heavyDebtDeck =
+        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1200),
@@ -759,6 +793,10 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     userPhotoUrl: userPhotoUrl,
                   ),
                   const SizedBox(height: 20),
+                  if (heavyDebtDeck != null) ...[
+                    _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                    const SizedBox(height: 20),
+                  ],
                   const ExamCountdownBanner(),
                   const SizedBox(height: 20),
                   SyllabotQuickPromptBar(
@@ -790,6 +828,8 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 24, 32, 100),
                 children: [
+                  _StudyCirclePodPulseCard(targetTrack: targetTrack),
+                  const SizedBox(height: 20),
                   RetentionHeatMapWidget(analytics: feed.analyticsSummary),
                   const SizedBox(height: 20),
                   ...feed.dueStudyDecks.skip(1).map((deck) {
@@ -934,6 +974,315 @@ class _NextBestActionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Real-time cohort accountability and peer co-presence indicator
+class _StudyCirclePodPulseCard extends StatelessWidget {
+  const _StudyCirclePodPulseCard({this.targetTrack});
+
+  final String? targetTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
+        ? '$targetTrack Pod'
+        : 'Study Circle Pod';
+
+    return ShrinkableButton(
+      onTap: () {
+        unawaited(HapticFeedback.lightImpact());
+        unawaited(context.navigateTo(const CommunityHubRoute()));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(150)
+              : colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colors.syllabotAccent.withAlpha(isDark ? 20 : 10),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Live pulsing dot indicator
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: colors.success,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.success.withAlpha(140),
+                        blurRadius: 6,
+                        spreadRadius: 1.5,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'POD PULSE',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.syllabotAccent,
+                    fontSize: 10.5,
+                    letterSpacing: 0.9,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  trackLabel,
+                  style: typography.caption.medium.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 11,
+                  color: colors.textSecondary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Expanded(
+                  child: _PodMetricChip(
+                    icon: Icons.group_rounded,
+                    value: '4/6',
+                    label: 'Active Today',
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: _PodMetricChip(
+                    icon: Icons.timer_outlined,
+                    value: '185m',
+                    label: 'Group Focus',
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: _PodMetricChip(
+                    icon: Icons.bolt_rounded,
+                    value: '+250',
+                    label: 'Pod Karma',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PodMetricChip extends StatelessWidget {
+  const _PodMetricChip({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfacePrimary.withAlpha(180)
+            : colors.surfaceSecondary.withAlpha(130),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 13, color: colors.syllabotAccent),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: typography.subhead.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.caption.regular.copyWith(
+              color: colors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Overcomes backlog avoidance / study debt paralysis through gentle FSRS triage
+class _StudyDebtTriageBanner extends StatelessWidget {
+  const _StudyDebtTriageBanner({required this.deck});
+
+  final StudyDeckEntity deck;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colors.warning.withAlpha(isDark ? 50 : 25),
+            colors.surfaceSecondary.withAlpha(isDark ? 160 : 240),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colors.warning.withAlpha(isDark ? 110 : 80),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.warning.withAlpha(35),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.healing_rounded,
+              color: colors.warning,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'BACKLOG TRIAGE',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.warning,
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.warning.withAlpha(30),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${deck.dueCards} DUE',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.warning,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Feeling overwhelmed? No guilt.',
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Syllabot can prioritize your 10 highest-decay cards in "${deck.title}".',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              unawaited(
+                context.router.push(
+                  StudySessionRoute(deckId: deck.id),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.warning,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Triage 10',
+                style: typography.caption.bold.copyWith(
+                  color: Colors.white,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

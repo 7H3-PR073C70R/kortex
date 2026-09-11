@@ -36,6 +36,11 @@ class LiveRoomState extends Equatable {
     this.cardsReviewedInSprint = 0,
     this.recentActivityTicker = const [],
     this.lastReactionEmoji,
+    this.isCoOpSprintActive = false,
+    this.coOpSprintDeckTitle,
+    this.coOpSprintTargetCards = 10,
+    this.coOpSprintRemainingSeconds = 180,
+    this.coOpSprintCompletedParticipants = const {},
   });
 
   final StudyRoomEntity room;
@@ -61,10 +66,21 @@ class LiveRoomState extends Equatable {
   final int cardsReviewedInSprint;
   final List<String> recentActivityTicker;
   final String? lastReactionEmoji;
+  final bool isCoOpSprintActive;
+  final String? coOpSprintDeckTitle;
+  final int coOpSprintTargetCards;
+  final int coOpSprintRemainingSeconds;
+  final Map<String, int> coOpSprintCompletedParticipants;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (remainingSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  String get formattedSprintTimer {
+    final minutes = (coOpSprintRemainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (coOpSprintRemainingSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
 
@@ -98,6 +114,11 @@ class LiveRoomState extends Equatable {
     int? cardsReviewedInSprint,
     List<String>? recentActivityTicker,
     String? lastReactionEmoji,
+    bool? isCoOpSprintActive,
+    String? coOpSprintDeckTitle,
+    int? coOpSprintTargetCards,
+    int? coOpSprintRemainingSeconds,
+    Map<String, int>? coOpSprintCompletedParticipants,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -127,6 +148,15 @@ class LiveRoomState extends Equatable {
       recentActivityTicker:
           recentActivityTicker ?? this.recentActivityTicker,
       lastReactionEmoji: lastReactionEmoji ?? this.lastReactionEmoji,
+      isCoOpSprintActive: isCoOpSprintActive ?? this.isCoOpSprintActive,
+      coOpSprintDeckTitle: coOpSprintDeckTitle ?? this.coOpSprintDeckTitle,
+      coOpSprintTargetCards:
+          coOpSprintTargetCards ?? this.coOpSprintTargetCards,
+      coOpSprintRemainingSeconds:
+          coOpSprintRemainingSeconds ?? this.coOpSprintRemainingSeconds,
+      coOpSprintCompletedParticipants:
+          coOpSprintCompletedParticipants ??
+          this.coOpSprintCompletedParticipants,
     );
   }
 
@@ -155,6 +185,11 @@ class LiveRoomState extends Equatable {
     cardsReviewedInSprint,
     recentActivityTicker,
     lastReactionEmoji,
+    isCoOpSprintActive,
+    coOpSprintDeckTitle,
+    coOpSprintTargetCards,
+    coOpSprintRemainingSeconds,
+    coOpSprintCompletedParticipants,
   ];
 }
 
@@ -197,6 +232,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   final String _currentUserAvatar;
 
   Timer? _timer;
+  Timer? _sprintTimer;
   StreamSubscription<StudyRoomEntity>? _roomSubscription;
   StreamSubscription<List<EphemeralParticipant>>? _presenceSubscription;
   StreamSubscription<PomodoroSyncEvent>? _syncSubscription;
@@ -449,6 +485,67 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     );
   }
 
+  void startCoOpSprint({
+    String deckTitle = '3-Min Focus Sprint',
+    int targetCards = 10,
+  }) {
+    _sprintTimer?.cancel();
+    final message = '⚡ Co-Op Sprint Started: $deckTitle ($targetCards Cards)';
+    final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(
+      isCoOpSprintActive: true,
+      coOpSprintDeckTitle: deckTitle,
+      coOpSprintTargetCards: targetCards,
+      coOpSprintRemainingSeconds: 180,
+      recentActivityTicker: updatedTicker,
+    ));
+    sendChatMessage(
+      '⚡ Launched Co-Op Sprint: $deckTitle ($targetCards cards) - Let’s focus together!',
+      isReaction: true,
+    );
+
+    _sprintTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (isClosed) {
+        timer.cancel();
+        return;
+      }
+      if (state.coOpSprintRemainingSeconds <= 1) {
+        timer.cancel();
+        endCoOpSprint();
+      } else {
+        emit(
+          state.copyWith(
+            coOpSprintRemainingSeconds: state.coOpSprintRemainingSeconds - 1,
+          ),
+        );
+      }
+    });
+  }
+
+  void completeCoOpSprintRound(int cardsCompleted) {
+    final updatedMap = Map<String, int>.from(state.coOpSprintCompletedParticipants);
+    updatedMap[_currentUserName] = cardsCompleted;
+    final message = '🏆 Sprint finished! You completed $cardsCompleted cards!';
+    final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    emit(state.copyWith(
+      coOpSprintCompletedParticipants: updatedMap,
+      cardsReviewedInSprint: state.cardsReviewedInSprint + cardsCompleted,
+      recentActivityTicker: updatedTicker,
+    ));
+    sendChatMessage(
+      '🏆 Sprint Completed: $cardsCompleted cards reviewed (+50 Pod XP)! 🔥',
+      isReaction: true,
+    );
+  }
+
+  void endCoOpSprint() {
+    _sprintTimer?.cancel();
+    emit(state.copyWith(
+      isCoOpSprintActive: false,
+      coOpSprintRemainingSeconds: 0,
+    ));
+  }
+
   void triggerMicroReaction(String emoji) {
     final message = 'You sent $emoji';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
@@ -685,6 +782,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   @override
   Future<void> close() async {
     _timer?.cancel();
+    _sprintTimer?.cancel();
     await _roomSubscription?.cancel();
     await _presenceSubscription?.cancel();
     await _syncSubscription?.cancel();

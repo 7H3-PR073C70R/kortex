@@ -166,6 +166,64 @@ class StudyCircleCard extends StatelessWidget {
               ],
             ),
           ),
+          if (circle.members.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surfaceSecondary.withAlpha(80) : colors.surfacePrimary.withAlpha(120),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.primary.withAlpha(isDark ? 25 : 15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'POD MEMBER CONTRIBUTIONS',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 9,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: circle.members.map((member) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 30 : 15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              member.userName,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${member.weeklyMinutesContributed}m',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
 
           // Action Button & Member Avatars Preview
