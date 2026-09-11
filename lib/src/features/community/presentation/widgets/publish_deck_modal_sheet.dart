@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -20,6 +23,8 @@ class PublishDeckModalSheet extends HookWidget {
     required String description,
     required String category,
     String syllabusTag,
+    int totalCards,
+    List<Map<String, dynamic>> cardsJson,
   })
   onSubmit;
 
@@ -31,6 +36,8 @@ class PublishDeckModalSheet extends HookWidget {
       required String description,
       required String category,
       String syllabusTag,
+      int totalCards,
+      List<Map<String, dynamic>> cardsJson,
     })
     onSubmit,
   }) {
@@ -55,6 +62,11 @@ class PublishDeckModalSheet extends HookWidget {
     final descriptionController = useTextEditingController();
     final selectedCategory = useState<String>('STEM');
 
+    final userDecks = useState<List<DeckModel>>([]);
+    final isLoadingDecks = useState<bool>(true);
+    final selectedDeck = useState<DeckModel?>(null);
+    final isSubmitting = useState<bool>(false);
+
     const categories = [
       'STEM',
       'JAMB',
@@ -65,6 +77,30 @@ class PublishDeckModalSheet extends HookWidget {
       'General',
     ];
 
+    useEffect(() {
+      var isMounted = true;
+      Future<void> fetchDecks() async {
+        try {
+          if (locator.isRegistered<DecksRemoteDataSource>()) {
+            final decks = await locator<DecksRemoteDataSource>().getUserDecks();
+            if (isMounted) {
+              userDecks.value = decks;
+              isLoadingDecks.value = false;
+            }
+          } else {
+            if (isMounted) isLoadingDecks.value = false;
+          }
+        } on Object catch (_) {
+          if (isMounted) isLoadingDecks.value = false;
+        }
+      }
+
+      unawaited(fetchDecks());
+      return () {
+        isMounted = false;
+      };
+    }, []);
+
     return Container(
       padding: EdgeInsets.only(
         top: 24,
@@ -73,7 +109,7 @@ class PublishDeckModalSheet extends HookWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom + 28,
       ),
       decoration: BoxDecoration(
-        color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
+        color: colors.surfacePrimary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
           color: colors.primary.withAlpha(isDark ? 60 : 30),
@@ -120,6 +156,82 @@ class PublishDeckModalSheet extends HookWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+
+            // Deck Picker Dropdown
+            Text(
+              'Select Deck from Your Library',
+              style: typography.caption.bold.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<DeckModel?>(
+                  value: selectedDeck.value,
+                  isExpanded: true,
+                  dropdownColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                  hint: Row(
+                    children: [
+                      Icon(Icons.style_rounded, size: 18, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        isLoadingDecks.value
+                            ? 'Loading your decks...'
+                            : 'Choose a deck to share...',
+                        style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.primary),
+                  items: [
+                    DropdownMenuItem<DeckModel?>(
+                      child: Text(
+                        '-- Custom / Manual Entry --',
+                        style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                      ),
+                    ),
+                    ...userDecks.value.map((deck) => DropdownMenuItem<DeckModel?>(
+                      value: deck,
+                      child: Row(
+                        children: [
+                          Icon(Icons.style_outlined, size: 16, color: colors.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${deck.title} (${deck.totalCards} cards)',
+                              style: typography.caption.bold.copyWith(color: colors.textPrimary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ],
+                  onChanged: (deck) {
+                    selectedDeck.value = deck;
+                    if (deck != null) {
+                      titleController.text = deck.title;
+                      subjectController.text = deck.subject;
+                      descriptionController.text = deck.description ?? '';
+                      syllabusTagController.text = deck.courseCode ?? 'General';
+                      if (categories.contains(deck.category)) {
+                        selectedCategory.value = deck.category;
+                      }
+                    }
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -185,23 +297,48 @@ class PublishDeckModalSheet extends HookWidget {
 
             // Submit Button
             ShrinkableButton(
-              onTap: () {
-                final title = titleController.text.trim();
-                final subject = subjectController.text.trim();
-                final desc = descriptionController.text.trim();
-                final tag = syllabusTagController.text.trim();
-                if (title.isEmpty || subject.isEmpty) return;
+              onTap: isSubmitting.value
+                  ? () {}
+                  : () async {
+                      final title = titleController.text.trim();
+                      final subject = subjectController.text.trim();
+                      final desc = descriptionController.text.trim();
+                      final tag = syllabusTagController.text.trim();
+                      if (title.isEmpty || subject.isEmpty) return;
 
-                unawaited(HapticFeedback.mediumImpact());
-                onSubmit(
-                  title: title,
-                  subject: subject,
-                  description: desc.isNotEmpty ? desc : 'Community Deck',
-                  category: selectedCategory.value,
-                  syllabusTag: tag.isNotEmpty ? tag : 'General',
-                );
-                Navigator.of(context).pop();
-              },
+                      isSubmitting.value = true;
+                      unawaited(HapticFeedback.mediumImpact());
+
+                      var cardsJson = <Map<String, dynamic>>[];
+                      var totalCards = selectedDeck.value?.totalCards ?? 10;
+
+                      if (selectedDeck.value != null) {
+                        try {
+                          var cards = selectedDeck.value!.cards;
+                          if (cards.isEmpty && locator.isRegistered<DecksRemoteDataSource>()) {
+                            cards = await locator<DecksRemoteDataSource>()
+                                .getDeckCards(selectedDeck.value!.id);
+                          }
+                          cardsJson = cards.map((c) => c.toJson()).toList();
+                          if (cards.isNotEmpty) {
+                            totalCards = cards.length;
+                          }
+                        } on Object catch (_) {}
+                      }
+
+                      onSubmit(
+                        title: title,
+                        subject: subject,
+                        description: desc.isNotEmpty ? desc : 'Community Deck',
+                        category: selectedCategory.value,
+                        syllabusTag: tag.isNotEmpty ? tag : 'General',
+                        totalCards: totalCards,
+                        cardsJson: cardsJson,
+                      );
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -222,12 +359,21 @@ class PublishDeckModalSheet extends HookWidget {
                   ],
                 ),
                 child: Center(
-                  child: Text(
-                    l10n.shareDeckTitle,
-                    style: typography.body.bold.copyWith(
-                      color: colors.white,
-                    ),
-                  ),
+                  child: isSubmitting.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          l10n.shareDeckTitle,
+                          style: typography.body.bold.copyWith(
+                            color: colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),

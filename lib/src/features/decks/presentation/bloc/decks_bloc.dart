@@ -170,6 +170,58 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
       }).toList();
     }
 
+    // Sort decks according to due date:
+    // 1. Decks with dueCards > 0 come first.
+    // 2. Among due decks, sort by highest due count descending.
+    // 3. For upcoming non-due decks, sort by earliest nextDueDate ascending.
+    // 4. Stable fallback: lastStudied or title.
+    list.sort((a, b) {
+      final aDue = a.dueCards > 0;
+      final bDue = b.dueCards > 0;
+
+      if (aDue && !bDue) return -1;
+      if (!aDue && bDue) return 1;
+
+      if (aDue && bDue) {
+        final countCmp = b.dueCards.compareTo(a.dueCards);
+        if (countCmp != 0) return countCmp;
+      }
+
+      final aEarliest = _findEarliestDueDate(a);
+      final bEarliest = _findEarliestDueDate(b);
+
+      if (aEarliest != null && bEarliest != null) {
+        final dateCmp = aEarliest.compareTo(bEarliest);
+        if (dateCmp != 0) return dateCmp;
+      } else if (aEarliest != null) {
+        return -1;
+      } else if (bEarliest != null) {
+        return 1;
+      }
+
+      if (a.lastStudied != null && b.lastStudied != null) {
+        return b.lastStudied!.compareTo(a.lastStudied!);
+      } else if (a.lastStudied != null) {
+        return -1;
+      } else if (b.lastStudied != null) {
+        return 1;
+      }
+
+      return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+    });
+
     return list;
+  }
+
+  DateTime? _findEarliestDueDate(DeckEntity deck) {
+    DateTime? earliest;
+    for (final card in deck.cards) {
+      if (card.nextDueDate != null) {
+        if (earliest == null || card.nextDueDate!.isBefore(earliest)) {
+          earliest = card.nextDueDate;
+        }
+      }
+    }
+    return earliest;
   }
 }

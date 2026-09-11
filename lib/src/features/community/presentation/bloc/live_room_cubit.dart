@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
@@ -222,6 +223,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     _subscribeToRoom(initialRoom.id);
     _initEphemeralPresence(initialRoom.id);
     _initAudioRtc(initialRoom.id);
+    unawaited(_initAmbientAudio());
   }
 
   final CommunityRepository _repository;
@@ -230,6 +232,18 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   final String _currentUserId;
   final String _currentUserName;
   final String _currentUserAvatar;
+  final AudioPlayer _ambientPlayer = AudioPlayer();
+
+  static const Map<String, String> _trackUrls = {
+    'Lo-Fi Beats': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+    'Gentle Rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_7313364f77.mp3',
+    'Binaural 40Hz': 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3',
+    'Library Silence': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
+    'lofi': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+    'rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_7313364f77.mp3',
+    'binaural': 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3',
+    'silence': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
+  };
 
   Timer? _timer;
   Timer? _sprintTimer;
@@ -566,16 +580,46 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     sendChatMessage('Target: $goal', isReaction: true);
   }
 
+  Future<void> _initAmbientAudio() async {
+    try {
+      await _ambientPlayer.setReleaseMode(ReleaseMode.loop);
+      await _ambientPlayer.setVolume(state.ambientAudioVolume);
+      if (state.isAmbientAudioPlaying) {
+        await _playTrack(state.ambientSoundTrack);
+      }
+    } on Object catch (_) {}
+  }
+
+  Future<void> _playTrack(String track) async {
+    try {
+      final url = _trackUrls[track] ?? _trackUrls['Lo-Fi Beats']!;
+      await _ambientPlayer.stop();
+      await _ambientPlayer.play(UrlSource(url));
+      await _ambientPlayer.setVolume(state.ambientAudioVolume);
+    } on Object catch (_) {}
+  }
+
   void setAmbientSoundTrack(String track) {
     emit(state.copyWith(ambientSoundTrack: track));
+    if (state.isAmbientAudioPlaying) {
+      unawaited(_playTrack(track));
+    }
   }
 
   void toggleAmbientAudio() {
-    emit(state.copyWith(isAmbientAudioPlaying: !state.isAmbientAudioPlaying));
+    final nextState = !state.isAmbientAudioPlaying;
+    emit(state.copyWith(isAmbientAudioPlaying: nextState));
+    if (nextState) {
+      unawaited(_playTrack(state.ambientSoundTrack));
+    } else {
+      unawaited(_ambientPlayer.pause());
+    }
   }
 
   void setAmbientVolume(double volume) {
-    emit(state.copyWith(ambientAudioVolume: volume.clamp(0.0, 1.0)));
+    final clamped = volume.clamp(0.0, 1.0);
+    emit(state.copyWith(ambientAudioVolume: clamped));
+    unawaited(_ambientPlayer.setVolume(clamped));
   }
 
   void toggleVoicePod() {
@@ -794,6 +838,10 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     await _audioConnSubscription?.cancel();
     await _audioService?.disconnect();
     await _ephemeralRepository?.leaveRoomPresence(state.room.id);
+    try {
+      await _ambientPlayer.stop();
+      await _ambientPlayer.dispose();
+    } on Object catch (_) {}
     return super.close();
   }
 }

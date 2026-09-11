@@ -81,6 +81,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       final rawList = res.data is List ? (res.data as List) : <dynamic>[];
       final rooms = rawList
           .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+          .where((r) => !_isAutoProvisionedHashRoom(r))
           .toList();
       if (rooms.isNotEmpty) {
         _persistRoomsLocally(rooms);
@@ -785,6 +786,16 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     } on Object catch (_) {}
   }
 
+  bool _isAutoProvisionedHashRoom(StudyRoomModel room) {
+    final hexRegex = RegExp('^[0-9a-fA-F]{16,}');
+    final title = room.title.trim();
+    final subject = room.subject.trim();
+    return hexRegex.hasMatch(title) ||
+        hexRegex.hasMatch(subject) ||
+        (title.contains('Study Hub Silent Focus Room') &&
+            RegExp('[0-9a-fA-F]{8,}').hasMatch(title));
+  }
+
   List<StudyRoomModel> _getLocalPersistedRooms({String? category}) {
     try {
       final storage = _localStorage;
@@ -794,6 +805,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
       final rooms = list
           .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+          .where((r) => !_isAutoProvisionedHashRoom(r))
           .toList();
       if (category != null && category.isNotEmpty && category != 'All') {
         return rooms

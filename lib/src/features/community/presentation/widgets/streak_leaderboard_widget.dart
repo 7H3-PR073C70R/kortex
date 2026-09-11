@@ -73,7 +73,7 @@ class StreakLeaderboardWidget extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              'Top 20% promoted every Monday at 00:00 UTC',
+                              _formatWeeklyResetLocalTime(),
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11,
@@ -474,6 +474,39 @@ class StreakLeaderboardWidget extends StatelessWidget {
       default:
         return '🥉';
     }
+  }
+
+  String _formatWeeklyResetLocalTime() {
+    final now = DateTime.now();
+    var daysUntilMonday = (DateTime.monday - now.toUtc().weekday) % 7;
+    if (daysUntilMonday == 0 && (now.toUtc().hour > 0 || now.toUtc().minute > 0)) {
+      daysUntilMonday = 7;
+    }
+    final nextMondayUtc = DateTime.utc(
+      now.toUtc().year,
+      now.toUtc().month,
+      now.toUtc().day + daysUntilMonday,
+    );
+    final localTime = nextMondayUtc.toLocal();
+
+    const weekdayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final localDay = weekdayNames[localTime.weekday - 1];
+    final hour = localTime.hour;
+    final minute = localTime.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final formattedHour = (hour % 12 == 0) ? 12 : hour % 12;
+    final minuteStr = minute == 0 ? '00' : minute.toString().padLeft(2, '0');
+    final tzName = localTime.timeZoneName.isNotEmpty ? ' ${localTime.timeZoneName}' : '';
+
+    return 'Top 20% promoted every $localDay at $formattedHour:$minuteStr $period$tzName';
   }
 }
 

@@ -787,43 +787,204 @@ class _AmbientSoundscapeBar extends StatelessWidget {
               ),
             ),
 
-            // Volume indicator / popup
-            PopupMenuButton<double>(
-              icon: Icon(
-                state.ambientAudioVolume > 0.5
-                    ? Icons.volume_up_rounded
-                    : (state.ambientAudioVolume > 0 ? Icons.volume_down_rounded : Icons.volume_mute_rounded),
-                size: 18,
-                color: isPlaying ? colors.syllabotAccent : colors.textSecondary,
-              ),
-              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  enabled: false,
-                  child: StatefulBuilder(
-                    builder: (ctx, setMenuState) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Ambient Volume', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
-                        Slider(
-                          value: state.ambientAudioVolume,
-                          activeColor: colors.syllabotAccent,
-                          onChanged: (val) {
-                            setMenuState(() {});
-                            context.read<LiveRoomCubit>().setAmbientVolume(val);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+            // Volume Button triggering interactive modal
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                _showVolumeModal(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (state.ambientAudioVolume > 0 && isPlaying)
+                      ? colors.syllabotAccent.withAlpha(isDark ? 50 : 30)
+                      : colors.primary.withAlpha(isDark ? 30 : 15),
                 ),
-              ],
+                child: Icon(
+                  state.ambientAudioVolume > 0.5
+                      ? Icons.volume_up_rounded
+                      : (state.ambientAudioVolume > 0
+                          ? Icons.volume_down_rounded
+                          : Icons.volume_mute_rounded),
+                  size: 16,
+                  color: isPlaying ? colors.syllabotAccent : colors.textSecondary,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _showVolumeModal(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final cubit = context.read<LiveRoomCubit>();
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: colors.transparent,
+        builder: (ctx) {
+        return BlocProvider.value(
+          value: cubit,
+          child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
+            builder: (context, roomState) {
+              final volumePercent = (roomState.ambientAudioVolume * 100).round();
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 50 : 25),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary.withAlpha(80),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                roomState.ambientAudioVolume > 0
+                                    ? Icons.volume_up_rounded
+                                    : Icons.volume_off_rounded,
+                                color: colors.syllabotAccent,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ambient Audio Volume',
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent.withAlpha(isDark ? 45 : 25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$volumePercent%',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.syllabotAccent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              cubit.setAmbientVolume(
+                                roomState.ambientAudioVolume == 0 ? 0.5 : 0.0,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                roomState.ambientAudioVolume == 0
+                                    ? Icons.volume_off_rounded
+                                    : Icons.volume_mute_rounded,
+                                color: colors.textSecondary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: colors.syllabotAccent,
+                                inactiveTrackColor:
+                                    colors.primary.withAlpha(isDark ? 50 : 30),
+                                thumbColor: colors.syllabotAccent,
+                                overlayColor: colors.syllabotAccent.withAlpha(40),
+                                trackHeight: 6,
+                                thumbShape: const RoundSliderThumbShape(),
+                              ),
+                              child: Slider(
+                                value: roomState.ambientAudioVolume,
+                                onChanged: cubit.setAmbientVolume,
+                              ),
+                            ),
+                          ),
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              cubit.setAmbientVolume(1);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.volume_up_rounded,
+                                color: colors.syllabotAccent,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Mute',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            'Max',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ));
   }
 }
 

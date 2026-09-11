@@ -670,60 +670,89 @@ class _ForumPostsList extends HookWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
-    final tracks = <String>{
-      'All',
-      if (userTrack != null && userTrack.trim().isNotEmpty && userTrack != 'General')
-        userTrack.trim(),
-      'WAEC',
-      'JAMB',
-      'SAT',
-      'University',
-      'STEM',
-    }.toList();
+    final effectiveTrack = (userTrack != null && userTrack.trim().isNotEmpty && userTrack != 'General')
+        ? userTrack.trim()
+        : 'WAEC';
+
+    useEffect(() {
+      if (state.selectedTrack != effectiveTrack) {
+        context.read<CommunityHubBloc>().add(
+          ChangeTrackFilterEvent(effectiveTrack),
+        );
+      }
+      return null;
+    }, [effectiveTrack]);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
-        // Multi-Track Filter Chips Bar
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        // Track Forum Header Scoped exclusively to active track
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.primary.withAlpha(isDark ? 30 : 15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 50 : 25),
+            ),
+          ),
           child: Row(
-            children: tracks.map((track) {
-              final isSelected = state.selectedTrack == track ||
-                  (track == 'All' && (state.selectedTrack.isEmpty || state.selectedTrack == 'All'));
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    context.read<CommunityHubBloc>().add(
-                      ChangeTrackFilterEvent(track),
-                    );
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colors.primary
-                          : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? colors.primary
-                            : colors.primary.withAlpha(isDark ? 40 : 20),
-                      ),
-                    ),
-                    child: Text(
-                      track,
-                      style: typography.caption.bold.copyWith(
-                        color: isSelected ? colors.white : colors.textSecondary,
-                      ),
-                    ),
-                  ),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                  shape: BoxShape.circle,
                 ),
-              );
-            }).toList(),
+                child: Icon(
+                  Icons.school_rounded,
+                  color: colors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '$effectiveTrack Forum',
+                          style: typography.body.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'ACTIVE TRACK',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 9,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Discussions & questions calibrated to your curriculum',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
@@ -877,6 +906,8 @@ class _MarketplaceDecksList extends StatelessWidget {
                         required description,
                         required category,
                         syllabusTag = 'General',
+                        totalCards = 10,
+                        cardsJson = const [],
                       }) {
                         context.read<CommunityHubBloc>().add(
                           PublishDeckEvent(
@@ -885,6 +916,8 @@ class _MarketplaceDecksList extends StatelessWidget {
                             description: description,
                             category: category,
                             syllabusTag: syllabusTag,
+                            totalCards: totalCards,
+                            cardsJson: cardsJson,
                           ),
                         );
                       },
@@ -971,6 +1004,8 @@ class _MarketplaceDecksList extends StatelessWidget {
                           required description,
                           required category,
                           syllabusTag = 'General',
+                          totalCards = 10,
+                          cardsJson = const [],
                         }) {
                           context.read<CommunityHubBloc>().add(
                             PublishDeckEvent(
@@ -979,6 +1014,8 @@ class _MarketplaceDecksList extends StatelessWidget {
                               description: description,
                               category: category,
                               syllabusTag: syllabusTag,
+                              totalCards: totalCards,
+                              cardsJson: cardsJson,
                             ),
                           );
                         },
