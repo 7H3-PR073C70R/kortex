@@ -45,6 +45,11 @@ class SocraticModeSelector extends StatelessWidget {
         l10n.socraticDeepResearch,
         Icons.menu_book_rounded,
       ),
+      (
+        SocraticMode.feynmanTeachBack,
+        'Feynman Teach-Back',
+        Icons.psychology_rounded,
+      ),
     ];
 
     return SizedBox(

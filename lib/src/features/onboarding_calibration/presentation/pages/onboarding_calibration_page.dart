@@ -205,15 +205,15 @@ class _CalibrationView extends StatelessWidget {
       case 0:
         return l10n.calibrationQuestion1;
       case 1:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? l10n.calibrationQuestionA2
             : l10n.calibrationQuestionB2;
       case 2:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? l10n.calibrationQuestionA3
             : l10n.calibrationQuestionB3;
       case 3:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? l10n.calibrationQuestionA4
             : l10n.calibrationQuestionB4;
       default:
@@ -353,15 +353,15 @@ class _MobileCalibrationLayout extends StatelessWidget {
       case 0:
         return const AcademicFocusStep();
       case 1:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? const HigherEdLevelStep()
             : const HighSchoolExamStep();
       case 2:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? const HigherEdFieldStep()
             : const HighSchoolSubjectsStep();
       case 3:
-        return state.profile.focus == AcademicFocus.higherEducation
+        return state.profile.focus != AcademicFocus.highSchool
             ? const HigherEdGoalsStep()
             : const HighSchoolTimelineStep();
       default:

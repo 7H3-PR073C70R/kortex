@@ -13,6 +13,7 @@ class StudyCircleEntity extends Equatable {
     this.totalMinutesCompleted = 0,
     this.members = const [],
     this.isCurrentUserMember = false,
+    this.podQuest = 'Collective Focus Sprint: 10 Hours Goal',
   });
 
   final String id;
@@ -25,6 +26,7 @@ class StudyCircleEntity extends Equatable {
   final int totalMinutesCompleted;
   final List<StudyCircleMemberEntity> members;
   final bool isCurrentUserMember;
+  final String podQuest;
 
   double get weeklyProgressPercent {
     if (targetWeeklyMinutes <= 0) return 1;
@@ -44,6 +46,7 @@ class StudyCircleEntity extends Equatable {
     int? totalMinutesCompleted,
     List<StudyCircleMemberEntity>? members,
     bool? isCurrentUserMember,
+    String? podQuest,
   }) {
     return StudyCircleEntity(
       id: id ?? this.id,
@@ -57,6 +60,7 @@ class StudyCircleEntity extends Equatable {
           totalMinutesCompleted ?? this.totalMinutesCompleted,
       members: members ?? this.members,
       isCurrentUserMember: isCurrentUserMember ?? this.isCurrentUserMember,
+      podQuest: podQuest ?? this.podQuest,
     );
   }
 
@@ -72,6 +76,7 @@ class StudyCircleEntity extends Equatable {
     totalMinutesCompleted,
     members,
     isCurrentUserMember,
+    podQuest,
   ];
 }
 

@@ -138,6 +138,25 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     );
   }
 
+  /// Automatically rebalances daily study pacing to prevent cram burnout
+  /// or unmanageable spikes after missed study days. Caps maximum daily target to 45 cards
+  /// and spreads remaining workload smoothly across available preparation days.
+  void autoRebalanceTargets() {
+    if (state.selectedExam == null) return;
+    final exam = state.selectedExam!;
+
+    final days = exam.daysRemaining <= 0 ? 1 : exam.daysRemaining;
+    final baseDaily = (exam.remainingCards / days).ceil();
+    final balancedTarget = baseDaily.clamp(10, 45);
+
+    emit(
+      state.copyWith(
+        dynamicDailyTarget: balancedTarget,
+        urgencyLevel: _calculator.getUrgencyLevel(exam.daysRemaining),
+      ),
+    );
+  }
+
   /// Updates an existing exam countdown.
   Future<void> updateExamCountdown({
     required String examId,

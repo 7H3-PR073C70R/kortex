@@ -367,6 +367,75 @@ class _QuizWorkspaceView extends HookWidget {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                   children: [
+                    // Assessment Mode Selector Pill
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            final newMode = state.assessmentMode ==
+                                    AssessmentMode.discoveryMode
+                                ? AssessmentMode.examSimulationMode
+                                : AssessmentMode.discoveryMode;
+                            context
+                                .read<QuizSessionCubit>()
+                                .setAssessmentMode(newMode);
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: state.assessmentMode ==
+                                      AssessmentMode.discoveryMode
+                                  ? colors.primary.withAlpha(isDark ? 50 : 25)
+                                  : colors.warning.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: state.assessmentMode ==
+                                        AssessmentMode.discoveryMode
+                                    ? colors.primary.withAlpha(90)
+                                    : colors.warning.withAlpha(90),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  state.assessmentMode ==
+                                          AssessmentMode.discoveryMode
+                                      ? Icons.lightbulb_outline_rounded
+                                      : Icons.timer_outlined,
+                                  size: 13,
+                                  color: state.assessmentMode ==
+                                          AssessmentMode.discoveryMode
+                                      ? colors.primary
+                                      : colors.warning,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  state.assessmentMode ==
+                                          AssessmentMode.discoveryMode
+                                      ? 'Discovery Mode (Hints Available)'
+                                      : 'Exam Simulation (Strict)',
+                                  style: typography.caption.bold.copyWith(
+                                    color: state.assessmentMode ==
+                                            AssessmentMode.discoveryMode
+                                        ? colors.primary
+                                        : colors.warning,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
                     // Question Counter & Sub-Topic with Flag indicator
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -479,7 +548,95 @@ class _QuizWorkspaceView extends HookWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    // Socratic Hint Feature (Discovery Mode only)
+                    if (state.assessmentMode == AssessmentMode.discoveryMode &&
+                        !current.isAnswered) ...[
+                      const SizedBox(height: 12),
+                      if (!state.isHintRevealed)
+                        Center(
+                          child: ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              context.read<QuizSessionCubit>().revealHint();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(60),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.lightbulb_outline_rounded,
+                                    size: 16,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Need a Socratic Hint? (Discovery Mode)',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(isDark ? 30 : 20),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: colors.warning.withAlpha(60),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.psychology_rounded,
+                                color: colors.warning,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Socratic Clue',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.warning,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Focus on the relationship between ${current.subTopic.isNotEmpty ? current.subTopic : "the core concepts"} and eliminate options with extreme claims.',
+                                      style: typography.footnote.regular.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    const SizedBox(height: 16),
 
                     // Options List
                     ...current.options.asMap().entries.map((entry) {

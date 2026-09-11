@@ -148,7 +148,23 @@ class CalibrationCubit extends Cubit<CalibrationState> {
   Future<void> skipCalibration() async {
     final CalibrationProfile defaultProfile;
 
-    if (state.profile.focus == AcademicFocus.higherEducation) {
+    if (state.profile.focus == AcademicFocus.professionalCertification) {
+      defaultProfile = const CalibrationProfile(
+        focus: AcademicFocus.professionalCertification,
+        higherEdLevel: HigherEdLevel.msc,
+        higherEdField: 'Professional Board & Licensing',
+        higherEdGoals: ['High-Yield Practice', 'Spaced Repetition (FSRS-6) Mastery'],
+        isCalibrated: true,
+      );
+    } else if (state.profile.focus == AcademicFocus.selfDirected) {
+      defaultProfile = const CalibrationProfile(
+        focus: AcademicFocus.selfDirected,
+        higherEdLevel: HigherEdLevel.bsc,
+        higherEdField: 'Independent Studies',
+        higherEdGoals: ['Concept Mastery', 'Spaced Repetition (FSRS-6) Mastery'],
+        isCalibrated: true,
+      );
+    } else if (state.profile.focus == AcademicFocus.higherEducation) {
       defaultProfile = const CalibrationProfile(
         higherEdLevel: HigherEdLevel.bsc,
         higherEdField: 'General Studies',

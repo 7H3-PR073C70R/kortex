@@ -445,4 +445,36 @@ class FsrsScheduler {
 
     return (card: updatedCard, log: log);
   }
+
+  /// Review Debt Rescuer: Intelligently segments an overwhelming backlog of due cards
+  /// into manageable micro-sprints (default 15 cards). Prioritizes cards with the lowest
+  /// retrievability (highest risk of memory decay) so students make maximum impact in minimal time.
+  List<T> triageReviewDebt<T>({
+    required List<T> dueCards,
+    required double Function(T card) getStability,
+    required DateTime? Function(T card) getLastReview,
+    int sprintSize = 15,
+    DateTime? now,
+  }) {
+    if (dueCards.length <= sprintSize) return dueCards;
+    final currentTime = now ?? DateTime.now();
+
+    final sorted = List<T>.from(dueCards)
+      ..sort((a, b) {
+        final lastA = getLastReview(a);
+        final lastB = getLastReview(b);
+        final elapsedA = lastA == null
+            ? 999.0
+            : currentTime.difference(lastA).inDays.toDouble();
+        final elapsedB = lastB == null
+            ? 999.0
+            : currentTime.difference(lastB).inDays.toDouble();
+        final retrievabilityA = retrievability(elapsedA, getStability(a));
+        final retrievabilityB = retrievability(elapsedB, getStability(b));
+        // Lowest retrievability comes first (at imminent risk of being forgotten)
+        return retrievabilityA.compareTo(retrievabilityB);
+      });
+
+    return sorted.take(sprintSize).toList();
+  }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -11,6 +12,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
@@ -412,9 +414,15 @@ class _CompactDashboardLayout extends StatelessWidget {
           userName: userName,
           userPhotoUrl: userPhotoUrl,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
-        // 2. Syllabot Floating Prompt Bar
+        // 2. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
+        if (feed.dueStudyDecks.isNotEmpty) ...[
+          _NextBestActionCard(
+            topDeck: feed.dueStudyDecks.first,
+          ),
+          const SizedBox(height: 14),
+        ],
 
         // 3. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         const ExamCountdownBanner(),
@@ -655,6 +663,12 @@ class _MediumDashboardLayout extends StatelessWidget {
           userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 18),
+        if (feed.dueStudyDecks.isNotEmpty) ...[
+          _NextBestActionCard(
+            topDeck: feed.dueStudyDecks.first,
+          ),
+          const SizedBox(height: 16),
+        ],
         const ExamCountdownBanner(),
         const SizedBox(height: 20),
         Row(
@@ -785,6 +799,137 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     );
                   }),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Behavioral decision-fatigue reducer: 1-Tap Next Best Action Card
+class _NextBestActionCard extends StatelessWidget {
+  const _NextBestActionCard({
+    required this.topDeck,
+  });
+
+  final StudyDeckEntity topDeck;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ShrinkableButton(
+      onTap: () {
+        unawaited(HapticFeedback.mediumImpact());
+        unawaited(
+          context.router.push(
+            StudySessionRoute(deckId: topDeck.id),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colors.primary.withAlpha(isDark ? 60 : 30),
+              colors.syllabotAccent.withAlpha(isDark ? 45 : 20),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colors.primary.withAlpha(isDark ? 100 : 70),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colors.primary.withAlpha(isDark ? 30 : 15),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [colors.primary, colors.syllabotAccent],
+                ),
+              ),
+              child: const Icon(
+                Icons.bolt_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'NEXT BEST ACTION',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '15-MIN SPRINT',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 8.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Review ${topDeck.title}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.subhead.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Start',
+                style: typography.caption.bold.copyWith(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],

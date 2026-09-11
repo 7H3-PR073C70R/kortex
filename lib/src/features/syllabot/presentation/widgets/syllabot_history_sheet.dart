@@ -417,6 +417,8 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
         return '📝';
       case SocraticMode.deepResearch:
         return '🔬';
+      case SocraticMode.feynmanTeachBack:
+        return '🧠';
     }
   }
 }

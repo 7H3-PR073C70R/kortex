@@ -198,6 +198,73 @@ class QuizResultsPage extends StatelessWidget {
                 ),
               );
             }),
+
+          // 4. Diagnostic Mistake Autopsy (Cognitive Learning Science)
+          if (!isPassed && result.totalQuestions > result.correctAnswers) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Diagnostic Mistake Autopsy',
+              style: typography.title3.bold.copyWith(
+                color: colors.white,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Cognitive breakdown to target root causes behind missed answers:',
+              style: typography.caption.regular.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.warning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.warning.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: colors.warning.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.psychology_alt_rounded,
+                      color: colors.warning,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Conceptual Reinforcement Needed',
+                          style: typography.subhead.bold.copyWith(
+                            color: colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${result.totalQuestions - result.correctAnswers} missed questions converted into targeted flashcards below.',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
       bottomNavigationBar: Container(

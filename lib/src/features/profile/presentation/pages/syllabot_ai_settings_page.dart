@@ -603,6 +603,8 @@ class SyllabotAiSettingsPage extends HookWidget {
         return '📝';
       case SocraticMode.deepResearch:
         return '🔬';
+      case SocraticMode.feynmanTeachBack:
+        return '🧠';
     }
   }
 
@@ -616,6 +618,8 @@ class SyllabotAiSettingsPage extends HookWidget {
         return 'Strict examiner rubric grading with mark breakdown';
       case SocraticMode.deepResearch:
         return 'Rigorous derivations, proofs, and multi-source context';
+      case SocraticMode.feynmanTeachBack:
+        return 'Explain simply to Syllabot; AI identifies gaps, jargon, and tests mastery';
     }
   }
 }

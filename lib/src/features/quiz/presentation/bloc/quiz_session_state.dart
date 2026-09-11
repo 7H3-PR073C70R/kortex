@@ -11,6 +11,11 @@ enum QuizSessionStatus {
   error,
 }
 
+enum AssessmentMode {
+  discoveryMode,      // Formative learning: immediate explanations, hint support, low stakes
+  examSimulationMode, // Summative testing: timed, strict, no hints until results
+}
+
 class QuizSessionState extends Equatable {
   const QuizSessionState({
     this.status = QuizSessionStatus.initial,
@@ -20,6 +25,9 @@ class QuizSessionState extends Equatable {
     this.elapsedSeconds = 0,
     this.durationMinutes,
     this.flaggedQuestionIds = const {},
+    this.assessmentMode = AssessmentMode.discoveryMode,
+    this.isHintRevealed = false,
+    this.hintsUsedCount = 0,
     this.result,
     this.errorMessage,
   });
@@ -31,6 +39,9 @@ class QuizSessionState extends Equatable {
   final int elapsedSeconds;
   final int? durationMinutes;
   final Set<String> flaggedQuestionIds;
+  final AssessmentMode assessmentMode;
+  final bool isHintRevealed;
+  final int hintsUsedCount;
   final QuizResultEntity? result;
   final String? errorMessage;
 
@@ -88,6 +99,9 @@ class QuizSessionState extends Equatable {
     int? elapsedSeconds,
     int? durationMinutes,
     Set<String>? flaggedQuestionIds,
+    AssessmentMode? assessmentMode,
+    bool? isHintRevealed,
+    int? hintsUsedCount,
     QuizResultEntity? result,
     String? errorMessage,
   }) {
@@ -99,6 +113,9 @@ class QuizSessionState extends Equatable {
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       flaggedQuestionIds: flaggedQuestionIds ?? this.flaggedQuestionIds,
+      assessmentMode: assessmentMode ?? this.assessmentMode,
+      isHintRevealed: isHintRevealed ?? this.isHintRevealed,
+      hintsUsedCount: hintsUsedCount ?? this.hintsUsedCount,
       result: result ?? this.result,
       errorMessage: errorMessage,
     );
@@ -113,6 +130,9 @@ class QuizSessionState extends Equatable {
     elapsedSeconds,
     durationMinutes,
     flaggedQuestionIds,
+    assessmentMode,
+    isHintRevealed,
+    hintsUsedCount,
     result,
     errorMessage,
   ];

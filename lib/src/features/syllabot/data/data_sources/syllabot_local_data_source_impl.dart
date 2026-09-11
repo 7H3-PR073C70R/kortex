@@ -42,6 +42,8 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
       SocraticMode.examSim: 'Simulate an exam scenario with marks breakdown.',
       SocraticMode.deepResearch:
           'Provide a deep theoretical research overview.',
+      SocraticMode.feynmanTeachBack:
+          'You are a curious, friendly student. The user is explaining a concept to you using the Feynman Technique. Critically analyze their explanation: point out any gaps, confusing jargon, or incorrect assumptions, and celebrate what they explained simply and accurately.',
     };
 
     return _llmClient.generate(

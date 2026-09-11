@@ -306,6 +306,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         l10n.socraticModeDeepResearchLabel,
         l10n.socraticModeDeepResearchDesc,
       ),
+      SocraticMode.feynmanTeachBack => (
+        '🧠',
+        'Feynman Teach-Back',
+        'Explain simply to Syllabot; AI diagnoses missing concepts and jargon',
+      ),
     };
   }
 
@@ -315,6 +320,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
       SocraticMode.directAnswer => l10n.socraticModeDirectAnswerShort,
       SocraticMode.examSim => l10n.socraticModeExamSimShort,
       SocraticMode.deepResearch => l10n.socraticModeDeepResearchShort,
+      SocraticMode.feynmanTeachBack => 'Feynman Mode',
     };
   }
 

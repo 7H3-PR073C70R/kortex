@@ -138,6 +138,34 @@ class StudyCircleCard extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+
+          // Group Pod Quest Milestone
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.primary.withAlpha(isDark ? 35 : 18),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.primary.withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.military_tech_rounded, size: 14, color: colors.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    circle.podQuest,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 10.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 14),
 
           // Action Button & Member Avatars Preview

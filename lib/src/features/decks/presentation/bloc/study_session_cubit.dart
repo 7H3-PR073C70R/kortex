@@ -48,7 +48,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   Timer? _timer;
 
-  Future<void> startSession(String deckId) async {
+  Future<void> startSession(
+    String deckId, {
+    bool triageDebt = false,
+    int sprintSize = 15,
+  }) async {
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
 
     final result = await _getDeckCardsUseCase(deckId);
@@ -71,10 +75,19 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           return;
         }
 
+        final sessionCards = triageDebt
+            ? _fsrsScheduler.triageReviewDebt<FlashcardEntity>(
+                dueCards: cards,
+                getStability: (c) => c.easeFactor,
+                getLastReview: (c) => c.lastReviewed,
+                sprintSize: sprintSize,
+              )
+            : cards;
+
         emit(
           state.copyWith(
             status: StudySessionStatus.studying,
-            cards: cards,
+            cards: sessionCards,
             currentIndex: 0,
             isFlipped: false,
             elapsedSeconds: 0,

@@ -61,6 +61,30 @@ class AcademicFocusStep extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: 14),
+        CalibrationOptionChip(
+          title: 'Professional & Licensing Boards',
+          subtitle: 'Medical (USMLE), Law (Bar), Finance (CFA/ACCA) & Tech Certifications',
+          icon: Icons.verified_user_rounded,
+          isSelected: selectedFocus == AcademicFocus.professionalCertification,
+          onTap: () {
+            context.read<CalibrationCubit>().setAcademicFocus(
+              AcademicFocus.professionalCertification,
+            );
+          },
+        ),
+        const SizedBox(height: 14),
+        CalibrationOptionChip(
+          title: 'Self-Directed & Lifelong Learning',
+          subtitle: 'Autonomous skill mastery, book digestion & curiosity research',
+          icon: Icons.explore_rounded,
+          isSelected: selectedFocus == AcademicFocus.selfDirected,
+          onTap: () {
+            context.read<CalibrationCubit>().setAcademicFocus(
+              AcademicFocus.selfDirected,
+            );
+          },
+        ),
       ],
     );
   }

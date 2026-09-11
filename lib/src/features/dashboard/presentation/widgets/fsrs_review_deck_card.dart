@@ -227,6 +227,47 @@ class FsrsReviewDeckCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                      if (deck.dueCards > 15)
+                        GestureDetector(
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            unawaited(
+                              context.router.push(
+                                StudySessionRoute(deckId: deck.id),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(80),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.flash_on_rounded,
+                                  size: 12,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '15-Card Sprint',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       Row(
                         children: [
                           Text(

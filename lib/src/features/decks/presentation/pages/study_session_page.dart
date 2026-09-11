@@ -230,12 +230,26 @@ class _StudySessionView extends HookWidget {
                       firstChild: Container(
                         height: 52,
                         alignment: Alignment.center,
-                        child: Text(
-                          l10n.studySessionSwipeHint,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 12,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.studySessionSwipeHint,
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.primary.withAlpha(isDark ? 210 : 170),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       secondChild: Column(

@@ -125,6 +125,23 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     emit(state.copyWith(flaggedQuestionIds: updatedFlags));
   }
 
+  /// Sets the assessment mode (discovery / practice vs strict exam simulation).
+  void setAssessmentMode(AssessmentMode mode) {
+    emit(state.copyWith(assessmentMode: mode));
+  }
+
+  /// Reveals a pedagogical Socratic hint for the active question without penalizing score.
+  void revealHint() {
+    if (!state.isHintRevealed) {
+      emit(
+        state.copyWith(
+          isHintRevealed: true,
+          hintsUsedCount: state.hintsUsedCount + 1,
+        ),
+      );
+    }
+  }
+
   /// Jumps directly to any question by index in the CBT question palette.
   void jumpToQuestion(int index) {
     if (index < 0 || index >= state.questions.length) return;
@@ -132,6 +149,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     emit(
       state.copyWith(
         currentIndex: index,
+        isHintRevealed: false,
         status: state.status == QuizSessionStatus.loading ||
                 state.status == QuizSessionStatus.completed
             ? state.status

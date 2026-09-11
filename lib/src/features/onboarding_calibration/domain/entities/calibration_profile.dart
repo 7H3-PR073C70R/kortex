@@ -3,6 +3,14 @@ import 'package:equatable/equatable.dart';
 enum AcademicFocus {
   higherEducation,
   highSchool,
+  professionalCertification,
+  selfDirected,
+}
+
+enum StudyPacingStyle {
+  microSprint15,
+  standardPomodoro25,
+  deepWork45,
 }
 
 enum HigherEdLevel {
@@ -23,6 +31,8 @@ class CalibrationProfile extends Equatable {
     this.highSchoolExam,
     this.highSchoolSubjects = const [],
     this.highSchoolTimeline,
+    this.pacingStyle = StudyPacingStyle.standardPomodoro25,
+    this.dailyGoalMinutes = 30,
     this.isCalibrated = false,
   });
 
@@ -33,6 +43,8 @@ class CalibrationProfile extends Equatable {
   final String? highSchoolExam;
   final List<String> highSchoolSubjects;
   final String? highSchoolTimeline;
+  final StudyPacingStyle pacingStyle;
+  final int dailyGoalMinutes;
   final bool isCalibrated;
 
   CalibrationProfile copyWith({
@@ -43,6 +55,8 @@ class CalibrationProfile extends Equatable {
     String? highSchoolExam,
     List<String>? highSchoolSubjects,
     String? highSchoolTimeline,
+    StudyPacingStyle? pacingStyle,
+    int? dailyGoalMinutes,
     bool? isCalibrated,
   }) {
     return CalibrationProfile(
@@ -53,6 +67,8 @@ class CalibrationProfile extends Equatable {
       highSchoolExam: highSchoolExam ?? this.highSchoolExam,
       highSchoolSubjects: highSchoolSubjects ?? this.highSchoolSubjects,
       highSchoolTimeline: highSchoolTimeline ?? this.highSchoolTimeline,
+      pacingStyle: pacingStyle ?? this.pacingStyle,
+      dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
       isCalibrated: isCalibrated ?? this.isCalibrated,
     );
   }
@@ -66,6 +82,8 @@ class CalibrationProfile extends Equatable {
     highSchoolExam,
     highSchoolSubjects,
     highSchoolTimeline,
+    pacingStyle,
+    dailyGoalMinutes,
     isCalibrated,
   ];
 }

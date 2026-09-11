@@ -4,6 +4,7 @@ enum SocraticMode {
   directAnswer,
   examSim,
   deepResearch,
+  feynmanTeachBack,
 }
 
 extension SocraticModeX on SocraticMode {
@@ -17,6 +18,8 @@ extension SocraticModeX on SocraticMode {
         return 'examSim';
       case SocraticMode.deepResearch:
         return 'deepResearch';
+      case SocraticMode.feynmanTeachBack:
+        return 'feynmanTeachBack';
     }
   }
 
@@ -30,6 +33,8 @@ extension SocraticModeX on SocraticMode {
         return 'Exam Simulator';
       case SocraticMode.deepResearch:
         return 'Deep Research';
+      case SocraticMode.feynmanTeachBack:
+        return 'Feynman Teach-Back';
     }
   }
 
@@ -43,6 +48,8 @@ extension SocraticModeX on SocraticMode {
         return 'Simulate an exam scenario with mark breakdowns';
       case SocraticMode.deepResearch:
         return 'Explore deep theoretical proofs and edge cases';
+      case SocraticMode.feynmanTeachBack:
+        return 'Explain simply to Syllabot; AI diagnoses missing concepts and jargon';
     }
   }
 
@@ -54,6 +61,8 @@ extension SocraticModeX on SocraticMode {
         return SocraticMode.examSim;
       case 'deepResearch':
         return SocraticMode.deepResearch;
+      case 'feynmanTeachBack':
+        return SocraticMode.feynmanTeachBack;
       case 'stepByStep':
       default:
         return SocraticMode.stepByStep;
