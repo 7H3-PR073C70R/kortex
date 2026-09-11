@@ -15,11 +15,14 @@ interface TriggerNotificationRequest {
     | "exam_milestones"
     | "memory_decay_alert"
     | "room_started"
-    | "document_completed";
+    | "document_completed"
+    | "welcome_user"
+    | "forum_solution_verified";
   documentId?: string;
   roomId?: string;
   deckId?: string;
   userId?: string;
+  topicTitle?: string;
 }
 
 serve(async (req: Request) => {
@@ -279,6 +282,59 @@ serve(async (req: Request) => {
             });
             notificationsDispatched++;
           }
+        }
+        break;
+      }
+
+      // 7. Welcome New User
+      case "welcome_user": {
+        if (userId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", userId)
+            .single();
+
+          const displayName = profile?.display_name || "Scholar";
+          await fetch(sendPushUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              userId,
+              title: `👋 Welcome to Kortex, ${displayName}!`,
+              body: "Your AI study companion is ready. Upload study materials or explore curated exam tracks to start mastering your courses.",
+              category: "general",
+              data: {
+                route: "/dashboard",
+                type: "welcome",
+              },
+            }),
+          });
+          notificationsDispatched++;
+        }
+        break;
+      }
+
+      // 8. Forum Solution Verified
+      case "forum_solution_verified": {
+        if (userId) {
+          await fetch(sendPushUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              userId,
+              title: "⭐ Solution Verified!",
+              body: body.topicTitle
+                ? `Your answer in "${body.topicTitle}" was accepted as the verified solution! You earned +100 XP.`
+                : "Your answer was accepted as the verified solution! You earned +100 XP.",
+              category: "leaderboard",
+              data: {
+                route: "/community",
+                type: "verified_solution",
+              },
+            }),
+          });
+          notificationsDispatched++;
         }
         break;
       }

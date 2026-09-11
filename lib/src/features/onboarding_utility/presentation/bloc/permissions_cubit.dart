@@ -3,6 +3,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -59,6 +61,20 @@ class PermissionsCubit extends Cubit<PermissionsState> {
         notificationsGranted: result.isGranted,
       ),
     );
+
+    if (result.isGranted && locator.isRegistered<NotificationService>()) {
+      try {
+        final notifService = locator<NotificationService>();
+        unawaited(notifService.requestPermission());
+        final userStorage = locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>()
+            : null;
+        final userId = userStorage?.getUserId();
+        if (userId != null && userId.isNotEmpty) {
+          unawaited(notifService.syncDeviceTokenWithBackend(userId: userId));
+        }
+      } on Object catch (_) {}
+    }
   }
 
   Future<void> requestStoragePermission() async {

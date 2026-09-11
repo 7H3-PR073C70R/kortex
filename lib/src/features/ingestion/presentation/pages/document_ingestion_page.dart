@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
@@ -284,6 +282,29 @@ class _DocumentIngestionView extends HookWidget {
                           final doc = state.userDocuments[index];
                           final kbSize = (doc.fileSizeBytes / 1024)
                               .toStringAsFixed(1);
+                          final hasCourseContext =
+                              (courseCode != null && courseCode!.isNotEmpty) ||
+                              (courseId != null && courseId!.isNotEmpty);
+                          final baseName = doc.filename
+                              .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                              .toLowerCase()
+                              .trim();
+                          final isAlreadyAttached = hasCourseContext &&
+                              (state.attachedDocumentIds.contains(doc.id) ||
+                                  (courseCode != null &&
+                                      (state.attachedDocumentIds.contains('${doc.id}_$courseCode') ||
+                                          state.attachedDocumentIds.contains('${doc.contentHash}_$courseCode') ||
+                                          state.attachedDocumentIds.contains('${baseName}_$courseCode'))) ||
+                                  (courseId != null &&
+                                      (state.attachedDocumentIds.contains('${doc.id}_$courseId') ||
+                                          state.attachedDocumentIds.contains('${doc.contentHash}_$courseId') ||
+                                          state.attachedDocumentIds.contains('${baseName}_$courseId'))) ||
+                                  _checkIsDocAttachedLocally(
+                                    doc: doc,
+                                    courseId: courseId,
+                                    courseCode: courseCode,
+                                  ));
+
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
@@ -353,59 +374,80 @@ class _DocumentIngestionView extends HookWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      side: BorderSide(
-                                        color: colors.primary.withAlpha(80),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      if (courseCode != null &&
-                                          courseCode!.isNotEmpty) {
-                                        context.read<IngestionBloc>().add(
-                                          AttachDocumentToCourseEvent(
-                                            doc: doc,
-                                            courseId: courseId,
-                                            courseCode: courseCode,
-                                            courseTitle: courseTitle,
+                                if (hasCourseContext) ...[
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: isAlreadyAttached
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withAlpha(20),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: colors.primary.withAlpha(60),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: colors.primary,
+                                                  size: 14,
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  'Attached to ${courseCode ?? "Course"}',
+                                                  style: typography.caption.bold.copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              side: BorderSide(
+                                                color: colors.primary.withAlpha(80),
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              context.read<IngestionBloc>().add(
+                                                AttachDocumentToCourseEvent(
+                                                  doc: doc,
+                                                  courseId: courseId,
+                                                  courseCode: courseCode,
+                                                  courseTitle: courseTitle,
+                                                ),
+                                              );
+                                            },
+                                            icon: Icon(
+                                              Icons.bookmark_add_outlined,
+                                              color: colors.primary,
+                                              size: 14,
+                                            ),
+                                            label: Text(
+                                              'Attach to ${courseCode ?? "Course"}',
+                                              style: typography.caption.bold.copyWith(
+                                                color: colors.primary,
+                                                fontSize: 11,
+                                              ),
+                                            ),
                                           ),
-                                        );
-                                      } else {
-                                        unawaited(
-                                          _showCourseAttachmentSheet(
-                                            context: context,
-                                            doc: doc,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    icon: Icon(
-                                      Icons.bookmark_add_outlined,
-                                      color: colors.primary,
-                                      size: 14,
-                                    ),
-                                    label: Text(
-                                      courseCode != null &&
-                                              courseCode!.isNotEmpty
-                                          ? 'Attach to $courseCode'
-                                          : 'Attach Deck',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           );
@@ -447,162 +489,43 @@ class _DocumentIngestionView extends HookWidget {
     );
   }
 
-  Future<void> _showCourseAttachmentSheet({
-    required BuildContext context,
+  bool _checkIsDocAttachedLocally({
     required DocumentUploadEntity doc,
-  }) async {
+    required String? courseId,
+    required String? courseCode,
+  }) {
     final storage = locator.isRegistered<LocalStorageService>()
         ? locator<LocalStorageService>()
         : null;
-    var courses = <CuratedCourseModel>[];
-    try {
-      final raw = storage?.getPreference(key: PrefKeys.userCuratedCourses);
+    if (storage == null) return false;
+
+    final baseName = doc.filename
+        .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+        .toLowerCase()
+        .trim();
+
+    for (final key in [
+      'extracted_doc_${doc.contentHash}',
+      'extracted_doc_${doc.id}',
+      'extracted_doc_$baseName',
+    ]) {
+      final raw = storage.getPreference(key: key);
       if (raw != null && raw.isNotEmpty) {
-        final list = jsonDecode(raw) as List<dynamic>;
-        courses = list
-            .whereType<Map<String, dynamic>>()
-            .map(CuratedCourseModel.fromJson)
-            .toList();
+        try {
+          final map = jsonDecode(raw) as Map<String, dynamic>;
+          final cId = map['courseId'] as String?;
+          final cCode = map['courseCode'] as String?;
+          if (courseId != null && courseId.isNotEmpty && cId == courseId) {
+            return true;
+          }
+          if (courseCode != null &&
+              courseCode.isNotEmpty &&
+              cCode?.toLowerCase() == courseCode.toLowerCase()) {
+            return true;
+          }
+        } on Object catch (_) {}
       }
-    } on Object catch (_) {}
-
-    if (courses.isEmpty) {
-      context.read<IngestionBloc>().add(
-        AttachDocumentToCourseEvent(
-          doc: doc,
-          courseCode: 'GENERAL',
-          courseTitle: 'General Studies',
-        ),
-      );
-      return;
     }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (modalCtx) {
-        final mColors = modalCtx.colors;
-        final mTypo = modalCtx.typography;
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          decoration: BoxDecoration(
-            color: mColors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: mColors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Attach Study Deck to Course',
-                  style: mTypo.title3.bold.copyWith(color: mColors.textPrimary),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Select an enrolled course for "${doc.filename}":',
-                  style: mTypo.caption.regular.copyWith(
-                    color: mColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: courses.length,
-                    separatorBuilder: (_, index) => const SizedBox(height: 8),
-                    itemBuilder: (ctx, idx) {
-                      final c = courses[idx];
-                      return InkWell(
-                        onTap: () {
-                          Navigator.of(modalCtx).pop();
-                          context.read<IngestionBloc>().add(
-                            AttachDocumentToCourseEvent(
-                              doc: doc,
-                              courseId: c.id,
-                              courseCode: c.courseCode,
-                              courseTitle: c.title,
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: mColors.surfaceSecondary.withAlpha(120),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: mColors.primary.withAlpha(30),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: mColors.primary.withAlpha(30),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.school_rounded,
-                                  color: mColors.primary,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      c.courseCode,
-                                      style: mTypo.body.bold.copyWith(
-                                        color: mColors.textPrimary,
-                                      ),
-                                    ),
-                                    Text(
-                                      c.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: mTypo.caption.regular.copyWith(
-                                        color: mColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: mColors.textSecondary,
-                                size: 14,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    return false;
   }
 }

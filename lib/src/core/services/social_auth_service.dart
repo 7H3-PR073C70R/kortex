@@ -4,8 +4,18 @@ import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+/// Exception thrown during social authentication failures.
+class SocialAuthException implements Exception {
+  const SocialAuthException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 /// Result from a successful social sign-in flow.
 class SocialAuthResult {
@@ -67,7 +77,22 @@ class SocialAuthService {
   /// Returns `null` if user cancelled.
   Future<SocialAuthResult?> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await _googleSignIn.signIn();
+      } on PlatformException catch (e) {
+        developer.log('Google sign-in platform error: ${e.code} - ${e.message}');
+        // User cancelled or back was pressed
+        if (e.code == 'sign_in_canceled' ||
+            e.code == '12501' ||
+            e.code == 'canceled') {
+          return null;
+        }
+        throw SocialAuthException(
+          e.message ?? 'Google Sign-In failed on this device (${e.code}).',
+        );
+      }
+
       if (googleUser == null) {
         developer.log('Google sign-in was cancelled by the user.');
         return null;
@@ -110,9 +135,11 @@ class SocialAuthService {
         email: email,
         displayName: displayName,
       );
+    } on SocialAuthException {
+      rethrow;
     } on Object catch (e) {
       developer.log('Google sign-in error: $e');
-      rethrow;
+      throw SocialAuthException('Google sign-in failed: $e');
     }
   }
 
@@ -120,16 +147,43 @@ class SocialAuthService {
   /// Returns `null` if user cancelled.
   Future<SocialAuthResult?> signInWithApple() async {
     try {
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        developer.log('Sign in with Apple is not supported on this platform/device.');
+        throw const SocialAuthException(
+          'Sign in with Apple is not supported or unavailable on this device.',
+        );
+      }
+
       final rawNonce = generateNonce();
       final nonce = sha256ofString(rawNonce);
 
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-      );
+      final AuthorizationCredentialAppleID appleCredential;
+      try {
+        appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: nonce,
+        );
+      } on SignInWithAppleAuthorizationException catch (e) {
+        if (e.code == AuthorizationErrorCode.canceled) {
+          developer.log('Apple sign-in was cancelled by the user.');
+          return null;
+        }
+        developer.log('Apple sign-in authorization error: ${e.message}');
+        throw SocialAuthException(e.message);
+      } on PlatformException catch (e) {
+        developer.log('Apple sign-in platform error: ${e.code} - ${e.message}');
+        // 1001 is canceled by user in ASAuthorizationError
+        if (e.code == '1001' || e.message?.contains('canceled') == true) {
+          return null;
+        }
+        throw SocialAuthException(
+          e.message ?? 'Sign in with Apple failed (${e.code}).',
+        );
+      }
 
       var idToken = appleCredential.identityToken ?? '';
       var email = appleCredential.email;
@@ -175,16 +229,11 @@ class SocialAuthService {
         email: email,
         displayName: displayName,
       );
-    } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) {
-        developer.log('Apple sign-in was cancelled by the user.');
-        return null;
-      }
-      developer.log('Apple sign-in authorization error: ${e.message}');
+    } on SocialAuthException {
       rethrow;
     } on Object catch (e) {
       developer.log('Apple sign-in error: $e');
-      rethrow;
+      throw SocialAuthException('Apple sign-in failed: $e');
     }
   }
 

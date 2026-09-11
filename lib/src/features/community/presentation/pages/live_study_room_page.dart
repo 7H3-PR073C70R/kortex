@@ -15,6 +15,7 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/features/community/presentation/widgets/floating_reaction_overlay.dart';
 import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -69,6 +70,9 @@ class _LiveStudyRoomView extends StatefulWidget {
 
 class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   final Set<String> _announcedHandRaises = {};
+  final FloatingReactionController _reactionController =
+      FloatingReactionController();
+  String? _lastReaction;
 
   @override
   void initState() {
@@ -243,6 +247,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
 
     return BlocConsumer<LiveRoomCubit, LiveRoomState>(
       listener: (context, state) {
+        if (state.lastReactionEmoji != null &&
+            state.lastReactionEmoji != _lastReaction) {
+          _lastReaction = state.lastReactionEmoji;
+          _reactionController.spawn(state.lastReactionEmoji!);
+        }
+
         for (final p in state.ephemeralParticipants) {
           if (p.isHandRaised &&
               p.userId != widget.currentUserId &&
@@ -263,11 +273,13 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
 
         final hasEphemeral = state.ephemeralParticipants.isNotEmpty;
 
-        return Scaffold(
-          backgroundColor: isDark
-              ? colors.backgroundPrimary
-              : colors.surfacePrimary,
-          appBar: AppBar(
+        return FloatingReactionOverlay(
+          controller: _reactionController,
+          child: Scaffold(
+            backgroundColor: isDark
+                ? colors.backgroundPrimary
+                : colors.surfacePrimary,
+            appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -386,6 +398,8 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                 // Floating Micro-Reaction Rail for Silent Focus
                 _MicroReactionRail(
                   onReact: (emoji) {
+                    _lastReaction = emoji;
+                    _reactionController.spawn(emoji);
                     context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
                   },
                   isDark: isDark,
@@ -404,9 +418,10 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }
 

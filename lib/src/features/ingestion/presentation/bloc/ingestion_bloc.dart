@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
+import 'package:kortex/src/features/ingestion/domain/services/deep_document_dedup_service.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/generate_flashcards_from_doc_use_case.dart';
@@ -35,6 +36,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     FetchLmsCoursesUseCase? fetchLmsCoursesUseCase,
     ImportLmsCourseUseCase? importLmsCourseUseCase,
     OnboardingStreamController? streamController,
+    DeepDocumentDedupService? dedupService,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
@@ -44,6 +46,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _fetchLmsCourses = fetchLmsCoursesUseCase,
        _importLmsCourse = importLmsCourseUseCase,
        _streamController = streamController,
+       _dedupService = dedupService ?? DeepDocumentDedupService(),
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -68,6 +71,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final FetchLmsCoursesUseCase? _fetchLmsCourses;
   final ImportLmsCourseUseCase? _importLmsCourse;
   final OnboardingStreamController? _streamController;
+  final DeepDocumentDedupService _dedupService;
 
   OnboardingStreamController? get streamController => _streamController;
 
@@ -82,33 +86,46 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     PickAndUploadFileEvent event,
     Emitter<IngestionState> emit,
   ) async {
-    // 1. Check if an identical document was already ingested or exists in userDocuments
-    final existingDoc = state.userDocuments
-        .where(
-          (d) =>
-              d.filename.toLowerCase().trim() ==
-              event.filename.toLowerCase().trim(),
-        )
-        .firstOrNull;
+    // 1. Deep document deduplication (page count check + random/representative page sampling)
+    final incomingHash =
+        DeepDocumentDedupService.computeSha256(event.fileBytes);
+    final incomingFingerprint = _dedupService.extractFingerprint(
+      bytes: event.fileBytes,
+      fileType: event.fileType,
+      contentHash: incomingHash,
+    );
 
-    if (existingDoc != null) {
+    DocumentUploadEntity? matchedDoc;
+    for (final d in state.userDocuments) {
+      if (_dedupService.isSameDocument(
+        incomingBytes: event.fileBytes,
+        incomingFileType: event.fileType,
+        incomingContentHash: incomingHash,
+        existingDoc: d,
+      )) {
+        matchedDoc = d;
+        break;
+      }
+    }
+
+    if (matchedDoc != null) {
       emit(
         state.copyWith(
           status: ProcessingStatus.generatingCards,
-          currentDocument: existingDoc,
+          currentDocument: matchedDoc,
           wasDeduplicated: true,
           stageMessage:
-              'Document already processed. Attaching study deck to ${event.courseCode ?? "course"}...',
+              'Document verified identical (${incomingFingerprint.pageCount} pages). Attaching study deck to ${event.courseCode ?? "course"}...',
         ),
       );
 
       await _assignExistingDeckToCourse(
-        docFilename: existingDoc.filename,
+        docFilename: matchedDoc.filename,
         courseId: event.courseId,
         courseCode: event.courseCode,
         courseTitle: event.courseTitle,
-        documentId: existingDoc.id,
-        contentHash: existingDoc.contentHash,
+        documentId: matchedDoc.id,
+        contentHash: matchedDoc.contentHash,
         emit: emit,
       );
       return;
@@ -140,6 +157,12 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         );
       },
       (doc) async {
+        _dedupService.saveFingerprint(
+          contentHash: doc.contentHash,
+          fingerprint: incomingFingerprint,
+          documentId: doc.id,
+        );
+
         emit(
           state.copyWith(
             uploadProgress: 1,
@@ -411,6 +434,16 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       }
 
+      final updatedAttached = Set<String>.from(state.attachedDocumentIds)
+        ..add(assignedDeck.id);
+      if (documentId != null) updatedAttached.add(documentId);
+      if (courseCode != null) {
+        updatedAttached.add('${assignedDeck.id}_$courseCode');
+        if (documentId != null) updatedAttached.add('${documentId}_$courseCode');
+      }
+      updatedAttached.add('${assignedDeck.id}_$courseId');
+      if (documentId != null) updatedAttached.add('${documentId}_$courseId');
+
       emit(
         state.copyWith(
           status: ProcessingStatus.completed,
@@ -418,6 +451,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               'Study deck attached to ${courseCode ?? "course"} successfully!',
           generatedDeck: assignedDeck.toEntity(),
           wasDeduplicated: true,
+          attachedDocumentIds: updatedAttached,
         ),
       );
       return;
@@ -608,7 +642,52 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     final result = await _fetchUserDocs();
     result.fold(
       (failure) => null,
-      (docs) => emit(state.copyWith(userDocuments: docs)),
+      (docs) {
+        final attached = <String>{};
+        final storage = locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null;
+        if (storage != null) {
+          for (final d in docs) {
+            final baseName = d.filename
+                .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                .toLowerCase()
+                .trim();
+            for (final key in [
+              'extracted_doc_${d.contentHash}',
+              'extracted_doc_${d.id}',
+              'extracted_doc_$baseName',
+            ]) {
+              final raw = storage.getPreference(key: key);
+              if (raw != null && raw.isNotEmpty) {
+                try {
+                  final map = jsonDecode(raw) as Map<String, dynamic>;
+                  final cCode = map['courseCode'] as String?;
+                  final cId = map['courseId'] as String?;
+                  if (cCode != null && cCode.isNotEmpty) {
+                    attached
+                      ..add('${d.id}_$cCode')
+                      ..add('${d.contentHash}_$cCode')
+                      ..add('${baseName}_$cCode');
+                  }
+                  if (cId != null && cId.isNotEmpty) {
+                    attached
+                      ..add('${d.id}_$cId')
+                      ..add('${d.contentHash}_$cId')
+                      ..add('${baseName}_$cId');
+                  }
+                } on Object catch (_) {}
+              }
+            }
+          }
+        }
+        emit(
+          state.copyWith(
+            userDocuments: docs,
+            attachedDocumentIds: {...state.attachedDocumentIds, ...attached},
+          ),
+        );
+      },
     );
   }
 

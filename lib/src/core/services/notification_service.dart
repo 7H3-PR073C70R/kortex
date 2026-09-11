@@ -135,6 +135,8 @@ class NotificationService {
     _initialized = true;
   }
 
+  StreamSubscription<String>? _tokenRefreshSubscription;
+
   /// Request push notification permissions from user.
   Future<NotificationSettings?> requestPermission() async {
     if (!_isAvailable) return null;
@@ -161,6 +163,20 @@ class NotificationService {
     }
   }
 
+  /// Sets up a listener for token refresh events to keep Supabase synced.
+  void setupTokenRefreshListener(String userId) {
+    if (!_isAvailable || userId.isEmpty) return;
+    unawaited(_tokenRefreshSubscription?.cancel());
+    try {
+      _tokenRefreshSubscription = _messaging!.onTokenRefresh.listen((newToken) {
+        developer.log('FCM token refreshed: $newToken');
+        unawaited(syncDeviceTokenWithBackend(userId: userId));
+      });
+    } on Object catch (e) {
+      developer.log('Failed to setup token refresh listener: $e');
+    }
+  }
+
   /// Synchronize the active FCM device registration token with the Supabase backend.
   Future<bool> syncDeviceTokenWithBackend({
     required String userId,
@@ -168,8 +184,12 @@ class NotificationService {
   }) async {
     if (userId.isEmpty) return false;
     try {
+      await requestPermission();
       final token = await getToken();
       if (token == null || token.isEmpty) return false;
+
+      // Ensure token refresh listener is active
+      setupTokenRefreshListener(userId);
 
       final client = dio ?? _effectiveDio;
       if (client == null) return false;
@@ -199,6 +219,31 @@ class NotificationService {
       return response.statusCode == 200 || response.statusCode == 204;
     } on Object catch (e) {
       developer.log('Failed to sync device token with Supabase: $e');
+      return false;
+    }
+  }
+
+  /// Dispatches a tailored notification request to the backend so Firebase delivers it.
+  Future<bool> requestBackendNotification({
+    required String action,
+    required String userId,
+    Map<String, dynamic>? extraData,
+  }) async {
+    if (userId.isEmpty) return false;
+    try {
+      final client = _effectiveDio;
+      if (client == null) return false;
+      final response = await client.post<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.triggerNotifications}',
+        data: {
+          'action': action,
+          'userId': userId,
+          ...?extraData,
+        },
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } on Object catch (e) {
+      developer.log('Backend notification request failed: $e');
       return false;
     }
   }
@@ -391,6 +436,7 @@ class NotificationService {
   }
 
   void dispose() {
+    unawaited(_tokenRefreshSubscription?.cancel());
     unawaited(_messageStreamController.close());
     unawaited(_payloadStreamController.close());
   }

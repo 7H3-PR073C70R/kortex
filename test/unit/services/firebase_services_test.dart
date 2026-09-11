@@ -171,6 +171,25 @@ void main() {
         completes,
       );
     });
+
+    test('requestBackendNotification executes safely without crashing', () async {
+      final res = await notificationService.requestBackendNotification(
+        action: 'welcome_user',
+        userId: 'test-user-id',
+      );
+      expect(res, isFalse);
+    });
+
+    test('setupTokenRefreshListener executes safely with empty or valid userId', () {
+      expect(
+        () => notificationService.setupTokenRefreshListener(''),
+        returnsNormally,
+      );
+      expect(
+        () => notificationService.setupTokenRefreshListener('user-123'),
+        returnsNormally,
+      );
+    });
   });
 
   group('SocialAuthService Tests', () {

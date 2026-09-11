@@ -470,15 +470,14 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       chatMsg,
     ) {
       if (!isClosed && chatMsg.senderId != _currentUserId) {
-        final tickerMsg = chatMsg.isReaction
-            ? '${chatMsg.senderName}: ${chatMsg.text}'
-            : '${chatMsg.senderName}: ${chatMsg.text}';
+        final tickerMsg = '${chatMsg.senderName}: ${chatMsg.text}';
         final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
         emit(
           state.copyWith(
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
             recentActivityTicker: updatedTicker,
+            lastReactionEmoji: chatMsg.isReaction ? chatMsg.text : state.lastReactionEmoji,
           ),
         );
       }

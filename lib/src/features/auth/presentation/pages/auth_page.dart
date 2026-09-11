@@ -63,8 +63,11 @@ Future<void> _handleGoogleSignIn(BuildContext context) async {
     }
   } on Object catch (e) {
     if (context.mounted) {
+      final message = e is SocialAuthException
+          ? e.message
+          : 'Google Sign-In failed: $e';
       context.showSnackBar(
-        message: 'Google Sign-In failed: $e',
+        message: message,
         type: SnackBarType.error,
       );
     }
@@ -85,8 +88,11 @@ Future<void> _handleAppleSignIn(BuildContext context) async {
     }
   } on Object catch (e) {
     if (context.mounted) {
+      final message = e is SocialAuthException
+          ? e.message
+          : 'Apple Sign-In failed: $e';
       context.showSnackBar(
-        message: 'Apple Sign-In failed: $e',
+        message: message,
         type: SnackBarType.error,
       );
     }

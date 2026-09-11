@@ -20,6 +20,7 @@ class IngestionState extends Equatable {
     this.wasDeduplicated = false,
     this.lmsCourses = const [],
     this.selectedCourse,
+    this.attachedDocumentIds = const {},
   });
 
   final ProcessingStatus status;
@@ -34,6 +35,7 @@ class IngestionState extends Equatable {
   final bool wasDeduplicated;
   final List<LmsCourse> lmsCourses;
   final LmsCourse? selectedCourse;
+  final Set<String> attachedDocumentIds;
 
   bool get isUploading => status == ProcessingStatus.uploading;
   bool get isParsingOcr => status == ProcessingStatus.parsingOcr;
@@ -55,6 +57,7 @@ class IngestionState extends Equatable {
     bool? wasDeduplicated,
     List<LmsCourse>? lmsCourses,
     LmsCourse? selectedCourse,
+    Set<String>? attachedDocumentIds,
   }) {
     return IngestionState(
       status: status ?? this.status,
@@ -69,6 +72,7 @@ class IngestionState extends Equatable {
       wasDeduplicated: wasDeduplicated ?? this.wasDeduplicated,
       lmsCourses: lmsCourses ?? this.lmsCourses,
       selectedCourse: selectedCourse ?? this.selectedCourse,
+      attachedDocumentIds: attachedDocumentIds ?? this.attachedDocumentIds,
     );
   }
 
@@ -86,5 +90,6 @@ class IngestionState extends Equatable {
     wasDeduplicated,
     lmsCourses,
     selectedCourse,
+    attachedDocumentIds,
   ];
 }

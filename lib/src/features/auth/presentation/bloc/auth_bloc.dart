@@ -539,6 +539,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             locator<NotificationService>()
                 .syncDeviceTokenWithBackend(userId: profile.id),
           );
+          final isNewlyRegistered = locator<LocalStorageService>()
+                  .getPreference(key: PrefKeys.isNewlyRegistered) ==
+              'true';
+          if (isNewlyRegistered) {
+            unawaited(
+              locator<NotificationService>().requestBackendNotification(
+                action: 'welcome_user',
+                userId: profile.id,
+              ),
+            );
+          }
         } on Object catch (_) {}
         if (profile.id.isNotEmpty) {
           try {
