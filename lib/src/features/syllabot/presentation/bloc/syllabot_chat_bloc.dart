@@ -102,9 +102,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       );
     }
 
-    if (isOffline) {
-      unawaited(_getChatHistory.cacheMessage(userMessage));
-    }
+    unawaited(_getChatHistory.cacheMessage(userMessage));
 
     emit(
       state.copyWith(
@@ -205,9 +203,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     );
     _currentRagReferences = [];
 
-    if (state.engineType == ExecutionEngineType.localOnDevice) {
-      unawaited(_getChatHistory.cacheMessage(botMessage));
-    }
+    unawaited(_getChatHistory.cacheMessage(botMessage));
 
     emit(
       state.copyWith(

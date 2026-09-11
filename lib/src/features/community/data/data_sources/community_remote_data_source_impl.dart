@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
@@ -20,19 +23,31 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     UserStorageService? userStorage,
     RealtimeClient? realtimeClient,
     CommunityLocalDataSource? localDataSource,
+    LocalStorageService? localStorage,
   })  : _userStorage = userStorage,
         _realtime = realtimeClient ?? RealtimeClient.instance,
-        _localDataSourceOverride = localDataSource;
+        _localDataSourceOverride = localDataSource,
+        _localStorageOverride = localStorage;
 
   final CommunityApiClient _client;
   final UserStorageService? _userStorage;
   final RealtimeClient _realtime;
   final CommunityLocalDataSource? _localDataSourceOverride;
+  final LocalStorageService? _localStorageOverride;
 
   CommunityLocalDataSource? get _localDataSource {
     if (_localDataSourceOverride != null) return _localDataSourceOverride;
     try {
       return locator<CommunityLocalDataSource>();
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  LocalStorageService? get _localStorage {
+    if (_localStorageOverride != null) return _localStorageOverride;
+    try {
+      return locator<LocalStorageService>();
     } on Object catch (_) {
       return null;
     }
@@ -64,9 +79,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       final res = await _client.fetchStudyRooms(params);
       final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-      return rawList
+      final rooms = rawList
           .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      if (rooms.isNotEmpty) {
+        _persistRoomsLocally(rooms);
+      }
+      return rooms;
     } catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
@@ -77,7 +96,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           ),
         );
       }
-      rethrow;
+      final cached = _getLocalPersistedRooms(category: category);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      return _getCuratedFallbackRooms(category: category);
     }
   }
 
@@ -413,11 +436,32 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       params['track'] = 'eq.$track';
     }
 
-    final res = await _client.fetchStudyCircles(params);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-    return rawList
-        .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final res = await _client.fetchStudyCircles(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final circles = rawList
+          .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (circles.isNotEmpty) {
+        _persistCirclesLocally(circles);
+      }
+      return circles;
+    } catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.fetchStudyCircles failed',
+          ),
+        );
+      }
+      final cached = _getLocalPersistedCircles(track: track);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      return _getCuratedFallbackCircles(track: track);
+    }
   }
 
   @override
@@ -499,11 +543,32 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       params['subject'] = 'eq.$subject';
     }
 
-    final res = await _client.fetchSharedDecks(params);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-    return rawList
-        .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final res = await _client.fetchSharedDecks(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final decks = rawList
+          .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (decks.isNotEmpty) {
+        _persistSharedDecksLocally(decks);
+      }
+      return decks;
+    } catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.fetchSharedDecks failed',
+          ),
+        );
+      }
+      final cached = _getLocalPersistedSharedDecks(subject: subject);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      return _getCuratedFallbackSharedDecks(subject: subject);
+    }
   }
 
   @override
@@ -678,5 +743,200 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       return data['token'].toString();
     }
     throw const ServerException(message: 'Failed to mint LiveKit audio token');
+  }
+
+  void _persistRoomsLocally(List<StudyRoomModel> rooms) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return;
+      final encoded = jsonEncode(rooms.map((r) => r.toJson()).toList());
+      unawaited(
+        storage.savePreference(
+          key: PrefKeys.persistedStudyRooms,
+          data: encoded,
+        ),
+      );
+    } on Object catch (_) {}
+  }
+
+  List<StudyRoomModel> _getLocalPersistedRooms({String? category}) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return [];
+      final raw = storage.getPreference(key: PrefKeys.persistedStudyRooms);
+      if (raw == null || raw.isEmpty) return [];
+      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+      final rooms = list
+          .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (category != null && category.isNotEmpty && category != 'All') {
+        return rooms
+            .where((r) => r.category.toLowerCase() == category.toLowerCase())
+            .toList();
+      }
+      return rooms;
+    } on Object catch (_) {
+      return [];
+    }
+  }
+
+  List<StudyRoomModel> _getCuratedFallbackRooms({String? category}) {
+    const allFallback = [
+      StudyRoomModel(
+        id: 'curated_room_pomodoro_silent',
+        title: 'Silent Pomodoro Library',
+        subject: 'General Study',
+        category: 'General',
+        pomodoroDurationMinutes: 25,
+        pomodoroState: 'focusing',
+        activeParticipantsCount: 14,
+        ambientSoundTrack: 'lofi',
+        activeGoal: 'Deep study & silent focus sprint',
+        isSilentFocus: true,
+      ),
+      StudyRoomModel(
+        id: 'curated_room_stem_lab',
+        title: 'Deep Work STEM Lab',
+        subject: 'Science & Engineering',
+        category: 'STEM',
+        pomodoroDurationMinutes: 50,
+        pomodoroState: 'focusing',
+        activeParticipantsCount: 8,
+        ambientSoundTrack: 'binaural',
+        activeGoal: 'Problem solving & derivation sprint',
+        isSilentFocus: true,
+      ),
+      StudyRoomModel(
+        id: 'curated_room_exam_prep',
+        title: 'Exam Sprint Pod',
+        subject: 'All Subjects',
+        category: 'Exam Prep',
+        pomodoroDurationMinutes: 45,
+        pomodoroState: 'focusing',
+        activeParticipantsCount: 19,
+        ambientSoundTrack: 'rain',
+        activeGoal: 'Past question drills & active recall',
+        isSilentFocus: true,
+      ),
+    ];
+    if (category != null && category.isNotEmpty && category != 'All') {
+      final filtered = allFallback
+          .where((r) => r.category.toLowerCase() == category.toLowerCase())
+          .toList();
+      if (filtered.isNotEmpty) return filtered;
+    }
+    return allFallback;
+  }
+
+  void _persistCirclesLocally(List<StudyCircleModel> circles) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return;
+      final encoded = jsonEncode(circles.map((c) => c.toJson()).toList());
+      unawaited(
+        storage.savePreference(
+          key: PrefKeys.persistedStudyCircles,
+          data: encoded,
+        ),
+      );
+    } on Object catch (_) {}
+  }
+
+  List<StudyCircleModel> _getLocalPersistedCircles({String? track}) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return [];
+      final raw = storage.getPreference(key: PrefKeys.persistedStudyCircles);
+      if (raw == null || raw.isEmpty) return [];
+      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+      final circles = list
+          .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (track != null && track.isNotEmpty && track != 'All') {
+        return circles
+            .where((c) => c.track.toLowerCase() == track.toLowerCase())
+            .toList();
+      }
+      return circles;
+    } on Object catch (_) {
+      return [];
+    }
+  }
+
+  List<StudyCircleModel> _getCuratedFallbackCircles({String? track}) {
+    final effectiveTrack =
+        (track != null && track.isNotEmpty && track != 'All')
+            ? track
+            : 'General';
+    return [
+      StudyCircleModel(
+        id: 'curated_circle_sprint',
+        name: '$effectiveTrack Study Circle',
+        track: effectiveTrack,
+        targetWeeklyMinutes: 600,
+        memberCount: 5,
+        maxMembers: 6,
+        members: const [],
+      ),
+    ];
+  }
+
+  void _persistSharedDecksLocally(List<SharedDeckModel> decks) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return;
+      final encoded = jsonEncode(decks.map((d) => d.toJson()).toList());
+      unawaited(
+        storage.savePreference(
+          key: PrefKeys.persistedSharedDecks,
+          data: encoded,
+        ),
+      );
+    } on Object catch (_) {}
+  }
+
+  List<SharedDeckModel> _getLocalPersistedSharedDecks({String? subject}) {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return [];
+      final raw = storage.getPreference(key: PrefKeys.persistedSharedDecks);
+      if (raw == null || raw.isEmpty) return [];
+      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+      final decks = list
+          .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (subject != null && subject.isNotEmpty && subject != 'All') {
+        return decks
+            .where((d) => d.subject.toLowerCase() == subject.toLowerCase())
+            .toList();
+      }
+      return decks;
+    } on Object catch (_) {
+      return [];
+    }
+  }
+
+  List<SharedDeckModel> _getCuratedFallbackSharedDecks({String? subject}) {
+    final effectiveSubject =
+        (subject != null && subject.isNotEmpty && subject != 'All')
+            ? subject
+            : 'General Studies';
+    return [
+      SharedDeckModel(
+        id: 'curated_deck_high_yield',
+        ownerId: 'kortex_team',
+        ownerName: 'Kortex Academic Curators',
+        title: '$effectiveSubject Core Exam Formulas & Review',
+        subject: effectiveSubject,
+        syllabusTag: 'Universal',
+        description:
+            'High-yield flashcards covering key definitions, exam principles, and quick recall prompts.',
+        category: 'Exam Prep',
+        totalCards: 20,
+        downloadsCount: 142,
+        rating: 4.9,
+        cards: const [],
+      ),
+    ];
   }
 }

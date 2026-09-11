@@ -1,8 +1,13 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 
 class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
   CommunityHubBloc({
@@ -338,6 +343,12 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
       (clonedDeck) {
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
+        if (locator.isRegistered<DashboardBloc>()) {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        }
         emit(state.copyWith(lastClonedDeckId: clonedDeck.id));
       },
     );

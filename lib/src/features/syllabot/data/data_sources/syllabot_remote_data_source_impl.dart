@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/syllabot/data/client/syllabot_api_client.dart';
@@ -95,6 +96,25 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
     return list
         .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<void> saveChatMessage(ChatMessageEntity message) async {
+    final userId = _userStorage?.getUserId() ?? '';
+    try {
+      final payload = <String, dynamic>{
+        'id': message.id,
+        'session_id': message.sessionId,
+        'sender': message.sender == MessageSender.user ? 'user' : 'syllabot',
+        'text': message.text,
+        'created_at': message.timestamp.toIso8601String(),
+        if (userId.isNotEmpty) 'user_id': userId,
+      };
+      await _dio.post<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.syllabotMessages}',
+        data: payload,
+      );
+    } on Object catch (_) {}
   }
 
   @override

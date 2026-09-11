@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
@@ -15,7 +16,9 @@ import 'package:kortex/src/features/community/domain/entities/study_community_en
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 class CommunityRepositoryImpl implements CommunityRepository {
@@ -214,8 +217,6 @@ class CommunityRepositoryImpl implements CommunityRepository {
     return _remoteDataSource.cloneSharedDeck(sharedDeckId).then((result) async {
       final newDeckId =
           result['new_deck_id'] as String? ?? 'cloned_$sharedDeckId';
-      final clonedCount =
-          (result['cloned_cards_count'] as num?)?.toInt() ?? 10;
       final deckTitle = result['title'] as String? ??
           result['deck_title'] as String? ??
           'Cloned Deck';
@@ -223,22 +224,91 @@ class CommunityRepositoryImpl implements CommunityRepository {
           result['deck_subject'] as String? ??
           'Community Resource';
 
+      // 1. Extract or look up cards for this shared deck
+      final cardsList = <FlashcardModel>[];
+      final rawCards = result['cards'] as List<dynamic>?;
+      if (rawCards != null && rawCards.isNotEmpty) {
+        for (var i = 0; i < rawCards.length; i++) {
+          final c = rawCards[i];
+          if (c is Map<String, dynamic>) {
+            cardsList.add(
+              FlashcardModel(
+                id: c['id'] as String? ?? 'card_${newDeckId}_$i',
+                deckId: newDeckId,
+                front: c['front'] as String? ?? 'Concept ${i + 1}',
+                back: c['back'] as String? ?? 'Explanation',
+                frontLatex: c['front_latex'] as String?,
+                backLatex: c['back_latex'] as String?,
+                imageUrl: c['image_url'] as String?,
+                sourceTopic: deckSubject,
+                interval: 0,
+                nextDueDate: DateTime.now(),
+              ),
+            );
+          }
+        }
+      }
+
+      // If cards not returned directly in RPC result, look up from shared decks
+      if (cardsList.isEmpty) {
+        try {
+          final sharedDecks = await _remoteDataSource.fetchSharedDecks();
+          final match = sharedDecks.where((d) => d.id == sharedDeckId).firstOrNull;
+          if (match != null && match.cards.isNotEmpty) {
+            for (var i = 0; i < match.cards.length; i++) {
+              final c = match.cards[i];
+              cardsList.add(
+                FlashcardModel(
+                  id: c['id'] as String? ?? 'card_${newDeckId}_$i',
+                  deckId: newDeckId,
+                  front: c['front'] as String? ?? 'Concept ${i + 1}',
+                  back: c['back'] as String? ?? 'Explanation',
+                  frontLatex: c['front_latex'] as String?,
+                  backLatex: c['back_latex'] as String?,
+                  imageUrl: c['image_url'] as String?,
+                  sourceTopic: deckSubject,
+                  interval: 0,
+                  nextDueDate: DateTime.now(),
+                ),
+              );
+            }
+          }
+        } on Object catch (_) {}
+      }
+
+      final effectiveCardCount = cardsList.isNotEmpty
+          ? cardsList.length
+          : ((result['cloned_cards_count'] as num?)?.toInt() ?? 10);
+
       final clonedDeck = DeckEntity(
         id: newDeckId,
         title: deckTitle,
         subject: deckSubject,
-        totalCards: clonedCount,
-        dueCards: clonedCount,
+        totalCards: effectiveCardCount,
+        dueCards: effectiveCardCount,
         masteryRate: 0,
         category: 'Community',
         description: 'Cloned from Community Marketplace',
+        cards: cardsList.map((m) => m.toEntity()).toList(),
       );
 
-      // Persist cloned deck locally into Drift SQLite and PrefKeys.persistedUserDecks
+      final deckModel = DeckModel.fromEntity(clonedDeck);
+
+      // 2. Persist cloned deck and cards locally into Drift SQLite and PrefKeys
       try {
         if (locator.isRegistered<DecksLocalDataSource>()) {
           await locator<DecksLocalDataSource>().saveDeck(
-            DeckModel.fromEntity(clonedDeck),
+            deckModel,
+            cards: cardsList.isNotEmpty ? cardsList : null,
+          );
+        }
+
+        if (locator.isRegistered<DecksRemoteDataSource>()) {
+          unawaited(
+            locator<DecksRemoteDataSource>().saveGeneratedDeck(
+              deck: deckModel,
+              cards: cardsList,
+            ),
           );
         }
 
@@ -246,6 +316,15 @@ class CommunityRepositoryImpl implements CommunityRepository {
             ? locator<LocalStorageService>()
             : null;
         if (storage != null) {
+          if (cardsList.isNotEmpty) {
+            unawaited(
+              storage.savePreference(
+                key: '${PrefKeys.persistedDeckCardsPrefix}$newDeckId',
+                data: jsonEncode(cardsList.map((c) => c.toJson()).toList()),
+              ),
+            );
+          }
+
           final raw = storage.getPreference(key: PrefKeys.persistedUserDecks);
           final existingList = raw != null && raw.isNotEmpty
               ? (jsonDecode(raw) as List<dynamic>)

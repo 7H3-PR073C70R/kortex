@@ -25,5 +25,7 @@ abstract class SyllabotRemoteDataSource {
     required String sessionId,
   });
 
+  Future<void> saveChatMessage(ChatMessageEntity message);
+
   Future<void> deleteSession({required String sessionId});
 }

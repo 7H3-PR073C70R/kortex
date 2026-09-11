@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -44,6 +47,51 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     } on Object catch (_) {
       return null;
     }
+  }
+
+  LocalStorageService? get _localStorage {
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        return locator<LocalStorageService>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  Future<void> _persistDocumentLocally(DocumentUploadModel doc) async {
+    try {
+      final storage = _localStorage;
+      if (storage != null) {
+        final existingDocs = _getLocalPersistedDocuments();
+        final updated = [
+          doc,
+          ...existingDocs.where(
+            (d) => d.id != doc.id && d.contentHash != doc.contentHash,
+          ),
+        ];
+        await storage.savePreference(
+          key: PrefKeys.persistedUserDocuments,
+          data: jsonEncode(updated.map((d) => d.toJson()).toList()),
+        );
+      }
+    } on Object catch (_) {}
+  }
+
+  List<DocumentUploadModel> _getLocalPersistedDocuments() {
+    try {
+      final storage = _localStorage;
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedUserDocuments);
+        if (raw != null && raw.isNotEmpty) {
+          final list = jsonDecode(raw) as List<dynamic>;
+          return list
+              .whereType<Map<String, dynamic>>()
+              .map((json) => DocumentUploadModel.fromJson(json))
+              .toList();
+        }
+      }
+    } on Object catch (_) {}
+    return [];
   }
 
   final Map<String, Uint8List> _documentBytesCache = {};
@@ -217,9 +265,11 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         final res = await _client.createDocumentRecord(payload);
         final list = res.data is List ? (res.data as List) : <dynamic>[];
         if (list.isNotEmpty) {
-          return DocumentUploadModel.fromJson(
+          final doc = DocumentUploadModel.fromJson(
             list.first as Map<String, dynamic>,
           );
+          unawaited(_persistDocumentLocally(doc));
+          return doc;
         }
       } on Object catch (e, stack) {
         final crashlytics = _crashlyticsService;
@@ -240,12 +290,15 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             fileType: fileType,
             fileSizeBytes: fileBytes.lengthInBytes,
           );
-          if (rpcResult != null) return rpcResult;
+          if (rpcResult != null) {
+            unawaited(_persistDocumentLocally(rpcResult));
+            return rpcResult;
+          }
         } on Object catch (_) {}
       }
     }
 
-    return DocumentUploadModel(
+    final fallbackDoc = DocumentUploadModel(
       id: docId,
       userId: userId,
       filename: filename,
@@ -256,6 +309,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       processingStatus: 'uploaded',
       createdAt: DateTime.now(),
     );
+    unawaited(_persistDocumentLocally(fallbackDoc));
+    return fallbackDoc;
   }
 
   @override
@@ -490,11 +545,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         },
       );
       final list = res.data is List ? (res.data as List) : <dynamic>[];
-      return list
-          .map((e) => DocumentUploadModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } on Object catch (_) {
-      return [];
-    }
+      if (list.isNotEmpty) {
+        final docs = list
+            .map((e) => DocumentUploadModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        for (final doc in docs) {
+          unawaited(_persistDocumentLocally(doc));
+        }
+        return docs;
+      }
+    } on Object catch (_) {}
+    return _getLocalPersistedDocuments();
   }
 }

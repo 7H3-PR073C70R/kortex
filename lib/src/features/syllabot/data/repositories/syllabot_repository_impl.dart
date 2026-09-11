@@ -137,6 +137,9 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
   @override
   Future<void> cacheMessage(ChatMessageEntity message) async {
     await _local.cacheMessage(message);
+    if (message.engineType != ExecutionEngineType.localOnDevice) {
+      unawaited(_remote.saveChatMessage(message));
+    }
   }
 
   @override

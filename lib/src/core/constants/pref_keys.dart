@@ -31,4 +31,12 @@ class PrefKeys {
       '__kortex_user_added_past_questions__';
   static const String syncedSecondarySubjects =
       '__kortex_synced_secondary_subjects__';
+  static const String persistedUserDocuments =
+      '__kortex_persisted_user_documents__';
+  static const String persistedStudyRooms =
+      '__kortex_persisted_study_rooms__';
+  static const String persistedStudyCircles =
+      '__kortex_persisted_study_circles__';
+  static const String persistedSharedDecks =
+      '__kortex_persisted_shared_decks__';
 }

@@ -108,6 +108,11 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         courseCode: courseCode,
       );
 
+      if (remote.isNotEmpty) {
+        // Write-through caching to local SQLite database so subsequent queries work offline
+        unawaited(_effectiveLocalDataSource.savePastQuestions(remote));
+      }
+
       return remote.map((m) {
         final entity = m.toEntity();
         if (_bookmarkedIds.contains(entity.id)) {
