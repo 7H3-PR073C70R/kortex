@@ -53,6 +53,8 @@ class AppApiEndpoint {
       '/rest/v1/user_curated_courses?select=id,course_id,syllabus_coverage,enrolled_at,curated_courses(*)&order=enrolled_at.desc';
   static const String curriculumMetadata =
       '/rest/v1/app_curriculum_metadata?select=*&is_active=eq.true';
+  static const String subjects =
+      '/rest/v1/subjects?select=*&order=stream.asc,title.asc';
 
   // Decks & Flashcards Endpoints
   static const String decks = '/rest/v1/decks?select=*';
