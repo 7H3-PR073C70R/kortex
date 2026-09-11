@@ -9,6 +9,7 @@ VALUES ('study-documents', 'study-documents', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Storage RLS Policies: users can manage only their own folder
+DROP POLICY IF EXISTS "Users can upload their own study documents" ON storage.objects;
 CREATE POLICY "Users can upload their own study documents"
 ON storage.objects
 FOR INSERT
@@ -17,6 +18,7 @@ WITH CHECK (
     auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can view their own study documents" ON storage.objects;
 CREATE POLICY "Users can view their own study documents"
 ON storage.objects
 FOR SELECT
@@ -25,6 +27,7 @@ USING (
     auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can delete their own study documents" ON storage.objects;
 CREATE POLICY "Users can delete their own study documents"
 ON storage.objects
 FOR DELETE
@@ -69,12 +72,14 @@ ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.extracted_snippets ENABLE ROW LEVEL SECURITY;
 
 -- 7. Strict RLS Policies for documents & snippets
+DROP POLICY IF EXISTS "Users can manage their own documents" ON public.documents;
 CREATE POLICY "Users can manage their own documents"
 ON public.documents
 FOR ALL
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage their own extracted snippets" ON public.extracted_snippets;
 CREATE POLICY "Users can manage their own extracted snippets"
 ON public.extracted_snippets
 FOR ALL

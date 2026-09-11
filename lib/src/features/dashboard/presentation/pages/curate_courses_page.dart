@@ -507,7 +507,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                             child: AppLogoLoader(size: 56),
                           )
                         : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(18, 6, 18, 100),
+                            padding: const EdgeInsets.fromLTRB(18, 6, 18, 140),
                             itemCount: filteredCourses.length,
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: 10),

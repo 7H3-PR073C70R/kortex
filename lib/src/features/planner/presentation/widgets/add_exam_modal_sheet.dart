@@ -653,10 +653,12 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    flex: 2,
                     child: AppButton(
                       text: widget.initialExam != null
                           ? l10n.updateExamCountdown
                           : l10n.saveExamCountdown,
+                      isEnabled: _selectedCourse != null,
                       onPressed: _submit,
                     ),
                   ),

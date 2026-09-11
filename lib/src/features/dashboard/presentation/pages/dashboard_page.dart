@@ -154,107 +154,113 @@ class _DashboardView extends HookWidget {
           SafeArea(
             bottom: false,
             child: BlocBuilder<DashboardBloc, DashboardState>(
-          builder: (context, state) {
-            if (state.isLoading) {
-              return const _DashboardShimmerLoading();
-            }
+              builder: (context, state) {
+                if (state.isLoading) {
+                  return const _DashboardShimmerLoading();
+                }
 
-            if (state.isError || state.feed == null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SyllabotAvatar(size: 48, isError: true),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.dashboardUnableToLoad,
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        state.errorMessage ?? l10n.dashboardConnectionError,
-                        textAlign: TextAlign.center,
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ShrinkableButton(
-                        onTap: () {
-                          context.read<DashboardBloc>().add(
-                            const DashboardStarted(),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            l10n.dashboardRetry,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.white,
+                if (state.isError || state.feed == null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SyllabotAvatar(size: 48, isError: true),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.dashboardUnableToLoad,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          Text(
+                            state.errorMessage ?? l10n.dashboardConnectionError,
+                            textAlign: TextAlign.center,
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          ShrinkableButton(
+                            onTap: () {
+                              context.read<DashboardBloc>().add(
+                                const DashboardStarted(),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                l10n.dashboardRetry,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  );
+                }
+
+                final feed = state.feed!;
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    final completer = Completer<void>();
+                    context.read<DashboardBloc>().add(
+                      const DashboardRefreshed(),
+                    );
+                    Timer(
+                      const Duration(milliseconds: 600),
+                      completer.complete,
+                    );
+                    return completer.future;
+                  },
+                  color: colors.primary,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isExpanded = constraints.maxWidth >= 1024;
+                      final isMedium =
+                          constraints.maxWidth >= 600 && !isExpanded;
+
+                      if (isExpanded) {
+                        return _ExpandedDashboardLayout(
+                          feed: feed,
+                          userName: userName,
+                          userPhotoUrl: userPhotoUrl,
+                          targetTrack: targetTrack,
+                        );
+                      } else if (isMedium) {
+                        return _MediumDashboardLayout(
+                          feed: feed,
+                          userName: userName,
+                          userPhotoUrl: userPhotoUrl,
+                          targetTrack: targetTrack,
+                        );
+                      } else {
+                        return _CompactDashboardLayout(
+                          feed: feed,
+                          userName: userName,
+                          userPhotoUrl: userPhotoUrl,
+                          targetTrack: targetTrack,
+                        );
+                      }
+                    },
                   ),
-                ),
-              );
-            }
-
-            final feed = state.feed!;
-
-            return RefreshIndicator(
-              onRefresh: () async {
-                final completer = Completer<void>();
-                context.read<DashboardBloc>().add(const DashboardRefreshed());
-                Timer(const Duration(milliseconds: 600), completer.complete);
-                return completer.future;
+                );
               },
-              color: colors.primary,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isExpanded = constraints.maxWidth >= 1024;
-                  final isMedium = constraints.maxWidth >= 600 && !isExpanded;
-
-                  if (isExpanded) {
-                    return _ExpandedDashboardLayout(
-                      feed: feed,
-                      userName: userName,
-                      userPhotoUrl: userPhotoUrl,
-                      targetTrack: targetTrack,
-                    );
-                  } else if (isMedium) {
-                    return _MediumDashboardLayout(
-                      feed: feed,
-                      userName: userName,
-                      userPhotoUrl: userPhotoUrl,
-                      targetTrack: targetTrack,
-                    );
-                  } else {
-                    return _CompactDashboardLayout(
-                      feed: feed,
-                      userName: userName,
-                      userPhotoUrl: userPhotoUrl,
-                      targetTrack: targetTrack,
-                    );
-                  }
-                },
-              ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
           // Confetti celebration overlay
           Align(
             alignment: Alignment.topCenter,
@@ -406,8 +412,9 @@ class _CompactDashboardLayout extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
-    final heavyDebtDeck =
-        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
+    final heavyDebtDeck = feed.dueStudyDecks
+        .where((d) => d.dueCards >= 30)
+        .firstOrNull;
 
     return ListView(
       physics: const BouncingScrollPhysics(
@@ -443,8 +450,10 @@ class _CompactDashboardLayout extends StatelessWidget {
         ],
 
         // 5. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
-        const ExamCountdownBanner(),
-        const SizedBox(height: 8),
+        if (feed.curatedCourses.isNotEmpty) ...[
+          const ExamCountdownBanner(),
+          const SizedBox(height: 8),
+        ],
         if (feed.dueStudyDecks.isNotEmpty)
           FsrsReviewDeckCard(
             deck: feed.dueStudyDecks.first,
@@ -670,8 +679,9 @@ class _MediumDashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final heavyDebtDeck =
-        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
+    final heavyDebtDeck = feed.dueStudyDecks
+        .where((d) => d.dueCards >= 30)
+        .firstOrNull;
 
     return ListView(
       physics: const BouncingScrollPhysics(
@@ -698,8 +708,11 @@ class _MediumDashboardLayout extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        const ExamCountdownBanner(),
-        const SizedBox(height: 20),
+        if (feed.curatedCourses.isNotEmpty) ...[
+          const ExamCountdownBanner(),
+          const SizedBox(height: 20),
+        ],
+
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -768,8 +781,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final heavyDebtDeck =
-        feed.dueStudyDecks.where((d) => d.dueCards >= 30).firstOrNull;
+    final heavyDebtDeck = feed.dueStudyDecks
+        .where((d) => d.dueCards >= 30)
+        .firstOrNull;
 
     return Center(
       child: ConstrainedBox(
@@ -797,8 +811,10 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     _StudyDebtTriageBanner(deck: heavyDebtDeck),
                     const SizedBox(height: 20),
                   ],
-                  const ExamCountdownBanner(),
-                  const SizedBox(height: 20),
+                  if (feed.curatedCourses.isNotEmpty) ...[
+                    const ExamCountdownBanner(),
+                    const SizedBox(height: 20),
+                  ],
                   SyllabotQuickPromptBar(
                     insightText: feed.syllabotDailyInsight,
                   ),

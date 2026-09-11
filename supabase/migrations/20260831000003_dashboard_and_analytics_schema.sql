@@ -23,11 +23,13 @@ CREATE INDEX IF NOT EXISTS idx_user_analytics_user_id ON public.user_analytics(u
 
 ALTER TABLE public.user_analytics ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own analytics" ON public.user_analytics;
 CREATE POLICY "Users can view own analytics"
     ON public.user_analytics
     FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own analytics" ON public.user_analytics;
 CREATE POLICY "Users can update own analytics"
     ON public.user_analytics
     FOR UPDATE
@@ -50,16 +52,19 @@ CREATE INDEX IF NOT EXISTS idx_heatmap_activity_user_date ON public.heatmap_acti
 
 ALTER TABLE public.heatmap_activity ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own heatmap activity" ON public.heatmap_activity;
 CREATE POLICY "Users can view own heatmap activity"
     ON public.heatmap_activity
     FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own heatmap activity" ON public.heatmap_activity;
 CREATE POLICY "Users can insert own heatmap activity"
     ON public.heatmap_activity
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own heatmap activity" ON public.heatmap_activity;
 CREATE POLICY "Users can update own heatmap activity"
     ON public.heatmap_activity
     FOR UPDATE
@@ -84,6 +89,8 @@ CREATE TABLE IF NOT EXISTS public.curated_courses (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.curated_courses ADD COLUMN IF NOT EXISTS embedding vector(1536);
+
 CREATE INDEX IF NOT EXISTS idx_curated_courses_code ON public.curated_courses(course_code);
 
 -- HNSW Vector Index for Semantic Course Recommendations
@@ -95,6 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_curated_courses_embedding_hnsw
 ALTER TABLE public.curated_courses ENABLE ROW LEVEL SECURITY;
 
 -- Curated courses can be viewed by all authenticated users
+DROP POLICY IF EXISTS "Authenticated users can view curated courses" ON public.curated_courses;
 CREATE POLICY "Authenticated users can view curated courses"
     ON public.curated_courses
     FOR SELECT
@@ -115,16 +123,19 @@ CREATE INDEX IF NOT EXISTS idx_user_curated_courses_user ON public.user_curated_
 
 ALTER TABLE public.user_curated_courses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own enrolled courses" ON public.user_curated_courses;
 CREATE POLICY "Users can view own enrolled courses"
     ON public.user_curated_courses
     FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own enrolled courses" ON public.user_curated_courses;
 CREATE POLICY "Users can insert own enrolled courses"
     ON public.user_curated_courses
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own enrolled courses" ON public.user_curated_courses;
 CREATE POLICY "Users can update own enrolled courses"
     ON public.user_curated_courses
     FOR UPDATE
@@ -148,11 +159,13 @@ CREATE INDEX IF NOT EXISTS idx_target_exam_countdowns_user ON public.target_exam
 
 ALTER TABLE public.target_exam_countdowns ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own exam countdown" ON public.target_exam_countdowns;
 CREATE POLICY "Users can view own exam countdown"
     ON public.target_exam_countdowns
     FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert/update own exam countdown" ON public.target_exam_countdowns;
 CREATE POLICY "Users can insert/update own exam countdown"
     ON public.target_exam_countdowns
     FOR ALL

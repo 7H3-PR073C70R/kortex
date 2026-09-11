@@ -11,6 +11,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_background_handler.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 
@@ -303,10 +304,18 @@ class NotificationService {
       developer.log('Error checking streak reminder: $e');
     }
 
-    // 2. Due decks reminder check
+    // 2. Due decks reminder check (only for authenticated users)
     try {
       if (locator.isRegistered<DecksRepository>() &&
-          locator.isRegistered<LocalStorageService>()) {
+          locator.isRegistered<LocalStorageService>() &&
+          locator.isRegistered<UserStorageService>()) {
+        final userStorage = locator<UserStorageService>();
+        final token = userStorage.getToken();
+        if (token == null || token.trim().isEmpty) {
+          // User is not authenticated; skip querying remote user-scoped decks
+          return;
+        }
+
         final decksRepo = locator<DecksRepository>();
         final storage = locator<LocalStorageService>();
         final decksRes = await decksRepo.getUserDecks();

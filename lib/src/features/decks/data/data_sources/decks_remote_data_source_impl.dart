@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -218,6 +219,33 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   Future<List<DeckModel>> getUserDecks() async {
     await _loadPersistedDecksIntoMemory();
 
+    final token = _userStorage?.getToken();
+    if (_userStorage != null && (token == null || token.trim().isEmpty)) {
+      // User is unauthenticated: return local created decks & canonical course decks immediately without network call
+      final fallbackList = <DeckModel>[..._localCreatedDecks];
+      try {
+        final track = _getUserTrack();
+        final factory = _pastQuestionDeckFactory;
+        if (factory != null && factory.isSecondaryTrack(track)) {
+          final registeredCourses = _getRegisteredCourses();
+          if (registeredCourses.isNotEmpty) {
+            final canonicalDecks =
+                await factory.generateCanonicalDecksForCourses(
+              courses: registeredCourses,
+              track: track,
+            );
+            for (final cd in canonicalDecks) {
+              if (!fallbackList.any((d) => d.id == cd.id)) {
+                fallbackList.add(cd);
+              }
+            }
+          }
+        }
+      } on Object catch (_) {}
+
+      return fallbackList;
+    }
+
     try {
       final remoteDecks = await _client.getUserDecks();
       final remoteIds = remoteDecks.map((d) => d.id).toSet();
@@ -248,7 +276,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (factory != null && factory.isSecondaryTrack(track)) {
           final registeredCourses = _getRegisteredCourses();
           if (registeredCourses.isNotEmpty) {
-            final canonicalDecks = await factory.generateCanonicalDecksForCourses(
+            final canonicalDecks =
+                await factory.generateCanonicalDecksForCourses(
               courses: registeredCourses,
               track: track,
             );
@@ -264,14 +293,20 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       return resultList;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
-        unawaited(
-          _crashlyticsService!.recordError(
-            e,
-            stack,
-            reason:
-                'DecksRemoteDataSource.getUserDecks failed, returning local cache',
-          ),
-        );
+        final isAuthOrNotFound = e is DioException &&
+            (e.response?.statusCode == 401 ||
+                e.response?.statusCode == 403 ||
+                e.response?.statusCode == 404);
+        if (!isAuthOrNotFound) {
+          unawaited(
+            _crashlyticsService!.recordError(
+              e,
+              stack,
+              reason:
+                  'DecksRemoteDataSource.getUserDecks failed, returning local cache',
+            ),
+          );
+        }
       }
 
       final fallbackList = <DeckModel>[..._localCreatedDecks];
@@ -281,7 +316,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (factory != null && factory.isSecondaryTrack(track)) {
           final registeredCourses = _getRegisteredCourses();
           if (registeredCourses.isNotEmpty) {
-            final canonicalDecks = await factory.generateCanonicalDecksForCourses(
+            final canonicalDecks =
+                await factory.generateCanonicalDecksForCourses(
               courses: registeredCourses,
               track: track,
             );
@@ -354,23 +390,32 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       }
     } on Object catch (_) {}
 
-    // 3. Fetch from remote if not cached locally
-    try {
-      final cards = await _client.getDeckCards(deckId);
-      if (cards.isNotEmpty) {
-        _localDeckCards[deckId] = cards;
-        unawaited(_localDataSource?.saveCards(deckId, cards));
-        return cards;
-      }
-    } on Object catch (e, stack) {
-      if (_crashlyticsService != null) {
-        unawaited(
-          _crashlyticsService!.recordError(
-            e,
-            stack,
-            reason: 'DecksRemoteDataSource.getDeckCards failed',
-          ),
-        );
+    // 3. Fetch from remote if not cached locally and user is authenticated
+    final token = _userStorage?.getToken();
+    if (_userStorage == null || (token != null && token.trim().isNotEmpty)) {
+      try {
+        final cards = await _client.getDeckCards(deckId);
+        if (cards.isNotEmpty) {
+          _localDeckCards[deckId] = cards;
+          unawaited(_localDataSource?.saveCards(deckId, cards));
+          return cards;
+        }
+      } on Object catch (e, stack) {
+        if (_crashlyticsService != null) {
+          final isAuthOrNotFound = e is DioException &&
+              (e.response?.statusCode == 401 ||
+                  e.response?.statusCode == 403 ||
+                  e.response?.statusCode == 404);
+          if (!isAuthOrNotFound) {
+            unawaited(
+              _crashlyticsService!.recordError(
+                e,
+                stack,
+                reason: 'DecksRemoteDataSource.getDeckCards failed',
+              ),
+            );
+          }
+        }
       }
     }
     return _localDeckCards[deckId] ?? const [];

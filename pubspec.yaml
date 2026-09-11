@@ -88,6 +88,9 @@ dev_dependencies:
   retrofit_generator: ^10.0.6
   very_good_analysis: ^10.2.0
 
+dependency_overrides:
+  path_provider_foundation: 2.5.1
+
 flutter:
   uses-material-design: true
   generate: true
