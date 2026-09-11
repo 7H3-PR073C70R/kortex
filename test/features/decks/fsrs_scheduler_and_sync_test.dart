@@ -413,8 +413,13 @@ void main() {
 
         await queue.enqueueReview(log);
 
-        // enqueueReview triggers auto-flush in background when authenticated
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Reviews are batched locally until the full deck is completed
+        expect(queue.getPendingCount(), equals(1));
+        verifyZeroInteractions(mockDio);
+
+        // Deck completion triggers batch flush
+        final syncedCount = await queue.flushPendingLogs();
+        expect(syncedCount, equals(1));
         expect(queue.getPendingCount(), equals(0));
 
         final captured = verify(

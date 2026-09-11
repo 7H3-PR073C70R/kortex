@@ -429,30 +429,30 @@ class _CompactDashboardLayout extends StatelessWidget {
           userName: userName,
           userPhotoUrl: userPhotoUrl,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
         // 2. Backlog Debt Triage (if review debt accumulated)
         if (heavyDebtDeck != null) ...[
           _StudyDebtTriageBanner(deck: heavyDebtDeck),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
         ],
 
         // 3. Pod & Cohort Pulse (Community co-presence)
         _StudyCirclePodPulseCard(targetTrack: targetTrack),
-        const SizedBox(height: 14),
+        const SizedBox(height: 20),
 
         // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
         if (feed.dueStudyDecks.isNotEmpty) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.first,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
         ],
 
         // 5. Dynamic Focus Hero Section (Exam Banner or Top Due Deck)
         if (feed.curatedCourses.isNotEmpty) ...[
           const ExamCountdownBanner(),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
         ],
         if (feed.dueStudyDecks.isNotEmpty)
           FsrsReviewDeckCard(

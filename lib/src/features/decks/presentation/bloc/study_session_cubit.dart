@@ -203,7 +203,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       reviewResult.card.stability,
     );
 
-    // 4. Enqueue into CardSyncQueue for robust offline persistence & automatic flush
+    // 4. Enqueue into CardSyncQueue for robust local persistence (batched to remote on deck completion)
     unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));
 
     // 5. Update flashcard entity with latest repetition, interval, and next due date

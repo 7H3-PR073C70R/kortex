@@ -209,7 +209,12 @@ class CardSyncQueue {
   }
 
   /// Appends a new review log to the local queue and persists to storage.
-  Future<void> enqueueReview(FsrsReviewLog log) async {
+  /// Does NOT trigger network sync by default so that reviews are batched
+  /// and dispatched in a single call after completing the entire deck.
+  Future<void> enqueueReview(
+    FsrsReviewLog log, {
+    bool flushImmediately = false,
+  }) async {
     _inMemoryLogBuffer.add(log);
     await _persistLogs();
     debugPrint(
@@ -217,7 +222,9 @@ class CardSyncQueue {
       'Total pending: ${getPendingCount()}',
     );
 
-    unawaited(flushPendingLogs());
+    if (flushImmediately) {
+      unawaited(flushPendingLogs());
+    }
   }
 
   /// Returns total number of unsynced review logs.

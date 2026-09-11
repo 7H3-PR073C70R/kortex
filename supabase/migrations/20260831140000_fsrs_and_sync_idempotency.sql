@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.study_review_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     transaction_uuid UUID NOT NULL,
-    card_id UUID NOT NULL REFERENCES public.flashcards(id) ON DELETE CASCADE,
+    card_id UUID NOT NULL,
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 4),
     stability DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     difficulty DOUBLE PRECISION NOT NULL DEFAULT 0.0,
