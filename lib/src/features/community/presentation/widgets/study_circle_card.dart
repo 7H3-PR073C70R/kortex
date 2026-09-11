@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class StudyCircleCard extends StatelessWidget {
@@ -20,6 +21,7 @@ class StudyCircleCard extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final progress = circle.weeklyProgressPercent;
     final isJoined = circle.isCurrentUserMember;
@@ -164,7 +166,7 @@ class StudyCircleCard extends StatelessWidget {
                     ),
                   if (circle.members.isEmpty)
                     Text(
-                      'Be the first to join!',
+                      l10n.firstToJoinCircle,
                       style: typography.caption.medium.copyWith(
                         color: colors.textSecondary,
                         fontStyle: FontStyle.italic,
@@ -216,8 +218,8 @@ class StudyCircleCard extends StatelessWidget {
                       const SizedBox(width: 5),
                       Text(
                         isJoined
-                            ? 'Your Pod'
-                            : (isFull ? 'Pod Full' : 'Join Pod'),
+                            ? l10n.yourPodLabel
+                            : (isFull ? l10n.podFullLabel : l10n.joinPodLabel),
                         style: typography.caption.bold.copyWith(
                           color: isJoined
                               ? colors.success
@@ -236,9 +238,9 @@ class StudyCircleCard extends StatelessWidget {
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text(
-                          'Sent 1-tap study nudge to your pod members! ⚡️',
+                          l10n.studyNudgeSentNotice,
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -266,7 +268,7 @@ class StudyCircleCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Nudge',
+                          l10n.nudgeAction,
                           style: typography.caption.bold.copyWith(
                             color: colors.primary,
                           ),

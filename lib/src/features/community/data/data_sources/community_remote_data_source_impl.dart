@@ -86,7 +86,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         _persistRoomsLocally(rooms);
       }
       return rooms;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
           _crashlyticsService!.recordError(
@@ -134,7 +134,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to create study room');
     }
-    return StudyRoomModel.fromJson(rawList.first as Map<String, dynamic>);
+    final room = StudyRoomModel.fromJson(rawList.first as Map<String, dynamic>);
+    final cached = _getLocalPersistedRooms();
+    _persistRoomsLocally([room, ...cached.where((r) => r.id != room.id)]);
+    return room;
   }
 
   @override
@@ -305,7 +308,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (cache != null) {
         for (var i = 0; i < cache.length; i++) {
           final isMatch = cache[i].id == replyId;
-          cache[i] = ForumReplyModel(
+          final updated = ForumReplyModel(
             id: cache[i].id,
             postId: cache[i].postId,
             authorId: cache[i].authorId,
@@ -317,6 +320,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             upvotes: cache[i].upvotes,
             createdAt: cache[i].createdAt,
           );
+          cache[i] = updated;
+          if (isMatch) {
+            unawaited(_localDataSource?.saveForumReply(updated));
+          }
         }
         final controller = _replyControllers[postId];
         if (controller != null && !controller.isClosed) {
@@ -446,7 +453,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         _persistCirclesLocally(circles);
       }
       return circles;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
           _crashlyticsService!.recordError(
@@ -489,6 +496,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     }
     final createdCircle =
         StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+    final cachedCircles = _getLocalPersistedCircles();
+    _persistCirclesLocally([
+      createdCircle,
+      ...cachedCircles.where((c) => c.id != createdCircle.id),
+    ]);
 
     if (userId != null) {
       try {
@@ -528,7 +540,14 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     });
     final rawList = res.data is List ? (res.data as List) : <dynamic>[];
     if (rawList.isNotEmpty) {
-      return StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+      final joined =
+          StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+      final cachedCircles = _getLocalPersistedCircles();
+      _persistCirclesLocally([
+        joined,
+        ...cachedCircles.where((c) => c.id != joined.id),
+      ]);
+      return joined;
     }
     throw Exception('Failed to fetch joined study circle');
   }
@@ -553,7 +572,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         _persistSharedDecksLocally(decks);
       }
       return decks;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
           _crashlyticsService!.recordError(
@@ -601,7 +620,14 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to publish shared deck');
     }
-    return SharedDeckModel.fromJson(rawList.first as Map<String, dynamic>);
+    final published =
+        SharedDeckModel.fromJson(rawList.first as Map<String, dynamic>);
+    final cachedDecks = _getLocalPersistedSharedDecks();
+    _persistSharedDecksLocally([
+      published,
+      ...cachedDecks.where((d) => d.id != published.id),
+    ]);
+    return published;
   }
 
   @override
@@ -786,13 +812,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         id: 'curated_room_pomodoro_silent',
         title: 'Silent Pomodoro Library',
         subject: 'General Study',
-        category: 'General',
-        pomodoroDurationMinutes: 25,
-        pomodoroState: 'focusing',
         activeParticipantsCount: 14,
-        ambientSoundTrack: 'lofi',
         activeGoal: 'Deep study & silent focus sprint',
-        isSilentFocus: true,
       ),
       StudyRoomModel(
         id: 'curated_room_stem_lab',
@@ -800,11 +821,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         subject: 'Science & Engineering',
         category: 'STEM',
         pomodoroDurationMinutes: 50,
-        pomodoroState: 'focusing',
         activeParticipantsCount: 8,
         ambientSoundTrack: 'binaural',
         activeGoal: 'Problem solving & derivation sprint',
-        isSilentFocus: true,
       ),
       StudyRoomModel(
         id: 'curated_room_exam_prep',
@@ -812,11 +831,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         subject: 'All Subjects',
         category: 'Exam Prep',
         pomodoroDurationMinutes: 45,
-        pomodoroState: 'focusing',
         activeParticipantsCount: 19,
         ambientSoundTrack: 'rain',
         activeGoal: 'Past question drills & active recall',
-        isSilentFocus: true,
       ),
     ];
     if (category != null && category.isNotEmpty && category != 'All') {
@@ -873,10 +890,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         id: 'curated_circle_sprint',
         name: '$effectiveTrack Study Circle',
         track: effectiveTrack,
-        targetWeeklyMinutes: 600,
         memberCount: 5,
-        maxMembers: 6,
-        members: const [],
       ),
     ];
   }
@@ -935,7 +949,6 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         totalCards: 20,
         downloadsCount: 142,
         rating: 4.9,
-        cards: const [],
       ),
     ];
   }

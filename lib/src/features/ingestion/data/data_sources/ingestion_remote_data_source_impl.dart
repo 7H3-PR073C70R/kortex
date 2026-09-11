@@ -86,7 +86,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           final list = jsonDecode(raw) as List<dynamic>;
           return list
               .whereType<Map<String, dynamic>>()
-              .map((json) => DocumentUploadModel.fromJson(json))
+              .map(DocumentUploadModel.fromJson)
               .toList();
         }
       }

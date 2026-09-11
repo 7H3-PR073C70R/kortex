@@ -10,25 +10,26 @@ void main() {
       final bookBuffer = StringBuffer();
 
       for (var chapter = 1; chapter <= 15; chapter++) {
-        bookBuffer.writeln('Chapter $chapter: Advanced Principles of Domain Architecture $chapter');
-        bookBuffer.writeln('Section $chapter.1 Core Theoretical Foundation');
-        bookBuffer.writeln(
-          'The primary operational foundation of Chapter $chapter defines how systemic models '
-          'integrate boundary conditions with empirical observations. Every system under Chapter $chapter '
-          'must satisfy the equilibrium relation and conserve energy states across all intervals.\n',
-        );
-        bookBuffer.writeln('Section $chapter.2 Mathematical Formulations and Governing Rules');
-        bookBuffer.writeln(
-          'Rule $chapter.2.1: The primary governance criterion specifies that the coefficient of determination '
-          'R^2 must exceed 0.95 under standard testing protocols. All anomalous deviations must be recorded '
-          'and cataloged in the diagnostic ledger.\n',
-        );
-        bookBuffer.writeln('Section $chapter.3 Execution Framework and Checklist');
-        bookBuffer.writeln(
-          'Step 1: Calibrate telemetry sensors before testing.\n'
-          'Step 2: Apply dynamic frequency sampling at 100Hz.\n'
-          'Step 3: Verify boundary limits and log experimental outcomes.\n',
-        );
+        bookBuffer
+          ..writeln('Chapter $chapter: Advanced Principles of Domain Architecture $chapter')
+          ..writeln('Section $chapter.1 Core Theoretical Foundation')
+          ..writeln(
+            'The primary operational foundation of Chapter $chapter defines how systemic models '
+            'integrate boundary conditions with empirical observations. Every system under Chapter $chapter '
+            'must satisfy the equilibrium relation and conserve energy states across all intervals.\n',
+          )
+          ..writeln('Section $chapter.2 Mathematical Formulations and Governing Rules')
+          ..writeln(
+            'Rule $chapter.2.1: The primary governance criterion specifies that the coefficient of determination '
+            'R^2 must exceed 0.95 under standard testing protocols. All anomalous deviations must be recorded '
+            'and cataloged in the diagnostic ledger.\n',
+          )
+          ..writeln('Section $chapter.3 Execution Framework and Checklist')
+          ..writeln(
+            'Step 1: Calibrate telemetry sensors before testing.\n'
+            'Step 2: Apply dynamic frequency sampling at 100Hz.\n'
+            'Step 3: Verify boundary limits and log experimental outcomes.\n',
+          );
       }
 
       final fullBookText = bookBuffer.toString();

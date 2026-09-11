@@ -2169,6 +2169,88 @@
             }
         }
     },
+    "createStudyCircleTitle": "Create Study Circle",
+    "@createStudyCircleTitle": {
+        "description": "Header title for creating a study circle"
+    },
+    "studyCircleMicroPodsSubtitle": "Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.",
+    "@studyCircleMicroPodsSubtitle": {
+        "description": "Subtitle explaining micro-pod study circles"
+    },
+    "circleNameLabel": "Circle Name",
+    "@circleNameLabel": {
+        "description": "Label for circle name input"
+    },
+    "circleNameHint": "e.g. 2026 JAMB Physics Slayers",
+    "@circleNameHint": {
+        "description": "Hint text for circle name input"
+    },
+    "academicTrackLabel": "Academic Track",
+    "@academicTrackLabel": {
+        "description": "Label for academic track selection"
+    },
+    "weeklyTargetLabel": "Weekly Target",
+    "@weeklyTargetLabel": {
+        "description": "Label for weekly study target"
+    },
+    "weeklyTargetHoursAndMins": "{hours} hrs ({mins} mins)",
+    "@weeklyTargetHoursAndMins": {
+        "description": "Weekly study target in hours and minutes",
+        "placeholders": {
+            "hours": {
+                "type": "String",
+                "example": "10.0"
+            },
+            "mins": {
+                "type": "int",
+                "example": "600"
+            }
+        }
+    },
+    "launchStudyCircleAction": "Launch Study Circle",
+    "@launchStudyCircleAction": {
+        "description": "Button to submit and create a study circle"
+    },
+    "firstToJoinCircle": "Be the first to join!",
+    "@firstToJoinCircle": {
+        "description": "Notice when circle has no members yet"
+    },
+    "yourPodLabel": "Your Pod",
+    "@yourPodLabel": {
+        "description": "Label indicating user is in this study circle"
+    },
+    "podFullLabel": "Pod Full",
+    "@podFullLabel": {
+        "description": "Label indicating study circle is full"
+    },
+    "joinPodLabel": "Join Pod",
+    "@joinPodLabel": {
+        "description": "Label on button to join study circle"
+    },
+    "studyNudgeSentNotice": "Sent 1-tap study nudge to your pod members! ⚡️",
+    "@studyNudgeSentNotice": {
+        "description": "Notice when user sends a study nudge"
+    },
+    "nudgeAction": "Nudge",
+    "@nudgeAction": {
+        "description": "Button label to nudge study pod members"
+    },
+    "liveRoomDiscussionTitle": "Live Room Discussion",
+    "@liveRoomDiscussionTitle": {
+        "description": "Title for live room chat drawer"
+    },
+    "liveRoomDiscussionSubtitle": "Real-time messages across room scholars",
+    "@liveRoomDiscussionSubtitle": {
+        "description": "Subtitle for live room chat drawer"
+    },
+    "noChatMessagesPrompt": "No messages yet. Say hello or send a reaction!",
+    "@noChatMessagesPrompt": {
+        "description": "Empty state for room chat"
+    },
+    "chatInputHint": "Ask a question or share notes...",
+    "@chatInputHint": {
+        "description": "Hint text in room chat input"
+    },
     "micMuted": "Muted",
     "@micMuted": {
         "description": "State when microphone is muted"
@@ -2701,6 +2783,64 @@
     "saveExamCountdown": "Save Exam Countdown",
     "@saveExamCountdown": {
         "description": "Submit button for saving exam countdown"
+    },
+    "updateExamCountdown": "Update Exam",
+    "@updateExamCountdown": {
+        "description": "Action button text for updating existing exam"
+    },
+    "examNameRequired": "Please enter exam name",
+    "@examNameRequired": {
+        "description": "Validation error message when exam name is empty"
+    },
+    "estimatedExamWorkload": "Estimated Exam Workload",
+    "@estimatedExamWorkload": {
+        "description": "Header title for estimated workload section"
+    },
+    "examTotalStudyItems": "{count} total study items",
+    "@examTotalStudyItems": {
+        "description": "Count of total study items for exam preparation",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "42"
+            }
+        }
+    },
+    "examNoStudyItems": "No study items detected yet",
+    "@examNoStudyItems": {
+        "description": "Message when no study decks or past questions are found"
+    },
+    "examWorkloadBreakdown": "• {deckCards} cards across course study decks\n• {pastQuestions} past questions included",
+    "@examWorkloadBreakdown": {
+        "description": "Itemized workload breakdown for an exam",
+        "placeholders": {
+            "deckCards": {
+                "type": "int",
+                "example": "120"
+            },
+            "pastQuestions": {
+                "type": "int",
+                "example": "50"
+            }
+        }
+    },
+    "recommendedDailyPaceLabel": "Recommended Daily Pace:",
+    "@recommendedDailyPaceLabel": {
+        "description": "Label for recommended daily study pace"
+    },
+    "dailyTargetPace": "~{count} items / day",
+    "@dailyTargetPace": {
+        "description": "Recommended daily study items target",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "15"
+            }
+        }
+    },
+    "timePickerLabel": "Time",
+    "@timePickerLabel": {
+        "description": "Label for selecting exam time"
     },
     "quizTitle": "Practice Quiz & Mock Exam",
     "@quizTitle": {

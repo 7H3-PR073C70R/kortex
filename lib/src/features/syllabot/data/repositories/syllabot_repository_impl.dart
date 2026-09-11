@@ -150,6 +150,9 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       try {
         final remote = await _remote.getSessionMessages(sessionId: sessionId);
         if (remote.isNotEmpty) {
+          for (final m in remote) {
+            unawaited(_local.cacheMessage(m.toEntity()));
+          }
           return remote.map((m) => m.toEntity()).toList();
         }
       } on Object catch (_) {}

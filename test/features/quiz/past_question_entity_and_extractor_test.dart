@@ -12,11 +12,12 @@ void main() {
         subject: 'Physics',
         year: 2024,
         questionNumber: 1,
-        prompt: 'State Newton\'s second law of motion and derive F = ma.',
+        prompt: "State Newton's second law of motion and derive F = ma.",
         options: [],
         correctOptionIndex: 0,
         correctOptionLabel: '',
-        explanation: 'Newton\'s second law states that the rate of change of momentum is proportional to the applied force.',
+        explanation:
+            "Newton's second law states that the rate of change of momentum is proportional to the applied force.",
         topic: 'Mechanics',
         isUserAdded: true,
         courseId: 'phy_101',
@@ -42,7 +43,6 @@ void main() {
         correctOptionLabel: 'B',
         explanation: 'At 25°C, pure water has [H+] = 10^-7 M, giving a pH of 7.',
         topic: 'Acids and Bases',
-        isUserAdded: false,
       );
 
       expect(mcqQuestion.isTheory, isFalse);
@@ -124,7 +124,6 @@ void main() {
         correctOptionLabel: 'D',
         explanation: '32 = 2^5, hence x = 5.',
         topic: 'Indices',
-        isUserAdded: false,
       );
 
       final quizQuestion = QuizQuestionEntity.fromPastQuestion(mcqPq);

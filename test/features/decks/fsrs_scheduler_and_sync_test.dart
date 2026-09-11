@@ -85,6 +85,12 @@ class _FakeUserStorageService implements UserStorageService {
   Future<void> saveUserEmail(String email) async {}
 
   @override
+  Future<void> saveUserDisplayName(String displayName) async {}
+
+  @override
+  Future<void> saveUserAvatarUrl(String avatarUrl) async {}
+
+  @override
   Future<void> saveProStatus({required bool isPro}) async => this.isPro = isPro;
 
   @override

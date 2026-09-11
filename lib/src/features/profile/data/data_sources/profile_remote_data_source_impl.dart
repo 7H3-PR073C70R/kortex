@@ -27,6 +27,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         userId: _userId,
         displayName: displayName,
       );
+      await _userStorage.saveUserDisplayName(displayName);
     } on DioException catch (e) {
       throw ServerException(message: e.message ?? 'Failed to update name');
     } on Object catch (e) {
@@ -41,6 +42,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         userId: _userId,
         photoUrl: photoUrl,
       );
+      await _userStorage.saveUserAvatarUrl(photoUrl);
     } on DioException catch (e) {
       throw ServerException(message: e.message ?? 'Failed to update avatar');
     } on Object catch (e) {

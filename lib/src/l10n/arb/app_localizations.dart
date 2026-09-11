@@ -2762,6 +2762,114 @@ abstract class AppLocalizations {
   /// **'{count} in this room'**
   String inThisRoom(int count);
 
+  /// Header title for creating a study circle
+  ///
+  /// In en, this message translates to:
+  /// **'Create Study Circle'**
+  String get createStudyCircleTitle;
+
+  /// Subtitle explaining micro-pod study circles
+  ///
+  /// In en, this message translates to:
+  /// **'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.'**
+  String get studyCircleMicroPodsSubtitle;
+
+  /// Label for circle name input
+  ///
+  /// In en, this message translates to:
+  /// **'Circle Name'**
+  String get circleNameLabel;
+
+  /// Hint text for circle name input
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 2026 JAMB Physics Slayers'**
+  String get circleNameHint;
+
+  /// Label for academic track selection
+  ///
+  /// In en, this message translates to:
+  /// **'Academic Track'**
+  String get academicTrackLabel;
+
+  /// Label for weekly study target
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Target'**
+  String get weeklyTargetLabel;
+
+  /// Weekly study target in hours and minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} hrs ({mins} mins)'**
+  String weeklyTargetHoursAndMins(String hours, int mins);
+
+  /// Button to submit and create a study circle
+  ///
+  /// In en, this message translates to:
+  /// **'Launch Study Circle'**
+  String get launchStudyCircleAction;
+
+  /// Notice when circle has no members yet
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to join!'**
+  String get firstToJoinCircle;
+
+  /// Label indicating user is in this study circle
+  ///
+  /// In en, this message translates to:
+  /// **'Your Pod'**
+  String get yourPodLabel;
+
+  /// Label indicating study circle is full
+  ///
+  /// In en, this message translates to:
+  /// **'Pod Full'**
+  String get podFullLabel;
+
+  /// Label on button to join study circle
+  ///
+  /// In en, this message translates to:
+  /// **'Join Pod'**
+  String get joinPodLabel;
+
+  /// Notice when user sends a study nudge
+  ///
+  /// In en, this message translates to:
+  /// **'Sent 1-tap study nudge to your pod members! ⚡️'**
+  String get studyNudgeSentNotice;
+
+  /// Button label to nudge study pod members
+  ///
+  /// In en, this message translates to:
+  /// **'Nudge'**
+  String get nudgeAction;
+
+  /// Title for live room chat drawer
+  ///
+  /// In en, this message translates to:
+  /// **'Live Room Discussion'**
+  String get liveRoomDiscussionTitle;
+
+  /// Subtitle for live room chat drawer
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time messages across room scholars'**
+  String get liveRoomDiscussionSubtitle;
+
+  /// Empty state for room chat
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet. Say hello or send a reaction!'**
+  String get noChatMessagesPrompt;
+
+  /// Hint text in room chat input
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question or share notes...'**
+  String get chatInputHint;
+
   /// State when microphone is muted
   ///
   /// In en, this message translates to:
@@ -3361,6 +3469,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save Exam Countdown'**
   String get saveExamCountdown;
+
+  /// Action button text for updating existing exam
+  ///
+  /// In en, this message translates to:
+  /// **'Update Exam'**
+  String get updateExamCountdown;
+
+  /// Validation error message when exam name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter exam name'**
+  String get examNameRequired;
+
+  /// Header title for estimated workload section
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Exam Workload'**
+  String get estimatedExamWorkload;
+
+  /// Count of total study items for exam preparation
+  ///
+  /// In en, this message translates to:
+  /// **'{count} total study items'**
+  String examTotalStudyItems(int count);
+
+  /// Message when no study decks or past questions are found
+  ///
+  /// In en, this message translates to:
+  /// **'No study items detected yet'**
+  String get examNoStudyItems;
+
+  /// Itemized workload breakdown for an exam
+  ///
+  /// In en, this message translates to:
+  /// **'• {deckCards} cards across course study decks\n• {pastQuestions} past questions included'**
+  String examWorkloadBreakdown(int deckCards, int pastQuestions);
+
+  /// Label for recommended daily study pace
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Daily Pace:'**
+  String get recommendedDailyPaceLabel;
+
+  /// Recommended daily study items target
+  ///
+  /// In en, this message translates to:
+  /// **'~{count} items / day'**
+  String dailyTargetPace(int count);
+
+  /// Label for selecting exam time
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timePickerLabel;
 
   /// Title of the quiz workspace view
   ///

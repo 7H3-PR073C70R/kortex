@@ -28,6 +28,10 @@ abstract class UserStorageService {
 
   Future<void> saveUserEmail(String email);
 
+  Future<void> saveUserDisplayName(String displayName);
+
+  Future<void> saveUserAvatarUrl(String avatarUrl);
+
   Future<void> saveProStatus({required bool isPro});
 
   bool isProSubscriber();
@@ -57,6 +61,8 @@ class UserStorageServiceImpl implements UserStorageService {
   String? _cachedToken;
   String? _cachedRefreshToken;
   String? _cachedEmail;
+  String? _cachedDisplayName;
+  String? _cachedAvatarUrl;
 
   @override
   Future<void> initStorage() async {
@@ -73,6 +79,10 @@ class UserStorageServiceImpl implements UserStorageService {
           _localStorageService.getPreference(key: _refreshTokenKey);
       _cachedEmail = _localStorageService.getPreference(key: _emailKey);
     }
+    _cachedDisplayName =
+        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
+    _cachedAvatarUrl =
+        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
   }
 
   void _initCache() {
@@ -80,6 +90,10 @@ class UserStorageServiceImpl implements UserStorageService {
     _cachedRefreshToken ??=
         _localStorageService.getPreference(key: _refreshTokenKey);
     _cachedEmail ??= _localStorageService.getPreference(key: _emailKey);
+    _cachedDisplayName ??=
+        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
+    _cachedAvatarUrl ??=
+        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
     unawaited(initStorage());
   }
 
@@ -136,12 +150,23 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   String? getUserDisplayName() {
+    if (_cachedDisplayName != null && _cachedDisplayName!.trim().isNotEmpty) {
+      return _cachedDisplayName!.trim();
+    }
+    final fromStorage =
+        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
+    if (fromStorage != null && fromStorage.trim().isNotEmpty) {
+      return _cachedDisplayName = fromStorage.trim();
+    }
     final map = _decodeJwtPayload();
     if (map == null) return null;
     final metadata = map['user_metadata'] as Map<String, dynamic>?;
     final name = metadata?['display_name'] as String? ??
         metadata?['full_name'] as String? ??
-        metadata?['name'] as String?;
+        metadata?['name'] as String? ??
+        map['display_name'] as String? ??
+        map['full_name'] as String? ??
+        map['name'] as String?;
     if (name != null && name.trim().isNotEmpty) return name.trim();
     final email = map['email'] as String?;
     if (email != null && email.contains('@')) {
@@ -152,12 +177,23 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   String? getUserAvatarUrl() {
+    if (_cachedAvatarUrl != null && _cachedAvatarUrl!.trim().isNotEmpty) {
+      return _cachedAvatarUrl!.trim();
+    }
+    final fromStorage =
+        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
+    if (fromStorage != null && fromStorage.trim().isNotEmpty) {
+      return _cachedAvatarUrl = fromStorage.trim();
+    }
     final map = _decodeJwtPayload();
     if (map == null) return null;
     final metadata = map['user_metadata'] as Map<String, dynamic>?;
     return metadata?['avatar_url'] as String? ??
         metadata?['picture'] as String? ??
-        metadata?['photo_url'] as String?;
+        metadata?['photo_url'] as String? ??
+        map['avatar_url'] as String? ??
+        map['picture'] as String? ??
+        map['photo_url'] as String?;
   }
 
   @override
@@ -274,10 +310,40 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
+  Future<void> saveUserDisplayName(String displayName) async {
+    final clean = displayName.trim();
+    _cachedDisplayName = clean;
+    try {
+      await _localStorageService.savePreference(
+        key: PrefKeys.userDisplayName,
+        data: clean,
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  @override
+  Future<void> saveUserAvatarUrl(String avatarUrl) async {
+    final clean = avatarUrl.trim();
+    _cachedAvatarUrl = clean;
+    try {
+      await _localStorageService.savePreference(
+        key: PrefKeys.userAvatarUrl,
+        data: clean,
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  @override
   void clearStorage() {
     _cachedToken = null;
     _cachedRefreshToken = null;
     _cachedEmail = null;
+    _cachedDisplayName = null;
+    _cachedAvatarUrl = null;
     unawaited(_safeSecureDelete(_tokenKey));
     unawaited(_safeSecureDelete(_refreshTokenKey));
     unawaited(_safeSecureDelete(_emailKey));
@@ -285,5 +351,7 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(_safeLocalDelete(_refreshTokenKey));
     unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     unawaited(_safeLocalDelete(_emailKey));
+    unawaited(_safeLocalDelete(PrefKeys.userDisplayName));
+    unawaited(_safeLocalDelete(PrefKeys.userAvatarUrl));
   }
 }

@@ -70,17 +70,17 @@ class MockLiveKitAudioService implements LiveKitAudioService {
     }
   }
 
-  void simulateHardwareMicState(bool enabled) {
+  void simulateHardwareMicState({required bool enabled}) {
     _isMicEnabled = enabled;
     if (!_micStateController.isClosed) {
       _micStateController.add(enabled);
     }
   }
 
-  void dispose() {
-    _speakersController.close();
-    _micStateController.close();
-    _connStateController.close();
+  Future<void> dispose() async {
+    await _speakersController.close();
+    await _micStateController.close();
+    await _connStateController.close();
   }
 }
 
@@ -154,8 +154,8 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }) async =>
       const Right(null);
 
-  void dispose() {
-    _participantsCtrl.close();
+  Future<void> dispose() async {
+    await _participantsCtrl.close();
   }
 }
 
@@ -192,15 +192,13 @@ void main() {
       title: 'Neurobiology Focus Room',
       subject: 'Medicine',
       category: 'STEM',
-      pomodoroDurationMinutes: 25,
       activeParticipantsCount: 4,
-      pomodoroState: 'focusing',
     );
   });
 
-  tearDown(() {
-    mockAudioService.dispose();
-    mockEphemeralRepo.dispose();
+  tearDown(() async {
+    await mockAudioService.dispose();
+    await mockEphemeralRepo.dispose();
   });
 
   group('Live Study Room Mic Toggle & State Synchronization Tests', () {
@@ -263,10 +261,8 @@ void main() {
         audioService: mockAudioService,
         currentUserId: 'user-ade',
         currentUserName: 'Adekunle',
-      );
+      )..toggleMicMute();
 
-      // Unmute
-      cubit.toggleMicMute();
       expect(cubit.state.isMuted, isFalse);
 
       // Mute again
@@ -297,14 +293,12 @@ void main() {
         audioService: mockAudioService,
         currentUserId: 'user-ade',
         currentUserName: 'Adekunle',
-      );
+      )..toggleMicMute();
 
-      // Turn on mic first
-      cubit.toggleMicMute();
       expect(cubit.state.isMuted, isFalse);
 
       // Simulate system revoking mic permission or muting via hardware switch
-      mockAudioService.simulateHardwareMicState(false);
+      mockAudioService.simulateHardwareMicState(enabled: false);
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(cubit.state.isMuted, isTrue);
@@ -348,9 +342,7 @@ void main() {
         audioService: mockAudioService,
         currentUserId: 'user-ade',
         currentUserName: 'Adekunle',
-      );
-
-      cubit.triggerMicroReaction('🔥');
+      )..triggerMicroReaction('🔥');
 
       expect(cubit.state.lastReactionEmoji, '🔥');
       expect(cubit.state.recentActivityTicker.first, contains('You sent 🔥'));

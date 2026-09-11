@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CreateStudyCircleSheet extends HookWidget {
@@ -42,6 +43,7 @@ class CreateStudyCircleSheet extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final nameController = useTextEditingController();
     final selectedTrack = useState<String>(initialTrack);
@@ -82,7 +84,7 @@ class CreateStudyCircleSheet extends HookWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Create Study Circle',
+                      l10n.createStudyCircleTitle,
                       style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
                       ),
@@ -97,7 +99,7 @@ class CreateStudyCircleSheet extends HookWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.',
+              l10n.studyCircleMicroPodsSubtitle,
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary,
               ),
@@ -106,7 +108,7 @@ class CreateStudyCircleSheet extends HookWidget {
 
             // Pod Name input
             Text(
-              'Circle Name',
+              l10n.circleNameLabel,
               style: typography.caption.bold.copyWith(
                 color: colors.textSecondary,
               ),
@@ -115,7 +117,7 @@ class CreateStudyCircleSheet extends HookWidget {
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                hintText: 'e.g. 2026 JAMB Physics Slayers',
+                hintText: l10n.circleNameHint,
                 hintStyle: typography.body.regular.copyWith(
                   color: colors.textSecondary.withAlpha(120),
                 ),
@@ -133,7 +135,7 @@ class CreateStudyCircleSheet extends HookWidget {
 
             // Track Selection Chips
             Text(
-              'Academic Track',
+              l10n.academicTrackLabel,
               style: typography.caption.bold.copyWith(
                 color: colors.textSecondary,
               ),
@@ -163,13 +165,16 @@ class CreateStudyCircleSheet extends HookWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Weekly Target',
+                  l10n.weeklyTargetLabel,
                   style: typography.caption.bold.copyWith(
                     color: colors.textSecondary,
                   ),
                 ),
                 Text(
-                  '${(targetMinutes.value / 60).toStringAsFixed(1)} hrs (${targetMinutes.value} mins)',
+                  l10n.weeklyTargetHoursAndMins(
+                    (targetMinutes.value / 60).toStringAsFixed(1),
+                    targetMinutes.value,
+                  ),
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
                   ),
@@ -208,7 +213,7 @@ class CreateStudyCircleSheet extends HookWidget {
                 ),
                 child: Center(
                   child: Text(
-                    'Launch Study Circle',
+                    l10n.launchStudyCircleAction,
                     style: typography.footnote.bold.copyWith(
                       color: colors.white,
                     ),

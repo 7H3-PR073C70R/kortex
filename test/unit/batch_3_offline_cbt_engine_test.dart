@@ -27,11 +27,11 @@ class MockSubmitQuizAnswersUseCase extends Mock
 List<PastQuestionModel> _buildTestQuestions() {
   final subjects = ['Mathematics', 'English Language', 'Chemistry', 'Physics'];
   final list = <PastQuestionModel>[];
-  int idCounter = 1;
+  var idCounter = 1;
   for (final cat in [ExamCategory.waec, ExamCategory.jamb]) {
     for (final sub in subjects) {
       for (final yr in [2023, 2022]) {
-        for (int q = 1; q <= 5; q++) {
+        for (var q = 1; q <= 5; q++) {
           list.add(
             PastQuestionModel(
               id: 'test-q-${idCounter++}',

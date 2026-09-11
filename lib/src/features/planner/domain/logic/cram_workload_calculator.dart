@@ -120,4 +120,3 @@ class CramWorkloadCalculator {
     return trajectory;
   }
 }
-

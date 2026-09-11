@@ -161,12 +161,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         // Triggers immediate speech on the first clause, comma, colon, or question
         final firstClauseDelimiters = RegExp(r'([,;:!?\n]+)\s*');
         final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
-        var accumulated = '';
+        final accumulatedBuffer = StringBuffer();
         var firstSentenceSpoken = false;
 
         await for (final chunk in stream) {
           if (!mounted) break;
-          accumulated = '$accumulated$chunk';
+          accumulatedBuffer.write(chunk);
+          var accumulated = accumulatedBuffer.toString();
 
           if (!firstSentenceSpoken) {
             final match = firstClauseDelimiters.firstMatch(accumulated);
@@ -176,6 +177,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
               final splitIndex = match != null ? match.end : accumulated.length;
               final firstClause = accumulated.substring(0, splitIndex).trim();
               accumulated = accumulated.substring(splitIndex);
+              accumulatedBuffer
+                ..clear()
+                ..write(accumulated);
 
               if (firstClause.isNotEmpty) {
                 firstSentenceSpoken = true;
@@ -192,6 +196,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
             while ((match = sentenceDelimiters.firstMatch(accumulated)) != null) {
               final sentence = accumulated.substring(0, match!.end).trim();
               accumulated = accumulated.substring(match.end);
+              accumulatedBuffer
+                ..clear()
+                ..write(accumulated);
 
               if (sentence.isNotEmpty) {
                 await widget.ttsHandler.enqueueSentence(sentence);
@@ -208,7 +215,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         }
 
         // Flush any remaining partial sentence
-        final remaining = accumulated.trim();
+        final remaining = accumulatedBuffer.toString().trim();
         if (remaining.isNotEmpty) {
           if (!firstSentenceSpoken && mounted) {
             setState(() {

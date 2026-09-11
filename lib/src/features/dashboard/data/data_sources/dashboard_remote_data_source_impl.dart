@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
@@ -20,12 +21,25 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     this._client, {
     UserActivityService? userActivityService,
     LocalStorageService? storageService,
+    AppDatabase? database,
   })  : _userActivityService = userActivityService,
-        _storageService = storageService;
+        _storageService = storageService,
+        _database = database;
 
   final DashboardApiClient _client;
   final UserActivityService? _userActivityService;
   final LocalStorageService? _storageService;
+  final AppDatabase? _database;
+
+  AppDatabase? get _effectiveDatabase {
+    if (_database != null) return _database;
+    try {
+      if (locator.isRegistered<AppDatabase>()) {
+        return locator<AppDatabase>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
 
   LocalStorageService? get _storage {
     if (_storageService != null) return _storageService;
@@ -129,14 +143,22 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         final list = jsonDecode(raw) as List<dynamic>;
         return list.map((e) {
           final m = e as Map<String, dynamic>;
+          final due = ((m['dueCards'] ?? m['due_cards']) as int?) ?? 0;
+          final total = ((m['totalCards'] ?? m['total_cards']) as int?) ?? 10;
+          final mastery =
+              ((m['masteryRate'] ?? m['mastery_rate']) as num?)?.toDouble() ??
+                  0.8;
+          final lastStudied =
+              ((m['lastStudied'] ?? m['last_studied']) as String?) ??
+                  DateTime.now().toIso8601String();
           return StudyDeckModel(
             id: (m['id'] as String?) ?? 'deck',
             title: (m['title'] as String?) ?? 'Study Deck',
             subject: (m['subject'] as String?) ?? 'General Studies',
-            totalCards: (m['totalCards'] as int?) ?? 10,
-            dueCards: (m['dueCards'] as int?) ?? 0,
-            retentionRate: (m['masteryRate'] as num?)?.toDouble() ?? 0.8,
-            lastReviewedIso: DateTime.now().toIso8601String(),
+            totalCards: total,
+            dueCards: due,
+            retentionRate: mastery,
+            lastReviewedIso: lastStudied,
             category: (m['category'] as String?) ?? 'General',
             colorHex: m['colorHex'] as String?,
           );
@@ -150,7 +172,31 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   Future<DashboardFeedModel> getDashboardFeed() async {
     final liveAnalytics = _userActivityService?.getAnalyticsSummary();
     final localCourses = _getLocallySavedCourses();
-    final localDecks = _getLocallySavedDecks();
+    var localDecks = _getLocallySavedDecks();
+    final db = _effectiveDatabase;
+    if (localDecks.isEmpty && db != null) {
+      try {
+        final entries = await db.getAllDecks();
+        if (entries.isNotEmpty) {
+          localDecks = entries
+              .where((d) => d.dueCards > 0)
+              .map(
+                (d) => StudyDeckModel(
+                  id: d.id,
+                  title: d.title,
+                  subject: d.subject,
+                  totalCards: d.totalCards,
+                  dueCards: d.dueCards,
+                  retentionRate: d.masteryRate,
+                  lastReviewedIso:
+                      (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                  category: d.category,
+                ),
+              )
+              .toList();
+        }
+      } on Object catch (_) {}
+    }
 
     try {
       var feed = await _client.getDashboardFeed(const {});
@@ -183,15 +229,13 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       }
       if (liveAnalytics != null &&
           (liveAnalytics.currentStreakDays > 0 ||
-              liveAnalytics.totalCardsMastered > 0 ||
-              liveAnalytics.weeklyMinutesStudied > 0 ||
-              liveAnalytics.overallRetentionRate > 0 ||
-              liveAnalytics.xpPoints > 0)) {
-        return feed.copyWith(analyticsSummary: liveAnalytics);
+              liveAnalytics.xpPoints > 0 ||
+              liveAnalytics.weeklyMinutesStudied > 0)) {
+        feed = feed.copyWith(analyticsSummary: liveAnalytics);
       }
       return feed;
     } on Object catch (_) {
-      return _generateFallbackFeedModel(liveAnalytics);
+      return _generateFallbackFeedModel(liveAnalytics, fallbackDecks: localDecks);
     }
   }
 
@@ -200,10 +244,37 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     try {
       final decks = await _client.getReviewQueue();
       if (decks.isNotEmpty) return decks;
-      return _getLocallySavedDecks();
-    } on Object catch (_) {
-      return _getLocallySavedDecks();
+    } on Object catch (_) {}
+
+    final local = _getLocallySavedDecks();
+    if (local.isNotEmpty) return local;
+
+    final db = _effectiveDatabase;
+    if (db != null) {
+      try {
+        final entries = await db.getAllDecks();
+        if (entries.isNotEmpty) {
+          return entries
+              .where((d) => d.dueCards > 0)
+              .map(
+                (d) => StudyDeckModel(
+                  id: d.id,
+                  title: d.title,
+                  subject: d.subject,
+                  totalCards: d.totalCards,
+                  dueCards: d.dueCards,
+                  retentionRate: d.masteryRate,
+                  lastReviewedIso:
+                      (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                  category: d.category,
+                ),
+              )
+              .toList();
+        }
+      } on Object catch (_) {}
     }
+
+    return local;
   }
 
   @override
@@ -211,7 +282,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     try {
       final courses = await _client.getCuratedCoursesCatalog();
       if (courses.isNotEmpty) {
-        if (locator.isRegistered<AppDatabase>()) {
+        final db = _effectiveDatabase;
+        if (db != null) {
           try {
             final now = DateTime.now();
             final companions = courses.map((c) {
@@ -229,7 +301,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 updatedAt: Value(now),
               );
             }).toList();
-            await locator<AppDatabase>().batchUpsertCourseModules(companions);
+            await db.batchUpsertCourseModules(companions);
           } on Object catch (_) {}
         }
         return courses;
@@ -393,10 +465,20 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         key: PrefKeys.userCuratedCourses,
         data: jsonStr,
       );
+      final db = _effectiveDatabase;
+      if (db != null) {
+        try {
+          await db.deleteCourseModuleById(courseId);
+        } on Object catch (e) {
+          developer.log('Error deleting course module from SQLite: $e');
+        }
+      }
       await _client.syncUserCourses({
         'p_courses': updated.map((c) => c.toJson()).toList(),
       });
-    } on Object catch (_) {}
+    } on Object catch (e) {
+      developer.log('Error in deleteCuratedCourse: $e');
+    }
   }
 
   @override
@@ -405,9 +487,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       await _storage?.deletePreference(key: PrefKeys.userCuratedCourses);
       await _storage?.deletePreference(key: PrefKeys.syncedSecondarySubjects);
       await _storage?.deletePreference(key: '__calibration_profile');
-      if (locator.isRegistered<AppDatabase>()) {
+      final db = _effectiveDatabase;
+      if (db != null) {
         try {
-          await locator<AppDatabase>().deleteAllCourseModules();
+          await db.deleteAllCourseModules();
         } on Object catch (_) {}
       }
       await _client.syncUserCourses({
@@ -435,8 +518,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   DashboardFeedModel _generateFallbackFeedModel(
-    AnalyticsSummaryModel? liveAnalytics,
-  ) {
+    AnalyticsSummaryModel? liveAnalytics, {
+    List<StudyDeckModel>? fallbackDecks,
+  }) {
     final analytics =
         liveAnalytics ??
         _userActivityService?.getAnalyticsSummary() ??
@@ -458,7 +542,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
     return DashboardFeedModel(
       analyticsSummary: analytics,
-      dueStudyDecks: _getLocallySavedDecks(),
+      dueStudyDecks: fallbackDecks ?? _getLocallySavedDecks(),
       curatedCourses: _getLocallySavedCourses(),
       syllabotDailyInsight: insight,
     );

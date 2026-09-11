@@ -201,7 +201,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
                 latex = (jsonDecode(e.latexSnippets!) as List<dynamic>)
                     .map((x) => x.toString())
                     .toList();
-              } catch (_) {}
+              } on Object catch (_) {}
             }
             return ChatMessageModel(
               id: e.id,
@@ -325,4 +325,3 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     }
   }
 }
-

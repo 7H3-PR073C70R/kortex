@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class RoomChatDrawer extends StatefulWidget {
@@ -64,18 +65,21 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     if (text.isEmpty) return;
 
     AppFeedback.light();
-    context.read<LiveRoomCubit>().sendChatMessage(text, isReaction: isReaction);
+    context.read<LiveRoomCubit>().sendChatMessage(
+      text,
+      isReaction: isReaction,
+    );
 
     if (explicitText == null) {
       _textController.clear();
     }
 
-    // Auto-scroll to bottom after frame
+    // Scroll to bottom on sending
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         unawaited(
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
+            _scrollController.position.maxScrollExtent + 60,
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
           ),
@@ -89,6 +93,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     return Container(
       constraints: BoxConstraints(
@@ -143,13 +148,13 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Live Room Discussion',
+                      l10n.liveRoomDiscussionTitle,
                       style: typography.callout.bold.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
                     Text(
-                      'Real-time messages across room scholars',
+                      l10n.liveRoomDiscussionSubtitle,
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 11,
@@ -209,7 +214,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'No messages yet. Say hello or send a reaction!',
+                          l10n.noChatMessagesPrompt,
                           style: typography.caption.medium.copyWith(
                             color: colors.textSecondary,
                           ),
@@ -262,7 +267,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                       color: colors.textPrimary,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Ask a question or share notes...',
+                      hintText: l10n.chatInputHint,
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: colors.textSecondary,

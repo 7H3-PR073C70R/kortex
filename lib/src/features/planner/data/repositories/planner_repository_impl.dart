@@ -397,6 +397,15 @@ class PlannerRepositoryImpl implements PlannerRepository {
         }
       }
 
+      final db = _effectiveDatabase;
+      if (db != null) {
+        try {
+          await db.deleteExamEventById(examId);
+        } on Object catch (e) {
+          developer.log('Error deleting ExamEvent from Drift: $e');
+        }
+      }
+
       _cachedExams.removeWhere((e) => e.id == examId);
       _saveToStorage();
     }).makeRequest();

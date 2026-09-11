@@ -63,8 +63,6 @@ void main() {
     name: 'JAMB Sprint Pod',
     track: 'JAMB',
     memberCount: 4,
-    maxMembers: 6,
-    targetWeeklyMinutes: 600,
     totalMinutesCompleted: 350,
   );
 

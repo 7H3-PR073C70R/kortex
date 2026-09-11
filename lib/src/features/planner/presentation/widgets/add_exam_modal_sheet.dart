@@ -128,7 +128,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       _nameController.text = '${_selectedCourse!.courseCode} Final Exam';
     }
 
-    _calculateWorkload();
+    unawaited(_calculateWorkload());
   }
 
   Future<void> _calculateWorkload() async {
@@ -137,8 +137,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       _isCalculatingWorkload = true;
     });
 
-    int deckCards = 0;
-    int pastQuestions = 0;
+    var deckCards = 0;
+    var pastQuestions = 0;
 
     final course = _selectedCourse;
     if (course != null) {
@@ -412,7 +412,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                           _nameController.text = '${course.courseCode} Final Exam';
                         }
                       });
-                      _calculateWorkload();
+                      unawaited(_calculateWorkload());
                     }
                   },
                 ),
@@ -430,7 +430,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter exam name';
+                    return l10n.examNameRequired;
                   }
                   return null;
                 },
@@ -460,7 +460,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Estimated Exam Workload',
+                          l10n.estimatedExamWorkload,
                           style: typography.callout.bold.copyWith(
                             color: colors.primary,
                             fontSize: 13,
@@ -481,8 +481,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                     const SizedBox(height: 8),
                     Text(
                       _totalWorkload > 0
-                          ? '$_totalWorkload total study items'
-                          : 'No study items detected yet',
+                          ? l10n.examTotalStudyItems(_totalWorkload)
+                          : l10n.examNoStudyItems,
                       style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
                         fontSize: 16,
@@ -490,8 +490,10 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '• $_deckCardsCount cards across course study decks\n'
-                      '• $_pastQuestionsCount past questions included',
+                      l10n.examWorkloadBreakdown(
+                        _deckCardsCount,
+                        _pastQuestionsCount,
+                      ),
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         height: 1.4,
@@ -502,7 +504,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Recommended Daily Pace:',
+                          l10n.recommendedDailyPaceLabel,
                           style: typography.footnote.medium.copyWith(
                             color: colors.textSecondary,
                           ),
@@ -517,7 +519,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            '~$_dailyTarget items / day',
+                            l10n.dailyTargetPace(_dailyTarget),
                             style: typography.caption.bold.copyWith(
                               color: colors.primary,
                             ),
@@ -564,7 +566,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Exam Date',
+                                  l10n.targetDateLabel,
                                   style: typography.caption.regular.copyWith(
                                     color: colors.textSecondary,
                                   ),
@@ -615,7 +617,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Time',
+                                  l10n.timePickerLabel,
                                   style: typography.caption.regular.copyWith(
                                     color: colors.textSecondary,
                                   ),
@@ -653,7 +655,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                   Expanded(
                     child: AppButton(
                       text: widget.initialExam != null
-                          ? 'Update Exam'
+                          ? l10n.updateExamCountdown
                           : l10n.saveExamCountdown,
                       onPressed: _submit,
                     ),

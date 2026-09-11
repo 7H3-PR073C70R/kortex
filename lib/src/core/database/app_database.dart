@@ -698,8 +698,9 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteAllForumPosts() {
     return batch((b) {
-      b.deleteWhere(forumReplies, (t) => const Constant(true));
-      b.deleteWhere(forumPosts, (t) => const Constant(true));
+      b
+        ..deleteWhere(forumReplies, (t) => const Constant(true))
+        ..deleteWhere(forumPosts, (t) => const Constant(true));
     });
   }
 
@@ -756,8 +757,9 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteAllSyllabotSessions() {
     return batch((b) {
-      b.deleteWhere(syllabotMessages, (t) => const Constant(true));
-      b.deleteWhere(syllabotSessions, (t) => const Constant(true));
+      b
+        ..deleteWhere(syllabotMessages, (t) => const Constant(true))
+        ..deleteWhere(syllabotSessions, (t) => const Constant(true));
     });
   }
 
@@ -795,4 +797,3 @@ class AppDatabase extends _$AppDatabase {
         .go();
   }
 }
-

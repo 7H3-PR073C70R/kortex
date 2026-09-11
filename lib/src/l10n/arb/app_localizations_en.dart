@@ -1539,6 +1539,66 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get createStudyCircleTitle => 'Create Study Circle';
+
+  @override
+  String get studyCircleMicroPodsSubtitle =>
+      'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.';
+
+  @override
+  String get circleNameLabel => 'Circle Name';
+
+  @override
+  String get circleNameHint => 'e.g. 2026 JAMB Physics Slayers';
+
+  @override
+  String get academicTrackLabel => 'Academic Track';
+
+  @override
+  String get weeklyTargetLabel => 'Weekly Target';
+
+  @override
+  String weeklyTargetHoursAndMins(String hours, int mins) {
+    return '$hours hrs ($mins mins)';
+  }
+
+  @override
+  String get launchStudyCircleAction => 'Launch Study Circle';
+
+  @override
+  String get firstToJoinCircle => 'Be the first to join!';
+
+  @override
+  String get yourPodLabel => 'Your Pod';
+
+  @override
+  String get podFullLabel => 'Pod Full';
+
+  @override
+  String get joinPodLabel => 'Join Pod';
+
+  @override
+  String get studyNudgeSentNotice =>
+      'Sent 1-tap study nudge to your pod members! ⚡️';
+
+  @override
+  String get nudgeAction => 'Nudge';
+
+  @override
+  String get liveRoomDiscussionTitle => 'Live Room Discussion';
+
+  @override
+  String get liveRoomDiscussionSubtitle =>
+      'Real-time messages across room scholars';
+
+  @override
+  String get noChatMessagesPrompt =>
+      'No messages yet. Say hello or send a reaction!';
+
+  @override
+  String get chatInputHint => 'Ask a question or share notes...';
+
+  @override
   String get micMuted => 'Muted';
 
   @override
@@ -1900,6 +1960,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveExamCountdown => 'Save Exam Countdown';
+
+  @override
+  String get updateExamCountdown => 'Update Exam';
+
+  @override
+  String get examNameRequired => 'Please enter exam name';
+
+  @override
+  String get estimatedExamWorkload => 'Estimated Exam Workload';
+
+  @override
+  String examTotalStudyItems(int count) {
+    return '$count total study items';
+  }
+
+  @override
+  String get examNoStudyItems => 'No study items detected yet';
+
+  @override
+  String examWorkloadBreakdown(int deckCards, int pastQuestions) {
+    return '• $deckCards cards across course study decks\n• $pastQuestions past questions included';
+  }
+
+  @override
+  String get recommendedDailyPaceLabel => 'Recommended Daily Pace:';
+
+  @override
+  String dailyTargetPace(int count) {
+    return '~$count items / day';
+  }
+
+  @override
+  String get timePickerLabel => 'Time';
 
   @override
   String get quizTitle => 'Practice Quiz & Mock Exam';

@@ -248,22 +248,19 @@ class _BoundingBoxPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final rrect = RRect.fromRectAndRadius(cropRect, const Radius.circular(16));
-    canvas.drawRRect(rrect, cropGuidePaint);
+    const cornerLength = 24.0;
 
     // Corner brackets for auto-crop alignment
-    const cornerLength = 24.0;
-    // Top-left
-    canvas.drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(cornerLength, 0), cornerPaint);
-    canvas.drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(0, cornerLength), cornerPaint);
-    // Top-right
-    canvas.drawLine(cropRect.topRight, cropRect.topRight + const Offset(-cornerLength, 0), cornerPaint);
-    canvas.drawLine(cropRect.topRight, cropRect.topRight + const Offset(0, cornerLength), cornerPaint);
-    // Bottom-left
-    canvas.drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(cornerLength, 0), cornerPaint);
-    canvas.drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(0, -cornerLength), cornerPaint);
-    // Bottom-right
-    canvas.drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(-cornerLength, 0), cornerPaint);
-    canvas.drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(0, -cornerLength), cornerPaint);
+    canvas
+      ..drawRRect(rrect, cropGuidePaint)
+      ..drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(cornerLength, 0), cornerPaint)
+      ..drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(0, cornerLength), cornerPaint)
+      ..drawLine(cropRect.topRight, cropRect.topRight + const Offset(-cornerLength, 0), cornerPaint)
+      ..drawLine(cropRect.topRight, cropRect.topRight + const Offset(0, cornerLength), cornerPaint)
+      ..drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(cornerLength, 0), cornerPaint)
+      ..drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(0, -cornerLength), cornerPaint)
+      ..drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(-cornerLength, 0), cornerPaint)
+      ..drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(0, -cornerLength), cornerPaint);
 
     // 2. Draw detected OCR text blocks
     final boxPaint = Paint()

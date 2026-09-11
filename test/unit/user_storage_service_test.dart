@@ -102,4 +102,47 @@ void main() {
       expect(userStorage.getUserEmail(), isNull);
     });
   });
+
+  group('UserStorageService Display Name & Avatar URL Persistence Suite', () {
+    test('getUserDisplayName falls back to JWT payload when not explicitly saved', () async {
+      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
+      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
+      const jwt = '$header.$payload.dummySignature';
+
+      await userStorage.saveToken(jwt);
+      expect(userStorage.getUserDisplayName(), equals('John Doe'));
+    });
+
+    test('saveUserDisplayName persists display name and overrides JWT payload', () async {
+      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
+      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
+      const jwt = '$header.$payload.dummySignature';
+
+      await userStorage.saveToken(jwt);
+      expect(userStorage.getUserDisplayName(), equals('John Doe'));
+
+      await userStorage.saveUserDisplayName('Dr. Ada Lovelace');
+      expect(fakeStorage.getPreference(key: PrefKeys.userDisplayName), equals('Dr. Ada Lovelace'));
+      expect(userStorage.getUserDisplayName(), equals('Dr. Ada Lovelace'));
+    });
+
+    test('saveUserAvatarUrl persists avatar and overrides JWT payload', () async {
+      await userStorage.saveUserAvatarUrl('https://example.com/avatar.png');
+      expect(fakeStorage.getPreference(key: PrefKeys.userAvatarUrl), equals('https://example.com/avatar.png'));
+      expect(userStorage.getUserAvatarUrl(), equals('https://example.com/avatar.png'));
+    });
+
+    test('clearStorage removes stored display name and avatar URL', () async {
+      await userStorage.saveUserDisplayName('Dr. Ada Lovelace');
+      await userStorage.saveUserAvatarUrl('https://example.com/avatar.png');
+      expect(userStorage.getUserDisplayName(), equals('Dr. Ada Lovelace'));
+      expect(userStorage.getUserAvatarUrl(), equals('https://example.com/avatar.png'));
+
+      userStorage.clearStorage();
+      expect(userStorage.getUserDisplayName(), isNull);
+      expect(userStorage.getUserAvatarUrl(), isNull);
+    });
+  });
 }

@@ -39,4 +39,6 @@ class PrefKeys {
       '__kortex_persisted_study_circles__';
   static const String persistedSharedDecks =
       '__kortex_persisted_shared_decks__';
+  static const String userDisplayName = '__kortex_user_display_name__';
+  static const String userAvatarUrl = '__kortex_user_avatar_url__';
 }

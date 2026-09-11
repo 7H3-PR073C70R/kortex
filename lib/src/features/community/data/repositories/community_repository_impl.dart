@@ -330,16 +330,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
               ? (jsonDecode(raw) as List<dynamic>)
               : <dynamic>[];
 
+          final nowIso = DateTime.now().toIso8601String();
           final deckMap = <String, dynamic>{
             'id': clonedDeck.id,
             'title': clonedDeck.title,
             'subject': clonedDeck.subject,
+            'totalCards': clonedDeck.totalCards,
             'total_cards': clonedDeck.totalCards,
+            'dueCards': clonedDeck.dueCards,
             'due_cards': clonedDeck.dueCards,
+            'masteryRate': clonedDeck.masteryRate,
             'mastery_rate': clonedDeck.masteryRate,
             'category': clonedDeck.category,
             'description': clonedDeck.description,
-            'created_at': DateTime.now().toIso8601String(),
+            'lastStudied': nowIso,
+            'last_studied': nowIso,
+            'created_at': nowIso,
           };
 
           existingList

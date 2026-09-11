@@ -424,11 +424,12 @@ class _StudySessionView extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetContext) {
         return Container(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           decoration: BoxDecoration(
@@ -535,6 +536,6 @@ class _StudySessionView extends HookWidget {
           ),
         );
       },
-    );
+    ));
   }
 }

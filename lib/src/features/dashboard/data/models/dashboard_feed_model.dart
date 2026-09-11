@@ -63,6 +63,26 @@ abstract class CuratedCourseModel with _$CuratedCourseModel {
     pdfDownloadUrl: pdfDownloadUrl,
     syllabusCoverage: syllabusCoverage,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'courseCode': courseCode,
+    'course_code': courseCode,
+    'title': title,
+    'department': department,
+    'totalMaterials': totalMaterials,
+    'total_materials': totalMaterials,
+    'hasActivePastPapers': hasActivePastPapers,
+    'has_active_past_papers': hasActivePastPapers,
+    'iconName': iconName,
+    'icon_name': iconName,
+    'colorHex': colorHex,
+    'color_hex': colorHex,
+    'pdfDownloadUrl': pdfDownloadUrl,
+    'pdf_download_url': pdfDownloadUrl,
+    'syllabusCoverage': syllabusCoverage,
+    'syllabus_coverage': syllabusCoverage,
+  };
 }
 
 @freezed

@@ -69,7 +69,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         await _appDatabase.deleteMockPastQuestions();
         final dbEntries = await _appDatabase.getPastQuestionsList(limit: 0);
         allQuestions.addAll(dbEntries.map(_entryToModel));
-      } on Object {}
+      } on Object catch (_) {
+        // Database unavailable or query failed; fallback to local memory cache.
+      }
     }
 
     // Injected seed questions (e.g. for testing)
@@ -105,7 +107,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           }
         }
       }
-    } on Object {}
+    } on Object catch (_) {
+      // Preference storage parsing failed; proceed with base questions.
+    }
 
     _cachedQuestions = allQuestions;
     _buildIndices(allQuestions);
@@ -168,14 +172,18 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           data: payload,
         );
       }
-    } on Object {}
+    } on Object catch (_) {
+      // Local storage write failed.
+    }
 
     // Optionally insert to AppDatabase if available
     if (_appDatabase != null) {
       try {
         final companions = newQuestions.map(_modelToCompanion).toList();
         await _appDatabase.batchInsertPastQuestions(companions);
-      } on Object {}
+      } on Object catch (_) {
+        // SQLite batch insertion failed.
+      }
     }
   }
 
@@ -293,7 +301,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         final dbSubjects =
             await _appDatabase.getAvailableSubjectsForExam(category.code);
         if (dbSubjects.isNotEmpty) return dbSubjects;
-      } on Object {}
+      } on Object catch (_) {
+        // AppDatabase query failed; fallback to in-memory index.
+      }
     }
     return _subjectsByCategory[category] ?? const [];
   }
@@ -308,7 +318,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         final dbYears =
             await _appDatabase.getAvailableYearsForExam(category.code);
         if (dbYears.isNotEmpty) return dbYears;
-      } on Object {}
+      } on Object catch (_) {
+        // AppDatabase query failed; fallback to in-memory index.
+      }
     }
     return _yearsByCategory[category] ?? const [];
   }
@@ -316,13 +328,15 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
   // --- Drift Helpers ---
 
   PastQuestionModel _entryToModel(PastQuestionEntry entry) {
-    List<String> options = [];
+    var options = <String>[];
     try {
       final decoded = jsonDecode(entry.optionsJson);
       if (decoded is List) {
         options = decoded.map((e) => e.toString()).toList();
       }
-    } on Object {}
+    } on Object catch (_) {
+      // Options parsing failed; options defaults to empty list.
+    }
     return PastQuestionModel(
       id: entry.id,
       examType: PastQuestionModel.parseExamCategory(entry.examType),
