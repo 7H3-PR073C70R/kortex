@@ -210,8 +210,12 @@ class LatexRichViewer extends StatelessWidget {
     final paragraphDirection =
         isParagraphRtl ? TextDirection.rtl : TextDirection.ltr;
 
+    final isListParagraph = lines
+        .where((l) => l.trim().isNotEmpty)
+        .any((l) => RegExp(r'^\s*(?:(\*|-|•)\s+|[A-Ea-e][\.\)]\s+)').hasMatch(l.trim()));
+
     final effectiveTextAlign = textAlign == TextAlign.center
-        ? TextAlign.center
+        ? (isListParagraph ? TextAlign.start : TextAlign.center)
         : (isParagraphRtl ? TextAlign.right : textAlign);
 
     for (final line in lines) {
@@ -270,9 +274,11 @@ class LatexRichViewer extends StatelessWidget {
     }
 
     return Column(
-      crossAxisAlignment: effectiveTextAlign == TextAlign.center
-          ? CrossAxisAlignment.center
-          : (isParagraphRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start),
+      crossAxisAlignment: (isListParagraph && !isParagraphRtl)
+          ? CrossAxisAlignment.start
+          : (effectiveTextAlign == TextAlign.center
+              ? CrossAxisAlignment.center
+              : (isParagraphRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start)),
       mainAxisSize: MainAxisSize.min,
       children: lineWidgets,
     );

@@ -146,7 +146,7 @@ class PastQuestionDeckFactory {
     return FlashcardModel(
       id: '${deckId}_q_${q.id}',
       deckId: deckId,
-      front: q.prompt,
+      front: _buildCardFront(q),
       back: _buildCardBack(q),
       imageUrl: q.imageUrl,
       frontLatex: q.latexFormula,
@@ -155,27 +155,70 @@ class PastQuestionDeckFactory {
     );
   }
 
+  String _buildCardFront(PastQuestionModel q) {
+    final prompt = q.prompt.trim();
+    if (q.options.isEmpty) return prompt;
+
+    final buffer = StringBuffer(prompt)..writeln('\n\n**Options:**');
+    const letters = ['A', 'B', 'C', 'D', 'E'];
+    for (var i = 0; i < q.options.length; i++) {
+      final defaultLetter = i < letters.length ? letters[i] : '${i + 1}';
+      final opt = q.options[i].trim();
+      // Normalize option label: avoid duplicate like "A. A. option"
+      final match = RegExp(r'^\s*(?:([A-Ea-e])[\.\)]|\(([A-Ea-e])\))\s*(.*)').firstMatch(opt);
+      if (match != null) {
+        final letter = (match.group(1) ?? match.group(2) ?? defaultLetter).toUpperCase();
+        final content = match.group(3)?.trim() ?? '';
+        buffer.writeln('• $letter. $content');
+      } else {
+        buffer.writeln('• $defaultLetter. $opt');
+      }
+    }
+    return buffer.toString().trim();
+  }
+
   String _buildCardBack(PastQuestionModel q) {
     final buffer = StringBuffer();
+
+    // 1. Correct Answer
     if (q.options.isNotEmpty) {
-      buffer.writeln('**Options:**');
       const letters = ['A', 'B', 'C', 'D', 'E'];
-      for (var i = 0; i < q.options.length; i++) {
-        final prefix = i < letters.length ? letters[i] : '${i + 1}';
-        final isCorrect = i == q.correctOptionIndex ||
-            (q.correctOptionLabel.isNotEmpty &&
-                prefix.toUpperCase() == q.correctOptionLabel.toUpperCase());
-        buffer.writeln('${isCorrect ? '✅ ' : '• '}$prefix. ${q.options[i]}');
+      var correctLabel = q.correctOptionLabel.trim();
+      String? correctText;
+
+      if (q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length) {
+        correctText = q.options[q.correctOptionIndex].trim();
+        if (correctLabel.isEmpty && q.correctOptionIndex < letters.length) {
+          correctLabel = letters[q.correctOptionIndex];
+        }
+      } else if (correctLabel.isNotEmpty) {
+        final idx = letters.indexOf(correctLabel.toUpperCase());
+        if (idx >= 0 && idx < q.options.length) {
+          correctText = q.options[idx].trim();
+        }
       }
-      buffer.writeln();
+
+      if (correctLabel.isNotEmpty) {
+        if (correctText != null && correctText.isNotEmpty) {
+          final cleanMatch = RegExp(r'^\s*(?:[A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)').firstMatch(correctText);
+          final cleanContent = cleanMatch != null ? cleanMatch.group(1)?.trim() ?? '' : correctText;
+          if (cleanContent.isNotEmpty) {
+            buffer.writeln('**Correct Answer:** Option $correctLabel — $cleanContent');
+          } else {
+            buffer.writeln('**Correct Answer:** Option $correctLabel');
+          }
+        } else {
+          buffer.writeln('**Correct Answer:** Option $correctLabel');
+        }
+      }
+    } else if (q.correctOptionLabel.isNotEmpty) {
+      buffer.writeln('**Correct Answer:** ${q.correctOptionLabel}');
     }
 
-    if (q.correctOptionLabel.isNotEmpty) {
-      buffer.writeln('**Correct Answer:** Option ${q.correctOptionLabel}');
-    }
-
+    // 2. Explanation
     if (q.explanation.isNotEmpty) {
-      buffer.writeln('\n**Explanation:**\n${q.explanation}');
+      if (buffer.isNotEmpty) buffer.writeln();
+      buffer.writeln('**Explanation:**\n${q.explanation.trim()}');
     }
 
     return buffer.toString().trim();

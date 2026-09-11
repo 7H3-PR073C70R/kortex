@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -28,20 +27,14 @@ class ExtractedPastQuestionResult {
 class PastQuestionAiExtractorService {
   PastQuestionAiExtractorService({
     LocalIngestionService? ingestionService,
-    StudyEngineRouter? studyEngineRouter,
     Dio? dio,
   })  : _ingestionService = ingestionService ??
             (locator.isRegistered<LocalIngestionService>()
                 ? locator<LocalIngestionService>()
                 : LocalIngestionService()),
-        _studyEngineRouter = studyEngineRouter ??
-            (locator.isRegistered<StudyEngineRouter>()
-                ? locator<StudyEngineRouter>()
-                : StudyEngineRouter()),
         _dio = dio ?? Dio();
 
   final LocalIngestionService _ingestionService;
-  final StudyEngineRouter _studyEngineRouter;
   final Dio _dio;
 
   /// Main extraction pipeline:
@@ -172,7 +165,7 @@ class PastQuestionAiExtractorService {
     return images;
   }
 
-  /// Calibrates questions via Cloud AI endpoint or fallback study engine.
+  /// Calibrates questions via Cloud AI endpoint or NLP heuristic parser from extracted text.
   Future<List<PastQuestionModel>> _calibrateWithAi({
     required String sourceText,
     required String courseCode,
@@ -183,6 +176,11 @@ class PastQuestionAiExtractorService {
     required List<String> extractedImages,
     String? courseId,
   }) async {
+    final cleanSource = sourceText.trim();
+    if (cleanSource.isEmpty) {
+      return const [];
+    }
+
     final promptInstruction = '''
 You are an expert university & exam examiner.
 Analyze the following past paper document text for the course "$courseCode - $courseTitle" ($mappedSubject, Exam Year $year).
@@ -214,10 +212,10 @@ Respond ONLY with a valid JSON array in this exact schema:
 ]
 
 Document Text:
-${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
+${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
 ''';
 
-    // 1. Try Cloud AI Edge Function or Syllabot streaming
+    // 1. Try Cloud AI Edge Function
     try {
       final response = await _dio.post<dynamic>(
         '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
@@ -231,8 +229,8 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
             'apikey': AppEnv.apiKey,
             'Authorization': 'Bearer ${AppEnv.apiKey}',
           },
-          sendTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 40),
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 30),
         ),
       );
 
@@ -254,37 +252,12 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
         }
       }
     } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] Cloud AI note ($e), using StudyEngine & NLP heuristic parser.');
+      debugPrint('[PastQuestionAiExtractor] Cloud AI unavailable ($e), parsing document text directly.');
     }
 
-    // 2. Try StudyEngineRouter synthesis
-    try {
-      final packResult = await _studyEngineRouter.generateStudyPack(
-        topic: '$courseCode $mappedSubject Exam $year',
-        count: 10,
-        sourceText: sourceText.isNotEmpty ? sourceText : null,
-      );
-
-      if (packResult.cards.isNotEmpty) {
-        final models = _convertGeneratedFlashcardsToPastQuestions(
-          cards: packResult.cards,
-          courseCode: courseCode,
-          courseTitle: courseTitle,
-          mappedSubject: mappedSubject,
-          examCategory: examCategory,
-          year: year,
-          courseId: courseId,
-          extractedImages: extractedImages,
-        );
-        if (models.isNotEmpty) return models;
-      }
-    } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] StudyEngineRouter note: $e');
-    }
-
-    // 3. Fallback Heuristic NLP Question Parser from raw source text
+    // 2. Parse actual extracted text using heuristic NLP document parser
     return _heuristicTextParser(
-      sourceText: sourceText,
+      sourceText: cleanSource,
       courseCode: courseCode,
       courseTitle: courseTitle,
       mappedSubject: mappedSubject,
@@ -314,8 +287,8 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
 
       if (front.isEmpty) continue;
 
-      final (options, correctIdx, correctLabel, isTheory) =
-          _parseOptionsFromText(front, back);
+      final (prompt, options, correctIdx, correctLabel, parsedExplanation, isTheory) =
+          _parseQuestionBlock('$front\n$back', courseCode, mappedSubject);
 
       final attachedImage = i < extractedImages.length ? extractedImages[i] : null;
 
@@ -326,15 +299,13 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
           subject: mappedSubject,
           year: year,
           questionNumber: i + 1,
-          prompt: front,
+          prompt: prompt.isNotEmpty ? prompt : front,
           options: isTheory ? const [] : options,
           correctOptionIndex: correctIdx,
           correctOptionLabel: correctLabel,
           explanation: explanation.isNotEmpty
               ? explanation
-              : (isTheory
-                  ? back
-                  : '$back\n\n💡 Reasoning: Option $correctLabel satisfies the fundamental governing principles of $mappedSubject.'),
+              : parsedExplanation,
           topic: courseTitle,
           imageUrl: attachedImage,
           isUserAdded: true,
@@ -346,72 +317,93 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
     return list;
   }
 
-  List<PastQuestionModel> _convertGeneratedFlashcardsToPastQuestions({
-    required List<GeneratedFlashcard> cards,
-    required String courseCode,
-    required String courseTitle,
-    required String mappedSubject,
-    required ExamCategory examCategory,
-    required int year,
-    required List<String> extractedImages,
-    String? courseId,
-  }) {
-    final list = <PastQuestionModel>[];
-    for (var i = 0; i < cards.length; i++) {
-      final card = cards[i];
-      final (options, correctIdx, correctLabel, isTheory) =
-          _parseOptionsFromText(card.front, card.back);
+  /// Parses options if present (A, B, C, D) and checks for answers.
+  /// If options A, B, C, D are not found, classifies the block as a Theory / Essay question.
+  (String, List<String>, int, String, String, bool) _parseQuestionBlock(
+    String block,
+    String courseCode,
+    String mappedSubject,
+  ) {
+    final rawLines = block.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    if (rawLines.isEmpty) return ('', const [], 0, '', '', true);
 
-      final attachedImage = i < extractedImages.length ? extractedImages[i] : null;
-
-      list.add(
-        PastQuestionModel(
-          id: 'pq_user_${DateTime.now().millisecondsSinceEpoch}_$i',
-          examType: examCategory,
-          subject: mappedSubject,
-          year: year,
-          questionNumber: i + 1,
-          prompt: card.front,
-          options: isTheory ? const [] : options,
-          correctOptionIndex: correctIdx,
-          correctOptionLabel: correctLabel,
-          explanation: card.explanation.isNotEmpty
-              ? card.explanation
-              : (isTheory
-                  ? card.back
-                  : '${card.back}\n\n💡 Verified Solution: Option $correctLabel correctly applies the core concepts of $courseCode.'),
-          topic: courseTitle,
-          imageUrl: attachedImage,
-          isUserAdded: true,
-          courseId: courseId,
-          courseCode: courseCode,
-        ),
-      );
+    // 1. Strip leading question index prefix from line 0
+    var rawPrompt = rawLines.first;
+    final prefixMatch = RegExp(
+      r'^\s*(?:(?:Question|Problem|Q)\s*#?\s*\d+[\.\:\)]?|\(?\d+\s*[\.\)\:\-–—])\s*',
+      caseSensitive: false,
+    ).firstMatch(rawPrompt);
+    if (prefixMatch != null) {
+      rawPrompt = rawPrompt.substring(prefixMatch.end).trim();
     }
-    return list;
-  }
 
-  /// Parses options if present. If options A, B, C, D are not found, recognizes it as a Theory question.
-  (List<String>, int, String, bool) _parseOptionsFromText(String front, String back) {
-    final fullText = '$front\n$back';
-    final lines = fullText.split('\n');
-    final optionRegex = RegExp(r'^\s*([A-Da-d])[\.\)]\s*(.+)', caseSensitive: false);
+    // 2. Identify Options, Answers, and Explanations
+    final optionRegex = RegExp(r'^\s*(?:([A-Da-d])[\.\)]|\(([A-Da-d])\))\s*(.+)', caseSensitive: false);
+    final answerRegex = RegExp(r'^\s*(?:Ans(?:wer)?|Correct(?:\s*Option)?|Key)\s*[:=\-]\s*([A-Da-d])', caseSensitive: false);
+    final explanationRegex = RegExp(r'^\s*(?:Explanation|Solution|Reasoning|Working|Rubric)\s*[:=\-]\s*(.*)', caseSensitive: false);
 
+    final promptLines = <String>[if (rawPrompt.isNotEmpty) rawPrompt];
     final options = <String>[];
-    for (final line in lines) {
-      final match = optionRegex.firstMatch(line);
-      if (match != null) {
-        options.add(line.trim());
+    String? detectedAnswer;
+    final explanationLines = <String>[];
+    var readingOptions = false;
+    var readingExplanation = false;
+
+    for (var j = 1; j < rawLines.length; j++) {
+      final line = rawLines[j];
+
+      // Check for answer key
+      final ansMatch = answerRegex.firstMatch(line);
+      if (ansMatch != null) {
+        detectedAnswer = ansMatch.group(1)?.toUpperCase();
+        continue;
+      }
+
+      // Check for explanation start
+      final expMatch = explanationRegex.firstMatch(line);
+      if (expMatch != null) {
+        readingExplanation = true;
+        final content = expMatch.group(1)?.trim() ?? '';
+        if (content.isNotEmpty) explanationLines.add(content);
+        continue;
+      }
+
+      if (readingExplanation) {
+        explanationLines.add(line);
+        continue;
+      }
+
+      // Check for option line
+      final optMatch = optionRegex.firstMatch(line);
+      if (optMatch != null) {
+        readingOptions = true;
+        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '').toUpperCase();
+        final text = optMatch.group(3)?.trim() ?? '';
+        options.add('$letter. $text');
+        continue;
+      }
+
+      if (!readingOptions) {
+        promptLines.add(line);
+      } else if (options.isNotEmpty) {
+        options[options.length - 1] = '${options.last} $line';
       }
     }
 
-    if (options.length >= 2) {
-      // Detected Multiple Choice Question
-      return (options, 0, 'A', false);
-    }
+    final prompt = promptLines.join('\n').trim();
+    final isTheory = options.length < 2;
 
-    // Theory question (no options)
-    return (const [], 0, '', true);
+    final correctLabel = detectedAnswer ?? (isTheory ? '' : 'A');
+    var correctIdx = ['A', 'B', 'C', 'D'].indexOf(correctLabel);
+    if (correctIdx == -1) correctIdx = 0;
+
+    final explanation = explanationLines.isNotEmpty
+        ? explanationLines.join('\n').trim()
+        : (isTheory
+            ? 'Model solution derived directly from $courseCode $mappedSubject syllabus.'
+            : 'Option $correctLabel is the verified solution for this $mappedSubject question.');
+
+    return (prompt, options, correctIdx, correctLabel, explanation, isTheory);
   }
 
   /// Heuristic NLP text parser that segments raw examination texts into questions.
@@ -425,10 +417,14 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
     required List<String> extractedImages,
     String? courseId,
   }) {
+    final cleanSource = sourceText.trim();
+    if (cleanSource.isEmpty) return const [];
+
     final list = <PastQuestionModel>[];
-    final lines = sourceText.split('\n');
+    final lines = cleanSource.split('\n');
+
     final questionHeaderRegex = RegExp(
-      r'^\s*(?:Question\s+\d+|Q\d+|\d+[\.\)])\s*(.*)',
+      r'^\s*(?:(?:Question|Problem|Q)\s*#?\s*\d+[\.\:\)]?|\(?\d+\s*[\.\)\:\-–—])\s*(.*)',
       caseSensitive: false,
     );
 
@@ -438,6 +434,13 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
     for (final line in lines) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
+
+      // Ignore common header/footer lines (e.g., "Page 1 of 4", "CONFIDENTIAL")
+      final isHeaderFooter = RegExp(
+        r'^(?:page\s+\d+\s+(?:of|\/)\s+\d+|turn\s+over|confidential|all\s+rights\s+reserved)',
+        caseSensitive: false,
+      ).hasMatch(trimmed);
+      if (isHeaderFooter) continue;
 
       if (questionHeaderRegex.hasMatch(trimmed)) {
         if (currentBuffer != null && currentBuffer.toString().trim().isNotEmpty) {
@@ -453,19 +456,23 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
       questionBuffers.add(currentBuffer);
     }
 
-    // If text didn't match numbering, treat as a single theory paper/problem statement
-    if (questionBuffers.isEmpty && sourceText.trim().isNotEmpty) {
-      questionBuffers.add(StringBuffer(sourceText.trim()));
+    // If text didn't match numbered headers, split into paragraphs by double newlines
+    if (questionBuffers.isEmpty) {
+      final paragraphs = cleanSource.split(RegExp(r'\n\s*\n'));
+      for (final p in paragraphs) {
+        final t = p.trim();
+        if (t.length >= 20) {
+          questionBuffers.add(StringBuffer(t));
+        }
+      }
     }
 
-    for (var i = 0; i < questionBuffers.length && i < 30; i++) {
+    for (var i = 0; i < questionBuffers.length && i < 50; i++) {
       final block = questionBuffers[i].toString().trim();
-      final blockLines = block.split('\n');
-      final prompt = blockLines.first;
-      final rest = blockLines.skip(1).join('\n');
+      final (prompt, options, correctIdx, correctLabel, explanation, isTheory) =
+          _parseQuestionBlock(block, courseCode, mappedSubject);
 
-      final (options, correctIdx, correctLabel, isTheory) =
-          _parseOptionsFromText(prompt, rest);
+      if (prompt.isEmpty) continue;
 
       final attachedImage = i < extractedImages.length ? extractedImages[i] : null;
 
@@ -480,13 +487,7 @@ ${sourceText.length > 12000 ? sourceText.substring(0, 12000) : sourceText}
           options: isTheory ? const [] : options,
           correctOptionIndex: correctIdx,
           correctOptionLabel: correctLabel,
-          explanation: rest.isNotEmpty
-              ? (isTheory
-                  ? 'Model Answer & Rubric:\n$rest\n\n💡 Marking Guide: Credit full marks for identifying foundational definitions, proper formula working, and relevant academic citations.'
-                  : 'Option $correctLabel is verified. Analysis:\n$rest')
-              : (isTheory
-                  ? 'Model Answer for $courseCode:\nThoroughly explain core definitions, state relevant governing laws, and demonstrate step-by-step practical calculations.'
-                  : 'Option A is the verified solution based on $mappedSubject examination syllabus.'),
+          explanation: explanation,
           topic: courseTitle,
           imageUrl: attachedImage,
           isUserAdded: true,

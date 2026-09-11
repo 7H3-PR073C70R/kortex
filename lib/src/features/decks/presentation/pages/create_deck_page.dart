@@ -16,16 +16,18 @@ import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/deck_metadata_section.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/manual_card_editor_view.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/upload_past_questions_view.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
-import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
-import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
-import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
-import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
-import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
+import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
+import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+class _DraftCard {
+  const _DraftCard({required this.front, required this.back});
+  final String front;
+  final String back;
+}
 
 @RoutePage()
 class CreateDeckPage extends HookWidget {
@@ -46,382 +48,249 @@ class CreateDeckPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
-    final selectedModeIndex = useState<int>(0);
-    final selectedYear = useState<int?>(DateTime.now().year);
-    final customYearController = useTextEditingController(
-      text: DateTime.now().year.toString(),
-    );
+    final resolvedSubject =
+        courseTitle ?? mappedSubject ?? courseCode ?? 'General Studies';
+    final resolvedCourseCode = courseCode ?? 'GEN';
+
+    final selectedTabIndex = useState<int>(0); // 0: Manual, 1: AI Prompt, 2: Document
 
     final titleController = useTextEditingController(
       text: courseCode != null && courseCode!.isNotEmpty
-          ? '$courseCode Past Questions & Review'
-          : 'Course Study Deck',
+          ? '$courseCode Study Deck'
+          : 'New Study Deck',
     );
     final descController = useTextEditingController();
 
-    // Mode 1: Upload Past Questions State
-    final pickedFile = useState<PickedDocument?>(null);
-    final isCalibrating = useState<bool>(false);
-    final calibrationStatus = useState<String>('');
-    final calibrationProgress = useState<double>(0);
+    // Deck Cards List
+    final deckCards = useState<List<_DraftCard>>([]);
 
-    // Mode 2: Manual Creation State
+    // Manual Card Entry
     final manualFrontController = useTextEditingController();
     final manualBackController = useTextEditingController();
-    final optionAController = useTextEditingController();
-    final optionBController = useTextEditingController();
-    final optionCController = useTextEditingController();
-    final optionDController = useTextEditingController();
-    final manualCorrectOption = useState<String>('A');
-    final isMultipleChoice = useState<bool>(false);
 
-    final manualAddedCards = useState<List<Map<String, dynamic>>>([]);
-    final isManualSubmitting = useState<bool>(false);
+    // AI Generation State
+    final aiTopicController = useTextEditingController(
+      text: courseTitle ?? resolvedCourseCode,
+    );
+    final aiCardCount = useState<int>(10);
+    final isAiGenerating = useState<bool>(false);
 
-    final resolvedSubject = courseTitle ?? mappedSubject ?? courseCode ?? 'General Studies';
-    final resolvedCourseCode = courseCode ?? 'GEN101';
+    // Document Ingestion State
+    final pickedDoc = useState<PickedDocument?>(null);
+    final isDocIngesting = useState<bool>(false);
+    final docStatus = useState<String>('');
 
-    int? getEffectiveYear() {
-      final textYear = int.tryParse(customYearController.text.trim());
-      if (textYear != null && textYear >= 1970 && textYear <= 2030) {
-        return textYear;
-      }
-      return selectedYear.value;
-    }
+    final isSaving = useState<bool>(false);
 
-    // Pipeline: Extract, Calibrate with LLM, Save to Q-Bank & Deck
-    Future<void> executeAiUploadCalibration() async {
-      final year = getEffectiveYear();
-      if (year == null) {
-        context.showSnackBar(
-          message: 'Please select or enter a valid examination year (e.g. 2024)',
-        );
-        return;
-      }
-
-      final doc = pickedFile.value;
-      if (doc == null) {
-        context.showSnackBar(
-          message: 'Please select a past question document or image asset to upload',
-        );
-        return;
-      }
-
-      isCalibrating.value = true;
-      calibrationProgress.value = 0.15;
-      calibrationStatus.value = 'Ingesting & extracting document buffer...';
-      AppFeedback.medium();
-
-      try {
-        final ingestionService = locator.isRegistered<LocalIngestionService>()
-            ? locator<LocalIngestionService>()
-            : LocalIngestionService();
-
-        // 1. Text extraction
-        final extractedText = await ingestionService.ingestBytes(
-          bytes: doc.bytes,
-          extension: doc.extension,
-          filePath: doc.path,
-        );
-
-        calibrationProgress.value = 0.50;
-        calibrationStatus.value = 'LLM calibrating questions, solutions & formula tokens...';
-
-        // 2. Calibrate via LLM / StudyEngineRouter
-        final studyEngine = locator.isRegistered<StudyEngineRouter>()
-            ? locator<StudyEngineRouter>()
-            : StudyEngineRouter();
-
-        final targetCount = extractedText.length > 30000
-            ? (extractedText.length ~/ 2500).clamp(20, 300)
-            : 15;
-
-        final studyResult = await studyEngine.generateStudyPack(
-          topic: '$resolvedCourseCode $resolvedSubject Exam $year',
-          count: targetCount,
-          sourceText: extractedText.isNotEmpty ? extractedText : null,
-        );
-
-        calibrationProgress.value = 0.75;
-        calibrationStatus.value = 'Registering calibrated set into global Past Question Bank...';
-
-        final generatedCards = studyResult.cards;
-        final deckId = UuidUtils.generate();
-
-        // 3. Register into global Past Question Bank
-        final examCat = _deriveExamCategory(courseTitle ?? resolvedCourseCode);
-        final pqModels = <PastQuestionModel>[];
-        final flashcards = <FlashcardModel>[];
-
-        for (var i = 0; i < generatedCards.length; i++) {
-          final card = generatedCards[i];
-          final qId = UuidUtils.generate();
-          final (options, correctIdx, correctLabel) =
-              _buildCalibratedOptions(card, generatedCards, i);
-
-          // Construct past question entity
-          pqModels.add(
-            PastQuestionModel(
-              id: qId,
-              examType: examCat,
-              subject: resolvedSubject,
-              year: year,
-              questionNumber: i + 1,
-              prompt: card.front,
-              options: options,
-              correctOptionIndex: correctIdx,
-              correctOptionLabel: correctLabel,
-              explanation: card.explanation.isNotEmpty ? card.explanation : card.back,
-              topic: resolvedSubject,
-              isUserAdded: true,
-              courseId: courseId,
-              courseCode: resolvedCourseCode,
-            ),
-          );
-
-          // Construct flashcard
-          flashcards.add(
-            FlashcardModel(
-              id: UuidUtils.generate(),
-              deckId: deckId,
-              front: card.front,
-              back: '${card.back}${card.explanation.isNotEmpty ? "\n\n💡 Explanation:\n${card.explanation}" : ""}',
-              sourceTopic: resolvedSubject,
-              nextDueDate: DateTime.now(),
-            ),
-          );
-        }
-
-        // Save into Past Question Bank
-        if (locator.isRegistered<PastQuestionsRepository>()) {
-          await locator<PastQuestionsRepository>().savePastQuestions(
-            pqModels.map((m) => m.toEntity()).toList(),
-          );
-        }
-
-        calibrationProgress.value = 0.90;
-        calibrationStatus.value = 'Linking study deck to course curriculum...';
-
-        // 4. Save Deck with Course Association
-        final deckTitle = titleController.text.trim().isNotEmpty
-            ? titleController.text.trim()
-            : '$resolvedCourseCode $year Past Questions & Review';
-
-        final deckModel = DeckModel(
-          id: deckId,
-          title: deckTitle,
-          subject: resolvedSubject,
-          totalCards: flashcards.length,
-          dueCards: flashcards.length,
-          masteryRate: 0,
-          category: 'Official Past Questions',
-          description: descController.text.trim().isNotEmpty
-              ? descController.text.trim()
-              : 'Calibrated from official past paper asset ($year) for $resolvedCourseCode.',
-          cards: flashcards,
-          courseId: courseId,
-          courseCode: resolvedCourseCode,
-        );
-
-        if (locator.isRegistered<DecksRemoteDataSource>()) {
-          await locator<DecksRemoteDataSource>().saveGeneratedDeck(
-            deck: deckModel,
-            cards: flashcards,
-          );
-        }
-
-        // 5. Refresh Blocs
-        if (locator.isRegistered<DecksBloc>()) {
-          locator<DecksBloc>().add(const DecksRefreshed());
-        }
-        if (locator.isRegistered<DashboardBloc>()) {
-          locator<DashboardBloc>().add(const DashboardRefreshed());
-        }
-        if (locator.isRegistered<PastQuestionsBloc>()) {
-          locator<PastQuestionsBloc>().add(
-            LoadPastQuestionsEvent(
-              courseId: courseId,
-              courseCode: resolvedCourseCode,
-            ),
-          );
-        }
-
-        calibrationProgress.value = 1.0;
-        AppFeedback.heavy();
-
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Successfully calibrated ${flashcards.length} questions & registered to Question Bank!',
-            type: SnackBarType.success,
-          );
-          Navigator.of(context).pop(true);
-        }
-      } on Object catch (err) {
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Failed to calibrate past question deck: $err',
-            type: SnackBarType.error,
-          );
-        }
-      } finally {
-        isCalibrating.value = false;
-      }
-    }
-
-    // Mode 2: Manual Card Add
+    // Add manual card to deck
     void addManualCard() {
       final front = manualFrontController.text.trim();
       final back = manualBackController.text.trim();
 
       if (front.isEmpty || back.isEmpty) {
         context.showSnackBar(
-          message: 'Please provide both question prompt (Front) and answer/explanation (Back)',
+          message: 'Please provide both a Front concept and a Back answer/explanation.',
         );
         return;
       }
 
       AppFeedback.light();
-      final cardItem = <String, dynamic>{
-        'front': front,
-        'back': back,
-        'isMcq': isMultipleChoice.value,
-      };
-
-      if (isMultipleChoice.value) {
-        cardItem['options'] = [
-          if (optionAController.text.trim().isNotEmpty) optionAController.text.trim() else 'Option A',
-          if (optionBController.text.trim().isNotEmpty) optionBController.text.trim() else 'Option B',
-          if (optionCController.text.trim().isNotEmpty) optionCController.text.trim() else 'Option C',
-          if (optionDController.text.trim().isNotEmpty) optionDController.text.trim() else 'Option D',
-        ];
-        cardItem['correctOption'] = manualCorrectOption.value;
-      }
-
-      manualAddedCards.value = [...manualAddedCards.value, cardItem];
+      deckCards.value = [
+        ...deckCards.value,
+        _DraftCard(front: front, back: back),
+      ];
       manualFrontController.clear();
       manualBackController.clear();
-      optionAController.clear();
-      optionBController.clear();
-      optionCController.clear();
-      optionDController.clear();
     }
 
-    // Mode 2: Save Manual Deck
-    Future<void> saveManualDeck() async {
-      final year = getEffectiveYear();
-      if (year == null) {
+    // AI Generation
+    Future<void> generateCardsWithAi() async {
+      final topic = aiTopicController.text.trim();
+      if (topic.isEmpty) {
         context.showSnackBar(
-          message: 'Please select or enter a valid examination year before creating the deck',
+          message: 'Please enter a topic or paste notes for AI generation.',
         );
         return;
       }
 
-      if (manualAddedCards.value.isEmpty) {
+      isAiGenerating.value = true;
+      AppFeedback.medium();
+
+      try {
+        final engine = locator.isRegistered<StudyEngineRouter>()
+            ? locator<StudyEngineRouter>()
+            : StudyEngineRouter();
+
+        final result = await engine.generateStudyPack(
+          topic: '$resolvedCourseCode: $topic',
+          count: aiCardCount.value,
+        );
+
+        if (result.cards.isNotEmpty) {
+          final newCards = result.cards
+              .map((c) => _DraftCard(
+                    front: c.front.replaceAll(RegExp(r'^On-Device:\s*', caseSensitive: false), ''),
+                    back: c.back,
+                  ))
+              .toList();
+
+          deckCards.value = [...deckCards.value, ...newCards];
+          AppFeedback.heavy();
+
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'Generated and added ${newCards.length} cards to your deck!',
+              type: SnackBarType.success,
+            );
+          }
+        } else {
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'Could not generate flashcards. Please try adding manually.',
+            );
+          }
+        }
+      } on Object catch (e) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Generation notice: $e',
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        isAiGenerating.value = false;
+      }
+    }
+
+    // Document Ingestion
+    Future<void> ingestDocumentCards() async {
+      final doc = pickedDoc.value;
+      if (doc == null) {
         context.showSnackBar(
-          message: 'Please add at least 1 flashcard or question to your deck',
+          message: 'Please select a lecture notes or study document first.',
         );
         return;
       }
 
-      final title = titleController.text.trim().isNotEmpty
-          ? titleController.text.trim()
-          : '$resolvedCourseCode $year Practice Deck';
+      isDocIngesting.value = true;
+      docStatus.value = 'Reading document text...';
+      AppFeedback.medium();
 
-      isManualSubmitting.value = true;
+      try {
+        final ingestion = locator.isRegistered<LocalIngestionService>()
+            ? locator<LocalIngestionService>()
+            : LocalIngestionService();
+
+        final extractedText = await ingestion.ingestBytes(
+          bytes: doc.bytes,
+          extension: doc.extension,
+          filePath: doc.path,
+        );
+
+        if (extractedText.trim().isEmpty) {
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'No readable text found in document. Please try a different file.',
+            );
+          }
+          return;
+        }
+
+        docStatus.value = 'Synthesizing flashcards from document...';
+
+        final engine = locator.isRegistered<StudyEngineRouter>()
+            ? locator<StudyEngineRouter>()
+            : StudyEngineRouter();
+
+        final result = await engine.generateStudyPack(
+          topic: '$resolvedCourseCode $resolvedSubject',
+          count: 15,
+          sourceText: extractedText,
+        );
+
+        if (result.cards.isNotEmpty) {
+          final newCards = result.cards
+              .map((c) => _DraftCard(
+                    front: c.front.replaceAll(RegExp(r'^On-Device:\s*', caseSensitive: false), ''),
+                    back: c.back,
+                  ))
+              .toList();
+
+          deckCards.value = [...deckCards.value, ...newCards];
+          AppFeedback.heavy();
+
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'Synthesized ${newCards.length} cards from "${doc.name}"!',
+              type: SnackBarType.success,
+            );
+          }
+        } else {
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'Could not extract flashcards from this document.',
+            );
+          }
+        }
+      } on Object catch (e) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Extraction error: $e',
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        isDocIngesting.value = false;
+      }
+    }
+
+    // Save Deck to Repository
+    Future<void> saveDeck() async {
+      final title = titleController.text.trim();
+      if (title.isEmpty) {
+        context.showSnackBar(message: 'Please enter a title for your study deck.');
+        return;
+      }
+
+      if (deckCards.value.isEmpty) {
+        context.showSnackBar(
+          message: 'Please add at least 1 flashcard to your deck before saving.',
+        );
+        return;
+      }
+
+      isSaving.value = true;
       AppFeedback.medium();
 
       try {
         final deckId = UuidUtils.generate();
-
-        final flashcards = <FlashcardModel>[];
-        final pqQuestions = <PastQuestionModel>[];
-        final examCat = _deriveExamCategory(courseTitle ?? resolvedCourseCode);
-
-        for (var i = 0; i < manualAddedCards.value.length; i++) {
-          final item = manualAddedCards.value[i];
-          final front = item['front'] as String;
-          final back = item['back'] as String;
-          final isMcq = item['isMcq'] as bool? ?? false;
-
-          flashcards.add(
-            FlashcardModel(
-              id: UuidUtils.generate(),
-              deckId: deckId,
-              front: front,
-              back: back,
-              sourceTopic: resolvedSubject,
-              nextDueDate: DateTime.now(),
-            ),
+        final flashcards = deckCards.value.map((draft) {
+          return FlashcardModel(
+            id: UuidUtils.generate(),
+            deckId: deckId,
+            front: draft.front,
+            back: draft.back,
+            sourceTopic: resolvedSubject,
+            nextDueDate: DateTime.now(),
           );
-
-          if (isMcq && item['options'] != null) {
-            final opts = (item['options'] as List).cast<String>();
-            final correctOpt = item['correctOption'] as String? ?? 'A';
-            final correctIdx = ['A', 'B', 'C', 'D'].indexOf(correctOpt).clamp(0, 3);
-
-            pqQuestions.add(
-              PastQuestionModel(
-                id: UuidUtils.generate(),
-                examType: examCat,
-                subject: resolvedSubject,
-                year: year,
-                questionNumber: i + 1,
-                prompt: front,
-                options: opts,
-                correctOptionIndex: correctIdx,
-                correctOptionLabel: correctOpt,
-                explanation: back,
-                topic: resolvedSubject,
-                isUserAdded: true,
-                courseId: courseId,
-                courseCode: resolvedCourseCode,
-              ),
-            );
-          } else {
-            // Theory / essay question
-            pqQuestions.add(
-              PastQuestionModel(
-                id: UuidUtils.generate(),
-                examType: examCat,
-                subject: resolvedSubject,
-                year: year,
-                questionNumber: i + 1,
-                prompt: front,
-                options: const [],
-                correctOptionIndex: 0,
-                correctOptionLabel: '',
-                explanation: back,
-                topic: resolvedSubject,
-                isUserAdded: true,
-                courseId: courseId,
-                courseCode: resolvedCourseCode,
-              ),
-            );
-          }
-        }
-
-        // Register in Question Bank if MCQ past questions were added
-        if (pqQuestions.isNotEmpty && locator.isRegistered<PastQuestionsRepository>()) {
-          await locator<PastQuestionsRepository>().savePastQuestions(
-            pqQuestions.map((q) => q.toEntity()).toList(),
-          );
-        }
+        }).toList();
 
         final deckModel = DeckModel(
           id: deckId,
           title: title,
           subject: resolvedSubject,
+          courseId: courseId,
+          courseCode: resolvedCourseCode,
           totalCards: flashcards.length,
           dueCards: flashcards.length,
           masteryRate: 0,
-          category: 'Course Review',
           description: descController.text.trim().isNotEmpty
               ? descController.text.trim()
-              : 'Manually curated study deck for $resolvedCourseCode ($year).',
+              : 'Study deck for $resolvedCourseCode ($resolvedSubject)',
           cards: flashcards,
-          courseId: courseId,
-          courseCode: resolvedCourseCode,
+          category: 'Course Study Deck',
         );
 
         if (locator.isRegistered<DecksRemoteDataSource>()) {
@@ -437,31 +306,25 @@ class CreateDeckPage extends HookWidget {
         if (locator.isRegistered<DashboardBloc>()) {
           locator<DashboardBloc>().add(const DashboardRefreshed());
         }
-        if (locator.isRegistered<PastQuestionsBloc>()) {
-          locator<PastQuestionsBloc>().add(
-            LoadPastQuestionsEvent(
-              courseId: courseId,
-              courseCode: resolvedCourseCode,
-            ),
-          );
-        }
+
+        AppFeedback.heavy();
 
         if (context.mounted) {
           context.showSnackBar(
-            message: 'Deck successfully created with ${flashcards.length} card(s)!',
+            message: 'Study Deck "$title" created with ${flashcards.length} card(s)!',
             type: SnackBarType.success,
           );
           Navigator.of(context).pop(true);
         }
-      } on Object catch (err) {
+      } on Object catch (e) {
         if (context.mounted) {
           context.showSnackBar(
-            message: 'Failed to create deck: $err',
+            message: 'Failed to create study deck: $e',
             type: SnackBarType.error,
           );
         }
       } finally {
-        isManualSubmitting.value = false;
+        isSaving.value = false;
       }
     }
 
@@ -501,150 +364,520 @@ class CreateDeckPage extends HookWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Segmented Tab Navigation
-              AppLiquidGlassTabBar(
-                tabs: const [
-                  'Upload Past Questions',
-                  'Manual Creation',
-                ],
-                selectedIndex: selectedModeIndex.value,
-                onTabSelected: (index) {
-                  AppFeedback.light();
-                  selectedModeIndex.value = index;
-                },
-                height: 44,
-              ),
-              const SizedBox(height: 20),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Deck Info Card
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary.withAlpha(120)
+                            : colors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(50)
+                              : colors.surfaceBorder.withAlpha(120),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.style_rounded, size: 18, color: colors.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Deck Details',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 14.5,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  resolvedCourseCode,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          AppTextField(
+                            controller: titleController,
+                            label: 'Deck Name',
+                            hintText: 'e.g. $resolvedCourseCode Flashcards',
+                          ),
+                          const SizedBox(height: 12),
+                          AppTextField(
+                            controller: descController,
+                            label: 'Description (Optional)',
+                            hintText: 'e.g. Core concepts & formulas for quick recall',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-              // 2. Common Deck Metadata: Year (Mandatory) & Title
-              DeckMetadataSection(
-                selectedYear: selectedYear,
-                customYearController: customYearController,
-                titleController: titleController,
-                descController: descController,
-              ),
-              const SizedBox(height: 24),
+                    // Method Selector Tabs
+                    AppLiquidGlassTabBar(
+                      tabs: const [
+                        'Manual Cards',
+                        'AI Generator',
+                        'Upload Notes',
+                      ],
+                      selectedIndex: selectedTabIndex.value,
+                      onTabSelected: (index) {
+                        AppFeedback.light();
+                        selectedTabIndex.value = index;
+                      },
+                    ),
+                    const SizedBox(height: 18),
 
-              // 3. Tab Content
-              if (selectedModeIndex.value == 0)
-                UploadPastQuestionsView(
-                  pickedFile: pickedFile,
-                  isCalibrating: isCalibrating.value,
-                  statusText: calibrationStatus.value,
-                  progress: calibrationProgress.value,
-                  onExecuteCalibration: executeAiUploadCalibration,
-                )
-              else
-                ManualCardEditorView(
-                  frontController: manualFrontController,
-                  backController: manualBackController,
-                  optionAController: optionAController,
-                  optionBController: optionBController,
-                  optionCController: optionCController,
-                  optionDController: optionDController,
-                  manualCorrectOption: manualCorrectOption,
-                  isMultipleChoice: isMultipleChoice,
-                  addedCards: manualAddedCards.value,
-                  onAddCard: addManualCard,
-                  onRemoveCard: (index) {
-                    AppFeedback.light();
-                    final list = List<Map<String, dynamic>>.from(manualAddedCards.value)..removeAt(index);
-                    manualAddedCards.value = list;
-                  },
-                  isSubmitting: isManualSubmitting.value,
-                  onSubmit: saveManualDeck,
+                    // Tab 1: Manual Flashcard Entry
+                    if (selectedTabIndex.value == 0) ...[
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(120)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(50)
+                                : colors.surfaceBorder.withAlpha(120),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add Card to Deck',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            AppTextField(
+                              controller: manualFrontController,
+                              label: 'Front (Question / Term / Concept)',
+                              hintText: "e.g. State Le Chatelier's principle",
+                              maxLines: 2,
+                            ),
+                            const SizedBox(height: 12),
+                            AppTextField(
+                              controller: manualBackController,
+                              label: 'Back (Answer / Definition / Formula)',
+                              hintText: 'e.g. When a system at equilibrium is subjected to change, it adjusts to counteract the change.',
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: AppButton(
+                                text: '+ Add Flashcard',
+                                onPressed: addManualCard,
+                                prefixIcon: const Icon(Icons.add_rounded, size: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]
+                    // Tab 2: AI Flashcard Generator
+                    else if (selectedTabIndex.value == 1) ...[
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(120)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(50)
+                                : colors.surfaceBorder.withAlpha(120),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'AI Flashcard Generator',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Enter a topic or paste notes to automatically generate active recall flashcards.',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            AppTextField(
+                              controller: aiTopicController,
+                              label: 'Topic or Study Notes',
+                              hintText: 'e.g. Organic chemistry reaction mechanisms and IUPAC naming',
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Text(
+                                  'Cards:',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                ...[5, 10, 15, 20].map((count) {
+                                  final isSelected = aiCardCount.value == count;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ShrinkableButton(
+                                      onTap: () {
+                                        AppFeedback.selection();
+                                        aiCardCount.value = count;
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? colors.primary
+                                              : (isDark ? colors.surfaceTertiary.withAlpha(80) : colors.surfaceSecondary),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '$count',
+                                          style: typography.caption.bold.copyWith(
+                                            color: isSelected ? colors.white : colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: AppButton(
+                                text: isAiGenerating.value ? 'Generating...' : '✨ Generate & Add Cards',
+                                isLoading: isAiGenerating.value,
+                                onPressed: isAiGenerating.value ? null : generateCardsWithAi,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]
+                    // Tab 3: Upload Study Document
+                    else ...[
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(120)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(50)
+                                : colors.surfaceBorder.withAlpha(120),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Upload Lecture Notes / Slides',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Extracts notes from PDF, PPTX, or TXT documents and synthesizes flashcards for this deck.',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            ShrinkableButton(
+                              onTap: isDocIngesting.value
+                                  ? null
+                                  : () async {
+                                      AppFeedback.light();
+                                      final doc = await FilePickerService().pickStudyDocument(
+                                        extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
+                                      );
+                                      if (doc != null) {
+                                        pickedDoc.value = doc;
+                                      }
+                                    },
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? colors.surfaceTertiary.withAlpha(60)
+                                      : colors.surfaceSecondary.withAlpha(60),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: pickedDoc.value != null ? colors.primary : colors.surfaceBorder,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      pickedDoc.value != null
+                                          ? Icons.check_circle_rounded
+                                          : Icons.upload_file_rounded,
+                                      size: 32,
+                                      color: colors.primary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      pickedDoc.value?.name ?? 'Select PDF, PPTX or Text Document',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (isDocIngesting.value) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  AppLogoLoader(size: 14, color: colors.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    docStatus.value,
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: AppButton(
+                                text: isDocIngesting.value ? 'Processing...' : 'Extract Flashcards',
+                                isLoading: isDocIngesting.value,
+                                onPressed: isDocIngesting.value || pickedDoc.value == null
+                                    ? null
+                                    : ingestDocumentCards,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // Cards in this Deck Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Cards in Deck (${deckCards.value.length})',
+                          style: typography.callout.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 15,
+                          ),
+                        ),
+                        if (deckCards.value.isNotEmpty)
+                          TextButton(
+                            onPressed: () {
+                              AppFeedback.light();
+                              deckCards.value = [];
+                            },
+                            child: Text(
+                              'Clear All',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.error,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (deckCards.value.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(60)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(80),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.style_outlined,
+                              size: 28,
+                              color: colors.textMuted,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'No flashcards in this deck yet',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Add cards manually or generate them with AI above.',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: deckCards.value.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final card = deckCards.value[index];
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary.withAlpha(100)
+                                  : colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: colors.surfaceBorder.withAlpha(80),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        card.front,
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        card.back,
+                                        style: typography.footnote.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 18,
+                                    color: colors.error.withAlpha(180),
+                                  ),
+                                  onPressed: () {
+                                    AppFeedback.light();
+                                    final list = List<_DraftCard>.from(deckCards.value)..removeAt(index);
+                                    deckCards.value = list;
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            ),
+
+            // Persistent Bottom Action Bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                border: Border(top: BorderSide(color: colors.surfaceBorder)),
+              ),
+              child: AppButton(
+                text: isSaving.value
+                    ? 'Creating Deck...'
+                    : 'Create Deck (${deckCards.value.length} Cards)',
+                isLoading: isSaving.value,
+                isEnabled: !isSaving.value && deckCards.value.isNotEmpty,
+                onPressed: isSaving.value ? null : saveDeck,
+              ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-
-
-  static (List<String>, int, String) _buildCalibratedOptions(
-    GeneratedFlashcard currentCard,
-    List<GeneratedFlashcard> allCards,
-    int index,
-  ) {
-    final lines = '${currentCard.front}\n${currentCard.back}'.split('\n');
-    final optionRegex = RegExp(r'^[A-Da-d][\.\)]\s*(.+)');
-    final parsedOptions = <String>[];
-    for (final line in lines) {
-      final match = optionRegex.firstMatch(line.trim());
-      if (match != null) {
-        parsedOptions.add(match.group(1)?.trim() ?? '');
-      }
-    }
-
-    if (parsedOptions.length >= 4) {
-      return (parsedOptions.take(4).toList(), 0, 'A');
-    }
-
-    final correctAnswer = currentCard.back.trim();
-    final candidateDistractors = allCards
-        .where((c) => c.back.trim() != correctAnswer && c.back.trim().isNotEmpty)
-        .map((c) => c.back.trim())
-        .toSet()
-        .toList();
-
-    final distractors = <String>[];
-    for (final d in candidateDistractors) {
-      if (distractors.length < 3) {
-        distractors.add(d);
-      }
-    }
-
-    var fallbackCounter = 1;
-    while (distractors.length < 3) {
-      final topicTag = currentCard.tags.isNotEmpty ? currentCard.tags.first : 'this concept';
-      distractors.add('Alternative formulation $fallbackCounter for $topicTag');
-      fallbackCounter++;
-    }
-
-    final targetIndex = index % 4;
-    final options = <String>[];
-    var distractorIdx = 0;
-    for (var pos = 0; pos < 4; pos++) {
-      if (pos == targetIndex) {
-        options.add(correctAnswer);
-      } else {
-        options.add(distractors[distractorIdx++]);
-      }
-    }
-
-    final labels = ['A', 'B', 'C', 'D'];
-    return (options, targetIndex, labels[targetIndex]);
-  }
-
-  static ExamCategory _deriveExamCategory(String subjectOrTitle) {
-    final lower = subjectOrTitle.toLowerCase();
-    if (lower.contains('waec') || lower.contains('wassce')) return ExamCategory.waec;
-    if (lower.contains('jamb') || lower.contains('utme')) return ExamCategory.jamb;
-    if (lower.contains('neco')) return ExamCategory.neco;
-    if (lower.contains('sat')) return ExamCategory.sat;
-    if (lower.contains('toefl')) return ExamCategory.toefl;
-    if (lower.contains('ielts')) return ExamCategory.ielts;
-    if (lower.contains('med') || lower.contains('anat') || lower.contains('phs')) {
-      return ExamCategory.medicine;
-    }
-    if (lower.contains('law')) return ExamCategory.law;
-    if (lower.contains('eng') || lower.contains('eee') || lower.contains('mec')) {
-      return ExamCategory.engineering;
-    }
-    if (lower.contains('csc') || lower.contains('comp') || lower.contains('inf')) {
-      return ExamCategory.computerScience;
-    }
-    if (lower.contains('bus') || lower.contains('acc') || lower.contains('mgt')) {
-      return ExamCategory.business;
-    }
-    return ExamCategory.general;
   }
 }

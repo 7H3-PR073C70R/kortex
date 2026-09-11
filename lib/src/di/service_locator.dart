@@ -133,7 +133,6 @@ void _initServices() {
     ..registerLazySingleton<PastQuestionAiExtractorService>(
       () => PastQuestionAiExtractorService(
         ingestionService: locator<LocalIngestionService>(),
-        studyEngineRouter: locator<StudyEngineRouter>(),
         dio: locator<Dio>(),
       ),
     );
