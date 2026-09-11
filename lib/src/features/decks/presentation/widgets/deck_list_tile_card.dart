@@ -12,6 +12,7 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
@@ -295,39 +296,97 @@ class DeckListTileCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      InkWell(
-                        onTap: () {
-                          unawaited(HapticFeedback.lightImpact());
-                          unawaited(
-                            context.router.push(
-                              StudySessionRoute(deckId: deck.id),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(6),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                l10n.decksStartSession,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 12.5,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              unawaited(HapticFeedback.mediumImpact());
+                              unawaited(
+                                context.router.push(
+                                  QuizWorkspaceRoute(
+                                    deckId: deck.id,
+                                    deckTitle: deck.title,
+                                    assessmentMode: AssessmentMode.millionaireMode,
+                                  ),
                                 ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
                               ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 14,
-                                color: colors.primary,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.military_tech_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Millionaire',
+                                    style: typography.caption.bold.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          InkWell(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              unawaited(
+                                context.router.push(
+                                  StudySessionRoute(deckId: deck.id),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    l10n.decksStartSession,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 14,
+                                    color: colors.primary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

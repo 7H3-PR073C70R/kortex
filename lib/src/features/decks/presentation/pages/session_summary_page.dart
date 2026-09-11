@@ -187,23 +187,45 @@ class SessionSummaryPage extends StatelessWidget {
 
               const Spacer(),
 
-              // Return to Dashboard Action
-              AppButton(
-                text: l10n.sessionSummaryReturnDashboard,
-                onPressed: () {
-                  unawaited(context.router.replace(const MainRoute()));
-                },
-              ),
-              const SizedBox(height: 12),
+              // Action Buttons
+              if (deckId.startsWith('sprint:')) ...[
+                AppButton(
+                  text: '🚀 Next Focus Sprint',
+                  onPressed: () {
+                    unawaited(
+                      context.router.replace(
+                        StudySessionRoute(deckId: deckId),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  text: 'Done for Now',
+                  variant: AppButtonVariant.outline,
+                  onPressed: () {
+                    unawaited(context.router.replace(const MainRoute()));
+                  },
+                ),
+              ] else ...[
+                // Return to Dashboard Action
+                AppButton(
+                  text: l10n.sessionSummaryReturnDashboard,
+                  onPressed: () {
+                    unawaited(context.router.replace(const MainRoute()));
+                  },
+                ),
+                const SizedBox(height: 12),
 
-              // Review More Decks Action
-              AppButton(
-                text: l10n.sessionSummaryReviewAgain,
-                variant: AppButtonVariant.outline,
-                onPressed: () {
-                  unawaited(context.router.maybePop());
-                },
-              ),
+                // Review More Decks Action
+                AppButton(
+                  text: l10n.sessionSummaryReviewAgain,
+                  variant: AppButtonVariant.outline,
+                  onPressed: () {
+                    unawaited(context.router.maybePop());
+                  },
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),

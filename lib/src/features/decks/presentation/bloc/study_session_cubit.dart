@@ -51,6 +51,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     String deckId, {
     bool triageDebt = false,
     int sprintSize = 15,
+    bool randomize = false,
   }) async {
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
 
@@ -74,7 +75,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           return;
         }
 
-        final sessionCards = triageDebt
+        var sessionCards = triageDebt
             ? _fsrsScheduler.triageReviewDebt<FlashcardEntity>(
                 dueCards: cards,
                 getStability: (c) => c.easeFactor,
@@ -82,6 +83,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
                 sprintSize: sprintSize,
               )
             : cards;
+
+        if (randomize) {
+          final shuffled = List<FlashcardEntity>.from(sessionCards)..shuffle();
+          sessionCards = shuffled.take(sprintSize).toList();
+        }
 
         emit(
           state.copyWith(
@@ -96,6 +102,45 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         _startTimer();
       },
     );
+  }
+
+  /// Starts an interleaved ADHD-friendly micro-sprint session with randomized cards.
+  /// Bounded to [batchSize] (default 10) to eliminate the "infinite abyss" task paralysis.
+  void startSprintSession({
+    required List<FlashcardEntity> cardPool,
+    String sessionTitle = 'Quick Sprint',
+    int batchSize = 10,
+  }) {
+    if (cardPool.isEmpty) {
+      emit(
+        state.copyWith(
+          status: StudySessionStatus.error,
+          errorMessage: 'No flashcards available for this sprint.',
+        ),
+      );
+      return;
+    }
+
+    final shuffled = List<FlashcardEntity>.from(cardPool)..shuffle();
+    final sprintBatch = shuffled.take(batchSize).toList();
+
+    emit(
+      state.copyWith(
+        status: StudySessionStatus.studying,
+        deckId: sessionTitle,
+        cards: sprintBatch,
+        currentIndex: 0,
+        isFlipped: false,
+        elapsedSeconds: 0,
+        correctCount: 0,
+        againCount: 0,
+        hardCount: 0,
+        goodCount: 0,
+        easyCount: 0,
+      ),
+    );
+
+    _startTimer();
   }
 
   void _startTimer() {

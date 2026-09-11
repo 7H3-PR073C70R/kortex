@@ -477,4 +477,56 @@ class FsrsScheduler {
 
     return sorted.take(sprintSize).toList();
   }
+
+  /// ADHD-Friendly "Soft Catch-Up" Review Queue:
+  /// Avoids overwhelming learners suffering from task paralysis or backlog shock.
+  /// Instead of serving all the hardest cards first (which triggers rejection and abandonment),
+  /// it curates a balanced micro-sprint:
+  /// - ~60% high-retrievability cards (easy dopamine wins to rebuild study momentum)
+  /// - ~40% critical risk cards (low-retrievability cards needing urgent intervention)
+  ///
+  /// The cards are arranged starting with an easy win, followed by an interleaved cadence.
+  List<T> softCatchUpReviewQueue<T>({
+    required List<T> dueCards,
+    required double Function(T card) getStability,
+    required DateTime? Function(T card) getLastReview,
+    int sprintSize = 10,
+    DateTime? now,
+  }) {
+    if (dueCards.length <= sprintSize) return dueCards;
+    final currentTime = now ?? DateTime.now();
+
+    final rated = dueCards.map((card) {
+      final lastReview = getLastReview(card);
+      final elapsed = lastReview == null
+          ? 999.0
+          : currentTime.difference(lastReview).inDays.toDouble();
+      final r = retrievability(elapsed, getStability(card));
+      return (card: card, retrievability: r);
+    }).toList()
+      ..sort((a, b) => b.retrievability.compareTo(a.retrievability));
+
+    final easyCount = (sprintSize * 0.6).round().clamp(1, sprintSize - 1);
+    final hardCount = sprintSize - easyCount;
+
+    final easyPool = rated.take(easyCount).map((e) => e.card).toList();
+    // Critical risk cards come from the tail of the retrievability list (lowest first)
+    final hardPool = rated.reversed.take(hardCount).map((e) => e.card).toList();
+
+    // Interleave them: start with easy win, then alternate
+    final result = <T>[];
+    var easyIndex = 0;
+    var hardIndex = 0;
+
+    while (result.length < sprintSize && (easyIndex < easyPool.length || hardIndex < hardPool.length)) {
+      if (easyIndex < easyPool.length) {
+        result.add(easyPool[easyIndex++]);
+      }
+      if (result.length < sprintSize && hardIndex < hardPool.length) {
+        result.add(hardPool[hardIndex++]);
+      }
+    }
+
+    return result;
+  }
 }

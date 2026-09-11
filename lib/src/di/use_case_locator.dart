@@ -119,6 +119,15 @@ void _initUseCaseLocator() {
         cardSyncQueue: locator<CardSyncQueue>(),
       ),
     )
+    ..registerFactory<FocusSessionCubit>(
+      () => FocusSessionCubit(
+        getDeckCardsUseCase: locator<GetDeckCardsUseCase>(),
+        saveSessionResultsUseCase: locator<SaveSessionResultsUseCase>(),
+        fsrsScheduler: locator<FsrsScheduler>(),
+        cardSyncQueue: locator<CardSyncQueue>(),
+        localStorageService: locator<LocalStorageService>(),
+      ),
+    )
     ..registerLazySingleton<StreamSyllabotResponseUseCase>(
       () => StreamSyllabotResponseUseCase(locator<SyllabotRepository>()),
     )

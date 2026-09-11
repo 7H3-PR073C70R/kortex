@@ -35,26 +35,64 @@ class AppFeedback {
 
   static void light() {
     if (!isHapticsEnabled) return;
-    unawaited(HapticFeedback.lightImpact());
+    try {
+      unawaited(HapticFeedback.lightImpact());
+    } on Object catch (_) {}
   }
 
   static void medium() {
     if (!isHapticsEnabled) return;
-    unawaited(HapticFeedback.mediumImpact());
+    try {
+      unawaited(HapticFeedback.mediumImpact());
+    } on Object catch (_) {}
   }
 
   static void heavy() {
     if (!isHapticsEnabled) return;
-    unawaited(HapticFeedback.heavyImpact());
+    try {
+      unawaited(HapticFeedback.heavyImpact());
+    } on Object catch (_) {}
+  }
+
+  static void celebration() {
+    if (!isHapticsEnabled) return;
+    try {
+      unawaited(HapticFeedback.heavyImpact());
+      Future.delayed(const Duration(milliseconds: 120), () {
+        if (isHapticsEnabled) {
+          try {
+            unawaited(HapticFeedback.mediumImpact());
+          } on Object catch (_) {}
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  static void lifeline() {
+    if (!isHapticsEnabled) return;
+    try {
+      unawaited(HapticFeedback.lightImpact());
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (isHapticsEnabled) {
+          try {
+            unawaited(HapticFeedback.selectionClick());
+          } on Object catch (_) {}
+        }
+      });
+    } on Object catch (_) {}
   }
 
   static void selection() {
     if (!isHapticsEnabled) return;
-    unawaited(HapticFeedback.selectionClick());
+    try {
+      unawaited(HapticFeedback.selectionClick());
+    } on Object catch (_) {}
   }
 
   static void vibrate() {
     if (!isHapticsEnabled) return;
-    unawaited(HapticFeedback.vibrate());
+    try {
+      unawaited(HapticFeedback.vibrate());
+    } on Object catch (_) {}
   }
 }

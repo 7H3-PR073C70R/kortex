@@ -19,6 +19,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.
 import 'package:kortex/src/features/dashboard/presentation/widgets/curated_course_carousel.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/millionaire_arcade_banner.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
@@ -451,6 +452,10 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 20),
         ],
 
+        // 5. Daily Dopamine Arcade (Millionaire Mode)
+        const MillionaireArcadeBanner(),
+        const SizedBox(height: 20),
+
         // 5. Active Recall FSRS-6 Review Engine (Hero Deck + Spaced Repetition Queue)
         if (feed.dueStudyDecks.isNotEmpty) ...[
           FsrsReviewDeckCard(
@@ -718,6 +723,8 @@ class _MediumDashboardLayout extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
+        const MillionaireArcadeBanner(),
+        const SizedBox(height: 16),
 
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -833,6 +840,8 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
+                  const MillionaireArcadeBanner(),
+                  const SizedBox(height: 20),
                   if (feed.dueStudyDecks.isNotEmpty)
                     FsrsReviewDeckCard(
                       deck: feed.dueStudyDecks.first,

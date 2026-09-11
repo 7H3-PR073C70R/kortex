@@ -20,6 +20,9 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.da
 import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accordion.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_audience_poll_dialog.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_ladder_drawer.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_lifeline_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
@@ -35,6 +38,7 @@ class QuizWorkspacePage extends StatelessWidget {
     this.initialQuestions,
     this.courseId,
     this.courseCode,
+    this.assessmentMode = AssessmentMode.discoveryMode,
     super.key,
   });
 
@@ -45,6 +49,7 @@ class QuizWorkspacePage extends StatelessWidget {
   final List<QuizQuestionEntity>? initialQuestions;
   final String? courseId;
   final String? courseCode;
+  final AssessmentMode assessmentMode;
 
   @override
   Widget build(BuildContext context) {
@@ -68,17 +73,29 @@ class QuizWorkspacePage extends StatelessWidget {
       create: (_) {
         final cubit = locator<QuizSessionCubit>();
         if (initialQuestions != null && initialQuestions!.isNotEmpty) {
-          cubit.startQuizFromPastQuestions(
-            title: deckTitle ?? subject ?? 'CBT Practice Test',
-            questions: initialQuestions!,
-            durationMinutes: durationMinutes,
-          );
+          if (assessmentMode == AssessmentMode.millionaireMode) {
+            cubit.startMillionaireQuiz(
+              title: deckTitle ?? subject ?? 'Millionaire Challenge',
+              questions: initialQuestions!,
+            );
+          } else {
+            cubit.startQuizFromPastQuestions(
+              title: deckTitle ?? subject ?? 'CBT Practice Test',
+              questions: initialQuestions!,
+              durationMinutes: durationMinutes,
+              assessmentMode: assessmentMode,
+            );
+          }
+        } else if (assessmentMode == AssessmentMode.millionaireMode &&
+            (deckId == 'arcade_global' || deckId.isEmpty)) {
+          unawaited(cubit.startMillionaireArcade());
         } else {
           unawaited(
             cubit.startQuizFromDeck(
               deckId: deckId,
               deckTitle: deckTitle ?? subject ?? 'Practice Quiz',
               durationMinutes: durationMinutes,
+              assessmentMode: assessmentMode,
             ),
           );
         }
@@ -124,7 +141,17 @@ class _QuizWorkspaceView extends HookWidget {
     }
 
     return BlocConsumer<QuizSessionCubit, QuizSessionState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status ||
+          (previous.audienceDistribution == null && current.audienceDistribution != null),
       listener: (context, state) {
+        if (state.audienceDistribution != null && state.currentQuestion != null) {
+          MillionaireAudiencePollDialog.show(
+            context,
+            distribution: state.audienceDistribution!,
+            options: state.currentQuestion!.options,
+          );
+        }
         if (state.status == QuizSessionStatus.completed &&
             state.result != null) {
           unawaited(
@@ -508,6 +535,146 @@ class _QuizWorkspaceView extends HookWidget {
 
                     const SizedBox(height: 16),
 
+                    // Millionaire Mode Lifeline Bar
+                    if (state.assessmentMode == AssessmentMode.millionaireMode) ...[
+                      MillionaireLifelineBar(
+                        state: state,
+                        onUseFiftyFifty: () {
+                          context.read<QuizSessionCubit>().useLifeline(LifelineType.fiftyFifty);
+                        },
+                        onUseAiClue: () {
+                          context.read<QuizSessionCubit>().useLifeline(LifelineType.aiClue);
+                        },
+                        onUseAskAudience: () {
+                          context.read<QuizSessionCubit>().useLifeline(LifelineType.askAudience);
+                        },
+                        onUseSkipSwap: () {
+                          context.read<QuizSessionCubit>().useLifeline(LifelineType.skipSwap);
+                        },
+                        onOpenLadder: () {
+                          MillionaireLadderDrawer.show(context, state);
+                        },
+                        onWalkAway: () {
+                          unawaited(context.read<QuizSessionCubit>().walkAwayAndBank());
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // Active AI Clue (Millionaire Mode)
+                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                        state.activeClueText != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.2 : 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Color(0xFF6366F1),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'AI Tutor Clue',
+                                    style: typography.caption.bold.copyWith(
+                                      color: const Color(0xFF6366F1),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    state.activeClueText!,
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // Second Chance Shield Notice
+                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                        state.isSecondChanceActive) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.shield_rounded,
+                              color: Color(0xFF10B981),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Second Chance Shield Active!',
+                                    style: typography.caption.bold.copyWith(
+                                      color: const Color(0xFF10B981),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Review and try another option without losing your banked progress.',
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ShrinkableButton(
+                              onTap: () {
+                                context.read<QuizSessionCubit>().useSecondChance();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Try Again',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
                     // Prompt Card
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -642,6 +809,13 @@ class _QuizWorkspaceView extends HookWidget {
                     ...current.options.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final opt = entry.value;
+
+                      // 50:50 Lifeline Masking
+                      if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                          state.isOptionEliminated(idx)) {
+                        return const SizedBox.shrink();
+                      }
+
                       final isSelected = current.userSelectedAnswer == opt;
                       final isCorrectOption =
                           opt.trim().toLowerCase() ==

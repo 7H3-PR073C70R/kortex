@@ -15,6 +15,7 @@ import 'package:kortex/src/features/community/presentation/widgets/create_post_b
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
+import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
@@ -34,13 +35,43 @@ class StudySessionPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHyperdrive =
+        deckId.startsWith('hyperdrive:') || deckId.startsWith('focus:');
+    if (isHyperdrive) {
+      final parts = deckId.split(':');
+      final targetDeckId =
+          parts.length > 1 ? parts.sublist(1).join(':') : deckId;
+      return FocusWorkspacePage(
+        deckId: targetDeckId,
+        deckTitle: 'Hyperdrive Focus',
+      );
+    }
+
     return BlocProvider<StudySessionCubit>(
       create: (_) {
         final cubit = locator<StudySessionCubit>();
-        unawaited(cubit.startSession(deckId));
+        final isSprint = deckId.startsWith('sprint:');
+        if (isSprint) {
+          // Format: 'sprint:10:actualDeckId'
+          final parts = deckId.split(':');
+          final size = int.tryParse(parts.length > 1 ? parts[1] : '10') ?? 10;
+          final targetDeckId =
+              parts.length > 2 ? parts.sublist(2).join(':') : '';
+          unawaited(
+            cubit.startSession(
+              targetDeckId,
+              randomize: true,
+              sprintSize: size,
+            ),
+          );
+        } else {
+          unawaited(cubit.startSession(deckId));
+        }
         return cubit;
       },
-      child: _StudySessionView(deckId: deckId),
+      child: _StudySessionView(
+        deckId: deckId.startsWith('sprint:') ? deckId.split(':').last : deckId,
+      ),
     );
   }
 }

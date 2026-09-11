@@ -2,6 +2,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
@@ -16,10 +19,24 @@ class MockGenerateQuizFromDeckUseCase extends Mock
 class MockSubmitQuizAnswersUseCase extends Mock
     implements SubmitQuizAnswersUseCase {}
 
+class MockCardSyncQueue extends Mock implements CardSyncQueue {}
+
+class MockDecksRepository extends Mock implements DecksRepository {}
+
+class FakeFsrsReviewLog extends Fake implements FsrsReviewLog {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(FakeFsrsReviewLog());
+  });
+
   group('QuizSessionCubit Test Suite', () {
     late MockGenerateQuizFromDeckUseCase mockGenerateUseCase;
     late MockSubmitQuizAnswersUseCase mockSubmitUseCase;
+    late MockCardSyncQueue mockCardSyncQueue;
+    late MockDecksRepository mockDecksRepository;
     late QuizSessionCubit cubit;
 
     const tQuestions = [
@@ -55,9 +72,17 @@ void main() {
     setUp(() {
       mockGenerateUseCase = MockGenerateQuizFromDeckUseCase();
       mockSubmitUseCase = MockSubmitQuizAnswersUseCase();
+      mockCardSyncQueue = MockCardSyncQueue();
+      mockDecksRepository = MockDecksRepository();
+
+      when(() => mockCardSyncQueue.enqueueReview(any(), flushImmediately: any(named: 'flushImmediately')))
+          .thenAnswer((_) async {});
+
       cubit = QuizSessionCubit(
         generateQuizUseCase: mockGenerateUseCase,
         submitQuizUseCase: mockSubmitUseCase,
+        decksRepository: mockDecksRepository,
+        cardSyncQueue: mockCardSyncQueue,
       );
     });
 
@@ -196,5 +221,149 @@ void main() {
             .having((s) => s.result?.correctAnswers, 'correctAnswers', 2),
       ],
     );
+
+    group('Millionaire Ascent Mode (ADHD Gamified Quiz)', () {
+      test('startMillionaireQuiz sets up millionaire mode, 3 lifelines, and Tier 1', () {
+        cubit.startMillionaireQuiz(
+          title: 'Physics Ascent',
+          questions: tQuestions,
+        );
+
+        expect(cubit.state.assessmentMode, equals(AssessmentMode.millionaireMode));
+        expect(cubit.state.currentTier, equals(1));
+        expect(cubit.state.bankedTier, equals(0));
+        expect(cubit.state.isLifelineAvailable(LifelineType.fiftyFifty), isTrue);
+        expect(cubit.state.isLifelineAvailable(LifelineType.aiClue), isTrue);
+        expect(cubit.state.isLifelineAvailable(LifelineType.skipSwap), isTrue);
+        expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
+      });
+
+      test('useLifeline(fiftyFifty) eliminates exactly 2 incorrect options', () {
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          )
+          ..useLifeline(LifelineType.fiftyFifty);
+
+        expect(cubit.state.isLifelineAvailable(LifelineType.fiftyFifty), isFalse);
+        expect(cubit.state.eliminatedOptionIndices.length, equals(2));
+        expect(cubit.state.eliminatedOptionIndices.contains(0), isFalse);
+      });
+
+      test('useLifeline(aiClue) sets activeClueText from explanation', () {
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          )
+          ..useLifeline(LifelineType.aiClue);
+
+        expect(cubit.state.isLifelineAvailable(LifelineType.aiClue), isFalse);
+        expect(cubit.state.activeClueText, isNotEmpty);
+      });
+
+      test('useLifeline(askAudience) computes distribution and disables lifeline', () {
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          )
+          ..useLifeline(LifelineType.askAudience);
+
+        expect(cubit.state.isLifelineAvailable(LifelineType.askAudience), isFalse);
+        expect(cubit.state.audienceDistribution, isNotNull);
+        expect(cubit.state.audienceDistribution!.containsKey('A'), isTrue);
+        expect(cubit.state.audienceDistribution!['A'], greaterThan(30));
+      });
+
+      test('startMillionaireArcade initializes arcade mode with global scope', () async {
+        when(() => mockDecksRepository.getUserDecks())
+            .thenAnswer((_) async => const Right([]));
+
+        await cubit.startMillionaireArcade();
+
+        expect(cubit.state.assessmentMode, equals(AssessmentMode.millionaireMode));
+        expect(cubit.state.millionaireScope, equals(MillionaireScope.globalArcade));
+        expect(cubit.state.questions.length, equals(12));
+        expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
+      });
+
+      test('startMillionaireQuiz sets courseTied scope by default', () {
+        cubit.startMillionaireQuiz(
+          title: 'Unit 1 Mastery',
+          questions: tQuestions,
+        );
+
+        expect(cubit.state.millionaireScope, equals(MillionaireScope.courseTied));
+        expect(cubit.state.quizTitle, equals('Unit 1 Mastery'));
+      });
+
+      test('correct answer at safe checkpoint banks the tier', () {
+        final twelveQuestions = List.generate(
+          12,
+          (i) => QuizQuestionEntity(
+            id: 'tier-q-$i',
+            prompt: 'Question $i',
+            type: QuizQuestionType.multipleChoice,
+            options: const ['Correct', 'Wrong 1', 'Wrong 2', 'Wrong 3'],
+            correctAnswer: 'Correct',
+            explanation: 'Exp $i',
+            subTopic: 'Physics',
+          ),
+        );
+
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Checkpoint Ascent',
+            questions: twelveQuestions,
+          )
+          ..jumpToQuestion(3);
+
+        expect(cubit.state.currentTier, equals(4));
+        expect(cubit.state.bankedTier, equals(0));
+
+        cubit.selectOption('Correct');
+
+        expect(cubit.state.bankedTier, equals(4));
+      });
+
+      test('incorrect answer enqueues FSRS review log with rating again', () {
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          )
+          ..selectOption('Wrong answer');
+
+        verify(() => mockCardSyncQueue.enqueueReview(any())).called(1);
+      });
+
+      test('walkAwayAndBank submits quiz with banked XP', () async {
+        when(
+          () => mockSubmitUseCase(
+            quizTitle: any(named: 'quizTitle'),
+            questions: any(named: 'questions'),
+            durationSeconds: any(named: 'durationSeconds'),
+          ),
+        ).thenAnswer((_) async => const Right(tResult));
+
+        cubit.startMillionaireQuiz(
+          title: 'Physics Ascent',
+          questions: tQuestions,
+        );
+
+        await cubit.walkAwayAndBank();
+
+        expect(cubit.state.isWalkedAway, isTrue);
+        verify(
+          () => mockSubmitUseCase(
+            quizTitle: any(named: 'quizTitle'),
+            questions: any(named: 'questions'),
+            durationSeconds: any(named: 'durationSeconds'),
+          ),
+        ).called(1);
+      });
+    });
   });
 }

@@ -14,6 +14,19 @@ enum QuizSessionStatus {
 enum AssessmentMode {
   discoveryMode,      // Formative learning: immediate explanations, hint support, low stakes
   examSimulationMode, // Summative testing: timed, strict, no hints until results
+  millionaireMode,    // Gamified tiered ladder with safe milestones & lifelines
+}
+
+enum MillionaireScope {
+  courseTied,   // Curriculum-aligned mastery milestone for a specific course/deck
+  globalArcade, // Cross-subject randomized dopamine climb
+}
+
+enum LifelineType {
+  fiftyFifty,  // Eliminates two incorrect options
+  aiClue,      // Socratic hint from Syllabot / AI tutor
+  askAudience, // Crowd wisdom / simulated confidence distribution
+  skipSwap,    // Skips current question without penalty
 }
 
 class QuizSessionState extends Equatable {
@@ -30,6 +43,23 @@ class QuizSessionState extends Equatable {
     this.hintsUsedCount = 0,
     this.result,
     this.errorMessage,
+    this.currentTier = 1,
+    this.bankedTier = 0,
+    this.millionaireScope,
+    this.availableLifelines = const {
+      LifelineType.fiftyFifty: true,
+      LifelineType.aiClue: true,
+      LifelineType.askAudience: true,
+      LifelineType.skipSwap: true,
+    },
+    this.eliminatedOptionIndices = const {},
+    this.activeClueText,
+    this.audienceDistribution,
+    this.speedBonusXp = 0,
+    this.questionStartTimeSeconds = 0,
+    this.hasSecondChance = true,
+    this.isSecondChanceActive = false,
+    this.isWalkedAway = false,
   });
 
   final QuizSessionStatus status;
@@ -44,6 +74,20 @@ class QuizSessionState extends Equatable {
   final int hintsUsedCount;
   final QuizResultEntity? result;
   final String? errorMessage;
+
+  // --- Millionaire Ascent Mode State ---
+  final int currentTier;
+  final int bankedTier;
+  final MillionaireScope? millionaireScope;
+  final Map<LifelineType, bool> availableLifelines;
+  final Set<int> eliminatedOptionIndices;
+  final String? activeClueText;
+  final Map<String, int>? audienceDistribution;
+  final int speedBonusXp;
+  final int questionStartTimeSeconds;
+  final bool hasSecondChance;
+  final bool isSecondChanceActive;
+  final bool isWalkedAway;
 
   QuizQuestionEntity? get currentQuestion =>
       currentIndex >= 0 && currentIndex < questions.length
@@ -91,6 +135,35 @@ class QuizSessionState extends Equatable {
     return '$minutes:$seconds';
   }
 
+  // --- Millionaire Ladder Constants & Helpers ---
+  static const List<int> millionaireTiersXp = [
+    100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000,
+  ];
+
+  static const Set<int> safeCheckpointTiers = {4, 8};
+
+  int get maxMillionaireTier => millionaireTiersXp.length;
+
+  int get currentTierPrizeXp {
+    if (currentTier <= 0) return 0;
+    final index = (currentTier - 1).clamp(0, millionaireTiersXp.length - 1);
+    return millionaireTiersXp[index];
+  }
+
+  int get bankedTierPrizeXp {
+    if (bankedTier <= 0) return 0;
+    final index = (bankedTier - 1).clamp(0, millionaireTiersXp.length - 1);
+    return millionaireTiersXp[index];
+  }
+
+  bool get isCurrentTierSafeCheckpoint => safeCheckpointTiers.contains(currentTier);
+
+  bool isLifelineAvailable(LifelineType type) =>
+      availableLifelines[type] ?? false;
+
+  bool isOptionEliminated(int optionIndex) =>
+      eliminatedOptionIndices.contains(optionIndex);
+
   QuizSessionState copyWith({
     QuizSessionStatus? status,
     String? quizTitle,
@@ -104,6 +177,20 @@ class QuizSessionState extends Equatable {
     int? hintsUsedCount,
     QuizResultEntity? result,
     String? errorMessage,
+    int? currentTier,
+    int? bankedTier,
+    MillionaireScope? millionaireScope,
+    Map<LifelineType, bool>? availableLifelines,
+    Set<int>? eliminatedOptionIndices,
+    String? activeClueText,
+    bool clearActiveClue = false,
+    Map<String, int>? audienceDistribution,
+    bool clearAudienceDistribution = false,
+    int? speedBonusXp,
+    int? questionStartTimeSeconds,
+    bool? hasSecondChance,
+    bool? isSecondChanceActive,
+    bool? isWalkedAway,
   }) {
     return QuizSessionState(
       status: status ?? this.status,
@@ -118,6 +205,18 @@ class QuizSessionState extends Equatable {
       hintsUsedCount: hintsUsedCount ?? this.hintsUsedCount,
       result: result ?? this.result,
       errorMessage: errorMessage,
+      currentTier: currentTier ?? this.currentTier,
+      bankedTier: bankedTier ?? this.bankedTier,
+      millionaireScope: millionaireScope ?? this.millionaireScope,
+      availableLifelines: availableLifelines ?? this.availableLifelines,
+      eliminatedOptionIndices: eliminatedOptionIndices ?? this.eliminatedOptionIndices,
+      activeClueText: clearActiveClue ? null : (activeClueText ?? this.activeClueText),
+      audienceDistribution: clearAudienceDistribution ? null : (audienceDistribution ?? this.audienceDistribution),
+      speedBonusXp: speedBonusXp ?? this.speedBonusXp,
+      questionStartTimeSeconds: questionStartTimeSeconds ?? this.questionStartTimeSeconds,
+      hasSecondChance: hasSecondChance ?? this.hasSecondChance,
+      isSecondChanceActive: isSecondChanceActive ?? this.isSecondChanceActive,
+      isWalkedAway: isWalkedAway ?? this.isWalkedAway,
     );
   }
 
@@ -135,5 +234,17 @@ class QuizSessionState extends Equatable {
     hintsUsedCount,
     result,
     errorMessage,
+    currentTier,
+    bankedTier,
+    millionaireScope,
+    availableLifelines,
+    eliminatedOptionIndices,
+    activeClueText,
+    audienceDistribution,
+    speedBonusXp,
+    questionStartTimeSeconds,
+    hasSecondChance,
+    isSecondChanceActive,
+    isWalkedAway,
   ];
 }

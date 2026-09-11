@@ -128,5 +128,32 @@ void main() {
         expect(cubit.cardSyncQueue.getPendingCount(), equals(1));
       },
     );
+
+    group('ADHD Micro-Sprint & Randomized Flashcard Sessions', () {
+      test('startSprintSession bounds cards to batchSize to avoid infinite abyss', () {
+        final cubit = buildCubit();
+        final largePool = List.generate(
+          50,
+          (i) => FlashcardEntity(
+            id: 'card_$i',
+            deckId: 'deck_large',
+            front: 'Q$i',
+            back: 'A$i',
+          ),
+        );
+
+        cubit.startSprintSession(
+          cardPool: largePool,
+          sessionTitle: 'Quick 12 Focus',
+          batchSize: 12,
+        );
+
+        expect(cubit.state.status, equals(StudySessionStatus.studying));
+        expect(cubit.state.cards.length, equals(12));
+        expect(cubit.state.totalCards, equals(12));
+        expect(cubit.state.currentIndex, equals(0));
+        expect(cubit.state.deckId, equals('Quick 12 Focus'));
+      });
+    });
   });
 }

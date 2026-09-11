@@ -6,12 +6,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/focus_mode_setup_modal.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_empty_state.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -294,7 +296,207 @@ class _DecksView extends HookWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  // ADHD-Friendly Quick Focus Sprint Banner
+                  if (state.allDecks.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF1E1B4B), const Color(0xFF31104B)]
+                              : [const Color(0xFFEEF2FF), const Color(0xFFFAF5FF)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF818CF8).withValues(alpha: 0.35),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.2 : 0.08),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.bolt_rounded,
+                                  color: Color(0xFF6366F1),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Quick Focus Sprint',
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Randomized flashcards to beat predictive boredom',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    final targetDeck = state.allDecks.firstWhere(
+                                      (d) => d.dueCards > 0,
+                                      orElse: () => state.allDecks.first,
+                                    );
+                                    AppFeedback.selection();
+                                    unawaited(
+                                      context.router.push(
+                                        StudySessionRoute(
+                                          deckId: 'sprint:10:${targetDeck.id}',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF6366F1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.flash_on_rounded, color: Colors.white, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Quick 10',
+                                          style: typography.caption.bold.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    final targetDeck = state.allDecks.firstWhere(
+                                      (d) => d.dueCards > 0,
+                                      orElse: () => state.allDecks.first,
+                                    );
+                                    AppFeedback.selection();
+                                    unawaited(
+                                      context.router.push(
+                                        StudySessionRoute(
+                                          deckId: 'sprint:20:${targetDeck.id}',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: colors.surfaceBorder.withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.track_changes_rounded, color: colors.textPrimary, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Power 20',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.selection();
+                                    unawaited(
+                                      FocusModeSetupModal.show(
+                                        context,
+                                        decks: state.allDecks,
+                                        initialDeck: state.allDecks.firstWhere(
+                                          (d) => d.dueCards > 0,
+                                          orElse: () => state.allDecks.first,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Hyperdrive',
+                                          style: typography.caption.bold.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // 2. Search Field - Unified full-width text field
                   TextField(
