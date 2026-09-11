@@ -42,6 +42,7 @@ abstract class CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    bool isAnonymous = false,
   });
 
   /// Adds a reply to a forum post.

@@ -10,11 +10,13 @@ class CameraLiveOcrOverlay extends StatelessWidget {
     super.key,
     this.isProcessing = false,
     this.onCapture,
+    this.contrastNormalized = true,
   });
 
   final List<RecognizedTextBlock> detectedBlocks;
   final bool isProcessing;
   final VoidCallback? onCapture;
+  final bool contrastNormalized;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +32,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Semi-transparent scan guidance layer
+          // Semi-transparent scan guidance & auto-crop page border layer
           CustomPaint(
             painter: _BoundingBoxPainter(
               blocks: detectedBlocks,
@@ -38,46 +40,125 @@ class CameraLiveOcrOverlay extends StatelessWidget {
             ),
           ),
 
-          // Top guidance header with frosted glass style
+          // Top guidance header with frosted glass style and contrast normalization status
           Positioned(
             top: 24,
             left: 20,
             right: 20,
-            child: Semantics(
-              liveRegion: true,
-              label: l10n.alignCameraTextHint,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colors.white.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.center_focus_strong_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(
+                  liveRegion: true,
+                  label: l10n.alignCameraTextHint,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.alignCameraTextHint,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    decoration: BoxDecoration(
+                      color: colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colors.white.withValues(alpha: 0.15),
                       ),
                     ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.center_focus_strong_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            l10n.alignCameraTextHint,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Auto-crop & Contrast Normalization Pills
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.white.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.crop_free_rounded,
+                            color: colors.primary,
+                            size: 13,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Smart Page Auto-Crop',
+                            style: TextStyle(
+                              color: colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (contrastNormalized)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.success.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.tonality_rounded,
+                              color: colors.success,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Contrast Normalization Active',
+                              style: TextStyle(
+                                color: colors.success,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
 
@@ -145,6 +226,46 @@ class _BoundingBoxPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 1. Draw textbook page auto-crop guideline viewfinder
+    final marginH = size.width * 0.08;
+    final marginV = size.height * 0.16;
+    final cropRect = Rect.fromLTRB(
+      marginH,
+      marginV,
+      size.width - marginH,
+      size.height - marginV - 80,
+    );
+
+    final cropGuidePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final cornerPaint = Paint()
+      ..color = accentColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final rrect = RRect.fromRectAndRadius(cropRect, const Radius.circular(16));
+    canvas.drawRRect(rrect, cropGuidePaint);
+
+    // Corner brackets for auto-crop alignment
+    const cornerLength = 24.0;
+    // Top-left
+    canvas.drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(cornerLength, 0), cornerPaint);
+    canvas.drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(0, cornerLength), cornerPaint);
+    // Top-right
+    canvas.drawLine(cropRect.topRight, cropRect.topRight + const Offset(-cornerLength, 0), cornerPaint);
+    canvas.drawLine(cropRect.topRight, cropRect.topRight + const Offset(0, cornerLength), cornerPaint);
+    // Bottom-left
+    canvas.drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(cornerLength, 0), cornerPaint);
+    canvas.drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(0, -cornerLength), cornerPaint);
+    // Bottom-right
+    canvas.drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(-cornerLength, 0), cornerPaint);
+    canvas.drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(0, -cornerLength), cornerPaint);
+
+    // 2. Draw detected OCR text blocks
     final boxPaint = Paint()
       ..color = accentColor.withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
@@ -161,10 +282,10 @@ class _BoundingBoxPainter extends CustomPainter {
         block.width,
         block.height,
       );
-      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
+      final blockRRect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
       canvas
-        ..drawRRect(rrect, fillPaint)
-        ..drawRRect(rrect, boxPaint);
+        ..drawRRect(blockRRect, fillPaint)
+        ..drawRRect(blockRRect, boxPaint);
     }
   }
 

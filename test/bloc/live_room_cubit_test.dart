@@ -62,6 +62,7 @@ class MockCommunityRepository implements CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    bool isAnonymous = false,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override

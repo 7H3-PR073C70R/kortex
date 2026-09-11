@@ -181,6 +181,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       latexContent: event.latexContent,
       isQuestion: event.isQuestion,
       syllabusTag: event.syllabusTag,
+      isAnonymous: event.isAnonymous,
     );
     res.fold(
       (failure) => emit(

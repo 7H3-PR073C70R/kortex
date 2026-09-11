@@ -32,11 +32,6 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<GetCalibrationProfileUseCase>(
       () => GetCalibrationProfileUseCase(locator<CalibrationRepository>()),
     )
-    ..registerLazySingleton<GetRecommendedContentUseCase>(
-      () => GetRecommendedContentUseCase(
-        locator<ContentRecommendationRepository>(),
-      ),
-    )
     ..registerLazySingleton<VerifyOtpUseCase>(
       () => VerifyOtpUseCase(locator<OtpRepository>()),
     )
@@ -234,6 +229,9 @@ void _initUseCaseLocator() {
     )
     ..registerLazySingleton<SubmitQuizAnswersUseCase>(
       () => SubmitQuizAnswersUseCase(locator<QuizRepository>()),
+    )
+    ..registerLazySingleton<ConvertFailedQuizToDeckUseCase>(
+      () => ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>()),
     )
     ..registerFactory<QuizSessionCubit>(
       () => QuizSessionCubit(

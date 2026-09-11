@@ -82,12 +82,6 @@ void _initServices() {
         getCuratedCoursesCatalogUseCase: locator<GetCuratedCoursesCatalogUseCase>(),
       ),
     )
-    ..registerFactory<ContentRecommendationCubit>(
-      () => ContentRecommendationCubit(
-        getRecommendedContentUseCase: locator<GetRecommendedContentUseCase>(),
-        getCalibrationProfileUseCase: locator<GetCalibrationProfileUseCase>(),
-      ),
-    )
     ..registerLazySingleton<StudyEngineRouter>(
       StudyEngineRouter.new,
     )

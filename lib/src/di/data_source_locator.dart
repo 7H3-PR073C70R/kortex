@@ -18,9 +18,6 @@ void _initDataSource() {
         storageService: locator<LocalStorageService>(),
       ),
     )
-    ..registerLazySingleton<ContentRecommendationDataSource>(
-      ContentRecommendationDataSourceImpl.new,
-    )
     ..registerLazySingleton<DashboardRemoteDataSource>(
       () => DashboardRemoteDataSourceImpl(
         locator<DashboardApiClient>(),

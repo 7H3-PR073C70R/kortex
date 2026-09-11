@@ -84,6 +84,7 @@ class CreateForumPostEvent extends CommunityEvent {
     this.latexContent,
     this.isQuestion = false,
     this.syllabusTag = 'General',
+    this.isAnonymous = false,
   });
 
   final String title;
@@ -92,6 +93,7 @@ class CreateForumPostEvent extends CommunityEvent {
   final String? latexContent;
   final bool isQuestion;
   final String syllabusTag;
+  final bool isAnonymous;
 
   @override
   List<Object?> get props => [
@@ -101,6 +103,7 @@ class CreateForumPostEvent extends CommunityEvent {
     latexContent,
     isQuestion,
     syllabusTag,
+    isAnonymous,
   ];
 }
 

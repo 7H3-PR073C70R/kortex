@@ -84,7 +84,6 @@ class AuthRouteGuard extends AutoRouteGuard {
         }
 
         if (currentRouteName == OnboardingCalibrationRoute.name ||
-            currentRouteName == OnboardingContentRoute.name ||
             currentRouteName == PermissionsRoute.name) {
           resolver.next();
         } else {

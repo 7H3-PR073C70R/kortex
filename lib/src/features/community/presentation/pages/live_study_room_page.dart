@@ -15,7 +15,6 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
-import 'package:kortex/src/features/community/presentation/widgets/collaborative_whiteboard_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -233,60 +232,37 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
           body: SafeArea(
             child: Column(
               children: [
-                // Top mode switcher: Silent Focus vs Whiteboard
-                _ViewModeSwitcher(
-                  activeMode: state.activeViewMode,
+                // Micro-Goal Status Pill & Ambient Soundscape Player
+                _MicroGoalPill(
+                  activeGoal: state.activeGoal,
                   isDark: isDark,
-                  strokeCount: state.whiteboardStrokes.length,
+                  onTapEdit: () => _showGoalEditDialog(context, state.activeGoal),
                 ),
-
+                const SizedBox(height: 6),
+                _AmbientSoundscapeBar(
+                  state: state,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 6),
+                _AmbientActivityTicker(
+                  tickerItems: state.recentActivityTicker,
+                  cardsReviewed: state.cardsReviewedInSprint,
+                  isDark: isDark,
+                ),
+                if (state.activeSpeakerIds.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _ActiveSpeakersBanner(
+                    speakerIds: state.activeSpeakerIds,
+                    participants: state.ephemeralParticipants,
+                    isDark: isDark,
+                  ),
+                ],
                 const SizedBox(height: 6),
 
-                // Micro-Goal Status Pill & Ambient Soundscape Player
-                if (state.activeViewMode != RoomViewMode.whiteboard) ...[
-                  _MicroGoalPill(
-                    activeGoal: state.activeGoal,
-                    isDark: isDark,
-                    onTapEdit: () => _showGoalEditDialog(context, state.activeGoal),
-                  ),
-                  const SizedBox(height: 6),
-                  _AmbientSoundscapeBar(
-                    state: state,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 6),
-                  _AmbientActivityTicker(
-                    tickerItems: state.recentActivityTicker,
-                    cardsReviewed: state.cardsReviewedInSprint,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 6),
-                ],
-
-                // Main body: Whiteboard or Silent Focus Cockpit
+                // Main body: Silent Focus Cockpit
                 Expanded(
-                  child: state.activeViewMode == RoomViewMode.whiteboard
-                      ? Stack(
-                          children: [
-                            CollaborativeWhiteboardWidget(
-                              currentUserId: widget.currentUserId,
-                              currentUserName: widget.currentUserName,
-                            ),
-                            if (state.activeSpeakerIds.isNotEmpty)
-                              Positioned(
-                                top: 8,
-                                left: 16,
-                                right: 16,
-                                child: _ActiveSpeakersBanner(
-                                  speakerIds: state.activeSpeakerIds,
-                                  participants: state.ephemeralParticipants,
-                                  isDark: isDark,
-                                ),
-                              ),
-                          ],
-                        )
-                      : Column(
-                          children: [
+                  child: Column(
+                    children: [
                             // Silent Focus Cockpit: Body-doubling flow state
                             Expanded(
                               flex: 5,
@@ -1064,8 +1040,6 @@ class _BottomActionBar extends StatelessWidget {
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
 
-    final isWhiteboard = state.activeViewMode == RoomViewMode.whiteboard;
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
@@ -1212,35 +1186,6 @@ class _BottomActionBar extends StatelessWidget {
             const SizedBox(width: 8),
           ],
 
-          // Whiteboard Toggle Button
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.lightImpact());
-              context.read<LiveRoomCubit>().switchViewMode(
-                    isWhiteboard ? RoomViewMode.stage : RoomViewMode.whiteboard,
-                  );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isWhiteboard ? cColors.primary : cColors.surfaceSecondary,
-                border: Border.all(
-                  color: isWhiteboard
-                      ? cColors.primary
-                      : cColors.primary.withAlpha(50),
-                ),
-              ),
-              child: Icon(
-                Icons.draw_rounded,
-                color: isWhiteboard ? cColors.white : cColors.primary,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
           // In-Room Live Chat Drawer Button with Unread Badge
           Stack(
             clipBehavior: Clip.none,
@@ -1334,129 +1279,6 @@ class _BottomActionBar extends StatelessWidget {
   }
 }
 
-// ── View Mode Switcher (Stage / Whiteboard) ───────────────────────────────────
-
-class _ViewModeSwitcher extends StatelessWidget {
-  const _ViewModeSwitcher({
-    required this.activeMode,
-    required this.isDark,
-    required this.strokeCount,
-  });
-
-  final RoomViewMode activeMode;
-  final bool isDark;
-  final int strokeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Container(
-        height: 38,
-        decoration: BoxDecoration(
-          color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfaceSecondary,
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: colors.primary.withAlpha(25)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _ModeTab(
-                icon: Icons.headphones_rounded,
-                label: 'Silent Cockpit',
-                isSelected: activeMode == RoomViewMode.stage,
-                onTap: () => context.read<LiveRoomCubit>().switchViewMode(RoomViewMode.stage),
-              ),
-            ),
-            Expanded(
-              child: _ModeTab(
-                icon: Icons.draw_rounded,
-                label: 'Whiteboard',
-                badgeText: strokeCount > 0 ? '$strokeCount' : null,
-                isSelected: activeMode == RoomViewMode.whiteboard,
-                onTap: () => context.read<LiveRoomCubit>().switchViewMode(RoomViewMode.whiteboard),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ModeTab extends StatelessWidget {
-  const _ModeTab({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.badgeText,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final String? badgeText;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? colors.primary : colors.transparent,
-          borderRadius: BorderRadius.circular(19),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? colors.white : colors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: typography.caption.bold.copyWith(
-                color: isSelected ? colors.white : colors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-            if (badgeText != null) ...[
-              const SizedBox(width: 5),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.white.withAlpha(50)
-                      : colors.primary.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badgeText!,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? colors.white : colors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Active Speakers Banner ───────────────────────────────────────────────────
 

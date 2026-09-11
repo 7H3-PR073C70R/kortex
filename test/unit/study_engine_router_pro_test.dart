@@ -8,7 +8,6 @@ import 'package:kortex/src/features/offline_ai/offline_ai.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
-class MockOfflineModelInstaller extends Mock implements OfflineModelInstaller {}
 class MockLocalInferenceIsolateManager extends Mock
     implements LocalInferenceIsolateManager {}
 class MockLocalStorageService extends Mock implements LocalStorageService {}
@@ -16,7 +15,6 @@ class MockUserStorageService extends Mock implements UserStorageService {}
 
 void main() {
   late MockConnectivity mockConnectivity;
-  late MockOfflineModelInstaller mockInstaller;
   late MockLocalInferenceIsolateManager mockIsolateManager;
   late MockLocalStorageService mockLocal;
   late MockUserStorageService mockUser;
@@ -24,7 +22,6 @@ void main() {
 
   setUp(() {
     mockConnectivity = MockConnectivity();
-    mockInstaller = MockOfflineModelInstaller();
     mockIsolateManager = MockLocalInferenceIsolateManager();
     mockLocal = MockLocalStorageService();
     mockUser = MockUserStorageService();
@@ -44,7 +41,6 @@ void main() {
 
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
         isolateManager: mockIsolateManager,
         subscriptionGuard: subscriptionGuard,
       );
@@ -53,16 +49,14 @@ void main() {
       expect(mode, equals(StudyEngineExecutionMode.cloudRemote));
     });
 
-    test('Online Free user with local model: Falls back to offlineOnDevice (free AI access)', () async {
+    test('Online Free user: Routes to offlineOnDevice without 1.5GB download locks', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
         (_) async => [ConnectivityResult.wifi],
       );
       when(() => mockUser.isProSubscriber()).thenReturn(false);
-      when(() => mockInstaller.isModelInstalled()).thenAnswer((_) async => true);
 
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
         isolateManager: mockIsolateManager,
         subscriptionGuard: subscriptionGuard,
       );
@@ -71,27 +65,20 @@ void main() {
       expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
     });
 
-    test('Online Free user without local model: Returns unavailable with Pro upgrade guidance', () async {
+    test('Offline Free or Pro user: Always routes to offlineOnDevice', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.wifi],
+        (_) async => [ConnectivityResult.none],
       );
       when(() => mockUser.isProSubscriber()).thenReturn(false);
-      when(() => mockInstaller.isModelInstalled()).thenAnswer((_) async => false);
 
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
         isolateManager: mockIsolateManager,
         subscriptionGuard: subscriptionGuard,
       );
 
       final mode = await router.getExecutionMode();
-      expect(mode, equals(StudyEngineExecutionMode.unavailable));
-
-      final result = await router.generateStudyPack(topic: 'Physics 101');
-      expect(result.executionMode, equals(StudyEngineExecutionMode.unavailable));
-      expect(result.isOfflineModelMissing, isTrue);
-      expect(result.userMessage, equals(StudyEngineRouter.cloudAiRequiresProPrompt));
+      expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
     });
   });
 }

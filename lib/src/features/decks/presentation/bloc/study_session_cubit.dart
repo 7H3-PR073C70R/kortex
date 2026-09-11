@@ -326,6 +326,75 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     }
   }
 
+  /// Finishes session early at a sprint checkpoint without losing FSRS card progress.
+  Future<void> finishEarly() async {
+    if (state.status != StudySessionStatus.studying) return;
+    _timer?.cancel();
+
+    final totalReviewed = state.currentIndex;
+    if (totalReviewed == 0) {
+      emit(state.copyWith(status: StudySessionStatus.finished));
+      return;
+    }
+
+    final finalRetention =
+        ((state.hardCount * 0.7) + (state.goodCount * 1.0) + (state.easyCount * 1.0)) /
+        (totalReviewed == 0 ? 1 : totalReviewed);
+    final mastered = state.goodCount + state.easyCount;
+    final remainingDue = state.cards.where((c) => c.isDueToday).length;
+    final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
+
+    try {
+      await locator<UserActivityService>().recordStudySession(
+        cardsReviewed: totalReviewed,
+        durationSeconds: state.elapsedSeconds,
+        retentionScore: finalRetention.clamp(0.0, 1.0),
+        masteredCards: mastered,
+      );
+    } on Object catch (_) {}
+
+    try {
+      if (locator.isRegistered<DecksRemoteDataSource>()) {
+        await locator<DecksRemoteDataSource>().updateDeckCards(
+          state.deckId,
+          state.cards.map(FlashcardModel.fromEntity).toList(),
+        );
+      }
+    } on Object catch (_) {}
+
+    try {
+      await _saveSessionResultsUseCase(
+        SaveSessionResultsParams(
+          deckId: state.deckId,
+          cardsReviewed: totalReviewed,
+          durationSeconds: state.elapsedSeconds,
+          retentionScore: finalRetention.clamp(0.0, 1.0),
+          masteryRate: calculatedMasteryRate,
+          dueCards: remainingDue,
+          updatedCards: state.cards,
+        ),
+      );
+    } on Object catch (_) {}
+
+    try {
+      locator<AuthBloc>().add(const AuthStreakIncremented());
+    } on Object catch (_) {}
+    try {
+      locator<DecksBloc>().add(const DecksRefreshed());
+    } on Object catch (_) {}
+    try {
+      locator<DashboardBloc>().add(const DashboardRefreshed());
+    } on Object catch (_) {}
+
+    unawaited(_cardSyncQueue.flushPendingLogs());
+
+    emit(
+      state.copyWith(
+        status: StudySessionStatus.finished,
+      ),
+    );
+  }
+
   @override
   Future<void> close() {
     _timer?.cancel();

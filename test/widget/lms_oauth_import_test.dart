@@ -7,7 +7,6 @@ import 'package:kortex/src/features/ingestion/data/data_sources/lms_import_data_
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_modal_sheet.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/lms_oauth_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -43,47 +42,28 @@ void main() {
     }
 
     testWidgets(
-      'LmsOAuthDialog renders security notice and authorises on tap',
+      'LmsImportModalSheet triggers OAuth flow and handles connection',
       (tester) async {
-        LmsOAuthResult? result;
-
         await tester.pumpWidget(
           createTestApp(
-            Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await LmsOAuthDialog.show(
-                      context,
-                      platform: 'google_classroom',
-                    );
-                  },
-                  child: const Text('Open OAuth'),
-                );
-              },
-            ),
+            const LmsImportModalSheet(),
           ),
         );
-
-        await tester.tap(find.text('Open OAuth'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Connect Google Classroom'), findsOneWidget);
+        expect(find.text('Sign in with Google Classroom'), findsOneWidget);
         expect(
           find.textContaining('Secured with OAuth 2.0 PKCE'),
           findsOneWidget,
         );
-        expect(find.text('Authorize & Connect'), findsOneWidget);
 
-        expect(find.text('Test with Demo Account'), findsOneWidget);
-
-        // Tap demo authorize button
-        await tester.tap(find.text('Test with Demo Account'));
+        // Tap the OAuth SSO button
+        await tester.tap(find.text('Sign in with Google Classroom'));
         await tester.pumpAndSettle();
 
-        expect(result, isNotNull);
-        expect(result!.platform, equals('google_classroom'));
-        expect(result!.accountEmail, contains('scholar.kortexify'));
+        // Connected status shows connected account
+        expect(find.textContaining('Connected as'), findsOneWidget);
+        expect(find.text('Disconnect'), findsOneWidget);
       },
     );
 

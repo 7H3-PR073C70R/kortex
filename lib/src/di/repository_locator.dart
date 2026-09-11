@@ -13,11 +13,6 @@ void _initRepositoryLocator() {
         localDataSource: locator<CalibrationLocalDataSource>(),
       ),
     )
-    ..registerLazySingleton<ContentRecommendationRepository>(
-      () => ContentRecommendationRepositoryImpl(
-        dataSource: locator<ContentRecommendationDataSource>(),
-      ),
-    )
     ..registerLazySingleton<OtpRepository>(
       () => const OtpRepositoryImpl(),
     )

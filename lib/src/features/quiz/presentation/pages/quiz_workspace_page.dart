@@ -523,6 +523,7 @@ class _QuizWorkspaceView extends HookWidget {
                                 latexContent,
                                 isQuestion = true,
                                 syllabusTag = 'Quiz Solution',
+                                isAnonymous = false,
                               }) {
                                 if (locator.isRegistered<CommunityHubBloc>()) {
                                   locator<CommunityHubBloc>().add(
@@ -533,6 +534,7 @@ class _QuizWorkspaceView extends HookWidget {
                                       latexContent: latexContent,
                                       isQuestion: true,
                                       syllabusTag: syllabusTag,
+                                      isAnonymous: isAnonymous,
                                     ),
                                   );
                                   context.showSnackBar(

@@ -7,12 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/permissions_cubit.dart';
-import 'package:kortex/src/features/onboarding_utility/presentation/widgets/permissions_chat_view.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -25,13 +21,8 @@ class PermissionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: locator<AuthModeCubit>()),
-        BlocProvider<PermissionsCubit>(
-          create: (_) => PermissionsCubit(),
-        ),
-      ],
+    return BlocProvider<PermissionsCubit>(
+      create: (_) => PermissionsCubit(),
       child: const _PermissionsView(),
     );
   }
@@ -46,11 +37,10 @@ class _PermissionsView extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
-    final isChatMode = context.watch<AuthModeCubit>().state.isChat;
 
     return BlocListener<PermissionsCubit, PermissionsState>(
       listener: (context, state) {
-        if (state.isDone && !isChatMode) {
+        if (state.isDone) {
           unawaited(
             // ignore: deprecated_member_use, backward-compatible a11y announcement
             SemanticsService.announce(
@@ -96,58 +86,46 @@ class _PermissionsView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ModeSwitchButton(
-                            isChatMode: isChatMode,
-                            onToggle: () {
-                              context.read<AuthModeCubit>().toggleMode();
-                            },
+                      ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          context
+                              .read<PermissionsCubit>()
+                              .skipPermissions();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
                           ),
-                          const SizedBox(width: 10),
-                          ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              context
-                                  .read<PermissionsCubit>()
-                                  .skipPermissions();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(180)
-                                    : colors.surfacePrimary.withAlpha(240),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: isDark
-                                      ? colors.surfaceBorder.withAlpha(100)
-                                      : colors.surfaceBorder,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary.withAlpha(180)
+                                : colors.surfacePrimary.withAlpha(240),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark
+                                  ? colors.surfaceBorder.withAlpha(100)
+                                  : colors.surfaceBorder,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(
+                                  isDark ? 30 : 12,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 30 : 12,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
-                              child: Text(
-                                l10n.permissionsSkip,
-                                style: typography.callout.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 13,
-                                ),
-                              ),
+                            ],
+                          ),
+                          child: Text(
+                            l10n.permissionsSkip,
+                            style: typography.callout.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 13,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -155,17 +133,15 @@ class _PermissionsView extends StatelessWidget {
 
                 // Main Content
                 Expanded(
-                  child: isChatMode
-                      ? const PermissionsChatView()
-                      : Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 480),
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 480),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [

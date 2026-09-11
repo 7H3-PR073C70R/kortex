@@ -58,6 +58,7 @@ class _StudySessionView extends HookWidget {
     final isDark = context.isDarkMode;
 
     final focusNode = useFocusNode();
+    final lastMilestoneIndex = useRef<int>(0);
 
     useEffect(
       () {
@@ -85,6 +86,14 @@ class _StudySessionView extends HookWidget {
                   ),
                 ),
               );
+            } else if (state.status == StudySessionStatus.studying &&
+                state.currentIndex > 0 &&
+                state.currentIndex % 10 == 0 &&
+                state.currentIndex != lastMilestoneIndex.value &&
+                !state.isLastCard) {
+              lastMilestoneIndex.value = state.currentIndex;
+              unawaited(HapticFeedback.mediumImpact());
+              _showSprintMilestoneSheet(context, state.currentIndex);
             }
           },
           builder: (context, state) {
@@ -258,6 +267,7 @@ class _StudySessionView extends HookWidget {
                                     latexContent,
                                     isQuestion = true,
                                     syllabusTag = 'Flashcards',
+                                    isAnonymous = false,
                                   }) {
                                   if (locator.isRegistered<CommunityHubBloc>()) {
                                     locator<CommunityHubBloc>().add(
@@ -268,6 +278,7 @@ class _StudySessionView extends HookWidget {
                                         latexContent: latexContent,
                                         isQuestion: true,
                                         syllabusTag: syllabusTag,
+                                        isAnonymous: isAnonymous,
                                       ),
                                     );
                                     context.showSnackBar(
@@ -405,6 +416,125 @@ class _StudySessionView extends HookWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showSprintMilestoneSheet(BuildContext context, int cardsCount) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(80),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.warning.withAlpha(25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.local_fire_department_rounded,
+                    color: colors.warning,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  '$cardsCount Cards Crushed! 🔥',
+                  style: typography.title2.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sprint round complete. Take a 30-second breather or keep blazing through your deck!',
+                  textAlign: TextAlign.center,
+                  style: typography.body.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      Navigator.of(sheetContext).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Keep Blazing 🔥',
+                      style: typography.callout.bold.copyWith(
+                        color: colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      unawaited(context.read<StudySessionCubit>().finishEarly());
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.textSecondary,
+                      side: BorderSide(
+                        color: colors.surfaceBorder,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Take a Breather & Finish Sprint',
+                      style: typography.subhead.medium.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

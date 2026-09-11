@@ -33,6 +33,7 @@ abstract class CommunityRemoteDataSource {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    bool isAnonymous = false,
   });
 
   Future<ForumReplyModel> replyToForumPost({

@@ -137,11 +137,47 @@ class MarketplaceDeckCard extends StatelessWidget {
             const SizedBox(height: 4),
 
             // Subject & Creator
-            Text(
-              '${deck.subject} • by ${deck.ownerName}',
-              style: typography.footnote.regular.copyWith(
-                color: colors.textSecondary,
-              ),
+            Row(
+              children: [
+                Text(
+                  '${deck.subject} • by ${deck.ownerName}',
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                if (deck.rating >= 4.5 || deck.downloadsCount >= 10) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colors.warning.withAlpha(25),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: colors.warning.withAlpha(80),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.workspace_premium_rounded,
+                          size: 11,
+                          color: colors.warning,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Mastery Contributor',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 16),
 

@@ -16,7 +16,6 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
-import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -42,14 +41,8 @@ class OfflineFlashcardGenerationPage extends StatefulWidget {
 
 class _OfflineFlashcardGenerationPageState
     extends State<OfflineFlashcardGenerationPage> {
-  late final OfflineModelInstaller _installer;
   late final StudyEngineRouter _engineRouter;
   late final TextEditingController _topicController;
-
-  bool _isModelReady = false;
-  bool _isDownloading = false;
-  double _downloadProgress = 0;
-  String? _downloadError;
 
   bool _isGenerating = false;
   bool _isSaving = false;
@@ -58,54 +51,10 @@ class _OfflineFlashcardGenerationPageState
   @override
   void initState() {
     super.initState();
-    _installer = OfflineModelInstaller();
-    _engineRouter = StudyEngineRouter(modelInstaller: _installer);
+    _engineRouter = locator.isRegistered<StudyEngineRouter>()
+        ? locator<StudyEngineRouter>()
+        : StudyEngineRouter();
     _topicController = TextEditingController(text: widget.initialTopic);
-
-    unawaited(_checkInitialState());
-    _listenToInstallProgress();
-  }
-
-  Future<void> _checkInitialState() async {
-    final installed = await _installer.isModelInstalled();
-    if (mounted) {
-      setState(() {
-        _isModelReady = installed;
-      });
-    }
-  }
-
-  void _listenToInstallProgress() {
-    _installer.progressStream.listen((progress) {
-      if (!mounted) return;
-      setState(() {
-        if (progress.step == InstallerStep.downloading) {
-          _isDownloading = true;
-          _downloadProgress = progress.progress;
-          _downloadError = null;
-        } else if (progress.step == InstallerStep.ready) {
-          _isDownloading = false;
-          _isModelReady = true;
-          _downloadProgress = 1;
-          _downloadError = null;
-        } else if (progress.step == InstallerStep.failed) {
-          _isDownloading = false;
-          _downloadError = progress.errorMessage;
-        } else if (progress.step == InstallerStep.idle) {
-          _isDownloading = false;
-          _isModelReady = false;
-        }
-      });
-    });
-  }
-
-  Future<void> _startDownload() async {
-    setState(() {
-      _isDownloading = true;
-      _downloadError = null;
-    });
-    await _installer.installModel();
-    await _checkInitialState();
   }
 
   Future<void> _generateCards() async {
@@ -153,7 +102,6 @@ class _OfflineFlashcardGenerationPageState
 
   @override
   void dispose() {
-    unawaited(_installer.dispose());
     _topicController.dispose();
     super.dispose();
   }
@@ -601,89 +549,52 @@ class _OfflineFlashcardGenerationPageState
             : colors.surfaceSecondary.withAlpha(120),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: _isModelReady
-              ? colors.success.withAlpha(90)
-              : colors.surfaceBorder,
+          color: colors.success.withAlpha(90),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                _isModelReady
-                    ? Icons.check_circle_outline
-                    : Icons.download_for_offline_outlined,
-                color: _isModelReady ? colors.success : colors.warning,
-                size: 22.sp,
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  _isModelReady
-                      ? 'Local GGUF Model Ready'
-                      : 'Offline Model (Qwen-2.5 1.5B)',
+          Icon(
+            Icons.check_circle_rounded,
+            color: colors.success,
+            size: 24.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Instant On-Device Engine Ready',
                   style: typography.body.bold.copyWith(
                     color: colors.textPrimary,
                     fontSize: 14.sp,
                   ),
                 ),
-              ),
-              if (!_isModelReady && !_isDownloading)
-                ElevatedButton(
-                  onPressed: _startDownload,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 8.h,
-                    ),
-                  ),
-                  child: Text(
-                    'Download',
-                    style: typography.caption.bold.copyWith(
-                      fontSize: 12.sp,
-                      color: colors.white,
-                    ),
+                SizedBox(height: 2.h),
+                Text(
+                  '0MB download required • Pre-indexed concept synthesizer',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 12.sp,
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
-          if (_isDownloading) ...[
-            SizedBox(height: 12.h),
-            LinearProgressIndicator(
-              value: _downloadProgress > 0 ? _downloadProgress : null,
-              backgroundColor: colors.surfaceBorder,
-              color: colors.primary,
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: colors.success.withAlpha(20),
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: colors.success.withAlpha(50)),
             ),
-            SizedBox(height: 6.h),
-            Text(
-              'Downloading weights... '
-              '${(_downloadProgress * 100).toStringAsFixed(1)}%',
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-                fontSize: 12.sp,
+            child: Text(
+              'Active',
+              style: typography.caption.bold.copyWith(
+                color: colors.success,
+                fontSize: 11.sp,
               ),
-            ),
-          ],
-          if (_downloadError != null) ...[
-            SizedBox(height: 8.h),
-            Text(
-              _downloadError!,
-              style: typography.caption.medium.copyWith(
-                color: colors.error,
-                fontSize: 12.sp,
-              ),
-            ),
-          ],
-          SizedBox(height: 6.h),
-          Text(
-            'Requirements: 4.0 GB free storage. Wi-Fi required. '
-            'Metal / Vulkan accelerated.',
-            style: typography.caption.regular.copyWith(
-              color: colors.textMuted,
-              fontSize: 11.sp,
             ),
           ),
         ],

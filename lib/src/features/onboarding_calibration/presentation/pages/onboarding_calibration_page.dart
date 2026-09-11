@@ -13,14 +13,11 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/academic_focus_step.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_chat_view.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_glass_card.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_step_tracker.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/high_school_exam_step.dart';
@@ -40,11 +37,8 @@ class OnboardingCalibrationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => locator<CalibrationCubit>()),
-        BlocProvider<AuthModeCubit>.value(value: locator<AuthModeCubit>()),
-      ],
+    return BlocProvider(
+      create: (context) => locator<CalibrationCubit>(),
       child: const _CalibrationView(),
     );
   }
@@ -69,7 +63,7 @@ class _CalibrationView extends StatelessWidget {
             const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
           );
           unawaited(
-            context.router.replaceAll([const PermissionsRoute()]),
+            context.router.replaceAll([const MainRoute()]),
           );
         } else if (state.status == CalibrationStatus.error &&
             state.errorMessage != null) {
@@ -129,73 +123,53 @@ class _CalibrationView extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          BlocBuilder<CalibrationCubit, CalibrationState>(
-                            builder: (ctx, state) {
-                              final isChatMode = context
-                                  .watch<AuthModeCubit>()
-                                  .state
-                                  .isChat;
-                              if (isChatMode) return const SizedBox.shrink();
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CalibrationStepTracker(
-                                    currentStep: state.currentStepIndex,
-                                    totalSteps: state.totalSteps,
+                      BlocBuilder<CalibrationCubit, CalibrationState>(
+                        builder: (ctx, state) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CalibrationStepTracker(
+                                currentStep: state.currentStepIndex,
+                                totalSteps: state.totalSteps,
+                              ),
+                              const SizedBox(width: 8),
+                              Semantics(
+                                button: true,
+                                label: l10n.calibrationSkipSemantics,
+                                child: GestureDetector(
+                                  onTap: () => unawaited(
+                                    ctx
+                                        .read<CalibrationCubit>()
+                                        .skipCalibration(),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Semantics(
-                                    button: true,
-                                    label: l10n.calibrationSkipSemantics,
-                                    child: GestureDetector(
-                                      onTap: () => unawaited(
-                                        ctx
-                                            .read<CalibrationCubit>()
-                                            .skipCalibration(),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceSecondary.withAlpha(context.isDarkMode ? 100 : 180),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: context.isDarkMode
+                                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                                            : colors.surfaceBorder,
                                       ),
-                                      behavior: HitTestBehavior.opaque,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.surfaceSecondary.withAlpha(context.isDarkMode ? 100 : 180),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: context.isDarkMode
-                                                ? colors.surfaceBorderHighlight.withAlpha(60)
-                                                : colors.surfaceBorder,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          l10n.calibrationSkip,
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 12,
-                                          ),
-                                        ),
+                                    ),
+                                    child: Text(
+                                      l10n.calibrationSkip,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                ],
-                              );
-                            },
-                          ),
-                          ModeSwitchButton(
-                            isChatMode: context
-                                .watch<AuthModeCubit>()
-                                .state
-                                .isChat,
-                            onToggle: () {
-                              context.read<AuthModeCubit>().toggleMode();
-                            },
-                          ),
-                        ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -203,28 +177,17 @@ class _CalibrationView extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isChatMode = context
-                          .watch<AuthModeCubit>()
-                          .state
-                          .isChat;
-
                       if (constraints.maxWidth >= 1024) {
-                        return _DesktopCalibrationSplitLayout(
-                          isChatMode: isChatMode,
-                        );
+                        return const _DesktopCalibrationSplitLayout();
                       } else if (constraints.maxWidth >= 600) {
-                        return Center(
+                        return const Center(
                           child: SizedBox(
                             width: 520,
-                            child: isChatMode
-                                ? const CalibrationChatView()
-                                : const _MobileCalibrationLayout(),
+                            child: _MobileCalibrationLayout(),
                           ),
                         );
                       } else {
-                        return isChatMode
-                            ? const CalibrationChatView()
-                            : const _MobileCalibrationLayout();
+                        return const _MobileCalibrationLayout();
                       }
                     },
                   ),
@@ -408,9 +371,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
 }
 
 class _DesktopCalibrationSplitLayout extends StatelessWidget {
-  const _DesktopCalibrationSplitLayout({required this.isChatMode});
-
-  final bool isChatMode;
+  const _DesktopCalibrationSplitLayout();
 
   @override
   Widget build(BuildContext context) {
@@ -504,9 +465,7 @@ class _DesktopCalibrationSplitLayout extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: isChatMode
-                  ? const CalibrationChatView()
-                  : const _MobileCalibrationLayout(),
+              child: const _MobileCalibrationLayout(),
             ),
           ),
         ),

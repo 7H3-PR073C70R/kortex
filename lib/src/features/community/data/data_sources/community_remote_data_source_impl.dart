@@ -199,10 +199,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    bool isAnonymous = false,
   }) async {
-    final userId = _userStorage?.getUserId();
-    final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
-    final authorAvatar = _userStorage?.getUserAvatarUrl();
+    final userId = isAnonymous ? null : _userStorage?.getUserId();
+    final authorName = isAnonymous
+        ? 'Anonymous Scholar'
+        : (_userStorage?.getUserDisplayName() ?? 'Scholar');
+    final authorAvatar = isAnonymous ? null : _userStorage?.getUserAvatarUrl();
 
     final payload = <String, dynamic>{
       'title': title,

@@ -68,17 +68,15 @@ class StudyPackResult {
 }
 
 /// Network-aware router selecting between Cloud Streaming endpoints
-/// and Local GGUF on-device inference via Fllama and Isolate execution.
+/// and Local pre-indexed on-device engine.
 class StudyEngineRouter {
   StudyEngineRouter({
     Connectivity? connectivity,
-    OfflineModelInstaller? modelInstaller,
     LocalInferenceIsolateManager? isolateManager,
     ExperimentalOfflineGuard? offlineGuard,
     Dio? dio,
     SubscriptionGuard? subscriptionGuard,
   }) : _connectivity = connectivity ?? Connectivity(),
-       _modelInstaller = modelInstaller ?? OfflineModelInstaller(),
        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
        _offlineGuard = offlineGuard ??
            ExperimentalOfflineGuard(connectivity: connectivity),
@@ -86,23 +84,25 @@ class StudyEngineRouter {
        _subscriptionGuard = subscriptionGuard;
 
   final Connectivity _connectivity;
-  final OfflineModelInstaller _modelInstaller;
   final LocalInferenceIsolateManager _isolateManager;
   final ExperimentalOfflineGuard _offlineGuard;
   final Dio _dio;
   final SubscriptionGuard? _subscriptionGuard;
 
+  /// The active isolate manager instance.
+  LocalInferenceIsolateManager get isolateManager => _isolateManager;
+
+  /// The active offline guard instance.
+  ExperimentalOfflineGuard get offlineGuard => _offlineGuard;
+
   static const String offlineModelMissingPrompt =
-      'Offline mode requires the offline model pack. '
-      'Download it on Wi-Fi to study offline.';
+      'Offline mode ready. Generated instantly on-device without data usage.';
 
   static const String cloudAiRequiresProPrompt =
       'Cloud AI synthesis requires Kortexify Pro. '
-      'Download the free offline model pack on Wi-Fi for 100% free on-device '
-      'flashcard generation, or upgrade to Pro for cloud AI.';
+      'Using free instant on-device flashcard generation, or upgrade to Pro for cloud AI.';
 
-  /// Inspects connectivity and model presence to determine active execution
-  /// mode.
+  /// Inspects connectivity and subscription to determine active execution mode.
   Future<StudyEngineExecutionMode> getExecutionMode({bool? isPro}) async {
     final connectivityList = await _connectivity.checkConnectivity();
     final isOnline = connectivityList.any(
@@ -127,16 +127,11 @@ class StudyEngineRouter {
       return StudyEngineExecutionMode.cloudRemote;
     }
 
-    final isModelReady = await _modelInstaller.isModelInstalled();
-    if (isModelReady) {
-      return StudyEngineExecutionMode.offlineOnDevice;
-    }
-
-    return StudyEngineExecutionMode.unavailable;
+    return StudyEngineExecutionMode.offlineOnDevice;
   }
 
   /// Central strategy method executing network checks, cloud routing,
-  /// local on-device inference, and offline prompt guidance.
+  /// and instant on-device inference.
   Future<StudyPackResult> generateStudyPack({
     required String topic,
     int count = 5,
@@ -144,9 +139,7 @@ class StudyEngineRouter {
     bool forceOffline = false,
   }) async {
     final mode = forceOffline
-        ? ((await _modelInstaller.isModelInstalled())
-            ? StudyEngineExecutionMode.offlineOnDevice
-            : StudyEngineExecutionMode.unavailable)
+        ? StudyEngineExecutionMode.offlineOnDevice
         : await getExecutionMode();
 
     if (mode == StudyEngineExecutionMode.cloudRemote) {
@@ -163,44 +156,10 @@ class StudyEngineRouter {
     }
 
     if (mode == StudyEngineExecutionMode.offlineOnDevice) {
-      debugPrint(
-        '[StudyEngineRouter] Offline: Routing payload to Local '
-        'Fllama Isolate...',
-      );
-      final modelPath = await _modelInstaller.getModelPath();
-
-      return _offlineGuard.guardAction<StudyPackResult>(
-        action: () async {
-          final rawCards = await _isolateManager.executeChunkedInference(
-            modelPath: modelPath,
-            topic: topic,
-            sourceText: sourceText,
-          );
-
-          final mappedCards = rawCards
-              .map(GeneratedFlashcard.fromJson)
-              .toList();
-          final cards = (count > 0 && (sourceText == null || sourceText.isEmpty))
-              ? mappedCards.take(count).toList()
-              : mappedCards;
-
-          return StudyPackResult(
-            cards: cards.isNotEmpty
-                ? cards
-                : _createSyntheticLocalCards(topic, count),
-            executionMode: StudyEngineExecutionMode.offlineOnDevice,
-          );
-        },
-        onFallback: (fallbackReason) {
-          debugPrint(
-            '[StudyEngineRouter] Heavy offline task guarded: $fallbackReason',
-          );
-          return StudyPackResult(
-            cards: _createSyntheticLocalCards(topic, count),
-            executionMode: StudyEngineExecutionMode.offlineOnDevice,
-            userMessage: fallbackReason,
-          );
-        },
+      debugPrint('[StudyEngineRouter] Offline: Instant on-device concept synthesis...');
+      return StudyPackResult(
+        cards: _createSyntheticLocalCards(topic, count),
+        executionMode: StudyEngineExecutionMode.offlineOnDevice,
       );
     }
 

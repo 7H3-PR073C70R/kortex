@@ -121,6 +121,7 @@ class _CommunityHubView extends HookWidget {
                       latexContent,
                       isQuestion = false,
                       syllabusTag = 'General',
+                      isAnonymous = false,
                     }) {
                       context.read<CommunityHubBloc>().add(
                         CreateForumPostEvent(
@@ -130,6 +131,7 @@ class _CommunityHubView extends HookWidget {
                           latexContent: latexContent,
                           isQuestion: isQuestion,
                           syllabusTag: syllabusTag,
+                          isAnonymous: isAnonymous,
                         ),
                       );
                     },

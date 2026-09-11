@@ -9,13 +9,12 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
@@ -281,91 +280,47 @@ class QuizResultsPage extends StatelessWidget {
       }
     }
 
-    final deckId = 'quiz_deck_${DateTime.now().millisecondsSinceEpoch}';
-    final deckTitle = resolvedCourseCode != null && resolvedCourseCode.isNotEmpty
-        ? '$resolvedCourseCode CBT Practice Deck'
-        : '${result.quizTitle} - Practice Deck';
-    final subject = resolvedCourseCode ??
-        (result.weaknesses.isNotEmpty
-            ? result.weaknesses.first.subTopic
-            : 'Quiz Review');
+    final convertUseCase = locator.isRegistered<ConvertFailedQuizToDeckUseCase>()
+        ? locator<ConvertFailedQuizToDeckUseCase>()
+        : ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>());
 
-    final cards = <FlashcardModel>[];
-
-    if (questionsToUse.isNotEmpty) {
-      for (var i = 0; i < questionsToUse.length; i++) {
-        final q = questionsToUse[i];
-        final explanationPart =
-            q.explanation.isNotEmpty ? '\n\n💡 Explanation:\n${q.explanation}' : '';
-
-        cards.add(
-          FlashcardModel(
-            id: 'card_${deckId}_$i',
-            deckId: deckId,
-            front: q.prompt,
-            back: '${q.correctAnswer}$explanationPart',
-            sourceTopic: q.subTopic.isNotEmpty ? q.subTopic : subject,
-            nextDueDate: DateTime.now().add(const Duration(days: 1)),
-          ),
-        );
-      }
-    } else {
-      // Fallback from weaknesses
-      for (var i = 0; i < result.weaknesses.length; i++) {
-        final w = result.weaknesses[i];
-        cards.add(
-          FlashcardModel(
-            id: 'card_${deckId}_$i',
-            deckId: deckId,
-            front: 'Key Focus: ${w.subTopic}',
-            back: 'Target accuracy: ${(w.accuracy * 100).toInt()}% (${w.correctCount}/${w.totalQuestions} correct). Review core concepts and formulas for this topic.',
-            sourceTopic: w.subTopic,
-            nextDueDate: DateTime.now().add(const Duration(days: 1)),
-          ),
-        );
-      }
-    }
-
-    final deck = DeckModel(
-      id: deckId,
-      title: deckTitle,
-      subject: subject,
-      totalCards: cards.length,
-      dueCards: cards.length,
-      masteryRate: 0,
-      category: 'Quiz Review',
-      description: 'Practice flashcards generated from CBT test session.',
-      cards: cards,
+    final conversionResult = await convertUseCase(
+      result: result,
+      questions: questions,
       courseId: resolvedCourseId,
       courseCode: resolvedCourseCode,
     );
 
-    // Save to DecksRemoteDataSource
-    if (locator.isRegistered<DecksRemoteDataSource>()) {
-      await locator<DecksRemoteDataSource>().saveGeneratedDeck(
-        deck: deck,
-        cards: cards,
-      );
-    }
+    conversionResult.fold(
+      (failure) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: failure.message ?? 'Failed to convert quiz to deck',
+            type: SnackBarType.error,
+          );
+        }
+      },
+      (deck) {
+        // Refresh DecksBloc & DashboardBloc
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
+        if (locator.isRegistered<DashboardBloc>()) {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        }
 
-    // Refresh DecksBloc & DashboardBloc
-    if (locator.isRegistered<DecksBloc>()) {
-      locator<DecksBloc>().add(const DecksRefreshed());
-    }
-    if (locator.isRegistered<DashboardBloc>()) {
-      locator<DashboardBloc>().add(const DashboardRefreshed());
-    }
-
-    if (context.mounted) {
-      context.showSnackBar(
-        message: 'Generated ${cards.length} practice flashcards!',
-        type: SnackBarType.success,
-      );
-      unawaited(
-        context.router.replace(
-          StudySessionRoute(deckId: deckId),
-        ),
-      );
-    }
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Generated ${deck.totalCards} practice flashcards!',
+            type: SnackBarType.success,
+          );
+          unawaited(
+            context.router.replace(
+              StudySessionRoute(deckId: deck.id),
+            ),
+          );
+        }
+      },
+    );
   }
 }

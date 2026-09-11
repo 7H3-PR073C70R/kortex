@@ -1,66 +1,32 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/decks/data/services/local_inference_isolate_manager.dart';
-import 'package:kortex/src/features/decks/data/services/offline_model_installer.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
+import 'package:kortex/src/features/offline_ai/data/services/local_inference_isolate_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
-
-class MockOfflineModelInstaller extends Mock implements OfflineModelInstaller {}
 
 class MockLocalInferenceIsolateManager extends Mock
     implements LocalInferenceIsolateManager {}
 
 void main() {
-  group('1. OfflineModelInstaller Pre-flight & Safeguards', () {
+  group('1. Offline Engine Instant Readiness & Safeguards', () {
     late MockConnectivity mockConnectivity;
 
     setUp(() {
       mockConnectivity = MockConnectivity();
     });
 
-    test(
-      'Fails pre-flight check when connection is cellular (Wi-Fi gate)',
-      () async {
-        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-          (_) async => [ConnectivityResult.mobile],
-        );
-
-        final installer = OfflineModelInstaller(connectivity: mockConnectivity);
-        final check = await installer.checkPrerequisites();
-
-        expect(check.isWifi, isFalse);
-        expect(check.error, contains('Wi-Fi Required'));
-      },
-    );
-
-    test('Passes Wi-Fi gate when connected to Wi-Fi', () async {
+    test('StudyEngineRouter defaults to offlineOnDevice without network', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.wifi],
+        (_) async => [ConnectivityResult.none],
       );
 
-      final installer = OfflineModelInstaller(connectivity: mockConnectivity);
-      final check = await installer.checkPrerequisites();
+      final router = StudyEngineRouter(connectivity: mockConnectivity);
+      final mode = await router.getExecutionMode();
 
-      expect(check.isWifi, isTrue);
-      expect(check.error, isNull);
-    });
-
-    test('Verifies supported model specs and 4.0 GB constant', () {
-      expect(
-        OfflineModelInstaller.minFreeDiskSpaceBytes,
-        equals(4 * 1024 * 1024 * 1024),
-      );
-      expect(
-        OfflineModelInstaller.supportedModels.containsKey('qwen2.5-1.5b'),
-        isTrue,
-      );
-      expect(
-        OfflineModelInstaller.supportedModels.containsKey('llama-3.2-1b'),
-        isTrue,
-      );
+      expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
     });
   });
 
@@ -150,12 +116,10 @@ void main() {
 
   group('3. StudyEngineRouter Central Switching Strategy', () {
     late MockConnectivity mockConnectivity;
-    late MockOfflineModelInstaller mockInstaller;
     late MockLocalInferenceIsolateManager mockIsolateManager;
 
     setUp(() {
       mockConnectivity = MockConnectivity();
-      mockInstaller = MockOfflineModelInstaller();
       mockIsolateManager = MockLocalInferenceIsolateManager();
     });
 
@@ -166,7 +130,6 @@ void main() {
 
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
         isolateManager: mockIsolateManager,
       );
 
@@ -184,43 +147,19 @@ void main() {
       expect(result.cards.first.isLocalInference, isFalse);
     });
 
-    test('Offline with model: Routes to Local Fllama Isolate', () async {
+    test('Offline: Routes to instant on-device engine without data consumption', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
         (_) async => [ConnectivityResult.none],
-      );
-      when(
-        () => mockInstaller.isModelInstalled(),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockInstaller.getModelPath(),
-      ).thenAnswer((_) async => '/models/qwen.gguf');
-      when(
-        () => mockIsolateManager.executeChunkedInference(
-          modelPath: any(named: 'modelPath'),
-          topic: any(named: 'topic'),
-          sourceText: any(named: 'sourceText'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          {
-            'id': 'local_1',
-            'front': 'Offline Hamiltonian',
-            'back': r'$$\mathcal{H} = T + V$$',
-            'explanation': 'Local Isolate Output',
-            'isLocalInference': true,
-          },
-        ],
       );
 
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
-        modelInstaller: mockInstaller,
         isolateManager: mockIsolateManager,
       );
 
       final result = await router.generateStudyPack(
         topic: 'Classical Mechanics',
-        count: 1,
+        count: 2,
       );
 
       expect(
@@ -228,41 +167,8 @@ void main() {
         equals(StudyEngineExecutionMode.offlineOnDevice),
       );
       expect(result.isOfflineModelMissing, isFalse);
+      expect(result.cards.length, equals(2));
       expect(result.cards.first.isLocalInference, isTrue);
     });
-
-    test(
-      'Offline without model: Returns friendly missing model pack message',
-      () async {
-        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-          (_) async => [ConnectivityResult.none],
-        );
-        when(
-          () => mockInstaller.isModelInstalled(),
-        ).thenAnswer((_) async => false);
-
-        final router = StudyEngineRouter(
-          connectivity: mockConnectivity,
-          modelInstaller: mockInstaller,
-          isolateManager: mockIsolateManager,
-        );
-
-        final result = await router.generateStudyPack(topic: 'Fluid Dynamics');
-
-        expect(
-          result.executionMode,
-          equals(StudyEngineExecutionMode.unavailable),
-        );
-        expect(result.isOfflineModelMissing, isTrue);
-        expect(result.cards, isEmpty);
-        expect(
-          result.userMessage,
-          equals(
-            'Offline mode requires the offline model pack. '
-            'Download it on Wi-Fi to study offline.',
-          ),
-        );
-      },
-    );
   });
 }

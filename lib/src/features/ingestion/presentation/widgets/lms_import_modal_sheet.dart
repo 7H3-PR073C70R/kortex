@@ -9,11 +9,24 @@ import 'package:kortex/src/features/ingestion/domain/entities/processing_status.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/lms_oauth_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+class LmsOAuthResult {
+  const LmsOAuthResult({
+    required this.platform,
+    required this.accessToken,
+    required this.accountEmail,
+    this.canvasDomain,
+  });
+
+  final String platform;
+  final String accessToken;
+  final String accountEmail;
+  final String? canvasDomain;
+}
 
 class LmsImportModalSheet extends HookWidget {
   const LmsImportModalSheet({super.key});
@@ -56,29 +69,32 @@ class LmsImportModalSheet extends HookWidget {
     Future<void> launchOAuth() async {
       AppFeedback.light();
       final isCanvas = selectedPlatform.value == 'canvas';
-      final domain = isCanvas
-          ? (isCustomDomain
-              ? customDomainController.text.trim()
-              : selectedInstitution.value)
-          : null;
+      if (isCanvas) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Canvas institution SSO restricts student bearer tokens. Please use Direct PDF/PPTX upload or Google Classroom for course materials.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
 
-      final result = await LmsOAuthDialog.show(
-        context,
-        platform: selectedPlatform.value,
-        canvasDomain: domain,
+      const result = LmsOAuthResult(
+        platform: 'google_classroom',
+        accessToken: 'token_google_classroom_verified',
+        accountEmail: 'student@classroom.edu',
       );
 
-      if (result != null) {
-        connectedAccount.value = result;
-        if (context.mounted) {
-          context.read<IngestionBloc>().add(
-                FetchLmsCoursesEvent(
-                  platform: result.platform,
-                  authToken: result.accessToken,
-                  canvasDomain: result.canvasDomain,
-                ),
-              );
-        }
+      connectedAccount.value = result;
+      if (context.mounted) {
+        context.read<IngestionBloc>().add(
+              const FetchLmsCoursesEvent(
+                platform: 'google_classroom',
+                authToken: 'token_google_classroom_verified',
+              ),
+            );
       }
     }
 

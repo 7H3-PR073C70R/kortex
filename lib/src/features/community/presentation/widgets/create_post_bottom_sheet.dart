@@ -22,6 +22,7 @@ class CreatePostBottomSheet extends HookWidget {
     String? latexContent,
     bool isQuestion,
     String syllabusTag,
+    bool isAnonymous,
   })
   onSubmit;
 
@@ -36,6 +37,7 @@ class CreatePostBottomSheet extends HookWidget {
       String? latexContent,
       bool isQuestion,
       String syllabusTag,
+      bool isAnonymous,
     })
     onSubmit,
     String? lockedTrack,
@@ -71,6 +73,7 @@ class CreatePostBottomSheet extends HookWidget {
     final latexController = useTextEditingController();
     final syllabusTagController = useTextEditingController();
     final isQuestion = useState<bool>(false);
+    final isAnonymous = useState<bool>(false);
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
@@ -230,6 +233,58 @@ class CreatePostBottomSheet extends HookWidget {
               controller: latexController,
               hintText: r'Optional LaTeX formula (e.g. \int_0^\infty e^{-x^2} dx)',
             ),
+            const SizedBox(height: 14),
+
+            // Ask Anonymously Toggle
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: colors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.surfaceBorder.withAlpha(80),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 20,
+                    color: isAnonymous.value
+                        ? colors.primary
+                        : colors.textSecondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ask Anonymously',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Hide name & avatar to ask questions with zero judgment.',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: isAnonymous.value,
+                    activeTrackColor: colors.primary,
+                    onChanged: (val) {
+                      isAnonymous.value = val;
+                    },
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Submit Button
@@ -269,6 +324,7 @@ class CreatePostBottomSheet extends HookWidget {
                   syllabusTag: syllabusTagController.text.trim().isNotEmpty
                       ? syllabusTagController.text.trim()
                       : 'General',
+                  isAnonymous: isAnonymous.value,
                 );
                 Navigator.of(context).pop();
               },

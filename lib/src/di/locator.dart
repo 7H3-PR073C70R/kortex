@@ -128,11 +128,6 @@ import 'package:kortex/src/features/onboarding_calibration/domain/repositories/c
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/get_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/use_cases/save_calibration_profile_use_case.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
-import 'package:kortex/src/features/onboarding_content/data/data_sources/content_recommendation_data_source.dart';
-import 'package:kortex/src/features/onboarding_content/data/repositories/content_recommendation_repository_impl.dart';
-import 'package:kortex/src/features/onboarding_content/domain/repositories/content_recommendation_repository.dart';
-import 'package:kortex/src/features/onboarding_content/domain/use_cases/get_recommended_content_use_case.dart';
-import 'package:kortex/src/features/onboarding_content/presentation/bloc/content_recommendation_cubit.dart';
 import 'package:kortex/src/features/onboarding_utility/data/repositories/otp_repository_impl.dart';
 import 'package:kortex/src/features/onboarding_utility/domain/repositories/otp_repository.dart';
 import 'package:kortex/src/features/onboarding_utility/domain/use_cases/resend_otp_use_case.dart';
@@ -162,6 +157,7 @@ import 'package:kortex/src/features/quiz/data/repositories/quiz_repository_impl.
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 import 'package:kortex/src/features/quiz/domain/services/past_question_ai_extractor_service.dart';
+import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';

@@ -85,6 +85,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    bool isAnonymous = false,
   }) {
     return _remoteDataSource
         .createForumPost(
@@ -94,6 +95,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           latexContent: latexContent,
           isQuestion: isQuestion,
           syllabusTag: syllabusTag,
+          isAnonymous: isAnonymous,
         )
         .then((model) => model.toEntity())
         .makeRequest();
