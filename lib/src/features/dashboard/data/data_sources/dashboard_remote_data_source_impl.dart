@@ -15,6 +15,7 @@ import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.d
 import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   DashboardRemoteDataSourceImpl(
@@ -168,35 +169,76 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     return const [];
   }
 
+  Future<List<StudyDeckModel>> _resolveActiveDueDecks() async {
+    final results = <StudyDeckModel>[];
+    final seenIds = <String>{};
+
+    // 1. Query DecksRemoteDataSource which has the unified canonical + created decks
+    try {
+      if (locator.isRegistered<DecksRemoteDataSource>()) {
+        final deckModels =
+            await locator<DecksRemoteDataSource>().getUserDecks();
+        for (final d in deckModels) {
+          if (d.dueCards > 0 && seenIds.add(d.id)) {
+            results.add(
+              StudyDeckModel(
+                id: d.id,
+                title: d.title,
+                subject: d.subject,
+                totalCards: d.totalCards,
+                dueCards: d.dueCards,
+                retentionRate: d.masteryRate,
+                lastReviewedIso:
+                    (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                category: d.category,
+              ),
+            );
+          }
+        }
+      }
+    } on Object catch (_) {}
+
+    // 2. Supplement with SQLite database if needed
+    final db = _effectiveDatabase;
+    if (db != null) {
+      try {
+        final entries = await db.getAllDecks();
+        for (final d in entries) {
+          if (d.dueCards > 0 && seenIds.add(d.id)) {
+            results.add(
+              StudyDeckModel(
+                id: d.id,
+                title: d.title,
+                subject: d.subject,
+                totalCards: d.totalCards,
+                dueCards: d.dueCards,
+                retentionRate: d.masteryRate,
+                lastReviewedIso:
+                    (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                category: d.category,
+              ),
+            );
+          }
+        }
+      } on Object catch (_) {}
+    }
+
+    // 3. Supplement with locally saved preference decks if needed
+    final saved = _getLocallySavedDecks();
+    for (final d in saved) {
+      if (d.dueCards > 0 && seenIds.add(d.id)) {
+        results.add(d);
+      }
+    }
+
+    return results;
+  }
+
   @override
   Future<DashboardFeedModel> getDashboardFeed() async {
     final liveAnalytics = _userActivityService?.getAnalyticsSummary();
     final localCourses = _getLocallySavedCourses();
-    var localDecks = _getLocallySavedDecks();
-    final db = _effectiveDatabase;
-    if (localDecks.isEmpty && db != null) {
-      try {
-        final entries = await db.getAllDecks();
-        if (entries.isNotEmpty) {
-          localDecks = entries
-              .where((d) => d.dueCards > 0)
-              .map(
-                (d) => StudyDeckModel(
-                  id: d.id,
-                  title: d.title,
-                  subject: d.subject,
-                  totalCards: d.totalCards,
-                  dueCards: d.dueCards,
-                  retentionRate: d.masteryRate,
-                  lastReviewedIso:
-                      (d.lastStudied ?? DateTime.now()).toIso8601String(),
-                  category: d.category,
-                ),
-              )
-              .toList();
-        }
-      } on Object catch (_) {}
-    }
+    final activeDueDecks = await _resolveActiveDueDecks();
 
     try {
       var feed = await _client.getDashboardFeed(const {});
@@ -220,13 +262,25 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       } else if (localCourses.isNotEmpty) {
         feed = feed.copyWith(curatedCourses: localCourses);
       }
-      if (feed.dueStudyDecks.isNotEmpty) {
-        feed = feed.copyWith(
-          dueStudyDecks: feed.dueStudyDecks.where((d) => d.dueCards > 0).toList(),
-        );
-      } else if (localDecks.isNotEmpty) {
-        feed = feed.copyWith(dueStudyDecks: localDecks);
+
+      // Merge remote due decks with all active due decks (canonical + local)
+      final combinedDueDecks = <StudyDeckModel>[];
+      final seenDeckIds = <String>{};
+
+      for (final d in feed.dueStudyDecks) {
+        if (d.dueCards > 0 && seenDeckIds.add(d.id)) {
+          combinedDueDecks.add(d);
+        }
       }
+
+      for (final d in activeDueDecks) {
+        if (seenDeckIds.add(d.id)) {
+          combinedDueDecks.add(d);
+        }
+      }
+
+      feed = feed.copyWith(dueStudyDecks: combinedDueDecks);
+
       if (liveAnalytics != null &&
           (liveAnalytics.currentStreakDays > 0 ||
               liveAnalytics.xpPoints > 0 ||
@@ -235,7 +289,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       }
       return feed;
     } on Object catch (_) {
-      return _generateFallbackFeedModel(liveAnalytics, fallbackDecks: localDecks);
+      return _generateFallbackFeedModel(liveAnalytics, fallbackDecks: activeDueDecks);
     }
   }
 

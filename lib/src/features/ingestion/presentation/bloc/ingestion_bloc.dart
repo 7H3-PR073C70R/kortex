@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
@@ -27,6 +30,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     required ProcessStemOcrUseCase processOcrUseCase,
     required GenerateFlashcardsFromDocUseCase generateDeckUseCase,
     required FetchUserDocumentsUseCase fetchUserDocsUseCase,
+    DecksRemoteDataSource? decksRemoteDataSource,
     ProcessLocalCameraOcrUseCase? processCameraOcrUseCase,
     FetchLmsCoursesUseCase? fetchLmsCoursesUseCase,
     ImportLmsCourseUseCase? importLmsCourseUseCase,
@@ -35,6 +39,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
        _fetchUserDocs = fetchUserDocsUseCase,
+       _decksRemoteDataSource = decksRemoteDataSource,
        _processCameraOcr = processCameraOcrUseCase,
        _fetchLmsCourses = fetchLmsCoursesUseCase,
        _importLmsCourse = importLmsCourseUseCase,
@@ -44,6 +49,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
     on<SetSynthesisModeEvent>(_onSetSynthesisMode);
     on<TriggerOcrParsingEvent>(_onTriggerOcrParsing);
+    on<AttachDocumentToCourseEvent>(_onAttachDocumentToCourse);
     on<UpdateSnippetContentEvent>(_onUpdateSnippetContent);
     on<GenerateFlashcardsFromSnippetsEvent>(_onGenerateFlashcards);
     on<FetchUserDocumentsEvent>(_onFetchUserDocuments);
@@ -57,6 +63,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final ProcessStemOcrUseCase _processOcr;
   final GenerateFlashcardsFromDocUseCase _generateDeck;
   final FetchUserDocumentsUseCase _fetchUserDocs;
+  final DecksRemoteDataSource? _decksRemoteDataSource;
   final ProcessLocalCameraOcrUseCase? _processCameraOcr;
   final FetchLmsCoursesUseCase? _fetchLmsCourses;
   final ImportLmsCourseUseCase? _importLmsCourse;
@@ -75,6 +82,38 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     PickAndUploadFileEvent event,
     Emitter<IngestionState> emit,
   ) async {
+    // 1. Check if an identical document was already ingested or exists in userDocuments
+    final existingDoc = state.userDocuments
+        .where(
+          (d) =>
+              d.filename.toLowerCase().trim() ==
+              event.filename.toLowerCase().trim(),
+        )
+        .firstOrNull;
+
+    if (existingDoc != null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.generatingCards,
+          currentDocument: existingDoc,
+          wasDeduplicated: true,
+          stageMessage:
+              'Document already processed. Attaching study deck to ${event.courseCode ?? "course"}...',
+        ),
+      );
+
+      await _assignExistingDeckToCourse(
+        docFilename: existingDoc.filename,
+        courseId: event.courseId,
+        courseCode: event.courseCode,
+        courseTitle: event.courseTitle,
+        documentId: existingDoc.id,
+        contentHash: existingDoc.contentHash,
+        emit: emit,
+      );
+      return;
+    }
+
     emit(
       state.copyWith(
         status: ProcessingStatus.uploading,
@@ -109,12 +148,36 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           ),
         );
 
+        if (doc.isDeduplicated) {
+          emit(
+            state.copyWith(
+              status: ProcessingStatus.generatingCards,
+              stageMessage:
+                  'Document already processed. Attaching study deck to ${event.courseCode ?? "course"}...',
+            ),
+          );
+
+          await _assignExistingDeckToCourse(
+            docFilename: doc.filename,
+            courseId: event.courseId,
+            courseCode: event.courseCode,
+            courseTitle: event.courseTitle,
+            documentId: doc.id,
+            contentHash: doc.contentHash,
+            emit: emit,
+          );
+          return;
+        }
+
         // Immediately trigger STEM OCR parsing
         add(
           TriggerOcrParsingEvent(
             documentId: doc.id,
             storagePath: doc.storagePath,
             fileType: doc.fileType,
+            courseId: event.courseId,
+            courseCode: event.courseCode,
+            courseTitle: event.courseTitle,
           ),
         );
       },
@@ -171,6 +234,254 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
                     ? 'AI synthesized ${snippets.length} conceptual cards'
                     : 'Extracted ${snippets.length} study cards locally'),
             snippets: snippets,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onAttachDocumentToCourse(
+    AttachDocumentToCourseEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.generatingCards,
+        currentDocument: event.doc,
+        stageMessage:
+            'Attaching "${event.doc.filename}" to ${event.courseCode ?? "course"}...',
+      ),
+    );
+
+    await _assignExistingDeckToCourse(
+      docFilename: event.doc.filename,
+      courseId: event.courseId,
+      courseCode: event.courseCode,
+      courseTitle: event.courseTitle,
+      documentId: event.doc.id,
+      contentHash: event.doc.contentHash,
+      emit: emit,
+    );
+  }
+
+  Future<void> _assignExistingDeckToCourse({
+    required String docFilename,
+    required String? courseId,
+    required String? courseCode,
+    required String? courseTitle,
+    required Emitter<IngestionState> emit,
+    String? documentId,
+    String? contentHash,
+  }) async {
+    final decksDataSource = _decksRemoteDataSource ??
+        (locator.isRegistered<DecksRemoteDataSource>()
+            ? locator<DecksRemoteDataSource>()
+            : null);
+
+    DeckModel? matchedDeck;
+    if (decksDataSource != null) {
+      final allDecks = await decksDataSource.getUserDecks();
+      final baseName = docFilename
+          .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+          .toLowerCase()
+          .trim();
+
+      // Check LocalStorage cache first
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      String? cachedDeckId;
+      if (storage != null) {
+        if (contentHash != null) {
+          final info = storage.getPreference(
+            key: 'extracted_doc_$contentHash',
+          );
+          if (info != null) {
+            try {
+              final map = jsonDecode(info) as Map<String, dynamic>;
+              cachedDeckId = map['deckId'] as String?;
+            } on Object catch (_) {}
+          }
+        }
+        if (cachedDeckId == null && documentId != null) {
+          final info = storage.getPreference(
+            key: 'extracted_doc_$documentId',
+          );
+          if (info != null) {
+            try {
+              final map = jsonDecode(info) as Map<String, dynamic>;
+              cachedDeckId = map['deckId'] as String?;
+            } on Object catch (_) {}
+          }
+        }
+        if (cachedDeckId == null) {
+          final info = storage.getPreference(
+            key: 'extracted_doc_$baseName',
+          );
+          if (info != null) {
+            try {
+              final map = jsonDecode(info) as Map<String, dynamic>;
+              cachedDeckId = map['deckId'] as String?;
+            } on Object catch (_) {}
+          }
+        }
+      }
+
+      if (cachedDeckId != null) {
+        matchedDeck = allDecks.where((d) => d.id == cachedDeckId).firstOrNull;
+      }
+
+      matchedDeck ??= allDecks.where((d) {
+        final dTitle = d.title.toLowerCase().trim();
+        return dTitle.contains(baseName) || baseName.contains(dTitle);
+      }).firstOrNull;
+    }
+
+    if (matchedDeck != null && courseId != null && decksDataSource != null) {
+      final existingCards = await decksDataSource.getDeckCards(matchedDeck.id);
+      final newDeckId = UuidUtils.generate();
+      final now = DateTime.now();
+
+      final newCards = existingCards.map((c) {
+        return c.copyWith(
+          id: UuidUtils.generate(),
+          deckId: newDeckId,
+          nextDueDate: now,
+        );
+      }).toList();
+
+      final assignedDeck = matchedDeck.copyWith(
+        id: newDeckId,
+        courseId: courseId,
+        courseCode: courseCode ?? matchedDeck.courseCode,
+        subject: courseTitle ?? matchedDeck.subject,
+        cards: newCards,
+        totalCards: newCards.length,
+        dueCards: newCards.length,
+      );
+
+      await decksDataSource.saveGeneratedDeck(
+        deck: assignedDeck,
+        cards: newCards,
+      );
+
+      // Save preference for future lookups
+      try {
+        final storage = locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null;
+        if (storage != null) {
+          final info = jsonEncode({
+            'deckId': assignedDeck.id,
+            'deckTitle': assignedDeck.title,
+            'documentId': documentId ?? '',
+            'courseId': courseId,
+            'courseCode': courseCode,
+          });
+          final baseName = docFilename
+              .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+              .toLowerCase()
+              .trim();
+          unawaited(
+            storage.savePreference(key: 'extracted_doc_$baseName', data: info),
+          );
+          if (documentId != null) {
+            unawaited(
+              storage.savePreference(
+                key: 'extracted_doc_$documentId',
+                data: info,
+              ),
+            );
+          }
+          if (contentHash != null) {
+            unawaited(
+              storage.savePreference(
+                key: 'extracted_doc_$contentHash',
+                data: info,
+              ),
+            );
+          }
+        }
+      } on Object catch (_) {}
+
+      if (locator.isRegistered<DecksBloc>()) {
+        locator<DecksBloc>().add(const DecksRefreshed());
+      }
+      if (locator.isRegistered<DashboardBloc>()) {
+        locator<DashboardBloc>().add(const DashboardRefreshed());
+      }
+
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.completed,
+          stageMessage:
+              'Study deck attached to ${courseCode ?? "course"} successfully!',
+          generatedDeck: assignedDeck.toEntity(),
+          wasDeduplicated: true,
+        ),
+      );
+      return;
+    }
+
+    if (matchedDeck != null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.completed,
+          stageMessage: 'Pre-existing study deck loaded!',
+          generatedDeck: matchedDeck.toEntity(),
+          wasDeduplicated: true,
+        ),
+      );
+      return;
+    }
+
+    // If no matched deck is yet created, extract OCR snippets and create the deck for the course
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage:
+            'Processing document and generating study deck for ${courseCode ?? "course"}...',
+      ),
+    );
+
+    final ocrResult = await _processOcr(
+      documentId: documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
+      storagePath: '',
+      fileType: 'pdf',
+    );
+
+    await ocrResult.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: ProcessingStatus.failed,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (snippets) async {
+        emit(
+          state.copyWith(
+            snippets: snippets,
+            status: ProcessingStatus.generatingCards,
+            stageMessage:
+                'Generating flashcards for ${courseCode ?? "course"}...',
+          ),
+        );
+
+        final cleanDeckTitle = docFilename.replaceAll(
+          RegExp(r'\.[a-zA-Z0-9]+$'),
+          '',
+        );
+        add(
+          GenerateFlashcardsFromSnippetsEvent(
+            documentId:
+                documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
+            deckTitle: cleanDeckTitle,
+            subject: courseTitle ?? courseCode ?? 'General',
+            snippets: snippets,
+            courseId: courseId,
+            courseCode: courseCode,
           ),
         );
       },

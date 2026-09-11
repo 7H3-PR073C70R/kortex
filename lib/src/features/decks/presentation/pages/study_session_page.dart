@@ -300,12 +300,29 @@ class _StudySessionView extends HookWidget {
                           ShrinkableButton(
                             onTap: () {
                               unawaited(HapticFeedback.lightImpact());
+                              final firstLinePrompt = currentCard.front.split('\n').first.trim();
+                              final topicName = currentCard.sourceTopic?.trim().isNotEmpty == true
+                                  ? currentCard.sourceTopic!.trim()
+                                  : 'Flashcard';
+                              final shortPrompt = firstLinePrompt.length > 55
+                                  ? '${firstLinePrompt.substring(0, 52)}...'
+                                  : firstLinePrompt;
+
                               unawaited(
                                 CreatePostBottomSheet.show(
                                   context,
                                   lockedTrack: (currentCard.sourceTopic?.isNotEmpty ?? false)
                                       ? currentCard.sourceTopic
                                       : null,
+                                  initialTitle: '[$topicName] Question on: $shortPrompt',
+                                  initialContent:
+                                      '${currentCard.front}\n\n'
+                                      '💡 I am reviewing this flashcard and need help understanding the underlying concept. '
+                                      'Could someone in the cohort explain the step-by-step reasoning or formula derivation?',
+                                  initialLatex: currentCard.frontLatex ?? currentCard.backLatex,
+                                  initialSyllabusTag: topicName,
+                                  initialIsQuestion: true,
+                                  contextBadge: 'Flashcard Bounty • $topicName',
                                   onSubmit: ({
                                     required title,
                                     required content,

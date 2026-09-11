@@ -175,6 +175,7 @@ void _initUseCaseLocator() {
         processOcrUseCase: locator<ProcessStemOcrUseCase>(),
         generateDeckUseCase: locator<GenerateFlashcardsFromDocUseCase>(),
         fetchUserDocsUseCase: locator<FetchUserDocumentsUseCase>(),
+        decksRemoteDataSource: locator<DecksRemoteDataSource>(),
         processCameraOcrUseCase: locator<ProcessLocalCameraOcrUseCase>(),
         fetchLmsCoursesUseCase: locator<FetchLmsCoursesUseCase>(),
         importLmsCourseUseCase: locator<ImportLmsCourseUseCase>(),

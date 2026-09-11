@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 
@@ -13,11 +14,17 @@ final class PickAndUploadFileEvent extends IngestionEvent {
     required this.filename,
     required this.fileType,
     required this.fileBytes,
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
   });
 
   final String filename;
   final String fileType;
   final Uint8List fileBytes;
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 }
 
 /// Progress callback fired during file upload.
@@ -32,11 +39,32 @@ final class TriggerOcrParsingEvent extends IngestionEvent {
     required this.documentId,
     required this.storagePath,
     required this.fileType,
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
   });
 
   final String documentId;
   final String storagePath;
   final String fileType;
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
+}
+
+/// Attach an existing or previously ingested document's study deck to a course.
+final class AttachDocumentToCourseEvent extends IngestionEvent {
+  const AttachDocumentToCourseEvent({
+    required this.doc,
+    this.courseId,
+    this.courseCode,
+    this.courseTitle,
+  });
+
+  final DocumentUploadEntity doc;
+  final String? courseId;
+  final String? courseCode;
+  final String? courseTitle;
 }
 
 /// User modified extracted snippet text or LaTeX in live editor.

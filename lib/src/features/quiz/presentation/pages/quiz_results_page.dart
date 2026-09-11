@@ -337,10 +337,44 @@ class QuizResultsPage extends StatelessWidget {
     final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
     final questionToAsk = incorrectQuestions.isNotEmpty ? incorrectQuestions.first : questions.firstOrNull;
 
+    final topicTag = questionToAsk?.subTopic.trim().isNotEmpty == true
+        ? questionToAsk!.subTopic.trim()
+        : (courseCode ?? 'Quiz Review');
+    final firstLine = questionToAsk?.prompt.split('\n').first.trim() ?? 'Quiz Question';
+    final shortPrompt = firstLine.length > 55 ? '${firstLine.substring(0, 52)}...' : firstLine;
+
+    final contentBuf = StringBuffer();
+    if (questionToAsk != null) {
+      contentBuf.writeln(questionToAsk.prompt);
+      if (questionToAsk.options.isNotEmpty) {
+        contentBuf.writeln('\n**Options:**');
+        for (final opt in questionToAsk.options) {
+          contentBuf.writeln('• $opt');
+        }
+      }
+      contentBuf
+        ..writeln(
+          '\nYour Answer: ${questionToAsk.userSelectedAnswer ?? 'Unanswered'}',
+        )
+        ..writeln('Correct Answer: ${questionToAsk.correctAnswer}');
+      if (questionToAsk.explanation.isNotEmpty) {
+        contentBuf.writeln('\n**Explanation:**\n${questionToAsk.explanation}');
+      }
+      contentBuf.writeln(
+        '\n💡 I missed this question during practice. Can someone in the cohort break down how to approach it?',
+      );
+    }
+
     unawaited(
       CreatePostBottomSheet.show(
         context,
         lockedTrack: courseCode,
+        initialTitle: '[$topicTag] Need help: $shortPrompt',
+        initialContent: contentBuf.toString().trim(),
+        initialLatex: questionToAsk?.latexFormula,
+        initialSyllabusTag: topicTag,
+        initialIsQuestion: true,
+        contextBadge: 'Quiz Review Bounty • $topicTag',
         onSubmit: ({
           required title,
           required content,

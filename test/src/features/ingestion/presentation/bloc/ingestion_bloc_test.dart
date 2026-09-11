@@ -3,6 +3,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
@@ -28,11 +31,14 @@ class MockGenerateFlashcardsFromDocUseCase extends Mock
 class MockFetchUserDocumentsUseCase extends Mock
     implements FetchUserDocumentsUseCase {}
 
+class MockDecksRemoteDataSource extends Mock implements DecksRemoteDataSource {}
+
 void main() {
   late MockUploadStudyDocumentUseCase mockUpload;
   late MockProcessStemOcrUseCase mockProcessOcr;
   late MockGenerateFlashcardsFromDocUseCase mockGenerateDeck;
   late MockFetchUserDocumentsUseCase mockFetchUserDocs;
+  late MockDecksRemoteDataSource mockDecksDataSource;
   late IngestionBloc bloc;
 
   final testDoc = DocumentUploadEntity(
@@ -58,6 +64,18 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
     registerFallbackValue(const <OcrExtractionEntity>[]);
+    registerFallbackValue(
+      const DeckModel(
+        id: '',
+        title: '',
+        subject: '',
+        totalCards: 0,
+        dueCards: 0,
+        masteryRate: 0,
+        category: '',
+      ),
+    );
+    registerFallbackValue(const <FlashcardModel>[]);
   });
 
   setUp(() {
@@ -65,12 +83,14 @@ void main() {
     mockProcessOcr = MockProcessStemOcrUseCase();
     mockGenerateDeck = MockGenerateFlashcardsFromDocUseCase();
     mockFetchUserDocs = MockFetchUserDocumentsUseCase();
+    mockDecksDataSource = MockDecksRemoteDataSource();
 
     bloc = IngestionBloc(
       uploadUseCase: mockUpload,
       processOcrUseCase: mockProcessOcr,
       generateDeckUseCase: mockGenerateDeck,
       fetchUserDocsUseCase: mockFetchUserDocs,
+      decksRemoteDataSource: mockDecksDataSource,
     );
   });
 
@@ -270,6 +290,72 @@ void main() {
         const IngestionState(
           synthesisMode: SynthesisMode.aiSmart,
         ),
+      ],
+    );
+
+    blocTest<IngestionBloc, IngestionState>(
+      'AttachDocumentToCourseEvent attaches pre-existing deck to course with message',
+      setUp: () {
+        when(() => mockDecksDataSource.getUserDecks()).thenAnswer(
+          (_) async => [
+            const DeckModel(
+              id: 'deck_calc_1',
+              title: 'calculus',
+              subject: 'Mathematics',
+              totalCards: 5,
+              dueCards: 5,
+              masteryRate: 0,
+              category: 'STEM',
+            ),
+          ],
+        );
+        when(() => mockDecksDataSource.getDeckCards(any())).thenAnswer(
+          (_) async => [
+            const FlashcardModel(
+              id: 'card_1',
+              deckId: 'deck_calc_1',
+              front: 'Integral of x',
+              back: 'x^2 / 2 + C',
+            ),
+          ],
+        );
+        when(
+          () => mockDecksDataSource.saveGeneratedDeck(
+            deck: any(named: 'deck'),
+            cards: any(named: 'cards'),
+          ),
+        ).thenAnswer((_) async {});
+      },
+      build: () => bloc,
+      act: (bloc) => bloc.add(
+        AttachDocumentToCourseEvent(
+          doc: testDoc,
+          courseId: 'course_mth101',
+          courseCode: 'MTH 101',
+          courseTitle: 'General Mathematics I',
+        ),
+      ),
+      expect: () => [
+        isA<IngestionState>()
+            .having((s) => s.status, 'status', ProcessingStatus.generatingCards)
+            .having(
+              (s) => s.stageMessage,
+              'stageMessage',
+              'Attaching "calculus.pdf" to MTH 101...',
+            ),
+        isA<IngestionState>()
+            .having((s) => s.status, 'status', ProcessingStatus.completed)
+            .having((s) => s.wasDeduplicated, 'wasDeduplicated', true)
+            .having(
+              (s) => s.stageMessage,
+              'stageMessage',
+              'Study deck attached to MTH 101 successfully!',
+            )
+            .having(
+              (s) => s.generatedDeck?.courseCode,
+              'courseCode',
+              'MTH 101',
+            ),
       ],
     );
   });

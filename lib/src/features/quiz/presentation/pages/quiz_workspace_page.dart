@@ -669,10 +669,35 @@ class _QuizWorkspaceView extends HookWidget {
                       ShrinkableButton(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
+                          final topicTag = current.subTopic.trim().isNotEmpty
+                              ? current.subTopic.trim()
+                              : (effectiveCourseCode ?? 'Quiz Solution');
+                          final firstLine = current.prompt.split('\n').first.trim();
+                          final shortPrompt = firstLine.length > 55 ? '${firstLine.substring(0, 52)}...' : firstLine;
+
+                          final contentBuf = StringBuffer(current.prompt);
+                          if (current.options.isNotEmpty) {
+                            contentBuf.writeln('\n\n**Options:**');
+                            for (final opt in current.options) {
+                              contentBuf.writeln('• $opt');
+                            }
+                          }
+                          contentBuf.writeln('\n**Correct Answer:** ${current.correctAnswer}');
+                          if (current.explanation.isNotEmpty) {
+                            contentBuf.writeln('\n**Explanation:**\n${current.explanation}');
+                          }
+                          contentBuf.writeln('\n💡 Seeking additional insights or alternative solution steps from the cohort.');
+
                           unawaited(
                             CreatePostBottomSheet.show(
                               context,
                               lockedTrack: effectiveCourseCode ?? deckTitle,
+                              initialTitle: '[$topicTag] Question: $shortPrompt',
+                              initialContent: contentBuf.toString().trim(),
+                              initialLatex: current.latexFormula,
+                              initialSyllabusTag: topicTag,
+                              initialIsQuestion: true,
+                              contextBadge: 'CBT Solution • $topicTag',
                               onSubmit: ({
                                 required title,
                                 required content,

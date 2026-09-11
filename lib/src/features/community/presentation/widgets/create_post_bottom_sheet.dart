@@ -12,6 +12,12 @@ class CreatePostBottomSheet extends HookWidget {
   const CreatePostBottomSheet({
     required this.onSubmit,
     this.lockedTrack,
+    this.initialTitle,
+    this.initialContent,
+    this.initialLatex,
+    this.initialSyllabusTag,
+    this.initialIsQuestion = false,
+    this.contextBadge,
     super.key,
   });
 
@@ -27,6 +33,12 @@ class CreatePostBottomSheet extends HookWidget {
   onSubmit;
 
   final String? lockedTrack;
+  final String? initialTitle;
+  final String? initialContent;
+  final String? initialLatex;
+  final String? initialSyllabusTag;
+  final bool initialIsQuestion;
+  final String? contextBadge;
 
   static Future<void> show(
     BuildContext context, {
@@ -41,6 +53,12 @@ class CreatePostBottomSheet extends HookWidget {
     })
     onSubmit,
     String? lockedTrack,
+    String? initialTitle,
+    String? initialContent,
+    String? initialLatex,
+    String? initialSyllabusTag,
+    bool initialIsQuestion = false,
+    String? contextBadge,
   }) {
     final colors = context.colors;
     final isDark = context.isDarkMode;
@@ -56,6 +74,12 @@ class CreatePostBottomSheet extends HookWidget {
         child: CreatePostBottomSheet(
           onSubmit: onSubmit,
           lockedTrack: lockedTrack,
+          initialTitle: initialTitle,
+          initialContent: initialContent,
+          initialLatex: initialLatex,
+          initialSyllabusTag: initialSyllabusTag,
+          initialIsQuestion: initialIsQuestion,
+          contextBadge: contextBadge,
         ),
       ),
     );
@@ -68,11 +92,12 @@ class CreatePostBottomSheet extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final titleController = useTextEditingController();
-    final contentController = useTextEditingController();
-    final latexController = useTextEditingController();
-    final syllabusTagController = useTextEditingController();
-    final isQuestion = useState<bool>(false);
+    final titleController = useTextEditingController(text: initialTitle);
+    final contentController = useTextEditingController(text: initialContent);
+    final latexController = useTextEditingController(text: initialLatex);
+    final syllabusTagController =
+        useTextEditingController(text: initialSyllabusTag);
+    final isQuestion = useState<bool>(initialIsQuestion);
     final isAnonymous = useState<bool>(false);
 
     final authState = context.watch<AuthBloc?>()?.state;
@@ -118,9 +143,49 @@ class CreatePostBottomSheet extends HookWidget {
             ),
             const SizedBox(height: 18),
 
+            // Context Badge if prefilled from card or question review
+            if (contextBadge != null && contextBadge!.isNotEmpty) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 35 : 18),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 80 : 45),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 14,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        contextBadge!,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Sheet Title
             Text(
-              isQuestion.value ? 'Ask Cohort a Question' : l10n.createPostButton,
+              isQuestion.value
+                  ? 'Ask Cohort a Question'
+                  : l10n.createPostButton,
               style: typography.title2.bold.copyWith(
                 color: colors.textPrimary,
               ),
