@@ -4,6 +4,10 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
@@ -425,6 +429,14 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
             );
           }
         } on Object catch (_) {}
+
+        // Refresh Decks & Dashboard in real-time
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
+        if (locator.isRegistered<DashboardBloc>()) {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        }
 
         emit(
           state.copyWith(

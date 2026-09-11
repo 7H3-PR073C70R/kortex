@@ -14,6 +14,8 @@ import 'package:kortex/src/features/community/domain/entities/study_circle_entit
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 class CommunityRepositoryImpl implements CommunityRepository {
@@ -232,8 +234,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
         description: 'Cloned from Community Marketplace',
       );
 
-      // Persist cloned deck locally directly into PrefKeys.persistedUserDecks
+      // Persist cloned deck locally into Drift SQLite and PrefKeys.persistedUserDecks
       try {
+        if (locator.isRegistered<DecksLocalDataSource>()) {
+          await locator<DecksLocalDataSource>().saveDeck(
+            DeckModel.fromEntity(clonedDeck),
+          );
+        }
+
         final storage = locator.isRegistered<LocalStorageService>()
             ? locator<LocalStorageService>()
             : null;

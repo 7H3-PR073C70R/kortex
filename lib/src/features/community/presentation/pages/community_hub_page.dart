@@ -25,6 +25,10 @@ import 'package:kortex/src/features/community/presentation/widgets/publish_deck_
 import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/study_circle_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -231,8 +235,17 @@ class _CommunityHubView extends HookWidget {
               // Main Tab Content with Shimmer Skeleton
               Expanded(
                 child: BlocConsumer<CommunityHubBloc, CommunityState>(
+                  listenWhen: (prev, curr) =>
+                      curr.lastClonedDeckId != null &&
+                      prev.lastClonedDeckId != curr.lastClonedDeckId,
                   listener: (context, state) {
                     if (state.lastClonedDeckId != null) {
+                      if (locator.isRegistered<DecksBloc>()) {
+                        locator<DecksBloc>().add(const DecksRefreshed());
+                      }
+                      if (locator.isRegistered<DashboardBloc>()) {
+                        locator<DashboardBloc>().add(const DashboardRefreshed());
+                      }
                       context.showSnackBar(
                         message: l10n.deckClonedSuccessNotice,
                       );

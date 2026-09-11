@@ -503,13 +503,29 @@ class SyllabotAiSettingsPage extends HookWidget {
 
               // Save Action
               ShrinkableButton(
-                onTap: () {
+                onTap: () async {
                   unawaited(HapticFeedback.lightImpact());
-                  context.showSnackBar(
-                    message: 'AI preferences saved successfully!',
-                    type: SnackBarType.success,
-                  );
-                  Navigator.of(context).pop();
+                  if (storage != null) {
+                    await storage.savePreference(
+                      key: PrefKeys.syllabotSocraticMode,
+                      data: socraticMode.value.name,
+                    );
+                    await storage.savePreference(
+                      key: PrefKeys.syllabotVoiceGender,
+                      data: voiceGender.value.name,
+                    );
+                    await storage.savePreference(
+                      key: PrefKeys.syllabotSpeechRate,
+                      data: speechRate.value.toString(),
+                    );
+                  }
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: 'AI preferences saved successfully!',
+                      type: SnackBarType.success,
+                    );
+                    Navigator.of(context).pop();
+                  }
                 },
                 child: Container(
                   width: double.infinity,

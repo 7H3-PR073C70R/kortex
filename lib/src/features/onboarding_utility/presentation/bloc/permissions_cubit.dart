@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 enum PermissionsStatus {
@@ -40,7 +44,11 @@ class PermissionsState extends Equatable {
 
 /// Cubit managing runtime permission requests.
 class PermissionsCubit extends Cubit<PermissionsState> {
-  PermissionsCubit() : super(const PermissionsState());
+  PermissionsCubit({LocalStorageService? localStorageService})
+      : _localStorageService = localStorageService,
+        super(const PermissionsState());
+
+  final LocalStorageService? _localStorageService;
 
   Future<void> requestNotificationPermission() async {
     emit(state.copyWith(status: PermissionsStatus.requesting));
@@ -66,10 +74,27 @@ class PermissionsCubit extends Cubit<PermissionsState> {
   }
 
   void skipPermissions() {
+    _markOnboardingCompleted();
     emit(state.copyWith(status: PermissionsStatus.completed));
   }
 
   void finishPermissions() {
+    _markOnboardingCompleted();
     emit(state.copyWith(status: PermissionsStatus.completed));
+  }
+
+  void _markOnboardingCompleted() {
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      unawaited(
+        storage?.savePreference(
+          key: PrefKeys.hasCompletedOnboarding,
+          data: 'true',
+        ),
+      );
+    } on Object catch (_) {}
   }
 }

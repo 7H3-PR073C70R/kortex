@@ -372,6 +372,15 @@ class NotificationService {
     }
   }
 
+  /// Cancel all pending and scheduled local notifications.
+  Future<void> cancelAllNotifications() async {
+    try {
+      await _localNotifications.cancelAll();
+    } on Object catch (e) {
+      developer.log('Failed to cancel all notifications: $e');
+    }
+  }
+
   void dispose() {
     unawaited(_messageStreamController.close());
     unawaited(_payloadStreamController.close());

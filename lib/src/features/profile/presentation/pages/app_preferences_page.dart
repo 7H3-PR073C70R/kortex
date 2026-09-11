@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -265,6 +266,9 @@ class AppPreferencesPage extends HookWidget {
                               data: val.toString(),
                             ),
                           );
+                        }
+                        if (!val && locator.isRegistered<NotificationService>()) {
+                          unawaited(locator<NotificationService>().cancelAllNotifications());
                         }
                         try {
                           if (locator.isRegistered<ProfileApiClient>()) {

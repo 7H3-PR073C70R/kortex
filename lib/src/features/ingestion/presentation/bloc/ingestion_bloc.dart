@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
@@ -266,6 +270,14 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             }
           }
         } on Object catch (_) {}
+
+        // Refresh Decks & Dashboard in real-time
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
+        if (locator.isRegistered<DashboardBloc>()) {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        }
 
         emit(
           state.copyWith(
