@@ -71,6 +71,84 @@ class _LiveStudyRoomView extends StatefulWidget {
 class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   final Set<String> _announcedHandRaises = {};
 
+  void _showGoalEditDialog(BuildContext context, String? currentGoal) {
+    final controller = TextEditingController(text: currentGoal ?? '');
+    final colors = context.colors;
+    final typography = context.typography;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Text('🎯', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                'Set Micro-Goal',
+                style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+              ),
+            ],
+          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Define what you intend to finish during this silent focus session.',
+              style: typography.caption.regular.copyWith(color: colors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              style: typography.body.regular.copyWith(color: colors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'e.g. Solve 10 calculus integrals',
+                hintStyle: typography.caption.regular.copyWith(color: colors.textMuted),
+                filled: true,
+                fillColor: colors.primary.withAlpha(20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: colors.primary.withAlpha(50)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+          ),
+          ShrinkableButton(
+            onTap: () {
+              final goal = controller.text.trim();
+              if (goal.isNotEmpty) {
+                context.read<LiveRoomCubit>().updateActiveGoal(goal);
+              }
+              Navigator.of(dialogCtx).pop();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Save Goal',
+                style: typography.caption.bold.copyWith(color: colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -94,9 +172,6 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
         }
       },
       builder: (context, state) {
-        final onStage = state.ephemeralParticipants
-            .where((p) => p.isHandRaised)
-            .toList();
         final audience = state.ephemeralParticipants
             .where((p) => !p.isHandRaised)
             .toList();
@@ -146,16 +221,31 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
           body: SafeArea(
             child: Column(
               children: [
-                // Top mode switcher: Stage vs Whiteboard
+                // Top mode switcher: Silent Focus vs Whiteboard
                 _ViewModeSwitcher(
                   activeMode: state.activeViewMode,
                   isDark: isDark,
                   strokeCount: state.whiteboardStrokes.length,
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
 
-                // Main body: Whiteboard or Stage & Audience
+                // Micro-Goal Status Pill & Ambient Soundscape Player
+                if (state.activeViewMode != RoomViewMode.whiteboard) ...[
+                  _MicroGoalPill(
+                    activeGoal: state.activeGoal,
+                    isDark: isDark,
+                    onTapEdit: () => _showGoalEditDialog(context, state.activeGoal),
+                  ),
+                  const SizedBox(height: 6),
+                  _AmbientSoundscapeBar(
+                    state: state,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 6),
+                ],
+
+                // Main body: Whiteboard or Silent Focus Cockpit
                 Expanded(
                   child: state.activeViewMode == RoomViewMode.whiteboard
                       ? Stack(
@@ -179,11 +269,11 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                         )
                       : Column(
                           children: [
-                            // Stage section — participants on stage
+                            // Silent Focus Cockpit: Body-doubling flow state
                             Expanded(
                               flex: 5,
-                              child: _StageSection(
-                                onStage: onStage,
+                              child: _FocusCockpitSection(
+                                participants: state.ephemeralParticipants,
                                 activeSpeakerIds: state.activeSpeakerIds,
                                 fallbackNames: hasEphemeral ? const [] : state.participants,
                                 colors: colors,
@@ -193,13 +283,15 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                                 participantCount: hasEphemeral
                                     ? state.ephemeralParticipants.length
                                     : state.participants.length,
+                                activeGoal: state.activeGoal,
+                                isVoicePodEnabled: state.isVoicePodEnabled,
                                 l10n: l10n,
                               ),
                             ),
 
                             const SizedBox(height: 2),
 
-                            // Audience section — listeners
+                            // Audience / Other Scholars section
                             if (audience.isNotEmpty || (!hasEphemeral && state.participants.length > 1))
                               Expanded(
                                 flex: 3,
@@ -216,7 +308,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
                         ),
                 ),
 
-                // Bottom action bar with Stage, Mic, Whiteboard, Chat, Timer, Leave
+                // Bottom action bar with Voice Pod, Whiteboard, Chat, Timer, Leave
                 _BottomActionBar(
                   state: state,
                   currentUserId: widget.currentUserId,
@@ -234,11 +326,227 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView> {
   }
 }
 
-// ── Stage Section ──────────────────────────────────────────────────────────────
+// ── Micro-Goal Status Pill ───────────────────────────────────────────────────
 
-class _StageSection extends StatelessWidget {
-  const _StageSection({
-    required this.onStage,
+class _MicroGoalPill extends StatelessWidget {
+  const _MicroGoalPill({
+    required this.activeGoal,
+    required this.isDark,
+    required this.onTapEdit,
+  });
+
+  final String? activeGoal;
+  final bool isDark;
+  final VoidCallback onTapEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    final hasGoal = activeGoal != null && activeGoal!.trim().isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ShrinkableButton(
+        onTap: onTapEdit,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: hasGoal
+                ? colors.primary.withAlpha(isDark ? 40 : 20)
+                : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasGoal
+                  ? colors.primary.withAlpha(isDark ? 80 : 50)
+                  : colors.primary.withAlpha(isDark ? 30 : 15),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text('🎯', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasGoal ? 'My Goal: $activeGoal' : 'Set a micro-goal for this focus session...',
+                  style: typography.caption.bold.copyWith(
+                    color: hasGoal ? colors.textPrimary : colors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.edit_rounded,
+                size: 14,
+                color: hasGoal ? colors.primary : colors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Ambient Soundscape Bar ────────────────────────────────────────────────────
+
+class _AmbientSoundscapeBar extends StatelessWidget {
+  const _AmbientSoundscapeBar({
+    required this.state,
+    required this.isDark,
+  });
+
+  final LiveRoomState state;
+  final bool isDark;
+
+  static const _soundtracks = [
+    {'name': 'Lo-Fi Beats', 'emoji': '🎧'},
+    {'name': 'Gentle Rain', 'emoji': '🌧️'},
+    {'name': 'Binaural 40Hz', 'emoji': '🧠'},
+    {'name': 'Library Silence', 'emoji': '📚'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    final currentSound = state.ambientSoundTrack;
+    final isPlaying = state.isAmbientAudioPlaying;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isDark ? colors.surfaceSecondary.withAlpha(150) : colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isPlaying
+                ? colors.syllabotAccent.withAlpha(isDark ? 80 : 50)
+                : colors.primary.withAlpha(isDark ? 30 : 15),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Play / Pause toggle
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                context.read<LiveRoomCubit>().toggleAmbientAudio();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (isPlaying ? colors.syllabotAccent : colors.primary)
+                      .withAlpha(isDark ? 50 : 30),
+                ),
+                child: Icon(
+                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 16,
+                  color: isPlaying ? colors.syllabotAccent : colors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Soundscape Track Selector
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _soundtracks.map((track) {
+                    final isSelected = currentSound == track['name'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          context.read<LiveRoomCubit>().setAmbientSoundTrack(track['name']!);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (isPlaying ? colors.syllabotAccent : colors.primary)
+                                : colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? colors.transparent
+                                  : colors.primary.withAlpha(isDark ? 30 : 20),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(track['emoji']!, style: const TextStyle(fontSize: 11)),
+                              const SizedBox(width: 4),
+                              Text(
+                                track['name']!,
+                                style: typography.caption.bold.copyWith(
+                                  fontSize: 10.5,
+                                  color: isSelected ? colors.white : colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+
+            // Volume indicator / popup
+            PopupMenuButton<double>(
+              icon: Icon(
+                state.ambientAudioVolume > 0.5
+                    ? Icons.volume_up_rounded
+                    : (state.ambientAudioVolume > 0 ? Icons.volume_down_rounded : Icons.volume_mute_rounded),
+                size: 18,
+                color: isPlaying ? colors.syllabotAccent : colors.textSecondary,
+              ),
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  enabled: false,
+                  child: StatefulBuilder(
+                    builder: (ctx, setMenuState) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Ambient Volume', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
+                        Slider(
+                          value: state.ambientAudioVolume,
+                          activeColor: colors.syllabotAccent,
+                          onChanged: (val) {
+                            setMenuState(() {});
+                            context.read<LiveRoomCubit>().setAmbientVolume(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Silent Focus Cockpit Section ─────────────────────────────────────────────
+
+class _FocusCockpitSection extends StatelessWidget {
+  const _FocusCockpitSection({
+    required this.participants,
     required this.activeSpeakerIds,
     required this.fallbackNames,
     required this.colors,
@@ -246,10 +554,12 @@ class _StageSection extends StatelessWidget {
     required this.isDark,
     required this.subject,
     required this.participantCount,
+    required this.activeGoal,
+    required this.isVoicePodEnabled,
     required this.l10n,
   });
 
-  final List<EphemeralParticipant> onStage;
+  final List<EphemeralParticipant> participants;
   final Set<String> activeSpeakerIds;
   final List<String> fallbackNames;
   final dynamic colors;
@@ -257,6 +567,8 @@ class _StageSection extends StatelessWidget {
   final bool isDark;
   final String subject;
   final int participantCount;
+  final String? activeGoal;
+  final bool isVoicePodEnabled;
   final AppLocalizations l10n;
 
   @override
@@ -265,10 +577,10 @@ class _StageSection extends StatelessWidget {
     final cTypography = context.typography;
     final cIsDark = context.isDarkMode;
 
-    final speakers = onStage.isNotEmpty
-        ? onStage
+    final scholars = participants.isNotEmpty
+        ? participants
         : fallbackNames
-            .take(3)
+            .take(6)
             .map(
               (n) => EphemeralParticipant(userId: n, displayName: n, avatarUrl: ''),
             )
@@ -276,62 +588,98 @@ class _StageSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            cColors.primary.withAlpha(cIsDark ? 30 : 15),
-            cColors.primary.withAlpha(cIsDark ? 10 : 5),
+            cColors.primary.withAlpha(cIsDark ? 25 : 12),
+            cColors.syllabotAccent.withAlpha(cIsDark ? 15 : 8),
           ],
         ),
       ),
       child: Column(
         children: [
-          // Topic label
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: cColors.primary.withAlpha(cIsDark ? 50 : 30),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              subject.toUpperCase(),
-              style: cTypography.caption.bold.copyWith(
-                color: cColors.primary,
-                letterSpacing: 1.2,
+          // Topic label & Silent Body-Doubling Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: cColors.primary.withAlpha(cIsDark ? 50 : 30),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  subject.toUpperCase(),
+                  style: cTypography.caption.bold.copyWith(
+                    color: cColors.primary,
+                    letterSpacing: 1.1,
+                    fontSize: 11,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent)
+                      .withAlpha(cIsDark ? 40 : 25),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isVoicePodEnabled ? Icons.record_voice_over_rounded : Icons.headphones_rounded,
+                      size: 12,
+                      color: isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isVoicePodEnabled ? 'Voice Pod Active' : 'Silent Flow Cockpit',
+                      style: cTypography.caption.bold.copyWith(
+                        color: isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const Spacer(),
 
-          // Speakers row with glow rings and mic status
+          // Scholars Grid with Flow Glow rings
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 24,
-            runSpacing: 16,
-            children: speakers.isEmpty
+            spacing: 20,
+            runSpacing: 14,
+            children: scholars.isEmpty
                 ? [
                     _GlowAvatar(
-                      name: 'Start',
+                      name: 'You',
                       colors: cColors,
                       typography: cTypography,
-                      size: 72,
-                      isGlowing: false,
+                      size: 60,
+                      isGlowing: true,
                       isDark: cIsDark,
                     ),
                   ]
-                : speakers
-                    .take(5)
+                : scholars
+                    .take(6)
                     .map(
-                      (p) => _SpeakerTile(
+                      (p) => _FocusParticipantTile(
                         participant: p,
                         colors: cColors,
                         typography: cTypography,
                         isDark: cIsDark,
-                        isSpeaking: activeSpeakerIds.contains(p.userId) ||
-                            (!p.isMuted && activeSpeakerIds.isEmpty),
+                        isSpeaking: isVoicePodEnabled &&
+                            (activeSpeakerIds.contains(p.userId) ||
+                             (!p.isMuted && activeSpeakerIds.isEmpty)),
+                        activeGoal: activeGoal,
+                        isVoicePodEnabled: isVoicePodEnabled,
                       ),
                     )
                     .toList(),
@@ -339,29 +687,30 @@ class _StageSection extends StatelessWidget {
 
           const Spacer(),
 
-          // Participant count
+          // Scholars in room
           Text(
             l10n.inThisRoom(participantCount),
             style: cTypography.caption.regular.copyWith(
               color: cColors.textSecondary,
+              fontSize: 11,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
         ],
       ),
     );
   }
 }
 
-// ── Speaker tile (on-stage) ──────────────────────────────────────────────────
-
-class _SpeakerTile extends StatelessWidget {
-  const _SpeakerTile({
+class _FocusParticipantTile extends StatelessWidget {
+  const _FocusParticipantTile({
     required this.participant,
     required this.colors,
     required this.typography,
     required this.isDark,
     required this.isSpeaking,
+    required this.activeGoal,
+    required this.isVoicePodEnabled,
   });
 
   final EphemeralParticipant participant;
@@ -369,6 +718,8 @@ class _SpeakerTile extends StatelessWidget {
   final dynamic typography;
   final bool isDark;
   final bool isSpeaking;
+  final String? activeGoal;
+  final bool isVoicePodEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -386,31 +737,22 @@ class _SpeakerTile extends StatelessWidget {
               name: participant.displayName,
               colors: cColors,
               typography: cTypography,
-              size: 64,
-              isGlowing: isSpeaking,
+              size: 56,
+              isGlowing: true,
               isDark: cIsDark,
             ),
-            if (participant.isHandRaised)
+            if (isVoicePodEnabled && !participant.isMuted)
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: cColors.warning,
-                  boxShadow: [
-                    BoxShadow(
-                      color: cColors.warning.withAlpha(120),
-                      blurRadius: 6,
-                    ),
-                  ],
+                  color: cColors.recallEasy,
                 ),
-                child: const Text(
-                  '✋',
-                  style: TextStyle(fontSize: 10),
-                ),
+                child: const Icon(Icons.mic_rounded, size: 9, color: Colors.white),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           participant.displayName.split(' ').first,
           style: cTypography.caption.medium.copyWith(color: cColors.textPrimary),
@@ -418,25 +760,19 @@ class _SpeakerTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              participant.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-              size: 13,
-              color: participant.isMuted ? cColors.error : cColors.recallEasy,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: (isSpeaking ? cColors.recallEasy : cColors.primary).withAlpha(25),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            isSpeaking ? 'Speaking' : 'Deep Flow',
+            style: cTypography.caption.bold.copyWith(
+              color: isSpeaking ? cColors.recallEasy : cColors.primary,
+              fontSize: 9.5,
             ),
-            const SizedBox(width: 3),
-            Text(
-              participant.isMuted
-                  ? 'Muted'
-                  : (isSpeaking ? 'Speaking' : 'Listening'),
-              style: cTypography.caption.bold.copyWith(
-                color: participant.isMuted ? cColors.textMuted : cColors.recallEasy,
-                fontSize: 10,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -583,26 +919,26 @@ class _BottomActionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Raise Hand / On Stage button
+          // Voice Pod Toggle Button (Silent Mode vs Audio Discussion)
           Expanded(
             child: ShrinkableButton(
               onTap: () {
                 unawaited(HapticFeedback.mediumImpact());
-                context.read<LiveRoomCubit>().toggleHandRaise();
+                context.read<LiveRoomCubit>().toggleVoicePod();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: state.isHandRaised
-                      ? cColors.primary
+                  color: state.isVoicePodEnabled
+                      ? cColors.warning
                       : cColors.primary.withAlpha(cIsDark ? 50 : 30),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: state.isHandRaised
+                  boxShadow: state.isVoicePodEnabled
                       ? [
                           BoxShadow(
-                            color: cColors.primary.withAlpha(100),
+                            color: cColors.warning.withAlpha(100),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
@@ -613,16 +949,18 @@ class _BottomActionBar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      state.isHandRaised ? Icons.pan_tool_rounded : Icons.pan_tool_outlined,
-                      color: state.isHandRaised ? cColors.white : cColors.primary,
+                      state.isVoicePodEnabled
+                          ? Icons.record_voice_over_rounded
+                          : Icons.headphones_rounded,
+                      color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        state.isHandRaised ? l10n.onStage : l10n.raiseHand,
+                        state.isVoicePodEnabled ? 'Voice Pod ON' : 'Silent Focus',
                         style: cTypography.footnote.bold.copyWith(
-                          color: state.isHandRaised ? cColors.white : cColors.primary,
+                          color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -635,49 +973,51 @@ class _BottomActionBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Mic Mute / Unmute Toggle Button
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.mediumImpact());
-              if (!state.isAudioConnected && state.isMuted) {
-                context.showSnackBar(
-                  message: 'Connecting to room audio...',
-                );
-              }
-              context.read<LiveRoomCubit>().toggleMicMute();
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: state.isMuted
-                    ? cColors.error.withAlpha(cIsDark ? 40 : 20)
-                    : cColors.recallEasy.withAlpha(cIsDark ? 50 : 30),
-                border: Border.all(
+          // Mic Mute / Unmute Toggle Button (Only visible when voice pod is active)
+          if (state.isVoicePodEnabled) ...[
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.mediumImpact());
+                if (!state.isAudioConnected && state.isMuted) {
+                  context.showSnackBar(
+                    message: 'Connecting to room audio...',
+                  );
+                }
+                context.read<LiveRoomCubit>().toggleMicMute();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
                   color: state.isMuted
-                      ? cColors.error.withAlpha(cIsDark ? 100 : 70)
-                      : cColors.recallEasy.withAlpha(cIsDark ? 120 : 80),
-                  width: 1.5,
+                      ? cColors.error.withAlpha(cIsDark ? 40 : 20)
+                      : cColors.recallEasy.withAlpha(cIsDark ? 50 : 30),
+                  border: Border.all(
+                    color: state.isMuted
+                        ? cColors.error.withAlpha(cIsDark ? 100 : 70)
+                        : cColors.recallEasy.withAlpha(cIsDark ? 120 : 80),
+                    width: 1.5,
+                  ),
+                  boxShadow: !state.isMuted
+                      ? [
+                          BoxShadow(
+                            color: cColors.recallEasy.withAlpha(80),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: !state.isMuted
-                    ? [
-                        BoxShadow(
-                          color: cColors.recallEasy.withAlpha(80),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-                color: state.isMuted ? cColors.error : cColors.recallEasy,
-                size: 18,
+                child: Icon(
+                  state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                  color: state.isMuted ? cColors.error : cColors.recallEasy,
+                  size: 18,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
 
           // Whiteboard Toggle Button
           ShrinkableButton(
@@ -830,8 +1170,8 @@ class _ViewModeSwitcher extends StatelessWidget {
           children: [
             Expanded(
               child: _ModeTab(
-                icon: Icons.mic_rounded,
-                label: 'Stage',
+                icon: Icons.headphones_rounded,
+                label: 'Silent Cockpit',
                 isSelected: activeMode == RoomViewMode.stage,
                 onTap: () => context.read<LiveRoomCubit>().switchViewMode(RoomViewMode.stage),
               ),

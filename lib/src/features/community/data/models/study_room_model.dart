@@ -13,6 +13,9 @@ class StudyRoomModel {
     this.pomodoroStartedAt,
     this.activeParticipantsCount = 1,
     this.maxParticipants = 50,
+    this.ambientSoundTrack = 'lofi',
+    this.activeGoal,
+    this.isSilentFocus = true,
   });
 
   final String id;
@@ -26,6 +29,9 @@ class StudyRoomModel {
   final DateTime? pomodoroStartedAt;
   final int activeParticipantsCount;
   final int maxParticipants;
+  final String ambientSoundTrack;
+  final String? activeGoal;
+  final bool isSilentFocus;
 
   factory StudyRoomModel.fromJson(Map<String, dynamic> json) {
     return StudyRoomModel(
@@ -44,6 +50,10 @@ class StudyRoomModel {
       activeParticipantsCount:
           (json['active_participants_count'] as num?)?.toInt() ?? 1,
       maxParticipants: (json['max_participants'] as num?)?.toInt() ?? 50,
+      ambientSoundTrack:
+          json['ambient_sound_track'] as String? ?? 'lofi',
+      activeGoal: json['active_goal'] as String?,
+      isSilentFocus: json['is_silent_focus'] as bool? ?? true,
     );
   }
 
@@ -60,6 +70,9 @@ class StudyRoomModel {
       'pomodoro_started_at': pomodoroStartedAt?.toIso8601String(),
       'active_participants_count': activeParticipantsCount,
       'max_participants': maxParticipants,
+      'ambient_sound_track': ambientSoundTrack,
+      'active_goal': activeGoal,
+      'is_silent_focus': isSilentFocus,
     };
   }
 
@@ -76,6 +89,9 @@ class StudyRoomModel {
       pomodoroStartedAt: pomodoroStartedAt,
       activeParticipantsCount: activeParticipantsCount,
       maxParticipants: maxParticipants,
+      ambientSoundTrack: ambientSoundTrack,
+      activeGoal: activeGoal,
+      isSilentFocus: isSilentFocus,
       participantAvatars: avatars,
     );
   }

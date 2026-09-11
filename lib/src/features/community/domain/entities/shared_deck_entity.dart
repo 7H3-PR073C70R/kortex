@@ -10,6 +10,7 @@ class SharedDeckEntity extends Equatable {
     required this.title,
     required this.subject,
     required this.totalCards,
+    this.syllabusTag = 'General',
     this.description,
     this.category = 'General',
     this.downloadsCount = 0,
@@ -23,6 +24,7 @@ class SharedDeckEntity extends Equatable {
   final String ownerName;
   final String title;
   final String subject;
+  final String syllabusTag;
   final String? description;
   final String category;
   final int totalCards;
@@ -37,6 +39,7 @@ class SharedDeckEntity extends Equatable {
     String? ownerName,
     String? title,
     String? subject,
+    String? syllabusTag,
     String? description,
     String? category,
     int? totalCards,
@@ -51,6 +54,7 @@ class SharedDeckEntity extends Equatable {
       ownerName: ownerName ?? this.ownerName,
       title: title ?? this.title,
       subject: subject ?? this.subject,
+      syllabusTag: syllabusTag ?? this.syllabusTag,
       description: description ?? this.description,
       category: category ?? this.category,
       totalCards: totalCards ?? this.totalCards,
@@ -68,6 +72,7 @@ class SharedDeckEntity extends Equatable {
     ownerName,
     title,
     subject,
+    syllabusTag,
     description,
     category,
     totalCards,

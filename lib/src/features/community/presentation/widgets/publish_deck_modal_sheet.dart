@@ -19,6 +19,7 @@ class PublishDeckModalSheet extends HookWidget {
     required String subject,
     required String description,
     required String category,
+    String syllabusTag,
   })
   onSubmit;
 
@@ -29,6 +30,7 @@ class PublishDeckModalSheet extends HookWidget {
       required String subject,
       required String description,
       required String category,
+      String syllabusTag,
     })
     onSubmit,
   }) {
@@ -49,6 +51,7 @@ class PublishDeckModalSheet extends HookWidget {
 
     final titleController = useTextEditingController();
     final subjectController = useTextEditingController();
+    final syllabusTagController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final selectedCategory = useState<String>('STEM');
 
@@ -134,6 +137,13 @@ class PublishDeckModalSheet extends HookWidget {
             ),
             const SizedBox(height: 12),
 
+            // Syllabus Topic Module
+            AppTextField(
+              controller: syllabusTagController,
+              hintText: 'Syllabus Topic (e.g. Stereochemistry, Mechanics)',
+            ),
+            const SizedBox(height: 12),
+
             // Description
             AppTextField(
               controller: descriptionController,
@@ -179,6 +189,7 @@ class PublishDeckModalSheet extends HookWidget {
                 final title = titleController.text.trim();
                 final subject = subjectController.text.trim();
                 final desc = descriptionController.text.trim();
+                final tag = syllabusTagController.text.trim();
                 if (title.isEmpty || subject.isEmpty) return;
 
                 unawaited(HapticFeedback.mediumImpact());
@@ -187,6 +198,7 @@ class PublishDeckModalSheet extends HookWidget {
                   subject: subject,
                   description: desc.isNotEmpty ? desc : 'Community Deck',
                   category: selectedCategory.value,
+                  syllabusTag: tag.isNotEmpty ? tag : 'General',
                 );
                 Navigator.of(context).pop();
               },

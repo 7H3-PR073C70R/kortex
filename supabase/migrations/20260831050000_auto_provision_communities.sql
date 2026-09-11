@@ -1,5 +1,6 @@
 -- Migration: Auto-Community Provisioning Engine & Triggers
 -- Creates study_communities, community_members, RPC functions, and automated database triggers
+-- (Document ingestion trigger removed to prevent ghost towns)
 
 -- 1. Study Communities table
 CREATE TABLE IF NOT EXISTS study_communities (
@@ -80,7 +81,7 @@ CREATE POLICY "Users can leave communities"
     TO authenticated
     USING (auth.uid() = user_id);
 
--- 3. Idempotent Stored Function for Auto-Provisioning
+-- 3. Idempotent Stored Function for Curriculum Track Provisioning
 CREATE OR REPLACE FUNCTION auto_provision_community_rpc(
     p_course_code TEXT,
     p_title TEXT,
@@ -124,7 +125,7 @@ BEGIN
 
         v_is_founding := true;
 
-        -- Create default 25m Pomodoro room
+        -- Create default 25m Silent Focus Pomodoro room
         INSERT INTO study_rooms (
             title,
             description,
@@ -133,56 +134,26 @@ BEGIN
             pomodoro_duration_minutes,
             pomodoro_state,
             active_participants_count,
+            ambient_sound_track,
+            is_silent_focus,
             created_by
         ) VALUES (
-            p_title || ' 25m Focus Room',
-            'Synchronized study session for ' || p_title,
+            p_title || ' Silent Focus Room',
+            'Synchronized silent co-working session for ' || p_title,
             v_normalized_code,
             p_department,
             25,
             'focusing',
             1,
+            'lofi',
+            true,
             v_user_id
         ) RETURNING id INTO v_room_id;
 
         UPDATE study_communities
         SET active_room_id = v_room_id,
-            active_room_title = p_title || ' 25m Focus Room'
+            active_room_title = p_title || ' Silent Focus Room'
         WHERE id = v_community_id;
-
-        -- Create default forum discussion posts
-        INSERT INTO forum_posts (
-            author_id,
-            author_name,
-            track,
-            title,
-            content,
-            upvotes
-        ) VALUES
-        (
-            v_user_id,
-            'Kortex Syllabot',
-            p_department,
-            'Welcome to ' || p_title || ' Peer Hub!',
-            'This community was auto-created for students studying ' || v_normalized_code || '. Share past paper solutions and discuss topics here.',
-            5
-        ),
-        (
-            v_user_id,
-            'Kortex AI',
-            p_department,
-            v_normalized_code || ' Past Paper Solutions & Discussion',
-            'Post questions from past exams and compare steps with peers.',
-            3
-        ),
-        (
-            v_user_id,
-            'Kortex AI',
-            p_department,
-            v_normalized_code || ' Cheat Sheets & Flashcard Decks',
-            'Curated neural study notes and active recall decks for ' || v_normalized_code || '.',
-            8
-        );
 
     ELSE
         v_community_id := v_community.id;
@@ -248,29 +219,11 @@ CREATE TRIGGER tr_user_profile_track_provision
     FOR EACH ROW
     EXECUTE FUNCTION trigger_onboarding_track_provision();
 
--- 5. Database Trigger on Document Ingestion
-CREATE OR REPLACE FUNCTION trigger_document_ingestion_provision()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_course_code TEXT;
+-- Seed initial core curriculum hubs
+DO $$
 BEGIN
-    IF NEW.subject IS NOT NULL AND NEW.subject <> '' THEN
-        v_course_code := upper(trim(NEW.subject));
-        PERFORM auto_provision_community_rpc(
-            v_course_code,
-            v_course_code || ' Study Hub',
-            'STEM'
-        );
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS tr_document_ingestion_provision ON documents;
-CREATE TRIGGER tr_document_ingestion_provision
-    AFTER INSERT ON documents
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_document_ingestion_provision();
+    PERFORM auto_provision_community_rpc('WAEC-STUDY-HUB', 'WAEC National Scholar Hub', 'WAEC');
+    PERFORM auto_provision_community_rpc('JAMB-STUDY-HUB', 'JAMB High-Speed Drill Hub', 'JAMB');
+    PERFORM auto_provision_community_rpc('SAT-STUDY-HUB', 'SAT Problem Solving Hub', 'SAT');
+    PERFORM auto_provision_community_rpc('UNIVERSITY-STUDY-HUB', 'University STEM & Engineering Hub', 'University');
+END $$;

@@ -36,6 +36,28 @@ abstract class CommunityApiClient {
     @Header('Prefer') String prefer = 'return=representation',
   });
 
+  @POST(AppApiEndpoint.verifyForumReplyRpc)
+  Future<HttpResponse<dynamic>> verifyForumReply(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @GET(AppApiEndpoint.studyCircles)
+  Future<HttpResponse<dynamic>> fetchStudyCircles(
+    @Queries() Map<String, dynamic> query,
+  );
+
+  @POST(AppApiEndpoint.studyCircles)
+  Future<HttpResponse<dynamic>> createStudyCircle(
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
+
+  @POST(AppApiEndpoint.studyCircleMembers)
+  Future<HttpResponse<dynamic>> joinStudyCircle(
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
+
   @GET(AppApiEndpoint.sharedDecks)
   Future<HttpResponse<dynamic>> fetchSharedDecks(
     @Queries() Map<String, dynamic> query,

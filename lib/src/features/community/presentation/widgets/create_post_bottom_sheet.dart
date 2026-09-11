@@ -20,6 +20,8 @@ class CreatePostBottomSheet extends HookWidget {
     required String content,
     required String track,
     String? latexContent,
+    bool isQuestion,
+    String syllabusTag,
   })
   onSubmit;
 
@@ -32,6 +34,8 @@ class CreatePostBottomSheet extends HookWidget {
       required String content,
       required String track,
       String? latexContent,
+      bool isQuestion,
+      String syllabusTag,
     })
     onSubmit,
     String? lockedTrack,
@@ -65,6 +69,8 @@ class CreatePostBottomSheet extends HookWidget {
     final titleController = useTextEditingController();
     final contentController = useTextEditingController();
     final latexController = useTextEditingController();
+    final syllabusTagController = useTextEditingController();
+    final isQuestion = useState<bool>(false);
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
@@ -111,101 +117,118 @@ class CreatePostBottomSheet extends HookWidget {
 
             // Sheet Title
             Text(
-              l10n.createPostButton,
+              isQuestion.value ? 'Ask Cohort a Question' : l10n.createPostButton,
               style: typography.title2.bold.copyWith(
                 color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 14),
 
-            // Locked Enrolled Track Indicator
+            // Post Type Toggle: Discussion vs Question Bounty
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: colors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: colors.primary.withAlpha(40),
-                ),
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(30),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.school_rounded,
-                      size: 16,
-                      color: colors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Posting to ${activeTrack.toUpperCase()} Forum',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(20),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.lock_rounded,
-                          size: 11,
-                          color: colors.primary,
+                    child: InkWell(
+                      onTap: () => isQuestion.value = false,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: !isQuestion.value
+                              ? colors.primary
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Locked',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 10.5,
+                        child: Center(
+                          child: Text(
+                            'Discussion / Notes',
+                            style: typography.caption.bold.copyWith(
+                              color: !isQuestion.value
+                                  ? colors.white
+                                  : colors.textSecondary,
+                            ),
                           ),
                         ),
-                      ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => isQuestion.value = true,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isQuestion.value
+                              ? colors.warning
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.help_outline_rounded,
+                              size: 14,
+                              color: isQuestion.value
+                                  ? colors.black
+                                  : colors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Question Bounty',
+                              style: typography.caption.bold.copyWith(
+                                color: isQuestion.value
+                                    ? colors.black
+                                    : colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Title Field
             AppTextField(
               controller: titleController,
-              hintText: l10n.postTitleHint,
+              hintText: isQuestion.value
+                  ? 'e.g. How do I solve this JAMB 2023 Physics Question 14?'
+                  : l10n.postTitleHint,
             ),
             const SizedBox(height: 12),
 
             // Content Field
             AppTextField(
               controller: contentController,
-              hintText: l10n.postContentHint,
+              hintText: isQuestion.value
+                  ? 'Detail the problem, what you tried, and where you are stuck...'
+                  : l10n.postContentHint,
               maxLines: 4,
+            ),
+            const SizedBox(height: 12),
+
+            // Optional Syllabus Tag Field
+            AppTextField(
+              controller: syllabusTagController,
+              hintText: 'Syllabus Topic (e.g. Thermodynamics, Calculus I)',
             ),
             const SizedBox(height: 12),
 
             // Optional LaTeX Field
             AppTextField(
               controller: latexController,
-              hintText: r'Optional LaTeX formula (e.g. \nabla \times E = 0)',
+              hintText: r'Optional LaTeX formula (e.g. \int_0^\infty e^{-x^2} dx)',
             ),
             const SizedBox(height: 20),
 
@@ -216,6 +239,25 @@ class CreatePostBottomSheet extends HookWidget {
                     contentController.text.trim().isEmpty) {
                   return;
                 }
+                final combinedText =
+                    '${titleController.text} ${contentController.text}';
+                final phoneRegex = RegExp(
+                  r'(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})',
+                );
+                if (phoneRegex.hasMatch(combinedText) &&
+                    combinedText.replaceAll(RegExp(r'\D'), '').length >= 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'For student safety, sharing phone numbers or personal contact info is prohibited.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: colors.surfaceSecondary,
+                    ),
+                  );
+                  return;
+                }
+
                 onSubmit(
                   title: titleController.text.trim(),
                   content: contentController.text.trim(),
@@ -223,6 +265,10 @@ class CreatePostBottomSheet extends HookWidget {
                   latexContent: latexController.text.trim().isNotEmpty
                       ? latexController.text.trim()
                       : null,
+                  isQuestion: isQuestion.value,
+                  syllabusTag: syllabusTagController.text.trim().isNotEmpty
+                      ? syllabusTagController.text.trim()
+                      : 'General',
                 );
                 Navigator.of(context).pop();
               },
@@ -240,7 +286,9 @@ class CreatePostBottomSheet extends HookWidget {
                 ),
                 child: Center(
                   child: Text(
-                    l10n.createPostButton,
+                    isQuestion.value
+                        ? 'Publish Question Bounty'
+                        : l10n.createPostButton,
                     style: typography.body.bold.copyWith(
                       color: colors.white,
                     ),

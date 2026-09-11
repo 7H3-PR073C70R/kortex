@@ -1431,17 +1431,17 @@ class _MinimapPainter extends CustomPainter {
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
 
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
-      viewPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
-      viewBorder,
-    );
+    canvas
+      ..drawRRect(
+        RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
+        viewPaint,
+      )
+      ..drawRRect(
+        RRect.fromRectAndRadius(viewRect, const Radius.circular(3)),
+        viewBorder,
+      );
   }
 
   @override
   bool shouldRepaint(covariant _MinimapPainter oldDelegate) => true;
 }
-

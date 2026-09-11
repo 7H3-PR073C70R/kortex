@@ -12,6 +12,8 @@ class UserProfileModel extends Equatable {
     this.retentionBenchmark = 0.85,
     this.level = 1,
     this.streakDays = 0,
+    this.streakFreezeCount = 1,
+    this.timezone = 'UTC',
     this.xpPoints = 0,
     this.subscriptionTier = 'free',
     this.isOnboarded = false,
@@ -29,6 +31,9 @@ class UserProfileModel extends Equatable {
           (json['retention_benchmark'] as num?)?.toDouble() ?? 0.85,
       level: (json['level'] as num?)?.toInt() ?? 1,
       streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
+      streakFreezeCount:
+          (json['streak_freeze_count'] as num?)?.toInt() ?? 1,
+      timezone: json['timezone'] as String? ?? 'UTC',
       xpPoints: (json['xp_points'] as num?)?.toInt() ?? 0,
       subscriptionTier:
           (json['subscription_tier'] as String?)?.toLowerCase() ?? 'free',
@@ -45,6 +50,8 @@ class UserProfileModel extends Equatable {
   final double retentionBenchmark;
   final int level;
   final int streakDays;
+  final int streakFreezeCount;
+  final String timezone;
   final int xpPoints;
   final String subscriptionTier;
   final bool isOnboarded;
@@ -60,6 +67,8 @@ class UserProfileModel extends Equatable {
       'retention_benchmark': retentionBenchmark,
       'level': level,
       'streak_days': streakDays,
+      'streak_freeze_count': streakFreezeCount,
+      'timezone': timezone,
       'xp_points': xpPoints,
       'subscription_tier': subscriptionTier,
       'is_onboarded': isOnboarded,
@@ -77,6 +86,8 @@ class UserProfileModel extends Equatable {
       retentionBenchmark: retentionBenchmark,
       level: level,
       streakDays: streakDays,
+      streakFreezeCount: streakFreezeCount,
+      timezone: timezone,
       xpPoints: xpPoints,
       subscriptionTier: subscriptionTier,
       isOnboarded: isOnboarded,
@@ -94,6 +105,8 @@ class UserProfileModel extends Equatable {
     retentionBenchmark,
     level,
     streakDays,
+    streakFreezeCount,
+    timezone,
     xpPoints,
     subscriptionTier,
     isOnboarded,

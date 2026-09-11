@@ -10,6 +10,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -23,6 +24,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   final CommunityRemoteDataSource _remoteDataSource;
   final UserStorageService? _userStorage;
+
+  String? get _currentUserId => _userStorage?.getUserId();
 
   @override
   Future<Either<Failure, List<StudyRoomEntity>>> fetchStudyRooms({
@@ -45,6 +48,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String subject,
     required String category,
     required int pomodoroMinutes,
+    String ambientSoundTrack = 'lofi',
+    String? activeGoal,
+    bool isSilentFocus = true,
   }) {
     return _remoteDataSource
         .createStudyRoom(
@@ -52,6 +58,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
           subject: subject,
           category: category,
           pomodoroMinutes: pomodoroMinutes,
+          ambientSoundTrack: ambientSoundTrack,
+          activeGoal: activeGoal,
+          isSilentFocus: isSilentFocus,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -60,9 +69,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
+    bool? questionsOnly,
   }) {
     return _remoteDataSource
-        .fetchForumPosts(track: track)
+        .fetchForumPosts(track: track, questionsOnly: questionsOnly)
         .then((models) => models.map((m) => m.toEntity()).toList())
         .makeRequest();
   }
@@ -73,6 +83,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String content,
     required String track,
     String? latexContent,
+    bool isQuestion = false,
+    String syllabusTag = 'General',
   }) {
     return _remoteDataSource
         .createForumPost(
@@ -80,6 +92,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
           content: content,
           track: track,
           latexContent: latexContent,
+          isQuestion: isQuestion,
+          syllabusTag: syllabusTag,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -102,10 +116,57 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> verifyForumReply({
+    required String postId,
+    required String replyId,
+  }) {
+    return _remoteDataSource
+        .verifyForumReply(postId: postId, replyId: replyId)
+        .makeRequest();
+  }
+
+  @override
   Stream<List<ForumReplyEntity>> watchForumReplies(String postId) {
     return _remoteDataSource
         .watchForumReplies(postId)
         .map((models) => models.map((m) => m.toEntity()).toList());
+  }
+
+  @override
+  Future<Either<Failure, List<StudyCircleEntity>>> fetchStudyCircles({
+    String? track,
+  }) {
+    return _remoteDataSource
+        .fetchStudyCircles(track: track)
+        .then(
+          (models) =>
+              models.map((m) => m.toEntity(currentUserId: _currentUserId)).toList(),
+        )
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
+    required String name,
+    required String track,
+    int targetWeeklyMinutes = 600,
+  }) {
+    return _remoteDataSource
+        .createStudyCircle(
+          name: name,
+          track: track,
+          targetWeeklyMinutes: targetWeeklyMinutes,
+        )
+        .then((m) => m.toEntity(currentUserId: _currentUserId))
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> joinStudyCircle(String circleId) {
+    return _remoteDataSource
+        .joinStudyCircle(circleId)
+        .then((m) => m.toEntity(currentUserId: _currentUserId))
+        .makeRequest();
   }
 
   @override
@@ -126,6 +187,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String category,
     required int totalCards,
     required List<Map<String, dynamic>> cardsJson,
+    String syllabusTag = 'General',
   }) {
     return _remoteDataSource
         .publishDeck(
@@ -135,6 +197,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           category: category,
           totalCards: totalCards,
           cardsJson: cardsJson,
+          syllabusTag: syllabusTag,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -254,6 +317,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 420,
           weeklyXp: 2150,
           streakDays: 16,
+          leagueTier: "Dean's List",
         ),
         LeaderboardEntryEntity(
           id: 'cohort_2',
@@ -263,6 +327,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 380,
           weeklyXp: 1890,
           streakDays: 14,
+          leagueTier: 'Diamond',
           rank: 2,
         ),
         LeaderboardEntryEntity(
@@ -273,6 +338,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 310,
           weeklyXp: 1540,
           streakDays: 11,
+          leagueTier: 'Diamond',
           rank: 3,
         ),
         LeaderboardEntryEntity(
@@ -284,6 +350,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 260,
           weeklyXp: 1120,
           streakDays: 7,
+          leagueTier: 'Gold',
           rank: 4,
           isCurrentUser: true,
         ),
@@ -295,6 +362,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 190,
           weeklyXp: 980,
           streakDays: 5,
+          leagueTier: 'Gold',
           rank: 5,
         ),
         LeaderboardEntryEntity(
@@ -305,6 +373,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           dailyXp: 140,
           weeklyXp: 740,
           streakDays: 4,
+          leagueTier: 'Silver',
           rank: 6,
         ),
       ];

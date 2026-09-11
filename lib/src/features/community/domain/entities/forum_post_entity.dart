@@ -12,6 +12,9 @@ class ForumPostEntity extends Equatable {
     required this.createdAt,
     this.authorAvatar,
     this.latexContent,
+    this.isQuestion = false,
+    this.isVerifiedSolution = false,
+    this.syllabusTag = 'General',
     this.upvotes = 0,
     this.repliesCount = 0,
     this.replies = const [],
@@ -25,6 +28,9 @@ class ForumPostEntity extends Equatable {
   final String title;
   final String content;
   final String? latexContent;
+  final bool isQuestion;
+  final bool isVerifiedSolution;
+  final String syllabusTag;
   final int upvotes;
   final int repliesCount;
   final DateTime createdAt;
@@ -39,6 +45,9 @@ class ForumPostEntity extends Equatable {
     String? title,
     String? content,
     String? latexContent,
+    bool? isQuestion,
+    bool? isVerifiedSolution,
+    String? syllabusTag,
     int? upvotes,
     int? repliesCount,
     DateTime? createdAt,
@@ -53,6 +62,9 @@ class ForumPostEntity extends Equatable {
       title: title ?? this.title,
       content: content ?? this.content,
       latexContent: latexContent ?? this.latexContent,
+      isQuestion: isQuestion ?? this.isQuestion,
+      isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      syllabusTag: syllabusTag ?? this.syllabusTag,
       upvotes: upvotes ?? this.upvotes,
       repliesCount: repliesCount ?? this.repliesCount,
       createdAt: createdAt ?? this.createdAt,
@@ -70,6 +82,9 @@ class ForumPostEntity extends Equatable {
     title,
     content,
     latexContent,
+    isQuestion,
+    isVerifiedSolution,
+    syllabusTag,
     upvotes,
     repliesCount,
     createdAt,
@@ -88,6 +103,7 @@ class ForumReplyEntity extends Equatable {
     required this.createdAt,
     this.authorAvatar,
     this.latexContent,
+    this.isVerifiedSolution = false,
     this.upvotes = 0,
   });
 
@@ -98,8 +114,35 @@ class ForumReplyEntity extends Equatable {
   final String? authorAvatar;
   final String content;
   final String? latexContent;
+  final bool isVerifiedSolution;
   final int upvotes;
   final DateTime createdAt;
+
+  ForumReplyEntity copyWith({
+    String? id,
+    String? postId,
+    String? authorId,
+    String? authorName,
+    String? authorAvatar,
+    String? content,
+    String? latexContent,
+    bool? isVerifiedSolution,
+    int? upvotes,
+    DateTime? createdAt,
+  }) {
+    return ForumReplyEntity(
+      id: id ?? this.id,
+      postId: postId ?? this.postId,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      content: content ?? this.content,
+      latexContent: latexContent ?? this.latexContent,
+      isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      upvotes: upvotes ?? this.upvotes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -110,6 +153,7 @@ class ForumReplyEntity extends Equatable {
     authorAvatar,
     content,
     latexContent,
+    isVerifiedSolution,
     upvotes,
     createdAt,
   ];

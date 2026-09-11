@@ -24,6 +24,11 @@ class LiveRoomState extends Equatable {
     this.isMuted = true,
     this.completedPomodoros = 0,
     this.activeViewMode = RoomViewMode.stage,
+    this.activeGoal,
+    this.ambientSoundTrack = 'lofi',
+    this.isAmbientAudioPlaying = true,
+    this.ambientAudioVolume = 0.5,
+    this.isVoicePodEnabled = false,
     this.whiteboardStrokes = const [],
     this.whiteboardRedoStack = const [],
     this.chatMessages = const [],
@@ -41,6 +46,11 @@ class LiveRoomState extends Equatable {
   final bool isMuted;
   final int completedPomodoros;
   final RoomViewMode activeViewMode;
+  final String? activeGoal;
+  final String ambientSoundTrack;
+  final bool isAmbientAudioPlaying;
+  final double ambientAudioVolume;
+  final bool isVoicePodEnabled;
   final List<WhiteboardStroke> whiteboardStrokes;
   final List<WhiteboardStroke> whiteboardRedoStack;
   final List<RoomChatMessage> chatMessages;
@@ -70,6 +80,11 @@ class LiveRoomState extends Equatable {
     bool? isMuted,
     int? completedPomodoros,
     RoomViewMode? activeViewMode,
+    String? activeGoal,
+    String? ambientSoundTrack,
+    bool? isAmbientAudioPlaying,
+    double? ambientAudioVolume,
+    bool? isVoicePodEnabled,
     List<WhiteboardStroke>? whiteboardStrokes,
     List<WhiteboardStroke>? whiteboardRedoStack,
     List<RoomChatMessage>? chatMessages,
@@ -88,6 +103,12 @@ class LiveRoomState extends Equatable {
       isMuted: isMuted ?? this.isMuted,
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
       activeViewMode: activeViewMode ?? this.activeViewMode,
+      activeGoal: activeGoal ?? this.activeGoal,
+      ambientSoundTrack: ambientSoundTrack ?? this.ambientSoundTrack,
+      isAmbientAudioPlaying:
+          isAmbientAudioPlaying ?? this.isAmbientAudioPlaying,
+      ambientAudioVolume: ambientAudioVolume ?? this.ambientAudioVolume,
+      isVoicePodEnabled: isVoicePodEnabled ?? this.isVoicePodEnabled,
       whiteboardStrokes: whiteboardStrokes ?? this.whiteboardStrokes,
       whiteboardRedoStack: whiteboardRedoStack ?? this.whiteboardRedoStack,
       chatMessages: chatMessages ?? this.chatMessages,
@@ -108,6 +129,11 @@ class LiveRoomState extends Equatable {
     isMuted,
     completedPomodoros,
     activeViewMode,
+    activeGoal,
+    ambientSoundTrack,
+    isAmbientAudioPlaying,
+    ambientAudioVolume,
+    isVoicePodEnabled,
     whiteboardStrokes,
     whiteboardRedoStack,
     chatMessages,
@@ -385,6 +411,26 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         );
       }
     });
+  }
+
+  void updateActiveGoal(String goal) {
+    emit(state.copyWith(activeGoal: goal));
+  }
+
+  void setAmbientSoundTrack(String track) {
+    emit(state.copyWith(ambientSoundTrack: track));
+  }
+
+  void toggleAmbientAudio() {
+    emit(state.copyWith(isAmbientAudioPlaying: !state.isAmbientAudioPlaying));
+  }
+
+  void setAmbientVolume(double volume) {
+    emit(state.copyWith(ambientAudioVolume: volume.clamp(0.0, 1.0)));
+  }
+
+  void toggleVoicePod() {
+    emit(state.copyWith(isVoicePodEnabled: !state.isVoicePodEnabled));
   }
 
   void toggleHandRaise() {

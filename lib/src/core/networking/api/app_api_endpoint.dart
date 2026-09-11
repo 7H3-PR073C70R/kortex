@@ -84,9 +84,12 @@ class AppApiEndpoint {
   static const String studyRooms = '/rest/v1/study_rooms';
   static const String forumPosts = '/rest/v1/forum_posts';
   static const String forumReplies = '/rest/v1/forum_replies';
+  static const String studyCircles = '/rest/v1/study_circles';
+  static const String studyCircleMembers = '/rest/v1/study_circle_members';
   static const String sharedDecks = '/rest/v1/shared_decks';
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
+  static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
   static const String studyCommunities = '/rest/v1/study_communities';

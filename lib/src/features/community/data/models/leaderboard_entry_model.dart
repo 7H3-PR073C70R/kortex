@@ -10,6 +10,7 @@ class LeaderboardEntryModel {
     this.dailyXp = 0,
     this.weeklyXp = 0,
     this.streakDays = 1,
+    this.leagueTier = 'Bronze',
     this.rank = 1,
   });
 
@@ -21,6 +22,7 @@ class LeaderboardEntryModel {
   final int dailyXp;
   final int weeklyXp;
   final int streakDays;
+  final String leagueTier;
   final int rank;
 
   factory LeaderboardEntryModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class LeaderboardEntryModel {
       dailyXp: (json['daily_xp'] as num?)?.toInt() ?? 0,
       weeklyXp: (json['weekly_xp'] as num?)?.toInt() ?? 0,
       streakDays: (json['streak_days'] as num?)?.toInt() ?? 1,
+      leagueTier: json['league_tier'] as String? ?? 'Bronze',
       rank: (json['rank'] as num?)?.toInt() ?? 1,
     );
   }
@@ -47,6 +50,7 @@ class LeaderboardEntryModel {
       'daily_xp': dailyXp,
       'weekly_xp': weeklyXp,
       'streak_days': streakDays,
+      'league_tier': leagueTier,
       'rank': rank,
     };
   }
@@ -61,6 +65,7 @@ class LeaderboardEntryModel {
       dailyXp: dailyXp,
       weeklyXp: weeklyXp,
       streakDays: streakDays,
+      leagueTier: leagueTier,
       rank: rank,
       isCurrentUser: currentUserId != null && userId == currentUserId,
     );

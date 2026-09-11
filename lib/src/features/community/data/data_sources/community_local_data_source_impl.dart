@@ -160,4 +160,3 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
     );
   }
 }
-

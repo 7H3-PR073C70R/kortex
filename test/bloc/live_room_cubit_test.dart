@@ -6,6 +6,7 @@ import 'package:kortex/src/features/community/data/client/ephemeral_presence_cli
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -32,18 +33,25 @@ class MockCommunityRepository implements CommunityRepository {
     required String subject,
     required String category,
     required int pomodoroMinutes,
+    String ambientSoundTrack = 'Lo-Fi Beats',
+    String? activeGoal,
+    bool isSilentFocus = true,
   }) async => Right(
     StudyRoomEntity(
       id: 'room-new',
       title: title,
       subject: subject,
       pomodoroDurationMinutes: pomodoroMinutes,
+      ambientSoundTrack: ambientSoundTrack,
+      activeGoal: activeGoal,
+      isSilentFocus: isSilentFocus,
     ),
   );
 
   @override
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
+    bool? questionsOnly,
   }) async => const Right([]);
 
   @override
@@ -52,6 +60,8 @@ class MockCommunityRepository implements CommunityRepository {
     required String content,
     required String track,
     String? latexContent,
+    bool isQuestion = false,
+    String syllabusTag = 'General',
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
@@ -60,6 +70,28 @@ class MockCommunityRepository implements CommunityRepository {
     required String content,
     String? latexContent,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, bool>> verifyForumReply({
+    required String postId,
+    required String replyId,
+  }) async => const Right(true);
+
+  @override
+  Future<Either<Failure, List<StudyCircleEntity>>> fetchStudyCircles({
+    String? track,
+  }) async => const Right([]);
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
+    required String name,
+    required String track,
+    int targetWeeklyMinutes = 600,
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> joinStudyCircle(String circleId) async =>
+      const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
@@ -74,6 +106,7 @@ class MockCommunityRepository implements CommunityRepository {
     required String category,
     required int totalCards,
     required List<Map<String, dynamic>> cardsJson,
+    String syllabusTag = 'General',
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override

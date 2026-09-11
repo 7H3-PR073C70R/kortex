@@ -36,21 +36,44 @@ class ChangeTrackFilterEvent extends CommunityEvent {
   List<Object?> get props => [track];
 }
 
+class ToggleQuestionsOnlyFilterEvent extends CommunityEvent {
+  const ToggleQuestionsOnlyFilterEvent({required this.questionsOnly});
+
+  final bool questionsOnly;
+
+  @override
+  List<Object?> get props => [questionsOnly];
+}
+
 class CreateRoomEvent extends CommunityEvent {
   const CreateRoomEvent({
     required this.title,
     required this.subject,
     required this.category,
     required this.pomodoroMinutes,
+    this.ambientSoundTrack = 'lofi',
+    this.activeGoal,
+    this.isSilentFocus = true,
   });
 
   final String title;
   final String subject;
   final String category;
   final int pomodoroMinutes;
+  final String ambientSoundTrack;
+  final String? activeGoal;
+  final bool isSilentFocus;
 
   @override
-  List<Object?> get props => [title, subject, category, pomodoroMinutes];
+  List<Object?> get props => [
+    title,
+    subject,
+    category,
+    pomodoroMinutes,
+    ambientSoundTrack,
+    activeGoal,
+    isSilentFocus,
+  ];
 }
 
 class CreateForumPostEvent extends CommunityEvent {
@@ -59,15 +82,26 @@ class CreateForumPostEvent extends CommunityEvent {
     required this.content,
     required this.track,
     this.latexContent,
+    this.isQuestion = false,
+    this.syllabusTag = 'General',
   });
 
   final String title;
   final String content;
   final String track;
   final String? latexContent;
+  final bool isQuestion;
+  final String syllabusTag;
 
   @override
-  List<Object?> get props => [title, content, track, latexContent];
+  List<Object?> get props => [
+    title,
+    content,
+    track,
+    latexContent,
+    isQuestion,
+    syllabusTag,
+  ];
 }
 
 class ReplyToPostEvent extends CommunityEvent {
@@ -83,6 +117,52 @@ class ReplyToPostEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [postId, content, latexContent];
+}
+
+class VerifyForumReplyEvent extends CommunityEvent {
+  const VerifyForumReplyEvent({
+    required this.postId,
+    required this.replyId,
+  });
+
+  final String postId;
+  final String replyId;
+
+  @override
+  List<Object?> get props => [postId, replyId];
+}
+
+class LoadStudyCirclesEvent extends CommunityEvent {
+  const LoadStudyCirclesEvent({this.track});
+
+  final String? track;
+
+  @override
+  List<Object?> get props => [track];
+}
+
+class CreateStudyCircleEvent extends CommunityEvent {
+  const CreateStudyCircleEvent({
+    required this.name,
+    required this.track,
+    this.targetWeeklyMinutes = 600,
+  });
+
+  final String name;
+  final String track;
+  final int targetWeeklyMinutes;
+
+  @override
+  List<Object?> get props => [name, track, targetWeeklyMinutes];
+}
+
+class JoinStudyCircleEvent extends CommunityEvent {
+  const JoinStudyCircleEvent(this.circleId);
+
+  final String circleId;
+
+  @override
+  List<Object?> get props => [circleId];
 }
 
 class CloneDeckEvent extends CommunityEvent {
@@ -111,6 +191,7 @@ class PublishDeckEvent extends CommunityEvent {
     required this.category,
     this.totalCards = 10,
     this.cardsJson = const [],
+    this.syllabusTag = 'General',
   });
 
   final String title;
@@ -119,6 +200,7 @@ class PublishDeckEvent extends CommunityEvent {
   final String category;
   final int totalCards;
   final List<Map<String, dynamic>> cardsJson;
+  final String syllabusTag;
 
   @override
   List<Object?> get props => [
@@ -128,5 +210,6 @@ class PublishDeckEvent extends CommunityEvent {
     category,
     totalCards,
     cardsJson,
+    syllabusTag,
   ];
 }

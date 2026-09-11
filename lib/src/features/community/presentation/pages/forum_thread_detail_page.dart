@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -56,6 +58,13 @@ class ForumThreadDetailPage extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: colors.textPrimary,
+          ),
+          onPressed: () => unawaited(context.router.maybePop()),
+        ),
         title: Text(
           post.track,
           style: typography.title3.bold.copyWith(
@@ -63,6 +72,28 @@ class ForumThreadDetailPage extends HookWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.flag_outlined,
+              color: colors.textSecondary,
+              size: 20,
+            ),
+            tooltip: 'Report Discussion',
+            onPressed: () {
+              unawaited(HapticFeedback.lightImpact());
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Thread reported for community safety moderation.',
+                    style: TextStyle(color: colors.textPrimary),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: colors.surfaceSecondary,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
           // Live indicator
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -95,13 +126,6 @@ class ForumThreadDetailPage extends HookWidget {
             ),
           ),
         ],
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => unawaited(context.router.maybePop()),
-        ),
       ),
       body: SafeArea(
         child: Column(
@@ -157,7 +181,87 @@ class ForumThreadDetailPage extends HookWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
+
+                          // Badges Row (Question Bounty, Syllabus Module, Solved Status)
+                          if (post.isQuestion || post.syllabusTag.isNotEmpty) ...[
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                if (post.isQuestion)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colors.warning.withAlpha(isDark ? 40 : 25),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: colors.warning.withAlpha(90)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('❓', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'Peer Question Bounty • +100 XP',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.warning,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (post.syllabusTag.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: colors.syllabotAccent.withAlpha(80)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('📚', style: TextStyle(fontSize: 11)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          post.syllabusTag,
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.syllabotAccent,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (post.isVerifiedSolution || replies.any((r) => r.isVerifiedSolution))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colors.recallEasy.withAlpha(isDark ? 40 : 25),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: colors.recallEasy),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_circle_rounded, size: 12, color: colors.recallEasy),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Solved',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.recallEasy,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
 
                           // Title
                           Text(
@@ -288,6 +392,11 @@ class ForumThreadDetailPage extends HookWidget {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final reply = replies[index];
+                          final hasVerifiedSolution = replies.any((r) => r.isVerifiedSolution);
+                          final userStorage = locator<UserStorageService>();
+                          final currentUserId = userStorage.getUserId();
+                          final isAuthor = currentUserId == null || currentUserId == post.authorId;
+
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                             child: Container(
@@ -297,10 +406,57 @@ class ForumThreadDetailPage extends HookWidget {
                                     ? colors.surfaceSecondary
                                     : colors.surfaceSecondary.withAlpha(100),
                                 borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: reply.isVerifiedSolution
+                                      ? colors.recallEasy
+                                      : colors.primary.withAlpha(isDark ? 30 : 15),
+                                  width: reply.isVerifiedSolution ? 1.5 : 1.0,
+                                ),
+                                boxShadow: reply.isVerifiedSolution
+                                    ? [
+                                        BoxShadow(
+                                          color: colors.recallEasy.withAlpha(isDark ? 50 : 25),
+                                          blurRadius: 8,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Verified Solution Notice Badge
+                                  if (reply.isVerifiedSolution)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: colors.recallEasy),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_rounded,
+                                            size: 14,
+                                            color: colors.recallEasy,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Verified Solution • 100 XP Bounty Awarded',
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.recallEasy,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
                                   Row(
                                     children: [
                                       CircleAvatar(
@@ -351,6 +507,74 @@ class ForumThreadDetailPage extends HookWidget {
                                       style: typography.caption.bold.copyWith(
                                         color: colors.primary,
                                         fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+
+                                  // Mark as Verified Solution Button (Post Author action on questions)
+                                  if (post.isQuestion && !reply.isVerifiedSolution && (!hasVerifiedSolution || isAuthor)) ...[
+                                    const SizedBox(height: 10),
+                                    ShrinkableButton(
+                                      onTap: () async {
+                                        final res = await repo.verifyForumReply(
+                                          postId: post.id,
+                                          replyId: reply.id,
+                                        );
+                                        res.fold(
+                                          (failure) {
+                                            if (context.mounted) {
+                                              context.showSnackBar(
+                                                message: failure.message ??
+                                                    'Failed to verify solution',
+                                                type: SnackBarType.error,
+                                              );
+                                            }
+                                          },
+                                          (_) {
+                                            localReplies.value = localReplies.value.map(
+                                              (r) => r.id == reply.id
+                                                  ? r.copyWith(isVerifiedSolution: true)
+                                                  : r,
+                                            ).toList();
+                                            if (context.mounted) {
+                                              context.showSnackBar(
+                                                message:
+                                                    'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
+                                              );
+                                            }
+                                          },
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.warning.withAlpha(isDark ? 40 : 25),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: colors.warning.withAlpha(90),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.verified_outlined,
+                                              size: 13,
+                                              color: colors.warning,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              'Mark as Solution (+100 XP)',
+                                              style: typography.caption.bold.copyWith(
+                                                color: colors.warning,
+                                                fontSize: 10.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ],

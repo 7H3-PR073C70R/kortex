@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a live peer focus room with synchronized Pomodoro state.
+/// Represents a live peer focus room with silent ambient body-doubling & synchronized Pomodoro.
 class StudyRoomEntity extends Equatable {
   const StudyRoomEntity({
     required this.id,
@@ -14,6 +14,9 @@ class StudyRoomEntity extends Equatable {
     this.pomodoroStartedAt,
     this.activeParticipantsCount = 1,
     this.maxParticipants = 50,
+    this.ambientSoundTrack = 'lofi',
+    this.activeGoal,
+    this.isSilentFocus = true,
     this.participantAvatars = const [],
   });
 
@@ -28,6 +31,9 @@ class StudyRoomEntity extends Equatable {
   final DateTime? pomodoroStartedAt;
   final int activeParticipantsCount;
   final int maxParticipants;
+  final String ambientSoundTrack;
+  final String? activeGoal;
+  final bool isSilentFocus;
   final List<String> participantAvatars;
 
   bool get isFocusing => pomodoroState == 'focusing';
@@ -46,6 +52,9 @@ class StudyRoomEntity extends Equatable {
     DateTime? pomodoroStartedAt,
     int? activeParticipantsCount,
     int? maxParticipants,
+    String? ambientSoundTrack,
+    String? activeGoal,
+    bool? isSilentFocus,
     List<String>? participantAvatars,
   }) {
     return StudyRoomEntity(
@@ -62,6 +71,9 @@ class StudyRoomEntity extends Equatable {
       activeParticipantsCount:
           activeParticipantsCount ?? this.activeParticipantsCount,
       maxParticipants: maxParticipants ?? this.maxParticipants,
+      ambientSoundTrack: ambientSoundTrack ?? this.ambientSoundTrack,
+      activeGoal: activeGoal ?? this.activeGoal,
+      isSilentFocus: isSilentFocus ?? this.isSilentFocus,
       participantAvatars: participantAvatars ?? this.participantAvatars,
     );
   }
@@ -79,6 +91,9 @@ class StudyRoomEntity extends Equatable {
     pomodoroStartedAt,
     activeParticipantsCount,
     maxParticipants,
+    ambientSoundTrack,
+    activeGoal,
+    isSilentFocus,
     participantAvatars,
   ];
 }

@@ -82,8 +82,9 @@ class WhiteboardCompression {
     var prevX = _round(points[0].x);
     var prevY = _round(points[0].y);
 
-    encoded.add(prevX);
-    encoded.add(prevY);
+    encoded
+      ..add(prevX)
+      ..add(prevY);
 
     for (var i = 1; i < points.length; i++) {
       final currentX = _round(points[i].x);
@@ -91,8 +92,9 @@ class WhiteboardCompression {
       final dx = _round(currentX - prevX);
       final dy = _round(currentY - prevY);
 
-      encoded.add(dx);
-      encoded.add(dy);
+      encoded
+        ..add(dx)
+        ..add(dy);
 
       prevX = currentX;
       prevY = currentY;

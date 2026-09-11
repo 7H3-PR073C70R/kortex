@@ -8,6 +8,7 @@ class SharedDeckModel {
     required this.ownerName,
     required this.title,
     required this.subject,
+    this.syllabusTag = 'General',
     this.description,
     this.category = 'General',
     required this.totalCards,
@@ -22,6 +23,7 @@ class SharedDeckModel {
   final String ownerName;
   final String title;
   final String subject;
+  final String syllabusTag;
   final String? description;
   final String category;
   final int totalCards;
@@ -38,6 +40,7 @@ class SharedDeckModel {
       ownerName: json['owner_name'] as String? ?? 'Community Educator',
       title: json['title'] as String,
       subject: json['subject'] as String,
+      syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       description: json['description'] as String?,
       category: json['category'] as String? ?? 'General',
       totalCards: (json['total_cards'] as num?)?.toInt() ?? rawCards.length,
@@ -55,6 +58,7 @@ class SharedDeckModel {
       'owner_name': ownerName,
       'title': title,
       'subject': subject,
+      'syllabus_tag': syllabusTag,
       'description': description,
       'category': category,
       'total_cards': totalCards,
@@ -84,6 +88,7 @@ class SharedDeckModel {
       ownerName: ownerName,
       title: title,
       subject: subject,
+      syllabusTag: syllabusTag,
       description: description,
       category: category,
       totalCards: totalCards,

@@ -19,6 +19,9 @@ class CreateStudyRoomSheet extends HookWidget {
     required String subject,
     required String category,
     required int pomodoroMinutes,
+    String ambientSoundTrack,
+    String? activeGoal,
+    bool isSilentFocus,
   })
   onSubmit;
 
@@ -29,6 +32,9 @@ class CreateStudyRoomSheet extends HookWidget {
       required String subject,
       required String category,
       required int pomodoroMinutes,
+      String ambientSoundTrack,
+      String? activeGoal,
+      bool isSilentFocus,
     })
     onSubmit,
   }) {
@@ -49,8 +55,10 @@ class CreateStudyRoomSheet extends HookWidget {
 
     final titleController = useTextEditingController();
     final subjectController = useTextEditingController();
+    final goalController = useTextEditingController();
     final selectedCategory = useState<String>('STEM');
     final selectedDuration = useState<int>(25);
+    final selectedAmbient = useState<String>('lofi');
 
     const categories = [
       'STEM',
@@ -63,6 +71,13 @@ class CreateStudyRoomSheet extends HookWidget {
     ];
 
     const durations = [15, 25, 45, 50, 60];
+    const ambientOptions = <({String id, String label, IconData icon})>[
+      (id: 'lofi', label: 'Lo-Fi Chill', icon: Icons.music_note_rounded),
+      (id: 'rain', label: 'Rainy Cafe', icon: Icons.water_drop_rounded),
+      (id: 'binaural', label: 'Binaural 40Hz', icon: Icons.waves_rounded),
+      (id: 'library', label: 'Library Silence', icon: Icons.local_library_rounded),
+      (id: 'none', label: 'Mute Sound', icon: Icons.volume_off_rounded),
+    ];
 
     return Container(
       padding: EdgeInsets.only(
@@ -106,14 +121,14 @@ class CreateStudyRoomSheet extends HookWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.timer_rounded,
+                    Icons.self_improvement_rounded,
                     color: colors.primary,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Create Focus Room',
+                  'Launch Silent Focus Cockpit',
                   style: typography.title2.bold.copyWith(
                     color: colors.textPrimary,
                   ),
@@ -125,14 +140,57 @@ class CreateStudyRoomSheet extends HookWidget {
             // Room Title Field
             AppTextField(
               controller: titleController,
-              hintText: 'Room Title (e.g. Pure Math Problem Solving)',
+              hintText: 'Room Title (e.g. 25m Silent Sprint: Organic Chem)',
             ),
             const SizedBox(height: 12),
 
             // Subject Field
             AppTextField(
               controller: subjectController,
-              hintText: 'Subject / Course Code (e.g. MTH 301, Physics)',
+              hintText: 'Subject / Course (e.g. JAMB Physics, MTH 201)',
+            ),
+            const SizedBox(height: 12),
+
+            // Active Goal Field
+            AppTextField(
+              controller: goalController,
+              hintText: 'Your Active Goal (e.g. Review 25 past questions)',
+            ),
+            const SizedBox(height: 16),
+
+            // Ambient Soundscape Selection
+            Text(
+              'Ambient Focus Soundscape',
+              style: typography.caption.bold.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: ambientOptions.map((opt) {
+                final isSelected = selectedAmbient.value == opt.id;
+                return ChoiceChip(
+                  avatar: Icon(
+                    opt.icon,
+                    size: 14,
+                    color: isSelected ? colors.white : colors.primary,
+                  ),
+                  label: Text(opt.label),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) {
+                      unawaited(HapticFeedback.lightImpact());
+                      selectedAmbient.value = opt.id;
+                    }
+                  },
+                  selectedColor: colors.primary,
+                  labelStyle: typography.caption.bold.copyWith(
+                    color: isSelected ? colors.white : colors.textPrimary,
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 16),
 
@@ -210,6 +268,11 @@ class CreateStudyRoomSheet extends HookWidget {
                   subject: subject,
                   category: selectedCategory.value,
                   pomodoroMinutes: selectedDuration.value,
+                  ambientSoundTrack: selectedAmbient.value,
+                  activeGoal: goalController.text.trim().isNotEmpty
+                      ? goalController.text.trim()
+                      : null,
+                  isSilentFocus: true,
                 );
                 Navigator.of(context).pop();
               },

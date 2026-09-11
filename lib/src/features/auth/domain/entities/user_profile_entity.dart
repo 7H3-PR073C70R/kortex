@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Represents a persistent user profile with track preferences,
-/// study goals, and subscription tier.
+/// study goals, streak protection, and subscription tier.
 class UserProfileEntity extends Equatable {
   const UserProfileEntity({
     required this.id,
@@ -13,6 +13,8 @@ class UserProfileEntity extends Equatable {
     this.retentionBenchmark = 0.85,
     this.level = 1,
     this.streakDays = 0,
+    this.streakFreezeCount = 1,
+    this.timezone = 'UTC',
     this.xpPoints = 0,
     this.subscriptionTier = 'free',
     this.isOnboarded = false,
@@ -27,6 +29,8 @@ class UserProfileEntity extends Equatable {
   final double retentionBenchmark;
   final int level;
   final int streakDays;
+  final int streakFreezeCount;
+  final String timezone;
   final int xpPoints;
   final String subscriptionTier;
   final bool isOnboarded;
@@ -43,6 +47,8 @@ class UserProfileEntity extends Equatable {
     double? retentionBenchmark,
     int? level,
     int? streakDays,
+    int? streakFreezeCount,
+    String? timezone,
     int? xpPoints,
     String? subscriptionTier,
     bool? isOnboarded,
@@ -57,6 +63,8 @@ class UserProfileEntity extends Equatable {
       retentionBenchmark: retentionBenchmark ?? this.retentionBenchmark,
       level: level ?? this.level,
       streakDays: streakDays ?? this.streakDays,
+      streakFreezeCount: streakFreezeCount ?? this.streakFreezeCount,
+      timezone: timezone ?? this.timezone,
       xpPoints: xpPoints ?? this.xpPoints,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       isOnboarded: isOnboarded ?? this.isOnboarded,
@@ -74,6 +82,8 @@ class UserProfileEntity extends Equatable {
     retentionBenchmark,
     level,
     streakDays,
+    streakFreezeCount,
+    timezone,
     xpPoints,
     subscriptionTier,
     isOnboarded,

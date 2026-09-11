@@ -4,6 +4,7 @@ import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -57,6 +58,16 @@ void main() {
     streakDays: 14,
   );
 
+  const testCircle = StudyCircleEntity(
+    id: 'circle_1',
+    name: 'JAMB Sprint Pod',
+    track: 'JAMB',
+    memberCount: 4,
+    maxMembers: 6,
+    targetWeeklyMinutes: 600,
+    totalMinutesCompleted: 350,
+  );
+
   setUp(() {
     mockRepository = MockCommunityRepository();
     when(
@@ -88,8 +99,15 @@ void main() {
         when(
           () => mockRepository.fetchForumPosts(
             track: any(named: 'track'),
+            questionsOnly: any(named: 'questionsOnly'),
           ),
         ).thenAnswer((_) async => Right([testPost]));
+
+        when(
+          () => mockRepository.fetchStudyCircles(
+            track: any(named: 'track'),
+          ),
+        ).thenAnswer((_) async => const Right([testCircle]));
 
         when(
           () => mockRepository.fetchSharedDecks(
@@ -112,6 +130,7 @@ void main() {
           status: CommunityStatus.loaded,
           studyRooms: const [testRoom],
           forumPosts: [testPost],
+          studyCircles: const [testCircle],
           sharedDecks: const [testDeck],
           leaderboardEntries: const [testLeaderboardEntry],
         ),

@@ -17,11 +17,13 @@ import 'package:kortex/src/features/community/presentation/bloc/community_state.
 import 'package:kortex/src/features/community/presentation/widgets/auto_community_banner_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_study_circle_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_study_room_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/live_focus_room_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/marketplace_deck_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/publish_deck_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
+import 'package:kortex/src/features/community/presentation/widgets/study_circle_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
@@ -117,6 +119,8 @@ class _CommunityHubView extends HookWidget {
                       required content,
                       required track,
                       latexContent,
+                      isQuestion = false,
+                      syllabusTag = 'General',
                     }) {
                       context.read<CommunityHubBloc>().add(
                         CreateForumPostEvent(
@@ -124,6 +128,8 @@ class _CommunityHubView extends HookWidget {
                           content: content,
                           track: track,
                           latexContent: latexContent,
+                          isQuestion: isQuestion,
+                          syllabusTag: syllabusTag,
                         ),
                       );
                     },
@@ -260,6 +266,8 @@ class _CommunityHubView extends HookWidget {
                                       _MarketplaceDecksList(state: state),
                                       StreakLeaderboardWidget(
                                         entries: state.leaderboardEntries,
+                                        streakFreezeCount:
+                                            authState?.userProfile?.streakFreezeCount ?? 0,
                                       ),
                                     ],
                                   ),
@@ -270,6 +278,8 @@ class _CommunityHubView extends HookWidget {
                                   child: SingleChildScrollView(
                                     child: StreakLeaderboardWidget(
                                       entries: state.leaderboardEntries,
+                                      streakFreezeCount:
+                                          authState?.userProfile?.streakFreezeCount ?? 0,
                                     ),
                                   ),
                                 ),
@@ -289,6 +299,8 @@ class _CommunityHubView extends HookWidget {
                               padding: const EdgeInsets.all(16),
                               child: StreakLeaderboardWidget(
                                 entries: state.leaderboardEntries,
+                                streakFreezeCount:
+                                    authState?.userProfile?.streakFreezeCount ?? 0,
                               ),
                             ),
                           ],
@@ -319,18 +331,154 @@ class _LiveRoomsList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
+        // Study Circles (Micro-Accountability Pods of 3-6) Section
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colors.syllabotAccent.withAlpha(isDark ? 40 : 25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.groups_rounded,
+                      size: 16,
+                      color: colors.syllabotAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Study Circles (3-6 Pods)',
+                    style: typography.subhead.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              ShrinkableButton(
+                onTap: () {
+                  unawaited(
+                    CreateStudyCircleSheet.show(
+                      context,
+                      onSubmit: ({
+                        required name,
+                        required track,
+                        required targetWeeklyMinutes,
+                      }) {
+                        context.read<CommunityHubBloc>().add(
+                          CreateStudyCircleEvent(
+                            name: name,
+                            track: track,
+                            targetWeeklyMinutes: targetWeeklyMinutes,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: colors.syllabotAccent.withAlpha(isDark ? 45 : 25),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, size: 14, color: colors.syllabotAccent),
+                      const SizedBox(width: 4),
+                      Text(
+                        'New Pod',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.syllabotAccent,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (state.studyCircles.isEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfacePrimary,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 25 : 15),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, size: 18, color: colors.textSecondary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Join a 3-6 student pod to share weekly study targets and keep each other accountable.',
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...state.studyCircles.map((circle) {
+            return StudyCircleCard(
+              circle: circle,
+              onJoinTap: () {
+                context.read<CommunityHubBloc>().add(
+                  JoinStudyCircleEvent(circle.id),
+                );
+                context.showSnackBar(
+                  message: 'Joined ${circle.name}!',
+                );
+              },
+            );
+          }),
+        const SizedBox(height: 8),
+
         // Action Header: Room Count + Launch Room Button
         Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.activeFocusRooms(state.studyRooms.length),
-                style: typography.footnote.bold.copyWith(
-                  color: colors.textSecondary,
-                  letterSpacing: 0.5,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 40 : 25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.headphones_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Silent Focus Cockpits (${state.studyRooms.length})',
+                    style: typography.subhead.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
               ShrinkableButton(
                 onTap: () {
@@ -342,6 +490,9 @@ class _LiveRoomsList extends StatelessWidget {
                         required subject,
                         required category,
                         required pomodoroMinutes,
+                        ambientSoundTrack = 'Lo-Fi Beats',
+                        activeGoal,
+                        isSilentFocus = true,
                       }) {
                         context.read<CommunityHubBloc>().add(
                           CreateRoomEvent(
@@ -349,6 +500,9 @@ class _LiveRoomsList extends StatelessWidget {
                             subject: subject,
                             category: category,
                             pomodoroMinutes: pomodoroMinutes,
+                            ambientSoundTrack: ambientSoundTrack,
+                            activeGoal: activeGoal,
+                            isSilentFocus: isSilentFocus,
                           ),
                         );
                       },
@@ -434,6 +588,9 @@ class _LiveRoomsList extends StatelessWidget {
                           required subject,
                           required category,
                           required pomodoroMinutes,
+                          ambientSoundTrack = 'Lo-Fi Beats',
+                          activeGoal,
+                          isSilentFocus = true,
                         }) {
                           context.read<CommunityHubBloc>().add(
                             CreateRoomEvent(
@@ -441,6 +598,9 @@ class _LiveRoomsList extends StatelessWidget {
                               subject: subject,
                               category: category,
                               pomodoroMinutes: pomodoroMinutes,
+                              ambientSoundTrack: ambientSoundTrack,
+                              activeGoal: activeGoal,
+                              isSilentFocus: isSilentFocus,
                             ),
                           );
                         },
@@ -495,95 +655,120 @@ class _ForumPostsList extends HookWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
-    final activeTrack = (userTrack != null && userTrack.trim().isNotEmpty)
-        ? userTrack.trim()
-        : (state.selectedTrack.isNotEmpty && state.selectedTrack != 'All'
-            ? state.selectedTrack
-            : 'General');
+    final tracks = <String>{
+      'All',
+      if (userTrack != null && userTrack.trim().isNotEmpty && userTrack != 'General')
+        userTrack.trim(),
+      'WAEC',
+      'JAMB',
+      'SAT',
+      'University',
+      'STEM',
+    }.toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
-        // Dedicated Track Header Banner (Locked to enrolled academic curriculum)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colors.primary.withAlpha(isDark ? 50 : 30),
-            ),
-          ),
+        // Multi-Track Filter Chips Bar
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
           child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(25),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.school_rounded,
-                  size: 18,
-                  color: colors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${activeTrack.toUpperCase()} Academic Forum',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.textPrimary,
+            children: tracks.map((track) {
+              final isSelected = state.selectedTrack == track ||
+                  (track == 'All' && (state.selectedTrack.isEmpty || state.selectedTrack == 'All'));
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    context.read<CommunityHubBloc>().add(
+                      ChangeTrackFilterEvent(track),
+                    );
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colors.primary
+                          : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? colors.primary
+                            : colors.primary.withAlpha(isDark ? 40 : 20),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Tailored strictly to your enrolled academic curriculum',
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
+                    child: Text(
+                      track,
+                      style: typography.caption.bold.copyWith(
+                        color: isSelected ? colors.white : colors.textSecondary,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(45),
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      size: 11,
-                      color: colors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Enrolled',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 10.5,
-                      ),
-                    ),
-                  ],
-                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Questions Only Bounty Filter Toggle Bar
+        ShrinkableButton(
+          onTap: () {
+            unawaited(HapticFeedback.lightImpact());
+            context.read<CommunityHubBloc>().add(
+              ToggleQuestionsOnlyFilterEvent(questionsOnly: !state.questionsOnly),
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: state.questionsOnly
+                  ? colors.warning.withAlpha(isDark ? 45 : 25)
+                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: state.questionsOnly
+                    ? colors.warning
+                    : colors.primary.withAlpha(isDark ? 30 : 15),
+                width: state.questionsOnly ? 1.5 : 1.0,
               ),
-            ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  state.questionsOnly ? Icons.check_circle_rounded : Icons.help_outline_rounded,
+                  size: 18,
+                  color: state.questionsOnly ? colors.warning : colors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Peer Question Bounties (+100 XP)',
+                    style: typography.caption.bold.copyWith(
+                      color: state.questionsOnly ? colors.warning : colors.textPrimary,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (state.questionsOnly ? colors.warning : colors.primary)
+                        .withAlpha(isDark ? 40 : 20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    state.questionsOnly ? 'Active' : 'Show Only',
+                    style: typography.caption.bold.copyWith(
+                      fontSize: 10,
+                      color: state.questionsOnly ? colors.warning : colors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -676,6 +861,7 @@ class _MarketplaceDecksList extends StatelessWidget {
                         required subject,
                         required description,
                         required category,
+                        syllabusTag = 'General',
                       }) {
                         context.read<CommunityHubBloc>().add(
                           PublishDeckEvent(
@@ -683,6 +869,7 @@ class _MarketplaceDecksList extends StatelessWidget {
                             subject: subject,
                             description: description,
                             category: category,
+                            syllabusTag: syllabusTag,
                           ),
                         );
                       },
@@ -768,6 +955,7 @@ class _MarketplaceDecksList extends StatelessWidget {
                           required subject,
                           required description,
                           required category,
+                          syllabusTag = 'General',
                         }) {
                           context.read<CommunityHubBloc>().add(
                             PublishDeckEvent(
@@ -775,6 +963,7 @@ class _MarketplaceDecksList extends StatelessWidget {
                               subject: subject,
                               description: description,
                               category: category,
+                              syllabusTag: syllabusTag,
                             ),
                           );
                         },

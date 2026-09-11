@@ -35,7 +35,10 @@ class TrackForumPostCard extends StatelessWidget {
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 40 : 25),
+            color: post.isVerifiedSolution
+                ? colors.success.withAlpha(isDark ? 100 : 70)
+                : colors.primary.withAlpha(isDark ? 40 : 25),
+            width: post.isVerifiedSolution ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
@@ -51,25 +54,70 @@ class TrackForumPostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Track chip + Author
+              // Badges row: Track + Question/Verified Status + Author
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.syllabotAccent.withAlpha(30),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      post.track,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.syllabotAccent,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.syllabotAccent.withAlpha(30),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          post.track,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.syllabotAccent,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (post.isQuestion) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: post.isVerifiedSolution
+                                ? colors.success.withAlpha(30)
+                                : colors.warning.withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                post.isVerifiedSolution
+                                    ? Icons.check_circle_rounded
+                                    : Icons.help_outline_rounded,
+                                size: 12,
+                                color: post.isVerifiedSolution
+                                    ? colors.success
+                                    : colors.warning,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                post.isVerifiedSolution
+                                    ? 'Solved'
+                                    : 'Question',
+                                style: typography.caption.bold.copyWith(
+                                  color: post.isVerifiedSolution
+                                      ? colors.success
+                                      : colors.warning,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   Text(
                     'by ${post.authorName}',

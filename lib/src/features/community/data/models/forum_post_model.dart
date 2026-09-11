@@ -10,6 +10,9 @@ class ForumPostModel {
     required this.title,
     required this.content,
     this.latexContent,
+    this.isQuestion = false,
+    this.isVerifiedSolution = false,
+    this.syllabusTag = 'General',
     this.upvotes = 0,
     this.repliesCount = 0,
     required this.createdAt,
@@ -24,6 +27,9 @@ class ForumPostModel {
   final String title;
   final String content;
   final String? latexContent;
+  final bool isQuestion;
+  final bool isVerifiedSolution;
+  final String syllabusTag;
   final int upvotes;
   final int repliesCount;
   final DateTime createdAt;
@@ -40,6 +46,9 @@ class ForumPostModel {
       title: json['title'] as String,
       content: json['content'] as String,
       latexContent: json['latex_content'] as String?,
+      isQuestion: json['is_question'] as bool? ?? false,
+      isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
+      syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       repliesCount: (json['replies_count'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(
@@ -61,6 +70,9 @@ class ForumPostModel {
       'title': title,
       'content': content,
       'latex_content': latexContent,
+      'is_question': isQuestion,
+      'is_verified_solution': isVerifiedSolution,
+      'syllabus_tag': syllabusTag,
       'upvotes': upvotes,
       'replies_count': repliesCount,
       'created_at': createdAt.toIso8601String(),
@@ -78,6 +90,9 @@ class ForumPostModel {
       title: title,
       content: content,
       latexContent: latexContent,
+      isQuestion: isQuestion,
+      isVerifiedSolution: isVerifiedSolution,
+      syllabusTag: syllabusTag,
       upvotes: upvotes,
       repliesCount: repliesCount,
       createdAt: createdAt,
@@ -95,6 +110,7 @@ class ForumReplyModel {
     this.authorAvatar,
     required this.content,
     this.latexContent,
+    this.isVerifiedSolution = false,
     this.upvotes = 0,
     required this.createdAt,
   });
@@ -106,6 +122,7 @@ class ForumReplyModel {
   final String? authorAvatar;
   final String content;
   final String? latexContent;
+  final bool isVerifiedSolution;
   final int upvotes;
   final DateTime createdAt;
 
@@ -118,6 +135,7 @@ class ForumReplyModel {
       authorAvatar: json['author_avatar'] as String?,
       content: json['content'] as String,
       latexContent: json['latex_content'] as String?,
+      isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
@@ -134,6 +152,7 @@ class ForumReplyModel {
       'author_avatar': authorAvatar,
       'content': content,
       'latex_content': latexContent,
+      'is_verified_solution': isVerifiedSolution,
       'upvotes': upvotes,
       'created_at': createdAt.toIso8601String(),
     };
@@ -148,6 +167,7 @@ class ForumReplyModel {
       authorAvatar: authorAvatar,
       content: content,
       latexContent: latexContent,
+      isVerifiedSolution: isVerifiedSolution,
       upvotes: upvotes,
       createdAt: createdAt,
     );

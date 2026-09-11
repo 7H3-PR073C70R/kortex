@@ -10,6 +10,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/data/models/leaderboard_entry_model.dart';
 import 'package:kortex/src/features/community/data/models/shared_deck_model.dart';
+import 'package:kortex/src/features/community/data/models/study_circle_model.dart';
 import 'package:kortex/src/features/community/data/models/study_community_model.dart';
 import 'package:kortex/src/features/community/data/models/study_room_model.dart';
 
@@ -47,7 +48,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
   // In-memory cache of replies per post, rebuilt from DB snapshots + WS events
   final Map<String, List<ForumReplyModel>> _replyCache = {};
-  final Map<String, StreamController<List<ForumReplyModel>>> _replyControllers = {};
+  final Map<String, StreamController<List<ForumReplyModel>>> _replyControllers =
+      {};
 
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
@@ -85,6 +87,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String subject,
     required String category,
     required int pomodoroMinutes,
+    String ambientSoundTrack = 'lofi',
+    String? activeGoal,
+    bool isSilentFocus = true,
   }) async {
     final userId = _userStorage?.getUserId();
     final res = await _client.createStudyRoom(
@@ -96,6 +101,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'pomodoro_state': 'focusing',
         'pomodoro_started_at': DateTime.now().toIso8601String(),
         'active_participants_count': 1,
+        'ambient_sound_track': ambientSoundTrack,
+        'active_goal': activeGoal,
+        'is_silent_focus': isSilentFocus,
         'created_by': ?userId,
       },
     );
@@ -116,13 +124,19 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
-  Future<List<ForumPostModel>> fetchForumPosts({String? track}) async {
+  Future<List<ForumPostModel>> fetchForumPosts({
+    String? track,
+    bool? questionsOnly,
+  }) async {
     final params = <String, dynamic>{
       'select': '*,forum_replies(*)',
       'order': 'created_at.desc',
     };
     if (track != null && track.isNotEmpty && track != 'All') {
       params['track'] = 'eq.$track';
+    }
+    if (questionsOnly == true) {
+      params['is_question'] = 'eq.true';
     }
 
     try {
@@ -165,7 +179,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       // Read-through fallback to local SQLite cache
       if (_localDataSource != null) {
         try {
-          final cachedPosts = await _localDataSource!.getForumPosts(track: track);
+          final cachedPosts =
+              await _localDataSource!.getForumPosts(track: track);
           if (cachedPosts.isNotEmpty) {
             return cachedPosts;
           }
@@ -182,6 +197,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String content,
     required String track,
     String? latexContent,
+    bool isQuestion = false,
+    String syllabusTag = 'General',
   }) async {
     final userId = _userStorage?.getUserId();
     final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
@@ -192,6 +209,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       'content': content,
       'track': track,
       'latex_content': latexContent,
+      'is_question': isQuestion,
+      'syllabus_tag': syllabusTag,
       'author_name': authorName,
       'author_id': ?userId,
       'author_avatar': ?authorAvatar,
@@ -243,6 +262,54 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       controller.add(List.unmodifiable(cache));
     }
     return reply;
+  }
+
+  @override
+  Future<bool> verifyForumReply({
+    required String postId,
+    required String replyId,
+  }) async {
+    try {
+      await _client.verifyForumReply({
+        'p_post_id': postId,
+        'p_reply_id': replyId,
+      });
+
+      final cache = _replyCache[postId];
+      if (cache != null) {
+        for (var i = 0; i < cache.length; i++) {
+          final isMatch = cache[i].id == replyId;
+          cache[i] = ForumReplyModel(
+            id: cache[i].id,
+            postId: cache[i].postId,
+            authorId: cache[i].authorId,
+            authorName: cache[i].authorName,
+            authorAvatar: cache[i].authorAvatar,
+            content: cache[i].content,
+            latexContent: cache[i].latexContent,
+            isVerifiedSolution: isMatch,
+            upvotes: cache[i].upvotes,
+            createdAt: cache[i].createdAt,
+          );
+        }
+        final controller = _replyControllers[postId];
+        if (controller != null && !controller.isClosed) {
+          controller.add(List.unmodifiable(cache));
+        }
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.verifyForumReply failed',
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   @override
@@ -334,6 +401,92 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<List<StudyCircleModel>> fetchStudyCircles({String? track}) async {
+    final params = <String, dynamic>{
+      'select': '*,study_circle_members(*)',
+      'order': 'created_at.desc',
+    };
+    if (track != null && track.isNotEmpty && track != 'All') {
+      params['track'] = 'eq.$track';
+    }
+
+    final res = await _client.fetchStudyCircles(params);
+    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    return rawList
+        .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<StudyCircleModel> createStudyCircle({
+    required String name,
+    required String track,
+    int targetWeeklyMinutes = 600,
+  }) async {
+    final userId = _userStorage?.getUserId();
+    final userName = _userStorage?.getUserDisplayName() ?? 'Scholar';
+    final avatarUrl = _userStorage?.getUserAvatarUrl();
+
+    final payload = <String, dynamic>{
+      'name': name,
+      'track': track,
+      'target_weekly_minutes': targetWeeklyMinutes,
+      'creator_id': ?userId,
+      'max_members': 6,
+      'member_count': 1,
+    };
+    final res = await _client.createStudyCircle(payload);
+    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    if (rawList.isEmpty) {
+      throw Exception('Failed to create study circle');
+    }
+    final createdCircle =
+        StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+
+    if (userId != null) {
+      try {
+        await _client.joinStudyCircle({
+          'circle_id': createdCircle.id,
+          'user_id': userId,
+          'user_name': userName,
+          'avatar_url': ?avatarUrl,
+          'role': 'creator',
+        });
+      } on Object catch (_) {}
+    }
+
+    return createdCircle;
+  }
+
+  @override
+  Future<StudyCircleModel> joinStudyCircle(String circleId) async {
+    final userId = _userStorage?.getUserId();
+    final userName = _userStorage?.getUserDisplayName() ?? 'Scholar';
+    final avatarUrl = _userStorage?.getUserAvatarUrl();
+
+    if (userId != null) {
+      await _client.joinStudyCircle({
+        'circle_id': circleId,
+        'user_id': userId,
+        'user_name': userName,
+        'avatar_url': ?avatarUrl,
+        'role': 'member',
+      });
+    }
+
+    final res = await _client.fetchStudyCircles({
+      'select': '*,study_circle_members(*)',
+      'id': 'eq.$circleId',
+      'limit': '1',
+    });
+    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    if (rawList.isNotEmpty) {
+      return StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+    }
+    throw Exception('Failed to fetch joined study circle');
+  }
+
+  @override
   Future<List<SharedDeckModel>> fetchSharedDecks({String? subject}) async {
     final params = <String, dynamic>{
       'select': '*',
@@ -358,6 +511,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String category,
     required int totalCards,
     required List<Map<String, dynamic>> cardsJson,
+    String syllabusTag = 'General',
   }) async {
     final userId = _userStorage?.getUserId();
     final ownerName = _userStorage?.getUserDisplayName() ?? 'Scholar';
@@ -365,6 +519,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final payload = <String, dynamic>{
       'title': title,
       'subject': subject,
+      'syllabus_tag': syllabusTag,
       'description': description,
       'category': category,
       'total_cards': totalCards,
@@ -395,7 +550,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   @override
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track}) {
     // Accumulate leaderboard snapshot, then push updates for any change via WebSocket
-    final streamController = StreamController<List<LeaderboardEntryModel>>.broadcast();
+    final streamController =
+        StreamController<List<LeaderboardEntryModel>>.broadcast();
     final cache = <String, LeaderboardEntryModel>{};
 
     // Initial fetch to seed the cache
@@ -419,7 +575,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         } else {
           final entry = LeaderboardEntryModel.fromJson(event.record);
           // Only include if track filter matches
-          if (track == null || track.isEmpty || track == 'All' ||
+          if (track == null ||
+              track.isEmpty ||
+              track == 'All' ||
               (event.record['track'] as String? ?? '') == track) {
             cache[entry.userId] = entry;
           }
@@ -434,7 +592,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     return streamController.stream;
   }
 
-  List<LeaderboardEntryModel> _sortedLeaderboard(Map<String, LeaderboardEntryModel> cache) {
+  List<LeaderboardEntryModel> _sortedLeaderboard(
+    Map<String, LeaderboardEntryModel> cache,
+  ) {
     final list = cache.values.toList()
       ..sort((a, b) => (b.weeklyXp).compareTo(a.weeklyXp));
     return list;

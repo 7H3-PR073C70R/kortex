@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -13,6 +14,7 @@ import 'package:kortex/src/features/community/domain/entities/shared_deck_entity
 import 'package:kortex/src/features/community/domain/use_cases/clone_shared_deck_use_case.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -215,21 +217,55 @@ class DeckMarketplaceDetailPage extends HookWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(40),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            deck.category.toUpperCase(),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(40),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                deck.category.toUpperCase(),
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (deck.syllabusTag.isNotEmpty && deck.syllabusTag != 'General') ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.syllabotAccent.withAlpha(35),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: colors.syllabotAccent.withAlpha(70),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('📚', style: TextStyle(fontSize: 10)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      deck.syllabusTag,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.syllabotAccent,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         Row(
                           children: [
@@ -263,6 +299,29 @@ class DeckMarketplaceDetailPage extends HookWidget {
                         color: colors.textSecondary,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: colors.syllabotAccent.withAlpha(isDark ? 30 : 18),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: colors.syllabotAccent.withAlpha(50)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('✨', style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Cloning awards +25 XP to ${deck.ownerName}',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.syllabotAccent,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     if (deck.description != null &&
                         deck.description!.isNotEmpty) ...[
                       const SizedBox(height: 12),
@@ -276,80 +335,206 @@ class DeckMarketplaceDetailPage extends HookWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // Cards Preview Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Preview Cards (${deck.totalCards})',
+                    'Interactive Card Preview (${deck.totalCards})',
                     style: typography.footnote.bold.copyWith(
                       color: colors.textPrimary,
                     ),
                   ),
                   Text(
-                    '${deck.downloadsCount} downloads',
+                    '${deck.downloadsCount} clones',
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Cards List
-              if (deck.cards.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      'Full deck containing ${deck.totalCards} cards '
-                      'ready to clone.',
-                      style: typography.footnote.medium.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                ...deck.cards.take(5).map((card) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfaceSecondary.withAlpha(100),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(30),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Q: ${card.front}',
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'A: ${card.back}',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+              // Interactive Flashcard Preview Carousel (Tap-to-flip first 3-5 cards)
+              _InteractiveCardPreviewCarousel(
+                cards: deck.cards,
+                totalCards: deck.totalCards,
+                subject: deck.subject,
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InteractiveCardPreviewCarousel extends HookWidget {
+  const _InteractiveCardPreviewCarousel({
+    required this.cards,
+    required this.totalCards,
+    required this.subject,
+  });
+
+  final List<FlashcardEntity> cards;
+  final int totalCards;
+  final String subject;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final displayCards = cards.isNotEmpty
+        ? cards.take(5).toList()
+        : [
+            FlashcardEntity(
+              id: 'preview_1',
+              deckId: 'preview',
+              front: 'Key concept: Essential foundations in $subject',
+              back: 'Comprehensive revision breakdown with memory aids and formulas.',
+            ),
+            FlashcardEntity(
+              id: 'preview_2',
+              deckId: 'preview',
+              front: 'High-yield exam application in $subject',
+              back: 'Step-by-step problem resolution for top test scores.',
+            ),
+          ];
+
+    final pageController = usePageController(viewportFraction: 0.92);
+    final currentPage = useState<int>(0);
+    final isFlipped = useState<bool>(false);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: pageController,
+            itemCount: displayCards.length,
+            onPageChanged: (idx) {
+              currentPage.value = idx;
+              isFlipped.value = false;
+            },
+            itemBuilder: (context, index) {
+              final card = displayCards[index];
+              final showingBack = isFlipped.value;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.selectionClick());
+                    isFlipped.value = !isFlipped.value;
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: showingBack
+                          ? colors.primary.withAlpha(isDark ? 45 : 25)
+                          : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: showingBack
+                            ? colors.primary
+                            : colors.primary.withAlpha(isDark ? 50 : 25),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 40 : 20),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (showingBack ? colors.primary : colors.textSecondary)
+                                    .withAlpha(30),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                showingBack ? 'ANSWER (FLIPPED)' : 'QUESTION (TAP TO FLIP)',
+                                style: typography.caption.bold.copyWith(
+                                  fontSize: 9.5,
+                                  color: showingBack ? colors.primary : colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.touch_app_rounded,
+                                  size: 13,
+                                  color: colors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Card ${index + 1} of ${displayCards.length}',
+                                  style: typography.caption.regular.copyWith(
+                                    fontSize: 10.5,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Text(
+                          showingBack ? card.back : card.front,
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Dots Indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(displayCards.length, (idx) {
+            final isSelected = currentPage.value == idx;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isSelected ? 18 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: isSelected ? colors.primary : colors.primary.withAlpha(50),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

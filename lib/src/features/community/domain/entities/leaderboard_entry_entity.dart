@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a gamified user standing on the streak & XP leaderboard.
+/// Represents a gamified user standing on the streak, league & XP leaderboard.
 class LeaderboardEntryEntity extends Equatable {
   const LeaderboardEntryEntity({
     required this.id,
@@ -11,6 +11,7 @@ class LeaderboardEntryEntity extends Equatable {
     this.dailyXp = 0,
     this.weeklyXp = 0,
     this.streakDays = 1,
+    this.leagueTier = 'Bronze',
     this.rank = 1,
     this.isCurrentUser = false,
   });
@@ -23,6 +24,7 @@ class LeaderboardEntryEntity extends Equatable {
   final int dailyXp;
   final int weeklyXp;
   final int streakDays;
+  final String leagueTier;
   final int rank;
   final bool isCurrentUser;
 
@@ -35,6 +37,7 @@ class LeaderboardEntryEntity extends Equatable {
     int? dailyXp,
     int? weeklyXp,
     int? streakDays,
+    String? leagueTier,
     int? rank,
     bool? isCurrentUser,
   }) {
@@ -47,6 +50,7 @@ class LeaderboardEntryEntity extends Equatable {
       dailyXp: dailyXp ?? this.dailyXp,
       weeklyXp: weeklyXp ?? this.weeklyXp,
       streakDays: streakDays ?? this.streakDays,
+      leagueTier: leagueTier ?? this.leagueTier,
       rank: rank ?? this.rank,
       isCurrentUser: isCurrentUser ?? this.isCurrentUser,
     );
@@ -62,6 +66,7 @@ class LeaderboardEntryEntity extends Equatable {
     dailyXp,
     weeklyXp,
     streakDays,
+    leagueTier,
     rank,
     isCurrentUser,
   ];

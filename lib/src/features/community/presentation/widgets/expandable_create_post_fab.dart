@@ -20,6 +20,8 @@ class ExpandableCreatePostFab extends StatelessWidget {
     required String content,
     required String track,
     String? latexContent,
+    bool isQuestion,
+    String syllabusTag,
   })
   onSubmit;
 
