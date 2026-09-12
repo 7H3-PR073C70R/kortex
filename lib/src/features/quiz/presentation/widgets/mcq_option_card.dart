@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
-
+import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 
 class McqOptionCard extends StatelessWidget {
   const McqOptionCard({
@@ -24,7 +24,9 @@ class McqOptionCard extends StatelessWidget {
 
   String get _letterPrefix => String.fromCharCode(65 + index); // A, B, C, D
 
-  String get _displayOptionText => QuizContentSanitizer.cleanOptionText(optionText);
+  String get _displayOptionText => FormulaAwareTextFormatter.formatFormulaAware(
+    QuizContentSanitizer.cleanOptionText(optionText),
+  );
 
   @override
   Widget build(BuildContext context) {

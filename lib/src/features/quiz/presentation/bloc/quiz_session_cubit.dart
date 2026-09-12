@@ -227,7 +227,6 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           final cleanPrompt = QuizContentSanitizer.cleanPrompt(card.front);
           final cleanSubTopic = QuizContentSanitizer.cleanSubTopic(
             card.sourceTopic,
-            defaultTopic: 'Cross-Subject Recall',
           );
 
           final otherAnswers = candidateCards

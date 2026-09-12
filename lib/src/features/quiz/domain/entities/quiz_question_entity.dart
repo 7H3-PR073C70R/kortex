@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
-import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 
 enum QuizQuestionType {
   multipleChoice,

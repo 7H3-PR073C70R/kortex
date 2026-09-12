@@ -5,6 +5,7 @@ import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 
 class PastQuestionDeckFactory {
   PastQuestionDeckFactory({
@@ -169,9 +170,11 @@ class PastQuestionDeckFactory {
       if (match != null) {
         final letter = (match.group(1) ?? match.group(2) ?? defaultLetter).toUpperCase();
         final content = match.group(3)?.trim() ?? '';
-        buffer.writeln('• $letter. $content');
+        final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(content);
+        buffer.writeln('• $letter. $formattedContent');
       } else {
-        buffer.writeln('• $defaultLetter. $opt');
+        final formattedOpt = FormulaAwareTextFormatter.formatFormulaAware(opt);
+        buffer.writeln('• $defaultLetter. $formattedOpt');
       }
     }
     return buffer.toString().trim();
@@ -202,8 +205,9 @@ class PastQuestionDeckFactory {
         if (correctText != null && correctText.isNotEmpty) {
           final cleanMatch = RegExp(r'^\s*(?:[A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)').firstMatch(correctText);
           final cleanContent = cleanMatch != null ? cleanMatch.group(1)?.trim() ?? '' : correctText;
-          if (cleanContent.isNotEmpty) {
-            buffer.writeln('**Correct Answer:** Option $correctLabel — $cleanContent');
+          final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(cleanContent);
+          if (formattedContent.isNotEmpty) {
+            buffer.writeln('**Correct Answer:** Option $correctLabel — $formattedContent');
           } else {
             buffer.writeln('**Correct Answer:** Option $correctLabel');
           }

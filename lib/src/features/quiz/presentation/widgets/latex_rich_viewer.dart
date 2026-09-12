@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 
 /// A high-performance, language-aware Flutter widget that parses mixed natural text,
 /// Markdown formatting, and LaTeX mathematics.
@@ -80,6 +81,8 @@ class LatexRichViewer extends StatelessWidget {
     s = s.replaceAll('&lt;', '<');
     s = s.replaceAll('&gt;', '>');
     s = s.replaceAll('&nbsp;', ' ');
+
+    s = FormulaAwareTextFormatter.formatFormulaAware(s);
 
     return s.trim();
   }

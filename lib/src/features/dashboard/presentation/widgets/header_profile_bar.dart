@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
@@ -208,6 +209,58 @@ class HeaderProfileBar extends StatelessWidget {
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Millionaire Ascent Arcade Shortcut
+                Semantics(
+                  button: true,
+                  label: 'Millionaire Ascent Arcade',
+                  child: Tooltip(
+                    message: 'Millionaire Ascent Arcade',
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        unawaited(
+                          context.router.push(
+                            QuizWorkspaceRoute(
+                              deckId: 'arcade_global',
+                              deckTitle: 'Daily Dopamine Arcade',
+                              assessmentMode: AssessmentMode.millionaireMode,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? const Color(0xFF312E81).withAlpha(190)
+                              : const Color(0xFFEEF2FF),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF818CF8).withAlpha(140)
+                                : const Color(0xFF6366F1).withAlpha(120),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withAlpha(isDark ? 80 : 35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.military_tech_rounded,
+                          size: 20,
+                          color: Color(0xFFFBBF24),
                         ),
                       ),
                     ),
