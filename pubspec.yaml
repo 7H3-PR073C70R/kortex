@@ -103,6 +103,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/svgs/
+    - assets/audio/
 
 flutter_gen:
   output: lib/src/gen/

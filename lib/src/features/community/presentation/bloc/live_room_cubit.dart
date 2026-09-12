@@ -257,15 +257,18 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   final String _currentUserAvatar;
   final AudioPlayer _ambientPlayer = AudioPlayer();
 
-  static const Map<String, String> _trackUrls = {
-    'Lo-Fi Beats': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
-    'Gentle Rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_7313364f77.mp3',
-    'Binaural 40Hz': 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3',
-    'Library Silence': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
-    'lofi': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
-    'rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_7313364f77.mp3',
-    'binaural': 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3',
-    'silence': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
+  // Bundled local audio assets (assets/audio/) — avoids CDN 403 failures on iOS/macOS.
+  // All four tracks are 10-second seamless loops at 22050 Hz stereo WAV.
+  static const Map<String, String> _trackAssets = {
+    'Lo-Fi Beats': 'audio/lofi.wav',
+    'Gentle Rain': 'audio/rain.wav',
+    'Binaural 40Hz': 'audio/binaural.wav',
+    'Library Silence': 'audio/silence.wav',
+    // Legacy / short-key aliases used by older state
+    'lofi': 'audio/lofi.wav',
+    'rain': 'audio/rain.wav',
+    'binaural': 'audio/binaural.wav',
+    'silence': 'audio/silence.wav',
   };
 
   Timer? _timer;
@@ -639,9 +642,9 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   Future<void> _playTrack(String track) async {
     try {
-      final url = _trackUrls[track] ?? _trackUrls['Lo-Fi Beats']!;
+      final asset = _trackAssets[track] ?? _trackAssets['lofi']!;
       await _ambientPlayer.stop();
-      await _ambientPlayer.play(UrlSource(url));
+      await _ambientPlayer.play(AssetSource(asset));
       await _ambientPlayer.setVolume(state.ambientAudioVolume);
     } on Object catch (_) {}
   }
