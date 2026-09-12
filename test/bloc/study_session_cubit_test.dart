@@ -154,6 +154,64 @@ void main() {
         expect(cubit.state.currentIndex, equals(0));
         expect(cubit.state.deckId, equals('Quick 12 Focus'));
       });
+
+      test('adaptiveShuffle blends challenging/due cards with easy momentum cards', () {
+        final cubit = buildCubit();
+
+        // 10 hard cards (repetitions == 0, easeFactor < 2.5)
+        final hardCards = List.generate(
+          10,
+          (i) => FlashcardEntity(
+            id: 'hard_$i',
+            deckId: 'deck_mix',
+            front: 'Hard $i',
+            back: 'Ans $i',
+            easeFactor: 1.8,
+          ),
+        );
+
+        // 10 easy cards (repetitions >= 3, easeFactor >= 2.5, interval > 3)
+        final easyCards = List.generate(
+          10,
+          (i) => FlashcardEntity(
+            id: 'easy_$i',
+            deckId: 'deck_mix',
+            front: 'Easy $i',
+            back: 'Ans $i',
+            easeFactor: 2.7,
+            repetitions: 5,
+            interval: 10,
+            nextDueDate: DateTime.now().add(const Duration(days: 7)),
+          ),
+        );
+
+        final mixedPool = [...hardCards, ...easyCards];
+        final sprintBatch = cubit.adaptiveShuffle(mixedPool, 10);
+
+        expect(sprintBatch.length, equals(10));
+        final hardSelected = sprintBatch.where((c) => c.id.startsWith('hard_')).length;
+        final easySelected = sprintBatch.where((c) => c.id.startsWith('easy_')).length;
+
+        // ~70% hard (7 cards) and ~30% easy (3 cards)
+        expect(hardSelected, equals(7));
+        expect(easySelected, equals(3));
+      });
+
+      test('speed run session configures countdown timer and formatting', () {
+        final cubit = buildCubit()
+          ..startSprintSession(
+            cardPool: tCards,
+            sessionTitle: 'Speed Run 3m',
+            batchSize: 2,
+            targetDurationSeconds: 180,
+          );
+
+        expect(cubit.isSpeedRun, isTrue);
+        expect(cubit.targetDurationSeconds, equals(180));
+        expect(cubit.formattedRemainingTime(0), equals('03:00'));
+        expect(cubit.formattedRemainingTime(65), equals('01:55'));
+        expect(cubit.formattedRemainingTime(180), equals('00:00'));
+      });
     });
   });
 }

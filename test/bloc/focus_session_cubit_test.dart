@@ -234,7 +234,7 @@ void main() {
         decksRepository: mockDecksRepo,
       );
 
-      final deckA = DeckEntity(
+      const deckA = DeckEntity(
         id: 'deck_a',
         title: 'Deck A',
         subject: 'Math',
@@ -243,7 +243,7 @@ void main() {
         masteryRate: 0.5,
         category: 'Math',
       );
-      final deckB = DeckEntity(
+      const deckB = DeckEntity(
         id: 'deck_b',
         title: 'Deck B',
         subject: 'Physics',
@@ -268,8 +268,8 @@ void main() {
         lastReviewed: DateTime.now().subtract(const Duration(days: 3)),
       );
 
-      when(() => mockDecksRepo.getUserDecks())
-          .thenAnswer((_) async => Right([deckA, deckB]));
+      when(mockDecksRepo.getUserDecks)
+          .thenAnswer((_) async => const Right([deckA, deckB]));
       when(() => mockDecksRepo.getDeckCards('deck_a'))
           .thenAnswer((_) async => Right([cardA]));
       when(() => mockDecksRepo.getDeckCards('deck_b'))

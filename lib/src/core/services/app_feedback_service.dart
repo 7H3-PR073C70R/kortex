@@ -10,6 +10,7 @@ class AppFeedback {
   AppFeedback._();
 
   static const String _hapticsKey = '__kortex_haptics_enabled__';
+  static const String _sfxKey = '__kortex_sfx_enabled__';
 
   static bool get isHapticsEnabled {
     try {
@@ -26,6 +27,28 @@ class AppFeedback {
       final storage = locator<LocalStorageService>();
       await storage.savePreference(
         key: _hapticsKey,
+        data: enabled ? 'true' : 'false',
+      );
+    } on Object {
+      return;
+    }
+  }
+
+  static bool get isSfxEnabled {
+    try {
+      final storage = locator<LocalStorageService>();
+      final pref = storage.getPreference(key: _sfxKey);
+      return pref == null || pref == 'true';
+    } on Object {
+      return true;
+    }
+  }
+
+  static Future<void> setSfxEnabled({required bool enabled}) async {
+    try {
+      final storage = locator<LocalStorageService>();
+      await storage.savePreference(
+        key: _sfxKey,
         data: enabled ? 'true' : 'false',
       );
     } on Object {

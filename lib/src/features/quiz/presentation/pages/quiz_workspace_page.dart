@@ -680,6 +680,73 @@ class _QuizWorkspaceView extends HookWidget {
                       const SizedBox(height: 14),
                     ],
 
+                    // Soft-Fail Banked Checkpoint Notice (Millionaire Mode)
+                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                        state.isSoftFailed) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.verified_user_rounded,
+                              color: Color(0xFFF59E0B),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Safe Checkpoint Secured! 🛡️',
+                                    style: typography.caption.bold.copyWith(
+                                      color: const Color(0xFFF59E0B),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Your progress is safely locked at Tier ${state.bankedTier} (+${state.bankedTierPrizeXp} XP). No score reset to zero!',
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ShrinkableButton(
+                              onTap: () {
+                                unawaited(context.read<QuizSessionCubit>().submitQuiz());
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Collect XP',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
                     // Prompt Card
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -989,16 +1056,19 @@ class _QuizWorkspaceView extends HookWidget {
                       height: 48,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (state.isLastQuestion) {
+                          if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                              state.isSoftFailed) {
+                            unawaited(context.read<QuizSessionCubit>().submitQuiz());
+                          } else if (state.isLastQuestion) {
                             _confirmSubmit(context, state);
                           } else {
                             context.read<QuizSessionCubit>().nextQuestion();
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: state.isLastQuestion
-                              ? colors.success
-                              : colors.primary,
+                          backgroundColor: (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed)
+                              ? const Color(0xFFF59E0B)
+                              : (state.isLastQuestion ? colors.success : colors.primary),
                           foregroundColor: colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -1006,9 +1076,11 @@ class _QuizWorkspaceView extends HookWidget {
                           ),
                         ),
                         child: Text(
-                          state.isLastQuestion
-                              ? l10n.submitQuizButton
-                              : l10n.nextQuestionButton,
+                          (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed)
+                              ? 'Bank & View Results'
+                              : (state.isLastQuestion
+                                  ? l10n.submitQuizButton
+                                  : l10n.nextQuestionButton),
                           style: typography.callout.bold.copyWith(color: colors.white),
                         ),
                       ),

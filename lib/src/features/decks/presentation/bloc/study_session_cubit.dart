@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
@@ -52,14 +53,89 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   /// Exposes active CardSyncQueue for offline sync monitoring.
   CardSyncQueue get cardSyncQueue => _cardSyncQueue;
 
+  int? _targetDurationSeconds;
   Timer? _timer;
+
+  /// Whether the current session is a timed speed run.
+  bool get isSpeedRun => _targetDurationSeconds != null;
+
+  /// Target duration in seconds for speed runs.
+  int? get targetDurationSeconds => _targetDurationSeconds;
+
+  /// Formats remaining countdown time for speed runs.
+  String formattedRemainingTime(int elapsed) {
+    if (_targetDurationSeconds == null) return '';
+    final remaining = math.max(0, _targetDurationSeconds! - elapsed);
+    final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
+    final seconds = (remaining % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  /// Blends 70% challenging/due cards with 30% easy momentum cards to maintain dopamine
+  /// and defeat predictive boredom without triggering failure fatigue.
+  List<FlashcardEntity> adaptiveShuffle(List<FlashcardEntity> cards, int count) {
+    if (cards.isEmpty) return const [];
+    if (cards.length <= count) {
+      return List<FlashcardEntity>.from(cards)..shuffle();
+    }
+
+    final hardOrDue = <FlashcardEntity>[];
+    final easy = <FlashcardEntity>[];
+
+    for (final card in cards) {
+      final isHard = card.isDueToday ||
+          card.easeFactor < 2.5 ||
+          card.interval <= 1 ||
+          card.repetitions == 0;
+      if (isHard) {
+        hardOrDue.add(card);
+      } else {
+        easy.add(card);
+      }
+    }
+
+    hardOrDue.shuffle();
+    easy.shuffle();
+
+    final hardTarget = (count * 0.7).round().clamp(1, count);
+    final easyTarget = count - hardTarget;
+
+    final selected = <FlashcardEntity>[];
+    final selectedIds = <String>{};
+
+    for (final card in hardOrDue.take(hardTarget)) {
+      selected.add(card);
+      selectedIds.add(card.id);
+    }
+
+    for (final card in easy.take(easyTarget)) {
+      if (!selectedIds.contains(card.id)) {
+        selected.add(card);
+        selectedIds.add(card.id);
+      }
+    }
+
+    // Backfill from remaining pool if either bucket was underfilled
+    if (selected.length < count) {
+      final remaining = cards.where((c) => !selectedIds.contains(c.id)).toList()..shuffle();
+      for (final card in remaining) {
+        if (selected.length >= count) break;
+        selected.add(card);
+        selectedIds.add(card.id);
+      }
+    }
+
+    return selected..shuffle();
+  }
 
   Future<void> startSession(
     String deckId, {
     bool triageDebt = false,
     int sprintSize = 15,
     bool randomize = false,
+    int? targetDurationSeconds,
   }) async {
+    _targetDurationSeconds = targetDurationSeconds;
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
 
     List<FlashcardEntity> cards;
@@ -106,31 +182,30 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       return;
     }
 
-        var sessionCards = triageDebt
-            ? _fsrsScheduler.triageReviewDebt<FlashcardEntity>(
-                dueCards: cards,
-                getStability: (c) => c.easeFactor,
-                getLastReview: (c) => c.lastReviewed,
-                sprintSize: sprintSize,
-              )
-            : cards;
+    var sessionCards = triageDebt
+        ? _fsrsScheduler.triageReviewDebt<FlashcardEntity>(
+            dueCards: cards,
+            getStability: (c) => c.easeFactor,
+            getLastReview: (c) => c.lastReviewed,
+            sprintSize: sprintSize,
+          )
+        : cards;
 
-        if (randomize) {
-          final shuffled = List<FlashcardEntity>.from(sessionCards)..shuffle();
-          sessionCards = shuffled.take(sprintSize).toList();
-        }
+    if (randomize) {
+      sessionCards = adaptiveShuffle(sessionCards, sprintSize);
+    }
 
-        emit(
-          state.copyWith(
-            status: StudySessionStatus.studying,
-            cards: sessionCards,
-            currentIndex: 0,
-            isFlipped: false,
-            elapsedSeconds: 0,
-          ),
-        );
+    emit(
+      state.copyWith(
+        status: StudySessionStatus.studying,
+        cards: sessionCards,
+        currentIndex: 0,
+        isFlipped: false,
+        elapsedSeconds: 0,
+      ),
+    );
 
-        _startTimer();
+    _startTimer();
   }
 
   /// Starts an interleaved ADHD-friendly micro-sprint session with randomized cards.
@@ -139,7 +214,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     required List<FlashcardEntity> cardPool,
     String sessionTitle = 'Quick Sprint',
     int batchSize = 10,
+    int? targetDurationSeconds,
   }) {
+    _targetDurationSeconds = targetDurationSeconds;
     if (cardPool.isEmpty) {
       emit(
         state.copyWith(
@@ -150,8 +227,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       return;
     }
 
-    final shuffled = List<FlashcardEntity>.from(cardPool)..shuffle();
-    final sprintBatch = shuffled.take(batchSize).toList();
+    final sprintBatch = adaptiveShuffle(cardPool, batchSize);
 
     emit(
       state.copyWith(
@@ -176,7 +252,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.status == StudySessionStatus.studying) {
-        emit(state.copyWith(elapsedSeconds: state.elapsedSeconds + 1));
+        final newElapsed = state.elapsedSeconds + 1;
+        emit(state.copyWith(elapsedSeconds: newElapsed));
+
+        if (_targetDurationSeconds != null && newElapsed >= _targetDurationSeconds!) {
+          _timer?.cancel();
+          unawaited(finishEarly());
+        }
       }
     });
   }

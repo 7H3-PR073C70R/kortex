@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -72,6 +73,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
     // Selected Year: null means "Random (All Years)"
     final selectedYear = useState<int?>(null);
+    final isMillionaire = useState<bool>(false);
 
     // Recommended default counts
     final recommendedCount = isMockExam ? 40 : 20;
@@ -114,12 +116,15 @@ class CbtPracticeConfigModalSheet extends HookWidget {
       // Shuffle for randomness
       candidateQuestions.shuffle();
 
-      // Take desired question count
-      final finalQuestions = candidateQuestions.take(selectedCount.value).toList();
+      // Take desired question count (12 for Millionaire mode)
+      final countToTake = isMillionaire.value ? 12 : selectedCount.value;
+      final finalQuestions = candidateQuestions.take(countToTake).toList();
 
       final quizQuestions = finalQuestions.map(QuizQuestionEntity.fromPastQuestion).toList();
 
-      final durationMinutes = isMockExam ? (quizQuestions.length * 1.5).round() : null;
+      final durationMinutes = isMillionaire.value
+          ? null
+          : (isMockExam ? (quizQuestions.length * 1.5).round() : null);
 
       Navigator.of(context).pop();
 
@@ -127,12 +132,17 @@ class CbtPracticeConfigModalSheet extends HookWidget {
         context.router.push(
           QuizWorkspaceRoute(
             deckId: 'cbt_${courseId}_${DateTime.now().millisecondsSinceEpoch}',
-            deckTitle: '$courseCode $title',
+            deckTitle: isMillionaire.value ? '$courseCode Millionaire Challenge' : '$courseCode $title',
             subject: courseTitle,
             durationMinutes: durationMinutes,
             initialQuestions: quizQuestions,
             courseId: courseId,
             courseCode: courseCode,
+            assessmentMode: isMillionaire.value
+                ? AssessmentMode.millionaireMode
+                : (isMockExam
+                    ? AssessmentMode.examSimulationMode
+                    : AssessmentMode.discoveryMode),
           ),
         ),
       );
@@ -247,6 +257,41 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                     ),
                   ],
                 ),
+              ),
+              // Practice Mode Selector
+              Text(
+                'Practice Mode',
+                style: typography.callout.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ChoiceChip(
+                      label: isMockExam ? 'Timed Mock' : 'Standard CBT',
+                      isSelected: !isMillionaire.value,
+                      onTap: () {
+                        AppFeedback.light();
+                        isMillionaire.value = false;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ChoiceChip(
+                      label: 'Millionaire Arcade',
+                      badge: '12 Tiers',
+                      isSelected: isMillionaire.value,
+                      onTap: () {
+                        AppFeedback.light();
+                        isMillionaire.value = true;
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 

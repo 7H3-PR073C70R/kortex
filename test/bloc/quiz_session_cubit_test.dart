@@ -392,6 +392,49 @@ void main() {
         expect(cubit.state.currentQuestion!.isAnswered, isTrue);
         expect(cubit.state.currentQuestion!.isCorrect, isTrue);
       });
+
+      test('useLifeline(skipSwap) replaces current question while preserving current tier and resetting options', () {
+        cubit.startMillionaireQuiz(
+          title: 'Physics Ascent',
+          questions: tQuestions,
+        );
+
+        final initialQuestionId = cubit.state.currentQuestion!.id;
+        final initialTier = cubit.state.currentTier;
+
+        cubit.useLifeline(LifelineType.skipSwap);
+
+        expect(cubit.state.isLifelineAvailable(LifelineType.skipSwap), isFalse);
+        expect(cubit.state.currentTier, initialTier);
+        expect(cubit.state.currentQuestion!.id, isNot(initialQuestionId));
+        expect(cubit.state.currentQuestion!.isAnswered, isFalse);
+        expect(cubit.state.eliminatedOptionIndices, isEmpty);
+        expect(cubit.state.status, QuizSessionStatus.inProgress);
+      });
+
+      test('incorrect answer with no second chance sets isSoftFailed and blocks jumping ahead', () {
+        cubit
+          ..startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          )
+          ..selectOption('8.9 m/s^2');
+        expect(cubit.state.isSecondChanceActive, isTrue);
+        cubit.useSecondChance();
+        expect(cubit.state.hasSecondChance, isFalse);
+
+        // Fail second time: soft-fail locks in banked tier
+        cubit.selectOption('10.2 m/s^2');
+        expect(cubit.state.isSoftFailed, isTrue);
+        expect(cubit.state.currentTier, cubit.state.bankedTier);
+
+        // Navigation forward is blocked
+        cubit.nextQuestion();
+        expect(cubit.state.currentIndex, 0);
+
+        cubit.jumpToQuestion(1);
+        expect(cubit.state.currentIndex, 0);
+      });
     });
   });
 }

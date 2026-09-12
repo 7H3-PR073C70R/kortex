@@ -40,7 +40,7 @@ class AppPreferencesPage extends HookWidget {
 
     final haptics = useState<bool>(AppFeedback.isHapticsEnabled);
     final notifications = useState<bool>(initialReminders);
-    final soundEffects = useState<bool>(true);
+    final soundEffects = useState<bool>(AppFeedback.isSfxEnabled);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -212,8 +212,11 @@ class AppPreferencesPage extends HookWidget {
                           value: soundEffects.value,
                           activeTrackColor: colors.primary,
                           onChanged: (val) {
-                            AppFeedback.selection();
                             soundEffects.value = val;
+                            unawaited(
+                              AppFeedback.setSfxEnabled(enabled: val),
+                            );
+                            if (val) AppFeedback.light();
                           },
                         ),
                       ],

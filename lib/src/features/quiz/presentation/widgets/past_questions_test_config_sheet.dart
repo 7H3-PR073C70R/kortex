@@ -6,6 +6,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Bottom modal sheet allowing students to configure and start a timed CBT practice test.
@@ -22,6 +23,7 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
   var selectedYear = state.selectedYear ?? (defaultYears.isNotEmpty ? defaultYears.first : 2024);
   var selectedCount = state.questions.length > 10 ? 10 : (state.questions.isEmpty ? 10 : state.questions.length);
   var isTimedMode = true;
+  var isMillionaireMode = false;
 
   unawaited(
     showModalBottomSheet<void>(
@@ -150,21 +152,40 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                         children: [
                           Expanded(
                             child: ModeOptionCard(
-                              title: 'Timed CBT Exam',
-                              subtitle: 'Strict countdown & score',
+                              title: 'Timed CBT',
+                              subtitle: 'Strict countdown',
                               icon: Icons.timer_outlined,
-                              isSelected: isTimedMode,
-                              onTap: () => setSheetState(() => isTimedMode = true),
+                              isSelected: isTimedMode && !isMillionaireMode,
+                              onTap: () => setSheetState(() {
+                                isTimedMode = true;
+                                isMillionaireMode = false;
+                              }),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: ModeOptionCard(
-                              title: 'Self-Paced Drill',
-                              subtitle: 'Instant answer reveal',
+                              title: 'Self-Paced',
+                              subtitle: 'Instant reveal',
                               icon: Icons.school_outlined,
-                              isSelected: !isTimedMode,
-                              onTap: () => setSheetState(() => isTimedMode = false),
+                              isSelected: !isTimedMode && !isMillionaireMode,
+                              onTap: () => setSheetState(() {
+                                isTimedMode = false;
+                                isMillionaireMode = false;
+                              }),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ModeOptionCard(
+                              title: 'Millionaire',
+                              subtitle: 'Arcade ladder',
+                              icon: Icons.military_tech_rounded,
+                              isSelected: isMillionaireMode,
+                              onTap: () => setSheetState(() {
+                                isMillionaireMode = true;
+                                selectedCount = 12;
+                              }),
                             ),
                           ),
                         ],
@@ -180,13 +201,13 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        children: [5, 10, 20, 40].map((count) {
+                        children: (isMillionaireMode ? [12] : [5, 10, 20, 40]).map((count) {
                           final isSelected = selectedCount == count;
 
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text('$count Qs'),
+                              label: Text(isMillionaireMode ? '12 Rungs (Millionaire)' : '$count Qs'),
                               selected: isSelected,
                               onSelected: (_) => setSheetState(() => selectedCount = count),
                               selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
@@ -225,9 +246,11 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                               .map(QuizQuestionEntity.fromPastQuestion)
                               .toList();
 
-                          final testTitle = isRandomSelection
-                              ? '${state.selectedExam.displayName} Random CBT Mock'
-                              : '${state.selectedExam.displayName} $selectedYear Past Paper';
+                          final testTitle = isMillionaireMode
+                              ? '${state.selectedExam.displayName} Millionaire Challenge'
+                              : (isRandomSelection
+                                  ? '${state.selectedExam.displayName} Random CBT Mock'
+                                  : '${state.selectedExam.displayName} $selectedYear Past Paper');
 
                           unawaited(
                             context.router.push(
@@ -237,10 +260,17 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                                 subject: state.selectedSubject == 'All'
                                     ? state.selectedExam.displayName
                                     : state.selectedSubject,
-                                durationMinutes: isTimedMode
-                                    ? (count * 1.5).round().clamp(5, 90)
-                                    : null,
+                                durationMinutes: isMillionaireMode
+                                    ? null
+                                    : (isTimedMode
+                                        ? (count * 1.5).round().clamp(5, 90)
+                                        : null),
                                 initialQuestions: testQuestions,
+                                assessmentMode: isMillionaireMode
+                                    ? AssessmentMode.millionaireMode
+                                    : (isTimedMode
+                                        ? AssessmentMode.examSimulationMode
+                                        : AssessmentMode.discoveryMode),
                               ),
                             ),
                           );

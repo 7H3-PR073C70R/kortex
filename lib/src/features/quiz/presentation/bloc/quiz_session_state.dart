@@ -60,6 +60,7 @@ class QuizSessionState extends Equatable {
     this.hasSecondChance = true,
     this.isSecondChanceActive = false,
     this.isWalkedAway = false,
+    this.isSoftFailed = false,
   });
 
   final QuizSessionStatus status;
@@ -88,6 +89,7 @@ class QuizSessionState extends Equatable {
   final bool hasSecondChance;
   final bool isSecondChanceActive;
   final bool isWalkedAway;
+  final bool isSoftFailed;
 
   QuizQuestionEntity? get currentQuestion =>
       currentIndex >= 0 && currentIndex < questions.length
@@ -191,6 +193,7 @@ class QuizSessionState extends Equatable {
     bool? hasSecondChance,
     bool? isSecondChanceActive,
     bool? isWalkedAway,
+    bool? isSoftFailed,
   }) {
     return QuizSessionState(
       status: status ?? this.status,
@@ -217,6 +220,7 @@ class QuizSessionState extends Equatable {
       hasSecondChance: hasSecondChance ?? this.hasSecondChance,
       isSecondChanceActive: isSecondChanceActive ?? this.isSecondChanceActive,
       isWalkedAway: isWalkedAway ?? this.isWalkedAway,
+      isSoftFailed: isSoftFailed ?? this.isSoftFailed,
     );
   }
 
@@ -246,5 +250,6 @@ class QuizSessionState extends Equatable {
     hasSecondChance,
     isSecondChanceActive,
     isWalkedAway,
+    isSoftFailed,
   ];
 }

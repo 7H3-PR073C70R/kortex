@@ -52,18 +52,32 @@ class StudySessionPage extends HookWidget {
         final cubit = locator<StudySessionCubit>();
         final isSprint = deckId.startsWith('sprint:');
         if (isSprint) {
-          // Format: 'sprint:10:actualDeckId'
+          // Format: 'sprint:10:actualDeckId' or 'sprint:speed:3:actualDeckId'
           final parts = deckId.split(':');
-          final size = int.tryParse(parts.length > 1 ? parts[1] : '10') ?? 10;
-          final targetDeckId =
-              parts.length > 2 ? parts.sublist(2).join(':') : '';
-          unawaited(
-            cubit.startSession(
-              targetDeckId,
-              randomize: true,
-              sprintSize: size,
-            ),
-          );
+          if (parts.length > 2 && parts[1] == 'speed') {
+            final minutes = int.tryParse(parts[2]) ?? 3;
+            final targetDeckId =
+                parts.length > 3 ? parts.sublist(3).join(':') : 'all';
+            unawaited(
+              cubit.startSession(
+                targetDeckId,
+                randomize: true,
+                sprintSize: 30,
+                targetDurationSeconds: minutes * 60,
+              ),
+            );
+          } else {
+            final size = int.tryParse(parts.length > 1 ? parts[1] : '10') ?? 10;
+            final targetDeckId =
+                parts.length > 2 ? parts.sublist(2).join(':') : '';
+            unawaited(
+              cubit.startSession(
+                targetDeckId,
+                randomize: true,
+                sprintSize: size,
+              ),
+            );
+          }
         } else {
           unawaited(cubit.startSession(deckId));
         }
@@ -205,7 +219,9 @@ class _StudySessionView extends HookWidget {
                     StudyProgressTopBar(
                       currentIndex: state.currentIndex,
                       totalCards: state.totalCards,
-                      elapsedTimeFormatted: state.formattedElapsedTime,
+                      elapsedTimeFormatted: context.read<StudySessionCubit>().isSpeedRun
+                          ? context.read<StudySessionCubit>().formattedRemainingTime(state.elapsedSeconds)
+                          : state.formattedElapsedTime,
                       onClose: () => unawaited(context.router.maybePop()),
                     ),
                     const SizedBox(height: 10),

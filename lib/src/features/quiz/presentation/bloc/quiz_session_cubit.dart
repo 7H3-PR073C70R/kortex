@@ -45,6 +45,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   final DecksRepository? _decksRepository;
   final CardSyncQueue? _cardSyncQueue;
   final MillionaireTieringEngine _tieringEngine;
+  List<QuizQuestionEntity> _reserveQuestions = [];
   Timer? _timer;
 
   /// Starts a new quiz session from a deck.
@@ -60,7 +61,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       state.copyWith(
         status: QuizSessionStatus.loading,
         quizTitle: deckTitle ?? 'Practice Quiz',
-        durationMinutes: durationMinutes,
+        durationMinutes: assessmentMode == AssessmentMode.millionaireMode
+            ? null
+            : durationMinutes,
         flaggedQuestionIds: const {},
         assessmentMode: assessmentMode,
         millionaireScope: assessmentMode == AssessmentMode.millionaireMode
@@ -86,6 +89,10 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         final finalQuestions = assessmentMode == AssessmentMode.millionaireMode
             ? _tieringEngine.tierQuestions(questions: questions)
             : questions;
+        if (assessmentMode == AssessmentMode.millionaireMode) {
+          final tieredIds = finalQuestions.map((q) => q.id).toSet();
+          _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
+        }
         emit(
           state.copyWith(
             status: QuizSessionStatus.inProgress,
@@ -128,6 +135,10 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     final finalQuestions = assessmentMode == AssessmentMode.millionaireMode
         ? questions.take(12).toList()
         : questions;
+    if (assessmentMode == AssessmentMode.millionaireMode && questions.length > finalQuestions.length) {
+      final tieredIds = finalQuestions.map((q) => q.id).toSet();
+      _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
+    }
     emit(
       state.copyWith(
         status: QuizSessionStatus.inProgress,
@@ -146,6 +157,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         hasSecondChance: true,
         isSecondChanceActive: false,
         isWalkedAway: false,
+        isSoftFailed: false,
         availableLifelines: const {
           LifelineType.fiftyFifty: true,
           LifelineType.aiClue: true,
@@ -165,6 +177,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     MillionaireScope scope = MillionaireScope.courseTied,
   }) {
     final tiered = _tieringEngine.tierQuestions(questions: questions);
+    final tieredIds = tiered.map((q) => q.id).toSet();
+    _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
     startQuizFromPastQuestions(
       title: title,
       questions: tiered,
@@ -398,11 +412,53 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         );
 
       case LifelineType.skipSwap:
-        emit(state.copyWith(availableLifelines: updatedLifelines));
-        if (state.canGoNext) {
-          nextQuestion();
+        final current = state.currentQuestion;
+        if (current == null) return;
+        final QuizQuestionEntity replacement;
+        if (_reserveQuestions.isNotEmpty) {
+          replacement = _reserveQuestions.removeAt(0);
+        } else {
+          replacement = _generateReplacementQuestion(current, state.currentTier);
         }
+
+        final updatedQuestions = List<QuizQuestionEntity>.from(state.questions);
+        updatedQuestions[state.currentIndex] = replacement;
+
+        emit(
+          state.copyWith(
+            availableLifelines: updatedLifelines,
+            questions: updatedQuestions,
+            eliminatedOptionIndices: const {},
+            clearActiveClue: true,
+            clearAudienceDistribution: true,
+            isHintRevealed: false,
+            questionStartTimeSeconds: state.elapsedSeconds,
+            status: QuizSessionStatus.inProgress,
+          ),
+        );
     }
+  }
+
+  /// Generates a curriculum-aligned replacement question when skipSwap lifeline is invoked.
+  QuizQuestionEntity _generateReplacementQuestion(QuizQuestionEntity current, int tier) {
+    final subTopic = current.subTopic.trim().isNotEmpty ? current.subTopic : 'Core Curriculum';
+    final cleanPrompt = current.prompt.replaceAll('?', '').split('\n').first.trim();
+    final subjectFocus = cleanPrompt.length > 35 ? '${cleanPrompt.substring(0, 32)}...' : cleanPrompt;
+
+    return QuizQuestionEntity(
+      id: 'swap_${current.id}_${DateTime.now().millisecondsSinceEpoch}',
+      prompt: 'Alternative Tier $tier Challenge ($subTopic): Which foundational principle governs $subjectFocus?',
+      type: QuizQuestionType.multipleChoice,
+      options: const [
+        'Active Recall & Spaced Retrieval',
+        'Direct Structural Synthesis',
+        'Iterative Heuristic Verification',
+        'Contextual Variable Isolation',
+      ],
+      correctAnswer: 'Active Recall & Spaced Retrieval',
+      explanation: 'In $subTopic, active recall and spaced retrieval establish durable neural retention.',
+      subTopic: subTopic,
+    );
   }
 
   /// Walks away from the Millionaire ascent, securing current banked or tier XP.
@@ -453,6 +509,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   /// Jumps directly to any question by index in the CBT question palette.
   void jumpToQuestion(int index) {
     if (index < 0 || index >= state.questions.length) return;
+    if (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed) {
+      return;
+    }
     final targetQuestion = state.questions[index];
     final tier = index + 1;
 
@@ -542,6 +601,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
               status: QuizSessionStatus.questionAnswered,
               questions: updatedList,
               currentTier: state.bankedTier,
+              isSoftFailed: true,
             ),
           );
         }
@@ -560,6 +620,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   /// Advances to the next question.
   void nextQuestion() {
     if (state.isLastQuestion) return;
+    if (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed) {
+      return;
+    }
 
     jumpToQuestion(state.currentIndex + 1);
   }

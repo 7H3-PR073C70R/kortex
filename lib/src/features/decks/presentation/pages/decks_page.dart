@@ -446,6 +446,53 @@ class _DecksView extends HookWidget {
                                   ),
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    final targetDeckId = state.allDecks.length > 1
+                                        ? 'all'
+                                        : state.allDecks.first.id;
+                                    AppFeedback.selection();
+                                    unawaited(
+                                      context.router.push(
+                                        StudySessionRoute(
+                                          deckId: 'sprint:speed:3:$targetDeckId',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.2) : const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.timer_outlined, color: Color(0xFFD97706), size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Speed Run (3m)',
+                                          style: typography.caption.bold.copyWith(
+                                            color: const Color(0xFFD97706),
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ShrinkableButton(
