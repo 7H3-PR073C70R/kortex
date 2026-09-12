@@ -9,6 +9,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
@@ -21,15 +22,18 @@ class PlannerRepositoryImpl implements PlannerRepository {
     CramWorkloadCalculator? calculator,
     AppDatabase? database,
     LocalStorageService? storageService,
+    UserStorageService? userStorageService,
     Dio? dio,
   })  : _calculator = calculator ?? const CramWorkloadCalculator(),
         _database = database,
         _storageService = storageService,
+        _userStorageService = userStorageService,
         _dio = dio;
 
   final CramWorkloadCalculator _calculator;
   final AppDatabase? _database;
   final LocalStorageService? _storageService;
+  final UserStorageService? _userStorageService;
   final Dio? _dio;
 
   Dio? get _effectiveDio {
@@ -59,6 +63,16 @@ class PlannerRepositoryImpl implements PlannerRepository {
     } on Object catch (_) {
       return null;
     }
+  }
+
+  UserStorageService? get _userStorage {
+    if (_userStorageService != null) return _userStorageService;
+    try {
+      if (locator.isRegistered<UserStorageService>()) {
+        return locator<UserStorageService>();
+      }
+    } on Object catch (_) {}
+    return null;
   }
 
   // In-memory local cache / fallback list
@@ -212,11 +226,13 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       // Attempt background/active sync with Supabase backend
       final client = _effectiveDio;
+      final userId = _userStorage?.getUserId() ?? '';
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
-          final response = await client.get<dynamic>(
-            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?order=target_date.asc',
-          );
+          final uri = userId.isNotEmpty
+              ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?user_id=eq.$userId&order=target_date.asc'
+              : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?order=target_date.asc';
+          final response = await client.get<dynamic>(uri);
           if (response.statusCode == 200 && response.data is List) {
             final remoteList = (response.data as List<dynamic>)
                 .map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>))
@@ -259,18 +275,20 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       var examId = 'exam-${DateTime.now().millisecondsSinceEpoch}';
       final client = _effectiveDio;
+      final userId = _userStorage?.getUserId() ?? '';
 
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
-          final payload = {
+          final payload = <String, dynamic>{
             'exam_name': examName,
-            'target_date': targetDate.toIso8601String(),
+            'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
             'total_cards_count': totalCardsCount,
             'mastered_cards_count': 0,
             'total_lapses': 0,
             'daily_target': dailyTarget,
             'target_score_percent': targetScorePercent,
+            if (userId.isNotEmpty) 'user_id': userId,
           };
           final response = await client.post<dynamic>(
             '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
@@ -294,7 +312,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       final newExam = ExamEventModel(
         id: examId,
-        userId: 'current-user',
+        userId: userId.isNotEmpty ? userId : 'current-user',
         examName: examName,
         targetDate: targetDate,
         subjectTrack: subjectTrack,
@@ -337,19 +355,25 @@ class PlannerRepositoryImpl implements PlannerRepository {
       );
 
       final client = _effectiveDio;
+      final userId = _userStorage?.getUserId() ?? '';
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
-          final payload = {
+          final payload = <String, dynamic>{
             'exam_name': examName,
-            'target_date': targetDate.toIso8601String(),
+            'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
-            'total_cards_count': ?totalCardsCount,
-            'target_score_percent': ?targetScorePercent,
+            if (totalCardsCount != null) 'total_cards_count': totalCardsCount,
+            if (targetScorePercent != null)
+              'target_score_percent': targetScorePercent,
             'daily_target': dailyTarget,
             'updated_at': DateTime.now().toIso8601String(),
+            if (userId.isNotEmpty) 'user_id': userId,
           };
+          final uri = userId.isNotEmpty
+              ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
+              : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
           await client.patch<dynamic>(
-            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId',
+            uri,
             data: payload,
           );
         } on Object catch (e) {
@@ -359,7 +383,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       final updated = ExamEventModel(
         id: examId,
-        userId: existing?.userId ?? 'current-user',
+        userId: existing?.userId ?? (userId.isNotEmpty ? userId : 'current-user'),
         examName: examName,
         targetDate: targetDate,
         subjectTrack: subjectTrack,
@@ -387,11 +411,13 @@ class PlannerRepositoryImpl implements PlannerRepository {
   Future<Either<Failure, void>> deleteExam(String examId) {
     return Future<void>.sync(() async {
       final client = _effectiveDio;
+      final userId = _userStorage?.getUserId() ?? '';
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
-          await client.delete<dynamic>(
-            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId',
-          );
+          final uri = userId.isNotEmpty
+              ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
+              : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
+          await client.delete<dynamic>(uri);
         } on Object catch (e) {
           developer.log('Failed to delete exam from Supabase: $e');
         }

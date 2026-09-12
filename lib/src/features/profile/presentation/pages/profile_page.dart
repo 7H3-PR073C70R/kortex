@@ -128,88 +128,86 @@ class _ProfileView extends HookWidget {
               ),
             ],
           ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 36),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
-                  ScholarHubCard(
-                    state: state,
-                    profile: profile,
-                    onEditName: () => _showEditProfileDialog(
-                      context,
-                      profile?.displayName ?? state.user?.displayName ?? 'Kortexify Scholar',
-                    ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 136),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
+                ScholarHubCard(
+                  state: state,
+                  profile: profile,
+                  onEditName: () => _showEditProfileDialog(
+                    context,
+                    profile?.displayName ?? state.user?.displayName ?? 'Kortexify Scholar',
                   ),
-                  const SizedBox(height: 20),
-
-                  // 2. Settings & Feature Management Menu
-                  Text(
-                    'Settings & Preferences',
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14.5,
-                    ),
+                ),
+                const SizedBox(height: 20),
+          
+                // 2. Settings & Feature Management Menu
+                Text(
+                  'Settings & Preferences',
+                  style: typography.body.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 14.5,
                   ),
-                  const SizedBox(height: 10),
-                  ProfileNavigationMenu(
-                    targetTrack: targetTrack,
-                    dailyTarget: dailyTarget,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 3. Sign Out Button
-                  Center(
-                    child: ShrinkableButton(
-                      onTap: () => _confirmSignOut(context, colors, typography),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 11,
+                ),
+                const SizedBox(height: 10),
+                ProfileNavigationMenu(
+                  targetTrack: targetTrack,
+                  dailyTarget: dailyTarget,
+                ),
+                const SizedBox(height: 24),
+          
+                // 3. Sign Out Button
+                Center(
+                  child: ShrinkableButton(
+                    onTap: () => _confirmSignOut(context, colors, typography),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 11,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.error.withAlpha(isDark ? 30 : 15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: colors.error.withAlpha(isDark ? 80 : 50),
                         ),
-                        decoration: BoxDecoration(
-                          color: colors.error.withAlpha(isDark ? 30 : 15),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: colors.error.withAlpha(isDark ? 80 : 50),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            color: colors.error,
+                            size: 17,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.logout_rounded,
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.signOutButton,
+                            style: typography.footnote.bold.copyWith(
                               color: colors.error,
-                              size: 17,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.signOutButton,
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.error,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-
-                  // 4. App Version Footer
-                  Center(
-                    child: Text(
-                      'Kortexify v1.2.0 • Neural Study AI',
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary.withAlpha(120),
-                        fontSize: 11,
-                      ),
+                ),
+                const SizedBox(height: 14),
+          
+                // 4. App Version Footer
+                Center(
+                  child: Text(
+                    'Kortexify v1.2.0 • Neural Study AI',
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary.withAlpha(120),
+                      fontSize: 11,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
