@@ -154,6 +154,37 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   }
 
   @override
+  Future<bool> isMicrophonePermissionPermanentlyDenied() async {
+    try {
+      final status = await Permission.microphone.status;
+      return status.isPermanentlyDenied;
+    } on Object catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> requestMicrophonePermission() async {
+    try {
+      var status = await Permission.microphone.status;
+      if (status.isGranted) return true;
+      status = await Permission.microphone.request();
+      return status.isGranted;
+    } on Object catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> openAppSettings() async {
+    try {
+      return await openAppSettings();
+    } on Object catch (_) {
+      return false;
+    }
+  }
+
+  @override
   Future<void> disconnect() async {
     try {
       await _room?.disconnect();

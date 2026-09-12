@@ -48,6 +48,8 @@ class LiveRoomState extends Equatable {
     this.isLocalUserAway = false,
     this.isGoalAchieved = false,
     this.showGoalVerificationModal = false,
+    this.microphonePermissionDenied = false,
+    this.isPermanentlyDeniedMic = false,
   });
 
   final StudyRoomEntity room;
@@ -84,6 +86,8 @@ class LiveRoomState extends Equatable {
   final bool isLocalUserAway;
   final bool isGoalAchieved;
   final bool showGoalVerificationModal;
+  final bool microphonePermissionDenied;
+  final bool isPermanentlyDeniedMic;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -139,6 +143,8 @@ class LiveRoomState extends Equatable {
     bool? isLocalUserAway,
     bool? isGoalAchieved,
     bool? showGoalVerificationModal,
+    bool? microphonePermissionDenied,
+    bool? isPermanentlyDeniedMic,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -187,6 +193,10 @@ class LiveRoomState extends Equatable {
       isGoalAchieved: isGoalAchieved ?? this.isGoalAchieved,
       showGoalVerificationModal:
           showGoalVerificationModal ?? this.showGoalVerificationModal,
+      microphonePermissionDenied:
+          microphonePermissionDenied ?? this.microphonePermissionDenied,
+      isPermanentlyDeniedMic:
+          isPermanentlyDeniedMic ?? this.isPermanentlyDeniedMic,
     );
   }
 
@@ -226,6 +236,8 @@ class LiveRoomState extends Equatable {
     isLocalUserAway,
     isGoalAchieved,
     showGoalVerificationModal,
+    microphonePermissionDenied,
+    isPermanentlyDeniedMic,
   ];
 }
 
@@ -800,8 +812,16 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     if (!nextMuted && _audioService != null) {
       final success = await _audioService.setMicrophoneEnabled(enabled: true);
       if (!success) {
-        // Permission denied or hardware unpublish failed
-        emit(state.copyWith(isMuted: true));
+        // Check if permission is permanently denied to guide user to settings
+        final isPermanentlyDenied =
+            await _audioService.isMicrophonePermissionPermanentlyDenied();
+        emit(
+          state.copyWith(
+            isMuted: true,
+            microphonePermissionDenied: true,
+            isPermanentlyDeniedMic: isPermanentlyDenied,
+          ),
+        );
         return;
       }
     } else if (nextMuted && _audioService != null) {
@@ -828,6 +848,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     emit(state.copyWith(
       isMuted: nextMuted,
       ephemeralParticipants: updatedList,
+      microphonePermissionDenied: false,
+      isPermanentlyDeniedMic: false,
     ));
 
     final repo = _ephemeralRepository;
@@ -840,6 +862,40 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ),
       );
     }
+  }
+
+  void dismissMicPermissionPrompt() {
+    emit(
+      state.copyWith(
+        microphonePermissionDenied: false,
+        isPermanentlyDeniedMic: false,
+      ),
+    );
+  }
+
+  Future<void> requestMicrophonePermissionAndRetry() async {
+    dismissMicPermissionPrompt();
+    if (_audioService != null) {
+      final granted = await _audioService.requestMicrophonePermission();
+      if (granted) {
+        await toggleMicMute();
+      } else {
+        final isPerm =
+            await _audioService.isMicrophonePermissionPermanentlyDenied();
+        emit(
+          state.copyWith(
+            isMuted: true,
+            microphonePermissionDenied: true,
+            isPermanentlyDeniedMic: isPerm,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> openAppSettingsForMic() async {
+    dismissMicPermissionPrompt();
+    await _audioService?.openAppSettings();
   }
 
   void addWhiteboardStroke(WhiteboardStroke stroke) {

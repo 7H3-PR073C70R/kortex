@@ -201,6 +201,15 @@ class MockLiveKitAudioService implements LiveKitAudioService {
     return true;
   }
 
+  @override
+  Future<bool> isMicrophonePermissionPermanentlyDenied() async => false;
+
+  @override
+  Future<bool> requestMicrophonePermission() async => true;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
   void emitActiveSpeakers(Set<String> speakers) {
     _speakersController.add(speakers);
   }

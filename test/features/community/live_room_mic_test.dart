@@ -76,6 +76,19 @@ class MockLiveKitAudioService implements LiveKitAudioService {
     return true;
   }
 
+  bool isPermanentlyDeniedValue = false;
+  bool requestPermissionResult = true;
+
+  @override
+  Future<bool> isMicrophonePermissionPermanentlyDenied() async =>
+      isPermanentlyDeniedValue;
+
+  @override
+  Future<bool> requestMicrophonePermission() async => requestPermissionResult;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
   void simulateHardwareMicState({required bool enabled}) {
     _isMicEnabled = enabled;
     if (!_micStateController.isClosed) {
@@ -336,7 +349,8 @@ void main() {
       await cubit.close();
     });
 
-    test('toggleMicMute does not unmute when audio service permission is denied',
+    test(
+        'toggleMicMute when audioService returns false sets microphonePermissionDenied to true',
         () async {
       mockAudioService.shouldSucceedSetMic = false;
       final cubit = LiveRoomCubit(
@@ -349,11 +363,16 @@ void main() {
       );
 
       expect(cubit.state.isMuted, isTrue);
+      expect(cubit.state.microphonePermissionDenied, isFalse);
 
       await cubit.toggleMicMute();
 
-      // State remains muted because permission was denied
+      // State remains muted and triggers permission denied prompt
       expect(cubit.state.isMuted, isTrue);
+      expect(cubit.state.microphonePermissionDenied, isTrue);
+
+      cubit.dismissMicPermissionPrompt();
+      expect(cubit.state.microphonePermissionDenied, isFalse);
 
       await cubit.close();
     });

@@ -439,6 +439,133 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
     );
   }
 
+  void _showMicrophonePermissionDialog(
+    BuildContext context, {
+    required bool isPermanentlyDenied,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final cubit = context.read<LiveRoomCubit>();
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: context.isDarkMode
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.error.withAlpha(context.isDarkMode ? 40 : 25),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.mic_off_rounded,
+                  color: colors.error,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Microphone Access',
+                  style: typography.subhead.bold
+                      .copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isPermanentlyDenied
+                    ? 'Microphone access is disabled in device settings. To speak and collaborate with your study pod, please enable Microphone permission in Settings.'
+                    : 'Kortex needs microphone permission so your study pod can hear you when speaking.',
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(context.isDarkMode ? 25 : 15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(40),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.shield_outlined,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your microphone is only streamed when unmuted in live pods.',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                cubit.dismissMicPermissionPrompt();
+              },
+              child: Text(
+                'Stay Muted',
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            ShrinkableButton(
+              onTap: () {
+                Navigator.of(dialogCtx).pop();
+                if (isPermanentlyDenied) {
+                  unawaited(cubit.openAppSettingsForMic());
+                } else {
+                  unawaited(cubit.requestMicrophonePermissionAndRetry());
+                }
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  isPermanentlyDenied ? 'Open Settings' : 'Grant Permission',
+                  style: typography.caption.bold.copyWith(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).then((_) => cubit.dismissMicPermissionPrompt()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -471,6 +598,13 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             state.activeGoal != null &&
             state.activeGoal!.trim().isNotEmpty) {
           _showGoalVerificationDialog(context, state.activeGoal!);
+        }
+
+        if (state.microphonePermissionDenied) {
+          _showMicrophonePermissionDialog(
+            context,
+            isPermanentlyDenied: state.isPermanentlyDeniedMic,
+          );
         }
       },
       builder: (context, state) {

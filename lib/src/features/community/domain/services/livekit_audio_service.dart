@@ -25,6 +25,15 @@ abstract class LiveKitAudioService {
   /// Toggles microphone audio track publishing. Returns true if successful.
   Future<bool> setMicrophoneEnabled({required bool enabled});
 
+  /// Checks if microphone permission has been permanently denied by the user.
+  Future<bool> isMicrophonePermissionPermanentlyDenied() async => false;
+
+  /// Prompts the system microphone permission dialog.
+  Future<bool> requestMicrophonePermission() async => false;
+
+  /// Opens the device app settings screen for granting permissions.
+  Future<bool> openAppSettings() async => false;
+
   /// Whether local microphone is currently unmuted
   bool get isMicrophoneEnabled;
 
