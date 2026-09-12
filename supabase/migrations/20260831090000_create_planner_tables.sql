@@ -4,7 +4,7 @@
 -- 1. Create exam_events table
 CREATE TABLE IF NOT EXISTS public.exam_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     exam_name TEXT NOT NULL,
     target_date DATE NOT NULL,
     subject_track TEXT NOT NULL DEFAULT 'General',

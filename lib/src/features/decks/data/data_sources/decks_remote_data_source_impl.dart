@@ -173,68 +173,72 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     final userId = _userStorage?.getUserId() ?? '';
     final actualDueCount = cards.where((c) => c.isDueToday).length;
 
-    // Insert Deck Record
-    try {
-      final deckPayload = <String, dynamic>{
-        'id': deck.id,
-        'title': deck.title,
-        'subject': deck.subject,
-        'total_cards': cards.length,
-        'due_cards': actualDueCount,
-        'mastery_rate': deck.masteryRate,
-        'description': deck.description,
-        if (userId.isNotEmpty) 'user_id': userId,
-        if (deck.courseId != null) 'course_id': deck.courseId,
-        if (deck.courseCode != null) 'course_code': deck.courseCode,
-      };
-      await _client.createDeckRecord(deckPayload);
-    } on Object catch (e, stack) {
-      if (_crashlyticsService != null) {
-        unawaited(
-          _crashlyticsService!.recordError(
-            e,
-            stack,
-            reason:
-                'DecksRemoteDataSource.createDeckRecord failed, proceeding offline',
-          ),
-        );
-      }
-    }
-
-    // Bulk Insert Associated Flashcards
-    try {
-      final cardsPayload = cards.map((c) {
-        return <String, dynamic>{
-          'id': c.id,
-          'deck_id': deck.id,
-          'front': c.front,
-          'back': c.back,
-          if (c.frontLatex != null) 'front_latex': c.frontLatex,
-          if (c.backLatex != null) 'back_latex': c.backLatex,
-          if (c.imageUrl != null) 'image_url': c.imageUrl,
-          if (c.sourceTopic != null) 'source_topic': c.sourceTopic,
-          'interval': c.interval,
-          'repetitions': c.repetitions,
-          'ease_factor': c.easeFactor,
-          if (c.nextDueDate != null)
-            'next_due_date': c.nextDueDate!.toIso8601String(),
+    if (_isValidUuid(deck.id)) {
+      // Insert Deck Record
+      try {
+        final deckPayload = <String, dynamic>{
+          'id': deck.id,
+          'title': deck.title,
+          'subject': deck.subject,
+          'total_cards': cards.length,
+          'due_cards': actualDueCount,
+          'mastery_rate': deck.masteryRate,
+          'description': deck.description,
           if (userId.isNotEmpty) 'user_id': userId,
+          if (deck.courseId != null) 'course_id': deck.courseId,
+          if (deck.courseCode != null) 'course_code': deck.courseCode,
         };
-      }).toList();
-
-      if (cardsPayload.isNotEmpty) {
-        await _client.bulkInsertCards(cardsPayload);
+        await _client.createDeckRecord(deckPayload);
+      } on Object catch (e, stack) {
+        if (_crashlyticsService != null) {
+          unawaited(
+            _crashlyticsService!.recordError(
+              e,
+              stack,
+              reason:
+                  'DecksRemoteDataSource.createDeckRecord failed, proceeding offline',
+            ),
+          );
+        }
       }
-    } on Object catch (e, stack) {
-      if (_crashlyticsService != null) {
-        unawaited(
-          _crashlyticsService!.recordError(
-            e,
-            stack,
-            reason:
-                'DecksRemoteDataSource.bulkInsertCards failed, proceeding offline',
-          ),
-        );
+
+      // Bulk Insert Associated Flashcards
+      try {
+        final cardsPayload = cards
+            .where((c) => _isValidUuid(c.id))
+            .map((c) {
+          return <String, dynamic>{
+            'id': c.id,
+            'deck_id': deck.id,
+            'front': c.front,
+            'back': c.back,
+            if (c.frontLatex != null) 'front_latex': c.frontLatex,
+            if (c.backLatex != null) 'back_latex': c.backLatex,
+            if (c.imageUrl != null) 'image_url': c.imageUrl,
+            if (c.sourceTopic != null) 'source_topic': c.sourceTopic,
+            'interval': c.interval,
+            'repetitions': c.repetitions,
+            'ease_factor': c.easeFactor,
+            if (c.nextDueDate != null)
+              'next_due_date': c.nextDueDate!.toIso8601String(),
+            if (userId.isNotEmpty) 'user_id': userId,
+          };
+        }).toList();
+
+        if (cardsPayload.isNotEmpty) {
+          await _client.bulkInsertCards(cardsPayload);
+        }
+      } on Object catch (e, stack) {
+        if (_crashlyticsService != null) {
+          unawaited(
+            _crashlyticsService!.recordError(
+              e,
+              stack,
+              reason:
+                  'DecksRemoteDataSource.bulkInsertCards failed, proceeding offline',
+            ),
+          );
+        }
       }
     }
   }

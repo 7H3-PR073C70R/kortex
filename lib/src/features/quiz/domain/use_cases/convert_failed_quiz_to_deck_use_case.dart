@@ -1,5 +1,6 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
@@ -32,7 +33,7 @@ class ConvertFailedQuizToDeckUseCase {
         );
       }
 
-      final deckId = 'quiz_deck_${DateTime.now().millisecondsSinceEpoch}';
+      final deckId = UuidUtils.generate();
       final resolvedCourseCode = courseCode?.trim();
       final resolvedCourseId = courseId?.trim();
 
@@ -57,7 +58,7 @@ class ConvertFailedQuizToDeckUseCase {
 
           cards.add(
             FlashcardModel(
-              id: 'card_${deckId}_$i',
+              id: UuidUtils.generate(),
               deckId: deckId,
               front: q.prompt,
               back: '${q.correctAnswer}$explanationPart',
@@ -72,7 +73,7 @@ class ConvertFailedQuizToDeckUseCase {
           final w = result.weaknesses[i];
           cards.add(
             FlashcardModel(
-              id: 'card_${deckId}_$i',
+              id: UuidUtils.generate(),
               deckId: deckId,
               front: 'Key Focus: ${w.subTopic}',
               back:
