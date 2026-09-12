@@ -16,6 +16,7 @@ import 'package:kortex/src/features/community/domain/repositories/ephemeral_room
 import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/features/community/presentation/widgets/floating_reaction_overlay.dart';
+import 'package:kortex/src/features/community/presentation/widgets/focus_session_summary_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -104,7 +105,11 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
     unawaited(context.read<LiveRoomCubit>().setLocalAwayState(isAway: isAway));
   }
 
-  void _showGoalVerificationDialog(BuildContext context, String goal) {
+  void _showGoalVerificationDialog(
+    BuildContext context,
+    String goal, {
+    VoidCallback? onAfterVerification,
+  }) {
     final colors = context.colors;
     final typography = context.typography;
     final cubit = context.read<LiveRoomCubit>();
@@ -164,6 +169,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
                   cubit.verifyMicroGoal(completed: true, goal: goal);
+                  onAfterVerification?.call();
                 },
               ),
               const SizedBox(height: 8),
@@ -180,6 +186,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
                   cubit.verifyMicroGoal(completed: false, goal: goal);
+                  onAfterVerification?.call();
                 },
               ),
             ],
@@ -189,11 +196,57 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               onPressed: () {
                 Navigator.of(dialogCtx).pop();
                 cubit.dismissGoalVerification();
+                onAfterVerification?.call();
               },
               child: Text('Dismiss', style: TextStyle(color: colors.textSecondary)),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _handleExit(BuildContext context) {
+    final cubit = context.read<LiveRoomCubit>();
+    final state = cubit.state;
+
+    if (state.activeGoal != null &&
+        state.activeGoal!.trim().isNotEmpty &&
+        !state.isGoalAchieved) {
+      _showGoalVerificationDialog(
+        context,
+        state.activeGoal!,
+        onAfterVerification: () {
+          final updatedState = cubit.state;
+          if (updatedState.completedPomodoros > 0) {
+            _showSummarySheet(context, updatedState);
+          } else {
+            unawaited(context.router.maybePop());
+          }
+        },
+      );
+      return;
+    }
+
+    if (state.completedPomodoros > 0) {
+      _showSummarySheet(context, state);
+    } else {
+      unawaited(context.router.maybePop());
+    }
+  }
+
+  void _showSummarySheet(BuildContext context, LiveRoomState state) {
+    unawaited(
+      FocusSessionSummarySheet.show(
+        context,
+        roomTitle: state.room.title,
+        subject: state.room.subject,
+        completedPomodoros: state.completedPomodoros,
+        pomodoroDurationMinutes: state.room.pomodoroDurationMinutes,
+        cardsReviewed: state.cardsReviewedInSprint,
+        activeGoal: state.activeGoal,
+        isGoalAchieved: state.isGoalAchieved,
+        onDone: () => unawaited(context.router.maybePop()),
       ),
     );
   }
@@ -402,15 +455,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
-              onPressed: () {
-                if (state.activeGoal != null &&
-                    state.activeGoal!.trim().isNotEmpty &&
-                    !state.isGoalAchieved) {
-                  _showGoalVerificationDialog(context, state.activeGoal!);
-                } else {
-                  unawaited(context.router.maybePop());
-                }
-              },
+              onPressed: () => _handleExit(context),
             ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,6 +585,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   isDark: isDark,
                   l10n: l10n,
                   onLaunchSprint: () => _showStartCoOpSprintDialog(context),
+                  onLeave: () => _handleExit(context),
                 ),
               ],
             ),
@@ -1265,7 +1311,6 @@ class _FocusCockpitSection extends StatelessWidget {
                         isSpeaking: isVoicePodEnabled &&
                             (activeSpeakerIds.contains(p.userId) ||
                              (!p.isMuted && activeSpeakerIds.isEmpty)),
-                        activeGoal: activeGoal,
                         isVoicePodEnabled: isVoicePodEnabled,
                       ),
                     )
@@ -1296,7 +1341,6 @@ class _FocusParticipantTile extends StatelessWidget {
     required this.typography,
     required this.isDark,
     required this.isSpeaking,
-    required this.activeGoal,
     required this.isVoicePodEnabled,
   });
 
@@ -1305,7 +1349,6 @@ class _FocusParticipantTile extends StatelessWidget {
   final dynamic typography;
   final bool isDark;
   final bool isSpeaking;
-  final String? activeGoal;
   final bool isVoicePodEnabled;
 
   @override
@@ -1400,7 +1443,7 @@ class _FocusParticipantTile extends StatelessWidget {
             ],
           ),
         ),
-        if (activeGoal != null && activeGoal!.trim().isNotEmpty) ...[
+        if (participant.activeGoal != null && participant.activeGoal!.trim().isNotEmpty) ...[
           const SizedBox(height: 3),
           Container(
             constraints: const BoxConstraints(maxWidth: 90),
@@ -1410,7 +1453,7 @@ class _FocusParticipantTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(5),
             ),
             child: Text(
-              '🎯 $activeGoal',
+              '🎯 ${participant.activeGoal}',
               style: cTypography.caption.regular.copyWith(
                 color: cColors.textSecondary,
                 fontSize: 8.5,
@@ -1589,6 +1632,7 @@ class _BottomActionBar extends StatelessWidget {
     required this.isDark,
     required this.l10n,
     this.onLaunchSprint,
+    this.onLeave,
   });
 
   final LiveRoomState state;
@@ -1598,6 +1642,7 @@ class _BottomActionBar extends StatelessWidget {
   final bool isDark;
   final AppLocalizations l10n;
   final VoidCallback? onLaunchSprint;
+  final VoidCallback? onLeave;
 
   @override
   Widget build(BuildContext context) {
@@ -1613,85 +1658,88 @@ class _BottomActionBar extends StatelessWidget {
           top: BorderSide(color: cColors.primary.withAlpha(20)),
         ),
       ),
-      child: Row(
-        children: [
-          // Launch Co-Op Sprint Button
-          ShrinkableButton(
-            onTap: onLaunchSprint,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-              decoration: BoxDecoration(
-                color: state.isCoOpSprintActive
-                    ? cColors.warning.withAlpha(cIsDark ? 50 : 30)
-                    : cColors.primary.withAlpha(cIsDark ? 40 : 20),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Launch Co-Op Sprint Button
+            ShrinkableButton(
+              onTap: onLaunchSprint,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                decoration: BoxDecoration(
                   color: state.isCoOpSprintActive
-                      ? cColors.warning
-                      : cColors.primary.withAlpha(cIsDark ? 90 : 50),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.bolt_rounded,
-                    size: 16,
-                    color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                      ? cColors.warning.withAlpha(cIsDark ? 50 : 30)
+                      : cColors.primary.withAlpha(cIsDark ? 40 : 20),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: state.isCoOpSprintActive
+                        ? cColors.warning
+                        : cColors.primary.withAlpha(cIsDark ? 90 : 50),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    state.isCoOpSprintActive ? state.formattedSprintTimer : 'Sprint',
-                    style: cTypography.caption.bold.copyWith(
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.bolt_rounded,
+                      size: 16,
                       color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
-                      fontSize: 11,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Fast Sprint Card Logger (+5 Cards)
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.mediumImpact());
-              context.read<LiveRoomCubit>().logCardReviewed(5);
-              context.showSnackBar(
-                message: 'Logged 5 cards in sprint! 🎯 Total: ${state.cardsReviewedInSprint + 5}',
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-              decoration: BoxDecoration(
-                color: cColors.syllabotAccent.withAlpha(cIsDark ? 40 : 20),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: cColors.syllabotAccent.withAlpha(cIsDark ? 90 : 50),
+                    const SizedBox(width: 4),
+                    Text(
+                      state.isCoOpSprintActive ? state.formattedSprintTimer : 'Sprint',
+                      style: cTypography.caption.bold.copyWith(
+                        color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.flash_on_rounded, size: 16, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    '+5 Cards',
-                    style: cTypography.caption.bold.copyWith(
-                      color: cColors.textPrimary,
-                      fontSize: 11,
-                    ),
+            ),
+            const SizedBox(width: 8),
+
+            // Fast Sprint Card Logger (+5 Cards)
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.mediumImpact());
+                context.read<LiveRoomCubit>().logCardReviewed(5);
+                context.showSnackBar(
+                  message: 'Logged 5 cards in sprint! 🎯 Total: ${state.cardsReviewedInSprint + 5}',
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                decoration: BoxDecoration(
+                  color: cColors.syllabotAccent.withAlpha(cIsDark ? 40 : 20),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: cColors.syllabotAccent.withAlpha(cIsDark ? 90 : 50),
                   ),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flash_on_rounded, size: 16, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+5 Cards',
+                      style: cTypography.caption.bold.copyWith(
+                        color: cColors.textPrimary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Voice Pod Toggle Button (Silent Mode vs Audio Discussion)
-          Expanded(
-            child: ShrinkableButton(
+            // Voice Pod Toggle Button (Silent Mode vs Audio Discussion)
+            ShrinkableButton(
               onTap: () {
                 unawaited(HapticFeedback.mediumImpact());
                 context.read<LiveRoomCubit>().toggleVoicePod();
@@ -1699,12 +1747,17 @@ class _BottomActionBar extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
                 decoration: BoxDecoration(
                   color: state.isVoicePodEnabled
                       ? cColors.warning
                       : cColors.primary.withAlpha(cIsDark ? 50 : 30),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: state.isVoicePodEnabled
+                        ? cColors.warning
+                        : cColors.primary.withAlpha(cIsDark ? 90 : 50),
+                  ),
                   boxShadow: state.isVoicePodEnabled
                       ? [
                           BoxShadow(
@@ -1716,7 +1769,7 @@ class _BottomActionBar extends StatelessWidget {
                       : null,
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       state.isVoicePodEnabled
@@ -1725,23 +1778,19 @@ class _BottomActionBar extends StatelessWidget {
                       color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
                       size: 16,
                     ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        state.isVoicePodEnabled ? 'Voice Pod ON' : 'Silent Focus',
-                        style: cTypography.footnote.bold.copyWith(
-                          color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 5),
+                    Text(
+                      state.isVoicePodEnabled ? 'Voice Pod ON' : 'Silent Focus',
+                      style: cTypography.caption.bold.copyWith(
+                        color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
           // Mic Mute / Unmute Toggle Button (Only visible when voice pod is active)
           if (state.isVoicePodEnabled) ...[
@@ -1861,7 +1910,7 @@ class _BottomActionBar extends StatelessWidget {
 
           // Leave Room
           ShrinkableButton(
-            onTap: () => unawaited(context.router.maybePop()),
+            onTap: onLeave ?? () => unawaited(context.router.maybePop()),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1878,8 +1927,9 @@ class _BottomActionBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 

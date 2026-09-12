@@ -111,6 +111,14 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
+  }) async {}
+
+  @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
   }) async {}
 
   @override

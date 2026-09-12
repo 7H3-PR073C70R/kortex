@@ -21,12 +21,14 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   }) async {
     await _presenceClient.joinRoomPresence(
       roomId: roomId,
       userId: userId,
       displayName: displayName,
       avatarUrl: avatarUrl,
+      activeGoal: activeGoal,
     );
   }
 
@@ -86,6 +88,19 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
       roomId: roomId,
       userId: userId,
       isAway: isAway,
+    );
+  }
+
+  @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  }) async {
+    await _presenceClient.broadcastGoal(
+      roomId: roomId,
+      userId: userId,
+      goal: goal,
     );
   }
 

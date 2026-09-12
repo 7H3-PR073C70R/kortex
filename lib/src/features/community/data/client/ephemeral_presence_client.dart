@@ -14,6 +14,7 @@ class EphemeralParticipant {
     this.isAway = false,
     this.isAiBuddy = false,
     this.joinedAt,
+    this.activeGoal,
   });
 
   factory EphemeralParticipant.fromJson(Map<String, dynamic> json) {
@@ -28,6 +29,7 @@ class EphemeralParticipant {
       joinedAt: json['joinedAt'] != null
           ? DateTime.tryParse(json['joinedAt'] as String)
           : null,
+      activeGoal: json['activeGoal'] as String?,
     );
   }
 
@@ -39,6 +41,9 @@ class EphemeralParticipant {
   final bool isAway;
   final bool isAiBuddy;
   final DateTime? joinedAt;
+  /// The micro-goal this participant set for the current session.
+  /// Broadcast via the ephemeral presence channel so peers can see it.
+  final String? activeGoal;
 
   Map<String, dynamic> toJson() {
     return {
@@ -50,6 +55,7 @@ class EphemeralParticipant {
       'isAway': isAway,
       'isAiBuddy': isAiBuddy,
       'joinedAt': (joinedAt ?? DateTime.now()).toIso8601String(),
+      if (activeGoal != null) 'activeGoal': activeGoal,
     };
   }
 
@@ -62,6 +68,7 @@ class EphemeralParticipant {
     bool? isAway,
     bool? isAiBuddy,
     DateTime? joinedAt,
+    String? activeGoal,
   }) {
     return EphemeralParticipant(
       userId: userId ?? this.userId,
@@ -72,6 +79,7 @@ class EphemeralParticipant {
       isAway: isAway ?? this.isAway,
       isAiBuddy: isAiBuddy ?? this.isAiBuddy,
       joinedAt: joinedAt ?? this.joinedAt,
+      activeGoal: activeGoal ?? this.activeGoal,
     );
   }
 }
@@ -258,9 +266,16 @@ abstract class EphemeralPresenceClient {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   });
 
   Future<void> leaveRoomPresence(String roomId);
+
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  });
 
   Future<void> broadcastPomodoroTick({
     required String roomId,
@@ -433,6 +448,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   }) async {
     _ensureRoomListening(roomId);
     final participant = EphemeralParticipant(
@@ -440,6 +456,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
       displayName: displayName,
       avatarUrl: avatarUrl,
       joinedAt: DateTime.now(),
+      activeGoal: activeGoal,
     );
     _roomParticipants.putIfAbsent(roomId, () => {});
     _roomParticipants[roomId]![userId] = participant;
@@ -565,6 +582,30 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           avatarUrl: '',
         );
     final updated = existing.copyWith(isAway: isAway);
+    _roomParticipants[roomId]![userId] = updated;
+    _notifyParticipants(roomId);
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'data': {'action': 'update', ...updated.toJson()},
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  }) async {
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    final existing = _roomParticipants[roomId]?[userId] ??
+        EphemeralParticipant(
+          userId: userId,
+          displayName: 'Scholar',
+          avatarUrl: '',
+        );
+    final updated = existing.copyWith(activeGoal: goal);
     _roomParticipants[roomId]![userId] = updated;
     _notifyParticipants(roomId);
     _realtime.broadcastPresence(

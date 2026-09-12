@@ -20,7 +20,7 @@ void main() {
       final formatted = FormulaAwareTextFormatter.formatFormulaAware(input);
       expect(formatted, contains(r'\rightarrow'));
       expect(formatted, contains(r'\text{(aq)}'));
-      expect(formatted, contains(r'H_2O'));
+      expect(formatted, contains('H_2O'));
     });
 
     test('formats single chemical compounds like H2O, CO2, Ca(OH)2', () {

@@ -22,17 +22,21 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   bool isMuted = true;
   int recordedSessions = 0;
 
+  String? lastBroadcastGoal;
+
   @override
   Future<void> joinRoomPresence({
     required String roomId,
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   }) async {
     final participant = EphemeralParticipant(
       userId: userId,
       displayName: displayName,
       avatarUrl: avatarUrl,
+      activeGoal: activeGoal,
     );
     joinedParticipants.add(participant);
     _participantsController.add(joinedParticipants);
@@ -42,6 +46,15 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   Future<void> leaveRoomPresence(String roomId) async {
     joinedParticipants.clear();
     _participantsController.add([]);
+  }
+
+  @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  }) async {
+    lastBroadcastGoal = goal;
   }
 
   @override

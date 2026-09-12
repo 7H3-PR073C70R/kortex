@@ -264,11 +264,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     'Gentle Rain': 'audio/rain.wav',
     'Binaural 40Hz': 'audio/binaural.wav',
     'Library Silence': 'audio/silence.wav',
-    // Legacy / short-key aliases used by older state
+    // Legacy / short-key aliases used by older state and the creation sheet
     'lofi': 'audio/lofi.wav',
     'rain': 'audio/rain.wav',
     'binaural': 'audio/binaural.wav',
     'silence': 'audio/silence.wav',
+    'library': 'audio/silence.wav', // alias used by CreateStudyRoomSheet
   };
 
   Timer? _timer;
@@ -437,6 +438,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         userId: _currentUserId,
         displayName: _currentUserName,
         avatarUrl: _currentUserAvatar,
+        activeGoal: state.activeGoal,
       ),
     );
 
@@ -623,11 +625,24 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   void updateActiveGoal(String goal) {
     final message = '🎯 Goal set: $goal';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    final updatedList = state.ephemeralParticipants.map((p) {
+      if (p.userId == _currentUserId) return p.copyWith(activeGoal: goal);
+      return p;
+    }).toList();
+
     emit(state.copyWith(
       activeGoal: goal,
+      ephemeralParticipants: updatedList,
       recentActivityTicker: updatedTicker,
     ));
     sendChatMessage('Target: $goal', isReaction: true);
+    unawaited(
+      _ephemeralRepository?.broadcastGoal(
+        roomId: state.room.id,
+        userId: _currentUserId,
+        goal: goal,
+      ),
+    );
   }
 
   Future<void> _initAmbientAudio() async {

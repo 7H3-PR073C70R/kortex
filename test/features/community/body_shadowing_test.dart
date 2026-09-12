@@ -55,7 +55,23 @@ class MockEphemeralRepository implements EphemeralRoomRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   }) async {}
+
+  final List<Map<String, dynamic>> broadcastGoalCalls = [];
+
+  @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  }) async {
+    broadcastGoalCalls.add({
+      'roomId': roomId,
+      'userId': userId,
+      'goal': goal,
+    });
+  }
 
   @override
   Future<void> leaveRoomPresence(String roomId) async {}
@@ -166,7 +182,7 @@ void main() {
     await cubit.close();
   });
 
-  test('Setting and prompting micro-goal updates cubit state', () async {
+  test('Setting and prompting micro-goal updates cubit state and broadcasts to peers', () async {
     final cubit = LiveRoomCubit(
       initialRoom: testRoom,
       repository: mockRepo,
@@ -176,6 +192,9 @@ void main() {
     )..updateActiveGoal('Solve 10 integrals');
 
     expect(cubit.state.activeGoal, 'Solve 10 integrals');
+    expect(mockEphemeral.broadcastGoalCalls.length, 1);
+    expect(mockEphemeral.broadcastGoalCalls.first['goal'], 'Solve 10 integrals');
+    expect(mockEphemeral.broadcastGoalCalls.first['userId'], 'user_test_1');
 
     cubit.promptGoalVerification();
     expect(cubit.state.showGoalVerificationModal, true);

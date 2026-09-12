@@ -238,6 +238,7 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }
 
   bool isAway = false;
+  String? lastBroadcastGoal;
 
   @override
   Future<void> broadcastAwayState({
@@ -249,17 +250,28 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  }) async {
+    lastBroadcastGoal = goal;
+  }
+
+  @override
   Future<void> joinRoomPresence({
     required String roomId,
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   }) async {
     participants.add(
       EphemeralParticipant(
         userId: userId,
         displayName: displayName,
         avatarUrl: avatarUrl,
+        activeGoal: activeGoal,
       ),
     );
     _participantsController.add(participants);

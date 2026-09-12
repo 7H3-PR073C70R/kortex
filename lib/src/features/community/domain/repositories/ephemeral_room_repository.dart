@@ -8,9 +8,16 @@ abstract class EphemeralRoomRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    String? activeGoal,
   });
 
   Future<void> leaveRoomPresence(String roomId);
+
+  Future<void> broadcastGoal({
+    required String roomId,
+    required String userId,
+    required String? goal,
+  });
 
   Future<void> broadcastPomodoroTick({
     required String roomId,
