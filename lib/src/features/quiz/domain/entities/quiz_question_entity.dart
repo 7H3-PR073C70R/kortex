@@ -90,6 +90,7 @@ class QuizQuestionEntity extends Equatable {
     String? latexFormula,
     String? imageUrl,
     String? userSelectedAnswer,
+    bool clearUserSelectedAnswer = false,
     bool? isAnswered,
     bool? isCorrect,
   }) {
@@ -103,7 +104,9 @@ class QuizQuestionEntity extends Equatable {
       subTopic: subTopic ?? this.subTopic,
       latexFormula: latexFormula ?? this.latexFormula,
       imageUrl: imageUrl ?? this.imageUrl,
-      userSelectedAnswer: userSelectedAnswer ?? this.userSelectedAnswer,
+      userSelectedAnswer: clearUserSelectedAnswer
+          ? null
+          : (userSelectedAnswer ?? this.userSelectedAnswer),
       isAnswered: isAnswered ?? this.isAnswered,
       isCorrect: isCorrect ?? this.isCorrect,
     );

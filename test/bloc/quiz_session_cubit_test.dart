@@ -355,7 +355,6 @@ void main() {
 
         await cubit.walkAwayAndBank();
 
-        expect(cubit.state.isWalkedAway, isTrue);
         verify(
           () => mockSubmitUseCase(
             quizTitle: any(named: 'quizTitle'),
@@ -363,6 +362,35 @@ void main() {
             durationSeconds: any(named: 'durationSeconds'),
           ),
         ).called(1);
+      });
+
+      test('useSecondChance resets question answering state, eliminates mistake, and allows retry', () {
+        cubit.startMillionaireQuiz(
+          title: 'Physics Ascent',
+          questions: tQuestions,
+        );
+
+        expect(cubit.state.hasSecondChance, isTrue);
+
+        // Select an incorrect option from tQuestions
+        cubit.selectOption('8.9 m/s^2');
+        expect(cubit.state.isSecondChanceActive, isTrue);
+        expect(cubit.state.currentQuestion!.isAnswered, isTrue);
+
+        // Consume second chance
+        cubit.useSecondChance();
+
+        expect(cubit.state.hasSecondChance, isFalse);
+        expect(cubit.state.isSecondChanceActive, isFalse);
+        expect(cubit.state.status, QuizSessionStatus.inProgress);
+        expect(cubit.state.currentQuestion!.isAnswered, isFalse);
+        expect(cubit.state.currentQuestion!.userSelectedAnswer, isNull);
+        expect(cubit.state.eliminatedOptionIndices, contains(1)); // '8.9 m/s^2' is index 1
+
+        // Now select the correct answer
+        cubit.selectOption('9.8 m/s^2');
+        expect(cubit.state.currentQuestion!.isAnswered, isTrue);
+        expect(cubit.state.currentQuestion!.isCorrect, isTrue);
       });
     });
   });

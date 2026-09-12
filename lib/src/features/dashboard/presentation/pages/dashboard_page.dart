@@ -914,7 +914,7 @@ class _NextBestActionCard extends StatelessWidget {
         unawaited(HapticFeedback.mediumImpact());
         unawaited(
           context.router.push(
-            StudySessionRoute(deckId: topDeck.id),
+            StudySessionRoute(deckId: 'sprint:10:${topDeck.id}'),
           ),
         );
       },

@@ -1,13 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}
+class MockDecksRepository extends Mock implements DecksRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -219,6 +223,66 @@ void main() {
 
       await cubit.completeEarly();
       expect(cubit.state.status, equals(FocusSessionStatus.completed));
+
+      await cubit.close();
+    });
+
+    test('startSession aggregates cards across all user decks when deckId is all_decks', () async {
+      final mockDecksRepo = MockDecksRepository();
+      final cubit = FocusSessionCubit(
+        localStorageService: mockStorage,
+        decksRepository: mockDecksRepo,
+      );
+
+      final deckA = DeckEntity(
+        id: 'deck_a',
+        title: 'Deck A',
+        subject: 'Math',
+        totalCards: 1,
+        dueCards: 1,
+        masteryRate: 0.5,
+        category: 'Math',
+      );
+      final deckB = DeckEntity(
+        id: 'deck_b',
+        title: 'Deck B',
+        subject: 'Physics',
+        totalCards: 1,
+        dueCards: 1,
+        masteryRate: 0.5,
+        category: 'Physics',
+      );
+
+      final cardA = FlashcardEntity(
+        id: 'c_a',
+        deckId: 'deck_a',
+        front: 'A',
+        back: 'Ans A',
+        lastReviewed: DateTime.now().subtract(const Duration(days: 2)),
+      );
+      final cardB = FlashcardEntity(
+        id: 'c_b',
+        deckId: 'deck_b',
+        front: 'B',
+        back: 'Ans B',
+        lastReviewed: DateTime.now().subtract(const Duration(days: 3)),
+      );
+
+      when(() => mockDecksRepo.getUserDecks())
+          .thenAnswer((_) async => Right([deckA, deckB]));
+      when(() => mockDecksRepo.getDeckCards('deck_a'))
+          .thenAnswer((_) async => Right([cardA]));
+      when(() => mockDecksRepo.getDeckCards('deck_b'))
+          .thenAnswer((_) async => Right([cardB]));
+
+      await cubit.startSession(
+        deckId: 'all_decks',
+        sessionTitle: 'Interleaved Focus Sprint',
+      );
+
+      expect(cubit.state.status, equals(FocusSessionStatus.active));
+      expect(cubit.state.cards.length, equals(2));
+      expect(cubit.state.deckTitle, equals('Interleaved Focus Sprint'));
 
       await cubit.close();
     });

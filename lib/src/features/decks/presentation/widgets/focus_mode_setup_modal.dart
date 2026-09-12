@@ -38,6 +38,17 @@ class FocusModeSetupModal extends StatefulWidget {
 }
 
 class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
+  static const DeckEntity allDecksOption = DeckEntity(
+    id: 'all_decks',
+    title: '⚡ All Decks (Interleaved Sprint)',
+    subject: 'Cross-Subject Recall',
+    totalCards: 0,
+    dueCards: 0,
+    masteryRate: 0,
+    category: 'Interleaved',
+    description: 'Smart cross-subject shuffle to defeat predictive boredom',
+  );
+
   late DeckEntity? _selectedDeck;
   FocusSessionType _type = FocusSessionType.cardCount;
   int _cardCount = 10;
@@ -50,7 +61,9 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
   void initState() {
     super.initState();
     _selectedDeck = widget.initialDeck ??
-        (widget.decks.isNotEmpty ? widget.decks.first : null);
+        (widget.decks.length > 1
+            ? allDecksOption
+            : (widget.decks.isNotEmpty ? widget.decks.first : null));
   }
 
   void _launchSession() {
@@ -66,14 +79,19 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
       hideCardCounter: _hideCardCounter,
     );
 
+    final targetId = _selectedDeck!.id;
+    final targetTitle = _selectedDeck!.id == 'all_decks'
+        ? 'Interleaved Focus Sprint'
+        : _selectedDeck!.title;
+
     Navigator.of(context).pop();
 
     unawaited(
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => FocusWorkspacePage(
-            deckId: _selectedDeck!.id,
-            deckTitle: _selectedDeck!.title,
+            deckId: targetId,
+            deckTitle: targetTitle,
             config: config,
           ),
         ),
@@ -196,18 +214,44 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                     Icons.keyboard_arrow_down_rounded,
                     color: colors.textSecondary,
                   ),
-                  items: widget.decks.map((deck) {
-                    return DropdownMenuItem<DeckEntity>(
-                      value: deck,
-                      child: Text(
-                        '${deck.title} (${deck.totalCards} cards)',
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
+                  items: [
+                    if (widget.decks.length > 1)
+                      DropdownMenuItem<DeckEntity>(
+                        value: allDecksOption,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 16,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                allDecksOption.title,
+                                style: typography.body.medium.copyWith(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    );
-                  }).toList(),
+                    ...widget.decks.map((deck) {
+                      return DropdownMenuItem<DeckEntity>(
+                        value: deck,
+                        child: Text(
+                          '${deck.title} (${deck.totalCards} cards)',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }),
+                  ],
                   onChanged: (deck) {
                     if (deck != null) setState(() => _selectedDeck = deck);
                   },

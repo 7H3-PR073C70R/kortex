@@ -367,15 +367,14 @@ class _DecksView extends HookWidget {
                               Expanded(
                                 child: ShrinkableButton(
                                   onTap: () {
-                                    final targetDeck = state.allDecks.firstWhere(
-                                      (d) => d.dueCards > 0,
-                                      orElse: () => state.allDecks.first,
-                                    );
+                                    final targetDeckId = state.allDecks.length > 1
+                                        ? 'all'
+                                        : state.allDecks.first.id;
                                     AppFeedback.selection();
                                     unawaited(
                                       context.router.push(
                                         StudySessionRoute(
-                                          deckId: 'sprint:10:${targetDeck.id}',
+                                          deckId: 'sprint:10:$targetDeckId',
                                         ),
                                       ),
                                     );
@@ -408,15 +407,14 @@ class _DecksView extends HookWidget {
                               Expanded(
                                 child: ShrinkableButton(
                                   onTap: () {
-                                    final targetDeck = state.allDecks.firstWhere(
-                                      (d) => d.dueCards > 0,
-                                      orElse: () => state.allDecks.first,
-                                    );
+                                    final targetDeckId = state.allDecks.length > 1
+                                        ? 'all'
+                                        : state.allDecks.first.id;
                                     AppFeedback.selection();
                                     unawaited(
                                       context.router.push(
                                         StudySessionRoute(
-                                          deckId: 'sprint:20:${targetDeck.id}',
+                                          deckId: 'sprint:20:$targetDeckId',
                                         ),
                                       ),
                                     );

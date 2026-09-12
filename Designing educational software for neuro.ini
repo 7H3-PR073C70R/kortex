@@ -1,0 +1,104 @@
+# Designing Educational Software for Neurodivergent Learners (ADHD)
+## Product & UX Strategy Specification for Kortex
+
+Designing educational software for neurodivergent learners—particularly students with **ADHD**—is one of the highest-leverage investments you can make. Designing for ADHD exemplifies the **"curb-cut effect"**: mechanics that help ADHD learners stay engaged (novelty, low friction, micro-incentives, safe failure) also dramatically improve retention and engagement for neurotypical users.
+
+ADHD is fundamentally a disorder of **executive dysfunction and dopamine regulation**, not a lack of intelligence or interest. ADHD learners struggle with:
+1. **Task initiation paralysis** (difficulty starting low-stimulation rote tasks).
+2. **Predictive boredom** (once an order or pattern is known, dopamine drops to zero).
+3. **Working memory bottlenecks** (holding multiple pieces of information at once).
+4. **Rejection Sensitive Dysphoria (RSD) / Failure Aversion** (quitting after high-friction failures).
+
+---
+
+### 1. "Who Wants to Be a Millionaire" Mode (Gamified Quiz)
+
+**Verdict:** **Exceptional fit for ADHD**, provided you avoid punitive design traps.
+
+#### Why it Works for ADHD:
+* **Structured Escalation & Dopamine Ladder:** The tiered question ladder ($100 → $1,000,000 or Level 1 → 15) turns a flat quiz into a clear, visually satisfying ascent.
+* **Working Memory Offloading (Lifelines):** Lifelines are ADHD super-tools. When working memory stalls or brain fog hits, lifelines (50/50, AI hint, Skip) prevent cognitive collapse and dropouts.
+* **High-Interest Context:** Dramatic sound effects, visual suspense, and milestone celebrations provide the stimulation ADHD brains crave to trigger hyperfocus.
+
+#### Critical Pitfalls & How to Adapt:
+| Millionaire Mechanic | ADHD Risk | Senior PM Adaptation |
+| :--- | :--- | :--- |
+| **Sudden Death / Hard Reset** | **High RSD / Rage Quits**: Losing all progress on question 11 causes acute frustration and app abandonment. | **Safety Net Milestones & Soft Fails:** Keep guaranteed checkpoint tiers (e.g., Level 5 & 10 "banked points"). Offer a **"Second Chance"** (e.g., burn a streak shield or watch an explanation to revive once). |
+| **Harsh Ticking Timer** | **Paralysis & Panic:** Ticking timers can cause severe cognitive freezing rather than productive urgency. | **Bonus Urgency, Not Disqualification:** Keep the base question untimed (or generous: 45–60s), but award **bonus multipliers/XP** for answering within the first 10 seconds. Urgency should reward, not punish. |
+| **Sensory Overload** | Distraction from text reading. | Keep animations crisp and punchy, but provide an accessibility toggle to mute sound or reduce dramatic camera/screen shakes. |
+
+#### Product Mechanics to Include:
+* **Lifelines designed for learning:**
+  1. **50:50**: Drops two incorrect distractors (reduces cognitive load).
+  2. **AI Tutor / Clue**: A 1-sentence prompt pointing out the core concept without giving away the answer.
+  3. **Skip & Swap**: Replaces the card with an equivalent-difficulty question from the same course syllabus.
+* **"Walk Away" Option:** Let students cash out their current XP/coins at any question. This teaches self-regulation and gives a feeling of agency.
+
+---
+
+### 2. Randomize / Cross-Deck Flashcard Shuffling
+
+**Verdict:** **Essential feature** for defeating rote boredom, with **one non-negotiable guardrail**.
+
+#### Why it Works for ADHD:
+* **Defeats "Predictive Boredom":** When flashcards appear in the exact order they were entered, the ADHD brain relies on sequential position cues rather than actual recall, leading to disengagement.
+* **The Interleaving Effect:** Cognitive science shows that interleaving (mixing topics, e.g., Module 1 → Module 4 → Module 2) forces discrimination learning and keeps alertness high.
+
+#### The Big Pitfall: The "Infinite Abyss" Paralysis
+* If a course has 250 flashcards and the student clicks *"Randomize All"*, seeing **"Card 1 of 250"** triggers instant executive paralysis and avoidance. The finish line feels unreachable.
+
+#### Senior PM Solution: Micro-Batching ("Sprints")
+Never dump the randomized pool into an endless stack. Wrap the randomized flashcards into bite-sized **Micro-Sprints**:
+* **Session Chunking:** Let users choose or default to:
+  * **"Quick 10"** (5-minute burst).
+  * **"Power 20"** (10-minute focus session).
+  * **"Speed Run"** (Timed 3-minute sprint).
+* **Smart Shuffle (Adaptive Randomization):**
+  * Don't make it pure pseudo-random. Prioritize cards marked **"Hard"** or **"Needs Review"** (spaced repetition), blended with 30% easy cards to maintain momentum and dopamine hits.
+* **Ultra-Low-Friction Interactions:**
+  * Swipe left/right, keyboard shortcuts (Space to flip, 1-4 for ratings), or clean tap targets. Friction in card flipping kills flow state.
+
+---
+
+### 3. Broader ADHD Product Framework for Kortex
+
+```
+                  ┌─────────────────────────────────────┐
+                  │          THE ADHD UX CORE           │
+                  └──────────────────┬──────────────────┘
+                                     │
+     ┌──────────────────┬────────────┴───────┬──────────────────┐
+     ▼                  ▼                    ▼                  ▼
+┌───────────────┐ ┌───────────────┐ ┌────────────────┐ ┌────────────────┐
+│  LOW-FRICTION │ │   DOPAMINE    │ │ WORKING MEMORY │ │  SAFE FAILURE  │
+│  ON-RAMPING   │ │   ECONOMY     │ │   OFFLOADING   │ │    (LOW RSD)   │
+└───────┬───────┘ └───────┬───────┘ └────────┬───────┘ └────────┬───────┘
+        │                 │                  │                  │
+• 1-Tap "Quick"   • Multi-sensory    • Auto-summary    • Streak Freeze
+  sessions          haptics + audio    at question top   on missed days
+• Zero setup      • Micro-badges     • High-contrast   • No score resets
+  overhead          every 5 cards      key concepts      to zero
+```
+
+#### A. Low-Friction On-Ramping (Destroying Activation Energy)
+* **1-Tap Resume:** When the app opens, feature a primary action button: *"Quick 5-Minute Sprint on [Last Studied Topic]"*. Don't force them through 4 navigation tiers to start studying.
+* **Context Preservation:** If a student switches apps or gets distracted mid-quiz, preserve their exact state for when they return.
+
+#### B. Dopamine Economy & Micro-Celebrations
+* **Micro-Progress Bars:** Progress bars should move visibly with *every* card or question.
+* **Sensory Feedback:** Crisp haptics on correct answers and satisfying sound effects (e.g., Duolingo-style audio chimes) tap directly into dopamine reward pathways.
+* **Streak Protection / Grace Days:** Strict streaks punish ADHD students for executive function lapses. Provide "Streak Freezes" or a "Comeback Bonus" to encourage re-engagement rather than guilt-driven uninstalls.
+
+#### C. Working Memory & Visual Focus
+* **Bionic / High-Readability Formatting:** Highlight key terms or keywords in bold so skimmers absorb the core question without cognitive fatigue.
+* **Eliminate Visual Clutter:** In quiz and flashcard review states, hide non-essential navigation chrome, banners, and sidebar distractions.
+
+---
+
+### Suggested Feature Roadmap
+
+| Phase | Milestone | Features Included |
+| :--- | :--- | :--- |
+| **Phase 1 (MVP)** | **Interleaved Micro-Sprints** | • "Shuffle All" with fixed batches (10/20 cards).<br>• Swipe gestures & haptic feedback.<br>• Session completion summary screen with immediate XP/stat payout. |
+| **Phase 2** | **Millionaire Game Mode** | • 10–12 Question tier ladder per course.<br>• 3 Lifelines (50/50, AI Clue, Skip).<br>• Safe tier milestones (Levels 4 & 8 banked).<br>• Optional untimed mode / Speed-bonus scoring. |
+| **Phase 3** | **Neuro-Adaptive Features** | • "Focus Mode" toggle (reduced animations, minimal UI).<br>• Smart streak recovery and flexible daily goals (e.g., "Study 3 times a week" instead of rigid daily streaks). |

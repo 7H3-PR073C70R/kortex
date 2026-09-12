@@ -18,6 +18,7 @@ import 'package:kortex/src/features/monetization/domain/services/subscription_gu
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
@@ -27,6 +28,11 @@ class QuizResultsPage extends StatelessWidget {
     this.questions = const [],
     this.courseId,
     this.courseCode,
+    this.assessmentMode = AssessmentMode.discoveryMode,
+    this.currentTier = 1,
+    this.bankedTier = 0,
+    this.speedBonusXp = 0,
+    this.isWalkedAway = false,
     super.key,
   });
 
@@ -34,6 +40,11 @@ class QuizResultsPage extends StatelessWidget {
   final List<QuizQuestionEntity> questions;
   final String? courseId;
   final String? courseCode;
+  final AssessmentMode assessmentMode;
+  final int currentTier;
+  final int bankedTier;
+  final int speedBonusXp;
+  final bool isWalkedAway;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +53,9 @@ class QuizResultsPage extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final isMillionaire = assessmentMode == AssessmentMode.millionaireMode;
     final score = result.scorePercent;
-    final isPassed = score >= 70;
+    final isPassed = isMillionaire || score >= 70;
     final gradeColor = isPassed ? colors.success : colors.warning;
 
     return Scaffold(
@@ -66,50 +78,177 @@ class QuizResultsPage extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
-          // 1. Grade Card
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  gradeColor.withValues(alpha: 0.2),
-                  colors.surfacePrimary.withValues(alpha: 0.8),
+          // 1. Grade Card or Millionaire Victory Card
+          if (isMillionaire) ...[
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF312E81).withValues(alpha: 0.9),
+                    const Color(0xFF1E1B4B).withValues(alpha: 0.95),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isWalkedAway || currentTier >= 12
+                      ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                      : const Color(0xFF10B981).withValues(alpha: 0.6),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
                 ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: gradeColor.withValues(alpha: 0.4),
+              child: Column(
+                children: [
+                  // Icon badge
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: currentTier >= 12
+                            ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
+                            : isWalkedAway
+                                ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                                : [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (currentTier >= 12
+                                  ? const Color(0xFFF59E0B)
+                                  : const Color(0xFF10B981))
+                              .withValues(alpha: 0.4),
+                          blurRadius: 18,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      currentTier >= 12
+                          ? Icons.emoji_events_rounded
+                          : isWalkedAway
+                              ? Icons.savings_rounded
+                              : Icons.military_tech_rounded,
+                      size: 36,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    currentTier >= 12
+                        ? 'MILLIONAIRE CHAMPION! 🏆'
+                        : isWalkedAway
+                            ? 'STRATEGIC CASH-OUT! 💰'
+                            : 'TIER $currentTier ASCENT REACHED! ⚡',
+                    textAlign: TextAlign.center,
+                    style: typography.title3.bold.copyWith(
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    currentTier >= 12
+                        ? 'You conquered all 12 rungs of the ladder with flawless cognitive retrieval.'
+                        : isWalkedAway
+                            ? 'You exercised executive self-regulation and safely banked Tier $currentTier XP!'
+                            : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
+                    textAlign: TextAlign.center,
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  // XP Reward Matrix
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _StatColumn(
+                          title: 'ASCENT TIER',
+                          value: '$currentTier / 12',
+                          color: const Color(0xFFF59E0B),
+                        ),
+                        Container(width: 1, height: 28, color: Colors.white24),
+                        _StatColumn(
+                          title: 'SPEED BONUS',
+                          value: '+$speedBonusXp XP',
+                          color: const Color(0xFF10B981),
+                        ),
+                        Container(width: 1, height: 28, color: Colors.white24),
+                        _StatColumn(
+                          title: 'BANKED XP',
+                          value: '${(currentTier * 100) + speedBonusXp}',
+                          color: const Color(0xFF60A5FA),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              children: [
-                Icon(
-                  isPassed
-                      ? Icons.emoji_events_rounded
-                      : Icons.insights_rounded,
-                  size: 54,
-                  color: gradeColor,
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    gradeColor.withValues(alpha: 0.2),
+                    colors.surfacePrimary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.quizScoreLabel(score),
-                  style: typography.largeTitle.bold.copyWith(
-                    color: colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: gradeColor.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    isPassed
+                        ? Icons.emoji_events_rounded
+                        : Icons.insights_rounded,
+                    size: 54,
+                    color: gradeColor,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${result.correctAnswers} of ${result.totalQuestions} '
-                  'questions correct',
-                  style: typography.body.regular.copyWith(
-                    color: colors.textSecondary,
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.quizScoreLabel(score),
+                    style: typography.largeTitle.bold.copyWith(
+                      color: colors.white,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    '${result.correctAnswers} of ${result.totalQuestions} '
+                    'questions correct',
+                    style: typography.body.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
 
           const SizedBox(height: 24),
 
@@ -490,6 +629,44 @@ class QuizResultsPage extends StatelessWidget {
           );
         }
       },
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = context.typography;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: typography.caption.bold.copyWith(
+            color: Colors.white70,
+            fontSize: 9.5,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: typography.subhead.bold.copyWith(
+            color: color,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }

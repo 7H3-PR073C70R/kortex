@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
@@ -22,6 +23,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
   FocusSessionCubit({
     GetDeckCardsUseCase? getDeckCardsUseCase,
     SaveSessionResultsUseCase? saveSessionResultsUseCase,
+    DecksRepository? decksRepository,
     FsrsScheduler? fsrsScheduler,
     CardSyncQueue? cardSyncQueue,
     LocalStorageService? localStorageService,
@@ -33,6 +35,10 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
         _saveSessionResultsUseCase = saveSessionResultsUseCase ??
             (locator.isRegistered<SaveSessionResultsUseCase>()
                 ? locator<SaveSessionResultsUseCase>()
+                : null),
+        _decksRepository = decksRepository ??
+            (locator.isRegistered<DecksRepository>()
+                ? locator<DecksRepository>()
                 : null),
         _fsrsScheduler = fsrsScheduler ??
             (locator.isRegistered<FsrsScheduler>()
@@ -53,6 +59,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
 
   final GetDeckCardsUseCase? _getDeckCardsUseCase;
   final SaveSessionResultsUseCase? _saveSessionResultsUseCase;
+  final DecksRepository? _decksRepository;
   final FsrsScheduler _fsrsScheduler;
   final CardSyncQueue _cardSyncQueue;
   final LocalStorageService? _localStorageService;
@@ -93,8 +100,19 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
     await _loadThoughts();
 
     List<FlashcardEntity> cards;
+    final isCrossDeck = deckId == 'all_decks' || deckId == 'cross_deck' || deckId == 'all';
     if (preloadedCards != null && preloadedCards.isNotEmpty) {
       cards = preloadedCards;
+    } else if (isCrossDeck && _decksRepository != null) {
+      final decksResult = await _decksRepository.getUserDecks();
+      final decks = decksResult.fold((l) => null, (r) => r) ?? [];
+      final crossCards = <FlashcardEntity>[];
+      for (final d in decks) {
+        final deckCardsResult = await _decksRepository.getDeckCards(d.id);
+        final deckCards = deckCardsResult.fold((l) => null, (r) => r) ?? [];
+        crossCards.addAll(deckCards);
+      }
+      cards = crossCards;
     } else if (_getDeckCardsUseCase != null) {
       final result = await _getDeckCardsUseCase(deckId);
       final fetched = result.fold(

@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -23,10 +24,15 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   StudySessionCubit({
     required GetDeckCardsUseCase getDeckCardsUseCase,
     required SaveSessionResultsUseCase saveSessionResultsUseCase,
+    DecksRepository? decksRepository,
     FsrsScheduler? fsrsScheduler,
     CardSyncQueue? cardSyncQueue,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
+       _decksRepository = decksRepository ??
+           (locator.isRegistered<DecksRepository>()
+               ? locator<DecksRepository>()
+               : null),
        _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
        _cardSyncQueue = cardSyncQueue ??
            (locator.isRegistered<CardSyncQueue>()
@@ -36,6 +42,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
   final SaveSessionResultsUseCase _saveSessionResultsUseCase;
+  final DecksRepository? _decksRepository;
   final FsrsScheduler _fsrsScheduler;
   final CardSyncQueue _cardSyncQueue;
 
@@ -55,25 +62,49 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   }) async {
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
 
-    final result = await _getDeckCardsUseCase(deckId);
-
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: StudySessionStatus.error,
-          errorMessage: failure.message,
-        ),
-      ),
-      (cards) {
-        if (cards.isEmpty) {
+    List<FlashcardEntity> cards;
+    if (deckId == 'all' || deckId == 'all_decks' || deckId == 'cross_deck') {
+      if (_decksRepository != null) {
+        final decksResult = await _decksRepository.getUserDecks();
+        final decks = decksResult.fold((l) => null, (r) => r) ?? [];
+        final crossCards = <FlashcardEntity>[];
+        for (final d in decks) {
+          final deckCardsResult = await _decksRepository.getDeckCards(d.id);
+          final deckCards = deckCardsResult.fold((l) => null, (r) => r) ?? [];
+          crossCards.addAll(deckCards);
+        }
+        cards = crossCards;
+      } else {
+        cards = [];
+      }
+    } else {
+      final result = await _getDeckCardsUseCase(deckId);
+      cards = result.fold(
+        (failure) {
           emit(
             state.copyWith(
               status: StudySessionStatus.error,
-              errorMessage: 'This deck currently has no cards.',
+              errorMessage: failure.message,
             ),
           );
-          return;
-        }
+          return <FlashcardEntity>[];
+        },
+        (data) => data,
+      );
+      if (cards.isEmpty && state.status == StudySessionStatus.error) {
+        return;
+      }
+    }
+
+    if (cards.isEmpty) {
+      emit(
+        state.copyWith(
+          status: StudySessionStatus.error,
+          errorMessage: 'This deck currently has no cards.',
+        ),
+      );
+      return;
+    }
 
         var sessionCards = triageDebt
             ? _fsrsScheduler.triageReviewDebt<FlashcardEntity>(
@@ -100,8 +131,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         );
 
         _startTimer();
-      },
-    );
   }
 
   /// Starts an interleaved ADHD-friendly micro-sprint session with randomized cards.

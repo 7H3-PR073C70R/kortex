@@ -161,6 +161,11 @@ class _QuizWorkspaceView extends HookWidget {
                 questions: state.questions,
                 courseId: effectiveCourseId,
                 courseCode: effectiveCourseCode,
+                assessmentMode: state.assessmentMode,
+                currentTier: state.currentTier,
+                bankedTier: state.bankedTier,
+                speedBonusXp: state.speedBonusXp,
+                isWalkedAway: state.isWalkedAway,
               ),
             ),
           );
@@ -945,24 +950,37 @@ class _QuizWorkspaceView extends HookWidget {
               top: false,
               child: Row(
                 children: [
-                  // Previous Question
-                  IconButton.outlined(
-                    onPressed: state.canGoPrevious
-                        ? () => context.read<QuizSessionCubit>().previousQuestion()
-                        : null,
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    tooltip: 'Previous Question',
-                  ),
-                  const SizedBox(width: 8),
-                  // Question Palette
-                  IconButton.outlined(
-                    onPressed: () => _showQuestionPalette(
-                      context,
-                      context.read<QuizSessionCubit>(),
-                      state,
+                  // Previous Question (Disabled in Millionaire mode as ascent is forward-only)
+                  if (state.assessmentMode != AssessmentMode.millionaireMode) ...[
+                    IconButton.outlined(
+                      onPressed: state.canGoPrevious
+                          ? () => context.read<QuizSessionCubit>().previousQuestion()
+                          : null,
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      tooltip: 'Previous Question',
                     ),
-                    icon: const Icon(Icons.grid_view_rounded),
-                    tooltip: 'Question Palette',
+                    const SizedBox(width: 8),
+                  ],
+                  // Question Palette / Ladder Drawer in Millionaire mode
+                  IconButton.outlined(
+                    onPressed: state.assessmentMode == AssessmentMode.millionaireMode
+                        ? () => MillionaireLadderDrawer.show(context, state)
+                        : () => _showQuestionPalette(
+                              context,
+                              context.read<QuizSessionCubit>(),
+                              state,
+                            ),
+                    icon: Icon(
+                      state.assessmentMode == AssessmentMode.millionaireMode
+                          ? Icons.military_tech_rounded
+                          : Icons.grid_view_rounded,
+                      color: state.assessmentMode == AssessmentMode.millionaireMode
+                          ? const Color(0xFFF59E0B)
+                          : null,
+                    ),
+                    tooltip: state.assessmentMode == AssessmentMode.millionaireMode
+                        ? 'Millionaire Ascent Ladder'
+                        : 'Question Palette',
                   ),
                   const SizedBox(width: 12),
                   // Next / Submit primary action

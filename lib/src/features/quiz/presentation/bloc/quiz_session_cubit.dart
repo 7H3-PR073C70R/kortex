@@ -417,11 +417,35 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   void useSecondChance() {
     if (!state.hasSecondChance || !state.isSecondChanceActive) return;
     AppFeedback.light();
+
+    final current = state.currentQuestion;
+    var updatedList = state.questions;
+    final updatedEliminated = Set<int>.from(state.eliminatedOptionIndices);
+
+    if (current != null) {
+      if (current.userSelectedAnswer != null) {
+        final wrongIdx = current.options.indexOf(current.userSelectedAnswer!);
+        if (wrongIdx != -1) {
+          updatedEliminated.add(wrongIdx);
+        }
+      }
+      final resetQuestion = current.copyWith(
+        isAnswered: false,
+        isCorrect: false,
+        clearUserSelectedAnswer: true,
+      );
+      final listCopy = List<QuizQuestionEntity>.from(state.questions);
+      listCopy[state.currentIndex] = resetQuestion;
+      updatedList = listCopy;
+    }
+
     emit(
       state.copyWith(
         hasSecondChance: false,
         isSecondChanceActive: false,
         status: QuizSessionStatus.inProgress,
+        questions: updatedList,
+        eliminatedOptionIndices: updatedEliminated,
       ),
     );
   }
