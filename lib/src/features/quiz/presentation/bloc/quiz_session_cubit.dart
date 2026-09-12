@@ -583,7 +583,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           unawaited(submitQuiz());
         }
       } else {
-        AppFeedback.light();
+        AppFeedback.incorrect();
         _flagMissedCardToFsrs(current.id);
 
         if (state.hasSecondChance) {
@@ -607,6 +607,16 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         }
       }
       return;
+    }
+
+    if (state.assessmentMode == AssessmentMode.discoveryMode) {
+      if (isCorrect) {
+        AppFeedback.correct();
+      } else {
+        AppFeedback.incorrect();
+      }
+    } else {
+      AppFeedback.selection();
     }
 
     emit(

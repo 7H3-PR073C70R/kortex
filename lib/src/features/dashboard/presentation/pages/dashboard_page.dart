@@ -8,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -450,6 +451,12 @@ class _CompactDashboardLayout extends StatelessWidget {
             topDeck: feed.dueStudyDecks.first,
           ),
           const SizedBox(height: 20),
+        ] else if (feed.curatedCourses.isNotEmpty) ...[
+          _NextBestActionCard(
+            fallbackCourseTitle: feed.curatedCourses.first.title,
+            fallbackCourseCode: feed.curatedCourses.first.courseCode,
+          ),
+          const SizedBox(height: 20),
         ],
 
         // 5. Daily Dopamine Arcade (Millionaire Mode)
@@ -722,6 +729,12 @@ class _MediumDashboardLayout extends StatelessWidget {
             topDeck: feed.dueStudyDecks.first,
           ),
           const SizedBox(height: 16),
+        ] else if (feed.curatedCourses.isNotEmpty) ...[
+          _NextBestActionCard(
+            fallbackCourseTitle: feed.curatedCourses.first.title,
+            fallbackCourseCode: feed.curatedCourses.first.courseCode,
+          ),
+          const SizedBox(height: 16),
         ],
         const MillionaireArcadeBanner(),
         const SizedBox(height: 16),
@@ -839,6 +852,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       topDeck: feed.dueStudyDecks.first,
                     ),
                     const SizedBox(height: 20),
+                  ] else if (feed.curatedCourses.isNotEmpty) ...[
+                    _NextBestActionCard(
+                      fallbackCourseTitle: feed.curatedCourses.first.title,
+                      fallbackCourseCode: feed.curatedCourses.first.courseCode,
+                    ),
+                    const SizedBox(height: 20),
                   ],
                   const MillionaireArcadeBanner(),
                   const SizedBox(height: 20),
@@ -898,10 +917,14 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 /// Behavioral decision-fatigue reducer: 1-Tap Next Best Action Card
 class _NextBestActionCard extends StatelessWidget {
   const _NextBestActionCard({
-    required this.topDeck,
+    this.topDeck,
+    this.fallbackCourseTitle,
+    this.fallbackCourseCode,
   });
 
-  final StudyDeckEntity topDeck;
+  final StudyDeckEntity? topDeck;
+  final String? fallbackCourseTitle;
+  final String? fallbackCourseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -909,14 +932,30 @@ class _NextBestActionCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final isDeckSprint = topDeck != null;
+    final badgeLabel = isDeckSprint ? '15-MIN SPRINT' : '3-MIN SPEED RUN';
+    final actionTitle = isDeckSprint
+        ? 'Review ${topDeck!.title}'
+        : (fallbackCourseTitle != null
+            ? 'Sprint: $fallbackCourseTitle'
+            : 'Quick Focus Sprint');
+
     return ShrinkableButton(
       onTap: () {
-        unawaited(HapticFeedback.mediumImpact());
-        unawaited(
-          context.router.push(
-            StudySessionRoute(deckId: 'sprint:10:${topDeck.id}'),
-          ),
-        );
+        AppFeedback.selection();
+        if (isDeckSprint) {
+          unawaited(
+            context.router.push(
+              StudySessionRoute(deckId: 'sprint:10:${topDeck!.id}'),
+            ),
+          );
+        } else {
+          unawaited(
+            context.router.push(
+              StudySessionRoute(deckId: 'sprint:speed:3:all'),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -983,7 +1022,7 @@ class _NextBestActionCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '15-MIN SPRINT',
+                          badgeLabel,
                           style: typography.caption.bold.copyWith(
                             color: colors.primary,
                             fontSize: 8.5,
@@ -994,7 +1033,7 @@ class _NextBestActionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Review ${topDeck.title}',
+                    actionTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: typography.subhead.bold.copyWith(

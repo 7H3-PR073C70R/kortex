@@ -12,6 +12,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -52,6 +53,11 @@ class MockExamLobbyPage extends HookWidget {
         title: l10n.mockExamModeDrillTitle,
         subtitle: l10n.mockExamModeDrillSubtitle,
         icon: Icons.track_changes_rounded,
+      ),
+      (
+        title: 'Millionaire Arcade',
+        subtitle: '12-rung gamified dopamine ascent with safe checkpoints & lifelines',
+        icon: Icons.military_tech_rounded,
       ),
     ];
 
@@ -221,12 +227,27 @@ class MockExamLobbyPage extends HookWidget {
                         isStarting.value = true;
                         final selectedMode =
                             simulationModes[selectedModeIndex.value];
-                        final duration = selectedModeIndex.value == 0
-                            ? 45
-                            : (selectedModeIndex.value == 1 ? 30 : 15);
-                        final questionCount = selectedModeIndex.value == 0
-                            ? 20
-                            : (selectedModeIndex.value == 1 ? 15 : 10);
+                        final AssessmentMode assessmentMode;
+                        final int? duration;
+                        final int questionCount;
+
+                        if (selectedModeIndex.value == 0) {
+                          assessmentMode = AssessmentMode.examSimulationMode;
+                          duration = 45;
+                          questionCount = 20;
+                        } else if (selectedModeIndex.value == 1) {
+                          assessmentMode = AssessmentMode.discoveryMode;
+                          duration = 30;
+                          questionCount = 15;
+                        } else if (selectedModeIndex.value == 2) {
+                          assessmentMode = AssessmentMode.discoveryMode;
+                          duration = null;
+                          questionCount = 10;
+                        } else {
+                          assessmentMode = AssessmentMode.millionaireMode;
+                          duration = null;
+                          questionCount = 12;
+                        }
 
                         locator<DashboardBloc>().add(
                           DashboardExamStarted(
@@ -280,6 +301,7 @@ class MockExamLobbyPage extends HookWidget {
                               deckTitle: '$examName (${selectedMode.title})',
                               subject: examName,
                               durationMinutes: duration,
+                              assessmentMode: assessmentMode,
                               initialQuestions: initialQuestions,
                             ),
                           ),

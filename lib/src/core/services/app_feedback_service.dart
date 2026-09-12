@@ -77,39 +77,79 @@ class AppFeedback {
     } on Object catch (_) {}
   }
 
+  static void correct() {
+    if (isHapticsEnabled) {
+      try {
+        unawaited(HapticFeedback.lightImpact());
+      } on Object catch (_) {}
+    }
+    if (isSfxEnabled) {
+      try {
+        unawaited(SystemSound.play(SystemSoundType.click));
+      } on Object catch (_) {}
+    }
+  }
+
+  static void incorrect() {
+    if (isHapticsEnabled) {
+      try {
+        // Subtle, low-friction sensory notification (low RSD, non-punitive)
+        unawaited(HapticFeedback.selectionClick());
+      } on Object catch (_) {}
+    }
+  }
+
   static void celebration() {
-    if (!isHapticsEnabled) return;
-    try {
-      unawaited(HapticFeedback.heavyImpact());
-      Future.delayed(const Duration(milliseconds: 120), () {
-        if (isHapticsEnabled) {
-          try {
-            unawaited(HapticFeedback.mediumImpact());
-          } on Object catch (_) {}
-        }
-      });
-    } on Object catch (_) {}
+    if (isHapticsEnabled) {
+      try {
+        unawaited(HapticFeedback.heavyImpact());
+        Future.delayed(const Duration(milliseconds: 120), () {
+          if (isHapticsEnabled) {
+            try {
+              unawaited(HapticFeedback.mediumImpact());
+            } on Object catch (_) {}
+          }
+        });
+      } on Object catch (_) {}
+    }
+    if (isSfxEnabled) {
+      try {
+        unawaited(SystemSound.play(SystemSoundType.alert));
+      } on Object catch (_) {}
+    }
   }
 
   static void lifeline() {
-    if (!isHapticsEnabled) return;
-    try {
-      unawaited(HapticFeedback.lightImpact());
-      Future.delayed(const Duration(milliseconds: 80), () {
-        if (isHapticsEnabled) {
-          try {
-            unawaited(HapticFeedback.selectionClick());
-          } on Object catch (_) {}
-        }
-      });
-    } on Object catch (_) {}
+    if (isHapticsEnabled) {
+      try {
+        unawaited(HapticFeedback.lightImpact());
+        Future.delayed(const Duration(milliseconds: 80), () {
+          if (isHapticsEnabled) {
+            try {
+              unawaited(HapticFeedback.selectionClick());
+            } on Object catch (_) {}
+          }
+        });
+      } on Object catch (_) {}
+    }
+    if (isSfxEnabled) {
+      try {
+        unawaited(SystemSound.play(SystemSoundType.click));
+      } on Object catch (_) {}
+    }
   }
 
   static void selection() {
-    if (!isHapticsEnabled) return;
-    try {
-      unawaited(HapticFeedback.selectionClick());
-    } on Object catch (_) {}
+    if (isHapticsEnabled) {
+      try {
+        unawaited(HapticFeedback.selectionClick());
+      } on Object catch (_) {}
+    }
+    if (isSfxEnabled) {
+      try {
+        unawaited(SystemSound.play(SystemSoundType.click));
+      } on Object catch (_) {}
+    }
   }
 
   static void vibrate() {

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
@@ -21,8 +24,63 @@ class ExamTimetablePage extends StatefulWidget {
 }
 
 class _ExamTimetablePageState extends State<ExamTimetablePage> {
+  static const String _dailyReminderKey = '__kortex_daily_exam_reminders__';
+  static const String _milestoneAlertsKey = '__kortex_milestone_exam_alerts__';
+
   bool _dailyReminderEnabled = true;
   bool _milestoneAlertsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPreferences();
+  }
+
+  void _loadNotificationPreferences() {
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        final storage = locator<LocalStorageService>();
+        final dailyPref = storage.getPreference(key: _dailyReminderKey);
+        final milestonePref = storage.getPreference(key: _milestoneAlertsKey);
+        setState(() {
+          _dailyReminderEnabled = dailyPref == null || dailyPref == 'true';
+          _milestoneAlertsEnabled = milestonePref == null || milestonePref == 'true';
+        });
+      }
+    } on Object catch (_) {}
+  }
+
+  Future<void> _setDailyReminder(bool enabled) async {
+    setState(() => _dailyReminderEnabled = enabled);
+    AppFeedback.selection();
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        await locator<LocalStorageService>().savePreference(
+          key: _dailyReminderKey,
+          data: enabled.toString(),
+        );
+      }
+      if (!enabled && !_milestoneAlertsEnabled && locator.isRegistered<NotificationService>()) {
+        unawaited(locator<NotificationService>().cancelAllNotifications());
+      }
+    } on Object catch (_) {}
+  }
+
+  Future<void> _setMilestoneAlerts(bool enabled) async {
+    setState(() => _milestoneAlertsEnabled = enabled);
+    AppFeedback.selection();
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        await locator<LocalStorageService>().savePreference(
+          key: _milestoneAlertsKey,
+          data: enabled.toString(),
+        );
+      }
+      if (!enabled && !_dailyReminderEnabled && locator.isRegistered<NotificationService>()) {
+        unawaited(locator<NotificationService>().cancelAllNotifications());
+      }
+    } on Object catch (_) {}
+  }
 
   Future<void> _confirmDelete(BuildContext context, ExamEventEntity exam) async {
     final colors = context.colors;
@@ -515,7 +573,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             activeThumbColor: colors.primary,
             activeTrackColor: colors.primary.withValues(alpha: 0.5),
             onChanged: (val) {
-              setState(() => _dailyReminderEnabled = val);
+              unawaited(_setDailyReminder(val));
             },
           ),
           const Divider(),
@@ -537,7 +595,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             activeThumbColor: colors.primary,
             activeTrackColor: colors.primary.withValues(alpha: 0.5),
             onChanged: (val) {
-              setState(() => _milestoneAlertsEnabled = val);
+              unawaited(_setMilestoneAlerts(val));
             },
           ),
         ],

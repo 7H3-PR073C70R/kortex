@@ -16,6 +16,9 @@ abstract class UserActivityService {
 
   int getCurrentStreak();
   int getLongestStreak();
+  int getStreakFreezes();
+  Future<void> setStreakFreezes(int count);
+  Future<bool> consumeStreakFreeze();
   int getTotalCardsMastered();
   int getWeeklyMinutesStudied();
   double getOverallRetentionRate();
@@ -35,6 +38,30 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _streakCurrentKey = '__kortex_streak_current';
   static const String _streakLongestKey = '__kortex_streak_longest';
   static const String _lastStudyDateKey = '__kortex_last_study_date';
+  static const String _streakFreezesKey = '__kortex_streak_freezes';
+
+  @override
+  int getStreakFreezes() {
+    final raw = _localStorageService.getPreference(key: _streakFreezesKey);
+    if (raw == null || raw.isEmpty) return 1; // Default to 1 streak freeze
+    return int.tryParse(raw) ?? 1;
+  }
+
+  @override
+  Future<void> setStreakFreezes(int count) async {
+    await _localStorageService.savePreference(
+      key: _streakFreezesKey,
+      data: count.toString(),
+    );
+  }
+
+  @override
+  Future<bool> consumeStreakFreeze() async {
+    final current = getStreakFreezes();
+    if (current <= 0) return false;
+    await setStreakFreezes(current - 1);
+    return true;
+  }
 
   @override
   Future<void> recordStudySession({
@@ -88,6 +115,10 @@ class UserActivityServiceImpl implements UserActivityService {
 
       if (diffDays == 1) {
         currentStreak += 1;
+      } else if (diffDays == 2 && getStreakFreezes() > 0) {
+        // Protect streak using an available streak freeze
+        await consumeStreakFreeze();
+        currentStreak += 1;
       } else if (diffDays > 1) {
         currentStreak = 1;
       }
@@ -127,6 +158,10 @@ class UserActivityServiceImpl implements UserActivityService {
       final todayDate = _parseDate(todayKey);
       final diffDays = todayDate.difference(lastDate).inDays;
       if (diffDays > 1) {
+        // If user missed 1 day (diffDays == 2) and has a streak freeze active, preserve streak
+        if (diffDays == 2 && getStreakFreezes() > 0) {
+          return streak;
+        }
         // Streak expired
         return 0;
       }

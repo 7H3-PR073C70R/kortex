@@ -116,5 +116,34 @@ void main() {
       expect(summary.heatMapData.length, equals(28));
       expect(summary.xpPoints, greaterThan(0));
     });
+
+    test('streak freeze protects streak on 1-day missed lapse', () async {
+      expect(activityService.getStreakFreezes(), equals(1));
+
+      // Record session on day 1
+      await activityService.recordStudySession(
+        cardsReviewed: 10,
+        durationSeconds: 100,
+        retentionScore: 0.9,
+      );
+      expect(activityService.getCurrentStreak(), equals(1));
+
+      // Simulate last study date was 2 days ago (missed yesterday)
+      final twoDaysAgo = DateTime.now().subtract(const Duration(days: 2));
+      final dateKey = '${twoDaysAgo.year}-${twoDaysAgo.month.toString().padLeft(2, '0')}-${twoDaysAgo.day.toString().padLeft(2, '0')}';
+      inMemoryPrefs['__kortex_last_study_date'] = dateKey;
+
+      // With streak freeze available, streak is preserved rather than wiped to 0
+      expect(activityService.getCurrentStreak(), equals(1));
+
+      // User studies today -> streak freeze consumed, streak increments to 2
+      await activityService.recordStudySession(
+        cardsReviewed: 10,
+        durationSeconds: 100,
+        retentionScore: 0.9,
+      );
+      expect(activityService.getStreakFreezes(), equals(0));
+      expect(activityService.getCurrentStreak(), equals(2));
+    });
   });
 }
