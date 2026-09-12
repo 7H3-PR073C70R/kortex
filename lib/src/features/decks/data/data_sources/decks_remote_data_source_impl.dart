@@ -82,6 +82,13 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     return const [];
   }
 
+  bool _isValidUuid(String id) {
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(id);
+  }
+
   String? _getUserTrack() {
     try {
       if (locator.isRegistered<AuthBloc>()) {
@@ -425,9 +432,10 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       }
     } on Object catch (_) {}
 
-    // 3. Fetch from remote if not cached locally and user is authenticated
+    // 3. Fetch from remote if not cached locally, deckId is a valid UUID, and user is authenticated
     final token = _userStorage?.getToken();
-    if (_userStorage == null || (token != null && token.trim().isNotEmpty)) {
+    if (_isValidUuid(deckId) &&
+        (_userStorage == null || (token != null && token.trim().isNotEmpty))) {
       try {
         final cards = await _client.getDeckCards(deckId);
         if (cards.isNotEmpty) {
@@ -560,27 +568,29 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       ),
     );
 
-    // 4. Sync to Supabase RPC record_study_session with correct parameter names
-    try {
-      await _client.saveSessionResults({
-        'p_deck_id': deckId,
-        'p_cards_reviewed': cardsReviewed,
-        'p_duration_seconds': durationSeconds,
-        'p_retention_score': retentionScore,
-      });
-    } on Object catch (_) {
-      // Offline/Local continues gracefully
-    }
+    // 4. Sync to Supabase RPC record_study_session with correct parameter names if UUID
+    if (_isValidUuid(deckId)) {
+      try {
+        await _client.saveSessionResults({
+          'p_deck_id': deckId,
+          'p_cards_reviewed': cardsReviewed,
+          'p_duration_seconds': durationSeconds,
+          'p_retention_score': retentionScore,
+        });
+      } on Object catch (_) {
+        // Offline/Local continues gracefully
+      }
 
-    // 5. Persist updated deck mastery and due status to Supabase decks table
-    try {
-      await _client.updateDeckRecord(deckId, {
-        'mastery_rate': calculatedMasteryRate,
-        'due_cards': calculatedDueCards,
-        'last_studied': now.toIso8601String(),
-      });
-    } on Object catch (_) {
-      // Offline/Local continues gracefully
+      // 5. Persist updated deck mastery and due status to Supabase decks table
+      try {
+        await _client.updateDeckRecord(deckId, {
+          'mastery_rate': calculatedMasteryRate,
+          'due_cards': calculatedDueCards,
+          'last_studied': now.toIso8601String(),
+        });
+      } on Object catch (_) {
+        // Offline/Local continues gracefully
+      }
     }
   }
 
@@ -591,10 +601,12 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     _persistLocalDecksToStorage();
     unawaited(_localDataSource?.deleteDeck(deckId));
 
-    try {
-      await _client.deleteDeck(deckId);
-    } on Object catch (_) {
-      // Offline/Local deletion continues smoothly
+    if (_isValidUuid(deckId)) {
+      try {
+        await _client.deleteDeck(deckId);
+      } on Object catch (_) {
+        // Offline/Local deletion continues smoothly
+      }
     }
   }
 
@@ -661,12 +673,14 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       ),
     );
 
-    try {
-      await _client.updateDeckRecord(deckId, {
-        'course_id': courseId,
-        'course_code': courseCode,
-      });
-    } on Object catch (_) {}
+    if (_isValidUuid(deckId)) {
+      try {
+        await _client.updateDeckRecord(deckId, {
+          'course_id': courseId,
+          'course_code': courseCode,
+        });
+      } on Object catch (_) {}
+    }
   }
 
   @override

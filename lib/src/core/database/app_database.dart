@@ -299,6 +299,26 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertFlashcardEntry(FlashcardsCompanion card) async {
+    if (card.deckId.present && card.deckId.value.isNotEmpty) {
+      final deckId = card.deckId.value;
+      final existing =
+          await (select(decks)..where((d) => d.id.equals(deckId)))
+              .getSingleOrNull();
+      if (existing == null) {
+        final now = DateTime.now();
+        await into(decks).insert(
+          DecksCompanion.insert(
+            id: deckId,
+            title: deckId.startsWith('canonical_')
+                ? 'Canonical Deck'
+                : 'Study Deck',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    }
     await into(flashcards).insertOnConflictUpdate(card);
     if (card.deckId.present) {
       await recalculateDeckStatsForId(card.deckId.value);
@@ -309,15 +329,35 @@ class AppDatabase extends _$AppDatabase {
     if (cardsList.isEmpty) return;
     final deckIds = <String>{};
 
-    await batch((b) {
-      b.insertAllOnConflictUpdate(flashcards, cardsList);
-    });
-
     for (final card in cardsList) {
       if (card.deckId.present && card.deckId.value.isNotEmpty) {
         deckIds.add(card.deckId.value);
       }
     }
+
+    final now = DateTime.now();
+    for (final deckId in deckIds) {
+      final existing =
+          await (select(decks)..where((d) => d.id.equals(deckId)))
+              .getSingleOrNull();
+      if (existing == null) {
+        await into(decks).insert(
+          DecksCompanion.insert(
+            id: deckId,
+            title: deckId.startsWith('canonical_')
+                ? 'Canonical Deck'
+                : 'Study Deck',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    }
+
+    await batch((b) {
+      b.insertAllOnConflictUpdate(flashcards, cardsList);
+    });
 
     for (final deckId in deckIds) {
       await recalculateDeckStatsForId(deckId);
