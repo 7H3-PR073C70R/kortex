@@ -15,6 +15,8 @@ class EphemeralParticipant {
     this.isAiBuddy = false,
     this.joinedAt,
     this.activeGoal,
+    this.cardsReviewed = 0,
+    this.currentDeckTitle,
   });
 
   factory EphemeralParticipant.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,8 @@ class EphemeralParticipant {
           ? DateTime.tryParse(json['joinedAt'] as String)
           : null,
       activeGoal: json['activeGoal'] as String?,
+      cardsReviewed: json['cardsReviewed'] as int? ?? 0,
+      currentDeckTitle: json['currentDeckTitle'] as String?,
     );
   }
 
@@ -44,6 +48,10 @@ class EphemeralParticipant {
   /// The micro-goal this participant set for the current session.
   /// Broadcast via the ephemeral presence channel so peers can see it.
   final String? activeGoal;
+  /// Number of flashcards reviewed in this room sprint.
+  final int cardsReviewed;
+  /// The active deck title being studied.
+  final String? currentDeckTitle;
 
   Map<String, dynamic> toJson() {
     return {
@@ -56,6 +64,8 @@ class EphemeralParticipant {
       'isAiBuddy': isAiBuddy,
       'joinedAt': (joinedAt ?? DateTime.now()).toIso8601String(),
       if (activeGoal != null) 'activeGoal': activeGoal,
+      'cardsReviewed': cardsReviewed,
+      if (currentDeckTitle != null) 'currentDeckTitle': currentDeckTitle,
     };
   }
 
@@ -69,6 +79,8 @@ class EphemeralParticipant {
     bool? isAiBuddy,
     DateTime? joinedAt,
     String? activeGoal,
+    int? cardsReviewed,
+    String? currentDeckTitle,
   }) {
     return EphemeralParticipant(
       userId: userId ?? this.userId,
@@ -80,6 +92,8 @@ class EphemeralParticipant {
       isAiBuddy: isAiBuddy ?? this.isAiBuddy,
       joinedAt: joinedAt ?? this.joinedAt,
       activeGoal: activeGoal ?? this.activeGoal,
+      cardsReviewed: cardsReviewed ?? this.cardsReviewed,
+      currentDeckTitle: currentDeckTitle ?? this.currentDeckTitle,
     );
   }
 }
@@ -277,6 +291,13 @@ abstract class EphemeralPresenceClient {
     required String? goal,
   });
 
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  });
+
   Future<void> broadcastPomodoroTick({
     required String roomId,
     required int remainingSeconds,
@@ -384,6 +405,21 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
                   EphemeralParticipant.fromJson(data);
             }
             _notifyParticipants(roomId);
+          } else if (type == 'card_progress') {
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+            final userId = data['userId'] as String?;
+            final cardsReviewed = data['cardsReviewed'] as int? ?? 0;
+            final deckTitle = data['deckTitle'] as String?;
+            if (userId != null &&
+                _roomParticipants[roomId] != null &&
+                _roomParticipants[roomId]!.containsKey(userId)) {
+              final existing = _roomParticipants[roomId]![userId]!;
+              _roomParticipants[roomId]![userId] = existing.copyWith(
+                cardsReviewed: cardsReviewed,
+                currentDeckTitle: deckTitle,
+              );
+              _notifyParticipants(roomId);
+            }
           } else if (type == 'pomodoro_tick') {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final syncEvent = PomodoroSyncEvent.fromJson(data);
@@ -606,6 +642,34 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           avatarUrl: '',
         );
     final updated = existing.copyWith(activeGoal: goal);
+    _roomParticipants[roomId]![userId] = updated;
+    _notifyParticipants(roomId);
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'data': {'action': 'update', ...updated.toJson()},
+      },
+    );
+  }
+
+  @override
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  }) async {
+    _roomParticipants.putIfAbsent(roomId, () => {});
+    final existing = _roomParticipants[roomId]?[userId] ??
+        EphemeralParticipant(
+          userId: userId,
+          displayName: 'Scholar',
+          avatarUrl: '',
+        );
+    final updated = existing.copyWith(
+      cardsReviewed: cardsReviewed,
+      currentDeckTitle: deckTitle,
+    );
     _roomParticipants[roomId]![userId] = updated;
     _notifyParticipants(roomId);
     _realtime.broadcastPresence(

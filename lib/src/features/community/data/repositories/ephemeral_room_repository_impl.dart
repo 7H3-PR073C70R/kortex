@@ -105,6 +105,21 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  }) async {
+    await _presenceClient.broadcastCardProgress(
+      roomId: roomId,
+      userId: userId,
+      cardsReviewed: cardsReviewed,
+      deckTitle: deckTitle,
+    );
+  }
+
+  @override
   Future<void> broadcastWhiteboardStroke({
     required String roomId,
     required WhiteboardStroke stroke,

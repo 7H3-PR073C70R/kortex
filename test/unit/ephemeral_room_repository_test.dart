@@ -48,6 +48,20 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
     _participantsController.add([]);
   }
 
+  int? lastBroadcastCardsReviewed;
+  String? lastBroadcastDeckTitle;
+
+  @override
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  }) async {
+    lastBroadcastCardsReviewed = cardsReviewed;
+    lastBroadcastDeckTitle = deckTitle;
+  }
+
   @override
   Future<void> broadcastGoal({
     required String roomId,

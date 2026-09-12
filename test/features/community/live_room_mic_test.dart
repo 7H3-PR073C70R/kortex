@@ -128,6 +128,14 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }) async {}
 
   @override
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  }) async {}
+
+  @override
   Future<void> leaveRoomPresence(String roomId) async {}
 
   @override

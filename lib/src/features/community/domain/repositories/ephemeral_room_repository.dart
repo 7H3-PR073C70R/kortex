@@ -19,6 +19,13 @@ abstract class EphemeralRoomRepository {
     required String? goal,
   });
 
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  });
+
   Future<void> broadcastPomodoroTick({
     required String roomId,
     required int remainingSeconds,

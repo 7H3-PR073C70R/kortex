@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
@@ -17,6 +19,7 @@ import 'package:kortex/src/features/community/domain/services/livekit_audio_serv
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/features/community/presentation/widgets/floating_reaction_overlay.dart';
 import 'package:kortex/src/features/community/presentation/widgets/focus_session_summary_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/in_room_deck_study_workspace.dart';
 import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -286,7 +289,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               autofocus: true,
               style: typography.body.regular.copyWith(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'e.g. Solve 10 calculus integrals',
+                hintText: 'e.g. Review 15 flashcards',
                 hintStyle: typography.caption.regular.copyWith(color: colors.textMuted),
                 filled: true,
                 fillColor: colors.primary.withAlpha(20),
@@ -295,6 +298,39 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   borderSide: BorderSide(color: colors.primary.withAlpha(50)),
                 ),
               ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                'Review 15 flashcards',
+                'Deep Focus 25 mins',
+                'Master 10 concepts',
+                'Complete 1 Quiz',
+              ].map((preset) {
+                return ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.selectionClick());
+                    controller.text = preset;
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: colors.primary.withAlpha(40)),
+                    ),
+                    child: Text(
+                      preset,
+                      style: typography.caption.bold.copyWith(
+                        fontSize: 10.5,
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -523,47 +559,69 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 ],
                 const SizedBox(height: 6),
 
-                // Main body: Silent Focus Cockpit
+                // In-Room View Mode Switcher (Stage / Study Deck / Whiteboard)
+                _InRoomModeSwitcherBar(
+                  activeMode: state.activeViewMode,
+                  onSelectMode: (mode) =>
+                      context.read<LiveRoomCubit>().switchViewMode(mode),
+                  isDark: isDark,
+                  cardsReviewed: state.cardsReviewedInSprint,
+                ),
+                const SizedBox(height: 6),
+
+                // Main body: Switches dynamically between Focus Stage, In-Room Study Deck, and Whiteboard
                 Expanded(
-                  child: Column(
-                    children: [
-                            // Silent Focus Cockpit: Body-doubling flow state
-                            Expanded(
-                              flex: 5,
-                              child: _FocusCockpitSection(
-                                participants: state.ephemeralParticipants,
-                                activeSpeakerIds: state.activeSpeakerIds,
-                                fallbackNames: hasEphemeral ? const [] : state.participants,
-                                colors: colors,
-                                typography: typography,
-                                isDark: isDark,
-                                subject: state.room.subject,
-                                participantCount: hasEphemeral
-                                    ? state.ephemeralParticipants.length
-                                    : state.participants.length,
-                                activeGoal: state.activeGoal,
-                                isVoicePodEnabled: state.isVoicePodEnabled,
-                                l10n: l10n,
-                              ),
-                            ),
-
-                            const SizedBox(height: 2),
-
-                            // Audience / Other Scholars section
-                            if (audience.isNotEmpty || (!hasEphemeral && state.participants.length > 1))
-                              Expanded(
-                                flex: 3,
-                                child: _AudienceSection(
-                                  audience: audience,
-                                  fallbackNames: hasEphemeral ? const [] : state.participants.skip(1).toList(),
-                                  colors: colors,
-                                  typography: typography,
-                                  isDark: isDark,
-                                  l10n: l10n,
+                  child: state.activeViewMode == RoomViewMode.deckStudy
+                      ? InRoomDeckStudyWorkspace(roomState: state)
+                      : state.activeViewMode == RoomViewMode.whiteboard
+                          ? _InRoomWhiteboardSection(state: state, isDark: isDark)
+                          : Column(
+                              children: [
+                                // Silent Focus Cockpit: Body-doubling flow state
+                                Expanded(
+                                  flex: 5,
+                                  child: _FocusCockpitSection(
+                                    participants: state.ephemeralParticipants,
+                                    activeSpeakerIds: state.activeSpeakerIds,
+                                    fallbackNames: hasEphemeral
+                                        ? const []
+                                        : state.participants,
+                                    colors: colors,
+                                    typography: typography,
+                                    isDark: isDark,
+                                    subject: state.room.subject,
+                                    participantCount: hasEphemeral
+                                        ? state.ephemeralParticipants.length
+                                        : state.participants.length,
+                                    activeGoal: state.activeGoal,
+                                    isVoicePodEnabled: state.isVoicePodEnabled,
+                                    l10n: l10n,
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
+
+                                const SizedBox(height: 2),
+
+                                // Audience / Other Scholars section
+                                if (audience.isNotEmpty ||
+                                    (!hasEphemeral &&
+                                        state.participants.length > 1))
+                                  Expanded(
+                                    flex: 3,
+                                    child: _AudienceSection(
+                                      audience: audience,
+                                      fallbackNames: hasEphemeral
+                                          ? const []
+                                          : state.participants
+                                              .skip(1)
+                                              .toList(),
+                                      colors: colors,
+                                      typography: typography,
+                                      isDark: isDark,
+                                      l10n: l10n,
+                                    ),
+                                  ),
+                              ],
+                            ),
                 ),
 
                 // Floating Micro-Reaction Rail for Silent Focus
@@ -1443,8 +1501,32 @@ class _FocusParticipantTile extends StatelessWidget {
             ],
           ),
         ),
+        if (participant.cardsReviewed > 0) ...[
+          const SizedBox(height: 2.5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: cColors.recallGood.withAlpha(25),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bolt_rounded, size: 9, color: cColors.recallGood),
+                const SizedBox(width: 2),
+                Text(
+                  '${participant.cardsReviewed} cards',
+                  style: cTypography.caption.bold.copyWith(
+                    color: cColors.recallGood,
+                    fontSize: 8.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (participant.activeGoal != null && participant.activeGoal!.trim().isNotEmpty) ...[
-          const SizedBox(height: 3),
+          const SizedBox(height: 2.5),
           Container(
             constraints: const BoxConstraints(maxWidth: 90),
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
@@ -1838,6 +1920,94 @@ class _BottomActionBar extends StatelessWidget {
             const SizedBox(width: 8),
           ],
 
+          // In-Room Deck Study Toggle Button
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.mediumImpact());
+              final cubit = context.read<LiveRoomCubit>();
+              final target = state.activeViewMode == RoomViewMode.deckStudy
+                  ? RoomViewMode.stage
+                  : RoomViewMode.deckStudy;
+              cubit.switchViewMode(target);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: state.activeViewMode == RoomViewMode.deckStudy
+                    ? cColors.primary
+                    : cColors.surfaceSecondary,
+                border: Border.all(
+                  color: state.activeViewMode == RoomViewMode.deckStudy
+                      ? cColors.primary
+                      : cColors.primary.withAlpha(50),
+                ),
+                boxShadow: state.activeViewMode == RoomViewMode.deckStudy
+                    ? [
+                        BoxShadow(
+                          color: cColors.primary.withAlpha(100),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                Icons.style_rounded,
+                color: state.activeViewMode == RoomViewMode.deckStudy
+                    ? Colors.white
+                    : cColors.primary,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // In-Room Collaborative Whiteboard Toggle Button
+          ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              final cubit = context.read<LiveRoomCubit>();
+              final target = state.activeViewMode == RoomViewMode.whiteboard
+                  ? RoomViewMode.stage
+                  : RoomViewMode.whiteboard;
+              cubit.switchViewMode(target);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: state.activeViewMode == RoomViewMode.whiteboard
+                    ? cColors.syllabotAccent
+                    : cColors.surfaceSecondary,
+                border: Border.all(
+                  color: state.activeViewMode == RoomViewMode.whiteboard
+                      ? cColors.syllabotAccent
+                      : cColors.primary.withAlpha(50),
+                ),
+                boxShadow: state.activeViewMode == RoomViewMode.whiteboard
+                    ? [
+                        BoxShadow(
+                          color: cColors.syllabotAccent.withAlpha(100),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                Icons.draw_rounded,
+                color: state.activeViewMode == RoomViewMode.whiteboard
+                    ? Colors.white
+                    : cColors.syllabotAccent,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // In-Room Live Chat Drawer Button with Unread Badge
           Stack(
             clipBehavior: Clip.none,
@@ -2205,5 +2375,486 @@ class _PomodoroMiniPill extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── In-Room Mode Switcher Bar ──────────────────────────────────────────────────
+
+class _InRoomModeSwitcherBar extends StatelessWidget {
+  const _InRoomModeSwitcherBar({
+    required this.activeMode,
+    required this.onSelectMode,
+    required this.isDark,
+    required this.cardsReviewed,
+  });
+
+  final RoomViewMode activeMode;
+  final ValueChanged<RoomViewMode> onSelectMode;
+  final bool isDark;
+  final int cardsReviewed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(3.5),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary.withAlpha(isDark ? 160 : 220),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.primary.withAlpha(isDark ? 50 : 25),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildSegment(
+            context,
+            mode: RoomViewMode.stage,
+            icon: Icons.group_rounded,
+            label: 'Focus Pod',
+            isActive: activeMode == RoomViewMode.stage,
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(width: 4),
+          _buildSegment(
+            context,
+            mode: RoomViewMode.deckStudy,
+            icon: Icons.style_rounded,
+            label: 'Study Deck',
+            badge: cardsReviewed > 0 ? '$cardsReviewed' : null,
+            isActive: activeMode == RoomViewMode.deckStudy,
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(width: 4),
+          _buildSegment(
+            context,
+            mode: RoomViewMode.whiteboard,
+            icon: Icons.draw_rounded,
+            label: 'Whiteboard',
+            isActive: activeMode == RoomViewMode.whiteboard,
+            colors: colors,
+            typography: typography,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegment(
+    BuildContext context, {
+    required RoomViewMode mode,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+    String? badge,
+  }) {
+    return Expanded(
+      child: ShrinkableButton(
+        onTap: () {
+          unawaited(HapticFeedback.selectionClick());
+          onSelectMode(mode);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isActive
+                ? colors.primary
+                : colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isActive ? Colors.white : colors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: (isActive
+                        ? typography.caption.bold
+                        : typography.caption.medium)
+                    .copyWith(
+                  color: isActive ? Colors.white : colors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              if (badge != null) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.white.withAlpha(50)
+                        : colors.recallEasy.withAlpha(isDark ? 50 : 30),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badge,
+                    style: typography.caption.bold.copyWith(
+                      fontSize: 9,
+                      color: isActive ? Colors.white : colors.recallEasy,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── In-Room Collaborative Whiteboard ──────────────────────────────────────────
+
+class _InRoomWhiteboardSection extends StatefulWidget {
+  const _InRoomWhiteboardSection({
+    required this.state,
+    required this.isDark,
+  });
+
+  final LiveRoomState state;
+  final bool isDark;
+
+  @override
+  State<_InRoomWhiteboardSection> createState() =>
+      _InRoomWhiteboardSectionState();
+}
+
+class _InRoomWhiteboardSectionState extends State<_InRoomWhiteboardSection> {
+  final List<WhiteboardPoint> _currentPoints = [];
+  int _selectedColorHex = 0xFFFFFFFF;
+  final double _strokeWidth = 3;
+  bool _isEraser = false;
+
+  final List<int> _colorPalette = const [
+    0xFFFFFFFF, // White
+    0xFF6366F1, // Indigo / Primary
+    0xFFF59E0B, // Amber
+    0xFF10B981, // Emerald
+    0xFFEC4899, // Pink
+    0xFF06B6D4, // Cyan
+  ];
+
+  void _onPanStart(DragStartDetails details, BoxConstraints constraints) {
+    setState(() {
+      _currentPoints
+        ..clear()
+        ..add(
+          WhiteboardPoint(
+            x: (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0),
+            y: (details.localPosition.dy / constraints.maxHeight).clamp(0.0, 1.0),
+          ),
+        );
+    });
+  }
+
+  void _onPanUpdate(DragUpdateDetails details, BoxConstraints constraints) {
+    setState(() {
+      _currentPoints.add(
+        WhiteboardPoint(
+          x: (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0),
+          y: (details.localPosition.dy / constraints.maxHeight).clamp(0.0, 1.0),
+        ),
+      );
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (_currentPoints.isEmpty) return;
+
+    final cubit = context.read<LiveRoomCubit>();
+    final userStorage = locator<UserStorageService>();
+    final userId = userStorage.getUserId() ?? 'user_local';
+    final userName = userStorage.getUserDisplayName() ?? 'Scholar';
+
+    final stroke = WhiteboardStroke(
+      id: 'stroke_${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(9999)}',
+      userId: userId,
+      userName: userName,
+      colorHex: _isEraser ? (widget.isDark ? 0xFF12131A : 0xFFFFFFFF) : _selectedColorHex,
+      strokeWidth: _isEraser ? 16.0 : _strokeWidth,
+      isEraser: _isEraser,
+      points: List<WhiteboardPoint>.from(_currentPoints),
+    );
+
+    cubit.addWhiteboardStroke(stroke);
+    setState(_currentPoints.clear);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = widget.isDark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Stack(
+        children: [
+          // Whiteboard Surface
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF13141E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colors.primary.withAlpha(isDark ? 60 : 30),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 80 : 20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    onPanStart: (details) => _onPanStart(details, constraints),
+                    onPanUpdate: (details) => _onPanUpdate(details, constraints),
+                    onPanEnd: _onPanEnd,
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      painter: _WhiteboardCanvasPainter(
+                        strokes: widget.state.whiteboardStrokes,
+                        livePoints: _currentPoints,
+                        liveColorHex: _selectedColorHex,
+                        liveStrokeWidth: _isEraser ? 16.0 : _strokeWidth,
+                        isEraser: _isEraser,
+                        isDark: isDark,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // Floating Tools Toolbar (Color palette, Eraser, Undo, Redo, Clear)
+          Positioned(
+            bottom: 12,
+            left: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.surfacePrimary.withAlpha(isDark ? 230 : 245),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 60 : 30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.black.withAlpha(isDark ? 90 : 30),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Color choices
+                  ..._colorPalette.map((colorHex) {
+                    final isSelected = !_isEraser && _selectedColorHex == colorHex;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          setState(() {
+                            _selectedColorHex = colorHex;
+                            _isEraser = false;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: isSelected ? 24 : 18,
+                          height: isSelected ? 24 : 18,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(colorHex),
+                            border: Border.all(
+                              color: isSelected ? colors.primary : Colors.grey.withAlpha(80),
+                              width: isSelected ? 2.5 : 1.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+
+                  const Spacer(),
+
+                  // Eraser Toggle
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.selectionClick());
+                      setState(() => _isEraser = !_isEraser);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isEraser ? colors.warning : colors.surfaceTertiary,
+                      ),
+                      child: Icon(
+                        Icons.cleaning_services_rounded,
+                        size: 15,
+                        color: _isEraser ? Colors.white : colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Undo Button
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      context.read<LiveRoomCubit>().undoWhiteboardStroke();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.surfaceTertiary,
+                      ),
+                      child: Icon(
+                        Icons.undo_rounded,
+                        size: 15,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Clear Button
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.mediumImpact());
+                      context.read<LiveRoomCubit>().clearWhiteboard();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.error.withAlpha(isDark ? 40 : 25),
+                      ),
+                      child: Icon(
+                        Icons.delete_sweep_rounded,
+                        size: 15,
+                        color: colors.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WhiteboardCanvasPainter extends CustomPainter {
+  const _WhiteboardCanvasPainter({
+    required this.strokes,
+    required this.livePoints,
+    required this.liveColorHex,
+    required this.liveStrokeWidth,
+    required this.isEraser,
+    required this.isDark,
+  });
+
+  final List<WhiteboardStroke> strokes;
+  final List<WhiteboardPoint> livePoints;
+  final int liveColorHex;
+  final double liveStrokeWidth;
+  final bool isEraser;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Draw completed strokes
+    for (final stroke in strokes) {
+      if (stroke.points.isEmpty) continue;
+
+      final paint = Paint()
+        ..color = Color(stroke.colorHex)
+        ..strokeWidth = stroke.strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      final path = Path()
+        ..moveTo(
+          stroke.points.first.x * size.width,
+          stroke.points.first.y * size.height,
+        );
+
+      for (var i = 1; i < stroke.points.length; i++) {
+        path.lineTo(
+          stroke.points[i].x * size.width,
+          stroke.points[i].y * size.height,
+        );
+      }
+      canvas.drawPath(path, paint);
+    }
+
+    // 2. Draw live dragging stroke
+    if (livePoints.isNotEmpty) {
+      final livePaint = Paint()
+        ..color = isEraser
+            ? (isDark ? const Color(0xFF13141E) : Colors.white)
+            : Color(liveColorHex)
+        ..strokeWidth = liveStrokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      final livePath = Path()
+        ..moveTo(
+          livePoints.first.x * size.width,
+          livePoints.first.y * size.height,
+        );
+      for (var i = 1; i < livePoints.length; i++) {
+        livePath.lineTo(
+          livePoints[i].x * size.width,
+          livePoints[i].y * size.height,
+        );
+      }
+      canvas.drawPath(livePath, livePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WhiteboardCanvasPainter oldDelegate) {
+    return oldDelegate.strokes != strokes ||
+        oldDelegate.livePoints != livePoints ||
+        oldDelegate.liveColorHex != liveColorHex ||
+        oldDelegate.liveStrokeWidth != liveStrokeWidth;
   }
 }

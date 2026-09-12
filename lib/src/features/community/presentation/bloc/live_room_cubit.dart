@@ -10,7 +10,7 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
 
-enum RoomViewMode { stage, whiteboard }
+enum RoomViewMode { stage, whiteboard, deckStudy }
 
 class LiveRoomState extends Equatable {
   const LiveRoomState({
@@ -26,6 +26,8 @@ class LiveRoomState extends Equatable {
     this.completedPomodoros = 0,
     this.activeViewMode = RoomViewMode.stage,
     this.activeGoal,
+    this.activeDeckId,
+    this.activeDeckTitle,
     this.ambientSoundTrack = 'lofi',
     this.isAmbientAudioPlaying = true,
     this.ambientAudioVolume = 0.5,
@@ -60,6 +62,8 @@ class LiveRoomState extends Equatable {
   final int completedPomodoros;
   final RoomViewMode activeViewMode;
   final String? activeGoal;
+  final String? activeDeckId;
+  final String? activeDeckTitle;
   final String ambientSoundTrack;
   final bool isAmbientAudioPlaying;
   final double ambientAudioVolume;
@@ -112,6 +116,9 @@ class LiveRoomState extends Equatable {
     int? completedPomodoros,
     RoomViewMode? activeViewMode,
     String? activeGoal,
+    String? activeDeckId,
+    String? activeDeckTitle,
+    bool clearActiveDeck = false,
     String? ambientSoundTrack,
     bool? isAmbientAudioPlaying,
     double? ambientAudioVolume,
@@ -147,6 +154,10 @@ class LiveRoomState extends Equatable {
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
       activeViewMode: activeViewMode ?? this.activeViewMode,
       activeGoal: activeGoal ?? this.activeGoal,
+      activeDeckId:
+          clearActiveDeck ? null : (activeDeckId ?? this.activeDeckId),
+      activeDeckTitle:
+          clearActiveDeck ? null : (activeDeckTitle ?? this.activeDeckTitle),
       ambientSoundTrack: ambientSoundTrack ?? this.ambientSoundTrack,
       isAmbientAudioPlaying:
           isAmbientAudioPlaying ?? this.isAmbientAudioPlaying,
@@ -193,6 +204,8 @@ class LiveRoomState extends Equatable {
     completedPomodoros,
     activeViewMode,
     activeGoal,
+    activeDeckId,
+    activeDeckTitle,
     ambientSoundTrack,
     isAmbientAudioPlaying,
     ambientAudioVolume,
@@ -537,17 +550,70 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     });
   }
 
-  void logCardReviewed([int count = 1]) {
+  void switchViewMode(RoomViewMode mode) {
+    emit(state.copyWith(activeViewMode: mode));
+  }
+
+  void selectActiveDeck(String deckId, String deckTitle) {
+    emit(
+      state.copyWith(
+        activeDeckId: deckId,
+        activeDeckTitle: deckTitle,
+        activeViewMode: RoomViewMode.deckStudy,
+      ),
+    );
+    unawaited(
+      _ephemeralRepository?.broadcastCardProgress(
+        roomId: state.room.id,
+        userId: _currentUserId,
+        cardsReviewed: state.cardsReviewedInSprint,
+        deckTitle: deckTitle,
+      ),
+    );
+  }
+
+  void clearActiveDeck() {
+    emit(
+      state.copyWith(
+        clearActiveDeck: true,
+      ),
+    );
+  }
+
+  void logCardReviewed([int count = 1, String? deckTitle]) {
     final updatedCount = state.cardsReviewedInSprint + count;
+    final currentTitle = deckTitle ?? state.activeDeckTitle ?? state.room.subject;
     final message = '🎯 You completed $updatedCount flashcards in this sprint!';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+
+    final updatedList = state.ephemeralParticipants.map((p) {
+      if (p.userId == _currentUserId) {
+        return p.copyWith(
+          cardsReviewed: updatedCount,
+          currentDeckTitle: currentTitle,
+        );
+      }
+      return p;
+    }).toList();
+
     emit(state.copyWith(
       cardsReviewedInSprint: updatedCount,
+      ephemeralParticipants: updatedList,
       recentActivityTicker: updatedTicker,
     ));
+
     sendChatMessage(
       'Reviewed $updatedCount cards in this sprint 🔥',
       isReaction: true,
+    );
+
+    unawaited(
+      _ephemeralRepository?.broadcastCardProgress(
+        roomId: state.room.id,
+        userId: _currentUserId,
+        cardsReviewed: updatedCount,
+        deckTitle: currentTitle,
+      ),
     );
   }
 
@@ -859,8 +925,6 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   void setRoomViewMode(RoomViewMode mode) {
     emit(state.copyWith(activeViewMode: mode));
   }
-
-  void switchViewMode(RoomViewMode mode) => setRoomViewMode(mode);
 
   void markChatAsRead() {
     emit(state.copyWith(unreadChatCount: 0));

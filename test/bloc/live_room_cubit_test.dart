@@ -240,6 +240,8 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
 
   bool isAway = false;
   String? lastBroadcastGoal;
+  int? lastBroadcastCardsReviewed;
+  String? lastBroadcastDeckTitle;
 
   @override
   Future<void> broadcastAwayState({
@@ -248,6 +250,17 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     required bool isAway,
   }) async {
     this.isAway = isAway;
+  }
+
+  @override
+  Future<void> broadcastCardProgress({
+    required String roomId,
+    required String userId,
+    required int cardsReviewed,
+    String? deckTitle,
+  }) async {
+    lastBroadcastCardsReviewed = cardsReviewed;
+    lastBroadcastDeckTitle = deckTitle;
   }
 
   @override
@@ -496,11 +509,45 @@ void main() {
 
       expect(cubit.state.activeViewMode, equals(RoomViewMode.stage));
 
+      cubit.switchViewMode(RoomViewMode.deckStudy);
+      expect(cubit.state.activeViewMode, equals(RoomViewMode.deckStudy));
+
       cubit.switchViewMode(RoomViewMode.whiteboard);
       expect(cubit.state.activeViewMode, equals(RoomViewMode.whiteboard));
 
       cubit.switchViewMode(RoomViewMode.stage);
       expect(cubit.state.activeViewMode, equals(RoomViewMode.stage));
+
+      await cubit.close();
+    });
+
+    test('selectActiveDeck updates state and broadcasts card progress', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-adeola',
+        currentUserName: 'Adeola',
+      );
+
+      expect(cubit.state.activeDeckId, isNull);
+      expect(cubit.state.activeDeckTitle, isNull);
+
+      cubit.selectActiveDeck('deck-bio-1', 'AP Biology');
+
+      expect(cubit.state.activeDeckId, equals('deck-bio-1'));
+      expect(cubit.state.activeDeckTitle, equals('AP Biology'));
+      expect(cubit.state.activeViewMode, equals(RoomViewMode.deckStudy));
+      expect(mockEphemeralRepo.lastBroadcastDeckTitle, equals('AP Biology'));
+
+      cubit.logCardReviewed(3, 'AP Biology');
+      expect(cubit.state.cardsReviewedInSprint, equals(3));
+      expect(mockEphemeralRepo.lastBroadcastCardsReviewed, equals(3));
+
+      cubit.clearActiveDeck();
+      expect(cubit.state.activeDeckId, isNull);
+      expect(cubit.state.activeDeckTitle, isNull);
 
       await cubit.close();
     });
