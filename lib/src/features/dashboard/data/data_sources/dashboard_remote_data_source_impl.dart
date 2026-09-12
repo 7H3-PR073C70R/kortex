@@ -148,7 +148,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           final total = ((m['totalCards'] ?? m['total_cards']) as int?) ?? 10;
           final mastery =
               ((m['masteryRate'] ?? m['mastery_rate']) as num?)?.toDouble() ??
-                  0.8;
+                  0.0;
           final lastStudied =
               ((m['lastStudied'] ?? m['last_studied']) as String?) ??
                   DateTime.now().toIso8601String();

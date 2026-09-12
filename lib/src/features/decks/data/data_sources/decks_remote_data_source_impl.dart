@@ -91,6 +91,19 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     return null;
   }
 
+  void _persistLocalDecksToStorage() {
+    try {
+      final jsonStr =
+          jsonEncode(_localCreatedDecks.map((d) => d.toJson()).toList());
+      unawaited(
+        _localStorage?.savePreference(
+          key: PrefKeys.persistedUserDecks,
+          data: jsonStr,
+        ),
+      );
+    } on Object catch (_) {}
+  }
+
   Future<void> _loadPersistedDecksIntoMemory() async {
     // 1. Primary: load from local relational database (SQLite)
     if (_localDataSource != null) {
@@ -104,11 +117,10 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             _localCreatedDecks[idx] = deck;
           }
         }
-        if (_localCreatedDecks.isNotEmpty) return;
       } on Object catch (_) {}
     }
 
-    // 2. Fallback: Legacy Hive / SharedPreferences loader for unmigrated sessions
+    // 2. Supplement / Fallback: SharedPreferences loader
     try {
       final raw = _localStorage?.getPreference(key: PrefKeys.persistedUserDecks);
       if (raw != null && raw.isNotEmpty) {
@@ -121,7 +133,11 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           if (idx < 0) {
             _localCreatedDecks.add(deck);
           } else {
-            _localCreatedDecks[idx] = deck;
+            if (deck.lastStudied != null &&
+                (_localCreatedDecks[idx].lastStudied == null ||
+                    deck.lastStudied!.isAfter(_localCreatedDecks[idx].lastStudied!))) {
+              _localCreatedDecks[idx] = deck;
+            }
           }
           if (deck.cards.isNotEmpty) {
             _localDeckCards[deck.id] = deck.cards;
@@ -141,6 +157,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     _localCreatedDecks
       ..removeWhere((d) => d.id == deck.id)
       ..insert(0, deck.copyWith(cards: cards));
+    _persistLocalDecksToStorage();
 
     // 2. Resilient local relational persistence (SQLite)
     unawaited(_localDataSource?.saveDeck(deck, cards: cards));
@@ -282,8 +299,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
               track: track,
             );
             for (final cd in canonicalDecks) {
+              final localMatch =
+                  _localCreatedDecks.where((d) => d.id == cd.id).firstOrNull;
+              final effectiveDeck = localMatch != null
+                  ? cd.copyWith(
+                      masteryRate: localMatch.masteryRate,
+                      dueCards: localMatch.dueCards,
+                      lastStudied: localMatch.lastStudied,
+                    )
+                  : cd;
               if (!resultList.any((d) => d.id == cd.id)) {
-                resultList.add(cd);
+                resultList.add(effectiveDeck);
               }
             }
           }
@@ -322,8 +348,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
               track: track,
             );
             for (final cd in canonicalDecks) {
+              final localMatch =
+                  _localCreatedDecks.where((d) => d.id == cd.id).firstOrNull;
+              final effectiveDeck = localMatch != null
+                  ? cd.copyWith(
+                      masteryRate: localMatch.masteryRate,
+                      dueCards: localMatch.dueCards,
+                      lastStudied: localMatch.lastStudied,
+                    )
+                  : cd;
               if (!fallbackList.any((d) => d.id == cd.id)) {
-                fallbackList.add(cd);
+                fallbackList.add(effectiveDeck);
               }
             }
           }
@@ -442,6 +477,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       );
     }
 
+    _persistLocalDecksToStorage();
+
     // Direct, targeted update in SQLite: only cards for this deck updated
     unawaited(_localDataSource?.saveCards(deckId, cards));
     unawaited(
@@ -510,7 +547,10 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       );
     }
 
-    // 3. Fast targeted SQLite update for deck stats
+    // 3. Fast targeted SQLite update for deck stats & ensure deck row exists
+    _persistLocalDecksToStorage();
+    final deckEntry = _localCreatedDecks.firstWhere((d) => d.id == deckId);
+    unawaited(_localDataSource?.saveDeck(deckEntry, cards: cards));
     unawaited(
       _localDataSource?.updateDeckStats(
         deckId: deckId,
@@ -548,6 +588,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   Future<void> deleteDeck(String deckId) async {
     _localDeckCards.remove(deckId);
     _localCreatedDecks.removeWhere((d) => d.id == deckId);
+    _persistLocalDecksToStorage();
     unawaited(_localDataSource?.deleteDeck(deckId));
 
     try {
@@ -584,6 +625,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         await _client.deleteDeck(deck.id);
       } on Object catch (_) {}
     }
+    _persistLocalDecksToStorage();
 
     await _localDataSource?.deleteDecksForCourse(
       courseId,
@@ -607,6 +649,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         courseCode: courseCode ?? old.courseCode,
         subject: subject ?? old.subject,
       );
+      _persistLocalDecksToStorage();
     }
 
     unawaited(
@@ -621,7 +664,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     try {
       await _client.updateDeckRecord(deckId, {
         'course_id': courseId,
-        'course_code': ?courseCode,
+        'course_code': courseCode,
       });
     } on Object catch (_) {}
   }
@@ -631,6 +674,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     final allIds = _localCreatedDecks.map((d) => d.id).toList();
     _localDeckCards.clear();
     _localCreatedDecks.clear();
+    _persistLocalDecksToStorage();
     unawaited(_localDataSource?.deleteAllDecks());
 
     for (final id in allIds) {

@@ -77,10 +77,10 @@ void main() {
       // 1. Front contains prompt and Options A, B, C, D
       expect(card.front, contains('Copper metal will react with concentrated trioxonitrate (V) acid to give?'));
       expect(card.front, contains('**Options:**'));
-      expect(card.front, contains('• A. Cu(NO 3 ) 3 + NO + N 2 O 4 + H 2 O'));
-      expect(card.front, contains('• B. Cu(NO 3 ) 2 + NO + H 2 O'));
-      expect(card.front, contains('• C. CuO + NO 2 + H 2 O'));
-      expect(card.front, contains('• D. Cu(NO 3 ) 2 + 2NO 2 + 2H 2 O'));
+      expect(card.front, contains(r'• A. $\mathrm{Cu(NO_3)_3 + NO + N_2O_4 + H_2O}$'));
+      expect(card.front, contains(r'• B. $\mathrm{Cu(NO_3)_2 + NO + H_2O}$'));
+      expect(card.front, contains(r'• C. $\mathrm{CuO + NO_2 + H_2O}$'));
+      expect(card.front, contains(r'• D. $\mathrm{Cu(NO_3)_2 + 2NO_2 + 2H_2O}$'));
 
       // 2. Front must NOT duplicate letters like "A. A."
       expect(card.front.contains('A. A.'), isFalse);
@@ -90,7 +90,7 @@ void main() {
       expect(card.front.contains('✅'), isFalse);
 
       // 4. Back contains correct answer and explanation, but NOT the options list
-      expect(card.back, contains('**Correct Answer:** Option D — Cu(NO 3 ) 2 + 2NO 2 + 2H 2 O'));
+      expect(card.back, contains(r'**Correct Answer:** Option D — $\mathrm{Cu(NO_3)_2 + 2NO_2 + 2H_2O}$'));
       expect(card.back, contains('**Explanation:**\nCopper metal reacts with concentrated nitric acid to produce copper(II) nitrate.'));
       expect(card.back.contains('**Options:**'), isFalse);
       expect(card.back.contains('• A.'), isFalse);
