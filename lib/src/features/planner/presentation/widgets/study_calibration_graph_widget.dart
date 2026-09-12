@@ -74,24 +74,29 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Study Desk Calibration',
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Study Desk Calibration',
+                      style: typography.callout.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Ideal trajectory vs. actual mastery',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ideal trajectory vs. actual mastery',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -156,16 +161,22 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
               ),
-              Text(
-                'Today ($progressPercent%)',
-                style: typography.caption.bold.copyWith(
-                  color: colors.primary,
+              Flexible(
+                child: Text(
+                  'Today ($progressPercent%)',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                'Exam (${exam.formattedCountdown})',
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
+              Flexible(
+                child: Text(
+                  'Exam (${exam.formattedCountdown})',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -243,10 +254,13 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      "Review Today's ${exam.dailyTarget} Flashcards",
-                      style: typography.callout.bold.copyWith(
-                        color: Colors.white,
+                    Flexible(
+                      child: Text(
+                        "Review Today's ${exam.dailyTarget} Flashcards",
+                        style: typography.callout.bold.copyWith(
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -289,13 +303,15 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(
-                title,
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
+              Expanded(
+                child: Text(
+                  title,
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

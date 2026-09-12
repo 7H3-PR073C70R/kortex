@@ -72,11 +72,14 @@ class ImageOcclusionCardViewer extends HookWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Pinch to Zoom • Tap Mask to Reveal',
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  'Pinch to Zoom • Tap Mask to Reveal',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton.icon(

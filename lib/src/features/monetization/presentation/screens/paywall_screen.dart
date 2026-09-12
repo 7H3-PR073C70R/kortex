@@ -551,11 +551,13 @@ class _PaywallScreenState extends State<PaywallScreen>
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Annual Pass',
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 14.5.sp,
+                          Flexible(
+                            child: Text(
+                              'Annual Pass',
+                              style: typography.body.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14.5.sp,
+                              ),
                             ),
                           ),
                           SizedBox(width: 8.w),
@@ -761,8 +763,11 @@ class _PaywallScreenState extends State<PaywallScreen>
           ),
         ),
         SizedBox(height: 10.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 6,
+          runSpacing: 4,
           children: [
             GestureDetector(
               onTap: () => _launchUrl(PaywallScreen.privacyPolicyUrl),
@@ -778,7 +783,7 @@ class _PaywallScreenState extends State<PaywallScreen>
               ),
             ),
             Text(
-              ' • ',
+              '•',
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary.withAlpha(120),
                 fontSize: 11,

@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
-import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';

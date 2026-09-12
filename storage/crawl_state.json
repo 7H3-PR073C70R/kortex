@@ -1,0 +1,59 @@
+{
+  "total_synced": 1160,
+  "progress": {
+    "jamb": {
+      "mathematics": 5,
+      "english-language": 5,
+      "chemistry": 5,
+      "physics": 5,
+      "biology": 5,
+      "geography": 5,
+      "literature-in-english": 5,
+      "economics": 5,
+      "commerce": 5,
+      "accounts-principles-of-accounts": 5,
+      "government": 5,
+      "physical-education": 5
+    },
+    "waec": {
+      "mathematics": 5,
+      "english-language": 5,
+      "chemistry": 5,
+      "physics": 5,
+      "biology": 5,
+      "geography": 5,
+      "literature-in-english": 5,
+      "economics": 5,
+      "commerce": 5,
+      "accounts-principles-of-accounts": 5,
+      "government": 5,
+      "christian-religious-knowledge-crk": 5,
+      "agricultural-science": 5,
+      "islamic-religious-knowledge-irk": 5,
+      "history": 2,
+      "animal-husbandry": 5,
+      "insurance": 5,
+      "civic-education": 5,
+      "further-mathematics": 5,
+      "yoruba": 5,
+      "book-keeping": 5,
+      "data-processing": 5,
+      "catering-craft-practice": 5,
+      "computer-studies": 5,
+      "marketing": 5,
+      "office-practice": 5
+    },
+    "neco": {
+      "mathematics": 5,
+      "english-language": 5,
+      "chemistry": 5,
+      "physics": 5,
+      "biology": 5,
+      "economics": 5,
+      "commerce": 5,
+      "government": 5,
+      "computer-studies": 5
+    }
+  },
+  "last_updated": "2026-09-12T10:06:38Z"
+}
