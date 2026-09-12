@@ -3,10 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Callback signature for spawning a reaction particle.
-typedef FloatingReactionCallback = void Function(
-  String emoji, {
-  Offset? startOffset,
-});
+typedef FloatingReactionCallback =
+    void Function(
+      String emoji, {
+      Offset? startOffset,
+    });
 
 /// Controller to programmatically spawn floating reaction emojis on the overlay.
 class FloatingReactionController {
@@ -122,7 +123,9 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
     final screenHeight = MediaQuery.maybeOf(context)?.size.height ?? 812.0;
 
     // Base position: bottom center-right if not specified
-    final defaultX = startOffset?.dx ?? (screenWidth * 0.5 + (_random.nextDouble() * 80 - 40));
+    final defaultX =
+        startOffset?.dx ??
+        (screenWidth * 0.5 + (_random.nextDouble() * 80 - 40));
     final defaultY = startOffset?.dy ?? (screenHeight * 0.78);
 
     final particle = _ReactionParticle(
@@ -131,10 +134,11 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
       startX: defaultX,
       startY: defaultY,
       amplitude: 16.0 + _random.nextDouble() * 24.0, // horizontal sway
-      frequency: 2.0 + _random.nextDouble() * 2.0,   // wave oscillations
-      driftX: (_random.nextDouble() - 0.5) * 60.0,   // overall left/right drift
-      scale: 0.9 + _random.nextDouble() * 0.45,       // size variation
-      maxRotation: (_random.nextDouble() - 0.5) * 0.35, // subtle tilt in radians
+      frequency: 2.0 + _random.nextDouble() * 2.0, // wave oscillations
+      driftX: (_random.nextDouble() - 0.5) * 60.0, // overall left/right drift
+      scale: 0.9 + _random.nextDouble() * 0.45, // size variation
+      maxRotation:
+          (_random.nextDouble() - 0.5) * 0.35, // subtle tilt in radians
       controller: animController,
     );
 
@@ -199,10 +203,13 @@ class _ReactionCanvasPainter extends CustomPainter {
 
       // Vertical movement: ease-out cubic rising
       final riseDist = size.height * 0.42;
-      final currentY = p.startY - (CurvedAnimation(
-        parent: p.controller,
-        curve: Curves.easeOutCubic,
-      ).value * riseDist);
+      final currentY =
+          p.startY -
+          (CurvedAnimation(
+                parent: p.controller,
+                curve: Curves.easeOutCubic,
+              ).value *
+              riseDist);
 
       // Horizontal movement: drift + sinusoidal wave
       final sway = math.sin(progress * p.frequency * math.pi) * p.amplitude;
@@ -222,7 +229,8 @@ class _ReactionCanvasPainter extends CustomPainter {
       }
 
       // Subtle rotation along sway
-      final rotation = math.sin(progress * p.frequency * math.pi) * p.maxRotation;
+      final rotation =
+          math.sin(progress * p.frequency * math.pi) * p.maxRotation;
 
       final textPainter = TextPainter(
         text: TextSpan(

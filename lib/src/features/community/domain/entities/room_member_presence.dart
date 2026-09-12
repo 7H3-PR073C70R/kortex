@@ -4,7 +4,8 @@ enum RoomFocusStatus {
   active,
   deepFocus,
   idle,
-  onBreak;
+  onBreak
+  ;
 
   String get nameString {
     switch (this) {

@@ -24,10 +24,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     RealtimeClient? realtimeClient,
     CommunityLocalDataSource? localDataSource,
     LocalStorageService? localStorage,
-  })  : _userStorage = userStorage,
-        _realtime = realtimeClient ?? RealtimeClient.instance,
-        _localDataSourceOverride = localDataSource,
-        _localStorageOverride = localStorage;
+  }) : _userStorage = userStorage,
+       _realtime = realtimeClient ?? RealtimeClient.instance,
+       _localDataSourceOverride = localDataSource,
+       _localStorageOverride = localStorage;
 
   final CommunityApiClient _client;
   final UserStorageService? _userStorage;
@@ -206,8 +206,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       // Read-through fallback to local SQLite cache
       if (_localDataSource != null) {
         try {
-          final cachedPosts =
-              await _localDataSource!.getForumPosts(track: track);
+          final cachedPosts = await _localDataSource!.getForumPosts(
+            track: track,
+          );
           if (cachedPosts.isNotEmpty) {
             return cachedPosts;
           }
@@ -280,8 +281,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to add reply');
     }
-    final reply =
-        ForumReplyModel.fromJson(rawList.first as Map<String, dynamic>);
+    final reply = ForumReplyModel.fromJson(
+      rawList.first as Map<String, dynamic>,
+    );
     final cache = _replyCache.putIfAbsent(postId, () => []);
     if (!cache.any((r) => r.id == reply.id)) {
       cache.add(reply);
@@ -392,8 +394,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
               final repliesRaw =
                   postJson['forum_replies'] as List<dynamic>? ?? [];
               final fetchedReplies = repliesRaw
-                  .map((r) =>
-                      ForumReplyModel.fromJson(r as Map<String, dynamic>))
+                  .map(
+                    (r) => ForumReplyModel.fromJson(r as Map<String, dynamic>),
+                  )
                   .toList();
               final currentCache = _replyCache.putIfAbsent(postId, () => []);
               for (final fetched in fetchedReplies) {
@@ -495,8 +498,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to create study circle');
     }
-    final createdCircle =
-        StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+    final createdCircle = StudyCircleModel.fromJson(
+      rawList.first as Map<String, dynamic>,
+    );
     final cachedCircles = _getLocalPersistedCircles();
     _persistCirclesLocally([
       createdCircle,
@@ -541,8 +545,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     });
     final rawList = res.data is List ? (res.data as List) : <dynamic>[];
     if (rawList.isNotEmpty) {
-      final joined =
-          StudyCircleModel.fromJson(rawList.first as Map<String, dynamic>);
+      final joined = StudyCircleModel.fromJson(
+        rawList.first as Map<String, dynamic>,
+      );
       final cachedCircles = _getLocalPersistedCircles();
       _persistCirclesLocally([
         joined,
@@ -621,8 +626,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (rawList.isEmpty) {
       throw Exception('Failed to publish shared deck');
     }
-    final published =
-        SharedDeckModel.fromJson(rawList.first as Map<String, dynamic>);
+    final published = SharedDeckModel.fromJson(
+      rawList.first as Map<String, dynamic>,
+    );
     final cachedDecks = _getLocalPersistedSharedDecks();
     _persistSharedDecksLocally([
       published,
@@ -650,16 +656,14 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final cache = <String, LeaderboardEntryModel>{};
 
     // Initial fetch to seed the cache
-    fetchLeaderboards(track: track)
-        .then((entries) {
-          for (final e in entries) {
-            cache[e.userId] = e;
-          }
-          if (!streamController.isClosed) {
-            streamController.add(_sortedLeaderboard(cache));
-          }
-        })
-        .ignore();
+    fetchLeaderboards(track: track).then((entries) {
+      for (final e in entries) {
+        cache[e.userId] = e;
+      }
+      if (!streamController.isClosed) {
+        streamController.add(_sortedLeaderboard(cache));
+      }
+    }).ignore();
 
     // Stream any row changes in the leaderboards table
     final wsSub = _realtime.watchTable('leaderboards').listen((event) {
@@ -893,10 +897,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   List<StudyCircleModel> _getCuratedFallbackCircles({String? track}) {
-    final effectiveTrack =
-        (track != null && track.isNotEmpty && track != 'All')
-            ? track
-            : 'General';
+    final effectiveTrack = (track != null && track.isNotEmpty && track != 'All')
+        ? track
+        : 'General';
     return [
       StudyCircleModel(
         id: 'curated_circle_sprint',
@@ -945,8 +948,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<SharedDeckModel> _getCuratedFallbackSharedDecks({String? subject}) {
     final effectiveSubject =
         (subject != null && subject.isNotEmpty && subject != 'All')
-            ? subject
-            : 'General Studies';
+        ? subject
+        : 'General Studies';
     return [
       SharedDeckModel(
         id: 'curated_deck_high_yield',

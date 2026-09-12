@@ -156,54 +156,63 @@ void main() {
     await mockEphemeral.dispose();
   });
 
-  test('Local user away state toggles presence and broadcasts to room', () async {
-    final cubit = LiveRoomCubit(
-      initialRoom: testRoom,
-      repository: mockRepo,
-      ephemeralRepository: mockEphemeral,
-      currentUserId: 'user_test_1',
-      currentUserName: 'Ade',
-    );
+  test(
+    'Local user away state toggles presence and broadcasts to room',
+    () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockRepo,
+        ephemeralRepository: mockEphemeral,
+        currentUserId: 'user_test_1',
+        currentUserName: 'Ade',
+      );
 
-    expect(cubit.state.isLocalUserAway, false);
+      expect(cubit.state.isLocalUserAway, false);
 
-    await cubit.setLocalAwayState(isAway: true);
-    expect(cubit.state.isLocalUserAway, true);
-    expect(mockEphemeral.broadcastAwayCalls.length, 1);
-    expect(mockEphemeral.broadcastAwayCalls.first['isAway'], true);
-    expect(cubit.state.recentActivityTicker.first, contains('stepped away'));
+      await cubit.setLocalAwayState(isAway: true);
+      expect(cubit.state.isLocalUserAway, true);
+      expect(mockEphemeral.broadcastAwayCalls.length, 1);
+      expect(mockEphemeral.broadcastAwayCalls.first['isAway'], true);
+      expect(cubit.state.recentActivityTicker.first, contains('stepped away'));
 
-    await cubit.setLocalAwayState(isAway: false);
-    expect(cubit.state.isLocalUserAway, false);
-    expect(mockEphemeral.broadcastAwayCalls.length, 2);
-    expect(mockEphemeral.broadcastAwayCalls.last['isAway'], false);
-    expect(cubit.state.recentActivityTicker.first, contains('Welcome back'));
+      await cubit.setLocalAwayState(isAway: false);
+      expect(cubit.state.isLocalUserAway, false);
+      expect(mockEphemeral.broadcastAwayCalls.length, 2);
+      expect(mockEphemeral.broadcastAwayCalls.last['isAway'], false);
+      expect(cubit.state.recentActivityTicker.first, contains('Welcome back'));
 
-    await cubit.close();
-  });
+      await cubit.close();
+    },
+  );
 
-  test('Setting and prompting micro-goal updates cubit state and broadcasts to peers', () async {
-    final cubit = LiveRoomCubit(
-      initialRoom: testRoom,
-      repository: mockRepo,
-      ephemeralRepository: mockEphemeral,
-      currentUserId: 'user_test_1',
-      currentUserName: 'Ade',
-    )..updateActiveGoal('Solve 10 integrals');
+  test(
+    'Setting and prompting micro-goal updates cubit state and broadcasts to peers',
+    () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockRepo,
+        ephemeralRepository: mockEphemeral,
+        currentUserId: 'user_test_1',
+        currentUserName: 'Ade',
+      )..updateActiveGoal('Solve 10 integrals');
 
-    expect(cubit.state.activeGoal, 'Solve 10 integrals');
-    expect(mockEphemeral.broadcastGoalCalls.length, 1);
-    expect(mockEphemeral.broadcastGoalCalls.first['goal'], 'Solve 10 integrals');
-    expect(mockEphemeral.broadcastGoalCalls.first['userId'], 'user_test_1');
+      expect(cubit.state.activeGoal, 'Solve 10 integrals');
+      expect(mockEphemeral.broadcastGoalCalls.length, 1);
+      expect(
+        mockEphemeral.broadcastGoalCalls.first['goal'],
+        'Solve 10 integrals',
+      );
+      expect(mockEphemeral.broadcastGoalCalls.first['userId'], 'user_test_1');
 
-    cubit.promptGoalVerification();
-    expect(cubit.state.showGoalVerificationModal, true);
+      cubit.promptGoalVerification();
+      expect(cubit.state.showGoalVerificationModal, true);
 
-    cubit.dismissGoalVerification();
-    expect(cubit.state.showGoalVerificationModal, false);
+      cubit.dismissGoalVerification();
+      expect(cubit.state.showGoalVerificationModal, false);
 
-    await cubit.close();
-  });
+      await cubit.close();
+    },
+  );
 
   test('Verifying micro-goal marks achievement and awards XP', () async {
     final cubit = LiveRoomCubit(
@@ -215,45 +224,53 @@ void main() {
     )..verifyMicroGoal(completed: true, goal: 'Solve 10 integrals');
 
     expect(cubit.state.isGoalAchieved, true);
-    expect(cubit.state.recentActivityTicker.first, contains('Micro-Goal Achieved'));
+    expect(
+      cubit.state.recentActivityTicker.first,
+      contains('Micro-Goal Achieved'),
+    );
     expect(cubit.state.lastReactionEmoji, '🎉');
 
     await cubit.close();
   });
 
-  test('Syllabot AI Virtual Study Partner activates for solo scholars', () async {
-    final cubit = LiveRoomCubit(
-      initialRoom: testRoom,
-      repository: mockRepo,
-      ephemeralRepository: mockEphemeral,
-      currentUserId: 'user_test_1',
-      currentUserName: 'Ade',
-    );
+  test(
+    'Syllabot AI Virtual Study Partner activates for solo scholars',
+    () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockRepo,
+        ephemeralRepository: mockEphemeral,
+        currentUserId: 'user_test_1',
+        currentUserName: 'Ade',
+      );
 
-    // Provide initial presence with only the local user
-    mockEphemeral.participantsCtrl.add([
-      const EphemeralParticipant(
-        userId: 'user_test_1',
-        displayName: 'Ade',
-        avatarUrl: '',
-      ),
-    ]);
+      // Provide initial presence with only the local user
+      mockEphemeral.participantsCtrl.add([
+        const EphemeralParticipant(
+          userId: 'user_test_1',
+          displayName: 'Ade',
+          avatarUrl: '',
+        ),
+      ]);
 
-    await pumpEventQueue();
+      await pumpEventQueue();
 
-    // Wait for buddy check timer
-    await Future<void>.delayed(const Duration(milliseconds: 4100));
+      // Wait for buddy check timer
+      await Future<void>.delayed(const Duration(milliseconds: 4100));
 
-    expect(cubit.state.isSyllabotBuddyActive, true);
-    expect(
-      cubit.state.ephemeralParticipants.any((p) => p.isAiBuddy),
-      true,
-    );
-    expect(
-      cubit.state.recentActivityTicker.any((t) => t.contains('Syllabot joined as your study buddy')),
-      true,
-    );
+      expect(cubit.state.isSyllabotBuddyActive, true);
+      expect(
+        cubit.state.ephemeralParticipants.any((p) => p.isAiBuddy),
+        true,
+      );
+      expect(
+        cubit.state.recentActivityTicker.any(
+          (t) => t.contains('Syllabot joined as your study buddy'),
+        ),
+        true,
+      );
 
-    await cubit.close();
-  });
+      await cubit.close();
+    },
+  );
 }

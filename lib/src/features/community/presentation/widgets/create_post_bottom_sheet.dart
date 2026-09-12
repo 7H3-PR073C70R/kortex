@@ -95,8 +95,9 @@ class CreatePostBottomSheet extends HookWidget {
     final titleController = useTextEditingController(text: initialTitle);
     final contentController = useTextEditingController(text: initialContent);
     final latexController = useTextEditingController(text: initialLatex);
-    final syllabusTagController =
-        useTextEditingController(text: initialSyllabusTag);
+    final syllabusTagController = useTextEditingController(
+      text: initialSyllabusTag,
+    );
     final isQuestion = useState<bool>(initialIsQuestion);
     final isAnonymous = useState<bool>(false);
 
@@ -105,8 +106,8 @@ class CreatePostBottomSheet extends HookWidget {
     final activeTrack = (lockedTrack != null && lockedTrack!.trim().isNotEmpty)
         ? lockedTrack!.trim()
         : ((userTrack != null && userTrack.trim().isNotEmpty)
-            ? userTrack.trim()
-            : 'General');
+              ? userTrack.trim()
+              : 'General');
 
     return Container(
       padding: EdgeInsets.only(
@@ -146,8 +147,10 @@ class CreatePostBottomSheet extends HookWidget {
             // Context Badge if prefilled from card or question review
             if (contextBadge != null && contextBadge!.isNotEmpty) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(isDark ? 35 : 18),
                   borderRadius: BorderRadius.circular(10),
@@ -296,7 +299,8 @@ class CreatePostBottomSheet extends HookWidget {
             // Optional LaTeX Field
             AppTextField(
               controller: latexController,
-              hintText: r'Optional LaTeX formula (e.g. \int_0^\infty e^{-x^2} dx)',
+              hintText:
+                  r'Optional LaTeX formula (e.g. \int_0^\infty e^{-x^2} dx)',
             ),
             const SizedBox(height: 14),
 

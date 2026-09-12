@@ -26,8 +26,7 @@ class StreakLeaderboardWidget extends StatelessWidget {
     final silverColor = colors.gray;
     final bronzeColor = colors.recallHard;
 
-    final currentUserEntry =
-        entries.where((e) => e.isCurrentUser).firstOrNull;
+    final currentUserEntry = entries.where((e) => e.isCurrentUser).firstOrNull;
     final currentTier = currentUserEntry?.leagueTier ?? 'Bronze';
 
     return Semantics(
@@ -84,7 +83,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(isDark ? 40 : 25),
                         borderRadius: BorderRadius.circular(8),
@@ -102,7 +104,10 @@ class StreakLeaderboardWidget extends StatelessWidget {
                 if (streakFreezeCount > 0) ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
                       borderRadius: BorderRadius.circular(10),
@@ -362,14 +367,20 @@ class StreakLeaderboardWidget extends StatelessWidget {
                                   vertical: 1.5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _getTierBorderColor(entry.leagueTier, colors).withAlpha(30),
+                                  color: _getTierBorderColor(
+                                    entry.leagueTier,
+                                    colors,
+                                  ).withAlpha(30),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   '${_getTierEmoji(entry.leagueTier)} ${entry.leagueTier}',
                                   style: typography.caption.bold.copyWith(
                                     fontSize: 9.5,
-                                    color: _getTierBorderColor(entry.leagueTier, colors),
+                                    color: _getTierBorderColor(
+                                      entry.leagueTier,
+                                      colors,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -413,7 +424,11 @@ class StreakLeaderboardWidget extends StatelessWidget {
     );
   }
 
-  List<Color> _getTierGradient(String tier, AppThemeColorsExtension colors, bool isDark) {
+  List<Color> _getTierGradient(
+    String tier,
+    AppThemeColorsExtension colors,
+    bool isDark,
+  ) {
     switch (tier.toLowerCase()) {
       case "dean's list":
         return [
@@ -479,7 +494,8 @@ class StreakLeaderboardWidget extends StatelessWidget {
   String _formatWeeklyResetLocalTime() {
     final now = DateTime.now();
     var daysUntilMonday = (DateTime.monday - now.toUtc().weekday) % 7;
-    if (daysUntilMonday == 0 && (now.toUtc().hour > 0 || now.toUtc().minute > 0)) {
+    if (daysUntilMonday == 0 &&
+        (now.toUtc().hour > 0 || now.toUtc().minute > 0)) {
       daysUntilMonday = 7;
     }
     final nextMondayUtc = DateTime.utc(
@@ -504,7 +520,9 @@ class StreakLeaderboardWidget extends StatelessWidget {
     final period = hour >= 12 ? 'PM' : 'AM';
     final formattedHour = (hour % 12 == 0) ? 12 : hour % 12;
     final minuteStr = minute == 0 ? '00' : minute.toString().padLeft(2, '0');
-    final tzName = localTime.timeZoneName.isNotEmpty ? ' ${localTime.timeZoneName}' : '';
+    final tzName = localTime.timeZoneName.isNotEmpty
+        ? ' ${localTime.timeZoneName}'
+        : '';
 
     return 'Top 20% promoted every $localDay at $formattedHour:$minuteStr $period$tzName';
   }

@@ -62,8 +62,9 @@ class DeckMarketplaceDetailPage extends HookWidget {
                   ? locator<LocalStorageService>()
                   : null;
               if (storage != null) {
-                final raw =
-                    storage.getPreference(key: PrefKeys.persistedUserDecks);
+                final raw = storage.getPreference(
+                  key: PrefKeys.persistedUserDecks,
+                );
                 final existingList = raw != null && raw.isNotEmpty
                     ? (jsonDecode(raw) as List<dynamic>)
                     : <dynamic>[];
@@ -267,7 +268,8 @@ class DeckMarketplaceDetailPage extends HookWidget {
                                 ],
                               ),
                             ),
-                            if (deck.syllabusTag.isNotEmpty && deck.syllabusTag != 'General') ...[
+                            if (deck.syllabusTag.isNotEmpty &&
+                                deck.syllabusTag != 'General') ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -284,7 +286,10 @@ class DeckMarketplaceDetailPage extends HookWidget {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Text('📚', style: TextStyle(fontSize: 10)),
+                                    const Text(
+                                      '📚',
+                                      style: TextStyle(fontSize: 10),
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       deck.syllabusTag,
@@ -333,11 +338,18 @@ class DeckMarketplaceDetailPage extends HookWidget {
                     ),
                     const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
-                        color: colors.syllabotAccent.withAlpha(isDark ? 30 : 18),
+                        color: colors.syllabotAccent.withAlpha(
+                          isDark ? 30 : 18,
+                        ),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: colors.syllabotAccent.withAlpha(50)),
+                        border: Border.all(
+                          color: colors.syllabotAccent.withAlpha(50),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -427,7 +439,8 @@ class _InteractiveCardPreviewCarousel extends HookWidget {
               id: 'preview_1',
               deckId: 'preview',
               front: 'Key concept: Essential foundations in $subject',
-              back: 'Comprehensive revision breakdown with memory aids and formulas.',
+              back:
+                  'Comprehensive revision breakdown with memory aids and formulas.',
             ),
             FlashcardEntity(
               id: 'preview_2',
@@ -469,7 +482,9 @@ class _InteractiveCardPreviewCarousel extends HookWidget {
                     decoration: BoxDecoration(
                       color: showingBack
                           ? colors.primary.withAlpha(isDark ? 45 : 25)
-                          : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                          : (isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: showingBack
@@ -497,15 +512,22 @@ class _InteractiveCardPreviewCarousel extends HookWidget {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: (showingBack ? colors.primary : colors.textSecondary)
-                                    .withAlpha(30),
+                                color:
+                                    (showingBack
+                                            ? colors.primary
+                                            : colors.textSecondary)
+                                        .withAlpha(30),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                showingBack ? 'ANSWER (FLIPPED)' : 'QUESTION (TAP TO FLIP)',
+                                showingBack
+                                    ? 'ANSWER (FLIPPED)'
+                                    : 'QUESTION (TAP TO FLIP)',
                                 style: typography.caption.bold.copyWith(
                                   fontSize: 9.5,
-                                  color: showingBack ? colors.primary : colors.textSecondary,
+                                  color: showingBack
+                                      ? colors.primary
+                                      : colors.textSecondary,
                                 ),
                               ),
                             ),
@@ -560,7 +582,9 @@ class _InteractiveCardPreviewCarousel extends HookWidget {
               width: isSelected ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: isSelected ? colors.primary : colors.primary.withAlpha(50),
+                color: isSelected
+                    ? colors.primary
+                    : colors.primary.withAlpha(50),
                 borderRadius: BorderRadius.circular(3),
               ),
             );

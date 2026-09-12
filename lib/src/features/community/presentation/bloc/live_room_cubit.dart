@@ -96,8 +96,14 @@ class LiveRoomState extends Equatable {
   }
 
   String get formattedSprintTimer {
-    final minutes = (coOpSprintRemainingSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds = (coOpSprintRemainingSeconds % 60).toString().padLeft(2, '0');
+    final minutes = (coOpSprintRemainingSeconds ~/ 60).toString().padLeft(
+      2,
+      '0',
+    );
+    final seconds = (coOpSprintRemainingSeconds % 60).toString().padLeft(
+      2,
+      '0',
+    );
     return '$minutes:$seconds';
   }
 
@@ -160,10 +166,12 @@ class LiveRoomState extends Equatable {
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
       activeViewMode: activeViewMode ?? this.activeViewMode,
       activeGoal: activeGoal ?? this.activeGoal,
-      activeDeckId:
-          clearActiveDeck ? null : (activeDeckId ?? this.activeDeckId),
-      activeDeckTitle:
-          clearActiveDeck ? null : (activeDeckTitle ?? this.activeDeckTitle),
+      activeDeckId: clearActiveDeck
+          ? null
+          : (activeDeckId ?? this.activeDeckId),
+      activeDeckTitle: clearActiveDeck
+          ? null
+          : (activeDeckTitle ?? this.activeDeckTitle),
       ambientSoundTrack: ambientSoundTrack ?? this.ambientSoundTrack,
       isAmbientAudioPlaying:
           isAmbientAudioPlaying ?? this.isAmbientAudioPlaying,
@@ -175,8 +183,7 @@ class LiveRoomState extends Equatable {
       unreadChatCount: unreadChatCount ?? this.unreadChatCount,
       cardsReviewedInSprint:
           cardsReviewedInSprint ?? this.cardsReviewedInSprint,
-      recentActivityTicker:
-          recentActivityTicker ?? this.recentActivityTicker,
+      recentActivityTicker: recentActivityTicker ?? this.recentActivityTicker,
       lastReactionEmoji: lastReactionEmoji ?? this.lastReactionEmoji,
       isCoOpSprintActive: isCoOpSprintActive ?? this.isCoOpSprintActive,
       coOpSprintDeckTitle: coOpSprintDeckTitle ?? this.coOpSprintDeckTitle,
@@ -252,7 +259,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     String? currentUserAvatar,
   }) : _repository = repository,
        _ephemeralRepository = ephemeralRepository,
-       _audioService = audioService ??
+       _audioService =
+           audioService ??
            (locator.isRegistered<LiveKitAudioService>()
                ? locator<LiveKitAudioService>()
                : null),
@@ -350,7 +358,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       );
     }
 
-    final hasGoal = state.activeGoal != null && state.activeGoal!.trim().isNotEmpty;
+    final hasGoal =
+        state.activeGoal != null && state.activeGoal!.trim().isNotEmpty;
     emit(
       state.copyWith(
         room: state.room.copyWith(pomodoroState: nextState),
@@ -393,10 +402,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           return p;
         }).toList();
 
-        emit(state.copyWith(
-          isMuted: isMuted,
-          ephemeralParticipants: updatedList,
-        ));
+        emit(
+          state.copyWith(
+            isMuted: isMuted,
+            ephemeralParticipants: updatedList,
+          ),
+        );
 
         // If the hardware mic reverted to muted (e.g. permission denied), broadcast
         if (isMuted && _ephemeralRepository != null) {
@@ -467,41 +478,43 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       ),
     );
 
-    _presenceSubscription = ephemeral
-        .watchParticipants(roomId)
-        .listen((participants) {
-          if (!isClosed) {
-            var updated = List<EphemeralParticipant>.from(participants);
-            final otherHumans = updated.where(
-              (p) => p.userId != _currentUserId && !p.isAiBuddy,
-            );
+    _presenceSubscription = ephemeral.watchParticipants(roomId).listen((
+      participants,
+    ) {
+      if (!isClosed) {
+        var updated = List<EphemeralParticipant>.from(participants);
+        final otherHumans = updated.where(
+          (p) => p.userId != _currentUserId && !p.isAiBuddy,
+        );
 
-            if (state.isSyllabotBuddyActive && otherHumans.isEmpty) {
-              if (!updated.any((p) => p.isAiBuddy)) {
-                updated.add(
-                  EphemeralParticipant(
-                    userId: 'syllabot_buddy_${state.room.id}',
-                    displayName: 'Syllabot AI (Study Buddy)',
-                    avatarUrl: 'https://api.dicebear.com/7.x/bottts/png?seed=syllabot',
-                    isAiBuddy: true,
-                    joinedAt: DateTime.now(),
-                  ),
-                );
-              }
-            } else if (otherHumans.isNotEmpty && state.isSyllabotBuddyActive) {
-              updated = updated.where((p) => !p.isAiBuddy).toList();
-            }
-
-            final names = updated.map((p) => p.displayName).toList();
-            emit(
-              state.copyWith(
-                ephemeralParticipants: updated,
-                participants: names.isNotEmpty ? names : state.participants,
-                isSyllabotBuddyActive: otherHumans.isEmpty && state.isSyllabotBuddyActive,
+        if (state.isSyllabotBuddyActive && otherHumans.isEmpty) {
+          if (!updated.any((p) => p.isAiBuddy)) {
+            updated.add(
+              EphemeralParticipant(
+                userId: 'syllabot_buddy_${state.room.id}',
+                displayName: 'Syllabot AI (Study Buddy)',
+                avatarUrl:
+                    'https://api.dicebear.com/7.x/bottts/png?seed=syllabot',
+                isAiBuddy: true,
+                joinedAt: DateTime.now(),
               ),
             );
           }
-        });
+        } else if (otherHumans.isNotEmpty && state.isSyllabotBuddyActive) {
+          updated = updated.where((p) => !p.isAiBuddy).toList();
+        }
+
+        final names = updated.map((p) => p.displayName).toList();
+        emit(
+          state.copyWith(
+            ephemeralParticipants: updated,
+            participants: names.isNotEmpty ? names : state.participants,
+            isSyllabotBuddyActive:
+                otherHumans.isEmpty && state.isSyllabotBuddyActive,
+          ),
+        );
+      }
+    });
 
     _syncSubscription = ephemeral.watchPomodoroSync(roomId).listen((
       syncEvent,
@@ -533,29 +546,38 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       }
     });
 
-    _whiteboardClearSubscription = ephemeral.watchWhiteboardClear(roomId).listen(
-      (_) {
-        if (!isClosed) {
-          emit(state.copyWith(
-            whiteboardStrokes: const [],
-            whiteboardRedoStack: const [],
-          ));
-        }
-      },
-    );
+    _whiteboardClearSubscription = ephemeral
+        .watchWhiteboardClear(roomId)
+        .listen(
+          (_) {
+            if (!isClosed) {
+              emit(
+                state.copyWith(
+                  whiteboardStrokes: const [],
+                  whiteboardRedoStack: const [],
+                ),
+              );
+            }
+          },
+        );
 
     _chatSubscription = ephemeral.watchChatMessages(roomId).listen((
       chatMsg,
     ) {
       if (!isClosed && chatMsg.senderId != _currentUserId) {
         final tickerMsg = '${chatMsg.senderName}: ${chatMsg.text}';
-        final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+        final updatedTicker = [
+          tickerMsg,
+          ...state.recentActivityTicker.take(4),
+        ];
         emit(
           state.copyWith(
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
             recentActivityTicker: updatedTicker,
-            lastReactionEmoji: chatMsg.isReaction ? chatMsg.text : state.lastReactionEmoji,
+            lastReactionEmoji: chatMsg.isReaction
+                ? chatMsg.text
+                : state.lastReactionEmoji,
           ),
         );
       }
@@ -594,7 +616,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   void logCardReviewed([int count = 1, String? deckTitle]) {
     final updatedCount = state.cardsReviewedInSprint + count;
-    final currentTitle = deckTitle ?? state.activeDeckTitle ?? state.room.subject;
+    final currentTitle =
+        deckTitle ?? state.activeDeckTitle ?? state.room.subject;
     final message = '🎯 You completed $updatedCount flashcards in this sprint!';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
 
@@ -608,11 +631,13 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       return p;
     }).toList();
 
-    emit(state.copyWith(
-      cardsReviewedInSprint: updatedCount,
-      ephemeralParticipants: updatedList,
-      recentActivityTicker: updatedTicker,
-    ));
+    emit(
+      state.copyWith(
+        cardsReviewedInSprint: updatedCount,
+        ephemeralParticipants: updatedList,
+        recentActivityTicker: updatedTicker,
+      ),
+    );
 
     sendChatMessage(
       'Reviewed $updatedCount cards in this sprint 🔥',
@@ -636,13 +661,15 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     _sprintTimer?.cancel();
     final message = '⚡ Co-Op Sprint Started: $deckTitle ($targetCards Cards)';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
-    emit(state.copyWith(
-      isCoOpSprintActive: true,
-      coOpSprintDeckTitle: deckTitle,
-      coOpSprintTargetCards: targetCards,
-      coOpSprintRemainingSeconds: 180,
-      recentActivityTicker: updatedTicker,
-    ));
+    emit(
+      state.copyWith(
+        isCoOpSprintActive: true,
+        coOpSprintDeckTitle: deckTitle,
+        coOpSprintTargetCards: targetCards,
+        coOpSprintRemainingSeconds: 180,
+        recentActivityTicker: updatedTicker,
+      ),
+    );
     sendChatMessage(
       '⚡ Launched Co-Op Sprint: $deckTitle ($targetCards cards) - Let’s focus together!',
       isReaction: true,
@@ -667,15 +694,19 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   void completeCoOpSprintRound(int cardsCompleted) {
-    final updatedMap = Map<String, int>.from(state.coOpSprintCompletedParticipants);
+    final updatedMap = Map<String, int>.from(
+      state.coOpSprintCompletedParticipants,
+    );
     updatedMap[_currentUserName] = cardsCompleted;
     final message = '🏆 Sprint finished! You completed $cardsCompleted cards!';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
-    emit(state.copyWith(
-      coOpSprintCompletedParticipants: updatedMap,
-      cardsReviewedInSprint: state.cardsReviewedInSprint + cardsCompleted,
-      recentActivityTicker: updatedTicker,
-    ));
+    emit(
+      state.copyWith(
+        coOpSprintCompletedParticipants: updatedMap,
+        cardsReviewedInSprint: state.cardsReviewedInSprint + cardsCompleted,
+        recentActivityTicker: updatedTicker,
+      ),
+    );
     sendChatMessage(
       '🏆 Sprint Completed: $cardsCompleted cards reviewed (+50 Pod XP)! 🔥',
       isReaction: true,
@@ -684,19 +715,23 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   void endCoOpSprint() {
     _sprintTimer?.cancel();
-    emit(state.copyWith(
-      isCoOpSprintActive: false,
-      coOpSprintRemainingSeconds: 0,
-    ));
+    emit(
+      state.copyWith(
+        isCoOpSprintActive: false,
+        coOpSprintRemainingSeconds: 0,
+      ),
+    );
   }
 
   void triggerMicroReaction(String emoji) {
     final message = 'You sent $emoji';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
-    emit(state.copyWith(
-      lastReactionEmoji: emoji,
-      recentActivityTicker: updatedTicker,
-    ));
+    emit(
+      state.copyWith(
+        lastReactionEmoji: emoji,
+        recentActivityTicker: updatedTicker,
+      ),
+    );
     sendChatMessage(emoji, isReaction: true);
   }
 
@@ -708,11 +743,13 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       return p;
     }).toList();
 
-    emit(state.copyWith(
-      activeGoal: goal,
-      ephemeralParticipants: updatedList,
-      recentActivityTicker: updatedTicker,
-    ));
+    emit(
+      state.copyWith(
+        activeGoal: goal,
+        ephemeralParticipants: updatedList,
+        recentActivityTicker: updatedTicker,
+      ),
+    );
     sendChatMessage('Target: $goal', isReaction: true);
     unawaited(
       _ephemeralRepository?.broadcastGoal(
@@ -788,10 +825,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ),
       );
     }
-    emit(state.copyWith(
-      isHandRaised: nextState,
-      ephemeralParticipants: updatedList,
-    ));
+    emit(
+      state.copyWith(
+        isHandRaised: nextState,
+        ephemeralParticipants: updatedList,
+      ),
+    );
 
     final repo = _ephemeralRepository;
     if (repo != null) {
@@ -813,8 +852,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       final success = await _audioService.setMicrophoneEnabled(enabled: true);
       if (!success) {
         // Check if permission is permanently denied to guide user to settings
-        final isPermanentlyDenied =
-            await _audioService.isMicrophonePermissionPermanentlyDenied();
+        final isPermanentlyDenied = await _audioService
+            .isMicrophonePermissionPermanentlyDenied();
         emit(
           state.copyWith(
             isMuted: true,
@@ -845,12 +884,14 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ),
       );
     }
-    emit(state.copyWith(
-      isMuted: nextMuted,
-      ephemeralParticipants: updatedList,
-      microphonePermissionDenied: false,
-      isPermanentlyDeniedMic: false,
-    ));
+    emit(
+      state.copyWith(
+        isMuted: nextMuted,
+        ephemeralParticipants: updatedList,
+        microphonePermissionDenied: false,
+        isPermanentlyDeniedMic: false,
+      ),
+    );
 
     final repo = _ephemeralRepository;
     if (repo != null) {
@@ -880,8 +921,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       if (granted) {
         await toggleMicMute();
       } else {
-        final isPerm =
-            await _audioService.isMicrophonePermissionPermanentlyDenied();
+        final isPerm = await _audioService
+            .isMicrophonePermissionPermanentlyDenied();
         emit(
           state.copyWith(
             isMuted: true,
@@ -901,10 +942,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   void addWhiteboardStroke(WhiteboardStroke stroke) {
     final updated = List<WhiteboardStroke>.from(state.whiteboardStrokes)
       ..add(stroke);
-    emit(state.copyWith(
-      whiteboardStrokes: updated,
-      whiteboardRedoStack: const [],
-    ));
+    emit(
+      state.copyWith(
+        whiteboardStrokes: updated,
+        whiteboardRedoStack: const [],
+      ),
+    );
     unawaited(
       _ephemeralRepository?.broadcastWhiteboardStroke(
         roomId: state.room.id,
@@ -914,10 +957,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   void clearWhiteboard() {
-    emit(state.copyWith(
-      whiteboardStrokes: const [],
-      whiteboardRedoStack: const [],
-    ));
+    emit(
+      state.copyWith(
+        whiteboardStrokes: const [],
+        whiteboardRedoStack: const [],
+      ),
+    );
     unawaited(
       _ephemeralRepository?.broadcastWhiteboardClear(roomId: state.room.id),
     );
@@ -931,10 +976,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       final removed = updated.removeAt(lastIndex);
       final updatedRedo = List<WhiteboardStroke>.from(state.whiteboardRedoStack)
         ..add(removed);
-      emit(state.copyWith(
-        whiteboardStrokes: updated,
-        whiteboardRedoStack: updatedRedo,
-      ));
+      emit(
+        state.copyWith(
+          whiteboardStrokes: updated,
+          whiteboardRedoStack: updatedRedo,
+        ),
+      );
     }
   }
 
@@ -944,10 +991,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     final strokeToRestore = updatedRedo.removeLast();
     final updatedStrokes = List<WhiteboardStroke>.from(state.whiteboardStrokes)
       ..add(strokeToRestore);
-    emit(state.copyWith(
-      whiteboardStrokes: updatedStrokes,
-      whiteboardRedoStack: updatedRedo,
-    ));
+    emit(
+      state.copyWith(
+        whiteboardStrokes: updatedStrokes,
+        whiteboardRedoStack: updatedRedo,
+      ),
+    );
     unawaited(
       _ephemeralRepository?.broadcastWhiteboardStroke(
         roomId: state.room.id,
@@ -1033,14 +1082,20 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         );
 
         final updatedList = [...state.ephemeralParticipants, buddy];
-        final tickerMsg = '🤖 Syllabot joined as your study buddy! Let’s focus on ${state.room.subject}.';
-        final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+        final tickerMsg =
+            '🤖 Syllabot joined as your study buddy! Let’s focus on ${state.room.subject}.';
+        final updatedTicker = [
+          tickerMsg,
+          ...state.recentActivityTicker.take(4),
+        ];
 
-        emit(state.copyWith(
-          isSyllabotBuddyActive: true,
-          ephemeralParticipants: updatedList,
-          recentActivityTicker: updatedTicker,
-        ));
+        emit(
+          state.copyWith(
+            isSyllabotBuddyActive: true,
+            ephemeralParticipants: updatedList,
+            recentActivityTicker: updatedTicker,
+          ),
+        );
       }
     });
   }
@@ -1088,12 +1143,14 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         : '💪 Good progress on: "$goal". Next round awaits!';
     final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
 
-    emit(state.copyWith(
-      isGoalAchieved: completed,
-      showGoalVerificationModal: false,
-      recentActivityTicker: updatedTicker,
-      lastReactionEmoji: completed ? '🎉' : '👏',
-    ));
+    emit(
+      state.copyWith(
+        isGoalAchieved: completed,
+        showGoalVerificationModal: false,
+        recentActivityTicker: updatedTicker,
+        lastReactionEmoji: completed ? '🎉' : '👏',
+      ),
+    );
 
     sendChatMessage(tickerMsg, isReaction: true);
   }

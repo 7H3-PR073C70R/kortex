@@ -148,8 +148,10 @@ class MarketplaceDeckCard extends StatelessWidget {
                 if (deck.rating >= 4.5 || deck.downloadsCount >= 10) ...[
                   const SizedBox(width: 6),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.warning.withAlpha(25),
                       borderRadius: BorderRadius.circular(6),

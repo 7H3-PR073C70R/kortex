@@ -1,3 +1,5 @@
+// ignore_for_file: document_ignores, avoid_positional_boolean_parameters
+
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';

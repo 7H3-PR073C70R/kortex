@@ -42,6 +42,6 @@ class BreakReminderService {
 
   void dispose() {
     stopFocusTimer();
-    _breakPromptController.close();
+    unawaited(_breakPromptController.close());
   }
 }

@@ -4603,6 +4603,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Successfully authenticated! Loading enrolled courses...'**
   String get lmsOAuthSuccess;
+
+  /// Title for the live whiteboard canvas
+  ///
+  /// In en, this message translates to:
+  /// **'Live Whiteboard'**
+  String get whiteboardTitle;
+
+  /// Live whiteboard stroke count status
+  ///
+  /// In en, this message translates to:
+  /// **'Live Whiteboard ({count, plural, =1{1 stroke} other{{count} strokes}})'**
+  String whiteboardLiveStatus(int count);
+
+  /// Accessibility label for the collaborative whiteboard canvas
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborative Whiteboard Canvas'**
+  String get whiteboardCanvasSemantics;
+
+  /// Title for clear whiteboard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Whiteboard'**
+  String get whiteboardClearTitle;
+
+  /// Confirmation message when clearing whiteboard
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear the collaborative whiteboard for everyone in the room?'**
+  String get whiteboardClearConfirmMessage;
+
+  /// Cancel button on clear whiteboard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get whiteboardClearCancel;
+
+  /// Clear all button on clear whiteboard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get whiteboardClearAll;
+
+  /// Label for dots grid style
+  ///
+  /// In en, this message translates to:
+  /// **'Dots'**
+  String get whiteboardGridDots;
+
+  /// Label for lines grid style
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get whiteboardGridLines;
+
+  /// Label for blank grid style
+  ///
+  /// In en, this message translates to:
+  /// **'Blank'**
+  String get whiteboardGridBlank;
+
+  /// Tooltip for pen tool
+  ///
+  /// In en, this message translates to:
+  /// **'Pen'**
+  String get whiteboardToolPen;
+
+  /// Tooltip for highlighter tool
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighter'**
+  String get whiteboardToolHighlighter;
+
+  /// Tooltip for eraser tool
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser'**
+  String get whiteboardToolEraser;
+
+  /// Tooltip for line shape tool
+  ///
+  /// In en, this message translates to:
+  /// **'Line'**
+  String get whiteboardToolLine;
+
+  /// Tooltip for arrow shape tool
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow'**
+  String get whiteboardToolArrow;
+
+  /// Tooltip for rectangle shape tool
+  ///
+  /// In en, this message translates to:
+  /// **'Rectangle'**
+  String get whiteboardToolRectangle;
+
+  /// Tooltip for circle shape tool
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get whiteboardToolCircle;
+
+  /// Tooltip for undo button
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get whiteboardUndo;
+
+  /// Tooltip for redo button
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get whiteboardRedo;
+
+  /// Tooltip for clear button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Whiteboard'**
+  String get whiteboardClear;
+
+  /// Tooltip for toggle grid button
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Grid Style'**
+  String get whiteboardToggleGrid;
+
+  /// Tooltip for toggle tools toolbar button
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Tools Toolbar'**
+  String get whiteboardToggleTools;
+
+  /// Label for whiteboard tab in live study room
+  ///
+  /// In en, this message translates to:
+  /// **'Whiteboard'**
+  String get whiteboardTabLabel;
 }
 
 class _AppLocalizationsDelegate

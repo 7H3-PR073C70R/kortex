@@ -183,9 +183,13 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: _quickReactions.map((emoji) {
                 return ShrinkableButton(
-                  onTap: () => _sendMessage(explicitText: emoji, isReaction: true),
+                  onTap: () =>
+                      _sendMessage(explicitText: emoji, isReaction: true),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     child: Text(
                       emoji,
                       style: const TextStyle(fontSize: 20),
@@ -227,7 +231,8 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                 return ListView.separated(
                   controller: _scrollController,
                   itemCount: state.chatMessages.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final msg = state.chatMessages[index];
                     final isMe = msg.senderId == widget.currentUserId;
@@ -257,7 +262,9 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                         ? colors.surfaceTertiary
                         : colors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: colors.surfaceBorder.withAlpha(100)),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withAlpha(100),
+                    ),
                   ),
                   child: TextField(
                     controller: _textController,
@@ -385,9 +392,7 @@ class _ChatMessageBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isMe
-                    ? colors.primary
-                    : colors.surfaceTertiary,
+                color: isMe ? colors.primary : colors.surfaceTertiary,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -396,8 +401,9 @@ class _ChatMessageBubble extends StatelessWidget {
                 ),
               ),
               child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   if (!isMe) ...[
                     Text(

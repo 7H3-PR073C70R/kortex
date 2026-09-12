@@ -100,8 +100,9 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
       content: entry.content,
       latexContent: entry.latexContent,
       upvotes: entry.upvotes,
-      repliesCount:
-          entry.repliesCount > 0 ? entry.repliesCount : replies.length,
+      repliesCount: entry.repliesCount > 0
+          ? entry.repliesCount
+          : replies.length,
       createdAt: entry.createdAt,
       replies: replies,
     );

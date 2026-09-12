@@ -50,8 +50,7 @@ class StudyRoomModel {
       activeParticipantsCount:
           (json['active_participants_count'] as num?)?.toInt() ?? 1,
       maxParticipants: (json['max_participants'] as num?)?.toInt() ?? 50,
-      ambientSoundTrack:
-          json['ambient_sound_track'] as String? ?? 'lofi',
+      ambientSoundTrack: json['ambient_sound_track'] as String? ?? 'lofi',
       activeGoal: json['active_goal'] as String?,
       isSilentFocus: json['is_silent_focus'] as bool? ?? true,
     );

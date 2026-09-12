@@ -146,8 +146,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
     return _remoteDataSource
         .fetchStudyCircles(track: track)
         .then(
-          (models) =>
-              models.map((m) => m.toEntity(currentUserId: _currentUserId)).toList(),
+          (models) => models
+              .map((m) => m.toEntity(currentUserId: _currentUserId))
+              .toList(),
         )
         .makeRequest();
   }
@@ -217,10 +218,12 @@ class CommunityRepositoryImpl implements CommunityRepository {
     return _remoteDataSource.cloneSharedDeck(sharedDeckId).then((result) async {
       final newDeckId =
           result['new_deck_id'] as String? ?? 'cloned_$sharedDeckId';
-      final deckTitle = result['title'] as String? ??
+      final deckTitle =
+          result['title'] as String? ??
           result['deck_title'] as String? ??
           'Cloned Deck';
-      final deckSubject = result['subject'] as String? ??
+      final deckSubject =
+          result['subject'] as String? ??
           result['deck_subject'] as String? ??
           'Community Resource';
 
@@ -253,7 +256,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
       if (cardsList.isEmpty) {
         try {
           final sharedDecks = await _remoteDataSource.fetchSharedDecks();
-          final match = sharedDecks.where((d) => d.id == sharedDeckId).firstOrNull;
+          final match = sharedDecks
+              .where((d) => d.id == sharedDeckId)
+              .firstOrNull;
           if (match != null && match.cards.isNotEmpty) {
             for (var i = 0; i < match.cards.length; i++) {
               final c = match.cards[i];
@@ -381,15 +386,12 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String? track,
   }) {
     final currentUserId = _userStorage?.getUserId() ?? '';
-    return _remoteDataSource
-        .fetchLeaderboards(track: track)
-        .then((models) {
-          final entities = models
-              .map((m) => m.toEntity(currentUserId: currentUserId))
-              .toList();
-          return _ensureNonEmptyWithCurrentUser(entities, track: track);
-        })
-        .makeRequest();
+    return _remoteDataSource.fetchLeaderboards(track: track).then((models) {
+      final entities = models
+          .map((m) => m.toEntity(currentUserId: currentUserId))
+          .toList();
+      return _ensureNonEmptyWithCurrentUser(entities, track: track);
+    }).makeRequest();
   }
 
   List<LeaderboardEntryEntity> _ensureNonEmptyWithCurrentUser(
@@ -474,24 +476,24 @@ class CommunityRepositoryImpl implements CommunityRepository {
       ];
     }
 
-    final hasCurrentUser =
-        list.any((e) => e.isCurrentUser || e.userId == currentUserId);
+    final hasCurrentUser = list.any(
+      (e) => e.isCurrentUser || e.userId == currentUserId,
+    );
     if (!hasCurrentUser) {
-      return List<LeaderboardEntryEntity>.from(list)
-        ..add(
-          LeaderboardEntryEntity(
-            id: 'cohort_current',
-            userId: currentUserId,
-            userName: currentUserName,
-            avatarUrl: currentUserAvatar,
-            track: effectiveTrack,
-            dailyXp: 100,
-            weeklyXp: 450,
-            streakDays: 3,
-            rank: list.length + 1,
-            isCurrentUser: true,
-          ),
-        );
+      return List<LeaderboardEntryEntity>.from(list)..add(
+        LeaderboardEntryEntity(
+          id: 'cohort_current',
+          userId: currentUserId,
+          userName: currentUserName,
+          avatarUrl: currentUserAvatar,
+          track: effectiveTrack,
+          dailyXp: 100,
+          weeklyXp: 450,
+          streakDays: 3,
+          rank: list.length + 1,
+          isCurrentUser: true,
+        ),
+      );
     }
 
     return list;

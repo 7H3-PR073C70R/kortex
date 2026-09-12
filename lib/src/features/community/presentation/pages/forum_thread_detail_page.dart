@@ -171,9 +171,10 @@ class ForumThreadDetailPage extends HookWidget {
                                     ),
                                     Text(
                                       _formatTime(post.createdAt, l10n),
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                          ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -185,76 +186,114 @@ class ForumThreadDetailPage extends HookWidget {
                           const SizedBox(height: 14),
 
                           // Badges Row (Question Bounty, Syllabus Module, Solved Status)
-                          if (post.isQuestion || post.syllabusTag.isNotEmpty) ...[
+                          if (post.isQuestion ||
+                              post.syllabusTag.isNotEmpty) ...[
                             Wrap(
                               spacing: 8,
                               runSpacing: 6,
                               children: [
                                 if (post.isQuestion)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: colors.warning.withAlpha(isDark ? 40 : 25),
+                                      color: colors.warning.withAlpha(
+                                        isDark ? 40 : 25,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: colors.warning.withAlpha(90)),
+                                      border: Border.all(
+                                        color: colors.warning.withAlpha(90),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text('❓', style: TextStyle(fontSize: 12)),
+                                        const Text(
+                                          '❓',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
                                         const SizedBox(width: 5),
                                         Text(
                                           'Peer Question Bounty • +100 XP',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.warning,
-                                            fontSize: 11,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.warning,
+                                                fontSize: 11,
+                                              ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 if (post.syllabusTag.isNotEmpty)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
+                                      color: colors.syllabotAccent.withAlpha(
+                                        isDark ? 35 : 20,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: colors.syllabotAccent.withAlpha(80)),
+                                      border: Border.all(
+                                        color: colors.syllabotAccent.withAlpha(
+                                          80,
+                                        ),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text('📚', style: TextStyle(fontSize: 11)),
+                                        const Text(
+                                          '📚',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           post.syllabusTag,
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.syllabotAccent,
-                                            fontSize: 11,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.syllabotAccent,
+                                                fontSize: 11,
+                                              ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                if (post.isVerifiedSolution || replies.any((r) => r.isVerifiedSolution))
+                                if (post.isVerifiedSolution ||
+                                    replies.any((r) => r.isVerifiedSolution))
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: colors.recallEasy.withAlpha(isDark ? 40 : 25),
+                                      color: colors.recallEasy.withAlpha(
+                                        isDark ? 40 : 25,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: colors.recallEasy),
+                                      border: Border.all(
+                                        color: colors.recallEasy,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.check_circle_rounded, size: 12, color: colors.recallEasy),
+                                        Icon(
+                                          Icons.check_circle_rounded,
+                                          size: 12,
+                                          color: colors.recallEasy,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Solved',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.recallEasy,
-                                            fontSize: 11,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.recallEasy,
+                                                fontSize: 11,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -405,7 +444,8 @@ class ForumThreadDetailPage extends HookWidget {
                                           (failure) {
                                             if (context.mounted) {
                                               context.showSnackBar(
-                                                message: failure.message ??
+                                                message:
+                                                    failure.message ??
                                                     'Could not generate AI hint.',
                                                 type: SnackBarType.error,
                                               );
@@ -443,8 +483,9 @@ class ForumThreadDetailPage extends HookWidget {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colors.syllabotAccent
-                                          .withAlpha(isDark ? 80 : 40),
+                                      color: colors.syllabotAccent.withAlpha(
+                                        isDark ? 80 : 40,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 3),
                                     ),
@@ -461,8 +502,8 @@ class ForumThreadDetailPage extends HookWidget {
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     else
@@ -494,10 +535,14 @@ class ForumThreadDetailPage extends HookWidget {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final reply = replies[index];
-                          final hasVerifiedSolution = replies.any((r) => r.isVerifiedSolution);
+                          final hasVerifiedSolution = replies.any(
+                            (r) => r.isVerifiedSolution,
+                          );
                           final userStorage = locator<UserStorageService>();
                           final currentUserId = userStorage.getUserId();
-                          final isAuthor = currentUserId == null || currentUserId == post.authorId;
+                          final isAuthor =
+                              currentUserId == null ||
+                              currentUserId == post.authorId;
 
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
@@ -511,13 +556,17 @@ class ForumThreadDetailPage extends HookWidget {
                                 border: Border.all(
                                   color: reply.isVerifiedSolution
                                       ? colors.recallEasy
-                                      : colors.primary.withAlpha(isDark ? 30 : 15),
+                                      : colors.primary.withAlpha(
+                                          isDark ? 30 : 15,
+                                        ),
                                   width: reply.isVerifiedSolution ? 1.5 : 1.0,
                                 ),
                                 boxShadow: reply.isVerifiedSolution
                                     ? [
                                         BoxShadow(
-                                          color: colors.recallEasy.withAlpha(isDark ? 50 : 25),
+                                          color: colors.recallEasy.withAlpha(
+                                            isDark ? 50 : 25,
+                                          ),
                                           blurRadius: 8,
                                         ),
                                       ]
@@ -535,9 +584,13 @@ class ForumThreadDetailPage extends HookWidget {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
+                                        color: colors.recallEasy.withAlpha(
+                                          isDark ? 40 : 20,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: colors.recallEasy),
+                                        border: Border.all(
+                                          color: colors.recallEasy,
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -550,10 +603,11 @@ class ForumThreadDetailPage extends HookWidget {
                                           const SizedBox(width: 6),
                                           Text(
                                             'Verified Solution • 100 XP Bounty Awarded',
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.recallEasy,
-                                              fontSize: 11,
-                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.recallEasy,
+                                                  fontSize: 11,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -563,33 +617,37 @@ class ForumThreadDetailPage extends HookWidget {
                                     children: [
                                       CircleAvatar(
                                         radius: 12,
-                                        backgroundColor:
-                                            colors.primary.withAlpha(30),
+                                        backgroundColor: colors.primary
+                                            .withAlpha(30),
                                         child: Text(
                                           reply.authorName.isNotEmpty
-                                              ? reply.authorName[0].toUpperCase()
+                                              ? reply.authorName[0]
+                                                    .toUpperCase()
                                               : '?',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.primary,
-                                            fontSize: 10,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.primary,
+                                                fontSize: 10,
+                                              ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           reply.authorName,
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.textPrimary,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                              ),
                                         ),
                                       ),
                                       Text(
                                         _formatTime(reply.createdAt, l10n),
-                                        style: typography.caption.regular.copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 10,
-                                        ),
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 10,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -614,7 +672,9 @@ class ForumThreadDetailPage extends HookWidget {
                                   ],
 
                                   // Mark as Verified Solution Button (Post Author action on questions)
-                                  if (post.isQuestion && !reply.isVerifiedSolution && (!hasVerifiedSolution || isAuthor)) ...[
+                                  if (post.isQuestion &&
+                                      !reply.isVerifiedSolution &&
+                                      (!hasVerifiedSolution || isAuthor)) ...[
                                     const SizedBox(height: 10),
                                     ShrinkableButton(
                                       onTap: () async {
@@ -626,18 +686,25 @@ class ForumThreadDetailPage extends HookWidget {
                                           (failure) {
                                             if (context.mounted) {
                                               context.showSnackBar(
-                                                message: failure.message ??
+                                                message:
+                                                    failure.message ??
                                                     'Failed to verify solution',
                                                 type: SnackBarType.error,
                                               );
                                             }
                                           },
                                           (_) {
-                                            localReplies.value = localReplies.value.map(
-                                              (r) => r.id == reply.id
-                                                  ? r.copyWith(isVerifiedSolution: true)
-                                                  : r,
-                                            ).toList();
+                                            localReplies.value = localReplies
+                                                .value
+                                                .map(
+                                                  (r) => r.id == reply.id
+                                                      ? r.copyWith(
+                                                          isVerifiedSolution:
+                                                              true,
+                                                        )
+                                                      : r,
+                                                )
+                                                .toList();
                                             if (context.mounted) {
                                               context.showSnackBar(
                                                 message:
@@ -653,8 +720,12 @@ class ForumThreadDetailPage extends HookWidget {
                                           vertical: 5,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: colors.warning.withAlpha(isDark ? 40 : 25),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: colors.warning.withAlpha(
+                                            isDark ? 40 : 25,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           border: Border.all(
                                             color: colors.warning.withAlpha(90),
                                           ),
@@ -670,10 +741,11 @@ class ForumThreadDetailPage extends HookWidget {
                                             const SizedBox(width: 5),
                                             Text(
                                               'Mark as Solution (+100 XP)',
-                                              style: typography.caption.bold.copyWith(
-                                                color: colors.warning,
-                                                fontSize: 10.5,
-                                              ),
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.warning,
+                                                    fontSize: 10.5,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -746,8 +818,8 @@ class ForumThreadDetailPage extends HookWidget {
                               (failure) {
                                 if (context.mounted) {
                                   context.showSnackBar(
-                                    message: failure.message ??
-                                        failure.toString(),
+                                    message:
+                                        failure.message ?? failure.toString(),
                                     type: SnackBarType.error,
                                   );
                                 }

@@ -103,9 +103,7 @@ class TrackForumPostCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                post.isVerifiedSolution
-                                    ? 'Solved'
-                                    : 'Question',
+                                post.isVerifiedSolution ? 'Solved' : 'Question',
                                 style: typography.caption.bold.copyWith(
                                   color: post.isVerifiedSolution
                                       ? colors.success

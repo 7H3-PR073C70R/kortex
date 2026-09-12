@@ -4,12 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/presentation/widgets/whiteboard_canvas_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 Widget _wrapWithTheme(Widget child) {
   return ScreenUtilInit(
     designSize: const Size(800, 1000),
     builder: (context, _) => MaterialApp(
       theme: AppTheme.darkTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     ),
   );
@@ -52,7 +55,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(WhiteboardCanvasWidget), findsOneWidget);
-        expect(find.text('Live Whiteboard (1 strokes)'), findsOneWidget);
+        expect(find.text('Live Whiteboard (1 stroke)'), findsOneWidget);
         expect(find.byIcon(Icons.edit_rounded), findsOneWidget);
         expect(find.byIcon(Icons.brush_rounded), findsOneWidget);
         expect(find.byIcon(Icons.cleaning_services_rounded), findsOneWidget);
@@ -76,7 +79,7 @@ void main() {
               height: 500,
               child: WhiteboardCanvasWidget(
                 strokes: const [],
-                currentUserId: 'user_local',
+                currentUserId: 'user_tester_1',
                 currentUserName: 'Test User',
                 onStrokeDrawn: (stroke) {
                   drawnStroke = stroke;
@@ -98,7 +101,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(drawnStroke, isNotNull);
-        expect(drawnStroke!.userId, equals('user_local'));
+        expect(drawnStroke!.userId, equals('user_tester_1'));
         expect(drawnStroke!.userName, equals('Test User'));
         expect(drawnStroke!.points.isNotEmpty, isTrue);
         expect(drawnStroke!.elementType, equals('stroke'));

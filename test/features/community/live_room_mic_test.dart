@@ -193,8 +193,7 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     required String roomId,
     required int durationMinutes,
     required String subject,
-  }) async =>
-      const Right(null);
+  }) async => const Right(null);
 
   Future<void> dispose() async {
     await _participantsCtrl.close();
@@ -209,8 +208,7 @@ class MockCommunityRepository implements CommunityRepository {
   Future<Either<Failure, String>> getLiveKitToken({
     required String roomId,
     required String userId,
-  }) async =>
-      const Right('mock-livekit-jwt-token');
+  }) async => const Right('mock-livekit-jwt-token');
 
   @override
   Stream<StudyRoomEntity> watchStudyRoom(String roomId) => const Stream.empty();
@@ -259,41 +257,43 @@ void main() {
     });
 
     test(
-        'Toggling mic mute un-mutes user, activates audio track, and broadcasts state',
-        () async {
-      final cubit = LiveRoomCubit(
-        initialRoom: testRoom,
-        repository: mockCommunityRepo,
-        ephemeralRepository: mockEphemeralRepo,
-        audioService: mockAudioService,
-        currentUserId: 'user-ade',
-        currentUserName: 'Adekunle',
-      );
+      'Toggling mic mute un-mutes user, activates audio track, and broadcasts state',
+      () async {
+        final cubit = LiveRoomCubit(
+          initialRoom: testRoom,
+          repository: mockCommunityRepo,
+          ephemeralRepository: mockEphemeralRepo,
+          audioService: mockAudioService,
+          currentUserId: 'user-ade',
+          currentUserName: 'Adekunle',
+        );
 
-      // Initial state is muted
-      expect(cubit.state.isMuted, isTrue);
+        // Initial state is muted
+        expect(cubit.state.isMuted, isTrue);
 
-      // User turns mic ON (unmute)
-      await cubit.toggleMicMute();
+        // User turns mic ON (unmute)
+        await cubit.toggleMicMute();
 
-      expect(cubit.state.isMuted, isFalse);
-      expect(mockAudioService.lastSetMicEnabled, isTrue);
+        expect(cubit.state.isMuted, isFalse);
+        expect(mockAudioService.lastSetMicEnabled, isTrue);
 
-      // Check ephemeral participants list has updated user state
-      final userParticipant = cubit.state.ephemeralParticipants
-          .firstWhere((p) => p.userId == 'user-ade');
-      expect(userParticipant.isMuted, isFalse);
+        // Check ephemeral participants list has updated user state
+        final userParticipant = cubit.state.ephemeralParticipants.firstWhere(
+          (p) => p.userId == 'user-ade',
+        );
+        expect(userParticipant.isMuted, isFalse);
 
-      // Check broadcast was dispatched to peers
-      expect(mockEphemeralRepo.broadcastMuteCalls, isNotEmpty);
-      expect(mockEphemeralRepo.broadcastMuteCalls.last, {
-        'roomId': 'room-101',
-        'userId': 'user-ade',
-        'isMuted': false,
-      });
+        // Check broadcast was dispatched to peers
+        expect(mockEphemeralRepo.broadcastMuteCalls, isNotEmpty);
+        expect(mockEphemeralRepo.broadcastMuteCalls.last, {
+          'roomId': 'room-101',
+          'userId': 'user-ade',
+          'isMuted': false,
+        });
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
 
     test('Toggling mic mute twice returns user to muted state', () async {
       final cubit = LiveRoomCubit(
@@ -313,8 +313,9 @@ void main() {
       expect(cubit.state.isMuted, isTrue);
       expect(mockAudioService.lastSetMicEnabled, isFalse);
 
-      final userParticipant = cubit.state.ephemeralParticipants
-          .firstWhere((p) => p.userId == 'user-ade');
+      final userParticipant = cubit.state.ephemeralParticipants.firstWhere(
+        (p) => p.userId == 'user-ade',
+      );
       expect(userParticipant.isMuted, isTrue);
 
       expect(mockEphemeralRepo.broadcastMuteCalls.last, {
@@ -327,101 +328,116 @@ void main() {
     });
 
     test(
-        'Hardware mic stream event synchronizes cubit state and participants',
-        () async {
-      final cubit = LiveRoomCubit(
-        initialRoom: testRoom,
-        repository: mockCommunityRepo,
-        ephemeralRepository: mockEphemeralRepo,
-        audioService: mockAudioService,
-        currentUserId: 'user-ade',
-        currentUserName: 'Adekunle',
-      );
-      await cubit.toggleMicMute();
+      'Hardware mic stream event synchronizes cubit state and participants',
+      () async {
+        final cubit = LiveRoomCubit(
+          initialRoom: testRoom,
+          repository: mockCommunityRepo,
+          ephemeralRepository: mockEphemeralRepo,
+          audioService: mockAudioService,
+          currentUserId: 'user-ade',
+          currentUserName: 'Adekunle',
+        );
+        await cubit.toggleMicMute();
 
-      expect(cubit.state.isMuted, isFalse);
+        expect(cubit.state.isMuted, isFalse);
 
-      // Simulate system revoking mic permission or muting via hardware switch
-      mockAudioService.simulateHardwareMicState(enabled: false);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        // Simulate system revoking mic permission or muting via hardware switch
+        mockAudioService.simulateHardwareMicState(enabled: false);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(cubit.state.isMuted, isTrue);
-      final userParticipant = cubit.state.ephemeralParticipants
-          .firstWhere((p) => p.userId == 'user-ade');
-      expect(userParticipant.isMuted, isTrue);
+        expect(cubit.state.isMuted, isTrue);
+        final userParticipant = cubit.state.ephemeralParticipants.firstWhere(
+          (p) => p.userId == 'user-ade',
+        );
+        expect(userParticipant.isMuted, isTrue);
 
-      // Check broadcast was sent so peers are informed
-      expect(mockEphemeralRepo.broadcastMuteCalls.last['isMuted'], isTrue);
+        // Check broadcast was sent so peers are informed
+        expect(mockEphemeralRepo.broadcastMuteCalls.last['isMuted'], isTrue);
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
 
     test(
-        'toggleMicMute when audioService returns false sets microphonePermissionDenied to true',
-        () async {
-      mockAudioService.shouldSucceedSetMic = false;
-      final cubit = LiveRoomCubit(
-        initialRoom: testRoom,
-        repository: mockCommunityRepo,
-        ephemeralRepository: mockEphemeralRepo,
-        audioService: mockAudioService,
-        currentUserId: 'user-ade',
-        currentUserName: 'Adekunle',
-      );
+      'toggleMicMute when audioService returns false sets microphonePermissionDenied to true',
+      () async {
+        mockAudioService.shouldSucceedSetMic = false;
+        final cubit = LiveRoomCubit(
+          initialRoom: testRoom,
+          repository: mockCommunityRepo,
+          ephemeralRepository: mockEphemeralRepo,
+          audioService: mockAudioService,
+          currentUserId: 'user-ade',
+          currentUserName: 'Adekunle',
+        );
 
-      expect(cubit.state.isMuted, isTrue);
-      expect(cubit.state.microphonePermissionDenied, isFalse);
+        expect(cubit.state.isMuted, isTrue);
+        expect(cubit.state.microphonePermissionDenied, isFalse);
 
-      await cubit.toggleMicMute();
+        await cubit.toggleMicMute();
 
-      // State remains muted and triggers permission denied prompt
-      expect(cubit.state.isMuted, isTrue);
-      expect(cubit.state.microphonePermissionDenied, isTrue);
+        // State remains muted and triggers permission denied prompt
+        expect(cubit.state.isMuted, isTrue);
+        expect(cubit.state.microphonePermissionDenied, isTrue);
 
-      cubit.dismissMicPermissionPrompt();
-      expect(cubit.state.microphonePermissionDenied, isFalse);
+        cubit.dismissMicPermissionPrompt();
+        expect(cubit.state.microphonePermissionDenied, isFalse);
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
 
-    test('logCardReviewed increments sprint count and updates ticker', () async {
-      final cubit = LiveRoomCubit(
-        initialRoom: testRoom,
-        repository: mockCommunityRepo,
-        ephemeralRepository: mockEphemeralRepo,
-        audioService: mockAudioService,
-        currentUserId: 'user-ade',
-        currentUserName: 'Adekunle',
-      );
+    test(
+      'logCardReviewed increments sprint count and updates ticker',
+      () async {
+        final cubit = LiveRoomCubit(
+          initialRoom: testRoom,
+          repository: mockCommunityRepo,
+          ephemeralRepository: mockEphemeralRepo,
+          audioService: mockAudioService,
+          currentUserId: 'user-ade',
+          currentUserName: 'Adekunle',
+        );
 
-      expect(cubit.state.cardsReviewedInSprint, 0);
+        expect(cubit.state.cardsReviewedInSprint, 0);
 
-      cubit.logCardReviewed(5);
+        cubit.logCardReviewed(5);
 
-      expect(cubit.state.cardsReviewedInSprint, 5);
-      expect(cubit.state.recentActivityTicker.first, contains('5 flashcards'));
-      expect(mockEphemeralRepo.sentChatMessages.length, 1);
-      expect(mockEphemeralRepo.sentChatMessages.first.text, contains('Reviewed 5 cards'));
+        expect(cubit.state.cardsReviewedInSprint, 5);
+        expect(
+          cubit.state.recentActivityTicker.first,
+          contains('5 flashcards'),
+        );
+        expect(mockEphemeralRepo.sentChatMessages.length, 1);
+        expect(
+          mockEphemeralRepo.sentChatMessages.first.text,
+          contains('Reviewed 5 cards'),
+        );
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
 
-    test('triggerMicroReaction sets last emoji and broadcasts reaction', () async {
-      final cubit = LiveRoomCubit(
-        initialRoom: testRoom,
-        repository: mockCommunityRepo,
-        ephemeralRepository: mockEphemeralRepo,
-        audioService: mockAudioService,
-        currentUserId: 'user-ade',
-        currentUserName: 'Adekunle',
-      )..triggerMicroReaction('🔥');
+    test(
+      'triggerMicroReaction sets last emoji and broadcasts reaction',
+      () async {
+        final cubit = LiveRoomCubit(
+          initialRoom: testRoom,
+          repository: mockCommunityRepo,
+          ephemeralRepository: mockEphemeralRepo,
+          audioService: mockAudioService,
+          currentUserId: 'user-ade',
+          currentUserName: 'Adekunle',
+        )..triggerMicroReaction('🔥');
 
-      expect(cubit.state.lastReactionEmoji, '🔥');
-      expect(cubit.state.recentActivityTicker.first, contains('You sent 🔥'));
-      expect(mockEphemeralRepo.sentChatMessages.length, 1);
-      expect(mockEphemeralRepo.sentChatMessages.first.text, '🔥');
+        expect(cubit.state.lastReactionEmoji, '🔥');
+        expect(cubit.state.recentActivityTicker.first, contains('You sent 🔥'));
+        expect(mockEphemeralRepo.sentChatMessages.length, 1);
+        expect(mockEphemeralRepo.sentChatMessages.first.text, '🔥');
 
-      await cubit.close();
-    });
+        await cubit.close();
+      },
+    );
   });
 }

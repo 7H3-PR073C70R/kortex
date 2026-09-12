@@ -127,27 +127,28 @@ class _CommunityHubView extends HookWidget {
                   CreatePostBottomSheet.show(
                     context,
                     lockedTrack: targetTrack,
-                    onSubmit: ({
-                      required title,
-                      required content,
-                      required track,
-                      latexContent,
-                      isQuestion = false,
-                      syllabusTag = 'General',
-                      isAnonymous = false,
-                    }) {
-                      context.read<CommunityHubBloc>().add(
-                        CreateForumPostEvent(
-                          title: title,
-                          content: content,
-                          track: track,
-                          latexContent: latexContent,
-                          isQuestion: isQuestion,
-                          syllabusTag: syllabusTag,
-                          isAnonymous: isAnonymous,
-                        ),
-                      );
-                    },
+                    onSubmit:
+                        ({
+                          required title,
+                          required content,
+                          required track,
+                          latexContent,
+                          isQuestion = false,
+                          syllabusTag = 'General',
+                          isAnonymous = false,
+                        }) {
+                          context.read<CommunityHubBloc>().add(
+                            CreateForumPostEvent(
+                              title: title,
+                              content: content,
+                              track: track,
+                              latexContent: latexContent,
+                              isQuestion: isQuestion,
+                              syllabusTag: syllabusTag,
+                              isAnonymous: isAnonymous,
+                            ),
+                          );
+                        },
                   ),
                 );
               },
@@ -219,121 +220,120 @@ class _CommunityHubView extends HookWidget {
       ),
       body: Column(
         children: [
-              // Auto-Community Spinoff Banner (Appears when community is provisioned)
-              AutoCommunityBannerWidget(
-                onTapOpenHub: (community) {
-                  tabController.animateTo(1);
-                  context.read<CommunityHubBloc>().add(
-                    ChangeTrackFilterEvent(community.courseCode),
+          // Auto-Community Spinoff Banner (Appears when community is provisioned)
+          AutoCommunityBannerWidget(
+            onTapOpenHub: (community) {
+              tabController.animateTo(1);
+              context.read<CommunityHubBloc>().add(
+                ChangeTrackFilterEvent(community.courseCode),
+              );
+            },
+            onTapJoinRoom: (roomId) {
+              final hubState = context.read<CommunityHubBloc>().state;
+              final room = hubState.studyRooms.firstWhere(
+                (r) => r.id == roomId,
+                orElse: () => StudyRoomEntity(
+                  id: roomId,
+                  title: 'Focus Room',
+                  subject: 'General Study',
+                ),
+              );
+              unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+            },
+          ),
+
+          // Main Tab Content with Shimmer Skeleton
+          Expanded(
+            child: BlocConsumer<CommunityHubBloc, CommunityState>(
+              listenWhen: (prev, curr) =>
+                  curr.lastClonedDeckId != null &&
+                  prev.lastClonedDeckId != curr.lastClonedDeckId,
+              listener: (context, state) {
+                if (state.lastClonedDeckId != null) {
+                  if (locator.isRegistered<DecksBloc>()) {
+                    locator<DecksBloc>().add(const DecksRefreshed());
+                  }
+                  if (locator.isRegistered<DashboardBloc>()) {
+                    locator<DashboardBloc>().add(const DashboardRefreshed());
+                  }
+                  context.showSnackBar(
+                    message: l10n.deckClonedSuccessNotice,
                   );
-                },
-                onTapJoinRoom: (roomId) {
-                  final hubState = context.read<CommunityHubBloc>().state;
-                  final room = hubState.studyRooms.firstWhere(
-                    (r) => r.id == roomId,
-                    orElse: () => StudyRoomEntity(
-                      id: roomId,
-                      title: 'Focus Room',
-                      subject: 'General Study',
-                    ),
+                }
+              },
+              builder: (context, state) {
+                if (state.status == CommunityStatus.loading &&
+                    state.studyRooms.isEmpty &&
+                    state.forumPosts.isEmpty) {
+                  return CommunityHubShimmer(
+                    tabIndex: tabController.index,
                   );
-                  unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
-                },
-              ),
+                }
 
-              // Main Tab Content with Shimmer Skeleton
-              Expanded(
-                child: BlocConsumer<CommunityHubBloc, CommunityState>(
-                  listenWhen: (prev, curr) =>
-                      curr.lastClonedDeckId != null &&
-                      prev.lastClonedDeckId != curr.lastClonedDeckId,
-                  listener: (context, state) {
-                    if (state.lastClonedDeckId != null) {
-                      if (locator.isRegistered<DecksBloc>()) {
-                        locator<DecksBloc>().add(const DecksRefreshed());
-                      }
-                      if (locator.isRegistered<DashboardBloc>()) {
-                        locator<DashboardBloc>().add(const DashboardRefreshed());
-                      }
-                      context.showSnackBar(
-                        message: l10n.deckClonedSuccessNotice,
-                      );
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state.status == CommunityStatus.loading &&
-                        state.studyRooms.isEmpty &&
-                        state.forumPosts.isEmpty) {
-                      return CommunityHubShimmer(
-                        tabIndex: tabController.index,
-                      );
-                    }
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 1024;
 
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isDesktop = constraints.maxWidth >= 1024;
-
-                        if (isDesktop) {
-                          // Desktop: 2-Panel Layout
-                          return Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: TabBarView(
-                                    controller: tabController,
-                                    children: [
-                                      _LiveRoomsList(state: state),
-                                      _ForumPostsList(state: state),
-                                      _MarketplaceDecksList(state: state),
-                                      StreakLeaderboardWidget(
-                                        entries: state.leaderboardEntries,
-                                        streakFreezeCount: effectiveStreakFreezes,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  flex: 2,
-                                  child: SingleChildScrollView(
-                                    child: StreakLeaderboardWidget(
-                                      entries: state.leaderboardEntries,
-                                      streakFreezeCount:
-                                          effectiveStreakFreezes,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        // Mobile: Single-Column Tab View
-                        return TabBarView(
-                          controller: tabController,
+                    if (isDesktop) {
+                      // Desktop: 2-Panel Layout
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _LiveRoomsList(state: state),
-                            _ForumPostsList(state: state),
-                            _MarketplaceDecksList(state: state),
-                            SingleChildScrollView(
-                              padding: const EdgeInsets.all(16),
-                              child: StreakLeaderboardWidget(
-                                entries: state.leaderboardEntries,
-                                streakFreezeCount: effectiveStreakFreezes,
+                            Expanded(
+                              flex: 3,
+                              child: TabBarView(
+                                controller: tabController,
+                                children: [
+                                  _LiveRoomsList(state: state),
+                                  _ForumPostsList(state: state),
+                                  _MarketplaceDecksList(state: state),
+                                  StreakLeaderboardWidget(
+                                    entries: state.leaderboardEntries,
+                                    streakFreezeCount: effectiveStreakFreezes,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              flex: 2,
+                              child: SingleChildScrollView(
+                                child: StreakLeaderboardWidget(
+                                  entries: state.leaderboardEntries,
+                                  streakFreezeCount: effectiveStreakFreezes,
+                                ),
                               ),
                             ),
                           ],
-                        );
-                      },
+                        ),
+                      );
+                    }
+
+                    // Mobile: Single-Column Tab View
+                    return TabBarView(
+                      controller: tabController,
+                      children: [
+                        _LiveRoomsList(state: state),
+                        _ForumPostsList(state: state),
+                        _MarketplaceDecksList(state: state),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: StreakLeaderboardWidget(
+                            entries: state.leaderboardEntries,
+                            streakFreezeCount: effectiveStreakFreezes,
+                          ),
+                        ),
+                      ],
                     );
                   },
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
+        ],
+      ),
     );
   }
 }
@@ -357,7 +357,9 @@ class _LiveRoomsList extends StatelessWidget {
         _InstantStudyDoubleCard(
           state: state,
           onMatch: (matchedRoom) {
-            unawaited(context.router.push(LiveStudyRoomRoute(room: matchedRoom)));
+            unawaited(
+              context.router.push(LiveStudyRoomRoute(room: matchedRoom)),
+            );
           },
         ),
         const SizedBox(height: 14),
@@ -396,24 +398,28 @@ class _LiveRoomsList extends StatelessWidget {
                   unawaited(
                     CreateStudyCircleSheet.show(
                       context,
-                      onSubmit: ({
-                        required name,
-                        required track,
-                        required targetWeeklyMinutes,
-                      }) {
-                        context.read<CommunityHubBloc>().add(
-                          CreateStudyCircleEvent(
-                            name: name,
-                            track: track,
-                            targetWeeklyMinutes: targetWeeklyMinutes,
-                          ),
-                        );
-                      },
+                      onSubmit:
+                          ({
+                            required name,
+                            required track,
+                            required targetWeeklyMinutes,
+                          }) {
+                            context.read<CommunityHubBloc>().add(
+                              CreateStudyCircleEvent(
+                                name: name,
+                                track: track,
+                                targetWeeklyMinutes: targetWeeklyMinutes,
+                              ),
+                            );
+                          },
                     ),
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.syllabotAccent.withAlpha(isDark ? 45 : 25),
                     borderRadius: BorderRadius.circular(10),
@@ -424,7 +430,11 @@ class _LiveRoomsList extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_rounded, size: 14, color: colors.syllabotAccent),
+                      Icon(
+                        Icons.add_rounded,
+                        size: 14,
+                        color: colors.syllabotAccent,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'New Pod',
@@ -445,7 +455,9 @@ class _LiveRoomsList extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfacePrimary,
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(120)
+                  : colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 25 : 15),
@@ -453,7 +465,11 @@ class _LiveRoomsList extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: colors.textSecondary),
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -516,27 +532,28 @@ class _LiveRoomsList extends StatelessWidget {
                   unawaited(
                     CreateStudyRoomSheet.show(
                       context,
-                      onSubmit: ({
-                        required title,
-                        required subject,
-                        required category,
-                        required pomodoroMinutes,
-                        ambientSoundTrack = 'Lo-Fi Beats',
-                        activeGoal,
-                        isSilentFocus = true,
-                      }) {
-                        context.read<CommunityHubBloc>().add(
-                          CreateRoomEvent(
-                            title: title,
-                            subject: subject,
-                            category: category,
-                            pomodoroMinutes: pomodoroMinutes,
-                            ambientSoundTrack: ambientSoundTrack,
-                            activeGoal: activeGoal,
-                            isSilentFocus: isSilentFocus,
-                          ),
-                        );
-                      },
+                      onSubmit:
+                          ({
+                            required title,
+                            required subject,
+                            required category,
+                            required pomodoroMinutes,
+                            ambientSoundTrack = 'Lo-Fi Beats',
+                            activeGoal,
+                            isSilentFocus = true,
+                          }) {
+                            context.read<CommunityHubBloc>().add(
+                              CreateRoomEvent(
+                                title: title,
+                                subject: subject,
+                                category: category,
+                                pomodoroMinutes: pomodoroMinutes,
+                                ambientSoundTrack: ambientSoundTrack,
+                                activeGoal: activeGoal,
+                                isSilentFocus: isSilentFocus,
+                              ),
+                            );
+                          },
                     ),
                   );
                 },
@@ -614,27 +631,28 @@ class _LiveRoomsList extends StatelessWidget {
                     unawaited(
                       CreateStudyRoomSheet.show(
                         context,
-                        onSubmit: ({
-                          required title,
-                          required subject,
-                          required category,
-                          required pomodoroMinutes,
-                          ambientSoundTrack = 'Lo-Fi Beats',
-                          activeGoal,
-                          isSilentFocus = true,
-                        }) {
-                          context.read<CommunityHubBloc>().add(
-                            CreateRoomEvent(
-                              title: title,
-                              subject: subject,
-                              category: category,
-                              pomodoroMinutes: pomodoroMinutes,
-                              ambientSoundTrack: ambientSoundTrack,
-                              activeGoal: activeGoal,
-                              isSilentFocus: isSilentFocus,
-                            ),
-                          );
-                        },
+                        onSubmit:
+                            ({
+                              required title,
+                              required subject,
+                              required category,
+                              required pomodoroMinutes,
+                              ambientSoundTrack = 'Lo-Fi Beats',
+                              activeGoal,
+                              isSilentFocus = true,
+                            }) {
+                              context.read<CommunityHubBloc>().add(
+                                CreateRoomEvent(
+                                  title: title,
+                                  subject: subject,
+                                  category: category,
+                                  pomodoroMinutes: pomodoroMinutes,
+                                  ambientSoundTrack: ambientSoundTrack,
+                                  activeGoal: activeGoal,
+                                  isSilentFocus: isSilentFocus,
+                                ),
+                              );
+                            },
                       ),
                     );
                   },
@@ -686,7 +704,10 @@ class _ForumPostsList extends HookWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
-    final effectiveTrack = (userTrack != null && userTrack.trim().isNotEmpty && userTrack != 'General')
+    final effectiveTrack =
+        (userTrack != null &&
+            userTrack.trim().isNotEmpty &&
+            userTrack != 'General')
         ? userTrack.trim()
         : 'WAEC';
 
@@ -741,7 +762,10 @@ class _ForumPostsList extends HookWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: colors.primary,
                             borderRadius: BorderRadius.circular(6),
@@ -778,7 +802,9 @@ class _ForumPostsList extends HookWidget {
           onTap: () {
             unawaited(HapticFeedback.lightImpact());
             context.read<CommunityHubBloc>().add(
-              ToggleQuestionsOnlyFilterEvent(questionsOnly: !state.questionsOnly),
+              ToggleQuestionsOnlyFilterEvent(
+                questionsOnly: !state.questionsOnly,
+              ),
             );
           },
           child: AnimatedContainer(
@@ -799,31 +825,43 @@ class _ForumPostsList extends HookWidget {
             child: Row(
               children: [
                 Icon(
-                  state.questionsOnly ? Icons.check_circle_rounded : Icons.help_outline_rounded,
+                  state.questionsOnly
+                      ? Icons.check_circle_rounded
+                      : Icons.help_outline_rounded,
                   size: 18,
-                  color: state.questionsOnly ? colors.warning : colors.textSecondary,
+                  color: state.questionsOnly
+                      ? colors.warning
+                      : colors.textSecondary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Peer Question Bounties (+100 XP)',
                     style: typography.caption.bold.copyWith(
-                      color: state.questionsOnly ? colors.warning : colors.textPrimary,
+                      color: state.questionsOnly
+                          ? colors.warning
+                          : colors.textPrimary,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: (state.questionsOnly ? colors.warning : colors.primary)
-                        .withAlpha(isDark ? 40 : 20),
+                    color:
+                        (state.questionsOnly ? colors.warning : colors.primary)
+                            .withAlpha(isDark ? 40 : 20),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     state.questionsOnly ? 'Active' : 'Show Only',
                     style: typography.caption.bold.copyWith(
                       fontSize: 10,
-                      color: state.questionsOnly ? colors.warning : colors.primary,
+                      color: state.questionsOnly
+                          ? colors.warning
+                          : colors.primary,
                     ),
                   ),
                 ),
@@ -874,7 +912,9 @@ class _ForumPostsList extends HookWidget {
             return TrackForumPostCard(
               post: post,
               onTap: () {
-                unawaited(context.router.push(ForumThreadDetailRoute(post: post)));
+                unawaited(
+                  context.router.push(ForumThreadDetailRoute(post: post)),
+                );
               },
             );
           }),
@@ -916,27 +956,28 @@ class _MarketplaceDecksList extends StatelessWidget {
                   unawaited(
                     PublishDeckModalSheet.show(
                       context,
-                      onSubmit: ({
-                        required title,
-                        required subject,
-                        required description,
-                        required category,
-                        syllabusTag = 'General',
-                        totalCards = 10,
-                        cardsJson = const [],
-                      }) {
-                        context.read<CommunityHubBloc>().add(
-                          PublishDeckEvent(
-                            title: title,
-                            subject: subject,
-                            description: description,
-                            category: category,
-                            syllabusTag: syllabusTag,
-                            totalCards: totalCards,
-                            cardsJson: cardsJson,
-                          ),
-                        );
-                      },
+                      onSubmit:
+                          ({
+                            required title,
+                            required subject,
+                            required description,
+                            required category,
+                            syllabusTag = 'General',
+                            totalCards = 10,
+                            cardsJson = const [],
+                          }) {
+                            context.read<CommunityHubBloc>().add(
+                              PublishDeckEvent(
+                                title: title,
+                                subject: subject,
+                                description: description,
+                                category: category,
+                                syllabusTag: syllabusTag,
+                                totalCards: totalCards,
+                                cardsJson: cardsJson,
+                              ),
+                            );
+                          },
                     ),
                   );
                 },
@@ -1014,27 +1055,28 @@ class _MarketplaceDecksList extends StatelessWidget {
                     unawaited(
                       PublishDeckModalSheet.show(
                         context,
-                        onSubmit: ({
-                          required title,
-                          required subject,
-                          required description,
-                          required category,
-                          syllabusTag = 'General',
-                          totalCards = 10,
-                          cardsJson = const [],
-                        }) {
-                          context.read<CommunityHubBloc>().add(
-                            PublishDeckEvent(
-                              title: title,
-                              subject: subject,
-                              description: description,
-                              category: category,
-                              syllabusTag: syllabusTag,
-                              totalCards: totalCards,
-                              cardsJson: cardsJson,
-                            ),
-                          );
-                        },
+                        onSubmit:
+                            ({
+                              required title,
+                              required subject,
+                              required description,
+                              required category,
+                              syllabusTag = 'General',
+                              totalCards = 10,
+                              cardsJson = const [],
+                            }) {
+                              context.read<CommunityHubBloc>().add(
+                                PublishDeckEvent(
+                                  title: title,
+                                  subject: subject,
+                                  description: description,
+                                  category: category,
+                                  syllabusTag: syllabusTag,
+                                  totalCards: totalCards,
+                                  cardsJson: cardsJson,
+                                ),
+                              );
+                            },
                       ),
                     );
                   },
@@ -1164,13 +1206,20 @@ class _InstantStudyDoubleCard extends StatelessWidget {
           ShrinkableButton(
             onTap: () {
               unawaited(HapticFeedback.mediumImpact());
-              final targetTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+              final targetTrack = context
+                  .read<AuthBloc?>()
+                  ?.state
+                  .userProfile
+                  ?.targetTrack;
 
               StudyRoomEntity? match;
               try {
                 match = state.studyRooms.firstWhere(
-                  (r) => r.activeParticipantsCount > 0 &&
-                      (targetTrack == null || r.category == targetTrack || r.subject == targetTrack),
+                  (r) =>
+                      r.activeParticipantsCount > 0 &&
+                      (targetTrack == null ||
+                          r.category == targetTrack ||
+                          r.subject == targetTrack),
                 );
               } on Object catch (_) {
                 try {
@@ -1182,7 +1231,8 @@ class _InstantStudyDoubleCard extends StatelessWidget {
                       ? state.studyRooms.first
                       : StudyRoomEntity(
                           id: 'instant_focus_room',
-                          title: '${targetTrack ?? "General"} Instant Focus Room',
+                          title:
+                              '${targetTrack ?? "General"} Instant Focus Room',
                           subject: targetTrack ?? 'General Study',
                           category: targetTrack ?? 'General',
                         );

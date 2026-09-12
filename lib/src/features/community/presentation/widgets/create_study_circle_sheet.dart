@@ -15,7 +15,8 @@ class CreateStudyCircleSheet extends HookWidget {
     required String name,
     required String track,
     required int targetWeeklyMinutes,
-  }) onSubmit;
+  })
+  onSubmit;
   final String initialTrack;
 
   static Future<void> show(
@@ -24,7 +25,8 @@ class CreateStudyCircleSheet extends HookWidget {
       required String name,
       required String track,
       required int targetWeeklyMinutes,
-    }) onSubmit,
+    })
+    onSubmit,
     String initialTrack = 'General',
   }) {
     return showModalBottomSheet<void>(

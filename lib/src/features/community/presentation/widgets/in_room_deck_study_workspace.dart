@@ -184,10 +184,13 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
 
     final isNewCard =
         currentCard.repetitions == 0 && currentCard.lastReviewed == null;
-    final initialStability =
-        currentCard.interval > 0 ? currentCard.interval.toDouble() : 0.0;
-    final initialDifficulty =
-        ((3.0 - currentCard.easeFactor) * 5.0).clamp(1.0, 10.0);
+    final initialStability = currentCard.interval > 0
+        ? currentCard.interval.toDouble()
+        : 0.0;
+    final initialDifficulty = ((3.0 - currentCard.easeFactor) * 5.0).clamp(
+      1.0,
+      10.0,
+    );
 
     final fsrsCard = FsrsCard(
       cardId: currentCard.id,
@@ -219,11 +222,15 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
       interval: reviewResult.card.scheduledDays,
       easeFactor: (3.0 - (reviewResult.card.difficulty / 5.0)).clamp(1.3, 2.5),
       lastReviewed: nowUtc,
-      nextDueDate: reviewResult.card.due ??
-          nowUtc.add(Duration(
+      nextDueDate:
+          reviewResult.card.due ??
+          nowUtc.add(
+            Duration(
               days: reviewResult.card.scheduledDays > 0
                   ? reviewResult.card.scheduledDays
-                  : 1)),
+                  : 1,
+            ),
+          ),
     );
 
     final updatedCards = List<FlashcardEntity>.from(_cards);
@@ -233,10 +240,12 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     _cards = updatedCards;
 
     if (locator.isRegistered<DecksRepository>()) {
-      unawaited(locator<DecksRepository>().updateDeckCards(
-        widget.roomState.activeDeckId ?? currentCard.deckId,
-        updatedCards,
-      ));
+      unawaited(
+        locator<DecksRepository>().updateDeckCards(
+          widget.roomState.activeDeckId ?? currentCard.deckId,
+          updatedCards,
+        ),
+      );
     }
 
     // 5. Log card completion to LiveRoomCubit & broadcast to room members
@@ -413,7 +422,9 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                           value: progress,
                           minHeight: 4,
                           backgroundColor: colors.surfaceTertiary,
-                          valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -552,8 +563,10 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isBack
                       ? colors.recallEasy.withAlpha(isDark ? 40 : 25)
@@ -662,8 +675,11 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
       ),
       child: Row(
         children: [
-          Icon(Icons.lightbulb_outline_rounded,
-              size: 16, color: colors.primary),
+          Icon(
+            Icons.lightbulb_outline_rounded,
+            size: 16,
+            color: colors.primary,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -769,8 +785,9 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    final decksBloc =
-        locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null;
+    final decksBloc = locator.isRegistered<DecksBloc>()
+        ? locator<DecksBloc>()
+        : null;
     final allDecks = decksBloc?.state.allDecks ?? const <DeckEntity>[];
 
     return Padding(
@@ -839,9 +856,10 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                       return ShrinkableButton(
                         onTap: () {
                           unawaited(HapticFeedback.mediumImpact());
-                          context
-                              .read<LiveRoomCubit>()
-                              .selectActiveDeck(deck.id, deck.title);
+                          context.read<LiveRoomCubit>().selectActiveDeck(
+                            deck.id,
+                            deck.title,
+                          );
                           unawaited(_loadDeckCards(deck.id));
                         },
                         child: Container(
@@ -851,10 +869,12 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isDue
-                                  ? colors.recallHard
-                                      .withAlpha(isDark ? 100 : 70)
-                                  : colors.surfaceBorder
-                                      .withAlpha(isDark ? 50 : 30),
+                                  ? colors.recallHard.withAlpha(
+                                      isDark ? 100 : 70,
+                                    )
+                                  : colors.surfaceBorder.withAlpha(
+                                      isDark ? 50 : 30,
+                                    ),
                               width: isDue ? 1.5 : 1.0,
                             ),
                           ),
@@ -864,8 +884,9 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                                 width: 42,
                                 height: 42,
                                 decoration: BoxDecoration(
-                                  color: colors.primary
-                                      .withAlpha(isDark ? 40 : 20),
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 40 : 20,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Center(
@@ -890,11 +911,11 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                                     const SizedBox(height: 4),
                                     Text(
                                       '${deck.totalCards} cards • ${deck.subject}',
-                                      style:
-                                          typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11.5,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -906,8 +927,9 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: colors.recallHard
-                                        .withAlpha(isDark ? 40 : 25),
+                                    color: colors.recallHard.withAlpha(
+                                      isDark ? 40 : 25,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(

@@ -150,7 +150,11 @@ class StudyCircleCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.military_tech_rounded, size: 14, color: colors.primary),
+                Icon(
+                  Icons.military_tech_rounded,
+                  size: 14,
+                  color: colors.primary,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -171,9 +175,13 @@ class StudyCircleCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? colors.surfaceSecondary.withAlpha(80) : colors.surfacePrimary.withAlpha(120),
+                color: isDark
+                    ? colors.surfaceSecondary.withAlpha(80)
+                    : colors.surfacePrimary.withAlpha(120),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colors.primary.withAlpha(isDark ? 25 : 15)),
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 25 : 15),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +200,10 @@ class StudyCircleCard extends StatelessWidget {
                     runSpacing: 6,
                     children: circle.members.map((member) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 30 : 15),
                           borderRadius: BorderRadius.circular(6),
@@ -277,9 +288,7 @@ class StudyCircleCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isJoined
                         ? colors.success.withAlpha(isDark ? 40 : 25)
-                        : (isFull
-                            ? colors.surfaceSecondary
-                            : colors.primary),
+                        : (isFull ? colors.surfaceSecondary : colors.primary),
                     borderRadius: BorderRadius.circular(12),
                     border: isJoined
                         ? Border.all(color: colors.success.withAlpha(80))
@@ -292,13 +301,11 @@ class StudyCircleCard extends StatelessWidget {
                         isJoined
                             ? Icons.check_circle_rounded
                             : (isFull
-                                ? Icons.lock_outline_rounded
-                                : Icons.group_add_rounded),
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.group_add_rounded),
                         color: isJoined
                             ? colors.success
-                            : (isFull
-                                ? colors.textSecondary
-                                : colors.white),
+                            : (isFull ? colors.textSecondary : colors.white),
                         size: 14,
                       ),
                       const SizedBox(width: 5),
@@ -309,9 +316,7 @@ class StudyCircleCard extends StatelessWidget {
                         style: typography.caption.bold.copyWith(
                           color: isJoined
                               ? colors.success
-                              : (isFull
-                                  ? colors.textSecondary
-                                  : colors.white),
+                              : (isFull ? colors.textSecondary : colors.white),
                         ),
                       ),
                     ],

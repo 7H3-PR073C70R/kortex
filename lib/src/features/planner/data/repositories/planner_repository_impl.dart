@@ -362,9 +362,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'exam_name': examName,
             'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
-            if (totalCardsCount != null) 'total_cards_count': totalCardsCount,
-            if (targetScorePercent != null)
-              'target_score_percent': targetScorePercent,
+            'total_cards_count': ?totalCardsCount,
+            'target_score_percent': ?targetScorePercent,
             'daily_target': dailyTarget,
             'updated_at': DateTime.now().toIso8601String(),
             if (userId.isNotEmpty) 'user_id': userId,

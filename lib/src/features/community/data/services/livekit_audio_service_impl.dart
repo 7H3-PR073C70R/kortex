@@ -75,7 +75,8 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
     }
 
     try {
-      final room = _room ??
+      final room =
+          _room ??
           lk.Room(
             roomOptions: const lk.RoomOptions(
               defaultAudioPublishOptions: lk.AudioPublishOptions(
@@ -161,7 +162,10 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
       }
       return true;
     } on Object catch (e) {
-      developer.log('LiveKit setMicrophoneEnabled error: $e', name: 'LiveKitAudio');
+      developer.log(
+        'LiveKit setMicrophoneEnabled error: $e',
+        name: 'LiveKitAudio',
+      );
       return false;
     }
   }
@@ -223,12 +227,18 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
       if (_isMicEnabled) {
         await setMicrophoneEnabled(enabled: false);
       }
-      developer.log('LiveKitAudioService: Audio paused due to interruption', name: 'LiveKitAudio');
+      developer.log(
+        'LiveKitAudioService: Audio paused due to interruption',
+        name: 'LiveKitAudio',
+      );
     } else {
       if (_wasMicEnabledBeforeInterruption) {
         await setMicrophoneEnabled(enabled: true);
       }
-      developer.log('LiveKitAudioService: Audio resumed after interruption', name: 'LiveKitAudio');
+      developer.log(
+        'LiveKitAudioService: Audio resumed after interruption',
+        name: 'LiveKitAudio',
+      );
     }
   }
 

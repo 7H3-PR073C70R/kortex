@@ -60,18 +60,19 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
 
     final rooms = roomsRes.fold((_) => state.studyRooms, (r) => r);
-    final forumPosts =
-        forumRes.fold((_) => state.forumPosts, (posts) => posts);
-    final studyCircles =
-        circlesRes.fold((_) => state.studyCircles, (c) => c);
-    final sharedDecks =
-        decksRes.fold((_) => state.sharedDecks, (decks) => decks);
+    final forumPosts = forumRes.fold((_) => state.forumPosts, (posts) => posts);
+    final studyCircles = circlesRes.fold((_) => state.studyCircles, (c) => c);
+    final sharedDecks = decksRes.fold(
+      (_) => state.sharedDecks,
+      (decks) => decks,
+    );
     final leaderboardEntries = leaderboardRes.fold(
       (_) => state.leaderboardEntries,
       (entries) => entries,
     );
 
-    final hasAnyData = rooms.isNotEmpty ||
+    final hasAnyData =
+        rooms.isNotEmpty ||
         forumPosts.isNotEmpty ||
         studyCircles.isNotEmpty ||
         sharedDecks.isNotEmpty ||
@@ -137,8 +138,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     Emitter<CommunityState> emit,
   ) async {
     emit(state.copyWith(questionsOnly: event.questionsOnly));
-    final effectiveTrack =
-        state.selectedTrack == 'All' ? null : state.selectedTrack;
+    final effectiveTrack = state.selectedTrack == 'All'
+        ? null
+        : state.selectedTrack;
     final res = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: event.questionsOnly,

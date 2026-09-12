@@ -37,7 +37,9 @@ class StudyCircleModel {
       totalMinutesCompleted:
           (json['total_minutes_completed'] as num?)?.toInt() ?? 0,
       members: rawMembers
-          .map((m) => StudyCircleMemberModel.fromJson(m as Map<String, dynamic>))
+          .map(
+            (m) => StudyCircleMemberModel.fromJson(m as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -58,7 +60,8 @@ class StudyCircleModel {
 
   StudyCircleEntity toEntity({String? currentUserId}) {
     final mappedMembers = members.map((m) => m.toEntity()).toList();
-    final isMember = currentUserId != null &&
+    final isMember =
+        currentUserId != null &&
         (creatorId == currentUserId ||
             members.any((m) => m.userId == currentUserId));
 

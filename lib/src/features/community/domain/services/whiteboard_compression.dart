@@ -63,7 +63,8 @@ class WhiteboardCompression {
       return math.sqrt(px * px + py * py);
     }
 
-    final u = ((p.x - lineStart.x) * dx + (p.y - lineStart.y) * dy) / magSquared;
+    final u =
+        ((p.x - lineStart.x) * dx + (p.y - lineStart.y) * dy) / magSquared;
     final clampedU = u.clamp(0.0, 1.0);
     final ix = lineStart.x + clampedU * dx;
     final iy = lineStart.y + clampedU * dy;

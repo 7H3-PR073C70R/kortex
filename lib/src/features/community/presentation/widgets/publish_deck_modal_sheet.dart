@@ -180,43 +180,64 @@ class PublishDeckModalSheet extends HookWidget {
                 child: DropdownButton<DeckModel?>(
                   value: selectedDeck.value,
                   isExpanded: true,
-                  dropdownColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                  dropdownColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfacePrimary,
                   hint: Row(
                     children: [
-                      Icon(Icons.style_rounded, size: 18, color: colors.primary),
+                      Icon(
+                        Icons.style_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         isLoadingDecks.value
                             ? 'Loading your decks...'
                             : 'Choose a deck to share...',
-                        style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
-                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.primary),
+                  icon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: colors.primary,
+                  ),
                   items: [
                     DropdownMenuItem<DeckModel?>(
                       child: Text(
                         '-- Custom / Manual Entry --',
-                        style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ),
-                    ...userDecks.value.map((deck) => DropdownMenuItem<DeckModel?>(
-                      value: deck,
-                      child: Row(
-                        children: [
-                          Icon(Icons.style_outlined, size: 16, color: colors.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${deck.title} (${deck.totalCards} cards)',
-                              style: typography.caption.bold.copyWith(color: colors.textPrimary),
-                              overflow: TextOverflow.ellipsis,
+                    ...userDecks.value.map(
+                      (deck) => DropdownMenuItem<DeckModel?>(
+                        value: deck,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.style_outlined,
+                              size: 16,
+                              color: colors.primary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${deck.title} (${deck.totalCards} cards)',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                   onChanged: (deck) {
                     selectedDeck.value = deck;
@@ -315,7 +336,8 @@ class PublishDeckModalSheet extends HookWidget {
                       if (selectedDeck.value != null) {
                         try {
                           var cards = selectedDeck.value!.cards;
-                          if (cards.isEmpty && locator.isRegistered<DecksRemoteDataSource>()) {
+                          if (cards.isEmpty &&
+                              locator.isRegistered<DecksRemoteDataSource>()) {
                             cards = await locator<DecksRemoteDataSource>()
                                 .getDeckCards(selectedDeck.value!.id);
                           }
@@ -365,7 +387,9 @@ class PublishDeckModalSheet extends HookWidget {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(

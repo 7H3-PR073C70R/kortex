@@ -566,7 +566,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     if (data is Map<String, dynamic> && data['sessionId'] != null) {
       return data['sessionId'].toString();
     }
-    throw ServerException(message: 'Invalid session response from server');
+    throw const ServerException(message: 'Invalid session response from server');
   }
 
   DashboardFeedModel _generateFallbackFeedModel(

@@ -2615,4 +2615,82 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lmsOAuthSuccess =>
       'Successfully authenticated! Loading enrolled courses...';
+
+  @override
+  String get whiteboardTitle => 'Live Whiteboard';
+
+  @override
+  String whiteboardLiveStatus(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count strokes',
+      one: '1 stroke',
+    );
+    return 'Live Whiteboard ($_temp0)';
+  }
+
+  @override
+  String get whiteboardCanvasSemantics => 'Collaborative Whiteboard Canvas';
+
+  @override
+  String get whiteboardClearTitle => 'Clear Whiteboard';
+
+  @override
+  String get whiteboardClearConfirmMessage =>
+      'Are you sure you want to clear the collaborative whiteboard for everyone in the room?';
+
+  @override
+  String get whiteboardClearCancel => 'Cancel';
+
+  @override
+  String get whiteboardClearAll => 'Clear All';
+
+  @override
+  String get whiteboardGridDots => 'Dots';
+
+  @override
+  String get whiteboardGridLines => 'Lines';
+
+  @override
+  String get whiteboardGridBlank => 'Blank';
+
+  @override
+  String get whiteboardToolPen => 'Pen';
+
+  @override
+  String get whiteboardToolHighlighter => 'Highlighter';
+
+  @override
+  String get whiteboardToolEraser => 'Eraser';
+
+  @override
+  String get whiteboardToolLine => 'Line';
+
+  @override
+  String get whiteboardToolArrow => 'Arrow';
+
+  @override
+  String get whiteboardToolRectangle => 'Rectangle';
+
+  @override
+  String get whiteboardToolCircle => 'Circle';
+
+  @override
+  String get whiteboardUndo => 'Undo';
+
+  @override
+  String get whiteboardRedo => 'Redo';
+
+  @override
+  String get whiteboardClear => 'Clear Whiteboard';
+
+  @override
+  String get whiteboardToggleGrid => 'Toggle Grid Style';
+
+  @override
+  String get whiteboardToggleTools => 'Toggle Tools Toolbar';
+
+  @override
+  String get whiteboardTabLabel => 'Whiteboard';
 }

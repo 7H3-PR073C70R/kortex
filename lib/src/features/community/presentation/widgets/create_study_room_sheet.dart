@@ -75,7 +75,11 @@ class CreateStudyRoomSheet extends HookWidget {
       (id: 'lofi', label: 'Lo-Fi Chill', icon: Icons.music_note_rounded),
       (id: 'rain', label: 'Rainy Cafe', icon: Icons.water_drop_rounded),
       (id: 'binaural', label: 'Binaural 40Hz', icon: Icons.waves_rounded),
-      (id: 'library', label: 'Library Silence', icon: Icons.local_library_rounded),
+      (
+        id: 'library',
+        label: 'Library Silence',
+        icon: Icons.local_library_rounded,
+      ),
       (id: 'none', label: 'Mute Sound', icon: Icons.volume_off_rounded),
     ];
 

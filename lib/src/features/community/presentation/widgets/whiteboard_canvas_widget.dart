@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/domain/services/whiteboard_compression.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 enum WhiteboardTool {
@@ -197,8 +199,8 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
       );
     }
 
-    int effectiveColor = _selectedColorHex;
-    double effectiveWidth = _strokeWidth;
+    var effectiveColor = _selectedColorHex;
+    var effectiveWidth = _strokeWidth;
 
     if (isEraser) {
       effectiveColor = widget.isDark ? 0xFF12131A : 0xFFFFFFFF;
@@ -229,55 +231,60 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
   void _showClearConfirmDialog() {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
-    showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: widget.isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.delete_sweep_rounded, color: colors.error, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Clear Whiteboard',
-              style: typography.subhead.bold.copyWith(
-                color: colors.textPrimary,
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: widget.isDark
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.delete_sweep_rounded, color: colors.error, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                l10n.whiteboardClearTitle,
+                style: typography.subhead.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
+            ],
+          ),
+          content: Text(
+            l10n.whiteboardClearConfirmMessage,
+            style: typography.caption.regular.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(
+                l10n.whiteboardClearCancel,
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                widget.onClear?.call();
+              },
+              child: Text(l10n.whiteboardClearAll),
             ),
           ],
         ),
-        content: Text(
-          'Are you sure you want to clear the collaborative whiteboard for everyone in the room?',
-          style: typography.caption.regular.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: colors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              widget.onClear?.call();
-            },
-            child: const Text('Clear All'),
-          ),
-        ],
       ),
     );
   }
@@ -285,10 +292,11 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final l10n = context.l10n;
     final isDark = widget.isDark;
 
     return Semantics(
-      label: 'Collaborative Whiteboard Canvas',
+      label: l10n.whiteboardCanvasSemantics,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Stack(
@@ -381,7 +389,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                           const SizedBox(width: 5),
                           Flexible(
                             child: Text(
-                              'Live Whiteboard (${widget.strokes.length} strokes)',
+                              l10n.whiteboardLiveStatus(widget.strokes.length),
                               overflow: TextOverflow.ellipsis,
                               style: context.typography.caption.bold.copyWith(
                                 fontSize: 11,
@@ -395,88 +403,95 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                   ),
                   const SizedBox(width: 6),
                   // Toggle Grid Button
-                  ShrinkableButton(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        if (!_showGrid) {
-                          _showGrid = true;
-                          _gridStyle = WhiteboardGridStyle.dots;
-                        } else if (_gridStyle == WhiteboardGridStyle.dots) {
-                          _gridStyle = WhiteboardGridStyle.lines;
-                        } else {
-                          _showGrid = false;
-                        }
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (isDark ? Colors.black : Colors.white).withAlpha(
-                          180,
+                  Tooltip(
+                    message: l10n.whiteboardToggleGrid,
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        setState(() {
+                          if (!_showGrid) {
+                            _showGrid = true;
+                            _gridStyle = WhiteboardGridStyle.dots;
+                          } else if (_gridStyle == WhiteboardGridStyle.dots) {
+                            _gridStyle = WhiteboardGridStyle.lines;
+                          } else {
+                            _showGrid = false;
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 40 : 20),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _showGrid
-                                ? (_gridStyle == WhiteboardGridStyle.dots
-                                      ? Icons.grain_rounded
-                                      : Icons.grid_on_rounded)
-                                : Icons.grid_off_rounded,
-                            size: 14,
-                            color: _showGrid
-                                ? colors.primary
-                                : colors.textSecondary,
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.black : Colors.white)
+                              .withAlpha(180),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 40 : 20),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _showGrid
-                                ? (_gridStyle == WhiteboardGridStyle.dots
-                                      ? 'Dots'
-                                      : 'Lines')
-                                : 'Blank',
-                            style: context.typography.caption.regular.copyWith(
-                              fontSize: 11,
-                              color: colors.textSecondary,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showGrid
+                                  ? (_gridStyle == WhiteboardGridStyle.dots
+                                        ? Icons.grain_rounded
+                                        : Icons.grid_on_rounded)
+                                  : Icons.grid_off_rounded,
+                              size: 14,
+                              color: _showGrid
+                                  ? colors.primary
+                                  : colors.textSecondary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _showGrid
+                                  ? (_gridStyle == WhiteboardGridStyle.dots
+                                        ? l10n.whiteboardGridDots
+                                        : l10n.whiteboardGridLines)
+                                  : l10n.whiteboardGridBlank,
+                              style: context.typography.caption.regular
+                                  .copyWith(
+                                    fontSize: 11,
+                                    color: colors.textSecondary,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 6),
                   // Collapse / Expand Tools Button
-                  ShrinkableButton(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _showToolsExpanded = !_showToolsExpanded);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: (isDark ? Colors.black : Colors.white).withAlpha(
-                          180,
+                  Tooltip(
+                    message: l10n.whiteboardToggleTools,
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        setState(
+                          () => _showToolsExpanded = !_showToolsExpanded,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: (isDark ? Colors.black : Colors.white)
+                              .withAlpha(180),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 40 : 20),
+                          ),
                         ),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        child: Icon(
+                          _showToolsExpanded
+                              ? Icons.keyboard_arrow_down_rounded
+                              : Icons.tune_rounded,
+                          size: 16,
+                          color: colors.textPrimary,
                         ),
-                      ),
-                      child: Icon(
-                        _showToolsExpanded
-                            ? Icons.keyboard_arrow_down_rounded
-                            : Icons.tune_rounded,
-                        size: 16,
-                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -520,17 +535,17 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                             _buildToolIcon(
                               icon: Icons.edit_rounded,
                               tool: WhiteboardTool.pen,
-                              tooltip: 'Pen',
+                              tooltip: l10n.whiteboardToolPen,
                             ),
                             _buildToolIcon(
                               icon: Icons.brush_rounded,
                               tool: WhiteboardTool.highlighter,
-                              tooltip: 'Highlighter',
+                              tooltip: l10n.whiteboardToolHighlighter,
                             ),
                             _buildToolIcon(
                               icon: Icons.cleaning_services_rounded,
                               tool: WhiteboardTool.eraser,
-                              tooltip: 'Eraser',
+                              tooltip: l10n.whiteboardToolEraser,
                             ),
                             const SizedBox(width: 4),
                             Container(
@@ -542,22 +557,22 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                             _buildToolIcon(
                               icon: Icons.horizontal_rule_rounded,
                               tool: WhiteboardTool.line,
-                              tooltip: 'Line',
+                              tooltip: l10n.whiteboardToolLine,
                             ),
                             _buildToolIcon(
                               icon: Icons.arrow_forward_rounded,
                               tool: WhiteboardTool.arrow,
-                              tooltip: 'Arrow',
+                              tooltip: l10n.whiteboardToolArrow,
                             ),
                             _buildToolIcon(
                               icon: Icons.crop_square_rounded,
                               tool: WhiteboardTool.rectangle,
-                              tooltip: 'Rectangle',
+                              tooltip: l10n.whiteboardToolRectangle,
                             ),
                             _buildToolIcon(
                               icon: Icons.circle_outlined,
                               tool: WhiteboardTool.circle,
-                              tooltip: 'Circle',
+                              tooltip: l10n.whiteboardToolCircle,
                             ),
                             const SizedBox(width: 8),
                             // Stroke width presets
@@ -569,7 +584,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                                 ),
                                 child: GestureDetector(
                                   onTap: () {
-                                    HapticFeedback.selectionClick();
+                                    unawaited(HapticFeedback.selectionClick());
                                     setState(() => _strokeWidth = w);
                                   },
                                   child: Container(
@@ -619,7 +634,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                                 padding: const EdgeInsets.only(right: 5),
                                 child: GestureDetector(
                                   onTap: () {
-                                    HapticFeedback.selectionClick();
+                                    unawaited(HapticFeedback.selectionClick());
                                     setState(() {
                                       _selectedColorHex = colorHex;
                                       if (_activeTool ==
@@ -648,75 +663,84 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                             }),
                             const SizedBox(width: 8),
                             // Undo
-                            ShrinkableButton(
-                              onTap: widget.canUndo
-                                  ? () {
-                                      HapticFeedback.lightImpact();
-                                      widget.onUndo?.call();
-                                    }
-                                  : null,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: widget.canUndo
-                                      ? colors.surfaceTertiary
-                                      : colors.surfaceTertiary.withAlpha(60),
-                                ),
-                                child: Icon(
-                                  Icons.undo_rounded,
-                                  size: 14,
-                                  color: widget.canUndo
-                                      ? colors.textPrimary
-                                      : colors.textMuted.withAlpha(100),
+                            Tooltip(
+                              message: l10n.whiteboardUndo,
+                              child: ShrinkableButton(
+                                onTap: widget.canUndo
+                                    ? () {
+                                        unawaited(HapticFeedback.lightImpact());
+                                        widget.onUndo?.call();
+                                      }
+                                    : null,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: widget.canUndo
+                                        ? colors.surfaceTertiary
+                                        : colors.surfaceTertiary.withAlpha(60),
+                                  ),
+                                  child: Icon(
+                                    Icons.undo_rounded,
+                                    size: 14,
+                                    color: widget.canUndo
+                                        ? colors.textPrimary
+                                        : colors.textMuted.withAlpha(100),
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 5),
                             // Redo
-                            ShrinkableButton(
-                              onTap: widget.canRedo
-                                  ? () {
-                                      HapticFeedback.lightImpact();
-                                      widget.onRedo?.call();
-                                    }
-                                  : null,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: widget.canRedo
-                                      ? colors.surfaceTertiary
-                                      : colors.surfaceTertiary.withAlpha(60),
-                                ),
-                                child: Icon(
-                                  Icons.redo_rounded,
-                                  size: 14,
-                                  color: widget.canRedo
-                                      ? colors.textPrimary
-                                      : colors.textMuted.withAlpha(100),
+                            Tooltip(
+                              message: l10n.whiteboardRedo,
+                              child: ShrinkableButton(
+                                onTap: widget.canRedo
+                                    ? () {
+                                        unawaited(HapticFeedback.lightImpact());
+                                        widget.onRedo?.call();
+                                      }
+                                    : null,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: widget.canRedo
+                                        ? colors.surfaceTertiary
+                                        : colors.surfaceTertiary.withAlpha(60),
+                                  ),
+                                  child: Icon(
+                                    Icons.redo_rounded,
+                                    size: 14,
+                                    color: widget.canRedo
+                                        ? colors.textPrimary
+                                        : colors.textMuted.withAlpha(100),
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 5),
                             // Clear
-                            ShrinkableButton(
-                              onTap: () {
-                                HapticFeedback.mediumImpact();
-                                _showClearConfirmDialog();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.error.withAlpha(
-                                    isDark ? 40 : 25,
+                            Tooltip(
+                              message: l10n.whiteboardClear,
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  _showClearConfirmDialog();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.error.withAlpha(
+                                      isDark ? 40 : 25,
+                                    ),
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.delete_sweep_rounded,
-                                  size: 14,
-                                  color: colors.error,
+                                  child: Icon(
+                                    Icons.delete_sweep_rounded,
+                                    size: 14,
+                                    color: colors.error,
+                                  ),
                                 ),
                               ),
                             ),
@@ -747,7 +771,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
         message: tooltip,
         child: GestureDetector(
           onTap: () {
-            HapticFeedback.selectionClick();
+            unawaited(HapticFeedback.selectionClick());
             setState(() => _activeTool = tool);
           },
           child: Container(
@@ -758,7 +782,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                   ? colors.primary.withAlpha(widget.isDark ? 60 : 35)
                   : Colors.transparent,
               border: isSelected
-                  ? Border.all(color: colors.primary.withAlpha(120), width: 1)
+                  ? Border.all(color: colors.primary.withAlpha(120))
                   : null,
             ),
             child: Icon(
@@ -823,13 +847,13 @@ class _WhiteboardCanvasPainter extends CustomPainter {
     const spacing = 24.0;
 
     if (gridStyle == WhiteboardGridStyle.dots) {
-      for (double x = spacing / 2; x < size.width; x += spacing) {
-        for (double y = spacing / 2; y < size.height; y += spacing) {
-          canvas.drawCircle(Offset(x, y), 1.0, gridPaint);
+      for (var x = spacing / 2; x < size.width; x += spacing) {
+        for (var y = spacing / 2; y < size.height; y += spacing) {
+          canvas.drawCircle(Offset(x, y), 1, gridPaint);
         }
       }
     } else if (gridStyle == WhiteboardGridStyle.lines) {
-      for (double y = spacing; y < size.height; y += spacing) {
+      for (var y = spacing; y < size.height; y += spacing) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
       }
     }
@@ -870,7 +894,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
   }
 
   void _drawLiveStroke(Canvas canvas, Size size) {
-    int effectiveColor = liveColorHex;
+    var effectiveColor = liveColorHex;
     if (activeTool == WhiteboardTool.eraser) {
       effectiveColor = isDark ? 0xFF13141E : 0xFFFFFFFF;
     } else if (activeTool == WhiteboardTool.highlighter) {
@@ -924,22 +948,18 @@ class _WhiteboardCanvasPainter extends CustomPainter {
     switch (shapeType) {
       case 'line':
         canvas.drawLine(start, end, paint);
-        break;
       case 'arrow':
         _drawArrow(canvas, start, end, paint);
-        break;
       case 'rectangle':
         final rect = Rect.fromPoints(start, end);
         canvas.drawRRect(
           RRect.fromRectAndRadius(rect, const Radius.circular(4)),
           paint,
         );
-        break;
       case 'circle':
         final rect = Rect.fromPoints(start, end);
         canvas.drawOval(rect, paint);
-        break;
-      default:
+      case _:
         canvas.drawLine(start, end, paint);
     }
   }
@@ -960,8 +980,9 @@ class _WhiteboardCanvasPainter extends CustomPainter {
       end.dy - arrowHeadLength * math.sin(angle + arrowAngle),
     );
 
-    canvas.drawLine(end, arrowP1, paint);
-    canvas.drawLine(end, arrowP2, paint);
+    canvas
+      ..drawLine(end, arrowP1, paint)
+      ..drawLine(end, arrowP2, paint);
   }
 
   bool _isShapeTool(WhiteboardTool tool) {
@@ -972,18 +993,15 @@ class _WhiteboardCanvasPainter extends CustomPainter {
   }
 
   String? _shapeTypeForTool(WhiteboardTool tool) {
-    switch (tool) {
-      case WhiteboardTool.line:
-        return 'line';
-      case WhiteboardTool.arrow:
-        return 'arrow';
-      case WhiteboardTool.rectangle:
-        return 'rectangle';
-      case WhiteboardTool.circle:
-        return 'circle';
-      default:
-        return null;
-    }
+    return switch (tool) {
+      WhiteboardTool.line => 'line',
+      WhiteboardTool.arrow => 'arrow',
+      WhiteboardTool.rectangle => 'rectangle',
+      WhiteboardTool.circle => 'circle',
+      WhiteboardTool.pen ||
+      WhiteboardTool.highlighter ||
+      WhiteboardTool.eraser => null,
+    };
   }
 
   @override

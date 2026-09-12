@@ -2963,7 +2963,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
             context,
             mode: RoomViewMode.whiteboard,
             icon: Icons.draw_rounded,
-            label: 'Whiteboard',
+            label: context.l10n.whiteboardTabLabel,
             isActive: activeMode == RoomViewMode.whiteboard,
             colors: colors,
             typography: typography,

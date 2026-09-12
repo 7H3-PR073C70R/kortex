@@ -3654,5 +3654,102 @@
     "lmsOAuthSuccess": "Successfully authenticated! Loading enrolled courses...",
     "@lmsOAuthSuccess": {
         "description": "OAuth success message"
+    },
+    "whiteboardTitle": "Live Whiteboard",
+    "@whiteboardTitle": {
+        "description": "Title for the live whiteboard canvas"
+    },
+    "whiteboardLiveStatus": "Live Whiteboard ({count, plural, =1{1 stroke} other{{count} strokes}})",
+    "@whiteboardLiveStatus": {
+        "description": "Live whiteboard stroke count status",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "whiteboardCanvasSemantics": "Collaborative Whiteboard Canvas",
+    "@whiteboardCanvasSemantics": {
+        "description": "Accessibility label for the collaborative whiteboard canvas"
+    },
+    "whiteboardClearTitle": "Clear Whiteboard",
+    "@whiteboardClearTitle": {
+        "description": "Title for clear whiteboard dialog"
+    },
+    "whiteboardClearConfirmMessage": "Are you sure you want to clear the collaborative whiteboard for everyone in the room?",
+    "@whiteboardClearConfirmMessage": {
+        "description": "Confirmation message when clearing whiteboard"
+    },
+    "whiteboardClearCancel": "Cancel",
+    "@whiteboardClearCancel": {
+        "description": "Cancel button on clear whiteboard dialog"
+    },
+    "whiteboardClearAll": "Clear All",
+    "@whiteboardClearAll": {
+        "description": "Clear all button on clear whiteboard dialog"
+    },
+    "whiteboardGridDots": "Dots",
+    "@whiteboardGridDots": {
+        "description": "Label for dots grid style"
+    },
+    "whiteboardGridLines": "Lines",
+    "@whiteboardGridLines": {
+        "description": "Label for lines grid style"
+    },
+    "whiteboardGridBlank": "Blank",
+    "@whiteboardGridBlank": {
+        "description": "Label for blank grid style"
+    },
+    "whiteboardToolPen": "Pen",
+    "@whiteboardToolPen": {
+        "description": "Tooltip for pen tool"
+    },
+    "whiteboardToolHighlighter": "Highlighter",
+    "@whiteboardToolHighlighter": {
+        "description": "Tooltip for highlighter tool"
+    },
+    "whiteboardToolEraser": "Eraser",
+    "@whiteboardToolEraser": {
+        "description": "Tooltip for eraser tool"
+    },
+    "whiteboardToolLine": "Line",
+    "@whiteboardToolLine": {
+        "description": "Tooltip for line shape tool"
+    },
+    "whiteboardToolArrow": "Arrow",
+    "@whiteboardToolArrow": {
+        "description": "Tooltip for arrow shape tool"
+    },
+    "whiteboardToolRectangle": "Rectangle",
+    "@whiteboardToolRectangle": {
+        "description": "Tooltip for rectangle shape tool"
+    },
+    "whiteboardToolCircle": "Circle",
+    "@whiteboardToolCircle": {
+        "description": "Tooltip for circle shape tool"
+    },
+    "whiteboardUndo": "Undo",
+    "@whiteboardUndo": {
+        "description": "Tooltip for undo button"
+    },
+    "whiteboardRedo": "Redo",
+    "@whiteboardRedo": {
+        "description": "Tooltip for redo button"
+    },
+    "whiteboardClear": "Clear Whiteboard",
+    "@whiteboardClear": {
+        "description": "Tooltip for clear button"
+    },
+    "whiteboardToggleGrid": "Toggle Grid Style",
+    "@whiteboardToggleGrid": {
+        "description": "Tooltip for toggle grid button"
+    },
+    "whiteboardToggleTools": "Toggle Tools Toolbar",
+    "@whiteboardToggleTools": {
+        "description": "Tooltip for toggle tools toolbar button"
+    },
+    "whiteboardTabLabel": "Whiteboard",
+    "@whiteboardTabLabel": {
+        "description": "Label for whiteboard tab in live study room"
     }
 }

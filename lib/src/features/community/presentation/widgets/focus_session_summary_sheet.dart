@@ -152,7 +152,10 @@ class FocusSessionSummarySheet extends StatelessWidget {
               ),
               // XP Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(30),
                   borderRadius: BorderRadius.circular(20),
@@ -241,9 +244,13 @@ class FocusSessionSummarySheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isGoalAchieved ? 'Micro-Goal Achieved (+50 XP Bonus)' : 'Micro-Goal Tracked',
+                          isGoalAchieved
+                              ? 'Micro-Goal Achieved (+50 XP Bonus)'
+                              : 'Micro-Goal Tracked',
                           style: typography.caption.bold.copyWith(
-                            color: isGoalAchieved ? Colors.green : colors.textPrimary,
+                            color: isGoalAchieved
+                                ? Colors.green
+                                : colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -288,7 +295,11 @@ class FocusSessionSummarySheet extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.share_rounded, size: 18, color: colors.primary),
+                        Icon(
+                          Icons.share_rounded,
+                          size: 18,
+                          color: colors.primary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Share',
