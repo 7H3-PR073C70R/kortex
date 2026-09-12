@@ -13,6 +13,7 @@ An industrial-grade, resumable Python crawler and synchronization engine that:
 """
 
 import argparse
+import base64
 import hashlib
 import html
 import json
@@ -26,6 +27,8 @@ import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+IMAGE_CACHE_DIR = Path("storage/classroom_images")
 
 # Enable vendored dependencies (e.g. beautifulsoup4, soupsieve, typing_extensions)
 VENDOR_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", "crawler", "vendor")
@@ -300,23 +303,135 @@ def fetch_classroom_page(
     return [], page, 1
 
 
-def check_ollama_available(model: str = "qwen2.5:14b", endpoint: str = "http://localhost:11434") -> Optional[str]:
-    """Checks if Ollama is running and finds the best available model."""
+def extract_image_url(raw_q: Dict[str, Any]) -> Optional[str]:
+    """Extracts and normalizes the full image URL from raw question data."""
+    img = raw_q.get("image") or raw_q.get("image_url")
+    if not img and raw_q.get("question"):
+        m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', str(raw_q.get("question", "")), re.IGNORECASE)
+        if m:
+            img = m.group(1)
+
+    if not img or str(img).strip().lower() in ["null", "none", ""]:
+        return None
+
+    img_str = str(img).strip()
+    if img_str.startswith("http://") or img_str.startswith("https://"):
+        return img_str
+
+    base_url = "https://myschool.ng/storage/classroom/"
+    return base_url + img_str.lstrip("/")
+
+
+def get_or_download_image_base64(image_url: str, timeout: int = 15) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Downloads and caches an image from a URL or local file, returning its base64 string and path.
+    Returns: (base64_str, local_file_path)
+    """
+    if not image_url:
+        return None, None
+
+    IMAGE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    clean_filename = image_url.split("/")[-1].split("?")[0]
+    if not clean_filename or len(clean_filename) > 100:
+        clean_filename = hashlib.md5(image_url.encode("utf-8")).hexdigest() + ".png"
+
+    local_path = IMAGE_CACHE_DIR / clean_filename
+
+    # Read from local cache if available
+    if local_path.exists() and local_path.stat().st_size > 0:
+        try:
+            with open(local_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8"), str(local_path)
+        except Exception:
+            pass
+
+    # If already a local file path
+    if os.path.exists(image_url):
+        try:
+            with open(image_url, "rb") as f:
+                data = f.read()
+                return base64.b64encode(data).decode("utf-8"), image_url
+        except Exception:
+            pass
+
+    # Download from remote URL
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) KortexCrawler/2.0"}
+        req = urllib.request.Request(image_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            content = resp.read()
+            if content:
+                with open(local_path, "wb") as f:
+                    f.write(content)
+                return base64.b64encode(content).decode("utf-8"), str(local_path)
+    except Exception as err:
+        print(f"    [!] Failed to download question image ({image_url}): {err}", file=sys.stderr)
+
+    return None, None
+
+
+KNOWN_VISION_KEYWORDS = ["vision", "llava", "minicpm", "moondream", "vl", "bakllava"]
+
+
+def check_ollama_models(
+    text_model: str = "qwen2.5:14b",
+    vision_model: Optional[str] = "llama3.2-vision",
+    endpoint: str = "http://localhost:11434"
+) -> Tuple[Optional[str], Optional[str]]:
+    """Checks Ollama tags and discovers active text and vision models."""
     try:
         req = urllib.request.Request(f"{endpoint.rstrip('/')}/api/tags")
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode())
-            available = [m.get("name", "") for m in data.get("models", [])]
-            if model in available:
-                return model
-            for m in available:
-                if m.startswith(model.split(":")[0]):
-                    return m
-            if available:
-                return available[0]
+            models = data.get("models", [])
+            available_names = [m.get("name", "") for m in models]
+
+            # 1. Resolve Text Model
+            resolved_text = None
+            if text_model in available_names:
+                resolved_text = text_model
+            else:
+                for m in available_names:
+                    if m.startswith(text_model.split(":")[0]):
+                        resolved_text = m
+                        break
+            if not resolved_text and available_names:
+                resolved_text = available_names[0]
+
+            # 2. Resolve Vision Model
+            resolved_vision = None
+            if vision_model and vision_model in available_names:
+                resolved_vision = vision_model
+            elif vision_model:
+                for m in available_names:
+                    if m.startswith(vision_model.split(":")[0]):
+                        resolved_vision = m
+                        break
+
+            # If resolved_text itself has vision keywords (e.g. user passed --ollama-model llama3.2-vision)
+            if not resolved_vision and resolved_text:
+                if any(kw in resolved_text.lower() for kw in KNOWN_VISION_KEYWORDS):
+                    resolved_vision = resolved_text
+
+            # Auto-detect any vision model in available models
+            if not resolved_vision:
+                for m_obj in models:
+                    name = m_obj.get("name", "").lower()
+                    families = m_obj.get("details", {}).get("families", [])
+                    if any(kw in name for kw in KNOWN_VISION_KEYWORDS) or any(f in ["clip", "mllama"] for f in families):
+                        resolved_vision = m_obj.get("name")
+                        break
+
+            return resolved_text, resolved_vision
     except Exception as err:
         print(f"  [!] Ollama ping failed: {err}", file=sys.stderr)
-    return None
+    return None, None
+
+
+def check_ollama_available(model: str = "qwen2.5:14b", endpoint: str = "http://localhost:11434") -> Optional[str]:
+    """Legacy helper: checks if Ollama is running and returns the text model."""
+    text_m, _ = check_ollama_models(text_model=model, endpoint=endpoint)
+    return text_m
 
 
 _EXPLANATION_CACHE: Dict[str, str] = {}
@@ -455,16 +570,29 @@ def generate_ollama_explanation(
     subject_slug: str,
     subject_name: str,
     model: str = "qwen2.5:14b",
+    vision_model: Optional[str] = None,
+    image_url: Optional[str] = None,
     endpoint: str = "http://localhost:11434",
-    timeout: int = 40
+    timeout: int = 50
 ) -> Optional[str]:
-    """Queries local Ollama for a step-by-step curriculum solution with language-aware context and LaTeX."""
-    cache_key = f"{subject_slug}_{prompt[:50]}_{correct_label}"
+    """Queries local Ollama for a step-by-step curriculum solution with vision and LaTeX support."""
+    prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()[:8]
+    img_hash = hashlib.md5(image_url.encode("utf-8")).hexdigest()[:8] if image_url else "noimg"
+    cache_key = f"{subject_slug}_{prompt_hash}_{img_hash}_{correct_label}"
     if cache_key in _EXPLANATION_CACHE:
         return _EXPLANATION_CACHE[cache_key]
 
     options_formatted = "\n".join(options)
     lang_info = NON_ENGLISH_LANGUAGES.get(subject_slug.lower())
+
+    # Download image if available
+    img_base64 = None
+    if image_url:
+        img_base64, _ = get_or_download_image_base64(image_url)
+
+    has_image = bool(img_base64)
+    can_use_vision = has_image and bool(vision_model)
+    target_model = vision_model if can_use_vision else model
 
     if lang_info:
         # Switch model context directly into the target non-English language
@@ -473,48 +601,112 @@ def generate_ollama_explanation(
             options_formatted=options_formatted,
             correct_label=correct_label
         )
+        if has_image and can_use_vision:
+            prompt_body += "\n\n**Remarque visuelle:** Une image/schéma est attachée à cette question. Examine attentivement l'image pour appuyer votre explication."
     else:
-        # Standard English curriculum tutor prompt
-        prompt_body = (
-            "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
-            f"Subject: {subject_name}\n"
-            f"Question: {prompt}\n"
-            f"Options:\n{options_formatted}\n"
-            f"Verified Correct Option: {correct_label}\n\n"
-            "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
-            "Guidelines:\n"
-            "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
-            "2. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
-            "3. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
-            "4. Conclude by confirming the correct option letter.\n"
-            "5. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
-        )
+        if has_image and can_use_vision:
+            prompt_body = (
+                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+                f"Subject: {subject_name}\n"
+                f"Question: {prompt}\n"
+                f"Options:\n{options_formatted}\n"
+                f"Verified Correct Option: {correct_label}\n"
+                "Diagram / Image: An image is provided showing the diagram, circuit, table, chart, setup, or figure for this question.\n\n"
+                "Task: Write a concise, step-by-step solution explaining why this option is correct based on the diagram.\n"
+                "Guidelines:\n"
+                "1. Carefully inspect the attached image/diagram. Read all values, labels, readings, axes, angles, or symbols from the diagram to derive the answer.\n"
+                "2. Write 2 to 4 clear, rigorous sentences or calculation steps showing the exact working based on the diagram.\n"
+                "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+                "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+                "5. Conclude by confirming the correct option letter.\n"
+                "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+            )
+        elif has_image and not can_use_vision:
+            prompt_body = (
+                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+                f"Subject: {subject_name}\n"
+                f"Question: {prompt}\n"
+                f"Options:\n{options_formatted}\n"
+                f"Verified Correct Option: {correct_label}\n"
+                f"[Diagram / Figure Reference: {image_url}]\n\n"
+                "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
+                "Guidelines:\n"
+                "1. Note that this question refers to an accompanying diagram or table. Explain the relevant scientific or mathematical principles, rules, and formulas that justify why Option {correct_label} is correct.\n"
+                "2. Write 2 to 4 clear, rigorous sentences explaining the solution.\n"
+                "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+                "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+                "5. Conclude by confirming the correct option letter.\n"
+                "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+            )
+        else:
+            # Standard English curriculum tutor prompt
+            prompt_body = (
+                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+                f"Subject: {subject_name}\n"
+                f"Question: {prompt}\n"
+                f"Options:\n{options_formatted}\n"
+                f"Verified Correct Option: {correct_label}\n\n"
+                "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
+                "Guidelines:\n"
+                "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
+                "2. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+                "3. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+                "4. Conclude by confirming the correct option letter.\n"
+                "5. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+            )
 
-    payload = {
-        "model": model,
+    payload: Dict[str, Any] = {
+        "model": target_model,
         "prompt": prompt_body,
         "stream": False,
         "options": {
             "temperature": 0.2,
-            "num_predict": 360
+            "num_predict": 380
         }
     }
 
-    try:
+    if can_use_vision and img_base64:
+        payload["images"] = [img_base64]
+
+    def _call_ollama(pl: Dict[str, Any]) -> Optional[str]:
         req = urllib.request.Request(
             f"{endpoint.rstrip('/')}/api/generate",
-            data=json.dumps(payload).encode("utf-8"),
+            data=json.dumps(pl).encode("utf-8"),
             headers={"Content-Type": "application/json"}
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
             raw_res = (data.get("response") or "").strip()
-            res = clean_llm_explanation(raw_res)
-            if res and len(res) > 20:
-                _EXPLANATION_CACHE[cache_key] = res
-                return res
+            return clean_llm_explanation(raw_res)
+
+    try:
+        res = _call_ollama(payload)
+        if res and len(res) > 20:
+            _EXPLANATION_CACHE[cache_key] = res
+            return res
+    except urllib.error.HTTPError as he:
+        err_msg = ""
+        try:
+            err_msg = he.read().decode("utf-8")
+        except Exception:
+            pass
+        # Gracefully handle models that do not support images by retrying without image payload
+        if "does not support images" in err_msg.lower() and "images" in payload:
+            print(f"    [!] Model '{target_model}' does not support images. Retrying with text-only fallback.", file=sys.stderr)
+            del payload["images"]
+            payload["model"] = model
+            try:
+                res = _call_ollama(payload)
+                if res and len(res) > 20:
+                    _EXPLANATION_CACHE[cache_key] = res
+                    return res
+            except Exception:
+                pass
+        else:
+            print(f"    [!] Ollama HTTP {he.code}: {err_msg}", file=sys.stderr)
     except Exception as e:
         print(f"    [!] Ollama generation error: {e}", file=sys.stderr)
+
     return None
 
 
@@ -524,17 +716,23 @@ def generate_explanation(
     correct_label: str,
     subject_slug: str,
     subject_name: str,
-    ollama_model: Optional[str] = None
+    ollama_model: Optional[str] = None,
+    ollama_vision_model: Optional[str] = None,
+    image_url: Optional[str] = None,
+    ollama_endpoint: str = "http://localhost:11434"
 ) -> str:
     """Generates detailed derivation or contextual explanation for a question."""
-    if ollama_model:
+    if ollama_model or ollama_vision_model:
         ollama_res = generate_ollama_explanation(
             prompt=prompt,
             options=options,
             correct_label=correct_label,
             subject_slug=subject_slug,
             subject_name=subject_name,
-            model=ollama_model
+            model=ollama_model or "qwen2.5:14b",
+            vision_model=ollama_vision_model,
+            image_url=image_url,
+            endpoint=ollama_endpoint
         )
         if ollama_res:
             return ollama_res
@@ -593,7 +791,9 @@ def transform_question(
     subject_name: str,
     exam_type: str,
     question_number: int,
-    ollama_model: Optional[str] = None
+    ollama_model: Optional[str] = None,
+    ollama_vision_model: Optional[str] = None,
+    ollama_endpoint: str = "http://localhost:11434"
 ) -> Dict[str, Any]:
     """Transforms raw question into Supabase public.past_questions schema."""
     raw_id = raw_q.get("id")
@@ -601,6 +801,9 @@ def transform_question(
     collection = raw_q.get("collection") or {}
     year = int(collection.get("exam_year") or 2024)
     raw_exam = (collection.get("exam_type") or exam_type).upper()
+
+    # Extract image URL first so explanation generator can inspect the image
+    image_url = extract_image_url(raw_q)
 
     options, corr_idx, corr_label = format_options(raw_q.get("options", []))
     formula = extract_latex_formula(prompt_text)
@@ -611,18 +814,16 @@ def transform_question(
         correct_label=corr_label,
         subject_slug=subject_slug,
         subject_name=subject_name,
-        ollama_model=ollama_model
+        ollama_model=ollama_model,
+        ollama_vision_model=ollama_vision_model,
+        image_url=image_url,
+        ollama_endpoint=ollama_endpoint
     )
 
     subj_code = subject_slug[:3].lower()
     q_id = f"{raw_exam.lower()}_{year}_{subj_code}_q{raw_id}"
     fingerprint = compute_fingerprint(raw_exam, subject_name, year, prompt_text)
 
-    # Note: image_url is stored in metadata for backward-compatibility with current table schema
-    image_url = raw_q.get("image") or None
-    image_base_url = "https://myschool.ng/storage/classroom/"
-    if image_url:
-        image_url = image_base_url + image_url
     metadata = {
         "raw_id": raw_id,
         "image_url": image_url,
@@ -726,6 +927,62 @@ class CrawlLedger:
         self.save()
 
 
+def append_to_output_file(output_path: str, new_questions: List[Dict[str, Any]]) -> int:
+    """
+    Appends new questions to the JSON output file, preserving existing items,
+    deduplicating by fingerprint, and writing atomically so partial runs are never lost.
+    Returns the total number of questions currently stored.
+    """
+    if not new_questions:
+        return 0
+
+    path = Path(output_path).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing_items: List[Dict[str, Any]] = []
+    seen_fingerprints: set = set()
+
+    if path.exists() and path.stat().st_size > 0:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    existing_items = data
+                    for item in existing_items:
+                        if isinstance(item, dict) and "fingerprint" in item:
+                            seen_fingerprints.add(item["fingerprint"])
+        except Exception as e:
+            print(f"  [!] Warning reading existing {path}: {e}. Preserving backup.", file=sys.stderr)
+            backup_path = path.with_suffix(".bak")
+            try:
+                path.rename(backup_path)
+            except Exception:
+                pass
+            existing_items = []
+            seen_fingerprints = set()
+
+    for q in new_questions:
+        fp = q.get("fingerprint")
+        if fp and fp in seen_fingerprints:
+            continue
+        existing_items.append(q)
+        if fp:
+            seen_fingerprints.add(fp)
+
+    # Atomic write via temporary file
+    temp_path = path.with_suffix(f".tmp_{os.getpid()}")
+    try:
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump(existing_items, f, indent=2, ensure_ascii=False)
+        temp_path.replace(path)
+    except Exception as e:
+        print(f"  [!] Error writing {path}: {e}", file=sys.stderr)
+        if temp_path.exists():
+            temp_path.unlink()
+
+    return len(existing_items)
+
+
 def run_crawler_and_sync(
     exam_types: List[str],
     target_subjects: List[str],
@@ -736,7 +993,9 @@ def run_crawler_and_sync(
     resume: bool = True,
     output_path: str = "review_output.json",
     use_ollama: bool = True,
-    ollama_model: str = "qwen2.5:14b"
+    ollama_model: str = "qwen2.5:14b",
+    ollama_vision_model: Optional[str] = "llama3.2-vision",
+    ollama_endpoint: str = "http://localhost:11434"
 ):
     """Orchestrates comprehensive past question extraction and Supabase synchronization."""
     env = load_env_vars()
@@ -745,10 +1004,15 @@ def run_crawler_and_sync(
 
     ledger = CrawlLedger() if resume else None
 
-    # Check local Ollama availability
+    # Check local Ollama availability (both text and vision capabilities)
     active_ollama_model = None
+    active_ollama_vision_model = None
     if use_ollama:
-        active_ollama_model = check_ollama_available(ollama_model)
+        active_ollama_model, active_ollama_vision_model = check_ollama_models(
+            text_model=ollama_model,
+            vision_model=ollama_vision_model,
+            endpoint=ollama_endpoint
+        )
 
     # Fetch dynamic catalog of subjects
     all_subjects = fetch_all_myschool_subjects()
@@ -764,16 +1028,21 @@ def run_crawler_and_sync(
     print(f"Max Pages/Subject: {'Unlimited (All available)' if max_pages_per_subject <= 0 else max_pages_per_subject}")
     print(f"Sync to Supabase:  {'ACTIVE (Live Database Writes)' if sync_db else 'DRY RUN (review_output.json)'}")
     print(f"Supabase Endpoint: {supabase_url}")
+    print(f"Output File:       {os.path.abspath(output_path)} (Mode: APPEND & DEDUPLICATE)")
     if active_ollama_model:
-        print(f"Ollama AI Engine:  ACTIVE (Local Model: {active_ollama_model})")
+        print(f"Ollama Text Model: ACTIVE ({active_ollama_model})")
     else:
-        print(f"Ollama AI Engine:  OFFLINE (Using standard curriculum fallbacks)")
+        print(f"Ollama Text Model: OFFLINE (Using standard curriculum fallbacks)")
+    if active_ollama_vision_model:
+        print(f"Ollama Vision:     ACTIVE ({active_ollama_vision_model} for image/diagram reasoning)")
+    else:
+        print(f"Ollama Vision:     NONE DETECTED (Diagram questions will use conceptual fallbacks)")
     print("=" * 80)
 
     total_extracted = 0
     total_upserted = 0
-    collected_for_file = []
     staged_batch = []
+    current_stored_total = 0
 
     for exam in exam_types:
         exam_lower = exam.lower()
@@ -822,14 +1091,20 @@ def run_crawler_and_sync(
                         subject_name=name,
                         exam_type=exam,
                         question_number=total_extracted + idx + 1,
-                        ollama_model=active_ollama_model
+                        ollama_model=active_ollama_model,
+                        ollama_vision_model=active_ollama_vision_model,
+                        ollama_endpoint=ollama_endpoint
                     )
                     page_questions.append(q_obj)
-                    prompt_preview = q_obj['prompt'][:45].replace('\n', ' ')
-                    print(f"      [AI Q{idx+1}/{len(raw_items)}] Generated solution: {prompt_preview}...", flush=True)
+                    prompt_preview = q_obj['prompt'][:42].replace('\n', ' ')
+                    has_img = bool(q_obj.get("image_url"))
+                    tag = " [📷 DIAGRAM]" if has_img else ""
+                    print(f"      [AI Q{idx+1}/{len(raw_items)}{tag}] Solution: {prompt_preview}...", flush=True)
 
                 total_extracted += len(page_questions)
-                collected_for_file.extend(page_questions)
+
+                # Append progressively to output file so data is never lost
+                current_stored_total = append_to_output_file(output_path, page_questions)
 
                 if sync_db:
                     staged_batch.extend(page_questions)
@@ -843,7 +1118,7 @@ def run_crawler_and_sync(
                 if ledger:
                     ledger.set_last_page(exam_lower, slug, curr_page, added_items=len(page_questions))
 
-                print(f"    Page {curr_page}/{limit_pages}: +{len(page_questions)} questions processed.")
+                print(f"    Page {curr_page}/{limit_pages}: +{len(page_questions)} questions processed (File total: {current_stored_total}).")
                 curr_page += 1
 
     # Flush any remaining staged batch to Supabase
@@ -853,17 +1128,13 @@ def run_crawler_and_sync(
             total_upserted += len(staged_batch)
             print(f"    ✓ Upserted final batch of {len(staged_batch)} Qs to Supabase (Total synced: {total_upserted})")
 
-    # Save to review_output.json
     output_path_abs = os.path.abspath(output_path)
-    with open(output_path_abs, "w", encoding="utf-8") as f:
-        json.dump(collected_for_file[:1000], f, indent=2, ensure_ascii=False)
-
     print("\n" + "=" * 80)
     print("🏁 INGESTION RUN COMPLETED")
-    print(f"Total Questions Extracted: {total_extracted}")
+    print(f"Total Questions Extracted This Run: {total_extracted}")
     if sync_db:
         print(f"Total Questions Upserted to Supabase: {total_upserted}")
-    print(f"Inspection preview saved to: {output_path_abs}")
+    print(f"Review output saved (appended) to:  {output_path_abs} ({current_stored_total} total questions stored)")
     print("=" * 80)
 
 
@@ -877,8 +1148,10 @@ if __name__ == "__main__":
     parser.add_argument("--delay", type=float, default=0.2, help="Delay in seconds between page requests")
     parser.add_argument("--no-resume", action="store_true", help="Do not resume from previous checkpoint")
     parser.add_argument("--no-ollama", action="store_true", help="Disable local Ollama explanation generation")
-    parser.add_argument("--ollama-model", default="qwen2.5:14b", help="Ollama model for step-by-step explanations (default: qwen2.5:14b)")
-    parser.add_argument("--output", default="review_output.json", help="Output file for inspection")
+    parser.add_argument("--ollama-model", default="qwen2.5:14b", help="Ollama model for text explanations (default: qwen2.5:14b)")
+    parser.add_argument("--ollama-vision-model", default="llama3.2-vision", help="Ollama model for questions with images/diagrams (default: llama3.2-vision)")
+    parser.add_argument("--ollama-endpoint", default="http://localhost:11434", help="Ollama API endpoint (default: http://localhost:11434)")
+    parser.add_argument("--output", default="review_output.json", help="Output JSON file for inspection (always appends and deduplicates)")
 
     args = parser.parse_args()
 
@@ -895,6 +1168,8 @@ if __name__ == "__main__":
         resume=not args.no_resume,
         output_path=args.output,
         use_ollama=not args.no_ollama,
-        ollama_model=args.ollama_model
+        ollama_model=args.ollama_model,
+        ollama_vision_model=args.ollama_vision_model,
+        ollama_endpoint=args.ollama_endpoint
     )
 

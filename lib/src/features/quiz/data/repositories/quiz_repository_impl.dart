@@ -21,6 +21,7 @@ import 'package:kortex/src/features/quiz/data/models/quiz_result_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
@@ -552,16 +553,26 @@ class QuizRepositoryImpl implements QuizRepository {
 
     for (var i = 0; i < selectedCards.length; i++) {
       final card = selectedCards[i];
-      final correctAnswer = card.back.trim();
+      final correctAnswer = QuizContentSanitizer.cleanOptionText(card.back);
+      if (correctAnswer.isEmpty) continue;
+      final cleanPrompt = QuizContentSanitizer.cleanPrompt(card.front);
+      final cleanSubTopic = QuizContentSanitizer.cleanSubTopic(
+        card.sourceTopic ?? deckTitle,
+        defaultTopic: 'Flashcard Concept',
+      );
+      final explanation = QuizContentSanitizer.extractExplanation(card.back) ??
+          'Concept: "$cleanPrompt" corresponds to "$correctAnswer".';
 
       final otherBacks = cards
           .where(
             (c) =>
                 c.id != card.id &&
-                c.back.trim().isNotEmpty &&
-                c.back.trim().toLowerCase() != correctAnswer.toLowerCase(),
+                c.back.trim().isNotEmpty,
           )
-          .map((c) => c.back.trim())
+          .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
+          .where((ans) =>
+              ans.isNotEmpty &&
+              ans.toLowerCase() != correctAnswer.toLowerCase())
           .toSet()
           .toList();
 
@@ -574,8 +585,8 @@ class QuizRepositoryImpl implements QuizRepository {
       if (options.length < 4) {
         final semanticDistractors = _generateSemanticDistractors(
           correctAnswer: correctAnswer,
-          prompt: card.front.trim(),
-          topic: card.sourceTopic ?? deckTitle,
+          prompt: cleanPrompt,
+          topic: cleanSubTopic,
           count: 4 - options.length,
         );
         for (final distractor in semanticDistractors) {
@@ -591,15 +602,14 @@ class QuizRepositoryImpl implements QuizRepository {
       result.add(
         QuizQuestionModel(
           id: 'quiz_card_${card.id}_$i',
-          prompt: card.front.trim().endsWith('?')
-              ? card.front.trim()
-              : 'What concept or definition corresponds to: "${card.front.trim()}"?',
+          prompt: cleanPrompt.endsWith('?')
+              ? cleanPrompt
+              : 'What concept or definition corresponds to: "$cleanPrompt"?',
           type: QuizQuestionType.multipleChoice,
           options: options,
           correctAnswer: correctAnswer,
-          explanation:
-              'Concept: "${card.front.trim()}" corresponds to "${card.back.trim()}".',
-          subTopic: card.sourceTopic ?? deckTitle ?? 'Flashcard Concept',
+          explanation: explanation,
+          subTopic: cleanSubTopic,
           latexFormula: card.frontLatex ??
               card.backLatex ??
               (card.front.contains(r'\') ? card.front : null),
@@ -710,16 +720,24 @@ class QuizRepositoryImpl implements QuizRepository {
 
     for (var i = 0; i < selectedCards.length; i++) {
       final card = selectedCards[i];
-      final correctAnswer = card.back.trim();
+      final correctAnswer = QuizContentSanitizer.cleanOptionText(card.back);
+      if (correctAnswer.isEmpty) continue;
+      final cleanPrompt = QuizContentSanitizer.cleanPrompt(card.front);
+      final cleanSubTopic = QuizContentSanitizer.cleanSubTopic(
+        card.tags.firstOrNull ?? topic,
+        defaultTopic: 'AI Concept Analysis',
+      );
 
       final otherBacks = cards
           .where(
             (c) =>
                 c.id != card.id &&
-                c.back.trim().isNotEmpty &&
-                c.back.trim().toLowerCase() != correctAnswer.toLowerCase(),
+                c.back.trim().isNotEmpty,
           )
-          .map((c) => c.back.trim())
+          .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
+          .where((ans) =>
+              ans.isNotEmpty &&
+              ans.toLowerCase() != correctAnswer.toLowerCase())
           .toSet()
           .toList();
 
@@ -732,8 +750,8 @@ class QuizRepositoryImpl implements QuizRepository {
       if (options.length < 4) {
         final semanticDistractors = _generateSemanticDistractors(
           correctAnswer: correctAnswer,
-          prompt: card.front.trim(),
-          topic: card.tags.firstOrNull ?? topic,
+          prompt: cleanPrompt,
+          topic: cleanSubTopic,
           count: 4 - options.length,
         );
         for (final distractor in semanticDistractors) {
@@ -749,16 +767,16 @@ class QuizRepositoryImpl implements QuizRepository {
       result.add(
         QuizQuestionModel(
           id: 'ai_q_${card.id}_$i',
-          prompt: card.front.trim().endsWith('?')
-              ? card.front.trim()
-              : 'Which explanation correctly describes: "${card.front.trim()}"?',
+          prompt: cleanPrompt.endsWith('?')
+              ? cleanPrompt
+              : 'Which explanation correctly describes: "$cleanPrompt"?',
           type: QuizQuestionType.multipleChoice,
           options: options,
           correctAnswer: correctAnswer,
           explanation: card.explanation.isNotEmpty
               ? card.explanation
-              : 'Verified AI synthesis for "${card.front.trim()}".',
-          subTopic: card.tags.firstOrNull ?? topic ?? 'AI Concept Analysis',
+              : 'Verified AI synthesis for "$cleanPrompt".',
+          subTopic: cleanSubTopic,
           latexFormula: card.back.contains(r'$$') || card.back.contains(r'\')
               ? card.back
               : null,

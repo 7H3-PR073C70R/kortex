@@ -16,6 +16,7 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/millionaire_tiering_engine.dart';
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/generate_quiz_from_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/submit_quiz_answers_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
@@ -86,12 +87,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         ),
       ),
       (questions) {
+        final sanitized = _sanitizeQuestions(questions);
         final finalQuestions = assessmentMode == AssessmentMode.millionaireMode
-            ? _tieringEngine.tierQuestions(questions: questions)
-            : questions;
+            ? _tieringEngine.tierQuestions(questions: sanitized)
+            : sanitized;
         if (assessmentMode == AssessmentMode.millionaireMode) {
           final tieredIds = finalQuestions.map((q) => q.id).toSet();
-          _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
+          _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
         }
         emit(
           state.copyWith(
@@ -132,12 +134,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     MillionaireScope? millionaireScope,
   }) {
     _timer?.cancel();
+    final sanitized = _sanitizeQuestions(questions);
     final finalQuestions = assessmentMode == AssessmentMode.millionaireMode
-        ? questions.take(12).toList()
-        : questions;
-    if (assessmentMode == AssessmentMode.millionaireMode && questions.length > finalQuestions.length) {
+        ? sanitized.take(12).toList()
+        : sanitized;
+    if (assessmentMode == AssessmentMode.millionaireMode && sanitized.length > finalQuestions.length) {
       final tieredIds = finalQuestions.map((q) => q.id).toSet();
-      _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
+      _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
     }
     emit(
       state.copyWith(
@@ -176,9 +179,10 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     required List<QuizQuestionEntity> questions,
     MillionaireScope scope = MillionaireScope.courseTied,
   }) {
-    final tiered = _tieringEngine.tierQuestions(questions: questions);
+    final sanitized = _sanitizeQuestions(questions);
+    final tiered = _tieringEngine.tierQuestions(questions: sanitized);
     final tieredIds = tiered.map((q) => q.id).toSet();
-    _reserveQuestions = questions.where((q) => !tieredIds.contains(q.id)).toList();
+    _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
     startQuizFromPastQuestions(
       title: title,
       questions: tiered,
@@ -216,27 +220,41 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         final questions = <QuizQuestionEntity>[];
         for (var i = 0; i < candidateCards.length; i++) {
           final card = candidateCards[i];
-          if (card.back.trim().isEmpty) continue;
+          final cleanAnswer = QuizContentSanitizer.cleanOptionText(card.back);
+          if (cleanAnswer.isEmpty) continue;
+          final explanation = QuizContentSanitizer.extractExplanation(card.back) ??
+              'Correct answer: $cleanAnswer';
+          final cleanPrompt = QuizContentSanitizer.cleanPrompt(card.front);
+          final cleanSubTopic = QuizContentSanitizer.cleanSubTopic(
+            card.sourceTopic,
+            defaultTopic: 'Cross-Subject Recall',
+          );
+
           final otherAnswers = candidateCards
               .where((c) => c.id != card.id && c.back.trim().isNotEmpty)
-              .map((c) => c.back.trim())
+              .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
+              .where((ans) =>
+                  ans.isNotEmpty &&
+                  ans.toLowerCase() != cleanAnswer.toLowerCase())
               .toSet()
               .toList()
             ..shuffle();
-          final options = <String>[card.back.trim(), ...otherAnswers.take(3)]
+
+          final options = <String>[cleanAnswer, ...otherAnswers.take(3)]
             ..shuffle();
+
           if (options.length >= 2) {
             questions.add(
               QuizQuestionEntity(
                 id: 'arcade_${card.id}_$i',
-                prompt: card.front.trim().endsWith('?')
-                    ? card.front.trim()
-                    : 'What matches the definition: "${card.front.trim()}"?',
+                prompt: cleanPrompt.endsWith('?')
+                    ? cleanPrompt
+                    : 'What matches the definition: "$cleanPrompt"?',
                 type: QuizQuestionType.multipleChoice,
                 options: options,
-                correctAnswer: card.back.trim(),
-                explanation: 'Correct answer: ${card.back.trim()}',
-                subTopic: card.sourceTopic ?? 'Cross-Subject Recall',
+                correctAnswer: cleanAnswer,
+                explanation: explanation,
+                subTopic: cleanSubTopic,
               ),
             );
           }
@@ -332,8 +350,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     switch (lifeline) {
       case LifelineType.fiftyFifty:
         final current = state.currentQuestion!;
+        final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
         final correctIndex = current.options.indexWhere(
-          (opt) => opt.trim().toLowerCase() == current.correctAnswer.trim().toLowerCase(),
+          (opt) => QuizContentSanitizer.cleanOptionText(opt).toLowerCase() == cleanCorrect,
         );
 
         final incorrectIndices = <int>[];
@@ -367,10 +386,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
 
       case LifelineType.askAudience:
         final current = state.currentQuestion!;
+        final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
         final correctIndex = current.options.indexWhere(
-          (opt) =>
-              opt.trim().toLowerCase() ==
-              current.correctAnswer.trim().toLowerCase(),
+          (opt) => QuizContentSanitizer.cleanOptionText(opt).toLowerCase() == cleanCorrect,
         );
 
         final letters = ['A', 'B', 'C', 'D'];
@@ -547,9 +565,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     if (state.currentQuestion!.isAnswered) return;
 
     final current = state.currentQuestion!;
-    final isCorrect =
-        current.correctAnswer.trim().toLowerCase() ==
-        option.trim().toLowerCase();
+    final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
+    final cleanSelected = QuizContentSanitizer.cleanOptionText(option).toLowerCase();
+    final isCorrect = cleanCorrect == cleanSelected;
 
     final updatedQuestion = current.copyWith(
       userSelectedAnswer: option,
@@ -846,6 +864,26 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         subTopic: 'Cognitive Science',
       ),
     ];
+  }
+
+  static List<QuizQuestionEntity> _sanitizeQuestions(List<QuizQuestionEntity> questions) {
+    return questions.map((q) {
+      final cleanCorrect = QuizContentSanitizer.cleanOptionText(q.correctAnswer);
+      final cleanOpts = q.options.map(QuizContentSanitizer.cleanOptionText).toList();
+      if (!cleanOpts.any((opt) => opt.toLowerCase() == cleanCorrect.toLowerCase()) && cleanCorrect.isNotEmpty) {
+        if (cleanOpts.isNotEmpty) {
+          cleanOpts[0] = cleanCorrect;
+        } else {
+          cleanOpts.add(cleanCorrect);
+        }
+      }
+      return q.copyWith(
+        prompt: QuizContentSanitizer.cleanPrompt(q.prompt),
+        options: cleanOpts,
+        correctAnswer: cleanCorrect,
+        subTopic: QuizContentSanitizer.cleanSubTopic(q.subTopic),
+      );
+    }).toList();
   }
 
   @override

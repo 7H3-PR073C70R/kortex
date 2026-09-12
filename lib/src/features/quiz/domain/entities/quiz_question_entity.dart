@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 
 enum QuizQuestionType {
   multipleChoice,
@@ -43,7 +44,7 @@ class QuizQuestionEntity extends Equatable {
     }
 
     final optionLetters = ['A', 'B', 'C', 'D', 'E'];
-    final correctAns = q.correctOptionIndex < q.options.length
+    final rawCorrectAns = q.correctOptionIndex < q.options.length
         ? q.options[q.correctOptionIndex]
         : (q.correctOptionIndex < optionLetters.length
               ? optionLetters[q.correctOptionIndex]
@@ -56,7 +57,7 @@ class QuizQuestionEntity extends Equatable {
           : q.prompt,
       type: QuizQuestionType.multipleChoice,
       options: q.options,
-      correctAnswer: correctAns,
+      correctAnswer: rawCorrectAns,
       explanation: q.explanation.isNotEmpty
           ? q.explanation
           : 'Option ${q.correctOptionLabel} is the correct answer.',

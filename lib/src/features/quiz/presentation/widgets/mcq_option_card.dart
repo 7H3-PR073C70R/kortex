@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
+
 class McqOptionCard extends StatelessWidget {
   const McqOptionCard({
     required this.optionText,
@@ -22,12 +24,7 @@ class McqOptionCard extends StatelessWidget {
 
   String get _letterPrefix => String.fromCharCode(65 + index); // A, B, C, D
 
-  String get _displayOptionText {
-    return optionText.replaceFirst(
-      RegExp(r'^(\(?[A-Ea-e][\.\)]|\b[A-Ea-e]\.)\s*'),
-      '',
-    );
-  }
+  String get _displayOptionText => QuizContentSanitizer.cleanOptionText(optionText);
 
   @override
   Widget build(BuildContext context) {

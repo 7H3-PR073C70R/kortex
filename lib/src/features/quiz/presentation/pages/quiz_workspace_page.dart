@@ -517,21 +517,26 @@ class _QuizWorkspaceView extends HookWidget {
                             ],
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withValues(
-                              alpha: 0.15,
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            current.subTopic,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              current.subTopic,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                              ),
                             ),
                           ),
                         ),

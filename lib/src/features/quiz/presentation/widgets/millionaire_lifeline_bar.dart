@@ -103,77 +103,89 @@ class MillionaireLifelineBar extends StatelessWidget {
             ),
           ),
 
-          const Spacer(),
-
-          // Lifeline 1: 50:50
-          _LifelinePill(
-            label: '50:50',
-            icon: Icons.filter_2_rounded,
-            isAvailable: isFiftyFiftyAvailable,
-            onTap: isFiftyFiftyAvailable ? onUseFiftyFifty : null,
-          ),
-          const SizedBox(width: 6),
-
-          // Lifeline 2: AI Clue
-          _LifelinePill(
-            label: 'AI Clue',
-            icon: Icons.auto_awesome_rounded,
-            isAvailable: isAiClueAvailable,
-            onTap: isAiClueAvailable ? onUseAiClue : null,
-          ),
-          const SizedBox(width: 6),
-
-          // Lifeline 3: Ask Crowd
-          if (onUseAskAudience != null) ...[
-            _LifelinePill(
-              label: 'Crowd',
-              icon: Icons.groups_rounded,
-              isAvailable: isAskAudienceAvailable,
-              onTap: isAskAudienceAvailable ? onUseAskAudience : null,
-            ),
-            const SizedBox(width: 6),
-          ],
-
-          // Lifeline 4: Skip & Swap
-          _LifelinePill(
-            label: 'Skip',
-            icon: Icons.skip_next_rounded,
-            isAvailable: isSkipSwapAvailable,
-            onTap: isSkipSwapAvailable ? onUseSkipSwap : null,
-          ),
           const SizedBox(width: 8),
 
-          // Walk Away Action
-          ShrinkableButton(
-            onTap: onWalkAway,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: colors.error.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Tooltip(
-                message: 'Bank current XP and walk away safely',
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.savings_rounded,
-                      color: colors.error,
-                      size: 15,
+          // Scrollable Lifelines & Bank Action
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Lifeline 1: 50:50
+                  _LifelinePill(
+                    label: '50:50',
+                    icon: Icons.filter_2_rounded,
+                    isAvailable: isFiftyFiftyAvailable,
+                    onTap: isFiftyFiftyAvailable ? onUseFiftyFifty : null,
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Lifeline 2: AI Clue
+                  _LifelinePill(
+                    label: 'AI Clue',
+                    icon: Icons.auto_awesome_rounded,
+                    isAvailable: isAiClueAvailable,
+                    onTap: isAiClueAvailable ? onUseAiClue : null,
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Lifeline 3: Ask Crowd
+                  if (onUseAskAudience != null) ...[
+                    _LifelinePill(
+                      label: 'Crowd',
+                      icon: Icons.groups_rounded,
+                      isAvailable: isAskAudienceAvailable,
+                      onTap: isAskAudienceAvailable ? onUseAskAudience : null,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Bank',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.error,
+                    const SizedBox(width: 6),
+                  ],
+
+                  // Lifeline 4: Skip & Swap
+                  _LifelinePill(
+                    label: 'Skip',
+                    icon: Icons.skip_next_rounded,
+                    isAvailable: isSkipSwapAvailable,
+                    onTap: isSkipSwapAvailable ? onUseSkipSwap : null,
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Walk Away Action
+                  ShrinkableButton(
+                    onTap: onWalkAway,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: colors.error.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Tooltip(
+                        message: 'Bank current XP and walk away safely',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.savings_rounded,
+                              color: colors.error,
+                              size: 15,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Bank',
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.error,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
