@@ -727,8 +727,21 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     }
   }
 
-  void toggleMicMute() {
+  Future<void> toggleMicMute() async {
     final nextMuted = !state.isMuted;
+
+    // If unmuting, attempt to enable microphone track first
+    if (!nextMuted && _audioService != null) {
+      final success = await _audioService.setMicrophoneEnabled(enabled: true);
+      if (!success) {
+        // Permission denied or hardware unpublish failed
+        emit(state.copyWith(isMuted: true));
+        return;
+      }
+    } else if (nextMuted && _audioService != null) {
+      unawaited(_audioService.setMicrophoneEnabled(enabled: false));
+    }
+
     final updatedList = state.ephemeralParticipants.map((p) {
       if (p.userId == _currentUserId) {
         return p.copyWith(isMuted: nextMuted);
@@ -750,11 +763,6 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       isMuted: nextMuted,
       ephemeralParticipants: updatedList,
     ));
-
-    // Update LiveKit hardware microphone track publishing
-    if (_audioService != null) {
-      unawaited(_audioService.setMicrophoneEnabled(enabled: !nextMuted));
-    }
 
     final repo = _ephemeralRepository;
     if (repo != null) {

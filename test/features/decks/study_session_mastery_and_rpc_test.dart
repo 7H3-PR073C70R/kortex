@@ -76,7 +76,7 @@ void main() {
     });
 
     test('calculates deck mastery, updates due cards, and sends exact RPC parameter keys', () async {
-      const deckId = 'deck-123';
+      const deckId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
       // 1. Initial deck has 0% mastery
       final initialDecks = await dataSource.getUserDecks();

@@ -61,13 +61,19 @@ class MockLiveKitAudioService implements LiveKitAudioService {
     }
   }
 
+  bool shouldSucceedSetMic = true;
+
   @override
-  Future<void> setMicrophoneEnabled({required bool enabled}) async {
+  Future<bool> setMicrophoneEnabled({required bool enabled}) async {
     lastSetMicEnabled = enabled;
+    if (!shouldSucceedSetMic && enabled) {
+      return false;
+    }
     _isMicEnabled = enabled;
     if (!_micStateController.isClosed) {
       _micStateController.add(enabled);
     }
+    return true;
   }
 
   void simulateHardwareMicState({required bool enabled}) {
@@ -240,7 +246,7 @@ void main() {
       expect(cubit.state.isMuted, isTrue);
 
       // User turns mic ON (unmute)
-      cubit.toggleMicMute();
+      await cubit.toggleMicMute();
 
       expect(cubit.state.isMuted, isFalse);
       expect(mockAudioService.lastSetMicEnabled, isTrue);
@@ -269,12 +275,13 @@ void main() {
         audioService: mockAudioService,
         currentUserId: 'user-ade',
         currentUserName: 'Adekunle',
-      )..toggleMicMute();
+      );
+      await cubit.toggleMicMute();
 
       expect(cubit.state.isMuted, isFalse);
 
       // Mute again
-      cubit.toggleMicMute();
+      await cubit.toggleMicMute();
       expect(cubit.state.isMuted, isTrue);
       expect(mockAudioService.lastSetMicEnabled, isFalse);
 
@@ -301,7 +308,8 @@ void main() {
         audioService: mockAudioService,
         currentUserId: 'user-ade',
         currentUserName: 'Adekunle',
-      )..toggleMicMute();
+      );
+      await cubit.toggleMicMute();
 
       expect(cubit.state.isMuted, isFalse);
 
@@ -316,6 +324,28 @@ void main() {
 
       // Check broadcast was sent so peers are informed
       expect(mockEphemeralRepo.broadcastMuteCalls.last['isMuted'], isTrue);
+
+      await cubit.close();
+    });
+
+    test('toggleMicMute does not unmute when audio service permission is denied',
+        () async {
+      mockAudioService.shouldSucceedSetMic = false;
+      final cubit = LiveRoomCubit(
+        initialRoom: testRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-ade',
+        currentUserName: 'Adekunle',
+      );
+
+      expect(cubit.state.isMuted, isTrue);
+
+      await cubit.toggleMicMute();
+
+      // State remains muted because permission was denied
+      expect(cubit.state.isMuted, isTrue);
 
       await cubit.close();
     });

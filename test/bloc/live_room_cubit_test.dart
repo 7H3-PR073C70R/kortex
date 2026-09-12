@@ -195,9 +195,10 @@ class MockLiveKitAudioService implements LiveKitAudioService {
   }
 
   @override
-  Future<void> setMicrophoneEnabled({required bool enabled}) async {
+  Future<bool> setMicrophoneEnabled({required bool enabled}) async {
     _micEnabled = enabled;
     _micController.add(enabled);
+    return true;
   }
 
   void emitActiveSpeakers(Set<String> speakers) {
@@ -454,7 +455,7 @@ void main() {
 
       expect(cubit.state.isMuted, isTrue);
 
-      cubit.toggleMicMute();
+      await cubit.toggleMicMute();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(cubit.state.isMuted, isFalse);

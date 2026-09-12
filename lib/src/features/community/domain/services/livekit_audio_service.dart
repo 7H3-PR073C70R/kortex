@@ -22,8 +22,8 @@ abstract class LiveKitAudioService {
   /// Disconnects from the current room and releases audio tracks
   Future<void> disconnect();
 
-  /// Toggles microphone audio track publishing
-  Future<void> setMicrophoneEnabled({required bool enabled});
+  /// Toggles microphone audio track publishing. Returns true if successful.
+  Future<bool> setMicrophoneEnabled({required bool enabled});
 
   /// Whether local microphone is currently unmuted
   bool get isMicrophoneEnabled;

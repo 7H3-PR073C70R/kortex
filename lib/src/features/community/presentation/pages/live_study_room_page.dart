@@ -1802,7 +1802,7 @@ class _BottomActionBar extends StatelessWidget {
                     message: 'Connecting to room audio...',
                   );
                 }
-                context.read<LiveRoomCubit>().toggleMicMute();
+                unawaited(context.read<LiveRoomCubit>().toggleMicMute());
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),

@@ -112,6 +112,7 @@ void main() {
     test(
       'deleteDeck removes deck and cards locally and calls remote API',
       () async {
+        const validUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
         when(() => mockClient.deleteDeck(any())).thenAnswer(
           (_) async => HttpResponse<dynamic>(
             null,
@@ -119,11 +120,11 @@ void main() {
           ),
         );
 
-        await dataSource.deleteDeck('deck_bio_101');
+        await dataSource.deleteDeck(validUuid);
 
         final userDecks = await dataSource.getUserDecks();
-        expect(userDecks.any((d) => d.id == 'deck_bio_101'), isFalse);
-        verify(() => mockClient.deleteDeck('deck_bio_101')).called(1);
+        expect(userDecks.any((d) => d.id == validUuid), isFalse);
+        verify(() => mockClient.deleteDeck(validUuid)).called(1);
       },
     );
 

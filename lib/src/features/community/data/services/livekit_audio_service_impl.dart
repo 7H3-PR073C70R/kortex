@@ -121,17 +121,20 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   }
 
   @override
-  Future<void> setMicrophoneEnabled({required bool enabled}) async {
+  Future<bool> setMicrophoneEnabled({required bool enabled}) async {
     if (enabled) {
-      final status = await Permission.microphone.request();
+      var status = await Permission.microphone.status;
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
+      }
       if (status != PermissionStatus.granted) {
         developer.log(
-          'Microphone permission denied',
+          'LiveKitAudioService: Microphone permission denied (status: $status)',
           name: 'LiveKitAudio',
         );
         _isMicEnabled = false;
         _micStateController.add(false);
-        return;
+        return false;
       }
     }
 
@@ -143,8 +146,10 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
       if (local != null) {
         await local.setMicrophoneEnabled(enabled);
       }
+      return true;
     } on Object catch (e) {
       developer.log('LiveKit setMicrophoneEnabled error: $e', name: 'LiveKitAudio');
+      return false;
     }
   }
 

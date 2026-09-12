@@ -22,7 +22,6 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_d
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
@@ -344,25 +343,21 @@ class _DashboardShimmerLoading extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
         // 2. Exam Countdown Banner Skeleton
         const ShimmerPlaceholder(height: 72, borderRadius: 18),
-        const SizedBox(height: 18),
-
-        // 3. Next Best Action / Hero Deck Skeleton
-        const ShimmerPlaceholder(height: 130, borderRadius: 22),
-        const SizedBox(height: 18),
-
-        // 4. Quick Actions Speed Dial Skeleton
-        const ShimmerPlaceholder(height: 48, borderRadius: 22),
         const SizedBox(height: 20),
 
-        // 5. Prompt Bar Skeleton
-        const ShimmerPlaceholder(height: 52, borderRadius: 24),
-        const SizedBox(height: 22),
+        // 3. Next Best Action Skeleton
+        const ShimmerPlaceholder(height: 130, borderRadius: 22),
+        const SizedBox(height: 20),
 
-        // 6. Curated Courses Skeleton
+        // 4. Hero Deck Skeleton
+        const ShimmerPlaceholder(height: 180, borderRadius: 22),
+        const SizedBox(height: 20),
+
+        // 5. Curated Courses Skeleton
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -385,7 +380,11 @@ class _DashboardShimmerLoading extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 20),
+
+        // 6. Quick Actions Speed Dial Skeleton
+        const ShimmerPlaceholder(height: 48, borderRadius: 22),
+        const SizedBox(height: 20),
 
         // 7. Retention Heatmap Skeleton
         const ShimmerPlaceholder(height: 160, borderRadius: 22),
@@ -512,30 +511,24 @@ class _CompactDashboardLayout extends StatelessWidget {
           const SizedBox(height: 20),
         ],
 
-        // 6. Quick Action Speed Dial Bar (Scan Document, Add Question, Create Deck, Live Pod)
-        const QuickActionSpeedDial(),
-        const SizedBox(height: 24),
-
-        // 7. Syllabot AI Daily Insight & Quick Prompt Bar
-        SyllabotQuickPromptBar(
-          insightText: feed.syllabotDailyInsight,
-        ),
-        const SizedBox(height: 24),
-
-        // 8. Curated Courses Carousel (Subject Progress & Syllabus)
+        // 6. Curated Courses Carousel (Subject Progress & Syllabus)
         if (feed.curatedCourses.isNotEmpty) ...[
           CuratedCourseCarousel(courses: feed.curatedCourses),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
         ] else ...[
           _EmptyCoursesCard(l10n: l10n),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
         ],
 
-        // 9. Study Circle Pod & Cohort Pulse (Social Proof & Live Co-Working)
-        _StudyCirclePodPulseCard(targetTrack: targetTrack),
-        const SizedBox(height: 24),
+        // 7. Quick Action Speed Dial Bar (Scan Document, Add Question, Create Deck, Live Pod)
+        const QuickActionSpeedDial(),
+        const SizedBox(height: 20),
 
-        // 10. Retention Heat Map & Mastery Stats (Long-Term Proof of Progress)
+        // 8. Study Circle Pod & Cohort Pulse (Social Proof & Live Co-Working)
+        _StudyCirclePodPulseCard(targetTrack: targetTrack),
+        const SizedBox(height: 20),
+
+        // 9. Retention Heat Map & Mastery Stats (Long-Term Proof of Progress)
         RetentionHeatMapWidget(analytics: feed.analyticsSummary),
       ],
     );
@@ -631,8 +624,8 @@ class _EmptyCoursesCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: isDark
-                ? colors.surfaceSecondary.withAlpha(140)
-                : colors.surfacePrimary.withAlpha(210),
+              ? colors.surfaceSecondary.withAlpha(140)
+              : colors.surfacePrimary.withAlpha(210),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: colors.primary.withAlpha(isDark ? 80 : 50),
@@ -720,31 +713,31 @@ class _MediumDashboardLayout extends StatelessWidget {
           userName: userName,
           userPhotoUrl: userPhotoUrl,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
         if (feed.curatedCourses.isNotEmpty) ...[
           const ExamCountdownBanner(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         if (heavyDebtDeck != null) ...[
           _StudyDebtTriageBanner(deck: heavyDebtDeck),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         if (feed.dueStudyDecks.isNotEmpty) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.first,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ] else if (feed.curatedCourses.isNotEmpty) ...[
           _NextBestActionCard(
             fallbackCourseTitle: feed.curatedCourses.first.title,
             fallbackCourseCode: feed.curatedCourses.first.courseCode,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left Column (Core Study & Quick Actions)
+            // Left Column (Core Learning & Curriculum)
             Expanded(
               flex: 6,
               child: Column(
@@ -756,7 +749,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                     )
                   else
                     _EmptyStudyDecksCard(l10n: context.l10n),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   if (feed.dueStudyDecks.length > 1) ...[
                     SizedBox(
                       height: 205,
@@ -774,18 +767,14 @@ class _MediumDashboardLayout extends StatelessWidget {
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                   ],
-                  const QuickActionSpeedDial(),
-                  const SizedBox(height: 16),
-                  SyllabotQuickPromptBar(
-                    insightText: feed.syllabotDailyInsight,
-                  ),
-                  const SizedBox(height: 20),
                   if (feed.curatedCourses.isNotEmpty)
                     CuratedCourseCarousel(courses: feed.curatedCourses)
                   else
                     _EmptyCoursesCard(l10n: context.l10n),
+                  const SizedBox(height: 20),
+                  const QuickActionSpeedDial(),
                 ],
               ),
             ),
@@ -797,7 +786,7 @@ class _MediumDashboardLayout extends StatelessWidget {
               child: Column(
                 children: [
                   _StudyCirclePodPulseCard(targetTrack: targetTrack),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   RetentionHeatMapWidget(analytics: feed.analyticsSummary),
                 ],
               ),
@@ -879,16 +868,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   else
                     _EmptyStudyDecksCard(l10n: context.l10n),
                   const SizedBox(height: 20),
-                  const QuickActionSpeedDial(),
-                  const SizedBox(height: 20),
-                  SyllabotQuickPromptBar(
-                    insightText: feed.syllabotDailyInsight,
-                  ),
-                  const SizedBox(height: 24),
                   if (feed.curatedCourses.isNotEmpty)
                     CuratedCourseCarousel(courses: feed.curatedCourses)
                   else
                     _EmptyCoursesCard(l10n: context.l10n),
+                  const SizedBox(height: 20),
+                  const QuickActionSpeedDial(),
                 ],
               ),
             ),
@@ -905,7 +890,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                   if (feed.dueStudyDecks.length > 1) ...[
                     ...feed.dueStudyDecks.skip(1).map((deck) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: FsrsReviewDeckCard(deck: deck),
                       );
                     }),
