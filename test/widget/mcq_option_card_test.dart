@@ -23,7 +23,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           McqOptionCard(
-            optionText: r'\Delta G = \Delta H - T\Delta S',
+            optionText: 'Gibbs Free Energy',
             index: 0, // Option A
             isSelected: false,
             isAnswered: false,
@@ -36,7 +36,7 @@ void main() {
       );
 
       expect(find.text('A'), findsOneWidget);
-      expect(find.text(r'\Delta G = \Delta H - T\Delta S'), findsOneWidget);
+      expect(find.text('Gibbs Free Energy'), findsOneWidget);
 
       await tester.tap(find.byType(McqOptionCard));
       await tester.pump();

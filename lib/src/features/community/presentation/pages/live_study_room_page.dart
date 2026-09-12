@@ -24,6 +24,7 @@ import 'package:kortex/src/features/community/presentation/widgets/room_chat_dra
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 @RoutePage()
 class LiveStudyRoomPage extends StatelessWidget {
@@ -539,12 +540,21 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
             ),
             ShrinkableButton(
-              onTap: () {
+              onTap: () async {
                 Navigator.of(dialogCtx).pop();
+                cubit.dismissMicPermissionPrompt();
                 if (isPermanentlyDenied) {
-                  unawaited(cubit.openAppSettingsForMic());
+                  await openAppSettings();
                 } else {
-                  unawaited(cubit.requestMicrophonePermissionAndRetry());
+                  final status = await Permission.microphone.request();
+                  if (status.isGranted && context.mounted) {
+                    await cubit.toggleMicMute();
+                  } else if (status.isPermanentlyDenied && context.mounted) {
+                    _showMicrophonePermissionDialog(
+                      context,
+                      isPermanentlyDenied: true,
+                    );
+                  }
                 }
               },
               child: Container(
@@ -2011,14 +2021,36 @@ class _BottomActionBar extends StatelessWidget {
           // Mic Mute / Unmute Toggle Button (Only visible when voice pod is active)
           if (state.isVoicePodEnabled) ...[
             ShrinkableButton(
-              onTap: () {
+              onTap: () async {
                 unawaited(HapticFeedback.mediumImpact());
-                if (!state.isAudioConnected && state.isMuted) {
-                  context.showSnackBar(
-                    message: 'Connecting to room audio...',
-                  );
+                final cubit = context.read<LiveRoomCubit>();
+                if (state.isMuted) {
+                  var status = await Permission.microphone.status;
+                  if (status.isPermanentlyDenied) {
+                    if (context.mounted) {
+                      _showPermanentlyDeniedSettingsDialog(context);
+                    }
+                    return;
+                  }
+                  if (!status.isGranted) {
+                    status = await Permission.microphone.request();
+                  }
+                  if (status.isGranted) {
+                    await cubit.toggleMicMute();
+                  } else if (status.isPermanentlyDenied) {
+                    if (context.mounted) {
+                      _showPermanentlyDeniedSettingsDialog(context);
+                    }
+                  } else {
+                    if (context.mounted) {
+                      context.showSnackBar(
+                        message: 'Microphone permission is required to unmute.',
+                      );
+                    }
+                  }
+                } else {
+                  await cubit.toggleMicMute();
                 }
-                unawaited(context.read<LiveRoomCubit>().toggleMicMute());
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -2234,6 +2266,84 @@ class _BottomActionBar extends StatelessWidget {
     ),
   );
 }
+
+  void _showPermanentlyDeniedSettingsDialog(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: context.isDarkMode
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.error.withAlpha(context.isDarkMode ? 40 : 25),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.mic_off_rounded,
+                  color: colors.error,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Microphone Access',
+                  style: typography.subhead.bold
+                      .copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Microphone access is disabled in device settings. Please open settings and enable Microphone permission to speak in this focus pod.',
+            style: typography.body.regular.copyWith(
+              color: colors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(
+                'Stay Muted',
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            ShrinkableButton(
+              onTap: () async {
+                Navigator.of(dialogCtx).pop();
+                await openAppSettings();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Open Settings',
+                  style: typography.caption.bold.copyWith(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 
