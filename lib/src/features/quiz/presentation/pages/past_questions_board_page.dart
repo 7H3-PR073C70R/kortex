@@ -553,9 +553,9 @@ class _HeroTrackBanner extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ShrinkableButton(
-                          onTap: () {
+                          onTap: () async {
                             AppFeedback.light();
-                            QuizDuelMatchmakingSheet.show(
+                            await QuizDuelMatchmakingSheet.show(
                               context,
                               initialSubject: state.selectedSubject != 'All'
                                   ? state.selectedSubject

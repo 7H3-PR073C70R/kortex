@@ -48,13 +48,12 @@ class SyllabusTopic {
 /// Interactive checklist tracking curriculum syllabus topics mapped to exam papers (PLN-07).
 class SyllabusChecklistWidget extends HookWidget {
   const SyllabusChecklistWidget({
-    super.key,
-    required this.topics,
+    required this.topics, super.key,
     this.onTopicToggled,
   });
 
   final List<SyllabusTopic> topics;
-  final void Function(SyllabusTopic topic, bool isMastered)? onTopicToggled;
+  final void Function(SyllabusTopic topic, {required bool isMastered})? onTopicToggled;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +87,7 @@ class SyllabusChecklistWidget extends HookWidget {
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+            border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +141,7 @@ class SyllabusChecklistWidget extends HookWidget {
                     selectedSubject.value = subject;
                   },
                   backgroundColor: colors.surfacePrimary,
-                  selectedColor: colors.primary.withOpacity(0.18),
+                  selectedColor: colors.primary.withValues(alpha: 0.18),
                   labelStyle: typography.caption.regular.copyWith(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? colors.primary : colors.textPrimary,
@@ -150,7 +149,7 @@ class SyllabusChecklistWidget extends HookWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
-                      color: isSelected ? colors.primary : colors.surfaceBorder.withOpacity(0.5),
+                      color: isSelected ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -172,8 +171,8 @@ class SyllabusChecklistWidget extends HookWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: topic.isMastered
-                        ? colors.success.withOpacity(0.3)
-                        : colors.surfaceBorder.withOpacity(0.5),
+                        ? colors.success.withValues(alpha: 0.3)
+                        : colors.surfaceBorder.withValues(alpha: 0.5),
                   ),
                 ),
                 child: CheckboxListTile(
@@ -184,12 +183,13 @@ class SyllabusChecklistWidget extends HookWidget {
                     AppFeedback.selection();
                     final nextList = topicList.value.map((t) {
                       if (t.id == topic.id) {
-                        return t.copyWith(isMastered: nextVal);
+                        final updated = t.copyWith(isMastered: nextVal);
+                        onTopicToggled?.call(updated, isMastered: nextVal);
+                        return updated;
                       }
                       return t;
                     }).toList();
                     topicList.value = nextList;
-                    onTopicToggled?.call(topic, nextVal);
                   },
                   title: Text(
                     topic.title,

@@ -41,7 +41,7 @@ void main() {
       );
 
       // Force start round 0
-      client.forceStartRound(match.duelId, 0);
+      client.forceStartRound(match.duelId);
 
       final correctIdx = match.questions.first.options.indexOf(match.questions.first.correctAnswer);
       // Fast response (1.5s out of 15s) -> large speed bonus
@@ -70,7 +70,7 @@ void main() {
       );
 
       // Force start round 0
-      client.forceStartRound(match.duelId, 0);
+      client.forceStartRound(match.duelId);
 
       final correctIdx = match.questions.first.options.indexOf(match.questions.first.correctAnswer);
       final wrongOption = ((correctIdx >= 0 ? correctIdx : 0) + 1) % 4;

@@ -29,8 +29,7 @@ class DeckTreeNode {
 /// Visual tree selector for sub-decks, folders, and hierarchical tags in Kortex.
 class SubdeckHierarchyTree extends HookWidget {
   const SubdeckHierarchyTree({
-    super.key,
-    required this.decks,
+    required this.decks, super.key,
     this.selectedDeckId,
     this.onDeckSelected,
     this.onTagSelected,
@@ -75,7 +74,7 @@ class SubdeckHierarchyTree extends HookWidget {
               () => DeckTreeNode(name: seg, path: currentPath),
             );
           } else {
-            var existingChild = currentParent!.children.firstWhere(
+            final existingChild = currentParent!.children.firstWhere(
               (c) => c.name == seg,
               orElse: () {
                 final newNode = DeckTreeNode(
@@ -114,7 +113,7 @@ class SubdeckHierarchyTree extends HookWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.folder_open_rounded, size: 48, color: colors.textSecondary.withOpacity(0.5)),
+              Icon(Icons.folder_open_rounded, size: 48, color: colors.textSecondary.withValues(alpha: 0.5)),
               const SizedBox(height: 12),
               Text(
                 'No Decks or Sub-Decks Found',
@@ -219,17 +218,17 @@ class SubdeckHierarchyTree extends HookWidget {
               margin: const EdgeInsets.symmetric(vertical: 2),
               padding: EdgeInsets.only(
                 left: 12.0 + (level * 20.0),
-                right: 12.0,
-                top: 8.0,
-                bottom: 8.0,
+                right: 12,
+                top: 8,
+                bottom: 8,
               ),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? colors.primary.withOpacity(0.12)
+                    ? colors.primary.withValues(alpha: 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: isSelected
-                    ? Border.all(color: colors.primary.withOpacity(0.4))
+                    ? Border.all(color: colors.primary.withValues(alpha: 0.4))
                     : null,
               ),
               child: Row(

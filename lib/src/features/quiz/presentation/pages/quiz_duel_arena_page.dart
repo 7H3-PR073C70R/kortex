@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -25,12 +27,12 @@ class QuizDuelArenaPage extends HookWidget {
 
     void onSelectOption(int index) {
       AppFeedback.selection();
-      context.read<QuizDuelCubit>().submitAnswer(index);
+      unawaited(context.read<QuizDuelCubit>().submitAnswer(index));
     }
 
     void onSendEmote(String emote) {
       AppFeedback.light();
-      context.read<QuizDuelCubit>().sendEmote(emote);
+      unawaited(context.read<QuizDuelCubit>().sendEmote(emote));
       floatingEmotes.value = [...floatingEmotes.value, emote];
       Future.delayed(const Duration(milliseconds: 2200), () {
         if (floatingEmotes.value.isNotEmpty) {
@@ -92,7 +94,7 @@ class QuizDuelArenaPage extends HookWidget {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: colors.error.withOpacity(0.15),
+                              color: colors.error.withValues(alpha: 0.15),
                               border: Border.all(color: colors.error, width: 2),
                             ),
                             child: Text(
@@ -167,7 +169,7 @@ class QuizDuelArenaPage extends HookWidget {
                       decoration: BoxDecoration(
                         color: colors.surfacePrimary,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: colors.surfaceBorder.withOpacity(0.6)),
+                        border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.6)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -208,8 +210,8 @@ class QuizDuelArenaPage extends HookWidget {
 
                     AppButton(
                       text: 'Rematch ⚡',
-                      onPressed: () {
-                        context.read<QuizDuelCubit>().startMatchmaking(
+                      onPressed: () async {
+                        await context.read<QuizDuelCubit>().startMatchmaking(
                           subject: match?.subject ?? 'Physics',
                           examBoard: match?.examBoard ?? 'WAEC',
                           userId: state.currentUserId,
@@ -248,10 +250,12 @@ class QuizDuelArenaPage extends HookWidget {
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.close_rounded),
-              onPressed: () {
+              onPressed: () async {
                 AppFeedback.light();
-                context.read<QuizDuelCubit>().leaveMatch();
-                Navigator.of(context).pop();
+                await context.read<QuizDuelCubit>().leaveMatch();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
             ),
             title: Text(
@@ -274,7 +278,7 @@ class QuizDuelArenaPage extends HookWidget {
                         decoration: BoxDecoration(
                           color: colors.surfacePrimary,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+                          border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
                         ),
                         child: Row(
                           children: [
@@ -366,7 +370,7 @@ class QuizDuelArenaPage extends HookWidget {
                           decoration: BoxDecoration(
                             color: colors.surfacePrimary,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: colors.surfaceBorder.withOpacity(0.4)),
+                            border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.4)),
                           ),
                           child: LatexRichViewer(
                             text: currentQuestion.prompt,
@@ -383,7 +387,7 @@ class QuizDuelArenaPage extends HookWidget {
                         Expanded(
                           child: ListView.separated(
                             itemCount: currentQuestion.options.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            separatorBuilder: (_, _) => const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               final option = currentQuestion.options[index];
                               final isSelected = state.selectedOptionIndex == index;
@@ -391,18 +395,18 @@ class QuizDuelArenaPage extends HookWidget {
                               final isCorrect = option == currentQuestion.correctAnswer;
 
                               Color? cardColor = colors.surfacePrimary;
-                              Color borderColor = colors.surfaceBorder.withOpacity(0.5);
+                              var borderColor = colors.surfaceBorder.withValues(alpha: 0.5);
 
                               if (isRoundSummary) {
                                 if (isCorrect) {
-                                  cardColor = colors.success.withOpacity(0.18);
+                                  cardColor = colors.success.withValues(alpha: 0.18);
                                   borderColor = colors.success;
                                 } else if (isSelected) {
-                                  cardColor = colors.error.withOpacity(0.18);
+                                  cardColor = colors.error.withValues(alpha: 0.18);
                                   borderColor = colors.error;
                                 }
                               } else if (isSelected) {
-                                cardColor = colors.primary.withOpacity(0.15);
+                                cardColor = colors.primary.withValues(alpha: 0.15);
                                 borderColor = colors.primary;
                               }
 
@@ -494,7 +498,7 @@ class QuizDuelArenaPage extends HookWidget {
                   bottom: 120,
                   right: 32,
                   child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
+                    tween: Tween(begin: 0, end: 1),
                     duration: const Duration(milliseconds: 1800),
                     builder: (context, value, child) {
                       return Transform.translate(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -53,18 +55,24 @@ class QuizDuelMatchmakingSheet extends HookWidget {
 
     final pulseController = useAnimationController(
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    );
+
+    useEffect(() {
+      unawaited(pulseController.repeat(reverse: true));
+      return null;
+    }, [pulseController]);
 
     void startMatchmaking() {
       AppFeedback.selection();
       isSearching.value = true;
-      final cubit = context.read<QuizDuelCubit>();
-      cubit.startMatchmaking(
-        subject: selectedSubject.value,
-        examBoard: selectedExamBoard.value,
-        userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
-        displayName: 'You',
-        avatarUrl: '⚡',
+      unawaited(
+        context.read<QuizDuelCubit>().startMatchmaking(
+          subject: selectedSubject.value,
+          examBoard: selectedExamBoard.value,
+          userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
+          displayName: 'You',
+          avatarUrl: '⚡',
+        ),
       );
     }
 
@@ -73,11 +81,13 @@ class QuizDuelMatchmakingSheet extends HookWidget {
         if (state.status == QuizDuelStatus.countdown ||
             state.status == QuizDuelStatus.inRound) {
           Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => BlocProvider.value(
-                value: context.read<QuizDuelCubit>(),
-                child: const QuizDuelArenaPage(),
+          unawaited(
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<QuizDuelCubit>(),
+                  child: const QuizDuelArenaPage(),
+                ),
               ),
             ),
           );
@@ -96,7 +106,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
         decoration: BoxDecoration(
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+          border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -109,7 +119,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: colors.textSecondary.withOpacity(0.3),
+                    color: colors.textSecondary.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -176,9 +186,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                               height: 110 + (pulseController.value * 20),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: colors.primary.withOpacity(0.12 - (pulseController.value * 0.08)),
+                                color: colors.primary.withValues(alpha: (0.12 - (pulseController.value * 0.08)).clamp(0.0, 1.0)),
                                 border: Border.all(
-                                  color: colors.primary.withOpacity(0.4 + (pulseController.value * 0.4)),
+                                  color: colors.primary.withValues(alpha: (0.4 + (pulseController.value * 0.4)).clamp(0.0, 1.0)),
                                   width: 2.5,
                                 ),
                               ),
@@ -191,7 +201,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                     color: colors.primary,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: colors.primary.withOpacity(0.4),
+                                        color: colors.primary.withValues(alpha: 0.4),
                                         blurRadius: 16,
                                         spreadRadius: 2,
                                       ),
@@ -231,9 +241,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                 AppButton(
                   text: 'Cancel Matchmaking',
                   variant: AppButtonVariant.secondary,
-                  onPressed: () {
+                  onPressed: () async {
                     isSearching.value = false;
-                    context.read<QuizDuelCubit>().leaveMatch();
+                    await context.read<QuizDuelCubit>().leaveMatch();
                   },
                 ),
               ] else ...[
@@ -254,7 +264,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     return ChoiceChip(
                       label: Text(sub),
                       selected: isSelected,
-                      selectedColor: colors.primary.withOpacity(0.2),
+                      selectedColor: colors.primary.withValues(alpha: 0.2),
                       backgroundColor: colors.surfaceSecondary,
                       labelStyle: TextStyle(
                         color: isSelected ? colors.primary : colors.textPrimary,
@@ -288,7 +298,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     return ChoiceChip(
                       label: Text(board),
                       selected: isSelected,
-                      selectedColor: colors.secondary.withOpacity(0.2),
+                      selectedColor: colors.secondary.withValues(alpha: 0.2),
                       backgroundColor: colors.surfaceSecondary,
                       labelStyle: TextStyle(
                         color: isSelected ? colors.secondary : colors.textPrimary,
@@ -309,9 +319,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: colors.surfaceSecondary.withOpacity(0.6),
+                    color: colors.surfaceSecondary.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: colors.surfaceBorder.withOpacity(0.4)),
+                    border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [

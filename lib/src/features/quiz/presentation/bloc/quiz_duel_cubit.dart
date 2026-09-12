@@ -28,7 +28,6 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     emit(state.copyWith(
       status: QuizDuelStatus.matching,
       currentUserId: userId,
-      errorMessage: null,
       clearSelectedOption: true,
     ));
 
@@ -58,7 +57,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   }
 
   void _subscribeToMatchStream(String duelId) {
-    _duelSubscription?.cancel();
+    unawaited(_duelSubscription?.cancel());
     _duelSubscription = _repository.streamDuel(duelId).listen(
       (match) {
         final previousStatus = state.status;
@@ -152,14 +151,14 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
         userId: state.currentUserId,
       );
     }
-    _duelSubscription?.cancel();
+    await _duelSubscription?.cancel();
     emit(const QuizDuelState(status: QuizDuelStatus.cancelled));
   }
 
   @override
   Future<void> close() {
     _countdownTimer?.cancel();
-    _duelSubscription?.cancel();
+    unawaited(_duelSubscription?.cancel());
     return super.close();
   }
 }

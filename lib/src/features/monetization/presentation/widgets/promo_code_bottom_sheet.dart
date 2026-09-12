@@ -90,7 +90,7 @@ class PromoCodeBottomSheet extends HookWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colors.textSecondary.withOpacity(0.3),
+                  color: colors.textSecondary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -102,7 +102,7 @@ class PromoCodeBottomSheet extends HookWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.12),
+                    color: colors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.card_giftcard_rounded, color: colors.primary, size: 22),
@@ -146,9 +146,9 @@ class PromoCodeBottomSheet extends HookWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colors.success.withOpacity(0.12),
+                  color: colors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.success.withOpacity(0.4)),
+                  border: Border.all(color: colors.success.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [

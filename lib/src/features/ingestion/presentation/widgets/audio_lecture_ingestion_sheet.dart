@@ -44,7 +44,7 @@ class AudioLectureIngestionSheet extends HookWidget {
     final fileSize = useState<String>('38.4 MB');
 
     final isUploading = useState<bool>(false);
-    final uploadProgress = useState<double>(0.0);
+    final uploadProgress = useState<double>(0);
     final currentChunk = useState<int>(0);
     final totalChunks = useState<int>(8);
     final transcriptionResult = useState<String>('');
@@ -102,7 +102,7 @@ class AudioLectureIngestionSheet extends HookWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: colors.textSecondary.withOpacity(0.3),
+                color: colors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -114,7 +114,7 @@ class AudioLectureIngestionSheet extends HookWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colors.primary.withOpacity(0.12),
+                  color: colors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.mic_none_rounded, color: colors.primary, size: 24),
@@ -146,7 +146,7 @@ class AudioLectureIngestionSheet extends HookWidget {
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
@@ -176,9 +176,7 @@ class AudioLectureIngestionSheet extends HookWidget {
                 IconButton(
                   icon: const Icon(Icons.folder_open_rounded),
                   color: colors.primary,
-                  onPressed: () {
-                    AppFeedback.selection();
-                  },
+                  onPressed: AppFeedback.selection,
                 ),
               ],
             ),

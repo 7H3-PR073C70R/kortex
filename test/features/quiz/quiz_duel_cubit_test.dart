@@ -27,7 +27,6 @@ void main() {
           displayName: 'Scholar One',
           avatarUrl: '⚡',
         ),
-        status: QuizDuelStatus.matching,
       );
     });
 
@@ -61,11 +60,9 @@ void main() {
       ),
       expect: () => [
         const QuizDuelState(
-          status: QuizDuelStatus.matching,
           currentUserId: 'user_1',
         ),
         QuizDuelState(
-          status: QuizDuelStatus.matching,
           currentUserId: 'user_1',
           match: testMatch,
         ),

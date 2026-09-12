@@ -411,3 +411,46 @@ enabled = true
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+[functions.generate-quiz-questions]
+verify_jwt = true
+
+[functions.parse-stem-ocr]
+verify_jwt = true
+
+[functions.provision-course-community]
+verify_jwt = true
+
+[functions.trigger-notifications]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.calculate-leaderboard]
+verify_jwt = false
+
+[functions.generate-livekit-token]
+verify_jwt = false
+
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.cleanup-ai-sessions]
+verify_jwt = false
+
+[functions.syllabot-stream]
+verify_jwt = false
+
+[functions.process-document-ingestion]
+verify_jwt = true
+
+[functions.generate-flashcards-stream]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+[functions.presence-heartbeat]
+verify_jwt = true
+

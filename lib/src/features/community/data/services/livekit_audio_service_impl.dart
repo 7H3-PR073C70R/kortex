@@ -204,7 +204,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   bool _wasMicEnabledBeforeInterruption = false;
 
   /// Handles audio session interruptions such as incoming phone calls or alarms (COM-15).
-  Future<void> handleAudioInterruption(bool isInterrupted) async {
+  Future<void> handleAudioInterruption({required bool isInterrupted}) async {
     if (isInterrupted) {
       _wasMicEnabledBeforeInterruption = _isMicEnabled;
       if (_isMicEnabled) {

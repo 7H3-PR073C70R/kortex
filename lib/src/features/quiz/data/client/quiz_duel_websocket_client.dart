@@ -5,7 +5,7 @@ import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 
-/// Realtime Phoenix WebSocket client managing 1v1 Quiz Duel synchronization (QZ-13).
+/// Realtime Phoenix-style WebSocket & Broadcast Channel Client for 1v1 Quiz Duels (QZ-13).
 class QuizDuelWebSocketClient {
   QuizDuelWebSocketClient({
     RealtimeClient? realtimeClient,
@@ -15,6 +15,9 @@ class QuizDuelWebSocketClient {
 
   final RealtimeClient _realtimeClient;
   final Random _random;
+
+  /// Supabase Realtime client reference
+  RealtimeClient get realtimeClient => _realtimeClient;
 
   final Map<String, StreamController<QuizDuelMatch>> _matchControllers = {};
   final Map<String, QuizDuelMatch> _activeMatches = {};
@@ -105,20 +108,17 @@ class QuizDuelWebSocketClient {
     );
 
     // Initial match in matching state
-    var match = QuizDuelMatch(
+    final match = QuizDuelMatch(
       duelId: duelId,
       subject: subject,
       examBoard: examBoard,
       questions: questions,
-      durationPerQuestionSeconds: defaultQuestionTimeSeconds,
       player1: player1,
-      status: QuizDuelStatus.matching,
       createdAt: DateTime.now(),
     );
 
     _activeMatches[duelId] = match;
-    final controller = _getOrCreateController(duelId);
-    controller.add(match);
+    _getOrCreateController(duelId).add(match);
 
     // Schedule AI Peer match after brief matching delay (1.2s)
     Timer(const Duration(milliseconds: 1200), () {
@@ -174,15 +174,9 @@ class QuizDuelWebSocketClient {
 
     final p1 = current.player1.copyWith(
       currentQuestionIndex: questionIndex,
-      selectedOptionIndex: null,
-      answeredInMs: null,
-      isAnswerCorrect: null,
     );
     final p2 = current.player2?.copyWith(
       currentQuestionIndex: questionIndex,
-      selectedOptionIndex: null,
-      answeredInMs: null,
-      isAnswerCorrect: null,
     );
 
     final updated = current.copyWith(
@@ -229,12 +223,14 @@ class QuizDuelWebSocketClient {
           ? validCorrectIdx
           : (validCorrectIdx + 1) % q.options.length;
 
-      submitDuelAnswer(
-        duelId: duelId,
-        userId: current.player2!.userId,
-        questionIndex: questionIndex,
-        optionIndex: selectedOption,
-        responseTimeMs: delayMs,
+      unawaited(
+        submitDuelAnswer(
+          duelId: duelId,
+          userId: current.player2!.userId,
+          questionIndex: questionIndex,
+          optionIndex: selectedOption,
+          responseTimeMs: delayMs,
+        ),
       );
     });
   }
@@ -267,7 +263,7 @@ class QuizDuelWebSocketClient {
     final earnedPoints = isCorrect ? (baseCorrectPoints + speedBonus) : 0;
 
     QuizDuelParticipant? updatedP1 = current.player1;
-    QuizDuelParticipant? updatedP2 = current.player2;
+    var updatedP2 = current.player2;
 
     if (current.player1.userId == userId) {
       final streak = isCorrect ? current.player1.comboStreak + 1 : 0;
@@ -337,7 +333,7 @@ class QuizDuelWebSocketClient {
     final p2Score = current.player2?.score ?? 0;
 
     String? winnerId;
-    bool isDraw = false;
+    var isDraw = false;
 
     if (p1Score > p2Score) {
       winnerId = current.player1.userId;
@@ -392,7 +388,7 @@ class QuizDuelWebSocketClient {
   StreamController<QuizDuelMatch> _getOrCreateController(String duelId) {
     return _matchControllers.putIfAbsent(
       duelId,
-      () => StreamController<QuizDuelMatch>.broadcast(),
+      StreamController<QuizDuelMatch>.broadcast,
     );
   }
 
@@ -412,7 +408,7 @@ class QuizDuelWebSocketClient {
       timer.cancel();
     }
     for (final ctrl in _matchControllers.values) {
-      ctrl.close();
+      unawaited(ctrl.close());
     }
     _matchControllers.clear();
     _activeMatches.clear();

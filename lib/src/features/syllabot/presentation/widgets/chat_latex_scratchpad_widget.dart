@@ -56,8 +56,7 @@ class ScratchpadPainter extends CustomPainter {
 /// In-chat Math Scratchpad enabling handwritten math formulas to LaTeX conversion (SYL-13).
 class ChatLatexScratchpadWidget extends HookWidget {
   const ChatLatexScratchpadWidget({
-    super.key,
-    required this.onInsertLatex,
+    required this.onInsertLatex, super.key,
   });
 
   final ValueChanged<String> onInsertLatex;
@@ -123,7 +122,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: colors.textSecondary.withOpacity(0.3),
+                color: colors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -135,7 +134,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: colors.primary.withOpacity(0.12),
+                  color: colors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.draw_rounded, color: colors.primary, size: 20),
@@ -170,7 +169,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
             ),
             clipBehavior: Clip.antiAlias,
             child: GestureDetector(

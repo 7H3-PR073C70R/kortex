@@ -244,15 +244,15 @@ void main() {
       ];
 
       SyllabusTopic? toggledTopic;
-      bool? isMastered;
+      bool? isMasteredResult;
 
       await tester.pumpWidget(
         _wrapWithTheme(
           SyllabusChecklistWidget(
             topics: topics,
-            onTopicToggled: (t, m) {
+            onTopicToggled: (t, {required isMastered}) {
               toggledTopic = t;
-              isMastered = m;
+              isMasteredResult = isMastered;
             },
           ),
         ),
@@ -266,7 +266,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(toggledTopic?.id, equals('t1'));
-      expect(isMastered, isTrue);
+      expect(isMasteredResult, isTrue);
     });
 
     testWidgets('ActiveSessionsListWidget renders sessions and revokes session', (

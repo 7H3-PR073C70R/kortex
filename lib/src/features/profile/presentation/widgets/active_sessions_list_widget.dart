@@ -28,8 +28,7 @@ class DeviceSession {
 /// Active logged-in device sessions manager widget (SEC-08).
 class ActiveSessionsListWidget extends HookWidget {
   const ActiveSessionsListWidget({
-    super.key,
-    required this.sessions,
+    required this.sessions, super.key,
     this.onRevokeSession,
     this.onRevokeAllOthers,
   });
@@ -119,8 +118,8 @@ class ActiveSessionsListWidget extends HookWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: session.isCurrentDevice
-                        ? colors.primary.withOpacity(0.4)
-                        : colors.surfaceBorder.withOpacity(0.5),
+                        ? colors.primary.withValues(alpha: 0.4)
+                        : colors.surfaceBorder.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
@@ -129,7 +128,7 @@ class ActiveSessionsListWidget extends HookWidget {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: session.isCurrentDevice
-                            ? colors.primary.withOpacity(0.12)
+                            ? colors.primary.withValues(alpha: 0.12)
                             : colors.surfaceSecondary,
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -156,7 +155,6 @@ class ActiveSessionsListWidget extends HookWidget {
                                 const SizedBox(width: 6),
                                 const AppBadge(
                                   label: 'This Device',
-                                  variant: AppBadgeVariant.primary,
                                 ),
                               ],
                             ],

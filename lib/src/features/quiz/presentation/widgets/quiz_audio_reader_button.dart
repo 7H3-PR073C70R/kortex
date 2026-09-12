@@ -7,9 +7,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech
 /// Audio speaker button that synthesizes quiz questions and MCQ options (QZ-15).
 class QuizAudioReaderButton extends HookWidget {
   const QuizAudioReaderButton({
-    super.key,
-    required this.questionText,
-    required this.options,
+    required this.questionText, required this.options, super.key,
     this.ttsHandler,
     this.size = 36.0,
     this.iconSize = 18.0,
@@ -49,11 +47,11 @@ class QuizAudioReaderButton extends HookWidget {
       label: isSpeaking ? 'Stop reading question' : 'Read question and options aloud',
       button: true,
       child: Material(
-        color: isSpeaking ? colors.primary.withOpacity(0.2) : colors.surfacePrimary,
+        color: isSpeaking ? colors.primary.withValues(alpha: 0.2) : colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(size / 2),
           side: BorderSide(
-            color: isSpeaking ? colors.primary : colors.surfaceBorder.withOpacity(0.5),
+            color: isSpeaking ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
           ),
         ),
         child: InkWell(

@@ -224,6 +224,7 @@ serve(async (req: Request) => {
             .eq("id", roomId)
             .single();
 
+          if (room) {
             // Target peers matching this academic track or enrolled in this course community
             const categoryFilter = room.category || room.subject;
             let peerIds: string[] = [];

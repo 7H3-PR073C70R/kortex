@@ -21,8 +21,7 @@ class OcclusionMask {
 /// Touch-enabled Image Occlusion viewer for medical and STEM flashcards (FSR-13).
 class ImageOcclusionCardViewer extends HookWidget {
   const ImageOcclusionCardViewer({
-    super.key,
-    required this.masks,
+    required this.masks, super.key,
     this.imageUrl,
     this.imageBytes,
     this.onMaskRevealed,
@@ -104,12 +103,12 @@ class ImageOcclusionCardViewer extends HookWidget {
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.surfaceBorder.withOpacity(0.5)),
+              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
             ),
             clipBehavior: Clip.antiAlias,
             child: InteractiveViewer(
               transformationController: transformationController,
-              minScale: 1.0,
+              minScale: 1,
               maxScale: 4.5,
               boundaryMargin: const EdgeInsets.all(24),
               child: LayoutBuilder(
@@ -145,7 +144,7 @@ class ImageOcclusionCardViewer extends HookWidget {
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
                                   color: isRevealed
-                                      ? colors.primary.withOpacity(0.2)
+                                      ? colors.primary.withValues(alpha: 0.2)
                                       : isActive
                                           ? colors.syllabotAccent
                                           : colors.primary,
@@ -153,14 +152,14 @@ class ImageOcclusionCardViewer extends HookWidget {
                                   border: Border.all(
                                     color: isRevealed
                                         ? colors.primary
-                                        : Colors.white.withOpacity(0.8),
+                                        : Colors.white.withValues(alpha: 0.8),
                                     width: isActive ? 2.5 : 1.5,
                                   ),
                                   boxShadow: isRevealed
                                       ? null
                                       : [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.25),
+                                            color: Colors.black.withValues(alpha: 0.25),
                                             blurRadius: 4,
                                             offset: const Offset(0, 2),
                                           ),
@@ -182,7 +181,7 @@ class ImageOcclusionCardViewer extends HookWidget {
                                       : Icon(
                                           Icons.help_outline_rounded,
                                           size: 14,
-                                          color: Colors.white.withOpacity(0.9),
+                                          color: Colors.white.withValues(alpha: 0.9),
                                         ),
                                 ),
                               ),
@@ -202,14 +201,11 @@ class ImageOcclusionCardViewer extends HookWidget {
   }
 
   Widget _buildBaseImage(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return Image.network(
         imageUrl!,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => _buildFallbackSchematic(context),
+        errorBuilder: (_, _, _) => _buildFallbackSchematic(context),
       );
     }
 
@@ -220,13 +216,13 @@ class ImageOcclusionCardViewer extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
 
-    return Container(
+    return ColoredBox(
       color: colors.surfaceSecondary,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.biotech_rounded, size: 56, color: colors.primary.withOpacity(0.4)),
+            Icon(Icons.biotech_rounded, size: 56, color: colors.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
               'STEM / Anatomical Diagram Canvas',

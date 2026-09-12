@@ -20,9 +20,7 @@ enum FlagQuestionReason {
 /// Community quality audit modal for flagging flawed quiz questions (QZ-14).
 class FlagQuestionBottomSheet extends HookWidget {
   const FlagQuestionBottomSheet({
-    super.key,
-    required this.questionId,
-    required this.questionSnippet,
+    required this.questionId, required this.questionSnippet, super.key,
     this.onSubmitReport,
   });
 
@@ -85,7 +83,7 @@ class FlagQuestionBottomSheet extends HookWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colors.textSecondary.withOpacity(0.3),
+                  color: colors.textSecondary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -97,7 +95,7 @@ class FlagQuestionBottomSheet extends HookWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colors.error.withOpacity(0.12),
+                    color: colors.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.flag_rounded, color: colors.error, size: 20),
@@ -151,10 +149,10 @@ class FlagQuestionBottomSheet extends HookWidget {
                   margin: const EdgeInsets.symmetric(vertical: 3),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? colors.primary.withOpacity(0.1) : Colors.transparent,
+                    color: isSelected ? colors.primary.withValues(alpha: 0.1) : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? colors.primary : colors.surfaceBorder.withOpacity(0.5),
+                      color: isSelected ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Row(
