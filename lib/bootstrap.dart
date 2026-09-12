@@ -45,19 +45,34 @@ Future<void> bootstrap({
 
     FlutterError.onError = (details) {
       log(details.exceptionAsString(), stackTrace: details.stack);
-      unawaited(FirebaseCrashlytics.instance.recordFlutterFatalError(details));
+      if (kReleaseMode) {
+        if (!details.silent) {
+          unawaited(
+            FirebaseCrashlytics.instance.recordFlutterFatalError(details),
+          );
+        }
+      } else {
+        // In debug/profile mode, present error in console without triggering fatal Crashlytics crashes on UI warnings
+        FlutterError.presentError(details);
+      }
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
-      unawaited(
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
-      );
+      log('Uncaught platform error: $error', stackTrace: stack);
+      if (kReleaseMode) {
+        unawaited(
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
+        );
+      }
       return true;
     };
   } on Object catch (e) {
     log('Firebase initialization error: $e');
     FlutterError.onError = (details) {
       log(details.exceptionAsString(), stackTrace: details.stack);
+      if (!kReleaseMode) {
+        FlutterError.presentError(details);
+      }
     };
   }
 
