@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -9,7 +12,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 @RoutePage()
-class SessionSummaryPage extends StatelessWidget {
+class SessionSummaryPage extends StatefulWidget {
   const SessionSummaryPage({
     required this.deckId,
     required this.cardsReviewed,
@@ -24,11 +27,38 @@ class SessionSummaryPage extends StatelessWidget {
   final double retentionScore;
 
   @override
+  State<SessionSummaryPage> createState() => _SessionSummaryPageState();
+}
+
+class _SessionSummaryPageState extends State<SessionSummaryPage> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController.play();
+    unawaited(HapticFeedback.heavyImpact());
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final deckId = widget.deckId;
+    final cardsReviewed = widget.cardsReviewed;
+    final durationSeconds = widget.durationSeconds;
+    final retentionScore = widget.retentionScore;
 
     final scorePercent = (retentionScore * 100).toInt();
     final minutes = (durationSeconds ~/ 60).toString().padLeft(2, '0');
@@ -39,12 +69,35 @@ class SessionSummaryPage extends StatelessWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      body: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          Positioned(
+            top: 0,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: math.pi / 2,
+              maxBlastForce: 25,
+              minBlastForce: 10,
+              emissionFrequency: 0.05,
+              numberOfParticles: 35,
+              gravity: 0.15,
+              colors: const [
+                Color(0xFF6366F1),
+                Color(0xFF10B981),
+                Color(0xFFF59E0B),
+                Color(0xFFEC4899),
+                Color(0xFF8B5CF6),
+                Color(0xFF3B82F6),
+              ],
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
               const Spacer(),
 
               // Celebration Glow Orb
@@ -230,6 +283,8 @@ class SessionSummaryPage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

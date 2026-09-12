@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_sou
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 import 'package:kortex/src/features/decks/domain/services/past_question_deck_factory.dart';
 
 class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
@@ -327,7 +328,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }
       } on Object catch (_) {}
 
-      return resultList;
+      return resultList.map(DeckTitleResolver.enrichDeckModel).toList();
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         final isAuthOrNotFound = e is DioException &&
@@ -376,7 +377,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }
       } on Object catch (_) {}
 
-      return fallbackList;
+      return fallbackList.map(DeckTitleResolver.enrichDeckModel).toList();
     }
   }
 
@@ -545,16 +546,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       );
     } else {
       _localCreatedDecks.add(
-        DeckModel(
-          id: deckId,
-          title: 'Study Deck',
-          subject: 'General',
-          category: 'General',
-          totalCards: totalCount,
-          dueCards: calculatedDueCards,
-          masteryRate: calculatedMasteryRate,
-          lastStudied: now,
-          cards: cards,
+        DeckTitleResolver.enrichDeckModel(
+          DeckModel(
+            id: deckId,
+            title: 'Study Deck',
+            subject: 'General',
+            category: 'General',
+            totalCards: totalCount,
+            dueCards: calculatedDueCards,
+            masteryRate: calculatedMasteryRate,
+            lastStudied: now,
+            cards: cards,
+          ),
         ),
       );
     }

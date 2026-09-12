@@ -205,15 +205,16 @@ class FsrsReviewDeckCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.timer_outlined,
-                            size: 14,
+                            size: 13,
                             color: isDark
                                 ? colors.textSecondary
                                 : colors.textPrimary.withAlpha(180),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Text(
                             l10n.dashboardEstimatedMinutes(
                               deck.estimatedMinutes,
@@ -222,7 +223,7 @@ class FsrsReviewDeckCard extends StatelessWidget {
                               color: isDark
                                   ? colors.textSecondary
                                   : colors.textPrimary.withAlpha(180),
-                              fontSize: 12,
+                              fontSize: 11.5,
                             ),
                           ),
                         ],
@@ -239,29 +240,30 @@ class FsrsReviewDeckCard extends StatelessWidget {
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: colors.primary.withAlpha(80),
                               ),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.flash_on_rounded,
-                                  size: 12,
+                                  size: 11,
                                   color: colors.primary,
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 2),
                                 Text(
-                                  '15-Card Sprint',
+                                  'Sprint',
                                   style: typography.caption.bold.copyWith(
                                     color: colors.primary,
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                   ),
                                 ),
                               ],
@@ -269,18 +271,19 @@ class FsrsReviewDeckCard extends StatelessWidget {
                           ),
                         ),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             l10n.dashboardReviewDeck,
                             style: typography.caption.bold.copyWith(
                               color: colors.primary,
-                              fontSize: 12.5,
+                              fontSize: 11.5,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Icon(
                             Icons.arrow_forward_rounded,
-                            size: 14,
+                            size: 13,
                             color: colors.primary,
                           ),
                         ],

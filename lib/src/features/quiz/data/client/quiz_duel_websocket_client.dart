@@ -23,6 +23,7 @@ class QuizDuelWebSocketClient {
   final Map<String, QuizDuelMatch> _activeMatches = {};
   final Map<String, Timer> _roundTimers = {};
   final Map<String, Timer> _aiActionTimers = {};
+  final Map<String, Timer> _matchingTimers = {};
 
   /// Points configuration
   static const int baseCorrectPoints = 100;
@@ -121,7 +122,8 @@ class QuizDuelWebSocketClient {
     _getOrCreateController(duelId).add(match);
 
     // Schedule AI Peer match after brief matching delay (1.2s)
-    Timer(const Duration(milliseconds: 1200), () {
+    _matchingTimers[duelId]?.cancel();
+    _matchingTimers[duelId] = Timer(const Duration(milliseconds: 1200), () {
       if (_activeMatches[duelId]?.status == QuizDuelStatus.matching) {
         _simulateMatchFoundWithAi(duelId);
       }
@@ -376,6 +378,7 @@ class QuizDuelWebSocketClient {
 
   /// Leaves or terminates a duel match.
   Future<void> leaveDuel({required String duelId, required String userId}) async {
+    _matchingTimers[duelId]?.cancel();
     _roundTimers[duelId]?.cancel();
     _aiActionTimers[duelId]?.cancel();
     final current = _activeMatches[duelId];
@@ -401,12 +404,18 @@ class QuizDuelWebSocketClient {
   }
 
   void dispose() {
+    for (final timer in _matchingTimers.values) {
+      timer.cancel();
+    }
+    _matchingTimers.clear();
     for (final timer in _roundTimers.values) {
       timer.cancel();
     }
+    _roundTimers.clear();
     for (final timer in _aiActionTimers.values) {
       timer.cancel();
     }
+    _aiActionTimers.clear();
     for (final ctrl in _matchControllers.values) {
       unawaited(ctrl.close());
     }

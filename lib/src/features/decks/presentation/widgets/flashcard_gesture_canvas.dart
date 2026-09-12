@@ -42,7 +42,7 @@ class FlashcardGestureCanvas extends HookWidget {
 
     // Flip Animation Controller
     final flipController = useAnimationController(
-      duration: const Duration(milliseconds: 380),
+      duration: const Duration(milliseconds: 520),
     );
 
     // Synchronize flip state
@@ -206,7 +206,8 @@ class FlashcardGestureCanvas extends HookWidget {
       child: AnimatedBuilder(
         animation: flipController,
         builder: (context, child) {
-          final flipAngle = flipController.value * math.pi;
+          final smoothT = Curves.easeInOutCubic.transform(flipController.value);
+          final flipAngle = smoothT * math.pi;
           final isUnder = flipAngle > math.pi / 2;
 
           final transformMatrix = Matrix4.identity()

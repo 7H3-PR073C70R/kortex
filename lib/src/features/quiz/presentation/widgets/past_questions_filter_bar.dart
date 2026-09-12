@@ -18,7 +18,8 @@ class SubjectFilterBar extends StatelessWidget {
 
     return BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
       builder: (context, state) {
-        final subjects = ['All', ...state.availableSubjects];
+        final subjects = state.availableSubjects;
+        if (subjects.isEmpty) return const SizedBox.shrink();
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,

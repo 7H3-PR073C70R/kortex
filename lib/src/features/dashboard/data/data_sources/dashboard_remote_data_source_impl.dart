@@ -16,6 +16,7 @@ import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart'
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   DashboardRemoteDataSourceImpl(
@@ -144,6 +145,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         final list = jsonDecode(raw) as List<dynamic>;
         return list.map((e) {
           final m = e as Map<String, dynamic>;
+          final deckId = (m['id'] as String?) ?? 'deck';
+          final rawTitle = (m['title'] as String?) ?? 'Study Deck';
+          final rawSubject = (m['subject'] as String?) ?? 'General Studies';
+          final rawCategory = (m['category'] as String?) ?? 'General';
           final due = ((m['dueCards'] ?? m['due_cards']) as int?) ?? 0;
           final total = ((m['totalCards'] ?? m['total_cards']) as int?) ?? 10;
           final mastery =
@@ -152,15 +157,31 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           final lastStudied =
               ((m['lastStudied'] ?? m['last_studied']) as String?) ??
                   DateTime.now().toIso8601String();
+
+          final resolvedTitle = DeckTitleResolver.resolveTitle(
+            deckId: deckId,
+            currentTitle: rawTitle,
+            subject: rawSubject,
+            category: rawCategory,
+          );
+          final resolvedSubject = DeckTitleResolver.resolveSubject(
+            deckId: deckId,
+            currentSubject: rawSubject,
+          );
+          final resolvedCategory = DeckTitleResolver.resolveCategory(
+            deckId: deckId,
+            currentCategory: rawCategory,
+          );
+
           return StudyDeckModel(
-            id: (m['id'] as String?) ?? 'deck',
-            title: (m['title'] as String?) ?? 'Study Deck',
-            subject: (m['subject'] as String?) ?? 'General Studies',
+            id: deckId,
+            title: resolvedTitle,
+            subject: resolvedSubject,
             totalCards: total,
             dueCards: due,
             retentionRate: mastery,
             lastReviewedIso: lastStudied,
-            category: (m['category'] as String?) ?? 'General',
+            category: resolvedCategory,
             colorHex: m['colorHex'] as String?,
           );
         }).where((d) => d.dueCards > 0).toList();
@@ -602,8 +623,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
   List<HeatMapDayModel> _generateEmptyHeatMap() {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+    final startMonday = currentMonday.subtract(const Duration(days: 21));
+
     return List.generate(28, (i) {
-      final day = now.subtract(Duration(days: 27 - i));
+      final day = startMonday.add(Duration(days: i));
       return HeatMapDayModel(
         dateIso: day.toIso8601String(),
         intensityLevel: 0,

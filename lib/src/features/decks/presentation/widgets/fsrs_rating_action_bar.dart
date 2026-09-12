@@ -65,12 +65,12 @@ class FsrsRatingActionBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 4 Modern Tactile Rating Cards
+        // 4 Modern Tactile Rating Cards with generous breathing room
         Row(
           children: buttons.map((b) {
             return Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Semantics(
                   button: true,
                   label: '${b.label}, review in ${b.interval}',
@@ -86,23 +86,23 @@ class FsrsRatingActionBar extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            vertical: 10,
+                            vertical: 13,
                             horizontal: 6,
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             color: isDark
                                 ? b.color.withAlpha(35)
-                                : b.color.withAlpha(20),
+                                : b.color.withAlpha(22),
                             border: Border.all(
-                              color: b.color.withAlpha(isDark ? 110 : 80),
+                              color: b.color.withAlpha(isDark ? 110 : 85),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: b.color.withAlpha(isDark ? 40 : 15),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
@@ -112,8 +112,8 @@ class FsrsRatingActionBar extends StatelessWidget {
                               // Top Interval Pill
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
+                                  horizontal: 7,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
                                   color: b.color.withAlpha(isDark ? 60 : 35),
@@ -127,7 +127,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 7),
 
                               // Button Label
                               Text(

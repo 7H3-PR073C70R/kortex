@@ -303,23 +303,18 @@ class ForumThreadDetailPage extends HookWidget {
                             const SizedBox(height: 12),
                           ],
 
-                          // Title
+                          // Title (Cleaned up from redundant prompt duplication)
                           Text(
-                            post.title,
+                            _cleanTitle(post.title, post.syllabusTag, post.track),
                             style: typography.title2.bold.copyWith(
                               color: colors.textPrimary,
+                              fontSize: 18,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
 
-                          // Content
-                          Text(
-                            post.content,
-                            style: typography.body.regular.copyWith(
-                              color: colors.textSecondary,
-                              height: 1.6,
-                            ),
-                          ),
+                          // Structured Content Card
+                          _ForumThreadStructuredBody(post: post),
 
                           // LaTeX block
                           if (post.latexContent != null &&
@@ -432,7 +427,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       unawaited(HapticFeedback.mediumImpact());
                                       try {
                                         final hintContent =
-                                            '🤖 **Syllabot Socratic Hint**:\n'
+                                            '🤖 Syllabot Socratic Hint:\n'
                                             '• Identify the core theorem or formula governing "${post.title}".\n'
                                             '• What boundary conditions or exceptions apply under "${post.syllabusTag}"?\n'
                                             '• Try substituting the known values to see if the symmetry holds.';
@@ -451,16 +446,14 @@ class ForumThreadDetailPage extends HookWidget {
                                               );
                                             }
                                           },
-                                          (newReply) {
-                                            localReplies.value = [
-                                              ...localReplies.value,
-                                              newReply,
-                                            ];
-                                            if (context.mounted) {
-                                              context.showSnackBar(
-                                                message:
-                                                    'Syllabot generated a Socratic hint! 💡',
-                                              );
+                                          (reply) {
+                                            if (!localReplies.value.any(
+                                              (r) => r.id == reply.id,
+                                            )) {
+                                              localReplies.value = [
+                                                ...localReplies.value,
+                                                reply,
+                                              ];
                                             }
                                           },
                                         );
@@ -474,20 +467,14 @@ class ForumThreadDetailPage extends HookWidget {
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      colors.syllabotAccent,
-                                      colors.syllabotAccent.withAlpha(200),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: colors.syllabotAccent,
+                                  borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
                                       color: colors.syllabotAccent.withAlpha(
                                         isDark ? 80 : 40,
                                       ),
                                       blurRadius: 10,
-                                      offset: const Offset(0, 3),
                                     ),
                                   ],
                                 ),
@@ -600,63 +587,90 @@ class ForumThreadDetailPage extends HookWidget {
                                             size: 14,
                                             color: colors.recallEasy,
                                           ),
-                                          const SizedBox(width: 6),
+                                          const SizedBox(width: 4),
                                           Text(
-                                            'Verified Solution • 100 XP Bounty Awarded',
+                                            'Verified Solution',
                                             style: typography.caption.bold
                                                 .copyWith(
                                                   color: colors.recallEasy,
-                                                  fontSize: 11,
                                                 ),
                                           ),
                                         ],
                                       ),
                                     ),
 
+                                  // Reply Author Row
                                   Row(
                                     children: [
                                       CircleAvatar(
-                                        radius: 12,
-                                        backgroundColor: colors.primary
-                                            .withAlpha(30),
+                                        radius: 14,
+                                        backgroundColor:
+                                            reply.authorName.contains('Syllabot')
+                                                ? colors.syllabotAccent.withAlpha(
+                                                    50,
+                                                  )
+                                                : colors.primary.withAlpha(40),
                                         child: Text(
-                                          reply.authorName.isNotEmpty
-                                              ? reply.authorName[0]
-                                                    .toUpperCase()
-                                              : '?',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.primary,
-                                                fontSize: 10,
-                                              ),
+                                          reply.authorName.contains('Syllabot')
+                                              ? '🤖'
+                                              : (reply.authorName.isNotEmpty
+                                                  ? reply.authorName[0]
+                                                      .toUpperCase()
+                                                  : '?'),
+                                          style: TextStyle(
+                                            fontSize:
+                                                reply.authorName.contains(
+                                                      'Syllabot',
+                                                    )
+                                                    ? 12
+                                                    : 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: colors.primary,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(
-                                          reply.authorName,
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.textPrimary,
-                                              ),
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatTime(reply.createdAt, l10n),
-                                        style: typography.caption.regular
-                                            .copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 10,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              reply.authorName,
+                                              style: typography.footnote.bold
+                                                  .copyWith(
+                                                    color: colors.textPrimary,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
+                                            Text(
+                                              _formatTime(
+                                                reply.createdAt,
+                                                l10n,
+                                              ),
+                                              style: typography.caption.regular
+                                                  .copyWith(
+                                                    color: colors.textSecondary,
+                                                    fontSize: 10,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    reply.content,
-                                    style: typography.footnote.regular.copyWith(
+                                  const SizedBox(height: 10),
+
+                                  // Reply Body rendered without markdown asterisks
+                                  _CleanFormattedText(
+                                    text: reply.content,
+                                    baseStyle: typography.body.regular.copyWith(
                                       color: colors.textSecondary,
                                       height: 1.5,
+                                      fontSize: 13.5,
                                     ),
                                   ),
                                   if (reply.latexContent != null &&
@@ -873,5 +887,390 @@ class ForumThreadDetailPage extends HookWidget {
     if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
     if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
     return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+String _cleanTitle(String title, String syllabusTag, String track) {
+  var cleaned = title.replaceAll(RegExp(r'\*\*|__'), '').trim();
+  if (cleaned.toLowerCase().startsWith('question discussion:')) {
+    cleaned = cleaned.substring('question discussion:'.length).trim();
+  }
+  if (cleaned.length > 90) {
+    if (syllabusTag.isNotEmpty) {
+      return '$syllabusTag ($track) Question Breakdown';
+    }
+    return '${cleaned.substring(0, 87)}...';
+  }
+  return cleaned.isEmpty ? '$syllabusTag ($track) Discussion' : cleaned;
+}
+
+class _ForumThreadStructuredBody extends StatelessWidget {
+  const _ForumThreadStructuredBody({
+    required this.post,
+  });
+
+  final ForumPostEntity post;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final rawContent = post.content;
+    
+    // Parse options, prompt, explanation, and answer comparison if available
+    final lines = rawContent.split('\n');
+    final promptLines = <String>[];
+    final options = <String>[];
+    final explanationLines = <String>[];
+    String? correctAnswer;
+    String? userAnswer;
+
+    var readingOptions = false;
+    var readingExplanation = false;
+
+    final optionRegex = RegExp(r'^([A-Da-d0-9][\.\:\)]|\([A-Da-d0-9]\))\s*(.*)');
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) continue;
+
+      final lower = line.toLowerCase();
+      if (lower.startsWith('options:') || lower.startsWith('choices:')) {
+        readingOptions = true;
+        readingExplanation = false;
+        continue;
+      }
+      if (lower.startsWith('explanation:') || lower.startsWith('solution:') || lower.startsWith('why is this correct?')) {
+        readingExplanation = true;
+        readingOptions = false;
+        final colonIdx = line.indexOf(':');
+        if (colonIdx != -1 && colonIdx < line.length - 1) {
+          final contentAfter = line.substring(colonIdx + 1).trim();
+          if (contentAfter.isNotEmpty) {
+            explanationLines.add(contentAfter);
+          }
+        }
+        continue;
+      }
+      if (lower.startsWith('correct answer:') || lower.startsWith('correct:')) {
+        final colonIdx = line.indexOf(':');
+        correctAnswer = colonIdx != -1 ? line.substring(colonIdx + 1).trim() : line;
+        continue;
+      }
+      if (lower.startsWith('your answer:') || lower.startsWith('selected answer:') || lower.startsWith('user answer:')) {
+        final colonIdx = line.indexOf(':');
+        userAnswer = colonIdx != -1 ? line.substring(colonIdx + 1).trim() : line;
+        continue;
+      }
+
+      if (readingExplanation) {
+        explanationLines.add(line);
+      } else if (optionRegex.hasMatch(line)) {
+        options.add(line);
+        readingOptions = true;
+      } else if (readingOptions) {
+        // If it was already reading options and starts with a letter, add to options
+        if (RegExp('^[A-Da-d]').hasMatch(line)) {
+          options.add(line);
+        } else {
+          readingOptions = false;
+          promptLines.add(line);
+        }
+      } else {
+        promptLines.add(line);
+      }
+    }
+
+    final promptText = promptLines.join('\n').trim();
+    final explanationText = explanationLines.join('\n').trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Prompt Card
+        if (promptText.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? colors.surfaceSecondary
+                  : colors.surfaceSecondary.withAlpha(120),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.primary.withAlpha(25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'QUESTION PROMPT',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _CleanFormattedText(
+                  text: promptText,
+                  baseStyle: typography.body.regular.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 14.5,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Options List (if structured)
+        if (options.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Options',
+            style: typography.caption.bold.copyWith(
+              color: colors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...options.map((opt) {
+            var letter = '';
+            var optText = opt;
+            final match = optionRegex.firstMatch(opt);
+            if (match != null) {
+              letter = match.group(1)?.replaceAll(RegExp(r'[\(\)\.\:\s]'), '') ?? '';
+              optText = match.group(2) ?? opt;
+            }
+
+            final isCorrect = correctAnswer != null &&
+                (correctAnswer.toLowerCase().contains(optText.toLowerCase()) ||
+                    (letter.isNotEmpty && correctAnswer.toUpperCase().contains(letter.toUpperCase())));
+
+            final isUserSelected = userAnswer != null &&
+                (userAnswer.toLowerCase().contains(optText.toLowerCase()) ||
+                    (letter.isNotEmpty && userAnswer.toUpperCase().contains(letter.toUpperCase())));
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isCorrect
+                    ? colors.success.withAlpha(20)
+                    : isUserSelected
+                        ? colors.error.withAlpha(20)
+                        : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isCorrect
+                      ? colors.success.withAlpha(100)
+                      : isUserSelected
+                          ? colors.error.withAlpha(100)
+                          : colors.primary.withAlpha(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (letter.isNotEmpty) ...[
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCorrect
+                            ? colors.success
+                            : isUserSelected
+                                ? colors.error
+                                : colors.primary.withAlpha(30),
+                      ),
+                      child: Text(
+                        letter.toUpperCase(),
+                        style: typography.caption.bold.copyWith(
+                          color: (isCorrect || isUserSelected)
+                              ? colors.white
+                              : colors.primary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: _CleanFormattedText(
+                      text: optText,
+                      baseStyle: typography.footnote.regular.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (isCorrect)
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: colors.success,
+                    ),
+                ],
+              ),
+            );
+          }),
+        ],
+
+        // User & Correct Answer Summary Pill
+        if (correctAnswer != null || userAnswer != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colors.primary.withAlpha(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                if (correctAnswer != null) ...[
+                  Icon(Icons.check_circle_outline, size: 16, color: colors.success),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _CleanFormattedText(
+                      text: 'Correct: $correctAnswer',
+                      baseStyle: typography.caption.bold.copyWith(
+                        color: colors.success,
+                      ),
+                    ),
+                  ),
+                ],
+                if (userAnswer != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _CleanFormattedText(
+                      text: 'Selected: $userAnswer',
+                      baseStyle: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+
+        // Explanation Card
+        if (explanationText.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colors.primary.withAlpha(15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.primary.withAlpha(50),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: colors.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Concept Explanation',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _CleanFormattedText(
+                  text: explanationText,
+                  baseStyle: typography.footnote.regular.copyWith(
+                    color: colors.textPrimary,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CleanFormattedText extends StatelessWidget {
+  const _CleanFormattedText({
+    required this.text,
+    required this.baseStyle,
+  });
+
+  final String text;
+  final TextStyle baseStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    // Parse **bold** markdown tokens into rich text spans without showing raw asterisks
+    final spans = <InlineSpan>[];
+    final pattern = RegExp(r'\*\*(.*?)\*\*|__(.*?)__');
+    var lastIndex = 0;
+
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > lastIndex) {
+        spans.add(
+          TextSpan(
+            text: text.substring(lastIndex, match.start),
+            style: baseStyle,
+          ),
+        );
+      }
+      final boldContent = match.group(1) ?? match.group(2) ?? '';
+      spans.add(
+        TextSpan(
+          text: boldContent,
+          style: baseStyle.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(lastIndex),
+          style: baseStyle,
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+    );
   }
 }

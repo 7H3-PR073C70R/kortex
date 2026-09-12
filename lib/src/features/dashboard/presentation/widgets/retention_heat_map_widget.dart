@@ -27,6 +27,31 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
   HeatMapDayEntity? _selectedDay;
 
   @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final todayMatch = widget.analytics.heatMapData.where((d) =>
+      d.date.year == now.year && d.date.month == now.month && d.date.day == now.day,
+    ).firstOrNull;
+    _selectedDay = todayMatch ?? widget.analytics.heatMapData.lastOrNull;
+  }
+
+  @override
+  void didUpdateWidget(RetentionHeatMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedDay != null) {
+      final match = widget.analytics.heatMapData.where((d) =>
+        d.date.year == _selectedDay!.date.year &&
+        d.date.month == _selectedDay!.date.month &&
+        d.date.day == _selectedDay!.date.day,
+      ).firstOrNull;
+      if (match != null) {
+        _selectedDay = match;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;

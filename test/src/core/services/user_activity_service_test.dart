@@ -68,7 +68,9 @@ void main() {
       expect(activityService.getAcademicRank(), equals('Neural Scholar II'));
 
       final heatMap = activityService.getHeatMapData();
-      final today = heatMap.last;
+      final now = DateTime.now();
+      final todayKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final today = heatMap.firstWhere((h) => h.dateIso.startsWith(todayKey));
       expect(today.cardsReviewed, equals(20));
       expect(today.minutesStudied, equals(5));
       expect(today.intensityLevel, greaterThan(0));

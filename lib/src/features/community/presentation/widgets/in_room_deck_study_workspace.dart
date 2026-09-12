@@ -17,6 +17,7 @@ import 'package:kortex/src/features/decks/domain/repositories/decks_repository.d
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// In-Room Active Recall Study Deck Workspace.
@@ -43,6 +44,7 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
   int _currentIndex = 0;
   bool _isFlipped = false;
   bool _isLoadingCards = false;
+  bool _isRatingLocked = false;
   String? _loadedDeckId;
 
   // 3D Flip animation
@@ -62,10 +64,10 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     super.initState();
     _flipController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 520),
     );
     _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutCubic),
     );
 
     if (widget.roomState.activeDeckId != null) {
@@ -154,7 +156,13 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
   }
 
   Future<void> _rateCard(int grade) async {
-    if (_cards.isEmpty || _currentIndex >= _cards.length) return;
+    if (_cards.isEmpty || _currentIndex >= _cards.length || _isRatingLocked) {
+      return;
+    }
+
+    setState(() {
+      _isRatingLocked = true;
+    });
 
     unawaited(HapticFeedback.mediumImpact());
     final currentCard = _cards[_currentIndex];
@@ -255,18 +263,43 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     if (_isFlipped) {
       await _flipController.reverse();
     }
+    final isComplete = _currentIndex >= _cards.length - 1;
     setState(() {
       _isFlipped = false;
       _showAiHintPrompt = false;
       _activeAiHint = null;
-      if (_currentIndex < _cards.length - 1) {
+      if (!isComplete) {
         _currentIndex++;
       } else {
         _currentIndex = _cards.length; // Complete state
       }
     });
 
+    if (isComplete && mounted) {
+      unawaited(
+        GratificationCelebrationOverlay.show(
+          context,
+          title: 'Deck Round Mastered! 🎉',
+          subtitle:
+              'You reviewed all ${_cards.length} cards in "$deckTitle" alongside your pod.',
+          primaryStatLabel: 'Cards Reviewed',
+          primaryStatValue: '${_cards.length}',
+          secondaryStatLabel: 'Sprint Score',
+          secondaryStatValue: '100%',
+          xpEarned: _cards.length * 10,
+        ),
+      );
+    }
+
     _resetInactivityTimer();
+
+    // 7. Release rating lock after transition delay to prevent spamming
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (mounted) {
+      setState(() {
+        _isRatingLocked = false;
+      });
+    }
   }
 
   void _generateSyllabotHint() {
@@ -1087,14 +1120,21 @@ class _FsrsGradeButton extends StatelessWidget {
     return ShrinkableButton(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withAlpha(isDark ? 40 : 25),
-          borderRadius: BorderRadius.circular(12),
+          color: color.withAlpha(isDark ? 42 : 25),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: color.withAlpha(isDark ? 90 : 60),
+            color: color.withAlpha(isDark ? 100 : 75),
             width: 1.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(isDark ? 35 : 15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1103,15 +1143,15 @@ class _FsrsGradeButton extends StatelessWidget {
               label,
               style: typography.caption.bold.copyWith(
                 color: color,
-                fontSize: 13,
+                fontSize: 13.5,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               sublabel,
               style: typography.caption.regular.copyWith(
-                fontSize: 10,
-                color: color.withAlpha(200),
+                fontSize: 10.5,
+                color: color.withAlpha(210),
               ),
             ),
           ],

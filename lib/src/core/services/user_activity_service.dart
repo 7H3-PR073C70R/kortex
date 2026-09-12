@@ -304,8 +304,13 @@ class UserActivityServiceImpl implements UserActivityService {
       }
     }
 
+    final today = DateTime(now.year, now.month, now.day);
+    // Align to Monday of current week, then back 3 weeks (21 days) to form 4 full 7-day weeks (28 days)
+    final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+    final startMonday = currentMonday.subtract(const Duration(days: 21));
+
     return List.generate(28, (i) {
-      final day = now.subtract(Duration(days: 27 - i));
+      final day = startMonday.add(Duration(days: i));
       final key = _toDateKey(day);
       final entry = map[key];
       final cards = entry?.cards ?? 0;
@@ -313,7 +318,10 @@ class UserActivityServiceImpl implements UserActivityService {
       final minutes = seconds > 0 ? math.max(1, (seconds / 60).round()) : 0;
 
       var intensityLevel = 0;
-      if (cards >= 30 || minutes >= 25) {
+      if (day.isAfter(today)) {
+        // Future day in the current week
+        intensityLevel = 0;
+      } else if (cards >= 30 || minutes >= 25) {
         intensityLevel = 4;
       } else if (cards >= 20 || minutes >= 15) {
         intensityLevel = 3;

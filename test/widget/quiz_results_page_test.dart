@@ -41,7 +41,10 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           createTestApp(
-            const QuizResultsPage(result: tResult),
+            const QuizResultsPage(
+              result: tResult,
+              showCelebrationDialog: false,
+            ),
           ),
         );
 

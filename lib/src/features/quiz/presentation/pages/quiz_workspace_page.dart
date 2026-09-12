@@ -923,19 +923,17 @@ class _QuizWorkspaceView extends HookWidget {
                           final topicTag = current.subTopic.trim().isNotEmpty
                               ? current.subTopic.trim()
                               : (effectiveCourseCode ?? 'Quiz Solution');
-                          final firstLine = current.prompt.split('\n').first.trim();
-                          final shortPrompt = firstLine.length > 55 ? '${firstLine.substring(0, 52)}...' : firstLine;
 
-                          final contentBuf = StringBuffer(current.prompt);
+                          final contentBuf = StringBuffer(current.prompt.replaceAll('**', ''));
                           if (current.options.isNotEmpty) {
-                            contentBuf.writeln('\n\n**Options:**');
+                            contentBuf.writeln('\n\nOptions:');
                             for (final opt in current.options) {
-                              contentBuf.writeln('• $opt');
+                              contentBuf.writeln('• ${opt.replaceAll('**', '')}');
                             }
                           }
-                          contentBuf.writeln('\n**Correct Answer:** ${current.correctAnswer}');
+                          contentBuf.writeln('\nCorrect Answer: ${current.correctAnswer}');
                           if (current.explanation.isNotEmpty) {
-                            contentBuf.writeln('\n**Explanation:**\n${current.explanation}');
+                            contentBuf.writeln('\nExplanation:\n${current.explanation.replaceAll('**', '')}');
                           }
                           contentBuf.writeln('\n💡 Seeking additional insights or alternative solution steps from the cohort.');
 
@@ -943,7 +941,7 @@ class _QuizWorkspaceView extends HookWidget {
                             CreatePostBottomSheet.show(
                               context,
                               lockedTrack: effectiveCourseCode ?? deckTitle,
-                              initialTitle: '[$topicTag] Question: $shortPrompt',
+                              initialTitle: '[$topicTag] Question Discussion',
                               initialContent: contentBuf.toString().trim(),
                               initialLatex: current.latexFormula,
                               initialSyllabusTag: topicTag,

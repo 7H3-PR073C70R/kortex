@@ -525,10 +525,10 @@ void main() {
         currentUserName: 'Adeola',
       );
 
-      expect(cubit.state.activeViewMode, equals(RoomViewMode.stage));
-
-      cubit.switchViewMode(RoomViewMode.deckStudy);
       expect(cubit.state.activeViewMode, equals(RoomViewMode.deckStudy));
+
+      cubit.switchViewMode(RoomViewMode.stage);
+      expect(cubit.state.activeViewMode, equals(RoomViewMode.stage));
 
       cubit.switchViewMode(RoomViewMode.whiteboard);
       expect(cubit.state.activeViewMode, equals(RoomViewMode.whiteboard));

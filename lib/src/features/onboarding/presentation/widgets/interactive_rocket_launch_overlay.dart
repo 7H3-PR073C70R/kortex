@@ -212,12 +212,17 @@ class _InteractiveRocketLaunchOverlayState
     // Smooth spring interpolation toward target
     final dx = _targetRocketX - _rocketX;
     final dy = _targetRocketY - _rocketY;
-    _rocketX += dx * 0.22;
-    _rocketY += dy * 0.22;
+    if (!_isWarping) {
+      _rocketX += dx * 0.22;
+      _rocketY += dy * 0.22;
 
-    // Target tilt based on horizontal velocity
-    final targetTilt = (dx / 40.0).clamp(-0.45, 0.45);
-    _tiltAngle += (targetTilt - _tiltAngle) * 0.25;
+      // Target tilt based on horizontal velocity
+      final targetTilt = (dx / 40.0).clamp(-0.45, 0.45);
+      _tiltAngle += (targetTilt - _tiltAngle) * 0.25;
+    } else {
+      _rocketY -= 28.0;
+      _tiltAngle *= 0.85;
+    }
 
     // Fast speed progression for snappy launch
     if (!_isWarping) {
@@ -515,154 +520,134 @@ class _InteractiveRocketLaunchOverlayState
 
             // 5. Futuristic HUD & Telemetry Bar
             SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Mach Speed & Orbit Telemetry
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary.withAlpha(200),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(90),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isWarping ? 0.0 : 1.0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Mach Speed & Orbit Telemetry
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceSecondary.withAlpha(200),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(90),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.speed_rounded,
+                                  size: 18,
+                                  color: colors.syllabotAccent,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isWarping
+                                      ? l10n.warpDriveEngaged
+                                      : l10n.launchMachSpeed(
+                                          _machSpeed.toStringAsFixed(1),
+                                        ),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.speed_rounded,
-                                size: 18,
-                                color: colors.syllabotAccent,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isWarping
-                                    ? l10n.warpDriveEngaged
-                                    : l10n.launchMachSpeed(
-                                        _machSpeed.toStringAsFixed(1),
-                                      ),
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        // Score / Synapse Mastery Counter
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary.withAlpha(200),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: colors.warning.withAlpha(90),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.bolt_rounded,
-                                size: 18,
-                                color: colors.warning,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$_score XP',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.warning,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Skip Button
-                        ShrinkableButton(
-                          onTap: _onSkip,
-                          child: Container(
+                          // Score / Synapse Mastery Counter
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: colors.surfaceSecondary.withAlpha(150),
-                              borderRadius: BorderRadius.circular(14),
+                              color: colors.surfaceSecondary.withAlpha(200),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colors.warning.withAlpha(90),
+                              ),
                             ),
-                            child: Text(
-                              'Skip',
-                              style: typography.caption.medium.copyWith(
-                                color: colors.textSecondary,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.bolt_rounded,
+                                  size: 18,
+                                  color: colors.warning,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$_score XP',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.warning,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Skip Button
+                          ShrinkableButton(
+                            onTap: _onSkip,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary.withAlpha(150),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                'Skip',
+                                style: typography.caption.medium.copyWith(
+                                  color: colors.textSecondary,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Interactive Steering & Tap Hint
-                    if (!_isWarping)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(35),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(80),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.launchSteerHint,
-                          style: typography.caption.medium.copyWith(
-                            color: colors.syllabotAccent,
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
+
+                      const SizedBox(height: 12),
+
+                      // Interactive Steering & Tap Hint
+                      if (!_isWarping)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(35),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(80),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.launchSteerHint,
+                            style: typography.caption.medium.copyWith(
+                              color: colors.syllabotAccent,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-
-            // 6. Hyperspace Warp Whiteout / Iris Zoom
-            if (_isWarping)
-              AnimatedBuilder(
-                animation: _warpController,
-                builder: (context, child) {
-                  return IgnorePointer(
-                    child: Container(
-                      color: colors.white.withAlpha(
-                        (_warpController.value * 255).clamp(0, 255).toInt(),
-                      ),
-                      alignment: Alignment.center,
-                      child: _warpController.value > 0.25
-                          ? Text(
-                              l10n.launchEnteringWorkspace,
-                              style: typography.title2.bold.copyWith(
-                                color: colors.primary,
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  );
-                },
-              ),
           ],
         ),
       ),

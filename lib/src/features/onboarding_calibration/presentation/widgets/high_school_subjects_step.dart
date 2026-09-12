@@ -8,6 +8,7 @@ import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_ent
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/curriculum_icon_resolver.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Question B3: Universal subject selection powered directly by Kortex's
@@ -254,66 +255,35 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
           const SizedBox(height: 16),
         ],
 
-        // ── 3. Search Bar & Selection Status Bar ─────────────────────────────
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: isDark
-                ? colors.surfaceSecondary.withAlpha(120)
-                : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(80)
-                  : colors.surfaceBorder,
-            ),
+        // ── 3. Search Bar ───────────────────────────────────────────────────
+        AppTextField(
+          controller: _searchController,
+          hintText: isSat
+              ? 'Search SAT modules...'
+              : 'Search 35+ subjects (e.g. Physics, Economics)...',
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: colors.textSecondary,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(
-                Icons.search_rounded,
-                size: 18,
-                color: colors.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  style: typography.subhead.regular.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: isSat
-                        ? 'Search SAT modules...'
-                        : 'Search 35+ subjects (e.g. Physics, Economics)...',
-                    hintStyle: typography.subhead.regular.copyWith(
-                      color: colors.textSecondary.withAlpha(150),
-                      fontSize: 13,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              if (_searchQuery.isNotEmpty)
-                GestureDetector(
+          suffixIcon: _searchQuery.isNotEmpty
+              ? GestureDetector(
                   onTap: () {
                     _searchController.clear();
                     FocusScope.of(context).unfocus();
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.cancel_rounded,
-                      size: 16,
-                      color: colors.textSecondary,
-                    ),
+                  child: Icon(
+                    Icons.cancel_rounded,
+                    size: 18,
+                    color: colors.textSecondary,
                   ),
-                ),
-            ],
+                )
+              : null,
+          isDense: true,
+          borderRadius: 14,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
           ),
         ),
         const SizedBox(height: 10),

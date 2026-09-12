@@ -297,67 +297,49 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(140)
-                                  : colors.surfaceSecondary,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: colors.surfaceBorder.withAlpha(80),
-                              ),
+                          child: AppTextField(
+                            controller: _searchController,
+                            hintText: 'Search course code or title...',
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: colors.textSecondary,
+                              size: 20,
                             ),
-                            child: TextField(
-                              controller: _searchController,
-                              style: typography.callout.regular.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Search course code or title...',
-                                hintStyle: typography.callout.regular.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  color: colors.textSecondary,
-                                  size: 20,
-                                ),
-                                suffixIcon: _searchController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(
-                                          Icons.clear_rounded,
-                                          color: colors.textSecondary,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          _searchDebounceTimer?.cancel();
-                                          _searchController.clear();
-                                          context
-                                              .read<CurateCoursesCubit>()
-                                              .setSearchQuery('');
-                                        },
-                                      )
-                                    : null,
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                              onChanged: (val) {
-                                _searchDebounceTimer?.cancel();
-                                _searchDebounceTimer = Timer(
-                                  const Duration(milliseconds: 300),
-                                  () {
-                                    if (mounted) {
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear_rounded,
+                                      color: colors.textSecondary,
+                                      size: 18,
+                                    ),
+                                    onPressed: () {
+                                      _searchDebounceTimer?.cancel();
+                                      _searchController.clear();
                                       context
                                           .read<CurateCoursesCubit>()
-                                          .setSearchQuery(val);
-                                    }
-                                  },
-                                );
-                              },
+                                          .setSearchQuery('');
+                                    },
+                                  )
+                                : null,
+                            isDense: true,
+                            borderRadius: 14,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
                             ),
+                            onChanged: (val) {
+                              _searchDebounceTimer?.cancel();
+                              _searchDebounceTimer = Timer(
+                                const Duration(milliseconds: 300),
+                                () {
+                                  if (mounted) {
+                                    context
+                                        .read<CurateCoursesCubit>()
+                                        .setSearchQuery(val);
+                                  }
+                                },
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),

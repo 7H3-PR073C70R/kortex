@@ -5,6 +5,7 @@ import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 
 class DecksLocalDataSourceImpl implements DecksLocalDataSource {
   DecksLocalDataSourceImpl(this._appDatabase);
@@ -141,7 +142,7 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
     DeckEntry entry, [
     List<FlashcardModel> cards = const [],
   ]) {
-    return DeckModel(
+    final rawDeck = DeckModel(
       id: entry.id,
       title: entry.title,
       subject: entry.subject,
@@ -157,6 +158,7 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
       courseId: entry.courseId,
       courseCode: entry.courseCode,
     );
+    return DeckTitleResolver.enrichDeckModel(rawDeck);
   }
 
   FlashcardModel _cardFromEntry(FlashcardEntry entry) {

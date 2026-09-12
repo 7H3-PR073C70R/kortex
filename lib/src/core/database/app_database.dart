@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:kortex/src/core/database/tables.dart';
+import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 
 part 'app_database.g.dart';
 
@@ -315,16 +316,40 @@ class AppDatabase extends _$AppDatabase {
               .getSingleOrNull();
       if (existing == null) {
         final now = DateTime.now();
+        final resolvedTitle = DeckTitleResolver.resolveTitle(deckId: deckId);
+        final resolvedSubject = DeckTitleResolver.resolveSubject(deckId: deckId);
+        final resolvedCategory = DeckTitleResolver.resolveCategory(deckId: deckId);
         await into(decks).insert(
           DecksCompanion.insert(
             id: deckId,
-            title: deckId.startsWith('canonical_')
-                ? 'Canonical Deck'
-                : 'Study Deck',
+            title: resolvedTitle,
+            subject: Value(resolvedSubject),
+            category: Value(resolvedCategory),
             createdAt: now,
             updatedAt: now,
           ),
           mode: InsertMode.insertOrIgnore,
+        );
+      } else if (DeckTitleResolver.isGenericTitle(existing.title)) {
+        final resolvedTitle = DeckTitleResolver.resolveTitle(
+          deckId: deckId,
+          currentTitle: existing.title,
+          subject: existing.subject,
+        );
+        final resolvedSubject = DeckTitleResolver.resolveSubject(
+          deckId: deckId,
+          currentSubject: existing.subject,
+        );
+        final resolvedCategory = DeckTitleResolver.resolveCategory(
+          deckId: deckId,
+          currentCategory: existing.category,
+        );
+        await (update(decks)..where((d) => d.id.equals(deckId))).write(
+          DecksCompanion(
+            title: Value(resolvedTitle),
+            subject: Value(resolvedSubject),
+            category: Value(resolvedCategory),
+          ),
         );
       }
     }
@@ -350,16 +375,40 @@ class AppDatabase extends _$AppDatabase {
           await (select(decks)..where((d) => d.id.equals(deckId)))
               .getSingleOrNull();
       if (existing == null) {
+        final resolvedTitle = DeckTitleResolver.resolveTitle(deckId: deckId);
+        final resolvedSubject = DeckTitleResolver.resolveSubject(deckId: deckId);
+        final resolvedCategory = DeckTitleResolver.resolveCategory(deckId: deckId);
         await into(decks).insert(
           DecksCompanion.insert(
             id: deckId,
-            title: deckId.startsWith('canonical_')
-                ? 'Canonical Deck'
-                : 'Study Deck',
+            title: resolvedTitle,
+            subject: Value(resolvedSubject),
+            category: Value(resolvedCategory),
             createdAt: now,
             updatedAt: now,
           ),
           mode: InsertMode.insertOrIgnore,
+        );
+      } else if (DeckTitleResolver.isGenericTitle(existing.title)) {
+        final resolvedTitle = DeckTitleResolver.resolveTitle(
+          deckId: deckId,
+          currentTitle: existing.title,
+          subject: existing.subject,
+        );
+        final resolvedSubject = DeckTitleResolver.resolveSubject(
+          deckId: deckId,
+          currentSubject: existing.subject,
+        );
+        final resolvedCategory = DeckTitleResolver.resolveCategory(
+          deckId: deckId,
+          currentCategory: existing.category,
+        );
+        await (update(decks)..where((d) => d.id.equals(deckId))).write(
+          DecksCompanion(
+            title: Value(resolvedTitle),
+            subject: Value(resolvedSubject),
+            category: Value(resolvedCategory),
+          ),
         );
       }
     }
@@ -377,12 +426,10 @@ class AppDatabase extends _$AppDatabase {
     DecksCompanion deck,
     List<FlashcardsCompanion> cardsList,
   ) async {
-    await transaction(() async {
-      await into(decks).insertOnConflictUpdate(deck);
+    await batch((b) {
+      b.insertAllOnConflictUpdate(decks, [deck]);
       if (cardsList.isNotEmpty) {
-        await batch((b) {
-          b.insertAllOnConflictUpdate(flashcards, cardsList);
-        });
+        b.insertAllOnConflictUpdate(flashcards, cardsList);
       }
     });
 

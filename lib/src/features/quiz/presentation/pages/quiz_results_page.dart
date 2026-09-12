@@ -21,8 +21,10 @@ import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
+import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
+
 @RoutePage()
-class QuizResultsPage extends StatelessWidget {
+class QuizResultsPage extends StatefulWidget {
   const QuizResultsPage({
     required this.result,
     this.questions = const [],
@@ -33,6 +35,7 @@ class QuizResultsPage extends StatelessWidget {
     this.bankedTier = 0,
     this.speedBonusXp = 0,
     this.isWalkedAway = false,
+    this.showCelebrationDialog = true,
     super.key,
   });
 
@@ -45,6 +48,57 @@ class QuizResultsPage extends StatelessWidget {
   final int bankedTier;
   final int speedBonusXp;
   final bool isWalkedAway;
+  final bool showCelebrationDialog;
+
+  @override
+  State<QuizResultsPage> createState() => _QuizResultsPageState();
+}
+
+class _QuizResultsPageState extends State<QuizResultsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final isMillionaire =
+          widget.assessmentMode == AssessmentMode.millionaireMode;
+      final score = widget.result.scorePercent;
+      final isPassed = isMillionaire || score >= 65;
+
+      if (widget.showCelebrationDialog && isPassed) {
+        final title = isMillionaire
+            ? (widget.currentTier >= 12
+                ? 'Millionaire Champion! 🏆'
+                : 'Tier ${widget.currentTier} Conquered! ⚡')
+            : (score >= 90
+                ? 'Mastery Aced! 🌟'
+                : 'Assessment Complete! 🎯');
+
+        final subtitle = isMillionaire
+            ? 'Earned ${widget.currentTier * 100 + widget.speedBonusXp} XP in Millionaire Mode'
+            : 'Scored $score% (${widget.result.correctAnswers}/${widget.result.totalQuestions} correct)';
+
+        unawaited(
+          GratificationCelebrationOverlay.show(
+            context,
+            title: title,
+            subtitle: subtitle,
+            primaryStatLabel: 'Score',
+            primaryStatValue: '$score%',
+            secondaryStatLabel: 'Correct',
+            secondaryStatValue:
+                '${widget.result.correctAnswers}/${widget.result.totalQuestions}',
+            xpEarned: isMillionaire
+                ? (widget.currentTier * 100) + widget.speedBonusXp
+                : (widget.result.correctAnswers * 15),
+            emoji: isMillionaire
+                ? '👑'
+                : (score >= 90 ? '🌟' : '🎯'),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +107,15 @@ class QuizResultsPage extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isMillionaire = assessmentMode == AssessmentMode.millionaireMode;
-    final score = result.scorePercent;
+    final isMillionaire =
+        widget.assessmentMode == AssessmentMode.millionaireMode;
+    final score = widget.result.scorePercent;
     final isPassed = isMillionaire || score >= 70;
     final gradeColor = isPassed ? colors.success : colors.warning;
+    final result = widget.result;
+    final isWalkedAway = widget.isWalkedAway;
+    final currentTier = widget.currentTier;
+    final speedBonusXp = widget.speedBonusXp;
 
     return Scaffold(
       backgroundColor: colors.transparent,
@@ -473,22 +532,23 @@ class QuizResultsPage extends StatelessWidget {
 
   void _handleAskPodForHelp(BuildContext context) {
     unawaited(HapticFeedback.lightImpact());
-    final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
-    final questionToAsk = incorrectQuestions.isNotEmpty ? incorrectQuestions.first : questions.firstOrNull;
+    final incorrectQuestions =
+        widget.questions.where((q) => !q.isCorrect).toList();
+    final questionToAsk = incorrectQuestions.isNotEmpty
+        ? incorrectQuestions.first
+        : widget.questions.firstOrNull;
 
     final topicTag = questionToAsk?.subTopic.trim().isNotEmpty == true
         ? questionToAsk!.subTopic.trim()
-        : (courseCode ?? 'Quiz Review');
-    final firstLine = questionToAsk?.prompt.split('\n').first.trim() ?? 'Quiz Question';
-    final shortPrompt = firstLine.length > 55 ? '${firstLine.substring(0, 52)}...' : firstLine;
+        : (widget.courseCode ?? 'Quiz Review');
 
     final contentBuf = StringBuffer();
     if (questionToAsk != null) {
-      contentBuf.writeln(questionToAsk.prompt);
+      contentBuf.writeln(questionToAsk.prompt.replaceAll('**', ''));
       if (questionToAsk.options.isNotEmpty) {
-        contentBuf.writeln('\n**Options:**');
+        contentBuf.writeln('\nOptions:');
         for (final opt in questionToAsk.options) {
-          contentBuf.writeln('• $opt');
+          contentBuf.writeln('• ${opt.replaceAll('**', '')}');
         }
       }
       contentBuf
@@ -497,7 +557,7 @@ class QuizResultsPage extends StatelessWidget {
         )
         ..writeln('Correct Answer: ${questionToAsk.correctAnswer}');
       if (questionToAsk.explanation.isNotEmpty) {
-        contentBuf.writeln('\n**Explanation:**\n${questionToAsk.explanation}');
+        contentBuf.writeln('\nExplanation:\n${questionToAsk.explanation.replaceAll('**', '')}');
       }
       contentBuf.writeln(
         '\n💡 I missed this question during practice. Can someone in the cohort break down how to approach it?',
@@ -507,8 +567,8 @@ class QuizResultsPage extends StatelessWidget {
     unawaited(
       CreatePostBottomSheet.show(
         context,
-        lockedTrack: courseCode,
-        initialTitle: '[$topicTag] Need help: $shortPrompt',
+        lockedTrack: widget.courseCode,
+        initialTitle: '[$topicTag] Question Discussion',
         initialContent: contentBuf.toString().trim(),
         initialLatex: questionToAsk?.latexFormula,
         initialSyllabusTag: topicTag,
@@ -538,7 +598,8 @@ class QuizResultsPage extends StatelessWidget {
             );
           }
           context.showSnackBar(
-            message: 'Question bounty posted to class cohort! 🎯 (+100 XP Bounty)',
+            message:
+                'Question bounty posted to class cohort! 🎯 (+100 XP Bounty)',
             type: SnackBarType.success,
           );
         },
@@ -558,10 +619,13 @@ class QuizResultsPage extends StatelessWidget {
     }
 
     // Prioritize questions that were answered incorrectly; fallback to all questions
-    final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
-    final questionsToUse = incorrectQuestions.isNotEmpty ? incorrectQuestions : questions;
+    final incorrectQuestions =
+        widget.questions.where((q) => !q.isCorrect).toList();
+    final questionsToUse = incorrectQuestions.isNotEmpty
+        ? incorrectQuestions
+        : widget.questions;
 
-    if (questionsToUse.isEmpty && result.weaknesses.isEmpty) {
+    if (questionsToUse.isEmpty && widget.result.weaknesses.isEmpty) {
       context.showSnackBar(
         message: 'No questions available to generate flashcards.',
       );
@@ -569,8 +633,8 @@ class QuizResultsPage extends StatelessWidget {
     }
 
     // Resolve course affiliation if not explicitly supplied
-    var resolvedCourseId = courseId?.trim();
-    var resolvedCourseCode = courseCode?.trim();
+    var resolvedCourseId = widget.courseId?.trim();
+    var resolvedCourseCode = widget.courseCode?.trim();
 
     if ((resolvedCourseId == null || resolvedCourseId.isEmpty) &&
         (resolvedCourseCode == null || resolvedCourseCode.isEmpty)) {
@@ -579,7 +643,9 @@ class QuizResultsPage extends StatelessWidget {
         for (final d in allDecks) {
           if (d.courseCode != null &&
               d.courseCode!.isNotEmpty &&
-              result.quizTitle.toLowerCase().contains(d.courseCode!.toLowerCase())) {
+              widget.result.quizTitle
+                  .toLowerCase()
+                  .contains(d.courseCode!.toLowerCase())) {
             resolvedCourseId = d.courseId;
             resolvedCourseCode = d.courseCode;
             break;
@@ -593,8 +659,8 @@ class QuizResultsPage extends StatelessWidget {
         : ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>());
 
     final conversionResult = await convertUseCase(
-      result: result,
-      questions: questions,
+      result: widget.result,
+      questions: widget.questions,
       courseId: resolvedCourseId,
       courseCode: resolvedCourseCode,
     );

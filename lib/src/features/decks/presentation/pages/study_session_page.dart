@@ -23,7 +23,6 @@ import 'package:kortex/src/features/decks/presentation/widgets/study_progress_to
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
 class StudySessionPage extends HookWidget {
@@ -149,29 +148,210 @@ class _StudySessionView extends HookWidget {
             }
 
             if (state.status == StudySessionStatus.error) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SyllabotAvatar(size: 48, isError: true),
-                      const SizedBox(height: 16),
-                      Text(
-                        state.errorMessage ?? l10n.dashboardUnableToLoad,
-                        textAlign: TextAlign.center,
-                        style: typography.callout.medium.copyWith(
-                          color: colors.textPrimary,
+              final isNoCards = state.errorMessage?.toLowerCase().contains('no cards') == true ||
+                  state.errorMessage?.toLowerCase().contains('no flashcards') == true;
+              return Column(
+                children: [
+                  // Top Navigation Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Semantics(
+                          button: true,
+                          label: 'Back',
+                          child: IconButton(
+                            icon: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary.withAlpha(isDark ? 180 : 120),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.arrow_back_rounded,
+                                color: colors.textPrimary,
+                                size: 20,
+                              ),
+                            ),
+                            onPressed: () => context.router.pop(),
+                          ),
+                        ),
+                        Text(
+                          'Study Session',
+                          style: typography.subhead.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 44),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 32,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary.withAlpha(140)
+                                  : colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 60 : 30),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primary.withAlpha(isDark ? 25 : 10),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Glowing Icon Container
+                                Container(
+                                  width: 68,
+                                  height: 68,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.primary.withAlpha(isDark ? 70 : 35),
+                                        colors.syllabotAccent.withAlpha(isDark ? 50 : 20),
+                                      ],
+                                    ),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(isDark ? 100 : 50),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    isNoCards
+                                        ? Icons.style_outlined
+                                        : Icons.error_outline_rounded,
+                                    size: 32,
+                                    color: isNoCards
+                                        ? colors.primary
+                                        : colors.warning,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  isNoCards
+                                      ? 'No Flashcards Yet'
+                                      : 'Unable to Load Session',
+                                  textAlign: TextAlign.center,
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  isNoCards
+                                      ? 'This deck does not have any flashcards yet. Generate cards with Syllabot AI or create them manually to start active recall.'
+                                      : (state.errorMessage ?? l10n.dashboardUnableToLoad),
+                                  textAlign: TextAlign.center,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                if (isNoCards) ...[
+                                  ShrinkableButton(
+                                    onTap: () {
+                                      AppFeedback.light();
+                                      unawaited(
+                                        context.router.replace(
+                                          DocumentIngestionRoute(),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            colors.primary,
+                                            colors.syllabotAccent,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.primary.withAlpha(60),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.auto_awesome_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Generate with AI',
+                                            style: typography.subhead.bold.copyWith(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                ],
+                                ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.light();
+                                    context.router.pop();
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceSecondary.withAlpha(isDark ? 160 : 100),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Return to Workspace',
+                                      style: typography.footnote.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        onPressed: () => context.router.pop(),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               );
             }
 

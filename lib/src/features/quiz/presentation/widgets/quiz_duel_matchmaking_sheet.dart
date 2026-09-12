@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -33,9 +34,12 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: colors.transparent,
-      builder: (_) => QuizDuelMatchmakingSheet(
-        initialSubject: initialSubject,
-        initialExamBoard: initialExamBoard,
+      builder: (_) => BlocProvider<QuizDuelCubit>(
+        create: (_) => locator<QuizDuelCubit>(),
+        child: QuizDuelMatchmakingSheet(
+          initialSubject: initialSubject,
+          initialExamBoard: initialExamBoard,
+        ),
       ),
     );
   }

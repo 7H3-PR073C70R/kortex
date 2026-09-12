@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -75,25 +76,26 @@ class DeckListTileCard extends StatelessWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final masteryPercent = (deck.masteryRate * 100).toInt();
+    final effectiveDeck = DeckTitleResolver.enrichDeckEntity(deck);
+    final masteryPercent = (effectiveDeck.masteryRate * 100).toInt();
 
     return Semantics(
       button: true,
       label:
-          '${deck.title}. ${deck.subject}. '
-          '${l10n.decksTotalCards(deck.totalCards)}. '
-          '${l10n.decksDueBadge(deck.dueCards)}.',
+          '${effectiveDeck.title}. ${effectiveDeck.subject}. '
+          '${l10n.decksTotalCards(effectiveDeck.totalCards)}. '
+          '${l10n.decksDueBadge(effectiveDeck.dueCards)}.',
       child: ShrinkableButton(
         onTap: () {
           unawaited(HapticFeedback.lightImpact());
           unawaited(
-            context.router.push(StudySessionRoute(deckId: deck.id)),
+            context.router.push(StudySessionRoute(deckId: effectiveDeck.id)),
           );
         },
         onLongPress: () {
           unawaited(HapticFeedback.mediumImpact());
           unawaited(
-            context.router.push(DeckDetailRoute(deckId: deck.id)),
+            context.router.push(DeckDetailRoute(deckId: effectiveDeck.id)),
           );
         },
         child: ClipRRect(
@@ -108,12 +110,12 @@ class DeckListTileCard extends StatelessWidget {
                     ? colors.surfaceSecondary.withAlpha(160)
                     : colors.surfacePrimary.withAlpha(215),
                 border: Border.all(
-                  color: deck.hasDueCards
+                  color: effectiveDeck.hasDueCards
                       ? colors.primary.withAlpha(isDark ? 110 : 70)
                       : (isDark
                             ? colors.surfaceBorderHighlight.withAlpha(70)
                             : colors.surfaceBorder.withAlpha(130)),
-                  width: deck.hasDueCards ? 1.4 : 1.0,
+                  width: effectiveDeck.hasDueCards ? 1.4 : 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -143,7 +145,7 @@ class DeckListTileCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              deck.subject.toUpperCase(),
+                              effectiveDeck.subject.toUpperCase(),
                               style: typography.caption.bold.copyWith(
                                 color: colors.primary,
                                 fontSize: 10.5,
@@ -151,8 +153,8 @@ class DeckListTileCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (deck.courseCode != null &&
-                              deck.courseCode!.isNotEmpty) ...[
+                          if (effectiveDeck.courseCode != null &&
+                              effectiveDeck.courseCode!.isNotEmpty) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -169,7 +171,7 @@ class DeckListTileCard extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                deck.courseCode!,
+                                effectiveDeck.courseCode!,
                                 style: typography.caption.bold.copyWith(
                                   color: colors.textSecondary,
                                   fontSize: 10,
@@ -182,7 +184,7 @@ class DeckListTileCard extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (deck.hasDueCards)
+                          if (effectiveDeck.hasDueCards)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -196,7 +198,7 @@ class DeckListTileCard extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                l10n.decksDueBadge(deck.dueCards),
+                                l10n.decksDueBadge(effectiveDeck.dueCards),
                                 style: typography.caption.bold.copyWith(
                                   color: colors.error,
                                   fontSize: 10.5,
@@ -205,7 +207,7 @@ class DeckListTileCard extends StatelessWidget {
                             )
                           else
                             Text(
-                              l10n.decksTotalCards(deck.totalCards),
+                              l10n.decksTotalCards(effectiveDeck.totalCards),
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textMuted,
                                 fontSize: 11.5,
@@ -251,7 +253,7 @@ class DeckListTileCard extends StatelessWidget {
 
                   // Title
                   Text(
-                    deck.title,
+                    effectiveDeck.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: typography.callout.bold.copyWith(
@@ -260,10 +262,10 @@ class DeckListTileCard extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  if (deck.description != null) ...[
+                  if (effectiveDeck.description != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      deck.description!,
+                      effectiveDeck.description!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: typography.footnote.regular.copyWith(
@@ -305,8 +307,8 @@ class DeckListTileCard extends StatelessWidget {
                               unawaited(
                                 context.router.push(
                                   QuizWorkspaceRoute(
-                                    deckId: deck.id,
-                                    deckTitle: deck.title,
+                                    deckId: effectiveDeck.id,
+                                    deckTitle: effectiveDeck.title,
                                     assessmentMode: AssessmentMode.millionaireMode,
                                   ),
                                 ),
@@ -357,7 +359,7 @@ class DeckListTileCard extends StatelessWidget {
                               unawaited(HapticFeedback.lightImpact());
                               unawaited(
                                 context.router.push(
-                                  StudySessionRoute(deckId: deck.id),
+                                  StudySessionRoute(deckId: effectiveDeck.id),
                                 ),
                               );
                             },

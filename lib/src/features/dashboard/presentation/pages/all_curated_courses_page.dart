@@ -19,6 +19,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -194,74 +195,33 @@ class AllCuratedCoursesPage extends HookWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: TextField(
-                              controller: searchController,
-                              style: typography.callout.regular.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13.5,
-                              ),
-                              onChanged: (val) => searchQuery.value = val,
-                              decoration: InputDecoration(
-                                hintText: 'Search enrolled courses or codes...',
-                                hintStyle: typography.callout.regular.copyWith(
-                                  color: colors.textSecondary.withAlpha(140),
-                                  fontSize: 13,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  color: colors.textSecondary,
-                                  size: 18,
-                                ),
-                                suffixIcon: searchQuery.value.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(
-                                          Icons.clear_rounded,
-                                          color: colors.textSecondary,
-                                          size: 16,
-                                        ),
-                                        onPressed: () {
-                                          searchController.clear();
-                                          searchQuery.value = '';
-                                        },
-                                      )
-                                    : null,
-                                filled: true,
-                                fillColor: isDark
-                                    ? colors.surfaceSecondary.withAlpha(120)
-                                    : colors.surfacePrimary.withAlpha(180),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 14,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? colors.surfaceBorderHighlight.withAlpha(50)
-                                        : colors.surfaceBorder.withAlpha(120),
+                        child: AppTextField(
+                          controller: searchController,
+                          hintText: 'Search enrolled courses or codes...',
+                          onChanged: (val) => searchQuery.value = val,
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.textSecondary,
+                            size: 18,
+                          ),
+                          suffixIcon: searchQuery.value.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear_rounded,
+                                    color: colors.textSecondary,
+                                    size: 16,
                                   ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? colors.surfaceBorderHighlight.withAlpha(50)
-                                        : colors.surfaceBorder.withAlpha(120),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(
-                                    color: colors.primary,
-                                    width: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    searchQuery.value = '';
+                                  },
+                                )
+                              : null,
+                          isDense: true,
+                          borderRadius: 14,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 14,
                           ),
                         ),
                       ),

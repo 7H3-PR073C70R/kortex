@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,6 +43,7 @@ class RoomChatDrawer extends StatefulWidget {
 class _RoomChatDrawerState extends State<RoomChatDrawer> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _hasText = false;
 
   static const List<String> _quickReactions = [
     '🔥',
@@ -52,6 +54,19 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     '📚',
     '✨',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _textController.addListener(() {
+      final hasText = _textController.text.trim().isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() {
+          _hasText = hasText;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -94,16 +109,18 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final l10n = context.l10n;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
       ),
       padding: EdgeInsets.only(
-        top: 16,
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 12,
+        left: 14,
+        right: 14,
+        bottom: bottomInset + math.max(12.0, safeBottom),
       ),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
@@ -111,13 +128,20 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(100),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 80 : 30),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           // Drag handle
           Center(
             child: Container(
-              width: 36,
+              width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: colors.surfaceBorder,
@@ -125,19 +149,19 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Header
+          // Header Bar
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(25),
+                  color: colors.primary.withAlpha(isDark ? 45 : 25),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.chat_bubble_rounded,
+                  Icons.forum_rounded,
                   color: colors.primary,
                   size: 18,
                 ),
@@ -151,6 +175,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                       l10n.liveRoomDiscussionTitle,
                       style: typography.callout.bold.copyWith(
                         color: colors.textPrimary,
+                        fontSize: 15,
                       ),
                     ),
                     Text(
@@ -166,18 +191,19 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
               IconButton(
                 icon: const Icon(Icons.close_rounded, size: 20),
                 onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Close',
               ),
             ],
           ),
 
           const SizedBox(height: 8),
 
-          // Quick Reactions Bar
+          // Quick Emoji Tap Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: colors.surfaceTertiary,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -192,7 +218,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                     ),
                     child: Text(
                       emoji,
-                      style: const TextStyle(fontSize: 20),
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                 );
@@ -200,9 +226,9 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Messages Timeline
+          // Messages Timeline (WhatsApp-styled bubbles)
           Expanded(
             child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
               builder: (context, state) {
@@ -230,9 +256,11 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
 
                 return ListView.separated(
                   controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   itemCount: state.chatMessages.length,
                   separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final msg = state.chatMessages[index];
                     final isMe = msg.senderId == widget.currentUserId;
@@ -242,6 +270,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                       isMe: isMe,
                       colors: colors,
                       typography: typography,
+                      isDark: isDark,
                     );
                   },
                 );
@@ -249,39 +278,45 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Input Bar
+          // WhatsApp Style Bottom Input Bar
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                   decoration: BoxDecoration(
                     color: isDark
                         ? colors.surfaceTertiary
                         : colors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(100),
+                      color: colors.surfaceBorder.withAlpha(isDark ? 90 : 60),
                     ),
                   ),
                   child: TextField(
                     controller: _textController,
+                    maxLines: 4,
+                    minLines: 1,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
                     onSubmitted: (_) => _sendMessage(),
                     style: TextStyle(
                       fontSize: 13.5,
                       color: colors.textPrimary,
+                      height: 1.3,
                     ),
                     decoration: InputDecoration(
                       hintText: l10n.chatInputHint,
                       hintStyle: TextStyle(
                         fontSize: 13,
-                        color: colors.textSecondary,
+                        color: colors.textSecondary.withAlpha(180),
                       ),
                       border: InputBorder.none,
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
                 ),
@@ -290,22 +325,27 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
               ShrinkableButton(
                 onTap: _sendMessage,
                 child: Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: colors.primary,
+                    color: _hasText
+                        ? colors.primary
+                        : colors.primary.withAlpha(isDark ? 160 : 200),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withAlpha(60),
+                        color: colors.primary.withAlpha(isDark ? 80 : 50),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                    size: 18,
+                  child: const Center(
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -323,40 +363,53 @@ class _ChatMessageBubble extends StatelessWidget {
     required this.isMe,
     required this.colors,
     required this.typography,
+    required this.isDark,
   });
 
   final RoomChatMessage message;
   final bool isMe;
   final AppThemeColorsExtension colors;
   final TypographyThemeExtension typography;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final timeStr = DateFormat('h:mm a').format(message.timestamp);
 
-    if (message.isReaction) {
+    // Single Emoji Reaction Pill
+    if (message.isReaction && message.text.length <= 4) {
       return Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: colors.surfaceTertiary,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 message.text,
-                style: const TextStyle(fontSize: 22),
+                style: const TextStyle(fontSize: 16),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 isMe ? 'You' : message.senderName,
-                style: TextStyle(
+                style: typography.caption.medium.copyWith(
                   fontSize: 11,
                   color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                timeStr,
+                style: typography.caption.regular.copyWith(
+                  fontSize: 9.5,
+                  color: colors.textMuted,
                 ),
               ),
             ],
@@ -365,79 +418,90 @@ class _ChatMessageBubble extends StatelessWidget {
       );
     }
 
+    // WhatsApp-Style Chat Bubble
+    final bubbleColor = isMe
+        ? colors.primary
+        : (isDark ? colors.surfaceTertiary : colors.surfaceSecondary);
+
+    final textColor = isMe ? Colors.white : colors.textPrimary;
+    final subtextColor = isMe
+        ? Colors.white.withAlpha(190)
+        : colors.textSecondary;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: colors.primary.withAlpha(30),
-              child: Text(
-                message.senderName.isNotEmpty
-                    ? message.senderName[0].toUpperCase()
-                    : 'S',
-                style: TextStyle(
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.76,
+        ),
+        margin: EdgeInsets.only(
+          left: isMe ? 40 : 0,
+          right: isMe ? 0 : 40,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(14),
+            topRight: const Radius.circular(14),
+            bottomLeft: isMe ? const Radius.circular(14) : const Radius.circular(3),
+            bottomRight: isMe ? const Radius.circular(3) : const Radius.circular(14),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 40 : 10),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isMe && message.senderName.isNotEmpty) ...[
+              Text(
+                message.senderName,
+                style: typography.caption.bold.copyWith(
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
                   color: colors.primary,
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isMe ? colors.primary : colors.surfaceTertiary,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-                  bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-                ),
+              const SizedBox(height: 2),
+            ],
+            Text(
+              message.text,
+              style: typography.body.regular.copyWith(
+                fontSize: 13.5,
+                color: textColor,
+                height: 1.35,
               ),
-              child: Column(
-                crossAxisAlignment: isMe
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  if (!isMe) ...[
-                    Text(
-                      message.senderName,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: colors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: isMe ? Colors.white : colors.textPrimary,
-                    ),
+            ),
+            const SizedBox(height: 3),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  timeStr,
+                  style: typography.caption.regular.copyWith(
+                    fontSize: 9.5,
+                    color: subtextColor,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    timeStr,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      color: isMe
-                          ? Colors.white.withAlpha(180)
-                          : colors.textSecondary.withAlpha(160),
-                    ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.done_all_rounded,
+                    size: 13,
+                    color: Colors.white.withAlpha(200),
                   ),
                 ],
-              ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

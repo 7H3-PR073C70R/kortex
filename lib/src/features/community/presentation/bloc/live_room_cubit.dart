@@ -24,7 +24,7 @@ class LiveRoomState extends Equatable {
     this.isHandRaised = false,
     this.isMuted = true,
     this.completedPomodoros = 0,
-    this.activeViewMode = RoomViewMode.stage,
+    this.activeViewMode = RoomViewMode.deckStudy,
     this.activeGoal,
     this.activeDeckId,
     this.activeDeckTitle,
@@ -639,10 +639,15 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       ),
     );
 
-    sendChatMessage(
-      'Reviewed $updatedCount cards in this sprint 🔥',
-      isReaction: true,
-    );
+    // Only broadcast to room chat on milestone intervals (e.g. every 5 cards or sprint goal) to prevent spam
+    if (updatedCount > 0 &&
+        (updatedCount % 5 == 0 ||
+            updatedCount == state.coOpSprintTargetCards)) {
+      sendChatMessage(
+        'Reviewed $updatedCount cards in this sprint 🔥',
+        isReaction: true,
+      );
+    }
 
     unawaited(
       _ephemeralRepository?.broadcastCardProgress(

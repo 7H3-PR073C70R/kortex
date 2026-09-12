@@ -230,25 +230,40 @@ class CuratedCourseCarousel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Carousel List: starts at 4px horizontal padding to align with section header
-        SizedBox(
-          height: 165,
-          child: ListView.separated(
+        // Carousel List: If single course, span full width; else horizontal scroll list
+        if (courses.length == 1)
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: courses.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              return _CourseCard(
-                course: course,
+            child: SizedBox(
+              width: double.infinity,
+              height: 165,
+              child: _CourseCard(
+                course: courses.first,
                 colors: colors,
                 isDark: isDark,
-              );
-            },
+                isFullWidth: true,
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 165,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: courses.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final course = courses[index];
+                return _CourseCard(
+                  course: course,
+                  colors: colors,
+                  isDark: isDark,
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -259,11 +274,13 @@ class _CourseCard extends StatelessWidget {
     required this.course,
     required this.colors,
     required this.isDark,
+    this.isFullWidth = false,
   });
 
   final CuratedCourseEntity course;
   final AppThemeColorsExtension colors;
   final bool isDark;
+  final bool isFullWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +327,7 @@ class _CourseCard extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              width: 220,
+              width: isFullWidth ? double.infinity : 220,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),

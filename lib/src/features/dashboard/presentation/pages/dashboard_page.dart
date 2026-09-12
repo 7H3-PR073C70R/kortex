@@ -444,15 +444,9 @@ class _CompactDashboardLayout extends StatelessWidget {
         ],
 
         // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
-        if (feed.dueStudyDecks.isNotEmpty) ...[
+        if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
           _NextBestActionCard(
-            topDeck: feed.dueStudyDecks.first,
-          ),
-          const SizedBox(height: 20),
-        ] else if (feed.curatedCourses.isNotEmpty) ...[
-          _NextBestActionCard(
-            fallbackCourseTitle: feed.curatedCourses.first.title,
-            fallbackCourseCode: feed.curatedCourses.first.courseCode,
+            topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
           ),
           const SizedBox(height: 20),
         ],
@@ -488,22 +482,25 @@ class _CompactDashboardLayout extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 205,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: feed.dueStudyDecks.length - 1,
-                separatorBuilder: (_, _) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  final deck = feed.dueStudyDecks[index + 1];
-                  return SizedBox(
-                    width: 300,
-                    child: FsrsReviewDeckCard(deck: deck),
-                  );
-                },
+            if (feed.dueStudyDecks.length - 1 == 1)
+              FsrsReviewDeckCard(deck: feed.dueStudyDecks[1])
+            else
+              SizedBox(
+                height: 205,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: feed.dueStudyDecks.length - 1,
+                  separatorBuilder: (_, _) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    final deck = feed.dueStudyDecks[index + 1];
+                    return SizedBox(
+                      width: 300,
+                      child: FsrsReviewDeckCard(deck: deck),
+                    );
+                  },
+                ),
               ),
-            ),
           ],
           const SizedBox(height: 20),
         ] else ...[
@@ -722,15 +719,9 @@ class _MediumDashboardLayout extends StatelessWidget {
           _StudyDebtTriageBanner(deck: heavyDebtDeck),
           const SizedBox(height: 20),
         ],
-        if (feed.dueStudyDecks.isNotEmpty) ...[
+        if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
           _NextBestActionCard(
-            topDeck: feed.dueStudyDecks.first,
-          ),
-          const SizedBox(height: 20),
-        ] else if (feed.curatedCourses.isNotEmpty) ...[
-          _NextBestActionCard(
-            fallbackCourseTitle: feed.curatedCourses.first.title,
-            fallbackCourseCode: feed.curatedCourses.first.courseCode,
+            topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
           ),
           const SizedBox(height: 20),
         ],
@@ -751,22 +742,25 @@ class _MediumDashboardLayout extends StatelessWidget {
                     _EmptyStudyDecksCard(l10n: context.l10n),
                   const SizedBox(height: 20),
                   if (feed.dueStudyDecks.length > 1) ...[
-                    SizedBox(
-                      height: 205,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: feed.dueStudyDecks.length - 1,
-                        separatorBuilder: (_, _) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final deck = feed.dueStudyDecks[index + 1];
-                          return SizedBox(
-                            width: 300,
-                            child: FsrsReviewDeckCard(deck: deck),
-                          );
-                        },
+                    if (feed.dueStudyDecks.length - 1 == 1)
+                      FsrsReviewDeckCard(deck: feed.dueStudyDecks[1])
+                    else
+                      SizedBox(
+                        height: 205,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: feed.dueStudyDecks.length - 1,
+                          separatorBuilder: (_, _) => const SizedBox(width: 14),
+                          itemBuilder: (context, index) {
+                            final deck = feed.dueStudyDecks[index + 1];
+                            return SizedBox(
+                              width: 300,
+                              child: FsrsReviewDeckCard(deck: deck),
+                            );
+                          },
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 20),
                   ],
                   if (feed.curatedCourses.isNotEmpty)
@@ -848,15 +842,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     _StudyDebtTriageBanner(deck: heavyDebtDeck),
                     const SizedBox(height: 20),
                   ],
-                  if (feed.dueStudyDecks.isNotEmpty) ...[
+                  if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
                     _NextBestActionCard(
-                      topDeck: feed.dueStudyDecks.first,
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (feed.curatedCourses.isNotEmpty) ...[
-                    _NextBestActionCard(
-                      fallbackCourseTitle: feed.curatedCourses.first.title,
-                      fallbackCourseCode: feed.curatedCourses.first.courseCode,
+                      topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -912,14 +900,10 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 /// Behavioral decision-fatigue reducer: 1-Tap Next Best Action Card
 class _NextBestActionCard extends StatelessWidget {
   const _NextBestActionCard({
-    this.topDeck,
-    this.fallbackCourseTitle,
-    this.fallbackCourseCode,
+    required this.topDeck,
   });
 
-  final StudyDeckEntity? topDeck;
-  final String? fallbackCourseTitle;
-  final String? fallbackCourseCode;
+  final StudyDeckEntity topDeck;
 
   @override
   Widget build(BuildContext context) {
@@ -927,30 +911,17 @@ class _NextBestActionCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final isDeckSprint = topDeck != null;
-    final badgeLabel = isDeckSprint ? '15-MIN SPRINT' : '3-MIN SPEED RUN';
-    final actionTitle = isDeckSprint
-        ? 'Review ${topDeck!.title}'
-        : (fallbackCourseTitle != null
-            ? 'Sprint: $fallbackCourseTitle'
-            : 'Quick Focus Sprint');
+    const badgeLabel = '15-MIN SPRINT';
+    final actionTitle = 'Review ${topDeck.title}';
 
     return ShrinkableButton(
       onTap: () {
         AppFeedback.selection();
-        if (isDeckSprint) {
-          unawaited(
-            context.router.push(
-              StudySessionRoute(deckId: 'sprint:10:${topDeck!.id}'),
-            ),
-          );
-        } else {
-          unawaited(
-            context.router.push(
-              StudySessionRoute(deckId: 'sprint:speed:3:all'),
-            ),
-          );
-        }
+        unawaited(
+          context.router.push(
+            StudySessionRoute(deckId: 'sprint:10:${topDeck.id}'),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
