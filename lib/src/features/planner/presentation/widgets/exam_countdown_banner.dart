@@ -131,37 +131,43 @@ class ExamCountdownBanner extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withAlpha(isDark ? 40 : 25),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: badgeColor.withAlpha(100),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer_rounded,
-                              size: 14,
-                              color: badgeColor,
+                          decoration: BoxDecoration(
+                            color: badgeColor.withAlpha(isDark ? 40 : 25),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: badgeColor.withAlpha(100),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${exam.subjectTrack} Track',
-                              style: typography.caption.bold.copyWith(
-                                fontSize: 11,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer_rounded,
+                                size: 14,
                                 color: badgeColor,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  '${exam.subjectTrack} Track',
+                                  style: typography.caption.bold.copyWith(
+                                    fontSize: 11,
+                                    color: badgeColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -239,10 +245,13 @@ class ExamCountdownBanner extends StatelessWidget {
                       color: colors.primary,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      l10n.recommendedDailyPace(pace),
-                      style: typography.footnote.semiBold.copyWith(
-                        color: colors.primary,
+                    Expanded(
+                      child: Text(
+                        l10n.recommendedDailyPace(pace),
+                        style: typography.footnote.semiBold.copyWith(
+                          color: colors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

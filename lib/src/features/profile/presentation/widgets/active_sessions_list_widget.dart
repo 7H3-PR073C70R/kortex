@@ -84,10 +84,13 @@ class ActiveSessionsListWidget extends HookWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Active Logins (${sessionList.value.length})',
-                style: typography.title2.bold.copyWith(
-                  color: colors.textPrimary,
+              Expanded(
+                child: Text(
+                  'Active Logins (${sessionList.value.length})',
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (sessionList.value.length > 1)
@@ -145,10 +148,13 @@ class ActiveSessionsListWidget extends HookWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                session.deviceName,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.textPrimary,
+                              Flexible(
+                                child: Text(
+                                  session.deviceName,
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (session.isCurrentDevice) ...[

@@ -83,6 +83,8 @@ dev_dependencies:
   flutter_native_splash: ^2.4.7
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   freezed: ^3.2.5
   json_serializable: ^6.14.1
   mocktail: ^1.0.5
@@ -104,6 +106,23 @@ flutter:
     - assets/icons/
     - assets/svgs/
     - assets/audio/
+    - assets/fonts/
+    - assets/google_fonts/
+    - google_fonts/
+
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono.ttf
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto.ttf
+    - family: MaterialIcons
+      fonts:
+        - asset: assets/fonts/MaterialIcons-Regular.otf
 
 flutter_gen:
   output: lib/src/gen/

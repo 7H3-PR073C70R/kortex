@@ -95,12 +95,16 @@ class SyllabusChecklistWidget extends HookWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Syllabus Topic Mastery',
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
+                  Flexible(
+                    child: Text(
+                      'Syllabus Topic Mastery',
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     '$totalMastered of ${topicList.value.length} Topics (${(overallProgress * 100).toInt()}%)',
                     style: typography.caption.regular.copyWith(
