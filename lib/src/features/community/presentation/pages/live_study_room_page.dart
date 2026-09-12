@@ -21,6 +21,7 @@ import 'package:kortex/src/features/community/presentation/widgets/floating_reac
 import 'package:kortex/src/features/community/presentation/widgets/focus_session_summary_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/in_room_deck_study_workspace.dart';
 import 'package:kortex/src/features/community/presentation/widgets/room_chat_drawer.dart';
+import 'package:kortex/src/features/community/presentation/widgets/whiteboard_canvas_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -103,7 +104,8 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return;
-    final isAway = state == AppLifecycleState.paused ||
+    final isAway =
+        state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden;
     unawaited(context.read<LiveRoomCubit>().setLocalAwayState(isAway: isAway));
@@ -123,8 +125,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         context: context,
         barrierDismissible: false,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: context.isDarkMode
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               const Text('🎯', style: TextStyle(fontSize: 22)),
@@ -132,7 +138,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               Expanded(
                 child: Text(
                   'Micro-Goal Reflection',
-                  style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -143,7 +151,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             children: [
               Text(
                 'Focus block completed! Did you finish your micro-goal?',
-                style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 12),
               Container(
@@ -167,9 +177,23 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   side: BorderSide(color: Colors.green.withAlpha(60)),
                 ),
                 tileColor: Colors.green.withAlpha(context.isDarkMode ? 30 : 15),
-                leading: const Icon(Icons.check_circle_rounded, color: Colors.green),
-                title: Text('Completed (100%)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
-                subtitle: Text('Earn +50 Pod XP & celebrate with peers', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                leading: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.green,
+                ),
+                title: Text(
+                  'Completed (100%)',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Earn +50 Pod XP & celebrate with peers',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
                   cubit.verifyMicroGoal(completed: true, goal: goal);
@@ -184,9 +208,23 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   side: BorderSide(color: Colors.amber.withAlpha(60)),
                 ),
                 tileColor: Colors.amber.withAlpha(context.isDarkMode ? 30 : 15),
-                leading: const Icon(Icons.timelapse_rounded, color: Colors.amber),
-                title: Text('Partially Finished', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
-                subtitle: Text('Good momentum! Roll over to next block', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                leading: const Icon(
+                  Icons.timelapse_rounded,
+                  color: Colors.amber,
+                ),
+                title: Text(
+                  'Partially Finished',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Good momentum! Roll over to next block',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
                   cubit.verifyMicroGoal(completed: false, goal: goal);
@@ -202,7 +240,10 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 cubit.dismissGoalVerification();
                 onAfterVerification?.call();
               },
-              child: Text('Dismiss', style: TextStyle(color: colors.textSecondary)),
+              child: Text(
+                'Dismiss',
+                style: TextStyle(color: colors.textSecondary),
+              ),
             ),
           ],
         ),
@@ -264,107 +305,131 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: context.isDarkMode
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               const Text('🎯', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
               Text(
                 'Set Micro-Goal',
-                style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+                style: typography.subhead.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Define what you intend to finish during this silent focus session.',
-              style: typography.caption.regular.copyWith(color: colors.textSecondary),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Define what you intend to finish during this silent focus session.',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: typography.body.regular.copyWith(
+                  color: colors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Review 15 flashcards',
+                  hintStyle: typography.caption.regular.copyWith(
+                    color: colors.textMuted,
+                  ),
+                  filled: true,
+                  fillColor: colors.primary.withAlpha(20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.primary.withAlpha(50)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children:
+                    [
+                      'Review 15 flashcards',
+                      'Deep Focus 25 mins',
+                      'Master 10 concepts',
+                      'Complete 1 Quiz',
+                    ].map((preset) {
+                      return ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          controller.text = preset;
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(40),
+                            ),
+                          ),
+                          child: Text(
+                            preset,
+                            style: typography.caption.bold.copyWith(
+                              fontSize: 10.5,
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: colors.textSecondary),
+              ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: typography.body.regular.copyWith(color: colors.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'e.g. Review 15 flashcards',
-                hintStyle: typography.caption.regular.copyWith(color: colors.textMuted),
-                filled: true,
-                fillColor: colors.primary.withAlpha(20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colors.primary.withAlpha(50)),
+            ShrinkableButton(
+              onTap: () {
+                final goal = controller.text.trim();
+                if (goal.isNotEmpty) {
+                  context.read<LiveRoomCubit>().updateActiveGoal(goal);
+                }
+                Navigator.of(dialogCtx).pop();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Save Goal',
+                  style: typography.caption.bold.copyWith(color: colors.white),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                'Review 15 flashcards',
-                'Deep Focus 25 mins',
-                'Master 10 concepts',
-                'Complete 1 Quiz',
-              ].map((preset) {
-                return ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.selectionClick());
-                    controller.text = preset;
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: colors.primary.withAlpha(40)),
-                    ),
-                    child: Text(
-                      preset,
-                      style: typography.caption.bold.copyWith(
-                        fontSize: 10.5,
-                        color: colors.primary,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
-          ),
-          ShrinkableButton(
-            onTap: () {
-              final goal = controller.text.trim();
-              if (goal.isNotEmpty) {
-                context.read<LiveRoomCubit>().updateActiveGoal(goal);
-              }
-              Navigator.of(dialogCtx).pop();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: colors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Save Goal',
-                style: typography.caption.bold.copyWith(color: colors.white),
-              ),
-            ),
-          ),
-        ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showStartCoOpSprintDialog(BuildContext context) {
     final colors = context.colors;
@@ -375,15 +440,21 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: context.isDarkMode ? colors.surfaceSecondary : colors.surfacePrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: context.isDarkMode
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               const Text('⚡', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
               Text(
                 'Launch Co-Op Sprint',
-                style: typography.subhead.bold.copyWith(color: colors.textPrimary),
+                style: typography.subhead.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
@@ -393,19 +464,40 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             children: [
               Text(
                 'Rally everyone in this room for a synchronized 3-minute study sprint! All members review concurrently and earn Pod XP.',
-                style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 16),
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: colors.primary.withAlpha(50)),
                 ),
-                tileColor: colors.primary.withAlpha(context.isDarkMode ? 30 : 15),
-                leading: const Icon(Icons.flash_on_rounded, color: Colors.amber),
-                title: Text('10-Card Sprint (3 min)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
-                subtitle: Text('Fast-paced rapid recall challenge', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                tileColor: colors.primary.withAlpha(
+                  context.isDarkMode ? 30 : 15,
+                ),
+                leading: const Icon(
+                  Icons.flash_on_rounded,
+                  color: Colors.amber,
+                ),
+                title: Text(
+                  '10-Card Sprint (3 min)',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Fast-paced rapid recall challenge',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
                   cubit.startCoOpSprint(deckTitle: 'Rapid Flashcard Sprint');
@@ -413,18 +505,37 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
               const SizedBox(height: 10),
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: colors.syllabotAccent.withAlpha(50)),
                 ),
-                tileColor: colors.syllabotAccent.withAlpha(context.isDarkMode ? 30 : 15),
+                tileColor: colors.syllabotAccent.withAlpha(
+                  context.isDarkMode ? 30 : 15,
+                ),
                 leading: const Icon(Icons.quiz_rounded, color: Colors.cyan),
-                title: Text('Past Questions Battle (5 min)', style: typography.caption.bold.copyWith(color: colors.textPrimary)),
-                subtitle: Text('Review 15 CBT past questions together', style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 11)),
+                title: Text(
+                  'Past Questions Battle (5 min)',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Review 15 CBT past questions together',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
                 onTap: () {
                   Navigator.of(dialogCtx).pop();
-                  cubit.startCoOpSprint(deckTitle: 'CBT Past Questions Sprint', targetCards: 15);
+                  cubit.startCoOpSprint(
+                    deckTitle: 'CBT Past Questions Sprint',
+                    targetCards: 15,
+                  );
                 },
               ),
             ],
@@ -432,7 +543,10 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: colors.textSecondary),
+              ),
             ),
           ],
         ),
@@ -455,8 +569,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
           backgroundColor: context.isDarkMode
               ? colors.surfaceSecondary
               : colors.surfacePrimary,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               Container(
@@ -475,8 +590,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               Expanded(
                 child: Text(
                   'Microphone Access',
-                  style: typography.subhead.bold
-                      .copyWith(color: colors.textPrimary),
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -558,8 +674,10 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 }
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: colors.primary,
                   borderRadius: BorderRadius.circular(10),
@@ -631,171 +749,203 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 ? colors.backgroundPrimary
                 : colors.surfacePrimary,
             appBar: AppBar(
-            backgroundColor: colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
-              onPressed: () => _handleExit(context),
-            ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  state.room.title,
-                  style: typography.headline.bold.copyWith(color: colors.textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              backgroundColor: colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: colors.textPrimary,
                 ),
-                Text(
-                  state.room.subject,
-                  style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                onPressed: () => _handleExit(context),
+              ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    state.room.title,
+                    style: typography.headline.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    state.room.subject,
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _LivePulseBadge(colors: colors),
+                      const SizedBox(width: 8),
+                      _PomodoroMiniPill(
+                        state: state,
+                        colors: colors,
+                        typography: typography,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _LivePulseBadge(colors: colors),
-                    const SizedBox(width: 8),
-                    _PomodoroMiniPill(state: state, colors: colors, typography: typography),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Micro-Goal Status Pill & Ambient Soundscape Player
-                _MicroGoalPill(
-                  activeGoal: state.activeGoal,
-                  isDark: isDark,
-                  onTapEdit: () => _showGoalEditDialog(context, state.activeGoal),
-                ),
-                const SizedBox(height: 6),
-                _AmbientSoundscapeBar(
-                  state: state,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 6),
-                _AmbientActivityTicker(
-                  tickerItems: state.recentActivityTicker,
-                  cardsReviewed: state.cardsReviewedInSprint,
-                  isDark: isDark,
-                ),
-                if (state.isCoOpSprintActive) ...[
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Micro-Goal Status Pill & Ambient Soundscape Player
+                  _MicroGoalPill(
+                    activeGoal: state.activeGoal,
+                    isDark: isDark,
+                    onTapEdit: () =>
+                        _showGoalEditDialog(context, state.activeGoal),
+                  ),
                   const SizedBox(height: 6),
-                  _CoOpSprintBanner(
+                  _AmbientSoundscapeBar(
                     state: state,
                     isDark: isDark,
                   ),
-                ],
-                if (state.activeSpeakerIds.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  _ActiveSpeakersBanner(
-                    speakerIds: state.activeSpeakerIds,
-                    participants: state.ephemeralParticipants,
+                  _AmbientActivityTicker(
+                    tickerItems: state.recentActivityTicker,
+                    cardsReviewed: state.cardsReviewedInSprint,
                     isDark: isDark,
                   ),
-                ],
-                const SizedBox(height: 6),
+                  if (state.isCoOpSprintActive) ...[
+                    const SizedBox(height: 6),
+                    _CoOpSprintBanner(
+                      state: state,
+                      isDark: isDark,
+                    ),
+                  ],
+                  if (state.activeSpeakerIds.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _ActiveSpeakersBanner(
+                      speakerIds: state.activeSpeakerIds,
+                      participants: state.ephemeralParticipants,
+                      isDark: isDark,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
 
-                // In-Room View Mode Switcher (Stage / Study Deck / Whiteboard)
-                _InRoomModeSwitcherBar(
-                  activeMode: state.activeViewMode,
-                  onSelectMode: (mode) =>
-                      context.read<LiveRoomCubit>().switchViewMode(mode),
-                  isDark: isDark,
-                  cardsReviewed: state.cardsReviewedInSprint,
-                ),
-                const SizedBox(height: 6),
+                  // In-Room View Mode Switcher (Stage / Study Deck / Whiteboard)
+                  _InRoomModeSwitcherBar(
+                    activeMode: state.activeViewMode,
+                    onSelectMode: (mode) =>
+                        context.read<LiveRoomCubit>().switchViewMode(mode),
+                    isDark: isDark,
+                    cardsReviewed: state.cardsReviewedInSprint,
+                  ),
+                  const SizedBox(height: 6),
 
-                // Main body: Switches dynamically between Focus Stage, In-Room Study Deck, and Whiteboard
-                Expanded(
-                  child: state.activeViewMode == RoomViewMode.deckStudy
-                      ? InRoomDeckStudyWorkspace(roomState: state)
-                      : state.activeViewMode == RoomViewMode.whiteboard
-                          ? _InRoomWhiteboardSection(state: state, isDark: isDark)
-                          : Column(
-                              children: [
-                                // Silent Focus Cockpit: Body-doubling flow state
+                  // Main body: Switches dynamically between Focus Stage, In-Room Study Deck, and Whiteboard
+                  Expanded(
+                    child: state.activeViewMode == RoomViewMode.deckStudy
+                        ? InRoomDeckStudyWorkspace(roomState: state)
+                        : state.activeViewMode == RoomViewMode.whiteboard
+                        ? WhiteboardCanvasWidget(
+                            strokes: state.whiteboardStrokes,
+                            canUndo: state.whiteboardStrokes.any(
+                              (s) => s.userId == widget.currentUserId,
+                            ),
+                            canRedo: state.whiteboardRedoStack.isNotEmpty,
+                            isDark: isDark,
+                            currentUserId: widget.currentUserId,
+                            currentUserName: widget.currentUserName,
+                            onStrokeDrawn: (stroke) {
+                              context.read<LiveRoomCubit>().addWhiteboardStroke(
+                                stroke,
+                              );
+                            },
+                            onUndo: () => context
+                                .read<LiveRoomCubit>()
+                                .undoWhiteboardStroke(),
+                            onRedo: () => context
+                                .read<LiveRoomCubit>()
+                                .redoWhiteboardStroke(),
+                            onClear: () =>
+                                context.read<LiveRoomCubit>().clearWhiteboard(),
+                          )
+                        : Column(
+                            children: [
+                              // Silent Focus Cockpit: Body-doubling flow state
+                              Expanded(
+                                flex: 5,
+                                child: _FocusCockpitSection(
+                                  participants: state.ephemeralParticipants,
+                                  activeSpeakerIds: state.activeSpeakerIds,
+                                  fallbackNames: hasEphemeral
+                                      ? const []
+                                      : state.participants,
+                                  colors: colors,
+                                  typography: typography,
+                                  isDark: isDark,
+                                  subject: state.room.subject,
+                                  participantCount: hasEphemeral
+                                      ? state.ephemeralParticipants.length
+                                      : state.participants.length,
+                                  activeGoal: state.activeGoal,
+                                  isVoicePodEnabled: state.isVoicePodEnabled,
+                                  l10n: l10n,
+                                ),
+                              ),
+
+                              const SizedBox(height: 2),
+
+                              // Audience / Other Scholars section
+                              if (audience.isNotEmpty ||
+                                  (!hasEphemeral &&
+                                      state.participants.length > 1))
                                 Expanded(
-                                  flex: 5,
-                                  child: _FocusCockpitSection(
-                                    participants: state.ephemeralParticipants,
-                                    activeSpeakerIds: state.activeSpeakerIds,
+                                  flex: 3,
+                                  child: _AudienceSection(
+                                    audience: audience,
                                     fallbackNames: hasEphemeral
                                         ? const []
-                                        : state.participants,
+                                        : state.participants.skip(1).toList(),
                                     colors: colors,
                                     typography: typography,
                                     isDark: isDark,
-                                    subject: state.room.subject,
-                                    participantCount: hasEphemeral
-                                        ? state.ephemeralParticipants.length
-                                        : state.participants.length,
-                                    activeGoal: state.activeGoal,
-                                    isVoicePodEnabled: state.isVoicePodEnabled,
                                     l10n: l10n,
                                   ),
                                 ),
+                            ],
+                          ),
+                  ),
 
-                                const SizedBox(height: 2),
+                  // Floating Micro-Reaction Rail for Silent Focus
+                  _MicroReactionRail(
+                    onReact: (emoji) {
+                      _lastReaction = emoji;
+                      _reactionController.spawn(emoji);
+                      context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
+                    },
+                    isDark: isDark,
+                  ),
 
-                                // Audience / Other Scholars section
-                                if (audience.isNotEmpty ||
-                                    (!hasEphemeral &&
-                                        state.participants.length > 1))
-                                  Expanded(
-                                    flex: 3,
-                                    child: _AudienceSection(
-                                      audience: audience,
-                                      fallbackNames: hasEphemeral
-                                          ? const []
-                                          : state.participants
-                                              .skip(1)
-                                              .toList(),
-                                      colors: colors,
-                                      typography: typography,
-                                      isDark: isDark,
-                                      l10n: l10n,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                ),
-
-                // Floating Micro-Reaction Rail for Silent Focus
-                _MicroReactionRail(
-                  onReact: (emoji) {
-                    _lastReaction = emoji;
-                    _reactionController.spawn(emoji);
-                    context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
-                  },
-                  isDark: isDark,
-                ),
-
-                // Bottom action bar with Voice Pod, Fast Card Logger, Whiteboard, Chat, Timer, Leave
-                _BottomActionBar(
-                  state: state,
-                  currentUserId: widget.currentUserId,
-                  colors: colors,
-                  typography: typography,
-                  isDark: isDark,
-                  l10n: l10n,
-                  onLaunchSprint: () => _showStartCoOpSprintDialog(context),
-                  onLeave: () => _handleExit(context),
-                ),
-              ],
+                  // Bottom action bar with Voice Pod, Fast Card Logger, Whiteboard, Chat, Timer, Leave
+                  _BottomActionBar(
+                    state: state,
+                    currentUserId: widget.currentUserId,
+                    colors: colors,
+                    typography: typography,
+                    isDark: isDark,
+                    l10n: l10n,
+                    onLaunchSprint: () => _showStartCoOpSprintDialog(context),
+                    onLeave: () => _handleExit(context),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
   }
 }
 
@@ -870,7 +1020,10 @@ class _CoOpSprintBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.warning.withAlpha(40),
                         borderRadius: BorderRadius.circular(4),
@@ -913,7 +1066,11 @@ class _CoOpSprintBanner extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                  const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
                   const SizedBox(width: 3),
                   Text(
                     '+1 Card',
@@ -928,7 +1085,11 @@ class _CoOpSprintBanner extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           IconButton(
-            icon: Icon(Icons.close_rounded, size: 18, color: colors.textSecondary),
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: colors.textSecondary,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => context.read<LiveRoomCubit>().endCoOpSprint(),
@@ -982,7 +1143,9 @@ class _MicroGoalPill extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  hasGoal ? 'My Goal: $activeGoal' : 'Set a micro-goal for this focus session...',
+                  hasGoal
+                      ? 'My Goal: $activeGoal'
+                      : 'Set a micro-goal for this focus session...',
                   style: typography.caption.bold.copyWith(
                     color: hasGoal ? colors.textPrimary : colors.textSecondary,
                   ),
@@ -1023,8 +1186,8 @@ class _AmbientActivityTicker extends StatelessWidget {
     final latestMessage = tickerItems.isNotEmpty
         ? tickerItems.first
         : (cardsReviewed > 0
-            ? '⚡️ You completed $cardsReviewed cards in this sprint!'
-            : '🌱 Silent focus active. Set a goal and start reviewing.');
+              ? '⚡️ You completed $cardsReviewed cards in this sprint!'
+              : '🌱 Silent focus active. Set a goal and start reviewing.');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1095,7 +1258,9 @@ class _AmbientSoundscapeBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isDark ? colors.surfaceSecondary.withAlpha(150) : colors.surfacePrimary,
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(150)
+              : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isPlaying
@@ -1139,13 +1304,20 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                       child: ShrinkableButton(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
-                          context.read<LiveRoomCubit>().setAmbientSoundTrack(track['name']!);
+                          context.read<LiveRoomCubit>().setAmbientSoundTrack(
+                            track['name']!,
+                          );
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (isPlaying ? colors.syllabotAccent : colors.primary)
+                                ? (isPlaying
+                                      ? colors.syllabotAccent
+                                      : colors.primary)
                                 : colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -1157,13 +1329,18 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(track['emoji']!, style: const TextStyle(fontSize: 11)),
+                              Text(
+                                track['emoji']!,
+                                style: const TextStyle(fontSize: 11),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 track['name']!,
                                 style: typography.caption.bold.copyWith(
                                   fontSize: 10.5,
-                                  color: isSelected ? colors.white : colors.textSecondary,
+                                  color: isSelected
+                                      ? colors.white
+                                      : colors.textSecondary,
                                 ),
                               ),
                             ],
@@ -1194,10 +1371,12 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                   state.ambientAudioVolume > 0.5
                       ? Icons.volume_up_rounded
                       : (state.ambientAudioVolume > 0
-                          ? Icons.volume_down_rounded
-                          : Icons.volume_mute_rounded),
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_mute_rounded),
                   size: 16,
-                  color: isPlaying ? colors.syllabotAccent : colors.textSecondary,
+                  color: isPlaying
+                      ? colors.syllabotAccent
+                      : colors.textSecondary,
                 ),
               ),
             ),
@@ -1217,163 +1396,184 @@ class _AmbientSoundscapeBar extends StatelessWidget {
         context: context,
         backgroundColor: colors.transparent,
         builder: (ctx) {
-        return BlocProvider.value(
-          value: cubit,
-          child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
-            builder: (context, roomState) {
-              final volumePercent = (roomState.ambientAudioVolume * 100).round();
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 50 : 25),
+          return BlocProvider.value(
+            value: cubit,
+            child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
+              builder: (context, roomState) {
+                final volumePercent = (roomState.ambientAudioVolume * 100)
+                    .round();
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
                   ),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.textSecondary.withAlpha(80),
-                            borderRadius: BorderRadius.circular(2),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 50 : 25),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colors.textSecondary.withAlpha(80),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                roomState.ambientAudioVolume > 0
-                                    ? Icons.volume_up_rounded
-                                    : Icons.volume_off_rounded,
-                                color: colors.syllabotAccent,
-                                size: 22,
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  roomState.ambientAudioVolume > 0
+                                      ? Icons.volume_up_rounded
+                                      : Icons.volume_off_rounded,
+                                  color: colors.syllabotAccent,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Ambient Audio Volume',
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Ambient Audio Volume',
-                                style: typography.body.bold.copyWith(
-                                  color: colors.textPrimary,
+                              decoration: BoxDecoration(
+                                color: colors.syllabotAccent.withAlpha(
+                                  isDark ? 45 : 25,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$volumePercent%',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.syllabotAccent,
                                 ),
                               ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: colors.syllabotAccent.withAlpha(isDark ? 45 : 25),
-                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Text(
-                              '$volumePercent%',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.syllabotAccent,
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            ShrinkableButton(
+                              onTap: () {
+                                unawaited(HapticFeedback.lightImpact());
+                                cubit.setAmbientVolume(
+                                  roomState.ambientAudioVolume == 0 ? 0.5 : 0.0,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 40 : 20,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  roomState.ambientAudioVolume == 0
+                                      ? Icons.volume_off_rounded
+                                      : Icons.volume_mute_rounded,
+                                  color: colors.textSecondary,
+                                  size: 20,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              cubit.setAmbientVolume(
-                                roomState.ambientAudioVolume == 0 ? 0.5 : 0.0,
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 40 : 20),
-                                shape: BoxShape.circle,
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderThemeData(
+                                  activeTrackColor: colors.syllabotAccent,
+                                  inactiveTrackColor: colors.primary.withAlpha(
+                                    isDark ? 50 : 30,
+                                  ),
+                                  thumbColor: colors.syllabotAccent,
+                                  overlayColor: colors.syllabotAccent.withAlpha(
+                                    40,
+                                  ),
+                                  trackHeight: 6,
+                                  thumbShape: const RoundSliderThumbShape(),
+                                ),
+                                child: Slider(
+                                  value: roomState.ambientAudioVolume,
+                                  onChanged: cubit.setAmbientVolume,
+                                ),
                               ),
-                              child: Icon(
-                                roomState.ambientAudioVolume == 0
-                                    ? Icons.volume_off_rounded
-                                    : Icons.volume_mute_rounded,
+                            ),
+                            ShrinkableButton(
+                              onTap: () {
+                                unawaited(HapticFeedback.lightImpact());
+                                cubit.setAmbientVolume(1);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 40 : 20,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.volume_up_rounded,
+                                  color: colors.syllabotAccent,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Mute',
+                              style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
-                                size: 20,
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: SliderTheme(
-                              data: SliderThemeData(
-                                activeTrackColor: colors.syllabotAccent,
-                                inactiveTrackColor:
-                                    colors.primary.withAlpha(isDark ? 50 : 30),
-                                thumbColor: colors.syllabotAccent,
-                                overlayColor: colors.syllabotAccent.withAlpha(40),
-                                trackHeight: 6,
-                                thumbShape: const RoundSliderThumbShape(),
-                              ),
-                              child: Slider(
-                                value: roomState.ambientAudioVolume,
-                                onChanged: cubit.setAmbientVolume,
+                            Text(
+                              'Max',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
                               ),
                             ),
-                          ),
-                          ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              cubit.setAmbientVolume(1);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 40 : 20),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.volume_up_rounded,
-                                color: colors.syllabotAccent,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Mute',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            'Max',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    ));
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -1415,11 +1615,15 @@ class _FocusCockpitSection extends StatelessWidget {
     final scholars = participants.isNotEmpty
         ? participants
         : fallbackNames
-            .take(6)
-            .map(
-              (n) => EphemeralParticipant(userId: n, displayName: n, avatarUrl: ''),
-            )
-            .toList();
+              .take(6)
+              .map(
+                (n) => EphemeralParticipant(
+                  userId: n,
+                  displayName: n,
+                  avatarUrl: '',
+                ),
+              )
+              .toList();
 
     return Container(
       width: double.infinity,
@@ -1441,7 +1645,10 @@ class _FocusCockpitSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: cColors.primary.withAlpha(cIsDark ? 50 : 30),
                   borderRadius: BorderRadius.circular(16),
@@ -1457,25 +1664,39 @@ class _FocusCockpitSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: (isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent)
-                      .withAlpha(cIsDark ? 40 : 25),
+                  color:
+                      (isVoicePodEnabled
+                              ? cColors.warning
+                              : cColors.syllabotAccent)
+                          .withAlpha(cIsDark ? 40 : 25),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isVoicePodEnabled ? Icons.record_voice_over_rounded : Icons.headphones_rounded,
+                      isVoicePodEnabled
+                          ? Icons.record_voice_over_rounded
+                          : Icons.headphones_rounded,
                       size: 12,
-                      color: isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent,
+                      color: isVoicePodEnabled
+                          ? cColors.warning
+                          : cColors.syllabotAccent,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      isVoicePodEnabled ? 'Voice Pod Active' : 'Silent Flow Cockpit',
+                      isVoicePodEnabled
+                          ? 'Voice Pod Active'
+                          : 'Silent Flow Cockpit',
                       style: cTypography.caption.bold.copyWith(
-                        color: isVoicePodEnabled ? cColors.warning : cColors.syllabotAccent,
+                        color: isVoicePodEnabled
+                            ? cColors.warning
+                            : cColors.syllabotAccent,
                         fontSize: 10.5,
                       ),
                     ),
@@ -1503,20 +1724,21 @@ class _FocusCockpitSection extends StatelessWidget {
                     ),
                   ]
                 : scholars
-                    .take(6)
-                    .map(
-                      (p) => _FocusParticipantTile(
-                        participant: p,
-                        colors: cColors,
-                        typography: cTypography,
-                        isDark: cIsDark,
-                        isSpeaking: isVoicePodEnabled &&
-                            (activeSpeakerIds.contains(p.userId) ||
-                             (!p.isMuted && activeSpeakerIds.isEmpty)),
-                        isVoicePodEnabled: isVoicePodEnabled,
-                      ),
-                    )
-                    .toList(),
+                      .take(6)
+                      .map(
+                        (p) => _FocusParticipantTile(
+                          participant: p,
+                          colors: cColors,
+                          typography: cTypography,
+                          isDark: cIsDark,
+                          isSpeaking:
+                              isVoicePodEnabled &&
+                              (activeSpeakerIds.contains(p.userId) ||
+                                  (!p.isMuted && activeSpeakerIds.isEmpty)),
+                          isVoicePodEnabled: isVoicePodEnabled,
+                        ),
+                      )
+                      .toList(),
           ),
 
           const Spacer(),
@@ -1590,14 +1812,20 @@ class _FocusParticipantTile extends StatelessWidget {
               isGlowing: !participant.isAway,
               isDark: cIsDark,
             ),
-            if (isVoicePodEnabled && !participant.isMuted && !participant.isAway)
+            if (isVoicePodEnabled &&
+                !participant.isMuted &&
+                !participant.isAway)
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: cColors.recallEasy,
                 ),
-                child: const Icon(Icons.mic_rounded, size: 9, color: Colors.white),
+                child: const Icon(
+                  Icons.mic_rounded,
+                  size: 9,
+                  color: Colors.white,
+                ),
               ),
             if (participant.isAway)
               Container(
@@ -1606,14 +1834,20 @@ class _FocusParticipantTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: cColors.warning,
                 ),
-                child: const Icon(Icons.pause_rounded, size: 9, color: Colors.white),
+                child: const Icon(
+                  Icons.pause_rounded,
+                  size: 9,
+                  color: Colors.white,
+                ),
               ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
           participant.displayName.split(' ').first,
-          style: cTypography.caption.medium.copyWith(color: cColors.textPrimary),
+          style: cTypography.caption.medium.copyWith(
+            color: cColors.textPrimary,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -1669,7 +1903,8 @@ class _FocusParticipantTile extends StatelessWidget {
             ),
           ),
         ],
-        if (participant.activeGoal != null && participant.activeGoal!.trim().isNotEmpty) ...[
+        if (participant.activeGoal != null &&
+            participant.activeGoal!.trim().isNotEmpty) ...[
           const SizedBox(height: 2.5),
           Container(
             constraints: const BoxConstraints(maxWidth: 90),
@@ -1721,8 +1956,14 @@ class _AudienceSection extends StatelessWidget {
     final listeners = audience.isNotEmpty
         ? audience
         : fallbackNames
-            .map((n) => EphemeralParticipant(userId: n, displayName: n, avatarUrl: ''))
-            .toList();
+              .map(
+                (n) => EphemeralParticipant(
+                  userId: n,
+                  displayName: n,
+                  avatarUrl: '',
+                ),
+              )
+              .toList();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -1772,7 +2013,10 @@ class _AudienceSection extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: cColors.warning,
                             ),
-                            child: const Text('✋', style: TextStyle(fontSize: 8)),
+                            child: const Text(
+                              '✋',
+                              style: TextStyle(fontSize: 8),
+                            ),
                           ),
                       ],
                     ),
@@ -1879,7 +2123,9 @@ class _BottomActionBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
-        color: cIsDark ? cColors.surfaceSecondary.withAlpha(180) : cColors.surfacePrimary,
+        color: cIsDark
+            ? cColors.surfaceSecondary.withAlpha(180)
+            : cColors.surfacePrimary,
         border: Border(
           top: BorderSide(color: cColors.primary.withAlpha(20)),
         ),
@@ -1894,7 +2140,10 @@ class _BottomActionBar extends StatelessWidget {
             ShrinkableButton(
               onTap: onLaunchSprint,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   color: state.isCoOpSprintActive
                       ? cColors.warning.withAlpha(cIsDark ? 50 : 30)
@@ -1912,13 +2161,19 @@ class _BottomActionBar extends StatelessWidget {
                     Icon(
                       Icons.bolt_rounded,
                       size: 16,
-                      color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                      color: state.isCoOpSprintActive
+                          ? cColors.warning
+                          : cColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      state.isCoOpSprintActive ? state.formattedSprintTimer : 'Sprint',
+                      state.isCoOpSprintActive
+                          ? state.formattedSprintTimer
+                          : 'Sprint',
                       style: cTypography.caption.bold.copyWith(
-                        color: state.isCoOpSprintActive ? cColors.warning : cColors.primary,
+                        color: state.isCoOpSprintActive
+                            ? cColors.warning
+                            : cColors.primary,
                         fontSize: 11,
                       ),
                     ),
@@ -1934,11 +2189,15 @@ class _BottomActionBar extends StatelessWidget {
                 unawaited(HapticFeedback.mediumImpact());
                 context.read<LiveRoomCubit>().logCardReviewed(5);
                 context.showSnackBar(
-                  message: 'Logged 5 cards in sprint! 🎯 Total: ${state.cardsReviewedInSprint + 5}',
+                  message:
+                      'Logged 5 cards in sprint! 🎯 Total: ${state.cardsReviewedInSprint + 5}',
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   color: cColors.syllabotAccent.withAlpha(cIsDark ? 40 : 20),
                   borderRadius: BorderRadius.circular(16),
@@ -1949,7 +2208,11 @@ class _BottomActionBar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.flash_on_rounded, size: 16, color: Colors.amber),
+                    const Icon(
+                      Icons.flash_on_rounded,
+                      size: 16,
+                      color: Colors.amber,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '+5 Cards',
@@ -1973,7 +2236,10 @@ class _BottomActionBar extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   color: state.isVoicePodEnabled
                       ? cColors.warning
@@ -2001,14 +2267,18 @@ class _BottomActionBar extends StatelessWidget {
                       state.isVoicePodEnabled
                           ? Icons.record_voice_over_rounded
                           : Icons.headphones_rounded,
-                      color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
+                      color: state.isVoicePodEnabled
+                          ? cColors.white
+                          : cColors.primary,
                       size: 16,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       state.isVoicePodEnabled ? 'Voice Pod ON' : 'Silent Focus',
                       style: cTypography.caption.bold.copyWith(
-                        color: state.isVoicePodEnabled ? cColors.white : cColors.primary,
+                        color: state.isVoicePodEnabled
+                            ? cColors.white
+                            : cColors.primary,
                         fontSize: 11,
                       ),
                     ),
@@ -2018,58 +2288,102 @@ class _BottomActionBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
 
-          // Mic Mute / Unmute Toggle Button (Only visible when voice pod is active)
-          if (state.isVoicePodEnabled) ...[
-            ShrinkableButton(
-              onTap: () async {
-                unawaited(HapticFeedback.mediumImpact());
-                final cubit = context.read<LiveRoomCubit>();
-                if (state.isMuted) {
-                  var status = await Permission.microphone.status;
-                  if (status.isPermanentlyDenied) {
-                    if (context.mounted) {
-                      _showPermanentlyDeniedSettingsDialog(context);
+            // Mic Mute / Unmute Toggle Button (Only visible when voice pod is active)
+            if (state.isVoicePodEnabled) ...[
+              ShrinkableButton(
+                onTap: () async {
+                  unawaited(HapticFeedback.mediumImpact());
+                  final cubit = context.read<LiveRoomCubit>();
+                  if (state.isMuted) {
+                    var status = await Permission.microphone.status;
+                    if (status.isPermanentlyDenied) {
+                      if (context.mounted) {
+                        _showPermanentlyDeniedSettingsDialog(context);
+                      }
+                      return;
                     }
-                    return;
-                  }
-                  if (!status.isGranted) {
-                    status = await Permission.microphone.request();
-                  }
-                  if (status.isGranted) {
-                    await cubit.toggleMicMute();
-                  } else if (status.isPermanentlyDenied) {
-                    if (context.mounted) {
-                      _showPermanentlyDeniedSettingsDialog(context);
+                    if (!status.isGranted) {
+                      status = await Permission.microphone.request();
+                    }
+                    if (status.isGranted) {
+                      await cubit.toggleMicMute();
+                    } else if (status.isPermanentlyDenied) {
+                      if (context.mounted) {
+                        _showPermanentlyDeniedSettingsDialog(context);
+                      }
+                    } else {
+                      if (context.mounted) {
+                        context.showSnackBar(
+                          message:
+                              'Microphone permission is required to unmute.',
+                        );
+                      }
                     }
                   } else {
-                    if (context.mounted) {
-                      context.showSnackBar(
-                        message: 'Microphone permission is required to unmute.',
-                      );
-                    }
+                    await cubit.toggleMicMute();
                   }
-                } else {
-                  await cubit.toggleMicMute();
-                }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: state.isMuted
+                        ? cColors.error.withAlpha(cIsDark ? 40 : 20)
+                        : cColors.recallEasy.withAlpha(cIsDark ? 50 : 30),
+                    border: Border.all(
+                      color: state.isMuted
+                          ? cColors.error.withAlpha(cIsDark ? 100 : 70)
+                          : cColors.recallEasy.withAlpha(cIsDark ? 120 : 80),
+                      width: 1.5,
+                    ),
+                    boxShadow: !state.isMuted
+                        ? [
+                            BoxShadow(
+                              color: cColors.recallEasy.withAlpha(80),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                    color: state.isMuted ? cColors.error : cColors.recallEasy,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+
+            // In-Room Deck Study Toggle Button
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.mediumImpact());
+                final cubit = context.read<LiveRoomCubit>();
+                final target = state.activeViewMode == RoomViewMode.deckStudy
+                    ? RoomViewMode.stage
+                    : RoomViewMode.deckStudy;
+                cubit.switchViewMode(target);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: state.isMuted
-                      ? cColors.error.withAlpha(cIsDark ? 40 : 20)
-                      : cColors.recallEasy.withAlpha(cIsDark ? 50 : 30),
+                  color: state.activeViewMode == RoomViewMode.deckStudy
+                      ? cColors.primary
+                      : cColors.surfaceSecondary,
                   border: Border.all(
-                    color: state.isMuted
-                        ? cColors.error.withAlpha(cIsDark ? 100 : 70)
-                        : cColors.recallEasy.withAlpha(cIsDark ? 120 : 80),
-                    width: 1.5,
+                    color: state.activeViewMode == RoomViewMode.deckStudy
+                        ? cColors.primary
+                        : cColors.primary.withAlpha(50),
                   ),
-                  boxShadow: !state.isMuted
+                  boxShadow: state.activeViewMode == RoomViewMode.deckStudy
                       ? [
                           BoxShadow(
-                            color: cColors.recallEasy.withAlpha(80),
+                            color: cColors.primary.withAlpha(100),
                             blurRadius: 10,
                             spreadRadius: 1,
                           ),
@@ -2077,195 +2391,162 @@ class _BottomActionBar extends StatelessWidget {
                       : null,
                 ),
                 child: Icon(
-                  state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-                  color: state.isMuted ? cColors.error : cColors.recallEasy,
+                  Icons.style_rounded,
+                  color: state.activeViewMode == RoomViewMode.deckStudy
+                      ? Colors.white
+                      : cColors.primary,
                   size: 18,
                 ),
               ),
             ),
             const SizedBox(width: 8),
-          ],
 
-          // In-Room Deck Study Toggle Button
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.mediumImpact());
-              final cubit = context.read<LiveRoomCubit>();
-              final target = state.activeViewMode == RoomViewMode.deckStudy
-                  ? RoomViewMode.stage
-                  : RoomViewMode.deckStudy;
-              cubit.switchViewMode(target);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: state.activeViewMode == RoomViewMode.deckStudy
-                    ? cColors.primary
-                    : cColors.surfaceSecondary,
-                border: Border.all(
-                  color: state.activeViewMode == RoomViewMode.deckStudy
-                      ? cColors.primary
-                      : cColors.primary.withAlpha(50),
-                ),
-                boxShadow: state.activeViewMode == RoomViewMode.deckStudy
-                    ? [
-                        BoxShadow(
-                          color: cColors.primary.withAlpha(100),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                Icons.style_rounded,
-                color: state.activeViewMode == RoomViewMode.deckStudy
-                    ? Colors.white
-                    : cColors.primary,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // In-Room Collaborative Whiteboard Toggle Button
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.lightImpact());
-              final cubit = context.read<LiveRoomCubit>();
-              final target = state.activeViewMode == RoomViewMode.whiteboard
-                  ? RoomViewMode.stage
-                  : RoomViewMode.whiteboard;
-              cubit.switchViewMode(target);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: state.activeViewMode == RoomViewMode.whiteboard
-                    ? cColors.syllabotAccent
-                    : cColors.surfaceSecondary,
-                border: Border.all(
+            // In-Room Collaborative Whiteboard Toggle Button
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                final cubit = context.read<LiveRoomCubit>();
+                final target = state.activeViewMode == RoomViewMode.whiteboard
+                    ? RoomViewMode.stage
+                    : RoomViewMode.whiteboard;
+                cubit.switchViewMode(target);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
                   color: state.activeViewMode == RoomViewMode.whiteboard
                       ? cColors.syllabotAccent
-                      : cColors.primary.withAlpha(50),
+                      : cColors.surfaceSecondary,
+                  border: Border.all(
+                    color: state.activeViewMode == RoomViewMode.whiteboard
+                        ? cColors.syllabotAccent
+                        : cColors.primary.withAlpha(50),
+                  ),
+                  boxShadow: state.activeViewMode == RoomViewMode.whiteboard
+                      ? [
+                          BoxShadow(
+                            color: cColors.syllabotAccent.withAlpha(100),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: state.activeViewMode == RoomViewMode.whiteboard
-                    ? [
-                        BoxShadow(
-                          color: cColors.syllabotAccent.withAlpha(100),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                Icons.draw_rounded,
-                color: state.activeViewMode == RoomViewMode.whiteboard
-                    ? Colors.white
-                    : cColors.syllabotAccent,
-                size: 18,
+                child: Icon(
+                  Icons.draw_rounded,
+                  color: state.activeViewMode == RoomViewMode.whiteboard
+                      ? Colors.white
+                      : cColors.syllabotAccent,
+                  size: 18,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // In-Room Live Chat Drawer Button with Unread Badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
-                  RoomChatDrawer.show(context, currentUserId: currentUserId);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cColors.surfaceSecondary,
-                    border: Border.all(color: cColors.primary.withAlpha(50)),
-                  ),
-                  child: Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: cColors.primary,
-                    size: 18,
-                  ),
-                ),
-              ),
-              if (state.unreadChatCount > 0)
-                Positioned(
-                  top: -2,
-                  right: -2,
+            // In-Room Live Chat Drawer Button with Unread Badge
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    RoomChatDrawer.show(context, currentUserId: currentUserId);
+                  },
                   child: Container(
-                    padding: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: cColors.error,
-                      border: Border.all(color: cColors.surfacePrimary, width: 1.5),
+                      color: cColors.surfaceSecondary,
+                      border: Border.all(color: cColors.primary.withAlpha(50)),
                     ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Center(
-                      child: Text(
-                        state.unreadChatCount > 9 ? '9+' : '${state.unreadChatCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: cColors.primary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                if (state.unreadChatCount > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: cColors.error,
+                        border: Border.all(
+                          color: cColors.surfacePrimary,
+                          width: 1.5,
+                        ),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Center(
+                        child: Text(
+                          state.unreadChatCount > 9
+                              ? '9+'
+                              : '${state.unreadChatCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
+              ],
+            ),
+            const SizedBox(width: 8),
+
+            // Pause/Resume timer
+            ShrinkableButton(
+              onTap: () => context.read<LiveRoomCubit>().toggleTimerPause(),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: cColors.surfaceSecondary,
+                  border: Border.all(color: cColors.primary.withAlpha(50)),
                 ),
-            ],
-          ),
-          const SizedBox(width: 8),
-
-          // Pause/Resume timer
-          ShrinkableButton(
-            onTap: () => context.read<LiveRoomCubit>().toggleTimerPause(),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cColors.surfaceSecondary,
-                border: Border.all(color: cColors.primary.withAlpha(50)),
-              ),
-              child: Icon(
-                state.room.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                color: cColors.primary,
-                size: 18,
+                child: Icon(
+                  state.room.isPaused
+                      ? Icons.play_arrow_rounded
+                      : Icons.pause_rounded,
+                  color: cColors.primary,
+                  size: 18,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Leave Room
-          ShrinkableButton(
-            onTap: onLeave ?? () => unawaited(context.router.maybePop()),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cColors.error.withAlpha(25),
-                border: Border.all(color: cColors.error.withAlpha(80)),
-              ),
-              child: Icon(
-                Icons.call_end_rounded,
-                color: cColors.error,
-                size: 18,
+            // Leave Room
+            ShrinkableButton(
+              onTap: onLeave ?? () => unawaited(context.router.maybePop()),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: cColors.error.withAlpha(25),
+                  border: Border.all(color: cColors.error.withAlpha(80)),
+                ),
+                child: Icon(
+                  Icons.call_end_rounded,
+                  color: cColors.error,
+                  size: 18,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showPermanentlyDeniedSettingsDialog(BuildContext context) {
     final colors = context.colors;
@@ -2278,8 +2559,9 @@ class _BottomActionBar extends StatelessWidget {
           backgroundColor: context.isDarkMode
               ? colors.surfaceSecondary
               : colors.surfacePrimary,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               Container(
@@ -2298,8 +2580,9 @@ class _BottomActionBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Microphone Access',
-                  style: typography.subhead.bold
-                      .copyWith(color: colors.textPrimary),
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -2327,8 +2610,10 @@ class _BottomActionBar extends StatelessWidget {
                 await openAppSettings();
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: colors.primary,
                   borderRadius: BorderRadius.circular(10),
@@ -2345,7 +2630,6 @@ class _BottomActionBar extends StatelessWidget {
     );
   }
 }
-
 
 // ── Active Speakers Banner ───────────────────────────────────────────────────
 
@@ -2451,7 +2735,7 @@ class _GlowAvatarState extends State<_GlowAvatar>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
+      // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
     )..repeat(reverse: true);
     _pulse = Tween<double>(begin: 0.85, end: 1.05).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
@@ -2528,7 +2812,7 @@ class _LivePulseBadgeState extends State<_LivePulseBadge>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
-    // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
+      // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
     )..repeat(reverse: true);
     _fade = Tween<double>(begin: 0.4, end: 1).animate(_ctrl);
   }
@@ -2709,9 +2993,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: isActive
-                ? colors.primary
-                : colors.transparent,
+            color: isActive ? colors.primary : colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isActive
                 ? [
@@ -2734,18 +3016,22 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 label,
-                style: (isActive
-                        ? typography.caption.bold
-                        : typography.caption.medium)
-                    .copyWith(
-                  color: isActive ? Colors.white : colors.textSecondary,
-                  fontSize: 11,
-                ),
+                style:
+                    (isActive
+                            ? typography.caption.bold
+                            : typography.caption.medium)
+                        .copyWith(
+                          color: isActive ? Colors.white : colors.textSecondary,
+                          fontSize: 11,
+                        ),
               ),
               if (badge != null) ...[
                 const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: isActive
                         ? Colors.white.withAlpha(50)
@@ -2766,339 +3052,5 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ── In-Room Collaborative Whiteboard ──────────────────────────────────────────
-
-class _InRoomWhiteboardSection extends StatefulWidget {
-  const _InRoomWhiteboardSection({
-    required this.state,
-    required this.isDark,
-  });
-
-  final LiveRoomState state;
-  final bool isDark;
-
-  @override
-  State<_InRoomWhiteboardSection> createState() =>
-      _InRoomWhiteboardSectionState();
-}
-
-class _InRoomWhiteboardSectionState extends State<_InRoomWhiteboardSection> {
-  final List<WhiteboardPoint> _currentPoints = [];
-  int _selectedColorHex = 0xFFFFFFFF;
-  final double _strokeWidth = 3;
-  bool _isEraser = false;
-
-  final List<int> _colorPalette = const [
-    0xFFFFFFFF, // White
-    0xFF6366F1, // Indigo / Primary
-    0xFFF59E0B, // Amber
-    0xFF10B981, // Emerald
-    0xFFEC4899, // Pink
-    0xFF06B6D4, // Cyan
-  ];
-
-  void _onPanStart(DragStartDetails details, BoxConstraints constraints) {
-    setState(() {
-      _currentPoints
-        ..clear()
-        ..add(
-          WhiteboardPoint(
-            x: (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0),
-            y: (details.localPosition.dy / constraints.maxHeight).clamp(0.0, 1.0),
-          ),
-        );
-    });
-  }
-
-  void _onPanUpdate(DragUpdateDetails details, BoxConstraints constraints) {
-    setState(() {
-      _currentPoints.add(
-        WhiteboardPoint(
-          x: (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0),
-          y: (details.localPosition.dy / constraints.maxHeight).clamp(0.0, 1.0),
-        ),
-      );
-    });
-  }
-
-  void _onPanEnd(DragEndDetails details) {
-    if (_currentPoints.isEmpty) return;
-
-    final cubit = context.read<LiveRoomCubit>();
-    final userStorage = locator<UserStorageService>();
-    final userId = userStorage.getUserId() ?? 'user_local';
-    final userName = userStorage.getUserDisplayName() ?? 'Scholar';
-
-    final stroke = WhiteboardStroke(
-      id: 'stroke_${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(9999)}',
-      userId: userId,
-      userName: userName,
-      colorHex: _isEraser ? (widget.isDark ? 0xFF12131A : 0xFFFFFFFF) : _selectedColorHex,
-      strokeWidth: _isEraser ? 16.0 : _strokeWidth,
-      isEraser: _isEraser,
-      points: List<WhiteboardPoint>.from(_currentPoints),
-    );
-
-    cubit.addWhiteboardStroke(stroke);
-    setState(_currentPoints.clear);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final isDark = widget.isDark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Stack(
-        children: [
-          // Whiteboard Surface
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF13141E) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: colors.primary.withAlpha(isDark ? 60 : 30),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 80 : 20),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return GestureDetector(
-                    onPanStart: (details) => _onPanStart(details, constraints),
-                    onPanUpdate: (details) => _onPanUpdate(details, constraints),
-                    onPanEnd: _onPanEnd,
-                    child: CustomPaint(
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      painter: _WhiteboardCanvasPainter(
-                        strokes: widget.state.whiteboardStrokes,
-                        livePoints: _currentPoints,
-                        liveColorHex: _selectedColorHex,
-                        liveStrokeWidth: _isEraser ? 16.0 : _strokeWidth,
-                        isEraser: _isEraser,
-                        isDark: isDark,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // Floating Tools Toolbar (Color palette, Eraser, Undo, Redo, Clear)
-          Positioned(
-            bottom: 12,
-            left: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary.withAlpha(isDark ? 230 : 245),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.primary.withAlpha(isDark ? 60 : 30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 90 : 30),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Color choices
-                  ..._colorPalette.map((colorHex) {
-                    final isSelected = !_isEraser && _selectedColorHex == colorHex;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: GestureDetector(
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          setState(() {
-                            _selectedColorHex = colorHex;
-                            _isEraser = false;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: isSelected ? 24 : 18,
-                          height: isSelected ? 24 : 18,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(colorHex),
-                            border: Border.all(
-                              color: isSelected ? colors.primary : Colors.grey.withAlpha(80),
-                              width: isSelected ? 2.5 : 1.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-
-                  const Spacer(),
-
-                  // Eraser Toggle
-                  ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      setState(() => _isEraser = !_isEraser);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isEraser ? colors.warning : colors.surfaceTertiary,
-                      ),
-                      child: Icon(
-                        Icons.cleaning_services_rounded,
-                        size: 15,
-                        color: _isEraser ? Colors.white : colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Undo Button
-                  ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      context.read<LiveRoomCubit>().undoWhiteboardStroke();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.surfaceTertiary,
-                      ),
-                      child: Icon(
-                        Icons.undo_rounded,
-                        size: 15,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Clear Button
-                  ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.mediumImpact());
-                      context.read<LiveRoomCubit>().clearWhiteboard();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.error.withAlpha(isDark ? 40 : 25),
-                      ),
-                      child: Icon(
-                        Icons.delete_sweep_rounded,
-                        size: 15,
-                        color: colors.error,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WhiteboardCanvasPainter extends CustomPainter {
-  const _WhiteboardCanvasPainter({
-    required this.strokes,
-    required this.livePoints,
-    required this.liveColorHex,
-    required this.liveStrokeWidth,
-    required this.isEraser,
-    required this.isDark,
-  });
-
-  final List<WhiteboardStroke> strokes;
-  final List<WhiteboardPoint> livePoints;
-  final int liveColorHex;
-  final double liveStrokeWidth;
-  final bool isEraser;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 1. Draw completed strokes
-    for (final stroke in strokes) {
-      if (stroke.points.isEmpty) continue;
-
-      final paint = Paint()
-        ..color = Color(stroke.colorHex)
-        ..strokeWidth = stroke.strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-
-      final path = Path()
-        ..moveTo(
-          stroke.points.first.x * size.width,
-          stroke.points.first.y * size.height,
-        );
-
-      for (var i = 1; i < stroke.points.length; i++) {
-        path.lineTo(
-          stroke.points[i].x * size.width,
-          stroke.points[i].y * size.height,
-        );
-      }
-      canvas.drawPath(path, paint);
-    }
-
-    // 2. Draw live dragging stroke
-    if (livePoints.isNotEmpty) {
-      final livePaint = Paint()
-        ..color = isEraser
-            ? (isDark ? const Color(0xFF13141E) : Colors.white)
-            : Color(liveColorHex)
-        ..strokeWidth = liveStrokeWidth
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-
-      final livePath = Path()
-        ..moveTo(
-          livePoints.first.x * size.width,
-          livePoints.first.y * size.height,
-        );
-      for (var i = 1; i < livePoints.length; i++) {
-        livePath.lineTo(
-          livePoints[i].x * size.width,
-          livePoints[i].y * size.height,
-        );
-      }
-      canvas.drawPath(livePath, livePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WhiteboardCanvasPainter oldDelegate) {
-    return oldDelegate.strokes != strokes ||
-        oldDelegate.livePoints != livePoints ||
-        oldDelegate.liveColorHex != liveColorHex ||
-        oldDelegate.liveStrokeWidth != liveStrokeWidth;
   }
 }
