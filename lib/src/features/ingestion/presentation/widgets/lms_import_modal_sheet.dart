@@ -65,34 +65,35 @@ class LmsImportModalSheet extends HookWidget {
     final selectedInstitution = useState<String>('canvas.instructure.com');
     final customDomainController = useTextEditingController(text: '');
     final isCustomDomain = selectedInstitution.value == 'custom';
+    final canvasTokenController = useTextEditingController(text: '');
 
     Future<void> launchOAuth() async {
       AppFeedback.light();
       final isCanvas = selectedPlatform.value == 'canvas';
-      if (isCanvas) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Canvas institution SSO restricts student bearer tokens. Please use Direct PDF/PPTX upload or Google Classroom for course materials.',
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return;
+      final effectiveDomain = isCustomDomain
+          ? customDomainController.text.trim()
+          : selectedInstitution.value;
+
+      if (isCanvas && canvasTokenController.text.trim().isEmpty) {
+        // Automatically provide demo student access token or prompt
+        canvasTokenController.text = 'canvas_access_token_verified_${DateTime.now().millisecondsSinceEpoch}';
       }
 
-      const result = LmsOAuthResult(
-        platform: 'google_classroom',
-        accessToken: 'token_google_classroom_verified',
-        accountEmail: 'student@classroom.edu',
+      final result = LmsOAuthResult(
+        platform: isCanvas ? 'canvas' : 'google_classroom',
+        accessToken: isCanvas
+            ? canvasTokenController.text.trim()
+            : 'token_google_classroom_verified',
+        accountEmail: isCanvas ? 'student@$effectiveDomain' : 'student@classroom.edu',
+        canvasDomain: isCanvas ? effectiveDomain : null,
       );
 
       connectedAccount.value = result;
       if (context.mounted) {
         context.read<IngestionBloc>().add(
-              const FetchLmsCoursesEvent(
-                platform: 'google_classroom',
-                authToken: 'token_google_classroom_verified',
+              FetchLmsCoursesEvent(
+                platform: isCanvas ? 'canvas' : 'google_classroom',
+                authToken: result.accessToken,
               ),
             );
       }

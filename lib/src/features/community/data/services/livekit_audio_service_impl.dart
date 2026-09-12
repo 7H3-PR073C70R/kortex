@@ -201,6 +201,24 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
     _connectionStateController.add(LiveAudioConnectionState.disconnected);
   }
 
+  bool _wasMicEnabledBeforeInterruption = false;
+
+  /// Handles audio session interruptions such as incoming phone calls or alarms (COM-15).
+  Future<void> handleAudioInterruption(bool isInterrupted) async {
+    if (isInterrupted) {
+      _wasMicEnabledBeforeInterruption = _isMicEnabled;
+      if (_isMicEnabled) {
+        await setMicrophoneEnabled(enabled: false);
+      }
+      developer.log('LiveKitAudioService: Audio paused due to interruption', name: 'LiveKitAudio');
+    } else {
+      if (_wasMicEnabledBeforeInterruption) {
+        await setMicrophoneEnabled(enabled: true);
+      }
+      developer.log('LiveKitAudioService: Audio resumed after interruption', name: 'LiveKitAudio');
+    }
+  }
+
   @visibleForTesting
   void simulateSpeaker(String userId, {required bool isSpeaking}) {
     if (isSpeaking) {
