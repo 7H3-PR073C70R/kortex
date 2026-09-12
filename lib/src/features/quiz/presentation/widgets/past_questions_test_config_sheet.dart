@@ -291,9 +291,11 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                           ),
                           child: Center(
                             child: Text(
-                              isRandomSelection
-                                  ? 'Start Random CBT ($selectedCount Questions)'
-                                  : 'Start $selectedYear Past Paper ($selectedCount Qs)',
+                              isMillionaireMode
+                                  ? 'Start Millionaire Ascent Challenge (12 Rungs 🏆)'
+                                  : (isRandomSelection
+                                      ? 'Start Random CBT ($selectedCount Questions)'
+                                      : 'Start $selectedYear Past Paper ($selectedCount Qs)'),
                               style: typography.callout.bold.copyWith(
                                 color: colors.white,
                               ),

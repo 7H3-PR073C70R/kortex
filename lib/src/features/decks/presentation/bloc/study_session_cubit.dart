@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -265,11 +266,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   void toggleFlip() {
     if (state.status != StudySessionStatus.studying) return;
+    AppFeedback.selection();
     emit(state.copyWith(isFlipped: !state.isFlipped));
   }
 
   void setFlipped({required bool isFlipped}) {
     if (state.status != StudySessionStatus.studying) return;
+    AppFeedback.selection();
     emit(state.copyWith(isFlipped: isFlipped));
   }
 
@@ -306,14 +309,18 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     switch (fsrsRating) {
       case FsrsRating.again:
+        AppFeedback.light();
         newAgain++;
       case FsrsRating.hard:
+        AppFeedback.light();
         newCorrect++;
         newHard++;
       case FsrsRating.good:
+        AppFeedback.correct();
         newCorrect++;
         newGood++;
       case FsrsRating.easy:
+        AppFeedback.correct();
         newCorrect++;
         newEasy++;
     }
@@ -381,6 +388,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     if (state.isLastCard) {
       _timer?.cancel();
+      AppFeedback.celebration();
       final totalReviewed = updatedCards.length;
       final finalRetention =
           ((newHard * 0.7) + (newGood * 1.0) + (newEasy * 1.0)) /
@@ -491,6 +499,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   Future<void> finishEarly() async {
     if (state.status != StudySessionStatus.studying) return;
     _timer?.cancel();
+    AppFeedback.celebration();
 
     final totalReviewed = state.currentIndex;
     if (totalReviewed == 0) {

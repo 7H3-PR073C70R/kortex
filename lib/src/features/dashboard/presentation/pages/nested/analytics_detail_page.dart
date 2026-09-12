@@ -7,10 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
@@ -18,6 +22,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -55,6 +60,16 @@ class _AnalyticsDetailView extends HookWidget {
 
     final selectedFilterIndex = useState<int>(0);
     const filterOptions = ['Last 7 Days', 'Last 30 Days', 'All Time'];
+
+    final activityService = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>()
+        : null;
+    final freezeCountState = useState<int>(
+      activityService?.getStreakFreezes() ?? 1,
+    );
+    final userXpState = useState<int>(
+      activityService?.getXpPoints() ?? 0,
+    );
 
     return Scaffold(
       backgroundColor: isDark
@@ -141,6 +156,40 @@ class _AnalyticsDetailView extends HookWidget {
               _ExecutiveKpiGrid(
                 analytics: analytics,
                 timeframeIndex: filterIndex,
+              ),
+              const SizedBox(height: 20),
+
+              // Streak Shield Protection Indicator
+              StreakShieldIndicator(
+                streakDays: analytics.currentStreakDays,
+                hasStreakFreeze: freezeCountState.value > 0,
+                userXp: math.max(analytics.xpPoints, userXpState.value),
+                onPurchaseFreeze: () async {
+                  if (activityService == null) return;
+                  final success = await activityService.purchaseStreakFreeze();
+                  if (success) {
+                    AppFeedback.celebration();
+                    freezeCountState.value = activityService.getStreakFreezes();
+                    userXpState.value = activityService.getXpPoints();
+                    if (context.mounted) {
+                      context.showSnackBar(
+                        message: l10n.streakFreezeSuccess,
+                        type: SnackBarType.success,
+                      );
+                      try {
+                        locator<AuthBloc>().add(const AuthStreakIncremented());
+                      } on Object catch (_) {}
+                    }
+                  } else {
+                    AppFeedback.incorrect();
+                    if (context.mounted) {
+                      context.showSnackBar(
+                        message:
+                            'Insufficient XP. Complete study sessions to earn at least 200 XP!',
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 20),
 

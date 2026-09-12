@@ -20,6 +20,7 @@ class FlashcardGestureCanvas extends HookWidget {
     required this.onSwipeRight,
     this.onSwipeUp,
     this.onSwipeDown,
+    this.enableBionicReading = false,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class FlashcardGestureCanvas extends HookWidget {
   final VoidCallback onSwipeRight;
   final VoidCallback? onSwipeUp;
   final VoidCallback? onSwipeDown;
+  final bool enableBionicReading;
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +245,7 @@ class FlashcardGestureCanvas extends HookWidget {
                           typography: typography,
                           isDark: isDark,
                           card: card,
+                          enableBionicReading: enableBionicReading,
                         ),
                       )
                     : _CardFace(
@@ -255,6 +258,7 @@ class FlashcardGestureCanvas extends HookWidget {
                         typography: typography,
                         isDark: isDark,
                         card: card,
+                        enableBionicReading: enableBionicReading,
                       ),
               ),
 
@@ -391,6 +395,7 @@ class _CardFace extends StatelessWidget {
     required this.isDark,
     required this.card,
     this.latexFormula,
+    this.enableBionicReading = false,
   });
 
   final String badgeText;
@@ -402,6 +407,7 @@ class _CardFace extends StatelessWidget {
   final TypographyThemeExtension typography;
   final bool isDark;
   final FlashcardEntity card;
+  final bool enableBionicReading;
 
   @override
   Widget build(BuildContext context) {
@@ -509,6 +515,7 @@ class _CardFace extends StatelessWidget {
                         latexFormula: latexFormula,
                         imageUrl: card.imageUrl,
                         isBackFace: isBackFace,
+                        enableBionicReading: enableBionicReading,
                       ),
                     ),
                   ),

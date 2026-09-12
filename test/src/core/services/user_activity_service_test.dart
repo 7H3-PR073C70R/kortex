@@ -145,5 +145,33 @@ void main() {
       expect(activityService.getStreakFreezes(), equals(0));
       expect(activityService.getCurrentStreak(), equals(2));
     });
+
+    test('purchaseStreakFreeze rejects when XP is insufficient and equips shield when XP is sufficient', () async {
+      // Starting state: 0 XP
+      expect(activityService.getXpPoints(), equals(0));
+      expect(activityService.getStreakFreezes(), equals(1));
+
+      // Attempt purchase without enough XP
+      final failedPurchase = await activityService.purchaseStreakFreeze();
+      expect(failedPurchase, isFalse);
+      expect(activityService.getStreakFreezes(), equals(1));
+      expect(activityService.getSpentXp(), equals(0));
+
+      // Study session to earn XP:
+      // (20 * 10) + (5 * 5) + 50 + (1 * 30) = 305 XP
+      await activityService.recordStudySession(
+        cardsReviewed: 20,
+        durationSeconds: 300,
+        retentionScore: 1,
+      );
+      expect(activityService.getXpPoints(), equals(305));
+
+      // Successful purchase of streak freeze (costs 200 XP)
+      final successPurchase = await activityService.purchaseStreakFreeze();
+      expect(successPurchase, isTrue);
+      expect(activityService.getStreakFreezes(), equals(2));
+      expect(activityService.getSpentXp(), equals(200));
+      expect(activityService.getXpPoints(), equals(105)); // 305 - 200 = 105
+    });
   });
 }

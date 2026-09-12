@@ -632,8 +632,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) {
     if (state.userProfile != null) {
       var liveStreak = 0;
+      var liveFreezes = state.userProfile!.streakFreezeCount;
       try {
-        liveStreak = locator<UserActivityService>().getCurrentStreak();
+        final activityService = locator<UserActivityService>();
+        liveStreak = activityService.getCurrentStreak();
+        liveFreezes = activityService.getStreakFreezes();
       } on Object catch (_) {}
 
       final updatedStreak = liveStreak > 0
@@ -644,7 +647,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(
         state.copyWith(
-          userProfile: state.userProfile!.copyWith(streakDays: updatedStreak),
+          userProfile: state.userProfile!.copyWith(
+            streakDays: updatedStreak,
+            streakFreezeCount: liveFreezes,
+          ),
         ),
       );
 
@@ -654,6 +660,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           locator<ProfileApiClient>().updateProfile(
             userId: state.userProfile!.id,
             streakDays: updatedStreak,
+            streakFreezeCount: liveFreezes,
           ),
         );
       } on Object catch (_) {}

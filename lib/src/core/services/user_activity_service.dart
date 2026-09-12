@@ -19,6 +19,8 @@ abstract class UserActivityService {
   int getStreakFreezes();
   Future<void> setStreakFreezes(int count);
   Future<bool> consumeStreakFreeze();
+  int getSpentXp();
+  Future<bool> purchaseStreakFreeze({int costXp = 200});
   int getTotalCardsMastered();
   int getWeeklyMinutesStudied();
   double getOverallRetentionRate();
@@ -39,6 +41,7 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _streakLongestKey = '__kortex_streak_longest';
   static const String _lastStudyDateKey = '__kortex_last_study_date';
   static const String _streakFreezesKey = '__kortex_streak_freezes';
+  static const String _spentXpKey = '__kortex_spent_xp';
 
   @override
   int getStreakFreezes() {
@@ -60,6 +63,31 @@ class UserActivityServiceImpl implements UserActivityService {
     final current = getStreakFreezes();
     if (current <= 0) return false;
     await setStreakFreezes(current - 1);
+    return true;
+  }
+
+  @override
+  int getSpentXp() {
+    final raw = _localStorageService.getPreference(key: _spentXpKey);
+    if (raw == null || raw.isEmpty) return 0;
+    return int.tryParse(raw) ?? 0;
+  }
+
+  Future<void> _recordSpentXp(int amount) async {
+    final current = getSpentXp();
+    await _localStorageService.savePreference(
+      key: _spentXpKey,
+      data: (current + amount).toString(),
+    );
+  }
+
+  @override
+  Future<bool> purchaseStreakFreeze({int costXp = 200}) async {
+    final availableXp = getXpPoints();
+    if (availableXp < costXp) return false;
+
+    await _recordSpentXp(costXp);
+    await setStreakFreezes(getStreakFreezes() + 1);
     return true;
   }
 
@@ -243,7 +271,8 @@ class UserActivityServiceImpl implements UserActivityService {
       xp += (cards * 10) + (minutes * 5) + 50;
     }
     final streak = getCurrentStreak();
-    return xp + (streak * 30);
+    final totalEarned = xp + (streak * 30);
+    return (totalEarned - getSpentXp()).clamp(0, 9999999);
   }
 
   @override

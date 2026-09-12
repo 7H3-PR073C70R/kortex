@@ -377,9 +377,11 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
               // Start Action Button
               AppButton(
-                text: isMockExam
-                    ? 'Start Mock Exam (${selectedCount.value} Questions)'
-                    : 'Start Practice Drill (${selectedCount.value} Questions)',
+                text: isMillionaire.value
+                    ? 'Start Millionaire Arcade (12 Tiers 🏆)'
+                    : (isMockExam
+                        ? 'Start Mock Exam (${selectedCount.value} Questions)'
+                        : 'Start Practice Drill (${selectedCount.value} Questions)'),
                 isLoading: isStarting.value,
                 onPressed: isStarting.value ? null : handleStart,
               ),

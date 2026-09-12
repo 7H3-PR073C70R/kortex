@@ -37,11 +37,13 @@ class ScholarHubCard extends StatelessWidget {
     var streakDays = profile?.streakDays ?? 0;
     var level = profile?.level ?? 1;
     var retentionPct = ((profile?.retentionBenchmark ?? 0.85) * 100).toInt();
+    var streakFreezes = profile?.streakFreezeCount ?? 0;
 
     try {
       final userActivity = locator<UserActivityService>();
       final localStreak = userActivity.getCurrentStreak();
       streakDays = math.max(streakDays, localStreak);
+      streakFreezes = math.max(streakFreezes, userActivity.getStreakFreezes());
 
       final liveRetention = userActivity.getOverallRetentionRate();
       if (liveRetention > 0) {
@@ -243,6 +245,53 @@ class ScholarHubCard extends StatelessWidget {
                     value: '$retentionPct% 🧠',
                     colors: colors,
                     typography: typography,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Streak Shield Protection Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: (streakFreezes > 0 ? colors.info : colors.warning)
+                  .withAlpha(isDark ? 30 : 18),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(22),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      streakFreezes > 0 ? '🛡️' : '⚠️',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      streakFreezes > 0
+                          ? '$streakFreezes Streak Freeze${streakFreezes > 1 ? 's' : ''} Active'
+                          : 'No Streak Shield Active',
+                      style: typography.caption.bold.copyWith(
+                        color: streakFreezes > 0 ? colors.info : colors.warning,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  streakFreezes > 0 ? 'Protected' : 'Risk of Reset',
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11,
                   ),
                 ),
               ],

@@ -7,6 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -104,6 +105,7 @@ class _StudySessionView extends HookWidget {
 
     final focusNode = useFocusNode();
     final lastMilestoneIndex = useRef<int>(0);
+    final isBionicEnabled = useState<bool>(false);
 
     useEffect(
       () {
@@ -226,35 +228,82 @@ class _StudySessionView extends HookWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // Study Buddy Pulse Indicator (Co-presence feeling)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(isDark ? 30 : 15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.primary.withAlpha(40)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
+                    // Study Buddy Pulse Indicator & Bionic Focus Accommodation
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 30 : 15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: colors.primary.withAlpha(40)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.success,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Studying with cohort',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ShrinkableButton(
+                          onTap: () {
+                            AppFeedback.selection();
+                            isBionicEnabled.value = !isBionicEnabled.value;
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: colors.success,
+                              color: isBionicEnabled.value
+                                  ? colors.primary.withAlpha(isDark ? 60 : 35)
+                                  : colors.surfaceSecondary.withAlpha(isDark ? 90 : 130),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isBionicEnabled.value
+                                    ? colors.primary
+                                    : colors.surfaceBorder.withAlpha(60),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_stories_rounded,
+                                  size: 13,
+                                  color: isBionicEnabled.value
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Bionic Focus',
+                                  style: typography.caption.bold.copyWith(
+                                    color: isBionicEnabled.value
+                                        ? colors.primary
+                                        : colors.textSecondary,
+                                    fontSize: 10.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Studying with scholars in your cohort right now',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
 
@@ -264,6 +313,7 @@ class _StudySessionView extends HookWidget {
                         child: FlashcardGestureCanvas(
                           card: currentCard,
                           isFlipped: state.isFlipped,
+                          enableBionicReading: isBionicEnabled.value,
                           onTapFlip: () {
                             context.read<StudySessionCubit>().toggleFlip();
                           },

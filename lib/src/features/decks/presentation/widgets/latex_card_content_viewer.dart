@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/utils/bionic_text_formatter.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -13,6 +14,7 @@ class LatexCardContentViewer extends StatelessWidget {
     this.latexFormula,
     this.imageUrl,
     this.isBackFace = false,
+    this.enableBionicReading = false,
     super.key,
   });
 
@@ -20,6 +22,7 @@ class LatexCardContentViewer extends StatelessWidget {
   final String? latexFormula;
   final String? imageUrl;
   final bool isBackFace;
+  final bool enableBionicReading;
 
   Widget _buildImage(
     String url, {
@@ -136,12 +139,16 @@ class LatexCardContentViewer extends StatelessWidget {
         ? typography.callout.medium
         : typography.title3.bold;
 
+    final displayText = enableBionicReading
+        ? BionicTextFormatter.format(text)
+        : text;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Primary text with LaTeX support
         LatexRichViewer(
-          text: text,
+          text: displayText,
           textAlign: TextAlign.center,
           style: baseStyle.copyWith(
             color: colors.textPrimary,

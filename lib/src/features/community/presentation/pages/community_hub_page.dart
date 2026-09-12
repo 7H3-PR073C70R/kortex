@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
@@ -69,6 +71,13 @@ class _CommunityHubView extends HookWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
+    final liveFreezes = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>().getStreakFreezes()
+        : 0;
+    final effectiveStreakFreezes = math.max(
+      authState?.userProfile?.streakFreezeCount ?? 0,
+      liveFreezes,
+    );
 
     // Auto provision / join community for user's academic track on launch & lock forum
     useEffect(() {
@@ -281,8 +290,7 @@ class _CommunityHubView extends HookWidget {
                                       _MarketplaceDecksList(state: state),
                                       StreakLeaderboardWidget(
                                         entries: state.leaderboardEntries,
-                                        streakFreezeCount:
-                                            authState?.userProfile?.streakFreezeCount ?? 0,
+                                        streakFreezeCount: effectiveStreakFreezes,
                                       ),
                                     ],
                                   ),
@@ -294,7 +302,7 @@ class _CommunityHubView extends HookWidget {
                                     child: StreakLeaderboardWidget(
                                       entries: state.leaderboardEntries,
                                       streakFreezeCount:
-                                          authState?.userProfile?.streakFreezeCount ?? 0,
+                                          effectiveStreakFreezes,
                                     ),
                                   ),
                                 ),
@@ -314,8 +322,7 @@ class _CommunityHubView extends HookWidget {
                               padding: const EdgeInsets.all(16),
                               child: StreakLeaderboardWidget(
                                 entries: state.leaderboardEntries,
-                                streakFreezeCount:
-                                    authState?.userProfile?.streakFreezeCount ?? 0,
+                                streakFreezeCount: effectiveStreakFreezes,
                               ),
                             ),
                           ],
