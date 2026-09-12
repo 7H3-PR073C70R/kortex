@@ -21,6 +21,13 @@ class MockLiveKitAudioService implements LiveKitAudioService {
       StreamController<LiveAudioConnectionState>.broadcast();
 
   bool? lastSetMicEnabled;
+  @override
+  bool isLowDataMode = false;
+
+  @override
+  Future<void> setLowDataMode({required bool enabled}) async {
+    isLowDataMode = enabled;
+  }
 
   @override
   bool get isConnected => _isConnected;

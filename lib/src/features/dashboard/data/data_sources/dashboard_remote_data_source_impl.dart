@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -557,17 +558,15 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     required String examId,
     required String subject,
   }) async {
-    try {
-      final res = await _client.startMockExam({
-        'examId': examId,
-        'subject': subject,
-      });
-      final dynamic data = res.data;
-      if (data is Map<String, dynamic> && data['sessionId'] != null) {
-        return data['sessionId'].toString();
-      }
-    } on Object catch (_) {}
-    return 'mock_session_${DateTime.now().millisecondsSinceEpoch}';
+    final res = await _client.startMockExam({
+      'examId': examId,
+      'subject': subject,
+    });
+    final dynamic data = res.data;
+    if (data is Map<String, dynamic> && data['sessionId'] != null) {
+      return data['sessionId'].toString();
+    }
+    throw ServerException(message: 'Invalid session response from server');
   }
 
   DashboardFeedModel _generateFallbackFeedModel(

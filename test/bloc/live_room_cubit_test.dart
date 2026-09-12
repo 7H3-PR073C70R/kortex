@@ -208,6 +208,15 @@ class MockLiveKitAudioService implements LiveKitAudioService {
   Future<bool> requestMicrophonePermission() async => true;
 
   @override
+  bool get isLowDataMode => _lowDataMode;
+  bool _lowDataMode = false;
+
+  @override
+  Future<void> setLowDataMode({required bool enabled}) async {
+    _lowDataMode = enabled;
+  }
+
+  @override
   Future<bool> openAppSettings() async => true;
 
   void emitActiveSpeakers(Set<String> speakers) {

@@ -20,6 +20,9 @@ void _initServices() {
     ..registerLazySingleton<SessionExpiredService>(
       SessionExpiredService.new,
     )
+    ..registerLazySingleton<BreakReminderService>(
+      BreakReminderService.new,
+    )
     ..registerLazySingleton<AppRouter>(
       () => AppRouter(authGuard: locator<AuthRouteGuard>()),
     )

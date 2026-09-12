@@ -14,6 +14,25 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart' as _svg;
 import 'package:vector_graphics/vector_graphics.dart' as _vg;
 
+class $AssetsAudioGen {
+  const $AssetsAudioGen();
+
+  /// File path: assets/audio/binaural.wav
+  String get binaural => 'assets/audio/binaural.wav';
+
+  /// File path: assets/audio/lofi.wav
+  String get lofi => 'assets/audio/lofi.wav';
+
+  /// File path: assets/audio/rain.wav
+  String get rain => 'assets/audio/rain.wav';
+
+  /// File path: assets/audio/silence.wav
+  String get silence => 'assets/audio/silence.wav';
+
+  /// List of all assets
+  List<String> get values => [binaural, lofi, rain, silence];
+}
+
 class $AssetsIconsGen {
   const $AssetsIconsGen();
 
@@ -119,6 +138,7 @@ class $AssetsSvgsGen {
 }
 
 abstract final class AppAssets {
+  static const $AssetsAudioGen audio = $AssetsAudioGen();
   static const $AssetsIconsGen icons = $AssetsIconsGen();
   static const $AssetsImagesGen images = $AssetsImagesGen();
   static const $AssetsSvgsGen svgs = $AssetsSvgsGen();

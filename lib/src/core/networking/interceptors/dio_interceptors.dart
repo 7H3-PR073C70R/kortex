@@ -218,3 +218,59 @@ class DataParserInterceptor extends Interceptor {
     super.onResponse(response, handler);
   }
 }
+
+class ExponentialBackoffRetryInterceptor extends Interceptor {
+  ExponentialBackoffRetryInterceptor({
+    Dio? dio,
+    this.maxRetries = 3,
+    this.initialDelay = const Duration(seconds: 1),
+  }) : _dio = dio ?? Dio();
+
+  final Dio _dio;
+  final int maxRetries;
+  final Duration initialDelay;
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final extra = err.requestOptions.extra;
+    final retryCount = (extra['retry_count'] as int?) ?? 0;
+
+    final statusCode = err.response?.statusCode;
+    final isTransient = err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.connectionError ||
+        (statusCode != null &&
+            (statusCode == 500 ||
+                statusCode == 502 ||
+                statusCode == 503 ||
+                statusCode == 504));
+
+    if (isTransient && retryCount < maxRetries) {
+      final nextRetry = retryCount + 1;
+      final multiplier = 1 << retryCount; // 1, 2, 4
+      final baseDelayMs = initialDelay.inMilliseconds * multiplier;
+      final jitterMs =
+          (baseDelayMs * 0.2 * (DateTime.now().millisecond / 1000.0)).toInt();
+      final delay = Duration(milliseconds: baseDelayMs + jitterMs);
+
+      await Future<void>.delayed(delay);
+
+      final newOptions = err.requestOptions;
+      newOptions.extra['retry_count'] = nextRetry;
+
+      try {
+        final response = await _dio.fetch<dynamic>(newOptions);
+        handler.resolve(response);
+        return;
+      } on DioException catch (retryErr) {
+        return super.onError(retryErr, handler);
+      }
+    }
+
+    super.onError(err, handler);
+  }
+}

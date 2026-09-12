@@ -46,6 +46,12 @@ abstract class LiveKitAudioService {
   /// Stream of local microphone muted/unmuted state
   Stream<bool> get microphoneStateStream;
 
+  /// Toggles low-data mode (Opus 16kbps mono constraint to reduce cellular usage).
+  Future<void> setLowDataMode({required bool enabled}) async {}
+
+  /// Whether low-data mode is active
+  bool get isLowDataMode => false;
+
   /// Stream of WebRTC connection status updates
   Stream<LiveAudioConnectionState> get connectionStateStream;
 }

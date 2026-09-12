@@ -30,8 +30,12 @@ void main() {
 
   group('DecksRemoteDataSourceImpl.saveGeneratedDeck', () {
     test('saves deck & cards locally and calls Supabase endpoints', () async {
+      const validDeckUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+      const validCard1Uuid = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12';
+      const validCard2Uuid = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
+
       const deck = DeckModel(
-        id: 'deck_bio_101',
+        id: validDeckUuid,
         title: 'Cellular Biology',
         subject: 'Biology',
         category: 'Document Ingestion',
@@ -42,14 +46,14 @@ void main() {
 
       final cards = [
         const FlashcardModel(
-          id: 'card_1',
-          deckId: 'deck_bio_101',
+          id: validCard1Uuid,
+          deckId: validDeckUuid,
           front: 'Mitosis',
           back: 'Cell division into 2 identical daughter cells',
         ),
         const FlashcardModel(
-          id: 'card_2',
-          deckId: 'deck_bio_101',
+          id: validCard2Uuid,
+          deckId: validDeckUuid,
           front: 'Meiosis',
           back: 'Cell division reducing chromosomes by half',
         ),
@@ -78,9 +82,9 @@ void main() {
 
       // Verify local instant availability
       final userDecks = await dataSource.getUserDecks();
-      expect(userDecks.any((d) => d.id == 'deck_bio_101'), isTrue);
+      expect(userDecks.any((d) => d.id == validDeckUuid), isTrue);
 
-      final deckCards = await dataSource.getDeckCards('deck_bio_101');
+      final deckCards = await dataSource.getDeckCards(validDeckUuid);
       expect(deckCards.length, 2);
 
       // Verify Supabase remote calls were executed with foreign keys
@@ -90,7 +94,7 @@ void main() {
             that: isA<Map<String, dynamic>>().having(
               (m) => m['id'],
               'id',
-              'deck_bio_101',
+              validDeckUuid,
             ),
           ),
         ),

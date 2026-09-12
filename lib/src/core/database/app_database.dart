@@ -17,6 +17,7 @@ part 'app_database.g.dart';
     ForumReplies,
     SyllabotSessions,
     SyllabotMessages,
+    ThoughtParkingLots,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -24,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +58,12 @@ class AppDatabase extends _$AppDatabase {
             );
             await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
+            );
+          }
+          if (from < 3) {
+            await m.createTable(thoughtParkingLots);
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_thought_parking_lots_created_at ON thought_parking_lots(created_at DESC);',
             );
           }
         },
@@ -835,5 +842,44 @@ class AppDatabase extends _$AppDatabase {
     return (delete(syllabotMessages)
           ..where((t) => t.createdAt.isSmallerThanValue(cutoff)))
         .go();
+  }
+
+  // --- Thought Parking Lot (ADHD Accessibility) ---
+
+  Future<List<ThoughtParkingLotEntry>> getAllThoughtEntries({
+    bool? isResolved,
+    String? deckId,
+  }) {
+    var query = select(thoughtParkingLots);
+    if (isResolved != null) {
+      query = query..where((t) => t.isResolved.equals(isResolved));
+    }
+    if (deckId != null) {
+      query = query..where((t) => t.deckId.equals(deckId));
+    }
+    return (query
+          ..orderBy([
+            (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+          ]))
+        .get();
+  }
+
+  Future<void> insertThoughtEntry(ThoughtParkingLotsCompanion entry) {
+    return into(thoughtParkingLots).insertOnConflictUpdate(entry);
+  }
+
+  Future<void> setThoughtResolved(String id, bool resolved) {
+    return (update(thoughtParkingLots)..where((t) => t.id.equals(id))).write(
+      ThoughtParkingLotsCompanion(
+        isResolved: Value(resolved),
+      ),
+    );
+  }
+
+  Future<void> deleteThoughtEntry(String id) {
+    return (delete(thoughtParkingLots)..where((t) => t.id.equals(id))).go();
   }
 }

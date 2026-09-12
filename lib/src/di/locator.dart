@@ -7,6 +7,7 @@ import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
 import 'package:kortex/src/core/services/analytics_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
+import 'package:kortex/src/core/services/break_reminder_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -85,6 +86,7 @@ import 'package:kortex/src/features/decks/domain/services/past_question_deck_fac
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_remedial_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';

@@ -198,3 +198,17 @@ class SyllabotMessages extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+@DataClassName('ThoughtParkingLotEntry')
+class ThoughtParkingLots extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('current-user'))();
+  TextColumn get content => text()();
+  TextColumn get sessionId => text().nullable()();
+  TextColumn get deckId => text().nullable()();
+  BoolColumn get isResolved => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

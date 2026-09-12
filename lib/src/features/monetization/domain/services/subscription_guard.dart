@@ -115,6 +115,66 @@ class SubscriptionGuard {
     return getTodayUploadCount() < freeDailyUploadLimit;
   }
 
+  /// Free users get 20 Syllabot queries per day. Pro is unlimited (MON-04).
+  static const int freeDailySyllabotLimit = 20;
+
+  int getTodaySyllabotQueryCount() {
+    try {
+      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+      final lastDate =
+          _effectiveLocalStorage.getPreference(key: PrefKeys.lastSyllabotDate);
+      if (lastDate != todayStr) {
+        return 0;
+      }
+      final countStr =
+          _effectiveLocalStorage.getPreference(key: PrefKeys.dailySyllabotCount);
+      return int.tryParse(countStr ?? '0') ?? 0;
+    } on Object {
+      return 0;
+    }
+  }
+
+  Future<void> recordSyllabotQuery() async {
+    try {
+      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+      final current = getTodaySyllabotQueryCount();
+      await _effectiveLocalStorage.savePreference(
+        key: PrefKeys.lastSyllabotDate,
+        data: todayStr,
+      );
+      await _effectiveLocalStorage.savePreference(
+        key: PrefKeys.dailySyllabotCount,
+        data: (current + 1).toString(),
+      );
+    } on Object catch (_) {}
+  }
+
+  bool canQuerySyllabot() {
+    if (isPro) return true;
+    return getTodaySyllabotQueryCount() < freeDailySyllabotLimit;
+  }
+
+  /// Offline Entitlement Grace Period (MON-05): 7-day cache validation.
+  static const int offlineGracePeriodDays = 7;
+
+  bool isOfflineEntitlementValid() {
+    if (!isPro) return false;
+    try {
+      final cachedDateStr = _effectiveLocalStorage.getPreference(
+        key: PrefKeys.proEntitlementCacheDate,
+      );
+      if (cachedDateStr == null || cachedDateStr.isEmpty) {
+        return true;
+      }
+      final cachedDate = DateTime.tryParse(cachedDateStr);
+      if (cachedDate == null) return true;
+      final diffDays = DateTime.now().difference(cachedDate).inDays;
+      return diffDays <= offlineGracePeriodDays;
+    } on Object {
+      return true;
+    }
+  }
+
   /// Free users get CSV. Anki and High-Density Printable PDFs require Pro.
   bool canExportDeck(DeckExportFormat format) {
     if (isPro) return true;

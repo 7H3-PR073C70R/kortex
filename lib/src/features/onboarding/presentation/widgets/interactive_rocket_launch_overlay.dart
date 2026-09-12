@@ -147,6 +147,17 @@ class _InteractiveRocketLaunchOverlayState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations ||
+        MediaQuery.of(context).accessibleNavigation) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_hasCompleted) {
+          _hasCompleted = true;
+          widget.onLaunchComplete();
+        }
+      });
+      return;
+    }
+
     final size = MediaQuery.sizeOf(context);
     if (_rocketX == 0 && _rocketY == 0) {
       // Start near the bottom-right (where the launch button was) and glide to center

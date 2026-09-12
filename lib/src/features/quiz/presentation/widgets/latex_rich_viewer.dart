@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:kortex/src/core/utils/latex_ast_cache.dart';
 import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 
 /// A high-performance, language-aware Flutter widget that parses mixed natural text,
@@ -63,28 +64,30 @@ class LatexRichViewer extends StatelessWidget {
   /// Sanitizes raw HTML entities, prompt artifacts, and reasoning tags
   static String sanitizeRawText(String input) {
     if (input.trim().isEmpty) return '';
-    var s = input;
+    return LatexAstCache.instance.getOrComputeSanitized(input, (raw) {
+      var s = raw;
 
-    // Strip reasoning tags & model prompt tokens
-    s = s.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
-    s = s.replaceAll(RegExp(r'<\/?think>', caseSensitive: false), '');
-    s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
+      // Strip reasoning tags & model prompt tokens
+      s = s.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
+      s = s.replaceAll(RegExp(r'<\/?think>', caseSensitive: false), '');
+      s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
 
-    // Replace common HTML tags and entities
-    s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
-    s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:b|strong)\s*>', caseSensitive: false), '**');
-    s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:i|em)\s*>', caseSensitive: false), '*');
-    s = s.replaceAll('&quot;', '"');
-    s = s.replaceAll('&#039;', "'");
-    s = s.replaceAll('&#39;', "'");
-    s = s.replaceAll('&amp;', '&');
-    s = s.replaceAll('&lt;', '<');
-    s = s.replaceAll('&gt;', '>');
-    s = s.replaceAll('&nbsp;', ' ');
+      // Replace common HTML tags and entities
+      s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
+      s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:b|strong)\s*>', caseSensitive: false), '**');
+      s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:i|em)\s*>', caseSensitive: false), '*');
+      s = s.replaceAll('&quot;', '"');
+      s = s.replaceAll('&#039;', "'");
+      s = s.replaceAll('&#39;', "'");
+      s = s.replaceAll('&amp;', '&');
+      s = s.replaceAll('&lt;', '<');
+      s = s.replaceAll('&gt;', '>');
+      s = s.replaceAll('&nbsp;', ' ');
 
-    s = FormulaAwareTextFormatter.formatFormulaAware(s);
+      s = FormulaAwareTextFormatter.formatFormulaAware(s);
 
-    return s.trim();
+      return s.trim();
+    });
   }
 
   @override
@@ -485,16 +488,7 @@ class LatexFormulaBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var clean = formula.trim();
-    if (clean.startsWith(r'\(') && clean.endsWith(r'\)')) {
-      clean = clean.substring(2, clean.length - 2).trim();
-    } else if (clean.startsWith(r'\[') && clean.endsWith(r'\]')) {
-      clean = clean.substring(2, clean.length - 2).trim();
-    } else if (clean.startsWith(r'$$') && clean.endsWith(r'$$')) {
-      clean = clean.substring(2, clean.length - 2).trim();
-    } else if (clean.startsWith(r'$') && clean.endsWith(r'$')) {
-      clean = clean.substring(1, clean.length - 1).trim();
-    }
+    final clean = LatexAstCache.instance.getOrCleanFormula(formula);
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

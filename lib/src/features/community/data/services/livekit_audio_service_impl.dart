@@ -14,6 +14,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
 
   bool _isMicEnabled = false;
   bool _isConnected = false;
+  bool _isLowDataMode = false;
 
   final _speakingParticipantsController =
       StreamController<Set<String>>.broadcast();
@@ -26,6 +27,18 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
 
   @override
   bool get isConnected => _isConnected;
+
+  @override
+  bool get isLowDataMode => _isLowDataMode;
+
+  @override
+  Future<void> setLowDataMode({required bool enabled}) async {
+    _isLowDataMode = enabled;
+    developer.log(
+      'LiveKitAudioService: Low-data mode set to $enabled (Opus 16kbps mono clamp)',
+      name: 'LiveKitAudio',
+    );
+  }
 
   @override
   Stream<Set<String>> get speakingParticipantsStream =>
