@@ -37,5 +37,8 @@ void _initClients() {
     )
     ..registerLazySingleton<ProfileApiClient>(
       () => ProfileApiClient(locator<Dio>()),
+    )
+    ..registerLazySingleton<QuizDuelWebSocketClient>(
+      QuizDuelWebSocketClient.new,
     );
 }

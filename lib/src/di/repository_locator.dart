@@ -98,5 +98,10 @@ void _initRepositoryLocator() {
       () => CurriculumRepositoryImpl(
         locator<CurriculumRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<QuizDuelRepository>(
+      () => QuizDuelRepositoryImpl(
+        client: locator<QuizDuelWebSocketClient>(),
+      ),
     );
 }

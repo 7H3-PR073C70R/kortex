@@ -135,5 +135,10 @@ void _initServices() {
         ingestionService: locator<LocalIngestionService>(),
         dio: locator<Dio>(),
       ),
+    )
+    ..registerFactory<QuizDuelCubit>(
+      () => QuizDuelCubit(
+        repository: locator<QuizDuelRepository>(),
+      ),
     );
 }

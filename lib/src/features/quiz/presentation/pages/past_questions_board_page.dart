@@ -13,10 +13,12 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_filter_bar.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_test_config_sheet.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -68,14 +70,21 @@ class PastQuestionsBoardPage extends StatelessWidget {
     final userTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
     final initialExam = resolveExamCategory(initialExamCode, userTrack);
 
-    return BlocProvider<PastQuestionsBloc>(
-      create: (_) => locator<PastQuestionsBloc>()
-        ..add(
-          LoadPastQuestionsEvent(
-            examCategory: initialExam,
-            subject: initialSubject,
-          ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PastQuestionsBloc>(
+          create: (_) => locator<PastQuestionsBloc>()
+            ..add(
+              LoadPastQuestionsEvent(
+                examCategory: initialExam,
+                subject: initialSubject,
+              ),
+            ),
         ),
+        BlocProvider<QuizDuelCubit>(
+          create: (_) => locator<QuizDuelCubit>(),
+        ),
+      ],
       child: _PastQuestionsBoardView(
         userTrack: userTrack ?? 'WAEC',
         initialSubject: initialSubject,
@@ -528,9 +537,58 @@ class _HeroTrackBanner extends StatelessWidget {
                                   color: colors.white,
                                   size: 18,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'Take CBT Practice Test',
+                                  'CBT Test',
+                                  style: typography.callout.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ShrinkableButton(
+                          onTap: () {
+                            AppFeedback.light();
+                            QuizDuelMatchmakingSheet.show(
+                              context,
+                              initialSubject: state.selectedSubject != 'All'
+                                  ? state.selectedSubject
+                                  : 'Physics',
+                              initialExamBoard: state.selectedExam.displayName,
+                            );
+                          },
+                          child: Container(
+                            height: 42,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [colors.secondary, colors.primary],
+                              ),
+                              borderRadius: BorderRadius.circular(13),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.secondary.withAlpha(90),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.flash_on_rounded,
+                                  color: colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '1v1 Duel ⚡',
                                   style: typography.callout.bold.copyWith(
                                     color: colors.white,
                                     fontSize: 13,

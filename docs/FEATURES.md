@@ -20,8 +20,8 @@ As part of the comprehensive product audit across all **12 Core Modules** and **
 
 ```mermaid
 pie title Feature Readiness Distribution (137 Features)
-    "In Production / Validated (🟢)" : 131
-    "Strategic Roadmap (🔵)" : 6
+    "In Production / Validated (🟢)" : 132
+    "Strategic Roadmap (🔵)" : 5
 ```
 
 ---
@@ -216,7 +216,7 @@ graph TD
 | **QZ-10** | Convert Failed Questions to Deck | 🟢 `Validated` | P0 | `ConvertFailedQuizToDeckUseCase` | **Ready.** One-tap creation of a remedial study deck containing all missed questions. |
 | **QZ-11** | OCR Past Question Camera Importer | 🟢 `Validated` | P1 | `AddPastQuestionModal`, `ProcessStemOcrUseCase`| **Ready.** Parses question paper photos into question text, options A-D, and answer key. |
 | **QZ-12** | Negative Marking Warning Alerts | 🟢 `Validated` | P1 | `CbtSessionCubit` | **Ready.** Contextual UI warnings when negative marking is enabled for JAMB/UTME practice. |
-| **QZ-13** | Peer-to-Peer 1v1 Quiz Duel | 🔵 `Strategic Roadmap`| P2 | `QuizDuelWebSocketClient` | **Roadmap.** Real-time synchronized 1v1 multiplayer quiz match. |
+| **QZ-13** | Peer-to-Peer 1v1 Quiz Duel | 🟢 `Validated` | P2 | `QuizDuelWebSocketClient`, `QuizDuelCubit` | **Ready & Validated.** Real-time synchronized 1v1 multiplayer quiz arena with speed bonuses, live emoji reactions, split scoreboard, and intelligent AI study-buddy fallback. |
 | **QZ-14** | Question Flagging & Quality Audit | 🟢 `Validated` | P2 | `FlagQuestionBottomSheet` | **Ready & Validated.** Community audit tool for reporting typos, wrong keys, LaTeX errors, or outdated content. |
 | **QZ-15** | Audio Reading of Quiz Questions | 🟢 `Validated` | P2 | `QuizAudioReaderButton`, `TextToSpeechHandler` | **Ready & Validated.** Accessible narration for STEM/MCQ stems and option items. |
 | **QZ-16** | Offline CBT Question Cache | 🟢 `Validated` | P0 | `PastQuestionsDao`, `DriftDB` | **Ready.** Stores 5,000+ past questions locally in SQLite for full offline practice. |
