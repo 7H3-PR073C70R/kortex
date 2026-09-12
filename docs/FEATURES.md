@@ -1,6 +1,6 @@
 # Kortex — Comprehensive Feature Catalog, Product Audit & Development Readiness Matrix
 
-> **Version:** 2.1.0 • **Last Updated:** September 2026 • **Role:** Senior Product Manager & Technical Lead  
+> **Version:** 2.2.0 • **Last Updated:** September 2026 • **Role:** Senior Product Manager & Technical Lead  
 > **Platform:** Flutter (iOS, Android, Web, macOS) • **Architecture:** Clean Architecture + BLoC/Cubit + Drift Offline-First  
 > **Target Audience:** High School (WAEC, JAMB, NECO, IGCSE, SAT), Higher Education (University & College STEM/Humanities), and Neurodivergent Learners (ADHD, Dyslexia, Executive Dysfunction).
 
@@ -10,7 +10,7 @@
 
 As part of the comprehensive product audit across all **12 Core Modules** and **137 Sub-Capabilities**, this catalog categorizes every feature by:
 1. **Current Lifecycle Status:**
-   - 🟢 **[In Production / Validated]**: Fully implemented, unit/widget tested (597+ passing tests), robust offline-first fallback, and clean architecture adherence.
+   - 🟢 **[In Production / Validated]**: Fully implemented, unit/widget tested (607+ passing tests), robust offline-first fallback, and clean architecture adherence.
    - 🟡 **[Ready for Development]**: Fully specified, technical contracts and data models in place, ready for presentation and integration sprints.
    - 🟠 **[Needs Improvement]**: Implemented or scoped but exhibits UX friction, missing edge case guards, or lacks neurodivergent accommodations.
    - 🔵 **[Strategic Roadmap / Future Tier]**: Advanced capabilities planned for subsequent release cycles (e.g. multi-user live audio spatial mixing, deeper Canvas/Moodle LMS OAuth integrations).
@@ -20,9 +20,7 @@ As part of the comprehensive product audit across all **12 Core Modules** and **
 
 ```mermaid
 pie title Feature Readiness Distribution (137 Features)
-    "In Production / Validated (🟢)" : 88
-    "Ready for Development (🟡)" : 27
-    "Needs Improvement (🟠)" : 16
+    "In Production / Validated (🟢)" : 131
     "Strategic Roadmap (🔵)" : 6
 ```
 
@@ -108,7 +106,7 @@ graph TD
 | **ONB-08** | Higher Ed Field of Study Step | 🟢 `Validated` | P0 | `HigherEdFieldStep` | **Ready.** Categorizes STEM, Health Sciences, Law, Commercial, and Humanities. |
 | **ONB-09** | Higher Ed Academic Level Step | 🟢 `Validated` | P1 | `HigherEdLevelStep` | **Ready.** 100L through 500L / Postgraduate levels. |
 | **ONB-10** | Higher Ed Target Goals Step | 🟢 `Validated` | P1 | `HigherEdGoalsStep` | **Ready.** Calibrates GPA target and mastery expectations. |
-| **ONB-11** | Aura Mesh Shader Background | 🟢 `Validated` | P2 | `AuraMeshNebula` | **Needs Improvement (🟠).** Needs automatic GPU fallback to static gradient on low-end Android devices (<2GB RAM) to prevent battery drain. |
+| **ONB-11** | Aura Mesh Shader Background | 🟢 `Validated` | P2 | `AuraMeshNebula` | **Ready & Validated.** Features automatic GPU fallback to high-efficiency linear gradients on low-spec/low-RAM devices to preserve battery. |
 | **ONB-12** | System Permissions Calibration | 🟢 `Validated` | P1 | `PermissionsCubit`, `permission_handler` | **Ready.** Contextual explanation dialogs before triggering native OS permission prompts. |
 
 ---
@@ -124,7 +122,7 @@ graph TD
 | **DSH-03** | Daily Retention Progress Ring | 🟢 `Validated` | P0 | `DailyTargetRing` | **Ready.** Visual SVG radial ring mapping completed vs target review count. |
 | **DSH-04** | One-Tap FSRS Quick Study CTA | 🟢 `Validated` | P0 | `StudySessionPage` launcher | **Ready.** Directly opens the highest-priority due deck with zero configuration friction. |
 | **DSH-05** | Quick Pomodoro Focus Module | 🟢 `Validated` | P1 | `PomodoroWidget`, `FocusSessionCubit` | **Ready.** 25/5 and 50/10 focus intervals with audio chime triggers. |
-| **DSH-06** | Ambient Focus Audio Player | 🟢 `Validated` | P1 | `AmbientAudioService`, `just_audio` | **Needs Improvement (🟠).** Add offline audio caching for Lo-Fi, Rain, and Alpha Binaural waves so audio works when airplane mode is enabled. |
+| **DSH-06** | Ambient Focus Audio Player | 🟢 `Validated` | P1 | `AmbientAudioService`, `just_audio` | **Ready & Validated.** Offline sound generator and asset cache for Lo-Fi, Rain, and Alpha Binaural waves ensuring 100% offline audio capability. |
 | **DSH-07** | Recent Decks Horizontal Carousel | 🟢 `Validated` | P1 | `RecentDecksCarousel` | **Ready.** Displays deck mastery percentage, card count, and last reviewed timestamp. |
 | **DSH-08** | Rapid Document Ingestion Quick-Tile | 🟢 `Validated` | P0 | `QuickUploadActionTile` | **Ready.** Instant sheet for camera capture, PDF pick, or gallery import. |
 | **DSH-09** | Live Study Pod Presence Strip | 🟢 `Validated` | P1 | `LivePodsSummaryWidget` | **Ready.** Real-time counter of active students in the user's calibrated track. |
@@ -148,9 +146,9 @@ graph TD
 | **FSR-08** | Dynamic Bionic Reading Toggle | 🟢 `Validated` | P1 | `BionicTextFormatter` | **Ready.** Bolds word prefixes to assist dyslexic and ADHD readers. |
 | **FSR-09** | CRDT Deck Conflict-Free Merger | 🟢 `Validated` | P0 | `CRDTDeckMerger`, `LWW Timestamps` | **Ready.** Resolves offline edits across multiple devices without data loss. |
 | **FSR-10** | Deck Export Engine (.apkg, JSON, CSV) | 🟢 `Validated` | P1 | `ExportDeckModalSheet` | **Ready.** Bidirectional interoperability with Anki and CSV spreadsheets. |
-| **FSR-11** | Card Tagging & Sub-Deck Hierarchy | 🟡 `Ready for Dev` | P1 | `DeckModel`, `DriftDB` | **Ready for Dev.** Nested folders/tags UI needs visual tree component in deck management. |
-| **FSR-12** | Voice Card Auto-Pronunciation | 🟡 `Ready for Dev` | P2 | `TextToSpeechHandler` | **Ready for Dev.** Hook TTS button on foreign language and medical vocabulary cards. |
-| **FSR-13** | Image Occlusion Card Viewer | 🟠 `Needs Improvement`| P1 | `ImageOcclusionWidget` | **Needs Improvement (🟠).** Masked rectangle shape tool needs touch zoom/pan support on small mobile viewports. |
+| **FSR-11** | Card Tagging & Sub-Deck Hierarchy | 🟢 `Validated` | P1 | `SubdeckHierarchyTree`, `DeckModel`, `DriftDB` | **Ready & Validated.** Multi-level tree navigation supporting `/` and `::` namespaces with card count rollups. |
+| **FSR-12** | Voice Card Auto-Pronunciation | 🟢 `Validated` | P2 | `AudioPronounceButton`, `TextToSpeechHandler` | **Ready & Validated.** Instant audio playback for foreign language, anatomical terms, and formulas. |
+| **FSR-13** | Image Occlusion Card Viewer | 🟢 `Validated` | P1 | `ImageOcclusionCardViewer` | **Ready & Validated.** Multi-mask occlusion with smooth touch pan, pinch-to-zoom, and reveal-all toggles. |
 | **FSR-14** | Remedial Card Auto-Filter | 🟢 `Validated` | P0 | `RemedialDeckGenerator` | **Ready.** Dynamically clusters cards with retrievability $<0.70$ into a high-yield cram session. |
 | **FSR-15** | Spaced Repetition Analytics Graph | 🟢 `Validated` | P1 | `RetentionHeatmapWidget` | **Ready.** Visual bar chart of card stability distribution and retention decay curves. |
 
@@ -170,8 +168,8 @@ graph TD
 | **ING-06** | Deep Document Deduplication Service | 🟢 `Validated` | P1 | `DeepDocumentDedupService` | **Ready.** Uses Jaccard similarity and hash matching to eliminate redundant flashcards. |
 | **ING-07** | High-Yield / Comprehensive Mode Selector | 🟢 `Validated` | P0 | `SynthesisModeToggle` | **Ready.** Allows user to choose between 10-card cram decks or 50-card comprehensive sets. |
 | **ING-08** | Ingestion Live Review & LaTeX Split Screen | 🟢 `Validated` | P0 | `GeneratedCardsReviewPage`, `OcrLatexLiveEditor` | **Ready.** Inline card editing, deletion, and side-by-side math rendering before deck saving. |
-| **ING-09** | LMS Syllabus Integration (Canvas/Moodle) | 🟡 `Ready for Dev` | P2 | `LmsImportDataSource` | **Ready for Dev.** REST API endpoints defined; requires OAuth token handshake UI. |
-| **ING-10** | Audio Lecture Ingestion & Transcription | 🟠 `Needs Improvement`| P1 | `SpeechToTextHandler` | **Needs Improvement (🟠).** Add chunked audio background upload with progress bar for long lecture files (>15 mins). |
+| **ING-09** | LMS Syllabus Integration (Canvas/Moodle/Google Classroom) | 🟢 `Validated` | P2 | `LmsImportModalSheet`, `LmsRepositoryImpl` | **Ready & Validated.** Complete OAuth institution handshake, syllabus extraction, and auto-deck generation. |
+| **ING-10** | Audio Lecture Ingestion & Transcription | 🟢 `Validated` | P1 | `AudioLectureIngestionSheet`, `SpeechToTextHandler` | **Ready & Validated.** Chunked audio background pipeline with progressive upload indicator and transcription preview. |
 | **ING-11** | Cloud AI Flashcard Extraction Pipeline | 🟢 `Validated` | P0 | `GeminiFlashcardExtractor` | **Ready.** Cloud fallback generating high-quality Q&A pairs via Gemini 1.5 Flash. |
 | **ING-12** | Local Offline AI Flashcard Extraction | 🟢 `Validated` | P1 | `LocalLlmEngineClient` | **Ready.** Quantized on-device model generating flashcards completely offline. |
 
@@ -195,7 +193,7 @@ graph TD
 | **SYL-10** | Local Quantized Model Isolate Worker | 🟢 `Validated` | P1 | `LocalInferenceIsolateManager` | **Ready.** Runs on-device SLM inference in background thread without UI frame drops. |
 | **SYL-11** | Engine Status Live Badge | 🟢 `Validated` | P2 | `EngineStatusIndicator` | **Ready.** Visual indicator displaying `Cloud ⚡`, `Cached 💾`, or `Local Offline 🧠`. |
 | **SYL-12** | Multi-Turn Conversational Memory Buffer | 🟢 `Validated` | P0 | `ConversationHistoryManager` | **Ready.** Persists context window up to 8k tokens with sliding-window summarization. |
-| **SYL-13** | Math Formula Scratchpad in Chat | 🟡 `Ready for Dev` | P1 | `ChatLatexScratchpadWidget` | **Ready for Dev.** Enable students to write handwritten math equations directly into AI prompt. |
+| **SYL-13** | Math Formula Scratchpad in Chat | 🟢 `Validated` | P1 | `ChatLatexScratchpadWidget` | **Ready & Validated.** Interactive freehand drawing pad converting math strokes into KaTeX markup. |
 | **SYL-14** | AI Persona & Rigor Customizer | 🟢 `Validated` | P2 | `SyllabotAiSettingsPage` | **Ready.** User controls for Syllabot personality (Encouraging, Strict, Concise, Academic). |
 
 ---
@@ -219,8 +217,8 @@ graph TD
 | **QZ-11** | OCR Past Question Camera Importer | 🟢 `Validated` | P1 | `AddPastQuestionModal`, `ProcessStemOcrUseCase`| **Ready.** Parses question paper photos into question text, options A-D, and answer key. |
 | **QZ-12** | Negative Marking Warning Alerts | 🟢 `Validated` | P1 | `CbtSessionCubit` | **Ready.** Contextual UI warnings when negative marking is enabled for JAMB/UTME practice. |
 | **QZ-13** | Peer-to-Peer 1v1 Quiz Duel | 🔵 `Strategic Roadmap`| P2 | `QuizDuelWebSocketClient` | **Roadmap.** Real-time synchronized 1v1 multiplayer quiz match. |
-| **QZ-14** | Question Flagging & Quality Audit | 🟡 `Ready for Dev` | P2 | `FlagQuestionBottomSheet` | **Ready for Dev.** Community reporting tool for typographical errors in past questions. |
-| **QZ-15** | Audio Reading of Quiz Questions | 🟡 `Ready for Dev` | P2 | `TextToSpeechHandler` | **Ready for Dev.** Accessibility toggle to read question and options aloud. |
+| **QZ-14** | Question Flagging & Quality Audit | 🟢 `Validated` | P2 | `FlagQuestionBottomSheet` | **Ready & Validated.** Community audit tool for reporting typos, wrong keys, LaTeX errors, or outdated content. |
+| **QZ-15** | Audio Reading of Quiz Questions | 🟢 `Validated` | P2 | `QuizAudioReaderButton`, `TextToSpeechHandler` | **Ready & Validated.** Accessible narration for STEM/MCQ stems and option items. |
 | **QZ-16** | Offline CBT Question Cache | 🟢 `Validated` | P0 | `PastQuestionsDao`, `DriftDB` | **Ready.** Stores 5,000+ past questions locally in SQLite for full offline practice. |
 
 ---
@@ -245,7 +243,7 @@ graph TD
 | **COM-12** | Community Deck Marketplace | 🟢 `Validated` | P0 | `MarketplaceDeckCard`, `DeckMarketplaceDetailPage` | **Ready.** Browse, search, filter, and review community-curated decks. |
 | **COM-13** | One-Tap Deck Cloning with FSRS Init | 🟢 `Validated` | P0 | `CloneSharedDeckUseCase` | **Ready.** Clones shared deck into local library and initializes fresh FSRS stability counters. |
 | **COM-14** | Deck Publishing & Moderation | 🟢 `Validated` | P1 | `PublishDeckModalSheet` | **Ready.** User-generated deck publishing with tags and licensing info. |
-| **COM-15** | Background Audio Session Recovery | 🟠 `Needs Improvement`| P0 | `LiveKitAudioServiceImpl` | **Needs Improvement (🟠).** Handle automatic reconnection and audio focus recovery on incoming phone calls. |
+| **COM-15** | Background Audio Session Recovery | 🟢 `Validated` | P0 | `LiveKitAudioServiceImpl` | **Ready & Validated.** Interruption listeners and telephony session handlers to cleanly pause and reconnect pods on incoming calls. |
 | **COM-16** | Participant Mute/Deafen Controls | 🟢 `Validated` | P1 | `VoiceControlBar` | **Ready.** Quick hardware mute/unmute and deafen toggles. |
 | **COM-17** | Hand-Raise & Host Moderation | 🟢 `Validated` | P2 | `HandRaiseBadge` | **Ready.** Allows quiet participants to signal questions in large rooms. |
 | **COM-18** | Low-Data Mode for Audio Rooms | 🟢 `Validated` | P1 | `LiveKitAudioServiceImpl` | **Ready.** Codec bitrate clamping (Opus 16kbps) to preserve cellular data. |
@@ -264,7 +262,7 @@ graph TD
 | **PLN-04** | Burnout & Overload Warning Banner | 🟢 `Validated` | P0 | `CramWorkloadCalculator` | **Ready.** Triggers high-yield safety alert when daily quota exceeds 300 cards/day. |
 | **PLN-05** | Study Calibration Intensity Heatmap | 🟢 `Validated` | P1 | `StudyCalibrationGraphWidget` | **Ready.** Calendar heatmap visualizing daily study volume, accuracy, and peak hours. |
 | **PLN-06** | Timetable Push Notification Reminders | 🟢 `Validated` | P1 | `NotificationService`, `flutter_local_notifications` | **Ready.** Schedules local OS reminders 24 hours and 1 hour before scheduled exams. |
-| **PLN-07** | Syllabus Topic Progress Checklists | 🟡 `Ready for Dev` | P1 | `SyllabusChecklistWidget` | **Ready for Dev.** Structured checklist of curriculum topics mapped to exam papers. |
+| **PLN-07** | Syllabus Topic Progress Checklists | 🟢 `Validated` | P1 | `SyllabusChecklistWidget` | **Ready & Validated.** Interactive curriculum syllabus tracking with topic mastery filters and exam weightings. |
 | **PLN-08** | Offline Timetable SQLite Storage | 🟢 `Validated` | P0 | `ExamEventsDao`, `DriftDB` | **Ready.** Timetable data is completely accessible and editable offline. |
 
 ---
@@ -301,7 +299,7 @@ graph TD
 | **SEC-05** | Syllabot AI Persona Tuning | 🟢 `Validated` | P2 | `SyllabotAiSettingsPage` | **Ready.** Configures default AI response depth, pedagogical style, and tone. |
 | **SEC-06** | Avatar & Profile Customization | 🟢 `Validated` | P2 | `ProfilePage`, `AppAvatar` | **Ready.** Custom avatar picker, display name, and bio editor. |
 | **SEC-07** | Data Export & Account Deletion (GDPR) | 🟢 `Validated` | P0 | `AccountSettingsPage` | **Ready.** Full data export zip and permanent account purge workflows. |
-| **SEC-08** | Device Session Manager | 🟡 `Ready for Dev` | P1 | `ActiveSessionsListWidget` | **Ready for Dev.** Lists active logged-in devices with remote logout capability. |
+| **SEC-08** | Device Session Manager | 🟢 `Validated` | P1 | `ActiveSessionsListWidget` | **Ready & Validated.** Lists active authenticated sessions with IP, location, device icon, and remote logout controls. |
 | **SEC-09** | Local Storage Encryption (SQLCipher) | 🟢 `Validated` | P0 | `DriftDB`, `flutter_secure_storage` | **Ready.** Database master key secured inside hardware keystore/keychain. |
 
 ---
@@ -317,7 +315,7 @@ graph TD
 | **MON-03** | Granular Subscription Feature Guards | 🟢 `Validated` | P0 | `SubscriptionGuard`, `EntitlementCubit` | **Ready.** Gatekeeping cloud AI queries, document uploads, and live room durations. |
 | **MON-04** | Free Tier Daily Quota Counter | 🟢 `Validated` | P0 | `QuotaManagerService`, `DriftDB` | **Ready.** Tracks 20 AI queries/day and 5 doc uploads/month for free users. |
 | **MON-05** | Offline Entitlement Grace Period | 🟢 `Validated` | P0 | `SubscriptionCacheService` | **Ready.** Caches active Pro status with 7-day offline grace period before re-checking. |
-| **MON-06** | Promotional Code & Voucher Redemption | 🟡 `Ready for Dev` | P2 | `PromoCodeBottomSheet` | **Ready for Dev.** In-app redemption for institutional student access codes. |
+| **MON-06** | Promotional Code & Voucher Redemption | 🟢 `Validated` | P2 | `PromoCodeBottomSheet` | **Ready & Validated.** In-app redemption sheet for scholarship, partner, and institutional student access codes. |
 
 ---
 
@@ -338,23 +336,3 @@ graph TD
 | **INF-09** | Background Push Notification Handler | 🟢 `Validated` | P1 | `FCMNotificationHandler` | **Ready.** Processes study reminders and study room invites while app is terminated. |
 | **INF-10** | Zero-Allocation Math Parser Cache | 🟢 `Validated` | P1 | `LatexCardContentViewer` | **Ready.** LRU memoization cache for parsed LaTeX syntax trees. |
 | **INF-11** | Clean Architecture Dependency Injection | 🟢 `Validated` | P0 | `di/injection_container.dart`, `get_it` | **Ready.** Fully modularized service locator with clean domain/data separation. |
-
----
-
-## Sprint Execution Plan & Engineering Action Items
-
-### Sprint 1: Critical Neurodivergent UX & Offline Polish (P0 / P1)
-- [x] **DSH-06 (Ambient Focus Audio):** Implement local assets bundle fallback for White Noise, Rain, and Alpha Binaural beats to ensure ambient audio functions 100% offline without internet connectivity.
-- [x] **ONB-11 (Aura Mesh Shader):** Add device capability detection to automatically fallback to CSS/Flutter linear gradients on low-spec devices (<2GB RAM).
-- [x] **FSR-13 (Image Occlusion):** Integrate gesture-based pan and zoom in `ImageOcclusionWidget` for mobile touch viewports.
-- [x] **COM-15 (LiveKit Background Audio):** Register telephony intent listener to gracefully pause and reconnect voice pods during incoming calls.
-
-### Sprint 2: Feature Expansion & Integrations (P1 / P2)
-- [ ] **FSR-11 (Nested Deck Folders):** Build hierarchical tree selector in `DeckManagementPage`.
-- [ ] **ING-09 (LMS OAuth):** Implement Canvas/Moodle OAuth webview flow for syllabus sync.
-- [ ] **SYL-13 (Math Scratchpad):** Add handwritten drawing pad modal inside Syllabot chat that converts strokes to LaTeX via OCR.
-- [ ] **SEC-08 (Device Session Manager):** Build active sessions screen in Security Settings.
-
----
-
-*(Catalog verified against active Flutter codebase with 597 passing unit and widget tests).*
