@@ -37,6 +37,16 @@ class ForumPostModel {
 
   factory ForumPostModel.fromJson(Map<String, dynamic> json) {
     final rawReplies = json['forum_replies'] as List<dynamic>? ?? [];
+    final parsedReplies = rawReplies
+        .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
+        .toList();
+    final explicitCount = (json['replies_count'] as num?)?.toInt() ??
+        (json['reply_count'] as num?)?.toInt() ??
+        (json['comments_count'] as num?)?.toInt();
+    final repliesCount = explicitCount != null && explicitCount > 0
+        ? explicitCount
+        : parsedReplies.length;
+
     return ForumPostModel(
       id: json['id'] as String,
       authorId: json['author_id'] as String? ?? '',
@@ -50,13 +60,11 @@ class ForumPostModel {
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
       syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
-      repliesCount: (json['replies_count'] as num?)?.toInt() ?? 0,
+      repliesCount: repliesCount,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
-      replies: rawReplies
-          .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
-          .toList(),
+      replies: parsedReplies,
     );
   }
 

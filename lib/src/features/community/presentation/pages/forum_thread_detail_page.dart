@@ -10,6 +10,8 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
@@ -163,6 +165,14 @@ class ForumThreadDetailPage extends HookWidget {
           (reply) {
             if (!localReplies.value.any((r) => r.id == reply.id)) {
               localReplies.value = [...localReplies.value, reply];
+            }
+            if (locator.isRegistered<CommunityHubBloc>()) {
+              locator<CommunityHubBloc>().add(
+                ForumPostRepliesIncrementedEvent(
+                  postId: post.id,
+                  reply: reply,
+                ),
+              );
             }
           },
         );
@@ -987,6 +997,14 @@ class ForumThreadDetailPage extends HookWidget {
                                     ...localReplies.value,
                                     createdReply,
                                   ];
+                                }
+                                if (locator.isRegistered<CommunityHubBloc>()) {
+                                  locator<CommunityHubBloc>().add(
+                                    ForumPostRepliesIncrementedEvent(
+                                      postId: post.id,
+                                      reply: createdReply,
+                                    ),
+                                  );
                                 }
                               },
                             );

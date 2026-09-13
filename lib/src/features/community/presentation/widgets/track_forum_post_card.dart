@@ -204,11 +204,18 @@ class TrackForumPostCard extends StatelessWidget {
                             color: colors.textSecondary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            '${post.repliesCount} replies',
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final count = post.replies.length > post.repliesCount
+                                  ? post.replies.length
+                                  : post.repliesCount;
+                              return Text(
+                                count == 1 ? '1 reply' : '$count replies',
+                                style: typography.caption.medium.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

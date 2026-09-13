@@ -21,6 +21,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CreateRoomEvent>(_onCreateRoom);
     on<CreateForumPostEvent>(_onCreateForumPost);
     on<ReplyToPostEvent>(_onReplyToPost);
+    on<ForumPostRepliesIncrementedEvent>(_onForumPostRepliesIncremented);
     on<VerifyForumReplyEvent>(_onVerifyForumReply);
     on<LoadStudyCirclesEvent>(_onLoadStudyCircles);
     on<CreateStudyCircleEvent>(_onCreateStudyCircle);
@@ -232,6 +233,27 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         emit(state.copyWith(forumPosts: updatedPosts));
       },
     );
+  }
+
+  void _onForumPostRepliesIncremented(
+    ForumPostRepliesIncrementedEvent event,
+    Emitter<CommunityState> emit,
+  ) {
+    final updatedPosts = state.forumPosts.map((p) {
+      if (p.id == event.postId) {
+        final exists = p.replies.any((r) => r.id == event.reply.id);
+        final updatedReplies = exists ? p.replies : [...p.replies, event.reply];
+        final effectiveCount = updatedReplies.length > p.repliesCount
+            ? updatedReplies.length
+            : (exists ? p.repliesCount : p.repliesCount + 1);
+        return p.copyWith(
+          repliesCount: effectiveCount,
+          replies: updatedReplies,
+        );
+      }
+      return p;
+    }).toList();
+    emit(state.copyWith(forumPosts: updatedPosts));
   }
 
   Future<void> _onVerifyForumReply(

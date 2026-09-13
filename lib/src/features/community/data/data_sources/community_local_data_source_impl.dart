@@ -90,6 +90,10 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
     ForumPostEntry entry, [
     List<ForumReplyModel> replies = const [],
   ]) {
+    final effectiveRepliesCount = replies.length > entry.repliesCount
+        ? replies.length
+        : (entry.repliesCount > 0 ? entry.repliesCount : replies.length);
+
     return ForumPostModel(
       id: entry.id,
       authorId: entry.authorId,
@@ -100,15 +104,17 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
       content: entry.content,
       latexContent: entry.latexContent,
       upvotes: entry.upvotes,
-      repliesCount: entry.repliesCount > 0
-          ? entry.repliesCount
-          : replies.length,
+      repliesCount: effectiveRepliesCount,
       createdAt: entry.createdAt,
       replies: replies,
     );
   }
 
   ForumPostsCompanion _postToCompanion(ForumPostModel post) {
+    final effectiveRepliesCount = post.replies.length > post.repliesCount
+        ? post.replies.length
+        : (post.repliesCount > 0 ? post.repliesCount : post.replies.length);
+
     return ForumPostsCompanion(
       id: Value(post.id),
       authorId: Value(post.authorId),
@@ -119,9 +125,7 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
       content: Value(post.content),
       latexContent: Value(post.latexContent),
       upvotes: Value(post.upvotes),
-      repliesCount: Value(
-        post.repliesCount > 0 ? post.repliesCount : post.replies.length,
-      ),
+      repliesCount: Value(effectiveRepliesCount),
       createdAt: Value(post.createdAt),
       cachedAt: Value(DateTime.now()),
     );

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 
 abstract class CommunityEvent extends Equatable {
@@ -120,6 +121,19 @@ class ReplyToPostEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [postId, content, latexContent];
+}
+
+class ForumPostRepliesIncrementedEvent extends CommunityEvent {
+  const ForumPostRepliesIncrementedEvent({
+    required this.postId,
+    required this.reply,
+  });
+
+  final String postId;
+  final ForumReplyEntity reply;
+
+  @override
+  List<Object?> get props => [postId, reply];
 }
 
 class VerifyForumReplyEvent extends CommunityEvent {

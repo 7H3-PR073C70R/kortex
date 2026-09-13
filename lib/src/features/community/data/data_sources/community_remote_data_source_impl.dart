@@ -156,7 +156,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     bool? questionsOnly,
   }) async {
     final params = <String, dynamic>{
-      'select': '*',
+      'select': '*,forum_replies(*)',
       'order': 'created_at.desc',
     };
     if (track != null && track.isNotEmpty && track != 'All') {
@@ -167,11 +167,55 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     }
 
     try {
-      final res = await _client.fetchForumPosts(params);
-      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      dynamic data;
+      try {
+        final res = await _client.fetchForumPosts(params);
+        data = res.data;
+      } on Object catch (_) {
+        // Fallback to scalar select if relation embed fails on remote schema
+        params['select'] = '*';
+        final res = await _client.fetchForumPosts(params);
+        data = res.data;
+      }
+
+      final rawList = data is List ? (data as List) : <dynamic>[];
       final posts = rawList
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
           .toList();
+
+      // Reconcile with in-memory reply cache
+      for (var i = 0; i < posts.length; i++) {
+        final p = posts[i];
+        final cached = _replyCache[p.id];
+        if (cached != null && cached.isNotEmpty) {
+          final mergedReplies = <ForumReplyModel>[...p.replies];
+          for (final r in cached) {
+            if (!mergedReplies.any((m) => m.id == r.id)) {
+              mergedReplies.add(r);
+            }
+          }
+          final effectiveCount = mergedReplies.length > p.repliesCount
+              ? mergedReplies.length
+              : (p.repliesCount > 0 ? p.repliesCount : mergedReplies.length);
+          posts[i] = ForumPostModel(
+            id: p.id,
+            authorId: p.authorId,
+            authorName: p.authorName,
+            authorAvatar: p.authorAvatar,
+            track: p.track,
+            title: p.title,
+            content: p.content,
+            latexContent: p.latexContent,
+            isQuestion: p.isQuestion,
+            isVerifiedSolution: p.isVerifiedSolution,
+            syllabusTag: p.syllabusTag,
+            upvotes: p.upvotes,
+            repliesCount: effectiveCount,
+            createdAt: p.createdAt,
+            replies: mergedReplies,
+          );
+        }
+      }
 
       // Write-through caching to SQLite
       if (_localDataSource != null && posts.isNotEmpty) {
