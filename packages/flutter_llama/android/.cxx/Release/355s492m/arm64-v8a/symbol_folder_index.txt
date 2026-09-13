@@ -1,0 +1,1 @@
+/Users/protector/Documents/projects/kortex/build/flutter_llama/intermediates/cxx/Release/355s492m/obj/arm64-v8a

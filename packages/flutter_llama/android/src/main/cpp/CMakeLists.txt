@@ -56,38 +56,42 @@ endif()
 
 message(STATUS "   Works on: All ARM64 Android devices")
 
-# Add llama.cpp as subdirectory (it will build its own CMakeLists.txt)
-add_subdirectory(${LLAMA_CPP_DIR} build-llama)
+# Add llama.cpp as subdirectory if source is present
+if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
+    add_subdirectory(${LLAMA_CPP_DIR} build-llama)
 
-# Create our JNI bridge library
-add_library(flutter_llama_bridge SHARED
-    flutter_llama_bridge.cpp
-)
+    # Create our JNI bridge library
+    add_library(flutter_llama_bridge SHARED
+        flutter_llama_bridge.cpp
+    )
 
-# Include directories
-target_include_directories(flutter_llama_bridge PRIVATE
-    ${LLAMA_CPP_DIR}/include
-    ${LLAMA_CPP_DIR}/src
-    ${LLAMA_CPP_DIR}/ggml/include
-    ${LLAMA_CPP_DIR}/common
-)
+    # Include directories
+    target_include_directories(flutter_llama_bridge PRIVATE
+        ${LLAMA_CPP_DIR}/include
+        ${LLAMA_CPP_DIR}/src
+        ${LLAMA_CPP_DIR}/ggml/include
+        ${LLAMA_CPP_DIR}/common
+    )
 
-# Link with llama.cpp libraries
-target_link_libraries(flutter_llama_bridge
-    llama
-    ${log-lib}
-    ${android-lib}
-)
+    # Link with llama.cpp libraries
+    target_link_libraries(flutter_llama_bridge
+        llama
+        ${log-lib}
+        ${android-lib}
+    )
 
-# Link GPU libraries if found
-if(vulkan-lib)
-    target_link_libraries(flutter_llama_bridge ${vulkan-lib})
-    message(STATUS "  Linked: Vulkan library")
-endif()
+    # Link GPU libraries if found
+    if(vulkan-lib)
+        target_link_libraries(flutter_llama_bridge ${vulkan-lib})
+        message(STATUS "  Linked: Vulkan library")
+    endif()
 
-if(opencl-lib)
-    target_link_libraries(flutter_llama_bridge ${opencl-lib})
-    message(STATUS "  Linked: OpenCL library")
+    if(opencl-lib)
+        target_link_libraries(flutter_llama_bridge ${opencl-lib})
+        message(STATUS "  Linked: OpenCL library")
+    endif()
+else()
+    message(STATUS "llama.cpp submodule not present at ${LLAMA_CPP_DIR}; skipping flutter_llama_bridge compilation")
 endif()
 
 message(STATUS "Flutter Llama Bridge configuration:")

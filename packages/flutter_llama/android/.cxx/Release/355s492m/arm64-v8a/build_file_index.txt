@@ -1,0 +1,1 @@
+/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt

@@ -1,0 +1,2 @@
+/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/CMakeFiles/rebuild_cache.dir
