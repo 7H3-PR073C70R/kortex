@@ -20,7 +20,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: context.colors.transparent,
         builder: (modalContext) => MillionaireLadderDrawer(
           state: state,
           onClose: () => Navigator.of(modalContext).pop(),
@@ -43,10 +43,10 @@ class MillionaireLadderDrawer extends StatelessWidget {
     return Container(
       height: MediaQuery.sizeOf(context).height * 0.82,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: colors.surfaceBorder.withValues(alpha: 0.5),
+          color: colors.surfaceBorder,
         ),
       ),
       child: Column(
@@ -73,12 +73,12 @@ class MillionaireLadderDrawer extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                    color: colors.warning.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.military_tech_rounded,
-                    color: Color(0xFFF59E0B),
+                    color: colors.warning,
                     size: 22,
                   ),
                 ),
@@ -89,7 +89,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     children: [
                       Text(
                         'Millionaire Prize Ladder',
-                        style: typography.title3.bold,
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       Text(
                         'Guaranteed Safe Checkpoints at Tier 4 & 8',
@@ -102,7 +104,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: onClose,
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded, color: colors.textPrimary),
                 ),
               ],
             ),
@@ -119,7 +121,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                   child: _SummaryCard(
                     title: 'Current Tier Prize',
                     value: '${state.currentTierPrizeXp} XP',
-                    color: const Color(0xFFF59E0B),
+                    color: colors.warning,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -127,7 +129,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                   child: _SummaryCard(
                     title: 'Banked Safety Net',
                     value: '${state.bankedTierPrizeXp} XP',
-                    color: const Color(0xFF10B981),
+                    color: colors.success,
                   ),
                 ),
                 if (state.speedBonusXp > 0) ...[
@@ -136,7 +138,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     child: _SummaryCard(
                       title: 'Speed Bonus',
                       value: '+${state.speedBonusXp} XP',
-                      color: const Color(0xFF6366F1),
+                      color: colors.syllabotAccent,
                     ),
                   ),
                 ],
@@ -164,17 +166,17 @@ class MillionaireLadderDrawer extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isCurrent
-                        ? const Color(0xFFF59E0B).withValues(alpha: 0.18)
+                        ? colors.warning.withValues(alpha: 0.18)
                         : (isSafe
-                            ? const Color(0xFF10B981).withValues(alpha: 0.08)
-                            : (isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.02))),
+                            ? colors.success.withValues(alpha: 0.08)
+                            : (isDark ? colors.surfaceSecondary : colors.cardBackground)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isCurrent
-                          ? const Color(0xFFF59E0B)
+                          ? colors.warning
                           : (isSafe
-                              ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                              : Colors.transparent),
+                              ? colors.success.withValues(alpha: 0.4)
+                              : colors.surfaceBorder.withValues(alpha: 0.5)),
                       width: isCurrent ? 1.5 : 1.0,
                     ),
                   ),
@@ -187,17 +189,17 @@ class MillionaireLadderDrawer extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isCurrent
-                              ? const Color(0xFFF59E0B)
+                              ? colors.warning
                               : (isPassed
-                                  ? const Color(0xFF10B981)
-                                  : (isDark ? Colors.white12 : Colors.black12)),
+                                  ? colors.success
+                                  : colors.surfaceSecondary),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '$tier',
                           style: typography.caption.bold.copyWith(
                             color: (isCurrent || isPassed)
-                                ? Colors.white
+                                ? colors.white
                                 : colors.textMuted,
                           ),
                         ),
@@ -210,23 +212,23 @@ class MillionaireLadderDrawer extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981)
+                            color: colors.success
                                 .withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.shield_rounded,
-                                color: Color(0xFF10B981),
+                                color: colors.success,
                                 size: 12,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 'SAFE',
                                 style: typography.caption.bold.copyWith(
-                                  color: const Color(0xFF10B981),
+                                  color: colors.success,
                                   fontSize: 10,
                                 ),
                               ),
@@ -240,7 +242,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                         tier == 12 ? '🏆 GRAND PRIZE' : 'Tier $tier',
                         style: typography.body.medium.copyWith(
                           color: isCurrent
-                              ? const Color(0xFFF59E0B)
+                              ? colors.warning
                               : (isPassed ? colors.textPrimary : colors.textSecondary),
                         ),
                       ),
@@ -252,9 +254,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
                         '$xp XP',
                         style: typography.callout.bold.copyWith(
                           color: isCurrent
-                              ? const Color(0xFFF59E0B)
+                              ? colors.warning
                               : (isSafe
-                                  ? const Color(0xFF10B981)
+                                  ? colors.success
                                   : (isPassed
                                       ? colors.textPrimary
                                       : colors.textMuted)),
@@ -276,13 +278,13 @@ class MillionaireLadderDrawer extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  gradient: LinearGradient(
+                    colors: [colors.warning, colors.warning.withAlpha(200)],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                      color: colors.warning.withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -292,7 +294,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                 child: Text(
                   'Continue Ascent',
                   style: typography.headline.bold.copyWith(
-                    color: Colors.white,
+                    color: colors.white,
                   ),
                 ),
               ),

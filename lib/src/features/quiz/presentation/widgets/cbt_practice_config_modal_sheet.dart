@@ -41,7 +41,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => CbtPracticeConfigModalSheet(
         title: title,
         courseId: courseId,

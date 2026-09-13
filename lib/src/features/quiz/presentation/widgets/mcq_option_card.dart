@@ -30,17 +30,24 @@ class McqOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
     final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     var borderColor = colors.surfaceBorder;
-    var bgColor = theme.colorScheme.surface.withValues(alpha: 0.6);
+    var bgColor = isDark ? colors.surfaceSecondary : colors.cardBackground;
+    var badgeBgColor = colors.surfaceSecondary;
+    var badgeBorderColor = colors.surfaceBorder;
+    var badgeTextColor = colors.textPrimary;
     Widget? trailingIcon;
 
     if (isAnswered) {
       if (isCorrect) {
         borderColor = colors.success;
-        bgColor = colors.success.withValues(alpha: 0.15);
+        bgColor = colors.success.withValues(alpha: isDark ? 0.2 : 0.08);
+        badgeBgColor = colors.success.withValues(alpha: isDark ? 0.3 : 0.15);
+        badgeBorderColor = colors.success.withValues(alpha: 0.5);
+        badgeTextColor = colors.success;
         trailingIcon = Icon(
           Icons.check_circle_rounded,
           color: colors.success,
@@ -48,7 +55,10 @@ class McqOptionCard extends StatelessWidget {
         );
       } else if (isSelected) {
         borderColor = colors.error;
-        bgColor = colors.error.withValues(alpha: 0.15);
+        bgColor = colors.error.withValues(alpha: isDark ? 0.2 : 0.08);
+        badgeBgColor = colors.error.withValues(alpha: isDark ? 0.3 : 0.15);
+        badgeBorderColor = colors.error.withValues(alpha: 0.5);
+        badgeTextColor = colors.error;
         trailingIcon = Icon(
           Icons.cancel_rounded,
           color: colors.error,
@@ -56,8 +66,11 @@ class McqOptionCard extends StatelessWidget {
         );
       }
     } else if (isSelected) {
-      borderColor = theme.colorScheme.primary;
-      bgColor = theme.colorScheme.primary.withValues(alpha: 0.1);
+      borderColor = colors.primary;
+      bgColor = colors.primary.withValues(alpha: isDark ? 0.2 : 0.08);
+      badgeBgColor = colors.primary.withValues(alpha: isDark ? 0.3 : 0.15);
+      badgeBorderColor = colors.primary.withValues(alpha: 0.5);
+      badgeTextColor = colors.primary;
     }
 
     return Semantics(
@@ -79,6 +92,13 @@ class McqOptionCard extends StatelessWidget {
                 color: borderColor,
                 width: isSelected || (isAnswered && isCorrect) ? 1.8 : 1.0,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 25 : 6),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -88,17 +108,16 @@ class McqOptionCard extends StatelessWidget {
                   height: 32,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSelected || (isAnswered && isCorrect)
-                        ? borderColor.withValues(alpha: 0.2)
-                        : colors.surface,
+                    color: badgeBgColor,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: badgeBorderColor,
+                    ),
                   ),
                   child: Text(
                     _letterPrefix,
-                    style: context.typography.footnote.bold.copyWith(
-                      color: isSelected || (isAnswered && isCorrect)
-                          ? borderColor
-                          : colors.textSecondary,
+                    style: typography.footnote.bold.copyWith(
+                      color: badgeTextColor,
                     ),
                   ),
                 ),
@@ -106,9 +125,8 @@ class McqOptionCard extends StatelessWidget {
                 Expanded(
                   child: LatexRichViewer(
                     text: _displayOptionText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: typography.body.medium.copyWith(
                       color: colors.textPrimary,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

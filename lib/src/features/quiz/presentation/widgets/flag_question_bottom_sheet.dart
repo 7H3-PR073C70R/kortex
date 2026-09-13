@@ -149,7 +149,7 @@ class FlagQuestionBottomSheet extends HookWidget {
                   margin: const EdgeInsets.symmetric(vertical: 3),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? colors.primary.withValues(alpha: 0.1) : Colors.transparent,
+                    color: isSelected ? colors.primary.withValues(alpha: 0.1) : colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isSelected ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),

@@ -52,20 +52,20 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
     }
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: colors.surfaceBorder.withValues(alpha: 0.6),
+            color: colors.surfaceBorder,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
+              color: colors.black.withAlpha(isDark ? 50 : 15),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -81,21 +81,21 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                    gradient: LinearGradient(
+                      colors: [colors.primary, colors.primary.withAlpha(200)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+                        color: colors.primary.withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.groups_rounded,
-                    color: Colors.white,
+                    color: colors.white,
                     size: 22,
                   ),
                 ),
@@ -151,14 +151,14 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: isMax
-                                ? const Color(0xFF10B981)
-                                : (isDark ? Colors.white12 : Colors.black12),
+                                ? colors.success
+                                : colors.surfaceSecondary,
                             shape: BoxShape.circle,
                           ),
                           child: Text(
                             letter,
                             style: typography.caption.bold.copyWith(
-                              color: isMax ? Colors.white : colors.textPrimary,
+                              color: isMax ? colors.white : colors.textPrimary,
                               fontSize: 11,
                             ),
                           ),
@@ -178,7 +178,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                         Text(
                           '$pct%',
                           style: typography.footnote.bold.copyWith(
-                            color: isMax ? const Color(0xFF10B981) : colors.textSecondary,
+                            color: isMax ? colors.success : colors.textSecondary,
                           ),
                         ),
                       ],
@@ -191,7 +191,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                           Container(
                             height: 10,
                             width: double.infinity,
-                            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                            color: colors.surfaceSecondary,
                           ),
                           FractionallySizedBox(
                             widthFactor: (pct / 100.0).clamp(0.0, 1.0),
@@ -200,8 +200,8 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: isMax
-                                      ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                                      : [const Color(0xFF3B82F6), const Color(0xFF2563EB)],
+                                      ? [colors.success, colors.success.withAlpha(200)]
+                                      : [colors.primary, colors.primary.withAlpha(200)],
                                 ),
                               ),
                             ),
@@ -218,17 +218,17 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.15 : 0.08),
+                color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                  color: colors.warning.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.tips_and_updates_rounded,
-                    color: Color(0xFFF59E0B),
+                    color: colors.warning,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -236,7 +236,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                     child: Text(
                       'Crowd confidence reflects peer data. Trust your reasoning!',
                       style: typography.caption.regular.copyWith(
-                        color: isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309),
+                        color: colors.warning,
                       ),
                     ),
                   ),
@@ -258,7 +258,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                 child: Text(
                   'Resume Ascent',
                   style: typography.headline.bold.copyWith(
-                    color: Colors.white,
+                    color: colors.white,
                   ),
                 ),
               ),

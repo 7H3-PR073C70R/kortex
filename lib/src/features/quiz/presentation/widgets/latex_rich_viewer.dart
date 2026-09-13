@@ -428,9 +428,8 @@ class LatexRichViewer extends StatelessWidget {
             style: baseStyle.copyWith(
               fontFamily: 'monospace',
               fontSize: (baseStyle.fontSize ?? 14) * 0.92,
-              backgroundColor: baseStyle.color != null
-                  ? baseStyle.color!.withAlpha(25)
-                  : Colors.grey.withAlpha(40),
+              backgroundColor: baseStyle.color?.withAlpha(25) ??
+                  const Color(0x1F808080),
             ),
           ),
         );
@@ -494,7 +493,7 @@ class LatexFormulaBlock extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final bg = backgroundColor ??
-        (isDark ? Colors.black.withValues(alpha: 0.38) : theme.colorScheme.surface);
+        (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4) : theme.colorScheme.surfaceContainerLowest);
     final border = borderColor ?? theme.colorScheme.primary.withValues(alpha: 0.25);
     final style = textStyle ??
         theme.textTheme.bodyLarge?.copyWith(

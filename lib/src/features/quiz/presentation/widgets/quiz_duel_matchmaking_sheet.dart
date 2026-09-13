@@ -190,9 +190,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.flash_on_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 22,
                     ),
                   ),
@@ -260,10 +260,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                       ),
                                     ],
                                   ),
-                                  child: const Center(
+                                  child: Center(
                                     child: Icon(
                                       Icons.radar_rounded,
-                                      color: Colors.white,
+                                      color: colors.white,
                                       size: 36,
                                     ),
                                   ),

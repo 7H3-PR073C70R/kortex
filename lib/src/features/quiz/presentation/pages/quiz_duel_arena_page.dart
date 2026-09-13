@@ -89,7 +89,7 @@ class QuizDuelArenaPage extends HookWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.bolt_rounded, color: Colors.amber, size: 18),
+                            Icon(Icons.bolt_rounded, color: colors.warning, size: 18),
                             const SizedBox(width: 6),
                             Text(
                               'MATCH FOUND • 1v1 DUEL',
@@ -211,7 +211,7 @@ class QuizDuelArenaPage extends HookWidget {
                               child: Text(
                                 'VS',
                                 style: typography.title2.bold.copyWith(
-                                  color: Colors.white,
+                                  color: colors.white,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
@@ -434,7 +434,7 @@ class QuizDuelArenaPage extends HookWidget {
         return Scaffold(
           backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.close_rounded),
@@ -625,7 +625,7 @@ class QuizDuelArenaPage extends HookWidget {
                                             child: Text(
                                               String.fromCharCode(65 + index),
                                               style: TextStyle(
-                                                color: isSelected ? Colors.white : colors.textPrimary,
+                                                color: isSelected ? colors.white : colors.textPrimary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                               ),

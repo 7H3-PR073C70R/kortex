@@ -68,7 +68,7 @@ class AddPastQuestionModalSheet extends HookWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => AddPastQuestionModalSheet(
         courseId: effectiveCourseId,
         courseCode: effectiveCourseCode,

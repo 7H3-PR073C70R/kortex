@@ -118,18 +118,19 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     final speedBonusXp = widget.speedBonusXp;
 
     return Scaffold(
-      backgroundColor: colors.transparent,
+      backgroundColor:
+          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.white),
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           result.quizTitle,
           style: typography.title3.bold.copyWith(
-            color: colors.white,
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -144,8 +145,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF312E81).withValues(alpha: 0.9),
-                    const Color(0xFF1E1B4B).withValues(alpha: 0.95),
+                    isDark ? colors.surfaceSecondary : colors.cardBackground,
+                    isDark ? colors.backgroundSecondary : colors.surfaceSecondary,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -153,13 +154,13 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: isWalkedAway || currentTier >= 12
-                      ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
-                      : const Color(0xFF10B981).withValues(alpha: 0.6),
+                      ? colors.warning.withValues(alpha: 0.6)
+                      : colors.success.withValues(alpha: 0.6),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                    color: colors.syllabotAccent.withValues(alpha: 0.25),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -175,16 +176,16 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: currentTier >= 12
-                            ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
+                            ? [colors.warning, colors.warning.withAlpha(200)]
                             : isWalkedAway
-                                ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                                : [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
+                                ? [colors.success, colors.success.withAlpha(200)]
+                                : [colors.syllabotAccent, colors.primary],
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: (currentTier >= 12
-                                  ? const Color(0xFFF59E0B)
-                                  : const Color(0xFF10B981))
+                                  ? colors.warning
+                                  : colors.success)
                               .withValues(alpha: 0.4),
                           blurRadius: 18,
                           offset: const Offset(0, 4),
@@ -198,7 +199,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                               ? Icons.savings_rounded
                               : Icons.military_tech_rounded,
                       size: 36,
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -210,7 +211,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                             : 'TIER $currentTier ASCENT REACHED! ⚡',
                     textAlign: TextAlign.center,
                     style: typography.title3.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -223,7 +224,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                             : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
                     textAlign: TextAlign.center,
                     style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary,
+                      color: colors.white.withAlpha(200),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -231,10 +232,10 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: colors.white.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Row(
@@ -243,19 +244,19 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         _StatColumn(
                           title: 'ASCENT TIER',
                           value: '$currentTier / 12',
-                          color: const Color(0xFFF59E0B),
+                          color: colors.warning,
                         ),
-                        Container(width: 1, height: 28, color: Colors.white24),
+                        Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
                         _StatColumn(
                           title: 'SPEED BONUS',
                           value: '+$speedBonusXp XP',
-                          color: const Color(0xFF10B981),
+                          color: colors.success,
                         ),
-                        Container(width: 1, height: 28, color: Colors.white24),
+                        Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
                         _StatColumn(
                           title: 'BANKED XP',
                           value: '${(currentTier * 100) + speedBonusXp}',
-                          color: const Color(0xFF60A5FA),
+                          color: colors.primary,
                         ),
                       ],
                     ),
@@ -269,8 +270,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    gradeColor.withValues(alpha: 0.2),
-                    colors.surfacePrimary.withValues(alpha: 0.8),
+                    gradeColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                    (isDark ? colors.surfaceSecondary : colors.cardBackground).withValues(alpha: 0.95),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -279,6 +280,13 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 border: Border.all(
                   color: gradeColor.withValues(alpha: 0.4),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.black.withAlpha(isDark ? 25 : 6),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -293,7 +301,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   Text(
                     l10n.quizScoreLabel(score),
                     style: typography.largeTitle.bold.copyWith(
-                      color: colors.white,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -315,7 +323,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
           Text(
             l10n.quizTopicWeakness,
             style: typography.title3.bold.copyWith(
-              color: colors.white,
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -344,13 +352,20 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: colors.surfacePrimary.withValues(alpha: 0.6),
+                  color: isDark ? colors.surfaceSecondary : colors.cardBackground,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isWeak
                         ? colors.error.withValues(alpha: 0.3)
                         : colors.surfaceBorder,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 20 : 4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -362,7 +377,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           Text(
                             weakness.subTopic,
                             style: typography.body.bold.copyWith(
-                              color: colors.white,
+                              color: colors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -406,7 +421,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
             Text(
               'Diagnostic Mistake Autopsy',
               style: typography.title3.bold.copyWith(
-                color: colors.white,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -420,7 +435,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: colors.warning.withValues(alpha: 0.12),
+                color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: colors.warning.withValues(alpha: 0.35),
@@ -449,7 +464,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         Text(
                           'Conceptual Reinforcement Needed',
                           style: typography.subhead.bold.copyWith(
-                            color: colors.white,
+                            color: colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -472,12 +487,19 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         decoration: BoxDecoration(
-          color: colors.surfacePrimary,
+          color: isDark ? colors.surfacePrimary : colors.cardBackground,
           border: Border(
             top: BorderSide(
-              color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
+              color: colors.surfaceBorder,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: colors.black.withAlpha(isDark ? 30 : 6),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
         ),
         child: SafeArea(
           top: false,
@@ -712,6 +734,7 @@ class _StatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final typography = context.typography;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -719,7 +742,7 @@ class _StatColumn extends StatelessWidget {
         Text(
           title,
           style: typography.caption.bold.copyWith(
-            color: Colors.white70,
+            color: colors.white.withAlpha(180),
             fontSize: 9.5,
             letterSpacing: 0.5,
           ),

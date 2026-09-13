@@ -43,14 +43,14 @@ class MillionaireLifelineBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark
             ? colors.surfaceSecondary.withValues(alpha: 0.85)
-            : colors.surfacePrimary.withValues(alpha: 0.95),
+            : colors.cardBackground,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: colors.surfaceBorder.withValues(alpha: 0.6),
+          color: colors.surfaceBorder,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            color: colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -66,15 +66,15 @@ class MillionaireLifelineBar extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: state.isCurrentTierSafeCheckpoint
-                      ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                      : [const Color(0xFFF59E0B), const Color(0xFFD97706)],
+                      ? [colors.success, colors.success.withAlpha(200)]
+                      : [colors.warning, colors.warning.withAlpha(200)],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
                     color: (state.isCurrentTierSafeCheckpoint
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFF59E0B))
+                            ? colors.success
+                            : colors.warning)
                         .withValues(alpha: 0.35),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
@@ -88,14 +88,14 @@ class MillionaireLifelineBar extends StatelessWidget {
                     state.isCurrentTierSafeCheckpoint
                         ? Icons.shield_rounded
                         : Icons.military_tech_rounded,
-                    color: Colors.white,
+                    color: colors.white,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'Tier ${state.currentTier}/12',
                     style: typography.caption.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                 ],
@@ -223,12 +223,12 @@ class _LifelinePill extends StatelessWidget {
           decoration: BoxDecoration(
             color: isAvailable
                 ? colors.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-                : (isDark ? Colors.white10 : Colors.black12),
+                : colors.surfaceSecondary.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isAvailable
                   ? colors.primary.withValues(alpha: 0.4)
-                  : Colors.transparent,
+                  : colors.transparent,
             ),
           ),
           child: Row(

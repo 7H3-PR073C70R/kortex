@@ -174,7 +174,8 @@ class _QuizWorkspaceView extends HookWidget {
       builder: (context, state) {
         if (state.status == QuizSessionStatus.loading) {
           return Scaffold(
-            backgroundColor: colors.transparent,
+            backgroundColor:
+                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
             body: const Center(
               child: AppLogoLoader(),
             ),
@@ -183,7 +184,8 @@ class _QuizWorkspaceView extends HookWidget {
 
         if (state.status == QuizSessionStatus.error) {
           return Scaffold(
-            backgroundColor: colors.transparent,
+            backgroundColor:
+                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
             appBar: AppBar(
               backgroundColor: colors.transparent,
               elevation: 0,
@@ -242,7 +244,7 @@ class _QuizWorkspaceView extends HookWidget {
               backgroundColor: colors.transparent,
               elevation: 0,
               leading: IconButton(
-                icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                icon: Icon(Icons.close_rounded, color: colors.textPrimary),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
@@ -302,12 +304,13 @@ class _QuizWorkspaceView extends HookWidget {
             : (state.currentIndex + 1) / state.totalQuestions;
 
         return Scaffold(
-          backgroundColor: colors.transparent,
+          backgroundColor:
+              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+              icon: Icon(Icons.close_rounded, color: colors.textPrimary),
               onPressed: () => _confirmExit(context, state),
             ),
             title: Text(
@@ -334,7 +337,7 @@ class _QuizWorkspaceView extends HookWidget {
               ),
               // Question Navigation Palette
               IconButton(
-                icon: Icon(Icons.grid_view_rounded, color: colors.textSecondary),
+                icon: Icon(Icons.grid_view_rounded, color: colors.textPrimary),
                 tooltip: 'Question Palette',
                 onPressed: () => _showQuestionPalette(
                   context,
@@ -351,7 +354,7 @@ class _QuizWorkspaceView extends HookWidget {
                 ),
                 decoration: BoxDecoration(
                   color: state.isTimeRunningLow
-                      ? colors.error.withValues(alpha: 0.15)
+                      ? colors.error.withValues(alpha: isDark ? 0.2 : 0.1)
                       : colors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -577,18 +580,18 @@ class _QuizWorkspaceView extends HookWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.2 : 0.1),
+                          color: colors.syllabotAccent.withValues(alpha: isDark ? 0.2 : 0.1),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                            color: colors.syllabotAccent.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.auto_awesome_rounded,
-                              color: Color(0xFF6366F1),
+                              color: colors.syllabotAccent,
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -599,7 +602,7 @@ class _QuizWorkspaceView extends HookWidget {
                                   Text(
                                     'AI Tutor Clue',
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color(0xFF6366F1),
+                                      color: colors.syllabotAccent,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -624,17 +627,17 @@ class _QuizWorkspaceView extends HookWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          color: colors.success.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                            color: colors.success.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.shield_rounded,
-                              color: Color(0xFF10B981),
+                              color: colors.success,
                               size: 22,
                             ),
                             const SizedBox(width: 10),
@@ -645,7 +648,7 @@ class _QuizWorkspaceView extends HookWidget {
                                   Text(
                                     'Second Chance Shield Active!',
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color(0xFF10B981),
+                                      color: colors.success,
                                     ),
                                   ),
                                   Text(
@@ -668,13 +671,13 @@ class _QuizWorkspaceView extends HookWidget {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981),
+                                  color: colors.success,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   'Try Again',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                   ),
                                 ),
                               ),
@@ -691,17 +694,17 @@ class _QuizWorkspaceView extends HookWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          color: colors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                            color: colors.warning.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.verified_user_rounded,
-                              color: Color(0xFFF59E0B),
+                              color: colors.warning,
                               size: 24,
                             ),
                             const SizedBox(width: 10),
@@ -712,7 +715,7 @@ class _QuizWorkspaceView extends HookWidget {
                                   Text(
                                     'Safe Checkpoint Secured! 🛡️',
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color(0xFFF59E0B),
+                                      color: colors.warning,
                                     ),
                                   ),
                                   Text(
@@ -735,13 +738,13 @@ class _QuizWorkspaceView extends HookWidget {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF59E0B),
+                                  color: colors.warning,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   'Collect XP',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                   ),
                                 ),
                               ),
@@ -756,13 +759,19 @@ class _QuizWorkspaceView extends HookWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: colors.surfacePrimary.withValues(alpha: 0.8),
+                        color: isDark ? colors.surfaceSecondary : colors.cardBackground,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: colors.primary.withValues(
-                            alpha: 0.2,
-                          ),
+                          color: colors.surfaceBorder,
+                          width: 1.2,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 30 : 6),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1009,12 +1018,19 @@ class _QuizWorkspaceView extends HookWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             decoration: BoxDecoration(
-              color: colors.surfacePrimary,
+              color: isDark ? colors.surfacePrimary : colors.cardBackground,
               border: Border(
                 top: BorderSide(
-                  color: colors.surfaceBorder.withAlpha(isDark ? 60 : 120),
+                  color: colors.surfaceBorder,
                 ),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 30 : 6),
+                  blurRadius: 10,
+                  offset: const Offset(0, -3),
+                ),
+              ],
             ),
             child: SafeArea(
               top: false,
@@ -1026,7 +1042,13 @@ class _QuizWorkspaceView extends HookWidget {
                       onPressed: state.canGoPrevious
                           ? () => context.read<QuizSessionCubit>().previousQuestion()
                           : null,
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: Icon(
+                        Icons.arrow_back_rounded,
+                        color: state.canGoPrevious ? colors.textPrimary : colors.textMuted,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.surfaceBorder),
+                      ),
                       tooltip: 'Previous Question',
                     ),
                     const SizedBox(width: 8),
@@ -1045,12 +1067,15 @@ class _QuizWorkspaceView extends HookWidget {
                           ? Icons.military_tech_rounded
                           : Icons.grid_view_rounded,
                       color: state.assessmentMode == AssessmentMode.millionaireMode
-                          ? const Color(0xFFF59E0B)
-                          : null,
+                          ? colors.warning
+                          : colors.textPrimary,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: colors.surfaceBorder),
                     ),
                     tooltip: state.assessmentMode == AssessmentMode.millionaireMode
-                        ? 'Millionaire Ascent Ladder'
-                        : 'Question Palette',
+                      ? 'Millionaire Ascent Ladder'
+                      : 'Question Palette',
                   ),
                   const SizedBox(width: 12),
                   // Next / Submit primary action
@@ -1070,7 +1095,7 @@ class _QuizWorkspaceView extends HookWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed)
-                              ? const Color(0xFFF59E0B)
+                              ? colors.warning
                               : (state.isLastQuestion ? colors.success : colors.primary),
                           foregroundColor: colors.white,
                           elevation: 0,
