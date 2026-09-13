@@ -78208,5 +78208,155 @@
       "comments_count": 3
     },
     "image_url": null
+  },
+  {
+    "id": "jamb_2000_mat_q791",
+    "fingerprint": "aac8a7197792a50e8f69db63f281a6be5b60af0ff523c51842ac9c3914e57ffa",
+    "exam_type": "JAMB",
+    "subject": "Mathematics",
+    "year": 2000,
+    "question_number": 1,
+    "prompt": "An equilateral triangle of side √3cm is inscribed in a circle. Find the radius of the circle.",
+    "options": [
+      "A. 2/3 cm",
+      "B. 2 cm",
+      "C. 1 cm",
+      "D. 3 cm"
+    ],
+    "correct_option_index": 2,
+    "correct_option_label": "C",
+    "explanation": "To find the radius of the circle in which an equilateral triangle of side length \\(\\sqrt{3}\\) cm is inscribed, we use the relationship between the side length \\(a\\) of an equilateral triangle and the radius \\(R\\) of its circumscribed circle, given by the formula \\(R = \\frac{a}{\\sqrt{3}}\\). Substituting \\(a = \\sqrt{3}\\) cm into the formula, we get \\(R = \\frac{\\sqrt{3}}{\\sqrt{3}} = 1\\) cm. Therefore, the radius of the circle is **1 cm**.\n\nCorrect option: C",
+    "topic": "General Mathematics",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 791,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 14
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_2000_mat_q792",
+    "fingerprint": "797707223d808b8824132b5d0ddae77c9bd7df432d0e48a8428cc8bfadff5a52",
+    "exam_type": "JAMB",
+    "subject": "Mathematics",
+    "year": 2000,
+    "question_number": 2,
+    "prompt": "3y = 4x - 1 and Ky = x + 3 are equations of two straight lines. If the two lines are perpendicular to each other, find K.",
+    "options": [
+      "A. -\\(\\frac{4}{3}\\)",
+      "B. -\\(\\frac{3}{4}\\)",
+      "C. \\(\\frac{3}{4}\\)",
+      "D. \\(\\frac{4}{3}\\)"
+    ],
+    "correct_option_index": 0,
+    "correct_option_label": "A",
+    "explanation": "To determine the value of \\( K \\) for which the lines \\( 3y = 4x - 1 \\) and \\( Ky = x + 3 \\) are perpendicular, we first find the slopes of each line. The slope of the first line is given by \\( m_1 = \\frac{4}{3} \\) since the equation can be rewritten as \\( y = \\frac{4}{3}x - \\frac{1}{3} \\). For the second line, rewriting \\( Ky = x + 3 \\) as \\( y = \\frac{1}{K}x + \\frac{3}{K} \\) gives the slope \\( m_2 = \\frac{1}{K} \\). For the lines to be perpendicular, the product of their slopes must be \\(-1\\), i.e., \\( m_1 \\cdot m_2 = -1 \\). Substituting the slopes, we get \\( \\frac{4}{3} \\cdot \\frac{1}{K} = -1 \\), leading to \\( K = -\\frac{4}{3} \\).\n\nThus, the correct option is **A**.",
+    "topic": "Algebra",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 792,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 8
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_2000_mat_q793",
+    "fingerprint": "a13812271b1f71fc4702a405826b02efe7200ac425aa621b8222d897335a50db",
+    "exam_type": "JAMB",
+    "subject": "Mathematics",
+    "year": 2000,
+    "question_number": 3,
+    "prompt": "if P and Q are fixed points and X is a point which moves so that XP = XQ, the locus of X is",
+    "options": [
+      "A. A straight line",
+      "B. a circle",
+      "C. the bisector of angle PXQ",
+      "D. the perpendicular bisector of PQ"
+    ],
+    "correct_option_index": 3,
+    "correct_option_label": "D",
+    "explanation": "Given that \\( P \\) and \\( Q \\) are fixed points and \\( X \\) is a point which moves such that \\( XP = XQ \\), the locus of \\( X \\) is the set of all points equidistant from \\( P \\) and \\( Q \\). By definition, the set of all points equidistant from two fixed points is the perpendicular bisector of the line segment joining those points. Therefore, the locus of \\( X \\) is the perpendicular bisector of \\( PQ \\).\n\nThus, the correct option is **D**.",
+    "topic": "General Mathematics",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 793,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 6
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_2000_mat_q794",
+    "fingerprint": "e6107c294530f1618464b665bbd5e29d31bd3b562a9b34f98e9bd10bfa3a317e",
+    "exam_type": "JAMB",
+    "subject": "Mathematics",
+    "year": 2000,
+    "question_number": 4,
+    "prompt": "In a regular polygon, each interior angle doubles its corresponding exterior angle. Find the number of sides of the polygon.",
+    "options": [
+      "A. 8",
+      "B. 6",
+      "C. 4",
+      "D. 3"
+    ],
+    "correct_option_index": 1,
+    "correct_option_label": "B",
+    "explanation": "Let the exterior angle of the polygon be \\( x \\) degrees. The interior angle, which is double the exterior angle, is then \\( 2x \\) degrees. Since the interior and exterior angles are supplementary, their sum is \\( 180^\\circ \\). Therefore, we have:\n\\[ x + 2x = 180^\\circ \\]\n\\[ 3x = 180^\\circ \\]\n\\[ x = 60^\\circ \\]\nThe exterior angle of a regular polygon with \\( n \\) sides is given by \\( \\frac{360^\\circ}{n} \\). Setting this equal to \\( 60^\\circ \\), we get:\n\\[ \\frac{360^\\circ}{n} = 60^\\circ \\]\n\\[ n = \\frac{360^\\circ}{60^\\circ} = 6 \\]\nThus, the polygon has **6 sides**, confirming the correct option is **B**.",
+    "topic": "General Mathematics",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 794,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 8
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_2000_mat_q795",
+    "fingerprint": "7730209ebf0f147cfddb3c5c084a4ad681c78acb52acccb2310bbfe58c242959",
+    "exam_type": "JAMB",
+    "subject": "Mathematics",
+    "year": 2000,
+    "question_number": 5,
+    "prompt": "A predator moves in a circle of radius √2 centre (0,0), while a prey moves along the line y = x. If 0 \\(\\leq\\) x \\(\\leq\\) 2, at which point(s) will they meet?",
+    "options": [
+      "A. (1,1) only",
+      "B. (1,1) and (1,2)",
+      "C. (0,0) and (1,1)",
+      "D. (√2,√2) only"
+    ],
+    "correct_option_index": 0,
+    "correct_option_label": "A",
+    "explanation": "To determine the point(s) where the predator and prey meet, we need to find the intersection of the circle \\(x^2 + y^2 = 2\\) and the line \\(y = x\\). Substituting \\(y = x\\) into the circle's equation, we get \\(x^2 + x^2 = 2\\), which simplifies to \\(2x^2 = 2\\). Solving for \\(x\\), we find \\(x^2 = 1\\), giving \\(x = 1\\) (since \\(0 \\leq x \\leq 2\\)). Therefore, the corresponding \\(y\\) value is also 1, leading to the point \\((1,1)\\). This point lies within the given range for \\(x\\), confirming that the predator and prey meet only at \\((1,1)\\).\n\nThus, the correct option is **A**.",
+    "topic": "General Mathematics",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 795,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 2
+    },
+    "image_url": null
   }
 ]
