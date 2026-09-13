@@ -20,9 +20,22 @@ import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
+import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+/// Available sorting modes for forum replies
+enum ForumSortFilter {
+  mostRecent('Most Recent', Icons.schedule_rounded),
+  topVoted('Top Voted', Icons.trending_up_rounded),
+  aiFirst('AI Solution First', Icons.auto_awesome_rounded),
+  unanswered('Unanswered', Icons.help_outline_rounded);
+
+  const ForumSortFilter(this.label, this.icon);
+  final String label;
+  final IconData icon;
+}
 
 @RoutePage()
 class ForumThreadDetailPage extends HookWidget {
@@ -44,6 +57,8 @@ class ForumThreadDetailPage extends HookWidget {
     final focusNode = useFocusNode();
     final isSubmitting = useState<bool>(false);
     final isGeneratingAiHint = useState<bool>(false);
+    final isSubscribed = useState<bool>(false);
+    final sortFilter = useState<ForumSortFilter>(ForumSortFilter.mostRecent);
     final currentPost = useState<ForumPostEntity>(post);
     final localReplies = useState<List<ForumReplyEntity>>(post.replies);
     final replyingToReply = useState<ForumReplyEntity?>(null);
@@ -135,6 +150,28 @@ class ForumThreadDetailPage extends HookWidget {
           ),
         );
       }
+    }
+
+    // Quick text insertion helper for the composer (LaTeX, AI, Code block)
+    void insertIntoComposer(String snippet) {
+      final text = replyController.text;
+      final selection = replyController.selection;
+      if (selection.isValid && selection.start >= 0) {
+        final newText = text.replaceRange(selection.start, selection.end, snippet);
+        replyController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(
+            offset: selection.start + snippet.length,
+          ),
+        );
+      } else {
+        replyController
+          ..text = '$text$snippet'
+          ..selection = TextSelection.collapsed(
+            offset: replyController.text.length,
+          );
+      }
+      focusNode.requestFocus();
     }
 
     // Intelligent Syllabot Socratic Hint generator
@@ -317,13 +354,48 @@ class ForumThreadDetailPage extends HookWidget {
           ),
           onPressed: () => unawaited(context.router.maybePop()),
         ),
-        title: Text(
-          post.track,
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              post.track,
+              style: typography.title3.bold.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+            if (post.syllabusTag.isNotEmpty)
+              Text(
+                post.syllabusTag,
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+          ],
         ),
         actions: [
+          // Subscribe / Follow Thread toggle
+          IconButton(
+            icon: Icon(
+              isSubscribed.value
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_none_rounded,
+              color: isSubscribed.value ? colors.primary : colors.textSecondary,
+              size: 22,
+            ),
+            tooltip: isSubscribed.value ? 'Unsubscribe' : 'Subscribe to thread',
+            onPressed: () {
+              unawaited(HapticFeedback.lightImpact());
+              isSubscribed.value = !isSubscribed.value;
+              context.showSnackBar(
+                message: isSubscribed.value
+                    ? 'Subscribed to thread notifications'
+                    : 'Unsubscribed from thread notifications',
+              );
+            },
+          ),
+          // Report Discussion
           IconButton(
             icon: Icon(
               Icons.flag_outlined,
@@ -344,10 +416,9 @@ class ForumThreadDetailPage extends HookWidget {
               );
             },
           ),
-          const SizedBox(width: 8),
           // Live indicator
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 16, left: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -357,20 +428,14 @@ class ForumThreadDetailPage extends HookWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: colors.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(120),
-                        blurRadius: 6,
-                      ),
-                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 Text(
                   l10n.liveIndicator,
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.1,
                   ),
                 ),
               ],
@@ -384,10 +449,10 @@ class ForumThreadDetailPage extends HookWidget {
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  // Original Post
+                  // Main Question Card & Post Hero
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -399,7 +464,7 @@ class ForumThreadDetailPage extends HookWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: colors.primary.withAlpha(40),
+                                    backgroundColor: colors.primary.withAlpha(isDark ? 50 : 35),
                                     child: Text(
                                       currentPost.value.authorName.isNotEmpty
                                           ? currentPost.value.authorName[0].toUpperCase()
@@ -433,7 +498,7 @@ class ForumThreadDetailPage extends HookWidget {
                                   ),
                                 ],
                               ),
-                              // Stack Overflow Post Vote Widget
+                              // Stack Overflow Post Vote Capsule
                               _ForumVoteCapsule(
                                 netVotes: currentPost.value.netVotes,
                                 userVote: currentPost.value.userVote,
@@ -446,7 +511,9 @@ class ForumThreadDetailPage extends HookWidget {
 
                           // Badges Row (Question Bounty, Syllabus Module, Solved Status)
                           if (currentPost.value.isQuestion ||
-                              currentPost.value.syllabusTag.isNotEmpty) ...[
+                              currentPost.value.syllabusTag.isNotEmpty ||
+                              currentPost.value.isVerifiedSolution ||
+                              localReplies.value.any((r) => r.isVerifiedSolution)) ...[
                             Wrap(
                               spacing: 8,
                               runSpacing: 6,
@@ -497,9 +564,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: colors.syllabotAccent.withAlpha(
-                                          80,
-                                        ),
+                                        color: colors.syllabotAccent.withAlpha(80),
                                       ),
                                     ),
                                     child: Row(
@@ -562,7 +627,7 @@ class ForumThreadDetailPage extends HookWidget {
                             const SizedBox(height: 12),
                           ],
 
-                          // Title (Cleaned up from redundant prompt duplication)
+                          // Title
                           Text(
                             _cleanTitle(currentPost.value.title, currentPost.value.syllabusTag, currentPost.value.track),
                             style: typography.title2.bold.copyWith(
@@ -572,10 +637,10 @@ class ForumThreadDetailPage extends HookWidget {
                           ),
                           const SizedBox(height: 14),
 
-                          // Structured Content Card
+                          // Structured Content Body Card
                           _ForumThreadStructuredBody(post: currentPost.value),
 
-                          // LaTeX block
+                          // LaTeX Formula block
                           if (currentPost.value.latexContent != null &&
                               currentPost.value.latexContent!.isNotEmpty) ...[
                             const SizedBox(height: 16),
@@ -615,13 +680,14 @@ class ForumThreadDetailPage extends HookWidget {
 
                           const SizedBox(height: 24),
 
-                          // Replies header
+                          // Discussion / Comments Header (matching Images 1, 2, 3)
                           Row(
                             children: [
                               Text(
-                                l10n.repliesHeader,
-                                style: typography.footnote.bold.copyWith(
+                                'Discussion',
+                                style: typography.headline.bold.copyWith(
                                   color: colors.textPrimary,
+                                  fontSize: 17,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -630,118 +696,151 @@ class ForumThreadDetailPage extends HookWidget {
                                 child: Container(
                                   key: ValueKey(localReplies.value.length),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
+                                    horizontal: 10,
+                                    vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(30),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: colors.primary.withAlpha(isDark ? 40 : 25),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(isDark ? 60 : 35),
+                                    ),
                                   ),
                                   child: Text(
                                     '${localReplies.value.length}',
                                     style: typography.caption.bold.copyWith(
                                       color: colors.primary,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
                               ),
                               const Spacer(),
-                              if (localReplies.value.isNotEmpty &&
-                                  !localReplies.value.any(
-                                    (r) =>
-                                        r.authorName
-                                            .toLowerCase()
-                                            .contains('syllabot') ||
-                                        r.content.contains('Syllabot') ||
-                                        r.content.contains('🤖') ||
-                                        r.content.contains('Socratic Hint'),
-                                  ))
-                                ShrinkableButton(
-                                  onTap: isGeneratingAiHint.value
-                                      ? null
-                                      : generateSyllabotHint,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.syllabotAccent.withAlpha(
-                                        isDark ? 40 : 20,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: colors.syllabotAccent.withAlpha(
-                                          80,
-                                        ),
-                                      ),
-                                    ),
+                              // Sort & Filter Dropdown Pill
+                              PopupMenuButton<ForumSortFilter>(
+                                initialValue: sortFilter.value,
+                                tooltip: 'Sort Replies',
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                  ),
+                                ),
+                                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                                onSelected: (filter) {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  sortFilter.value = filter;
+                                },
+                                itemBuilder: (context) => ForumSortFilter.values.map((f) {
+                                  final isSelected = f == sortFilter.value;
+                                  return PopupMenuItem<ForumSortFilter>(
+                                    value: f,
                                     child: Row(
-                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        if (isGeneratingAiHint.value)
-                                          SizedBox(
-                                            width: 12,
-                                            height: 12,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    colors.white,
-                                                  ),
-                                            ),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.auto_awesome_rounded,
-                                            size: 13,
-                                            color: colors.syllabotAccent,
-                                          ),
-                                        const SizedBox(width: 5),
+                                        Icon(
+                                          f.icon,
+                                          size: 16,
+                                          color: isSelected ? colors.primary : colors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 8),
                                         Text(
-                                          isGeneratingAiHint.value
-                                              ? 'Thinking...'
-                                              : 'AI Socratic Hint 🤖',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.syllabotAccent,
-                                                fontSize: 11,
-                                              ),
+                                          f.label,
+                                          style: typography.footnote.medium.copyWith(
+                                            color: isSelected ? colors.primary : colors.textPrimary,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          ),
                                         ),
                                       ],
                                     ),
+                                  );
+                                }).toList(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfaceSecondary.withAlpha(120),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(isDark ? 30 : 15),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        sortFilter.value.icon,
+                                        size: 13,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        sortFilter.value.label,
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 14,
+                                        color: colors.textSecondary,
+                                      ),
+                                    ],
                                   ),
                                 ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
                   ),
 
-                  // Replies list & Nested Threads
+                  // Replies list & Threaded Branch Trees
                   Builder(
                     builder: (context) {
                       final allReplies = localReplies.value;
-                      // Order top-level replies by netVotes descending (highest upvote first)
-                      final topLevelReplies = allReplies
+
+                      // Filter & sort top-level replies based on selected filter
+                      final topLevelReplies = (allReplies
                           .where((r) =>
                               r.parentReplyId == null ||
                               r.parentReplyId!.isEmpty)
-                          .toList()
+                          .toList())
                         ..sort((a, b) {
+                          // Keep verified solutions pinned to the top
                           if (a.isVerifiedSolution != b.isVerifiedSolution) {
                             return a.isVerifiedSolution ? -1 : 1;
                           }
-                          final voteComp = b.netVotes.compareTo(a.netVotes);
-                          if (voteComp != 0) return voteComp;
-                          return b.createdAt.compareTo(a.createdAt);
+
+                          switch (sortFilter.value) {
+                            case ForumSortFilter.mostRecent:
+                              return b.createdAt.compareTo(a.createdAt);
+                            case ForumSortFilter.topVoted:
+                              final voteComp = b.netVotes.compareTo(a.netVotes);
+                              if (voteComp != 0) return voteComp;
+                              return b.createdAt.compareTo(a.createdAt);
+                            case ForumSortFilter.aiFirst:
+                              final aIsAi = a.authorName.toLowerCase().contains('syllabot') || a.content.contains('🤖');
+                              final bIsAi = b.authorName.toLowerCase().contains('syllabot') || b.content.contains('🤖');
+                              if (aIsAi != bIsAi) return aIsAi ? -1 : 1;
+                              return b.netVotes.compareTo(a.netVotes);
+                            case ForumSortFilter.unanswered:
+                              final aHasChildren = allReplies.any((r) => r.parentReplyId == a.id);
+                              final bHasChildren = allReplies.any((r) => r.parentReplyId == b.id);
+                              if (aHasChildren != bHasChildren) return aHasChildren ? 1 : -1;
+                              return b.createdAt.compareTo(a.createdAt);
+                          }
                         });
 
-                      // Group nested replies and sort by date descending (most recent first)
-                      final nestedRepliesMap =
-                          <String, List<ForumReplyEntity>>{};
+                      // Group nested replies
+                      final nestedRepliesMap = <String, List<ForumReplyEntity>>{};
                       for (final reply in allReplies) {
                         if (reply.parentReplyId != null &&
                             reply.parentReplyId!.isNotEmpty) {
@@ -751,7 +850,7 @@ class ForumThreadDetailPage extends HookWidget {
                         }
                       }
                       for (final list in nestedRepliesMap.values) {
-                        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
                       }
 
                       final hasAiHintInEmpty = allReplies.any(
@@ -767,87 +866,94 @@ class ForumThreadDetailPage extends HookWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
-                              vertical: 28,
+                              vertical: 36,
                             ),
                             child: Column(
                               children: [
-                                Icon(
-                                  Icons.chat_bubble_outline_rounded,
-                                  size: 36,
-                                  color: colors.textSecondary.withAlpha(100),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.primary.withAlpha(isDark ? 25 : 15),
+                                  ),
+                                  child: Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 36,
+                                    color: colors.primary,
+                                  ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 12),
                                 Text(
                                   l10n.noRepliesYet,
-                                  style: typography.footnote.medium.copyWith(
+                                  style: typography.subhead.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Be the first to share an answer or solution.',
+                                  style: typography.caption.regular.copyWith(
                                     color: colors.textSecondary,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
                                 if (!hasAiHintInEmpty) ...[
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 18),
                                   ShrinkableButton(
                                     onTap: isGeneratingAiHint.value
                                         ? null
                                         : generateSyllabotHint,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
+                                        horizontal: 18,
+                                        vertical: 11,
                                       ),
-                                    decoration: BoxDecoration(
-                                      color: colors.syllabotAccent,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.syllabotAccent.withAlpha(
-                                            isDark ? 80 : 40,
-                                          ),
-                                          blurRadius: 10,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (isGeneratingAiHint.value)
-                                          SizedBox(
-                                            width: 14,
-                                            height: 14,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    colors.white,
-                                                  ),
+                                      decoration: BoxDecoration(
+                                        color: colors.syllabotAccent,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isGeneratingAiHint.value)
+                                            SizedBox(
+                                              width: 15,
+                                              height: 15,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<Color>(
+                                                      colors.white,
+                                                    ),
+                                              ),
+                                            )
+                                          else
+                                            Icon(
+                                              Icons.auto_awesome_rounded,
+                                              size: 16,
+                                              color: colors.white,
                                             ),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.auto_awesome_rounded,
-                                            size: 16,
-                                            color: colors.white,
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            isGeneratingAiHint.value
+                                                ? 'Consulting Syllabot...'
+                                                : 'Ask Syllabot for Socratic Hint 🤖',
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.white,
+                                              letterSpacing: 0.2,
+                                            ),
                                           ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          isGeneratingAiHint.value
-                                              ? 'Consulting Syllabot...'
-                                              : 'Ask Syllabot for Socratic Hint',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.white,
-                                            letterSpacing: 0.2,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      );
-                    }
+                        );
+                      }
 
                       return SliverList(
                         delegate: SliverChildBuilderDelegate(
@@ -927,14 +1033,14 @@ class ForumThreadDetailPage extends HookWidget {
               ),
             ),
 
-            // Active Reply Context Banner (Stack Overflow / Reddit style)
+            // Active Reply Context Banner (Replying to @...)
             if (replyingToReply.value != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 30 : 15),
+                  color: colors.primary.withAlpha(isDark ? 35 : 15),
                   border: Border(
-                    top: BorderSide(color: colors.primary.withAlpha(40)),
+                    top: BorderSide(color: colors.primary.withAlpha(50)),
                   ),
                 ),
                 child: Row(
@@ -970,116 +1076,328 @@ class ForumThreadDetailPage extends HookWidget {
                 ),
               ),
 
-            // Bottom reply input bar
+            // Rich Academic Bottom Composer Bar (Images 1, 2, 3)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               decoration: BoxDecoration(
                 color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
                 border: Border(
-                  top: BorderSide(color: colors.primary.withAlpha(30)),
+                  top: BorderSide(color: colors.primary.withAlpha(isDark ? 20 : 12)),
                 ),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: replyController,
-                      focusNode: focusNode,
-                      maxLines: 5,
-                      minLines: 1,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: replyingToReply.value != null
-                            ? 'Reply to @${replyingToReply.value!.authorName}...'
-                            : l10n.writeHelpfulReply,
-                        hintStyle: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? colors.surfacePrimary
-                            : colors.surfaceSecondary.withAlpha(100),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
+                  // Quick Tools Strip (LaTeX, AI Socratic, Code Block, Emoji/Formula shortcuts)
+                  Row(
+                    children: [
+                      // LaTeX Formula Picker
+                      _ComposerToolButton(
+                        icon: Icons.functions_rounded,
+                        tooltip: 'Insert Formula',
+                        label: '√x',
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          _showLatexSnippetDialog(context, insertIntoComposer);
+                        },
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      // Syllabot AI Assist
+                      _ComposerToolButton(
+                        icon: Icons.auto_awesome_rounded,
+                        tooltip: 'Ask AI for Socratic Hint',
+                        label: 'AI Hint',
+                        accentColor: colors.syllabotAccent,
+                        onTap: isGeneratingAiHint.value ? null : generateSyllabotHint,
+                      ),
+                      const SizedBox(width: 6),
+                      // Markdown Code Block
+                      _ComposerToolButton(
+                        icon: Icons.code_rounded,
+                        tooltip: 'Code Block',
+                        label: '</>',
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          insertIntoComposer('\n```\n// Code or equation here\n```\n');
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                      // Key Formula symbol quick picker (Δ, θ, π)
+                      _ComposerToolButton(
+                        icon: Icons.emoji_symbols_rounded,
+                        tooltip: 'Insert Math Symbol',
+                        label: 'π / θ',
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          _showMathSymbolDialog(context, insertIntoComposer);
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  ShrinkableButton(
-                    onTap: isSubmitting.value
-                        ? null
-                        : () async {
-                            final text = replyController.text.trim();
-                            if (text.isEmpty) return;
-                            final targetParentId = replyingToReply.value?.id;
-                            isSubmitting.value = true;
-                            final res = await repo.replyToForumPost(
-                              postId: currentPost.value.id,
-                              content: text,
-                              parentReplyId: targetParentId,
-                            );
-                            isSubmitting.value = false;
-                            res.fold(
-                              (failure) {
-                                if (context.mounted) {
-                                  context.showSnackBar(
-                                    message:
-                                        failure.message ?? failure.toString(),
-                                    type: SnackBarType.error,
-                                  );
-                                }
-                              },
-                              (createdReply) {
-                                replyController.clear();
-                                replyingToReply.value = null;
-                                if (!localReplies.value.any(
-                                  (r) => r.id == createdReply.id,
-                                )) {
-                                  localReplies.value = [
-                                    ...localReplies.value,
-                                    createdReply,
-                                  ];
-                                }
-                                if (locator.isRegistered<CommunityHubBloc>()) {
-                                  locator<CommunityHubBloc>().add(
-                                    ForumPostRepliesIncrementedEvent(
-                                      postId: currentPost.value.id,
-                                      reply: createdReply,
-                                    ),
-                                  );
-                                }
-                              },
-                            );
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.primary,
-                      ),
-                      child: isSubmitting.value
-                          ? AppLogoLoader(
-                              size: 18,
-                              color: colors.white,
-                              showMessage: false,
-                            )
-                          : Icon(
-                              Icons.send_rounded,
-                              color: colors.white,
-                              size: 18,
+                  const SizedBox(height: 8),
+
+                  // Input Row & Send Button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: replyController,
+                          focusNode: focusNode,
+                          maxLines: 5,
+                          minLines: 1,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: InputDecoration(
+                            hintText: replyingToReply.value != null
+                                ? 'Reply to @${replyingToReply.value!.authorName}...'
+                                : 'Share your solution or answer...',
+                            hintStyle: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
                             ),
-                    ),
+                            filled: true,
+                            fillColor: isDark
+                                ? colors.surfacePrimary
+                                : colors.surfaceSecondary.withAlpha(120),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ShrinkableButton(
+                        onTap: isSubmitting.value
+                            ? null
+                            : () async {
+                                final text = replyController.text.trim();
+                                if (text.isEmpty) return;
+                                final targetParentId = replyingToReply.value?.id;
+                                isSubmitting.value = true;
+                                final res = await repo.replyToForumPost(
+                                  postId: currentPost.value.id,
+                                  content: text,
+                                  parentReplyId: targetParentId,
+                                );
+                                isSubmitting.value = false;
+                                res.fold(
+                                  (failure) {
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            failure.message ?? failure.toString(),
+                                        type: SnackBarType.error,
+                                      );
+                                    }
+                                  },
+                                  (createdReply) {
+                                    replyController.clear();
+                                    replyingToReply.value = null;
+                                    if (!localReplies.value.any(
+                                      (r) => r.id == createdReply.id,
+                                    )) {
+                                      localReplies.value = [
+                                        ...localReplies.value,
+                                        createdReply,
+                                      ];
+                                    }
+                                    if (locator.isRegistered<CommunityHubBloc>()) {
+                                      locator<CommunityHubBloc>().add(
+                                        ForumPostRepliesIncrementedEvent(
+                                          postId: currentPost.value.id,
+                                          reply: createdReply,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colors.primary,
+                          ),
+                          child: isSubmitting.value
+                              ? AppLogoLoader(
+                                  size: 18,
+                                  color: colors.white,
+                                  showMessage: false,
+                                )
+                              : Icon(
+                                  Icons.send_rounded,
+                                  color: colors.white,
+                                  size: 18,
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showLatexSnippetDialog(BuildContext context, void Function(String snippet) onInsert) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final snippets = [
+      {'label': 'Fraction', 'snippet': r'\frac{a}{b}'},
+      {'label': 'Square Root', 'snippet': r'\sqrt{x}'},
+      {'label': 'Exponent', 'snippet': 'x^{2}'},
+      {'label': 'Integral', 'snippet': r'\int_{a}^{b} f(x) dx'},
+      {'label': 'Summation', 'snippet': r'\sum_{i=1}^{n} x_i'},
+      {'label': 'Limit', 'snippet': r'\lim_{x \to \infty}'},
+      {'label': 'Matrix 2x2', 'snippet': r'\begin{pmatrix} a & b \\ c & d \end{pmatrix}'},
+    ];
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insert LaTeX Formula',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: snippets.map((s) {
+                    return ShrinkableButton(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onInsert(s['snippet']!);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 30 : 15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: colors.primary.withAlpha(50)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              s['label']!,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              s['snippet']!,
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMathSymbolDialog(BuildContext context, void Function(String symbol) onInsert) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final symbols = [
+      'π', 'θ', 'Δ', 'α', 'β', 'γ', 'λ', 'μ', 'σ', 'ω',
+      '≈', '≠', '≤', '≥', '±', '×', '÷', '∞', '√', '∫',
+    ];
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insert Math & Greek Symbol',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.5,
+                  ),
+                  itemCount: symbols.length,
+                  itemBuilder: (ctx, idx) {
+                    final sym = symbols[idx];
+                    return ShrinkableButton(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onInsert(sym);
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 25 : 12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: colors.primary.withAlpha(40)),
+                        ),
+                        child: Text(
+                          sym,
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1104,6 +1422,63 @@ String _cleanTitle(String title, String syllabusTag, String track) {
     cleaned = cleaned.substring('question:'.length).trim();
   }
   return cleaned.isEmpty ? '$syllabusTag ($track) Discussion' : cleaned;
+}
+
+/// Helper button for composer tool strip
+class _ComposerToolButton extends StatelessWidget {
+  const _ComposerToolButton({
+    required this.icon,
+    required this.tooltip,
+    required this.label,
+    this.onTap,
+    this.accentColor,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final tint = accentColor ?? colors.primary;
+
+    return ShrinkableButton(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: tint.withAlpha(isDark ? 30 : 15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: tint.withAlpha(isDark ? 60 : 35),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: tint,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(
+                color: tint,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ForumThreadStructuredBody extends StatelessWidget {
@@ -1276,7 +1651,7 @@ class _ForumThreadStructuredBody extends StatelessWidget {
             ),
           ),
 
-        // Neutral Question Options List (Never styled as selected or checked)
+        // Neutral Question Options List
         if (options.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(
@@ -1466,14 +1841,25 @@ class _CleanFormattedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sanitize any corrupt unicode replacement chars or stray non-printable control chars
+    var sanitized = text.replaceAll(
+      RegExp(r'[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]+'),
+      '',
+    );
+    // Clean up any double/triple question prefixes
+    sanitized = sanitized.replaceAll(
+      RegExp(r'^\*\*Question:\*\*\s*', caseSensitive: false),
+      '',
+    );
+
     return LatexRichViewer(
-      text: text,
+      text: sanitized,
       style: baseStyle,
     );
   }
 }
 
-/// Bidirectional vote capsule for post or replies
+/// Matte bidirectional vote capsule for post hero
 class _ForumVoteCapsule extends StatelessWidget {
   const _ForumVoteCapsule({
     required this.netVotes,
@@ -1497,25 +1883,22 @@ class _ForumVoteCapsule extends StatelessWidget {
     final isDownvoted = userVote == -1;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 3,
-      ),
+      height: 32,
       decoration: BoxDecoration(
         color: (isUpvoted || isDownvoted)
             ? (isUpvoted
-                ? colors.primary.withAlpha(isDark ? 35 : 20)
-                : colors.error.withAlpha(isDark ? 35 : 20))
+                ? colors.primary.withAlpha(isDark ? 30 : 18)
+                : colors.error.withAlpha(isDark ? 30 : 18))
             : (isDark
-                ? colors.surfaceSecondary
+                ? colors.surfacePrimary.withAlpha(180)
                 : colors.surfaceSecondary.withAlpha(120)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: (isUpvoted || isDownvoted)
               ? (isUpvoted
-                  ? colors.primary.withAlpha(120)
-                  : colors.error.withAlpha(120))
-              : colors.primary.withAlpha(isDark ? 30 : 15),
+                  ? colors.primary.withAlpha(80)
+                  : colors.error.withAlpha(80))
+              : colors.primary.withAlpha(isDark ? 25 : 12),
         ),
       ),
       child: Row(
@@ -1524,38 +1907,45 @@ class _ForumVoteCapsule extends StatelessWidget {
           ShrinkableButton(
             onTap: onUpvote,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 5,
-                vertical: 3,
+              padding: const EdgeInsets.only(
+                left: 8,
+                right: 4,
+                top: 4,
+                bottom: 4,
               ),
               child: Icon(
-                Icons.keyboard_arrow_up_rounded,
-                size: 20,
+                Icons.arrow_upward_rounded,
+                size: 16,
                 color: isUpvoted ? colors.primary : colors.textSecondary,
               ),
             ),
           ),
-          Text(
-            '$netVotes',
-            style: typography.caption.bold.copyWith(
-              color: isUpvoted
-                  ? colors.primary
-                  : isDownvoted
-                      ? colors.error
-                      : colors.textPrimary,
-              fontSize: 12.5,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '$netVotes',
+              style: typography.caption.bold.copyWith(
+                color: isUpvoted
+                    ? colors.primary
+                    : isDownvoted
+                        ? colors.error
+                        : colors.textPrimary,
+                fontSize: 12,
+              ),
             ),
           ),
           ShrinkableButton(
             onTap: onDownvote,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 5,
-                vertical: 3,
+              padding: const EdgeInsets.only(
+                left: 4,
+                right: 8,
+                top: 4,
+                bottom: 4,
               ),
               child: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 20,
+                Icons.arrow_downward_rounded,
+                size: 16,
                 color: isDownvoted ? colors.error : colors.textSecondary,
               ),
             ),
@@ -1566,7 +1956,7 @@ class _ForumVoteCapsule extends StatelessWidget {
   }
 }
 
-/// Stack Overflow style top-level answer card with voting column & nested sub-replies
+/// Clean Reddit-style top-level discussion comment node (Directly on UI canvas, matte, borderless)
 class _ForumAnswerCard extends HookWidget {
   const _ForumAnswerCard({
     required this.reply,
@@ -1601,402 +1991,438 @@ class _ForumAnswerCard extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isExpanded = useState<bool>(true);
+    // Sub-replies are hidden by default
+    final isExpanded = useState<bool>(false);
+    // Sub-replies pagination (3 at a time)
+    final visibleChildCount = useState<int>(3);
+
     final isUpvoted = reply.userVote == 1;
     final isDownvoted = reply.userVote == -1;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfaceSecondary
-            : colors.surfaceSecondary.withAlpha(100),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: reply.isVerifiedSolution
-              ? colors.recallEasy
-              : colors.primary.withAlpha(isDark ? 30 : 15),
-          width: reply.isVerifiedSolution ? 1.5 : 1.0,
-        ),
-        boxShadow: reply.isVerifiedSolution
-            ? [
-                BoxShadow(
-                  color: colors.recallEasy.withAlpha(isDark ? 50 : 25),
-                  blurRadius: 8,
-                ),
-              ]
-            : null,
-      ),
+    final isAiReply = reply.authorName.toLowerCase().contains('syllabot') ||
+        reply.content.contains('🤖') ||
+        reply.content.contains('Syllabot Socratic Hint');
+
+    final pagedChildren = children.take(visibleChildCount.value).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left Column: Stack Overflow Voting gutter & Accepted solution checkmark
-                Column(
+          // Header Row: Avatar, Username, Flairs, Relative Time
+          Row(
+            children: [
+              if (isAiReply)
+                ClipOval(
+                  child: Image(
+                    image: AppAssets.images.syllabotAvatar.provider(),
+                    width: 22,
+                    height: 22,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.syllabotAccent.withAlpha(isDark ? 40 : 25),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.smart_toy_rounded,
+                        size: 13,
+                        color: colors.syllabotAccent,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                CircleAvatar(
+                  radius: 11,
+                  backgroundColor: colors.primary.withAlpha(isDark ? 35 : 20),
+                  child: Text(
+                    reply.authorName.isNotEmpty
+                        ? reply.authorName[0].toUpperCase()
+                        : '?',
+                    style: typography.caption.bold.copyWith(
+                      fontSize: 10,
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+
+              // Author Username (Distinct font style from body text)
+              Flexible(
+                child: Text(
+                  'u/${reply.authorName}',
+                  style: typography.caption.bold.copyWith(
+                    color: isAiReply
+                        ? colors.syllabotAccent
+                        : colors.primary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // Badges (AI TUTOR / OP / Verified)
+              if (isAiReply) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.syllabotAccent.withAlpha(isDark ? 30 : 20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'AI TUTOR',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.syllabotAccent,
+                      fontSize: 9,
+                    ),
+                  ),
+                ),
+              ],
+
+              if (reply.isVerifiedSolution) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.success.withAlpha(isDark ? 30 : 20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.verified_rounded,
+                        size: 10,
+                        color: colors.success,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        'SOLVED',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.success,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(width: 6),
+              Text(
+                '• ${_formatTime(reply.createdAt, l10n)}',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary.withAlpha(180),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Comment Body (Placed directly on UI canvas)
+          _CleanFormattedText(
+            text: reply.content,
+            baseStyle: typography.footnote.regular.copyWith(
+              color: colors.textPrimary,
+              height: 1.45,
+              fontSize: 13.5,
+            ),
+          ),
+          if (reply.latexContent != null &&
+              reply.latexContent!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceSecondary.withAlpha(120)
+                    : colors.surfaceSecondary.withAlpha(80),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                reply.latexContent!,
+                style: typography.caption.bold.copyWith(
+                  color: colors.primary,
+                  fontFamily: 'monospace',
+                  fontSize: 11.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+
+          // Reddit-style Matte Action Bar (Using Wrap to prevent any horizontal overflow)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              // Bidirectional Vote Pill
+              Container(
+                height: 28,
+                decoration: BoxDecoration(
+                  color: (isUpvoted || isDownvoted)
+                      ? (isUpvoted
+                          ? colors.primary.withAlpha(isDark ? 30 : 18)
+                          : colors.error.withAlpha(isDark ? 30 : 18))
+                      : (isDark
+                          ? colors.surfaceSecondary.withAlpha(140)
+                          : colors.surfaceSecondary.withAlpha(90)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ShrinkableButton(
                       onTap: () => onVote(1),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isUpvoted
-                              ? colors.primary.withAlpha(30)
-                              : colors.transparent,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 6,
+                          right: 3,
+                          top: 3,
+                          bottom: 3,
                         ),
                         child: Icon(
-                          Icons.arrow_drop_up_rounded,
-                          size: 32,
+                          Icons.arrow_upward_rounded,
+                          size: 14,
                           color: isUpvoted
                               ? colors.primary
                               : colors.textSecondary,
                         ),
                       ),
                     ),
-                    Text(
-                      '${reply.netVotes}',
-                      style: typography.body.bold.copyWith(
-                        color: isUpvoted
-                            ? colors.primary
-                            : isDownvoted
-                                ? colors.error
-                                : colors.textPrimary,
-                        fontSize: 14.5,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Text(
+                        '${reply.netVotes}',
+                        style: typography.caption.bold.copyWith(
+                          color: isUpvoted
+                              ? colors.primary
+                              : isDownvoted
+                                  ? colors.error
+                                  : colors.textPrimary,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                     ShrinkableButton(
                       onTap: () => onVote(-1),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDownvoted
-                              ? colors.error.withAlpha(30)
-                              : colors.transparent,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 3,
+                          right: 6,
+                          top: 3,
+                          bottom: 3,
                         ),
                         child: Icon(
-                          Icons.arrow_drop_down_rounded,
-                          size: 32,
+                          Icons.arrow_downward_rounded,
+                          size: 14,
                           color: isDownvoted
                               ? colors.error
                               : colors.textSecondary,
                         ),
                       ),
                     ),
-                    if (reply.isVerifiedSolution) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: colors.recallEasy.withAlpha(30),
-                        ),
-                        child: Icon(
-                          Icons.check_rounded,
-                          size: 20,
-                          color: colors.recallEasy,
+                  ],
+                ),
+              ),
+
+              // Reply Button
+              ShrinkableButton(
+                onTap: onReplyTap,
+                child: Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(140)
+                        : colors.surfaceSecondary.withAlpha(90),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.reply_rounded,
+                        size: 13,
+                        color: colors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Reply',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-                const SizedBox(width: 12),
+              ),
 
-                // Right Column: Answer Body, Stack Overflow Author signature card, Actions
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Verified Solution Pill
-                      if (reply.isVerifiedSolution)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3,
+              // Mark as Verified Solution (Author only)
+              if (isQuestion &&
+                  !reply.isVerifiedSolution &&
+                  (!hasVerifiedSolution || isAuthor))
+                ShrinkableButton(
+                  onTap: onVerifySolution,
+                  child: Container(
+                    height: 28,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: colors.warning.withAlpha(isDark ? 30 : 18),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_outlined,
+                          size: 12,
+                          color: colors.warning,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Mark Solution (+100 XP)',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 10,
                           ),
-                          decoration: BoxDecoration(
-                            color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: colors.recallEasy),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Collapse / Unhide toggle if has children (Hidden by default)
+              if (children.isNotEmpty)
+                ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.selectionClick());
+                    isExpanded.value = !isExpanded.value;
+                  },
+                  child: Container(
+                    height: 28,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary.withAlpha(140)
+                          : colors.surfaceSecondary.withAlpha(90),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isExpanded.value
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          size: 14,
+                          color: colors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isExpanded.value
+                              ? 'Hide replies'
+                              : '${children.length} ${children.length == 1 ? 'reply' : 'replies'}',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          // Threaded Nested Replies Tree with continuous left threadline and pagination
+          if (children.isNotEmpty && isExpanded.value)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...pagedChildren.map((child) {
+                    final grandChildren = nestedRepliesMap[child.id] ?? const [];
+                    return _ThreadedReplyTree(
+                      childReply: child,
+                      children: grandChildren,
+                      onVote: (direction) => onChildVote(child, direction),
+                      onReplyTap: () => onChildReplyTap(child),
+                      onChildVote: onChildVote,
+                      onChildReplyTap: onChildReplyTap,
+                    );
+                  }),
+
+                  // Pagination "Show more replies" button
+                  if (children.length > visibleChildCount.value)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 6, bottom: 4),
+                      child: ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          visibleChildCount.value += 5;
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 6,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.check_circle_rounded,
-                                size: 12,
-                                color: colors.recallEasy,
+                                Icons.add_circle_outline_rounded,
+                                size: 13,
+                                color: colors.primary,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Verified Solution',
+                                'Show ${children.length - visibleChildCount.value} more ${children.length - visibleChildCount.value == 1 ? 'reply' : 'replies'}',
                                 style: typography.caption.bold.copyWith(
-                                  color: colors.recallEasy,
-                                  fontSize: 10.5,
+                                  color: colors.primary,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
                           ),
                         ),
-
-                      // Answer Content
-                      _CleanFormattedText(
-                        text: reply.content,
-                        baseStyle: typography.body.regular.copyWith(
-                          color: colors.textPrimary,
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
                       ),
-                      if (reply.latexContent != null &&
-                          reply.latexContent!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          reply.latexContent!,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-
-                      // Author & Action Bar Row (Stack Overflow layout)
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          // Left actions: Reply + Comments toggle + Mark solution
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 6,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              ShrinkableButton(
-                                onTap: onReplyTap,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(isDark ? 25 : 15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.reply_rounded,
-                                        size: 14,
-                                        color: colors.primary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Reply',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              if (children.isNotEmpty)
-                                ShrinkableButton(
-                                  onTap: () {
-                                    unawaited(HapticFeedback.selectionClick());
-                                    isExpanded.value = !isExpanded.value;
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.surfacePrimary.withAlpha(isDark ? 120 : 80),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          isExpanded.value
-                                              ? Icons.keyboard_arrow_up_rounded
-                                              : Icons.keyboard_arrow_down_rounded,
-                                          size: 14,
-                                          color: colors.textSecondary,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          isExpanded.value
-                                              ? 'Hide (${children.length})'
-                                              : '💬 ${children.length}',
-                                          style: typography.caption.medium.copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              if (isQuestion &&
-                                  !reply.isVerifiedSolution &&
-                                  (!hasVerifiedSolution || isAuthor))
-                                ShrinkableButton(
-                                  onTap: onVerifySolution,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.warning
-                                          .withAlpha(isDark ? 40 : 25),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: colors.warning.withAlpha(90),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.verified_outlined,
-                                          size: 12,
-                                          color: colors.warning,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Mark Solution (+100 XP)',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.warning,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-
-                          // Right author card
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfacePrimary.withAlpha(140)
-                                  : colors.surfaceSecondary.withAlpha(120),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  radius: 10,
-                                  backgroundColor:
-                                      reply.authorName.contains('Syllabot')
-                                          ? colors.syllabotAccent.withAlpha(50)
-                                          : colors.primary.withAlpha(40),
-                                  child: Text(
-                                    reply.authorName.contains('Syllabot')
-                                        ? '🤖'
-                                        : (reply.authorName.isNotEmpty
-                                            ? reply.authorName[0].toUpperCase()
-                                            : '?'),
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: reply.authorName.contains('Syllabot')
-                                          ? 10
-                                          : 9,
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      reply.authorName,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 11,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      'answered ${_formatTime(reply.createdAt, l10n)}',
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 9,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Sleek Stack Overflow Nested Comments Section
-          if (children.isNotEmpty && isExpanded.value) ...[
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: colors.primary.withAlpha(isDark ? 25 : 15),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: children.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final child = entry.value;
-                  final grandChildren = nestedRepliesMap[child.id] ?? const [];
-                  return Column(
-                    children: [
-                      if (idx > 0)
-                        Divider(
-                          height: 12,
-                          thickness: 0.5,
-                          color: colors.primary.withAlpha(isDark ? 20 : 10),
-                        ),
-                      _ForumNestedReplyItem(
-                        childReply: child,
-                        children: grandChildren,
-                        onVote: (direction) => onChildVote(child, direction),
-                        onReplyTap: () => onChildReplyTap(child),
-                        onChildVote: onChildVote,
-                        onChildReplyTap: onChildReplyTap,
-                      ),
-                    ],
-                  );
-                }).toList(),
+                    ),
+                ],
               ),
             ),
-          ],
+
+          // Subtle divider separating top-level replies on the UI canvas
+          const SizedBox(height: 10),
+          Divider(
+            height: 16,
+            thickness: 0.6,
+            color: colors.surfaceBorder.withAlpha(isDark ? 35 : 20),
+          ),
         ],
       ),
     );
@@ -2013,9 +2439,9 @@ class _ForumAnswerCard extends HookWidget {
   }
 }
 
-/// Stack Overflow style comment item (Supports Depth 1 and Depth 2 with depth limit of 2)
-class _ForumNestedReplyItem extends HookWidget {
-  const _ForumNestedReplyItem({
+/// Borderless nested reply item placed directly on the UI canvas with Likes instead of votes
+class _ThreadedReplyTree extends HookWidget {
+  const _ThreadedReplyTree({
     required this.childReply,
     required this.onVote,
     this.children = const [],
@@ -2040,248 +2466,259 @@ class _ForumNestedReplyItem extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isExpanded = useState<bool>(true);
-    final isUpvoted = childReply.userVote == 1;
-    final isDownvoted = childReply.userVote == -1;
+    // Sub-sub replies are hidden by default
+    final isExpanded = useState<bool>(false);
+    final isLiked = childReply.userVote == 1;
 
-    // Hard depth limit of 2: Depth 2 comments CANNOT have a reply button
+    final isAiReply = childReply.authorName.toLowerCase().contains('syllabot') ||
+        childReply.content.contains('🤖');
+
     final canReply = depth < 2 && onReplyTap != null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Avatar + Author name + timestamp + sleek compact vote pill
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 9,
-                backgroundColor: childReply.authorName.contains('Syllabot')
-                    ? colors.syllabotAccent.withAlpha(50)
-                    : colors.primary.withAlpha(35),
-                child: Text(
-                  childReply.authorName.contains('Syllabot')
-                      ? '🤖'
-                      : (childReply.authorName.isNotEmpty
-                          ? childReply.authorName[0].toUpperCase()
-                          : '?'),
-                  style: typography.caption.bold.copyWith(
-                    fontSize: childReply.authorName.contains('Syllabot') ? 9 : 8,
-                    color: colors.primary,
-                  ),
+      padding: const EdgeInsets.only(top: 8),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Continuous Thread Connector Guide Line
+            SizedBox(
+              width: 16,
+              child: CustomPaint(
+                painter: _BranchLinePainter(
+                  lineColor: colors.primary.withAlpha(isDark ? 40 : 25),
+                  hasChildren: children.isNotEmpty && isExpanded.value,
                 ),
               ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  childReply.authorName,
-                  style: typography.caption.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 11,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '• ${_formatTime(childReply.createdAt, l10n)}',
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 9.5,
-                ),
-              ),
-              const Spacer(),
-              // Minimal sleek vote pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: (isUpvoted || isDownvoted)
-                      ? (isUpvoted
-                          ? colors.primary.withAlpha(isDark ? 35 : 20)
-                          : colors.error.withAlpha(isDark ? 35 : 20))
-                      : colors.surfacePrimary.withAlpha(isDark ? 100 : 60),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ShrinkableButton(
-                      onTap: () => onVote(1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Icon(
-                          Icons.keyboard_arrow_up_rounded,
-                          size: 15,
-                          color: isUpvoted ? colors.primary : colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${childReply.netVotes}',
-                      style: typography.caption.bold.copyWith(
-                        color: isUpvoted
-                            ? colors.primary
-                            : isDownvoted
-                                ? colors.error
-                                : colors.textPrimary,
-                        fontSize: 10.5,
-                      ),
-                    ),
-                    ShrinkableButton(
-                      onTap: () => onVote(-1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 15,
-                          color: isDownvoted ? colors.error : colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          // Comment body
-          Padding(
-            padding: const EdgeInsets.only(left: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _CleanFormattedText(
-                  text: childReply.content,
-                  baseStyle: typography.footnote.regular.copyWith(
-                    color: colors.textPrimary,
-                    height: 1.4,
-                    fontSize: 12.5,
-                  ),
-                ),
-                if (childReply.latexContent != null &&
-                    childReply.latexContent!.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    childReply.latexContent!,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontFamily: 'monospace',
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 4),
-
-                // Action buttons: Reply + Sub-comments toggle
-                Row(
-                  children: [
-                    if (canReply)
-                      ShrinkableButton(
-                        onTap: onReplyTap,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.reply_rounded,
-                              size: 13,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Reply',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 10.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (canReply && children.isNotEmpty)
-                      const SizedBox(width: 12),
-                    if (children.isNotEmpty)
-                      ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          isExpanded.value = !isExpanded.value;
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isExpanded.value
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              size: 13,
-                              color: colors.textSecondary,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              isExpanded.value
-                                  ? 'Hide'
-                                  : '${children.length} ${children.length == 1 ? 'reply' : 'replies'}',
-                              style: typography.caption.medium.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ],
             ),
-          ),
+            const SizedBox(width: 4),
 
-          // Grandchildren comments list (Depth 2) with elegant left thread guide line
-          if (children.isNotEmpty && isExpanded.value && depth < 2) ...[
-            const SizedBox(height: 6),
-            Container(
-              margin: const EdgeInsets.only(left: 14),
-              padding: const EdgeInsets.only(left: 10),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: colors.primary.withAlpha(isDark ? 45 : 25),
-                    width: 1.5,
-                  ),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: children.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final grandChild = entry.value;
-                  return Column(
-                    children: [
-                      if (idx > 0)
-                        Divider(
-                          height: 10,
-                          thickness: 0.5,
-                          color: colors.primary.withAlpha(isDark ? 20 : 10),
+            // Borderless sub-comment placed directly on the UI canvas
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Author Header Row & Timestamp
+                    Row(
+                      children: [
+                        if (isAiReply)
+                          ClipOval(
+                            child: Image(
+                              image: AppAssets.images.syllabotAvatar.provider(),
+                              width: 18,
+                              height: 18,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.syllabotAccent.withAlpha(isDark ? 40 : 25),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.smart_toy_rounded,
+                                  size: 11,
+                                  color: colors.syllabotAccent,
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          CircleAvatar(
+                            radius: 9,
+                            backgroundColor: colors.primary.withAlpha(isDark ? 35 : 20),
+                            child: Text(
+                              childReply.authorName.isNotEmpty
+                                  ? childReply.authorName[0].toUpperCase()
+                                  : '?',
+                              style: typography.caption.bold.copyWith(
+                                fontSize: 8,
+                                color: colors.primary,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: 6),
+
+                        // Author Name (Distinct styling from body)
+                        Flexible(
+                          child: Text(
+                            'u/${childReply.authorName}',
+                            style: typography.caption.bold.copyWith(
+                              color: isAiReply
+                                  ? colors.syllabotAccent
+                                  : colors.primary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      _ForumNestedReplyItem(
-                        childReply: grandChild,
-                        depth: 2,
-                        onVote: (direction) {
-                          if (onChildVote != null) {
-                            onChildVote!(grandChild, direction);
-                          } else {
-                            onVote(direction);
-                          }
-                        },
+                        const SizedBox(width: 6),
+                        Text(
+                          '• ${_formatTime(childReply.createdAt, l10n)}',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary.withAlpha(180),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Comment Body (Directly on canvas)
+                    _CleanFormattedText(
+                      text: childReply.content,
+                      baseStyle: typography.footnote.regular.copyWith(
+                        color: colors.textPrimary,
+                        height: 1.4,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    if (childReply.latexContent != null &&
+                        childReply.latexContent!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        childReply.latexContent!,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
                       ),
                     ],
-                  );
-                }).toList(),
+                    const SizedBox(height: 6),
+
+                    // Actions: Likes instead of upvote/downvote + Reply + Collapse
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // Heart / Like Button for Sub-Replies
+                        ShrinkableButton(
+                          onTap: () {
+                            unawaited(HapticFeedback.selectionClick());
+                            onVote(isLiked ? 0 : 1);
+                          },
+                          child: Container(
+                            height: 24,
+                            padding: const EdgeInsets.symmetric(horizontal: 7),
+                            decoration: BoxDecoration(
+                              color: isLiked
+                                  ? colors.error.withAlpha(isDark ? 30 : 18)
+                                  : (isDark
+                                      ? colors.surfaceSecondary.withAlpha(120)
+                                      : colors.surfaceSecondary.withAlpha(80)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isLiked
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 12,
+                                  color: isLiked
+                                      ? colors.error
+                                      : colors.textSecondary,
+                                ),
+                                if (childReply.upvotes > 0) ...[
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '${childReply.upvotes}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: isLiked
+                                          ? colors.error
+                                          : colors.textSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Reply Button
+                        if (canReply)
+                          ShrinkableButton(
+                            onTap: onReplyTap,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.reply_rounded,
+                                  size: 13,
+                                  color: colors.textSecondary,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Reply',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 10.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Toggle for Sub-Sub-Replies (Hidden by default)
+                        if (children.isNotEmpty)
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.selectionClick());
+                              isExpanded.value = !isExpanded.value;
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                isExpanded.value
+                                    ? 'Hide'
+                                    : '+${children.length} ${children.length == 1 ? 'reply' : 'replies'}',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    // Grandchildren branch (Depth 2)
+                    if (children.isNotEmpty && isExpanded.value && depth < 2) ...[
+                      const SizedBox(height: 6),
+                      Column(
+                        children: children.map((grandChild) {
+                          return _ThreadedReplyTree(
+                            childReply: grandChild,
+                            depth: 2,
+                            onVote: (direction) {
+                              if (onChildVote != null) {
+                                onChildVote!(grandChild, direction);
+                              } else {
+                                onVote(direction);
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -2294,5 +2731,54 @@ class _ForumNestedReplyItem extends HookWidget {
     if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
     if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
     return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+/// Custom painter for clean, non-glowing branch connector lines
+class _BranchLinePainter extends CustomPainter {
+  const _BranchLinePainter({
+    required this.lineColor,
+    required this.hasChildren,
+  });
+
+  final Color lineColor;
+  final bool hasChildren;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final startX = size.width * 0.4;
+    const startY = 0.0;
+    final curveEndX = size.width;
+    const midY = 14.0;
+
+    // Draw smooth L-curved branch into comment
+    final path = Path()
+      ..moveTo(startX, startY)
+      ..lineTo(startX, midY - 4)
+      ..quadraticBezierTo(startX, midY, startX + 4, midY)
+      ..lineTo(curveEndX, midY);
+
+    canvas.drawPath(path, paint);
+
+    // If there are sub-children, continue line downwards
+    if (hasChildren) {
+      canvas.drawLine(
+        Offset(startX, startY),
+        Offset(startX, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BranchLinePainter oldDelegate) {
+    return oldDelegate.lineColor != lineColor ||
+        oldDelegate.hasChildren != hasChildren;
   }
 }
