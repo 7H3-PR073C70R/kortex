@@ -38,4 +38,9 @@ abstract class QuizDuelRepository {
     required String duelId,
     required String userId,
   });
+
+  /// Immediately pairs with an AI bot opponent during active search.
+  Future<Either<Failure, void>> matchWithAiImmediately({
+    required String duelId,
+  });
 }

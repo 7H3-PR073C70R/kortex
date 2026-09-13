@@ -156,7 +156,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     bool? questionsOnly,
   }) async {
     final params = <String, dynamic>{
-      'select': '*,forum_replies(*)',
+      'select': '*',
       'order': 'created_at.desc',
     };
     if (track != null && track.isNotEmpty && track != 'All') {
@@ -302,10 +302,30 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String replyId,
   }) async {
     try {
-      await _client.verifyForumReply({
-        'p_post_id': postId,
-        'p_reply_id': replyId,
-      });
+      try {
+        await _client.verifyForumReply({
+          'p_post_id': postId,
+          'p_reply_id': replyId,
+        });
+      } on Object catch (_) {
+        // Fallback to direct REST PATCH if the remote RPC stored procedure encounters schema mismatch (e.g. legacy forum_topics relation)
+        try {
+          await _client.updateForumReply(
+            {'post_id': 'eq.$postId'},
+            {'is_verified_solution': false},
+          );
+          await _client.updateForumReply(
+            {'id': 'eq.$replyId'},
+            {'is_verified_solution': true},
+          );
+          await _client.updateForumPost(
+            {'id': 'eq.$postId'},
+            {'is_verified_solution': true},
+          );
+        } on Object catch (_) {
+          // Ignore REST errors to allow local-first optimistic cache update
+        }
+      }
 
       final cache = _replyCache[postId];
       if (cache != null) {
@@ -379,21 +399,18 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }).ignore();
     }
 
-    // Seed or refresh cache via REST
+    // Seed or refresh cache via direct REST call to /rest/v1/forum_replies
     _client
-        .fetchForumPosts({
-          'select': 'forum_replies(*)',
-          'id': 'eq.$postId',
-          'limit': '1',
+        .fetchForumReplies({
+          'select': '*',
+          'post_id': 'eq.$postId',
+          'order': 'created_at.asc',
         })
         .then((res) {
           try {
             final rawList = res.data is List ? (res.data as List) : <dynamic>[];
             if (rawList.isNotEmpty) {
-              final postJson = rawList.first as Map<String, dynamic>;
-              final repliesRaw =
-                  postJson['forum_replies'] as List<dynamic>? ?? [];
-              final fetchedReplies = repliesRaw
+              final fetchedReplies = rawList
                   .map(
                     (r) => ForumReplyModel.fromJson(r as Map<String, dynamic>),
                   )
@@ -966,5 +983,42 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         rating: 4.9,
       ),
     ];
+  }
+
+  @override
+  Future<bool> reportContent({
+    required String contentType,
+    required String contentId,
+    required String reason,
+    String? details,
+    String? postId,
+  }) async {
+    try {
+      final userId = _userStorage?.getUserId();
+      final reporterName = _userStorage?.getUserDisplayName() ?? 'Scholar';
+      final payload = <String, dynamic>{
+        'content_type': contentType,
+        'content_id': contentId,
+        'post_id': ?postId,
+        'reporter_id': ?userId,
+        'reporter_name': reporterName,
+        'reason': reason,
+        'details': ?details,
+      };
+
+      await _client.reportContent(payload);
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.reportContent failed',
+          ),
+        );
+      }
+      return false;
+    }
   }
 }

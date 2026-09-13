@@ -6,6 +6,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
@@ -53,33 +55,53 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     final isDark = context.isDarkMode;
 
     final selectedSubject = useState<String>(initialSubject);
-    final selectedExamBoard = useState<String>(initialExamBoard);
     final selectedQuestionCount = useState<int>(10);
     final isSearching = useState<bool>(false);
+    final searchSeconds = useState<int>(0);
 
-    // Dynamic subjects based on user's active decks + core subjects
+    useEffect(() {
+      Timer? timer;
+      if (isSearching.value) {
+        searchSeconds.value = 0;
+        timer = Timer.periodic(const Duration(seconds: 1), (_) {
+          searchSeconds.value++;
+        });
+      }
+      return () => timer?.cancel();
+    }, [isSearching.value]);
+
+    // Resolve exam board / standard directly from user's active profile track
+    final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
+    final userTrack = authBloc?.state.userProfile?.targetTrack;
+    final resolvedExamBoard = (userTrack != null && userTrack.isNotEmpty)
+        ? userTrack
+        : initialExamBoard;
+
+    // Resolve subjects strictly from user's registered courses and active study decks
+    final dashboardBloc = locator.isRegistered<DashboardBloc>() ? locator<DashboardBloc>() : null;
+    final curatedCourses = dashboardBloc?.state.feed?.curatedCourses.map((c) => c.title.trim()).where((t) => t.isNotEmpty).toSet().toList() ?? [];
+
     final decksBloc = locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null;
-    final deckSubjects = decksBloc?.state.allDecks.map((d) => d.subject).where((s) => s.isNotEmpty).toSet().toList() ?? [];
-    
-    final baseSubjects = [
-      'Physics',
-      'Mathematics',
-      'Chemistry',
-      'Biology',
-      'Economics',
-      'English',
-      'Computer Science',
-      'Law',
-      'Medicine',
-      'General Science',
-    ];
-    
-    final subjects = {...deckSubjects, ...baseSubjects}.toList();
+    final deckSubjects = decksBloc?.state.allDecks.map((d) => d.subject.trim()).where((s) => s.isNotEmpty).toSet().toList() ?? [];
+
+    final userRegisteredCourses = {...curatedCourses, ...deckSubjects}.toList();
+
+    // Fallback only if user has zero registered courses yet
+    final subjects = userRegisteredCourses.isNotEmpty
+        ? userRegisteredCourses
+        : const [
+            'Mathematics',
+            'English',
+            'Biology',
+            'Physics',
+            'Chemistry',
+            'Economics',
+          ];
+
     if (!subjects.contains(selectedSubject.value) && subjects.isNotEmpty) {
       selectedSubject.value = subjects.first;
     }
 
-    final examBoards = ['WAEC', 'JAMB', 'NECO', 'IGCSE', 'SAT', 'University'];
     final questionCounts = [5, 10, 15];
 
     final pulseController = useAnimationController(
@@ -97,7 +119,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       unawaited(
         context.read<QuizDuelCubit>().startMatchmaking(
           subject: selectedSubject.value,
-          examBoard: selectedExamBoard.value,
+          examBoard: resolvedExamBoard,
           userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
           displayName: 'You',
           avatarUrl: '⚡',
@@ -252,23 +274,33 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Finding Academic Rival...',
+                          'Finding Real Rival... (${(searchSeconds.value ~/ 60).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} / 02:00)',
                           style: typography.title3.bold.copyWith(
                             color: colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Matching in ${selectedSubject.value} (${selectedExamBoard.value})',
+                          'Searching live peers in ${selectedSubject.value} ($resolvedExamBoard)\nMatching with AI after 2 minutes if no rival joins',
+                          textAlign: TextAlign.center,
                           style: typography.body.regular.copyWith(
                             color: colors.textSecondary,
+                            fontSize: 12.5,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                AppButton(
+                  text: 'Practice with AI Now ⚡',
+                  onPressed: () async {
+                    AppFeedback.light();
+                    await context.read<QuizDuelCubit>().matchWithAiImmediately();
+                  },
+                ),
+                const SizedBox(height: 10),
                 AppButton(
                   text: 'Cancel Matchmaking',
                   variant: AppButtonVariant.secondary,
@@ -305,40 +337,6 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         if (val) {
                           AppFeedback.selection();
                           selectedSubject.value = sub;
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // Exam Board Selector
-                Text(
-                  'Exam Board / Standard',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: examBoards.map((board) {
-                    final isSelected = selectedExamBoard.value == board;
-                    return ChoiceChip(
-                      label: Text(board),
-                      selected: isSelected,
-                      selectedColor: colors.secondary.withValues(alpha: 0.2),
-                      backgroundColor: colors.surfaceSecondary,
-                      labelStyle: TextStyle(
-                        color: isSelected ? colors.secondary : colors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (val) {
-                        if (val) {
-                          AppFeedback.selection();
-                          selectedExamBoard.value = board;
                         }
                       },
                     );

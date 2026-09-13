@@ -157,6 +157,12 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     emit(const QuizDuelState(status: QuizDuelStatus.cancelled));
   }
 
+  /// Instantly matches with AI bot if user prefers not to wait out the 2-minute search.
+  Future<void> matchWithAiImmediately() async {
+    if (state.match == null || state.status != QuizDuelStatus.matching) return;
+    await _repository.matchWithAiImmediately(duelId: state.match!.duelId);
+  }
+
   @override
   Future<void> close() {
     _countdownTimer?.cancel();

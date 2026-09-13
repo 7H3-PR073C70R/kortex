@@ -38,6 +38,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: DeckMarketplaceDetailRoute.page),
     AutoRoute(page: TwoFactorSetupRoute.page),
     AutoRoute(page: PastQuestionsBoardRoute.page),
+    AutoRoute(page: CourseQuestionsRoute.page),
     AutoRoute(page: QuizWorkspaceRoute.page),
     AutoRoute(page: QuizResultsRoute.page),
     AutoRoute(page: PaywallRoute.page),

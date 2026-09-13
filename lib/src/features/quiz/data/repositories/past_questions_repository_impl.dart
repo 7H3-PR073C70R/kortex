@@ -77,9 +77,10 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     String? courseCode,
   }) {
     return Future<List<PastQuestionEntity>>.sync(() async {
-      // 1. Instant lookup from local offline asset and user-added dataset
+      // 1. Fetch remote data from Supabase actively
+      var remote = <PastQuestionModel>[];
       try {
-        final local = await _effectiveLocalDataSource.getPastQuestions(
+        remote = await _remoteDataSource.getPastQuestions(
           examCategory: examCategory,
           subject: subject,
           year: year,
@@ -87,33 +88,42 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           courseId: courseId,
           courseCode: courseCode,
         );
-        if (local.isNotEmpty) {
-          return local.map((m) {
-            final entity = m.toEntity();
-            if (_bookmarkedIds.contains(entity.id)) {
-              return entity.copyWith(isBookmarked: true);
-            }
-            return entity;
-          }).toList();
+
+        if (remote.isNotEmpty) {
+          // Write-through caching to local SQLite database so subsequent queries work offline
+          unawaited(_effectiveLocalDataSource.savePastQuestions(remote));
         }
       } on Object catch (_) {}
 
-      // 2. Fallback to remote data source if offline asset yielded no match
-      final remote = await _remoteDataSource.getPastQuestions(
-        examCategory: examCategory,
-        subject: subject,
-        year: year,
-        searchQuery: searchQuery,
-        courseId: courseId,
-        courseCode: courseCode,
-      );
+      // 2. Fetch local offline/cached questions
+      var local = <PastQuestionModel>[];
+      try {
+        local = await _effectiveLocalDataSource.getPastQuestions(
+          examCategory: examCategory,
+          subject: subject,
+          year: year,
+          searchQuery: searchQuery,
+          courseId: courseId,
+          courseCode: courseCode,
+        );
+      } on Object catch (_) {}
 
-      if (remote.isNotEmpty) {
-        // Write-through caching to local SQLite database so subsequent queries work offline
-        unawaited(_effectiveLocalDataSource.savePastQuestions(remote));
+      // 3. Merge results, preferring remote/updated items
+      final seenIds = <String>{};
+      final merged = <PastQuestionModel>[];
+
+      for (final q in remote) {
+        if (seenIds.add(q.id)) {
+          merged.add(q);
+        }
+      }
+      for (final q in local) {
+        if (seenIds.add(q.id)) {
+          merged.add(q);
+        }
       }
 
-      return remote.map((m) {
+      return merged.map((m) {
         final entity = m.toEntity();
         if (_bookmarkedIds.contains(entity.id)) {
           return entity.copyWith(isBookmarked: true);

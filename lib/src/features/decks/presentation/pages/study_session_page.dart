@@ -860,11 +860,9 @@ class _StudySessionView extends HookWidget {
                     onPressed: () {
                       unawaited(HapticFeedback.mediumImpact());
                       Navigator.of(sheetContext).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Milestone shared with your Study Circle! 🎉 +25 Pod Karma'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
+                      context.showSnackBar(
+                        message: 'Milestone shared with your Study Circle! 🎉 +25 Pod Karma',
+                        type: SnackBarType.success,
                       );
                     },
                     style: OutlinedButton.styleFrom(

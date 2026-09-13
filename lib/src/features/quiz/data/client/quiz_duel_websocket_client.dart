@@ -7,11 +7,16 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 
 /// Realtime Phoenix-style WebSocket & Broadcast Channel Client for 1v1 Quiz Duels (QZ-13).
 class QuizDuelWebSocketClient {
+
   QuizDuelWebSocketClient({
     RealtimeClient? realtimeClient,
     Random? random,
+    Duration? matchmakingTimeout,
   })  : _realtimeClient = realtimeClient ?? RealtimeClient.instance,
-        _random = random ?? Random();
+        _random = random ?? Random(),
+        matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout;
+  static const Duration defaultMatchmakingTimeout = Duration(minutes: 2);
+  final Duration matchmakingTimeout;
 
   final RealtimeClient _realtimeClient;
   final Random _random;
@@ -183,6 +188,7 @@ class QuizDuelWebSocketClient {
   }
 
   /// Finds or creates a duel match room.
+  /// Looks for real human opponent first; if none is found after 2 minutes, falls back to AI.
   Future<QuizDuelMatch> findOrCreateDuel({
     required String subject,
     required String examBoard,
@@ -192,6 +198,46 @@ class QuizDuelWebSocketClient {
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
   }) async {
+    // 1. Check if another real player is already waiting in matchmaking for this track/subject
+    QuizDuelMatch? existingMatch;
+    for (final m in _activeMatches.values) {
+      if (m.status == QuizDuelStatus.matching &&
+          m.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
+          m.examBoard.trim().toLowerCase() == examBoard.trim().toLowerCase() &&
+          m.player1.userId != userId &&
+          m.player2 == null) {
+        existingMatch = m;
+        break;
+      }
+    }
+
+    if (existingMatch != null) {
+      final player2 = QuizDuelParticipant(
+        userId: userId,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        isReady: true,
+        eloRating: 1250,
+      );
+
+      _matchingTimers[existingMatch.duelId]?.cancel();
+
+      final matched = existingMatch.copyWith(
+        player2: player2,
+        status: QuizDuelStatus.countdown,
+      );
+
+      _updateMatch(existingMatch.duelId, matched);
+
+      // Start round 1 after 2.5s countdown
+      Timer(const Duration(milliseconds: 2500), () {
+        _startRound(existingMatch!.duelId, 0);
+      });
+
+      return matched;
+    }
+
+    // 2. No open room found: Create new match and wait for real opponent for 2 minutes
     final duelId = 'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
     final questions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
@@ -205,7 +251,6 @@ class QuizDuelWebSocketClient {
       eloRating: 1250,
     );
 
-    // Initial match in matching state
     final match = QuizDuelMatch(
       duelId: duelId,
       subject: subject,
@@ -218,23 +263,26 @@ class QuizDuelWebSocketClient {
     _activeMatches[duelId] = match;
     _getOrCreateController(duelId).add(match);
 
-    // Schedule AI Peer match after brief matching delay (1.2s)
+    // Schedule AI match if no real player joins within matchmakingTimeout (default 2 minutes)
     _matchingTimers[duelId]?.cancel();
-    _matchingTimers[duelId] = Timer(const Duration(milliseconds: 1200), () {
+    _matchingTimers[duelId] = Timer(matchmakingTimeout, () {
       if (_activeMatches[duelId]?.status == QuizDuelStatus.matching) {
-        _simulateMatchFoundWithAi(duelId);
+        simulateMatchFoundWithAi(duelId);
       }
     });
 
     return match;
   }
 
-  void _simulateMatchFoundWithAi(String duelId) {
+  /// Immediately pairs with an AI opponent if the user chooses not to wait out the 2-minute search.
+  void simulateMatchFoundWithAi(String duelId) {
     final current = _activeMatches[duelId];
-    if (current == null) return;
+    if (current == null || current.status != QuizDuelStatus.matching) return;
 
-    final aiNames = ['Syllabot Scholar', 'Ada Lovelace ⚡', 'Kortex Rival', 'Newton Mind'];
-    final aiAvatars = ['🧠', '🚀', '⚡', '🏆'];
+    _matchingTimers[duelId]?.cancel();
+
+    final aiNames = ['Syllabot Scholar', 'Ada Lovelace ⚡', 'Kortex Rival', 'Newton Mind', 'Curie Intellect'];
+    final aiAvatars = ['🧠', '🚀', '⚡', '🏆', '💡'];
     final pick = _random.nextInt(aiNames.length);
 
     final player2 = QuizDuelParticipant(

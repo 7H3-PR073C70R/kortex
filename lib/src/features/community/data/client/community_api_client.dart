@@ -30,6 +30,11 @@ abstract class CommunityApiClient {
     @Header('Prefer') String prefer = 'return=representation',
   });
 
+  @GET(AppApiEndpoint.forumReplies)
+  Future<HttpResponse<dynamic>> fetchForumReplies(
+    @Queries() Map<String, dynamic> query,
+  );
+
   @POST(AppApiEndpoint.forumReplies)
   Future<HttpResponse<dynamic>> replyToForumPost(
     @Body() Map<String, dynamic> body, {
@@ -40,6 +45,20 @@ abstract class CommunityApiClient {
   Future<HttpResponse<dynamic>> verifyForumReply(
     @Body() Map<String, dynamic> body,
   );
+
+  @PATCH(AppApiEndpoint.forumReplies)
+  Future<HttpResponse<dynamic>> updateForumReply(
+    @Queries() Map<String, dynamic> query,
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
+
+  @PATCH(AppApiEndpoint.forumPosts)
+  Future<HttpResponse<dynamic>> updateForumPost(
+    @Queries() Map<String, dynamic> query,
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
 
   @GET(AppApiEndpoint.studyCircles)
   Future<HttpResponse<dynamic>> fetchStudyCircles(
@@ -98,4 +117,10 @@ abstract class CommunityApiClient {
   Future<HttpResponse<dynamic>> recordStudySession(
     @Body() Map<String, dynamic> body,
   );
+
+  @POST('/rest/v1/content_reports')
+  Future<HttpResponse<dynamic>> reportContent(
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'return=representation',
+  });
 }

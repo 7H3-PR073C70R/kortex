@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -86,6 +87,16 @@ class QuickActionSpeedDial extends StatelessWidget {
                           PastQuestionsBoardRoute(initialExamCode: trackCode),
                         ),
                       );
+                    },
+                  ),
+                  _buildDivider(colors, isDark),
+                  _ActionItem(
+                    icon: Icons.flash_on_rounded,
+                    label: '1v1 Duel',
+                    color: colors.primary,
+                    onTap: () {
+                      AppFeedback.light();
+                      unawaited(QuizDuelMatchmakingSheet.show(context));
                     },
                   ),
                   _buildDivider(colors, isDark),

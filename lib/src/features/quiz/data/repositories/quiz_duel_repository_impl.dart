@@ -93,4 +93,16 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> matchWithAiImmediately({
+    required String duelId,
+  }) async {
+    try {
+      _client.simulateMatchFoundWithAi(duelId);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }

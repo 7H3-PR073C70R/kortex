@@ -103,29 +103,22 @@ void main() {
     });
   });
 
-  group('LocalLlmEngineClient Dynamic Fallback & Robustness Test Suite', () {
+  group('LocalLlmEngineClient Dynamic Error Handling & No-Fallback Test Suite', () {
     late LocalLlmEngineClient client;
 
     setUp(() {
       client = LocalLlmEngineClient();
     });
 
-    test('generate yields direct 8-parts-of-speech answer for count query', () async {
-      final stream = client.generate(
-        prompt: 'How many part of speech do we have?',
-        systemInstruction: '',
-        socraticMode: SocraticMode.directAnswer,
+    test('generate throws LocalLlmNotDownloadedException when model is not downloaded', () async {
+      expect(
+        client.generate(
+          prompt: 'How many part of speech do we have?',
+          systemInstruction: '',
+          socraticMode: SocraticMode.directAnswer,
+        ),
+        emitsError(isA<LocalLlmNotDownloadedException>()),
       );
-
-      final tokens = await stream.toList();
-      final fullResponse = tokens.join();
-
-      expect(fullResponse.contains('8 traditional parts of speech') || fullResponse.contains('8'), isTrue);
-      expect(fullResponse.contains('Noun'), isTrue);
-      expect(fullResponse.contains('Verb'), isTrue);
-      expect(fullResponse.contains('Adjective'), isTrue);
-      expect(fullResponse.contains('Preposition'), isTrue);
-      expect(fullResponse.length, greaterThan(100));
     });
   });
 }

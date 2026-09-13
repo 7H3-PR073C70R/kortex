@@ -297,8 +297,24 @@ class _AnalyticsDetailView extends HookWidget {
 
   static AnalyticsSummaryEntity _buildEmptyAnalytics() {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentMonday = DateTime(
+      today.year,
+      today.month,
+      today.day - (today.weekday - 1),
+    );
+    final startMonday = DateTime(
+      currentMonday.year,
+      currentMonday.month,
+      currentMonday.day - 21,
+    );
+
     final heatMap = List.generate(28, (i) {
-      final day = now.subtract(Duration(days: 27 - i));
+      final day = DateTime(
+        startMonday.year,
+        startMonday.month,
+        startMonday.day + i,
+      );
       return HeatMapDayEntity(
         date: day,
         intensityLevel: 0,
@@ -975,11 +991,75 @@ class _DetailedHeatMapCard extends StatefulWidget {
 class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
   HeatMapDayEntity? _selectedDay;
 
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  static String _dateKey(DateTime d) {
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  List<HeatMapDayEntity> _getNormalizedDays(
+    List<HeatMapDayEntity> input,
+    int timeframeIndex,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dataMap = <String, HeatMapDayEntity>{};
+    for (final item in input) {
+      dataMap[_dateKey(item.date)] = item;
+    }
+
+    // timeframeIndex == 0: 1 week (7 days); otherwise 4 weeks (28 days)
+    final weeks = timeframeIndex == 0 ? 1 : 4;
+    final currentMonday = DateTime(
+      today.year,
+      today.month,
+      today.day - (today.weekday - 1),
+    );
+    final startMonday = DateTime(
+      currentMonday.year,
+      currentMonday.month,
+      currentMonday.day - ((weeks - 1) * 7),
+    );
+
+    final totalDays = weeks * 7;
+    return List.generate(totalDays, (i) {
+      final cellDate = DateTime(
+        startMonday.year,
+        startMonday.month,
+        startMonday.day + i,
+      );
+      final key = _dateKey(cellDate);
+      final existing = dataMap[key];
+      if (existing != null) {
+        return existing;
+      }
+      return HeatMapDayEntity(
+        date: cellDate,
+        intensityLevel: 0,
+        cardsReviewed: 0,
+        minutesStudied: 0,
+      );
+    });
+  }
+
   @override
   void didUpdateWidget(_DetailedHeatMapCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.timeframeIndex != widget.timeframeIndex) {
       _selectedDay = null;
+    } else if (_selectedDay != null) {
+      final normalized = _getNormalizedDays(
+        widget.analytics.heatMapData,
+        widget.timeframeIndex,
+      );
+      final match = normalized
+          .where((d) => _isSameDay(d.date, _selectedDay!.date))
+          .firstOrNull;
+      if (match != null) {
+        _selectedDay = match;
+      }
     }
   }
 
@@ -990,7 +1070,11 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     final isDark = widget.isDark;
     const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    final hasActivity = widget.analytics.heatMapData.any(
+    final normalizedDays = _getNormalizedDays(
+      widget.analytics.heatMapData,
+      widget.timeframeIndex,
+    );
+    final hasActivity = normalizedDays.any(
       (d) => d.cardsReviewed > 0 || d.minutesStudied > 0,
     );
 
@@ -1002,6 +1086,8 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     } else {
       statusLabel = hasActivity ? 'Active Habit' : 'All-Time Grid';
     }
+
+    final rowCount = (normalizedDays.length / 7).ceil();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -1056,7 +1142,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
               ),
               const SizedBox(height: 16),
 
-              // Weekday Headers
+              // Weekday Headers & Heat Map Matrix
               LayoutBuilder(
                 builder: (context, constraints) {
                   final cellWidth = ((constraints.maxWidth - (6 * 6)) / 7)
@@ -1065,6 +1151,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Weekday labels (Mon..Sun)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: weekdayLabels.map((day) {
@@ -1083,55 +1170,71 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                       ),
                       const SizedBox(height: 8),
 
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: widget.analytics.heatMapData.map((day) {
-                          final isSelected = _selectedDay == day;
-                          final color = _getIntensityColor(
-                            day.intensityLevel,
-                            colors,
-                            isDark,
-                          );
+                      // Rows of 7 days strictly aligned Monday to Sunday
+                      ...List.generate(rowCount, (rowIdx) {
+                        final startIdx = rowIdx * 7;
+                        final rowDays = normalizedDays.sublist(
+                          startIdx,
+                          math.min(startIdx + 7, normalizedDays.length),
+                        );
 
-                          return InkWell(
-                            onTap: () {
-                              unawaited(HapticFeedback.selectionClick());
-                              setState(() {
-                                _selectedDay = isSelected ? null : day;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: cellWidth,
-                              height: cellWidth,
-                              decoration: BoxDecoration(
-                                color: color,
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: rowIdx < rowCount - 1 ? 6.0 : 0.0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: rowDays.map((day) {
+                              final isSelected = _selectedDay != null &&
+                                  _isSameDay(_selectedDay!.date, day.date);
+                              final color = _getIntensityColor(
+                                day.intensityLevel,
+                                colors,
+                                isDark,
+                              );
+
+                              return InkWell(
+                                onTap: () {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  setState(() {
+                                    _selectedDay = isSelected ? null : day;
+                                  });
+                                },
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? colors.textPrimary
-                                      : (day.intensityLevel > 0
-                                            ? colors.primary.withAlpha(
-                                                isDark ? 90 : 50,
-                                              )
-                                            : colors.transparent),
-                                  width: isSelected ? 1.8 : 0.8,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  width: cellWidth,
+                                  height: cellWidth,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colors.textPrimary
+                                          : (day.intensityLevel > 0
+                                                ? colors.primary.withAlpha(
+                                                    isDark ? 90 : 50,
+                                                  )
+                                                : colors.transparent),
+                                      width: isSelected ? 1.8 : 0.8,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: colors.primary.withAlpha(
+                                                100,
+                                              ),
+                                              blurRadius: 6,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: colors.primary.withAlpha(100),
-                                          blurRadius: 6,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      }),
                     ],
                   );
                 },

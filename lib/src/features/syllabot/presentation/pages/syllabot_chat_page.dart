@@ -34,6 +34,7 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_eve
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/convert_to_deck_action_sheet.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capacity_prompt_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_download_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
@@ -226,37 +227,24 @@ class _SyllabotChatView extends HookWidget {
           type: SnackBarType.success,
         );
       } else {
-        // Start downloading model weights and replace bottom bar
-        isDownloadingModel.value = true;
-        downloadProgress.value = 0.05;
-
-        downloadSubscription.value = localLlm.downloadModel().listen(
-          (progress) {
-            downloadProgress.value = progress;
-          },
-          onDone: () {
-            isDownloadingModel.value = false;
-            if (pageContext.mounted) {
-              pageContext.read<SyllabotChatBloc>().add(
-                const ChangeEngineTypeEvent(
-                  ExecutionEngineType.localOnDevice,
-                ),
-              );
-              pageContext.showSnackBar(
-                message: 'On-Device Neural Engine ready! Activated.',
-                type: SnackBarType.success,
-              );
-            }
-          },
-          onError: (_) {
-            isDownloadingModel.value = false;
-            if (pageContext.mounted) {
-              pageContext.showSnackBar(
-                message: 'Download failed. Check connection.',
-                type: SnackBarType.error,
-              );
-            }
-          },
+        // Audit device capacity and prompt user with interactive modal sheet
+        unawaited(
+          LocalLlmCapacityPromptModalSheet.show(
+            pageContext,
+            onDownloadComplete: () {
+              if (pageContext.mounted) {
+                pageContext.read<SyllabotChatBloc>().add(
+                  const ChangeEngineTypeEvent(
+                    ExecutionEngineType.localOnDevice,
+                  ),
+                );
+                pageContext.showSnackBar(
+                  message: 'On-Device Neural Engine ready! Activated.',
+                  type: SnackBarType.success,
+                );
+              }
+            },
+          ),
         );
       }
     }

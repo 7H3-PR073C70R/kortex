@@ -91,4 +91,12 @@ abstract class CommunityRemoteDataSource {
     required String roomId,
     required String userId,
   });
+
+  Future<bool> reportContent({
+    required String contentType,
+    required String contentId,
+    required String reason,
+    String? details,
+    String? postId,
+  });
 }

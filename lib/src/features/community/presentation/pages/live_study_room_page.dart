@@ -257,6 +257,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
     final cubit = context.read<LiveRoomCubit>();
     final state = cubit.state;
 
+    final hasStudyActivity =
+        state.completedPomodoros > 0 || state.cardsReviewedInSprint > 0;
+
     if (state.activeGoal != null &&
         state.activeGoal!.trim().isNotEmpty &&
         !state.isGoalAchieved) {
@@ -265,20 +268,23 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         state.activeGoal!,
         onAfterVerification: () {
           final updatedState = cubit.state;
-          if (updatedState.completedPomodoros > 0) {
+          final updatedHasActivity =
+              updatedState.completedPomodoros > 0 ||
+              updatedState.cardsReviewedInSprint > 0;
+          if (updatedHasActivity) {
             _showSummarySheet(context, updatedState);
           } else {
-            unawaited(context.router.maybePop());
+            Navigator.of(context).pop();
           }
         },
       );
       return;
     }
 
-    if (state.completedPomodoros > 0) {
+    if (hasStudyActivity) {
       _showSummarySheet(context, state);
     } else {
-      unawaited(context.router.maybePop());
+      Navigator.of(context).pop();
     }
   }
 
@@ -293,7 +299,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         cardsReviewed: state.cardsReviewedInSprint,
         activeGoal: state.activeGoal,
         isGoalAchieved: state.isGoalAchieved,
-        onDone: () => unawaited(context.router.maybePop()),
+        onDone: () => Navigator.of(context).pop(),
       ),
     );
   }
@@ -744,26 +750,33 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
 
         final hasEphemeral = state.ephemeralParticipants.isNotEmpty;
 
-        return FloatingReactionOverlay(
-          controller: _reactionController,
-          child: Scaffold(
-            key: _scaffoldKey,
-            backgroundColor: isDark
-                ? colors.backgroundPrimary
-                : colors.surfacePrimary,
-            drawer: _RoomControlDrawer(
-              state: state,
-              currentUserId: widget.currentUserId,
-              currentUserName: widget.currentUserName,
-              colors: colors,
-              typography: typography,
-              isDark: isDark,
-              l10n: l10n,
-              onEditGoal: () => _showGoalEditDialog(context, state.activeGoal),
-              onOpenDeckPicker: () => InRoomDeckPickerModal.show(context),
-              onLaunchSprint: () => _showStartCoOpSprintDialog(context),
-            ),
-            appBar: AppBar(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _handleExit(context);
+          },
+          child: FloatingReactionOverlay(
+            controller: _reactionController,
+            child: Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: isDark
+                  ? colors.backgroundPrimary
+                  : colors.surfacePrimary,
+              drawer: _RoomControlDrawer(
+                state: state,
+                currentUserId: widget.currentUserId,
+                currentUserName: widget.currentUserName,
+                colors: colors,
+                typography: typography,
+                isDark: isDark,
+                l10n: l10n,
+                onEditGoal: () => _showGoalEditDialog(context, state.activeGoal),
+                onOpenDeckPicker: () => InRoomDeckPickerModal.show(context),
+                onLaunchSprint: () => _showStartCoOpSprintDialog(context),
+                onLeaveRoom: () => _handleExit(context),
+              ),
+              appBar: AppBar(
               backgroundColor: colors.transparent,
               elevation: 0,
               leading: Builder(
@@ -989,7 +1002,8 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
@@ -2537,6 +2551,7 @@ class _RoomControlDrawer extends StatelessWidget {
     required this.onEditGoal,
     required this.onOpenDeckPicker,
     required this.onLaunchSprint,
+    required this.onLeaveRoom,
   });
 
   final LiveRoomState state;
@@ -2549,6 +2564,7 @@ class _RoomControlDrawer extends StatelessWidget {
   final VoidCallback onEditGoal;
   final VoidCallback onOpenDeckPicker;
   final VoidCallback onLaunchSprint;
+  final VoidCallback onLeaveRoom;
 
   @override
   Widget build(BuildContext context) {
@@ -3094,6 +3110,45 @@ class _RoomControlDrawer extends StatelessWidget {
                             Icons.chevron_right_rounded,
                             color: colors.textSecondary,
                             size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Leave Room Button
+                  ShrinkableButton(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onLeaveRoom();
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.error.withAlpha(isDark ? 35 : 20),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: colors.error.withAlpha(isDark ? 80 : 45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            size: 17,
+                            color: colors.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Leave Room',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.error,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),

@@ -250,25 +250,8 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     }
     _cards = updatedCards;
 
-    if (locator.isRegistered<DecksRepository>()) {
-      unawaited(
-        locator<DecksRepository>().updateDeckCards(
-          widget.roomState.activeDeckId ?? currentCard.deckId,
-          updatedCards,
-        ),
-      );
-    }
-
     // 5. Log card completion to LiveRoomCubit & broadcast to room members
     context.read<LiveRoomCubit>().logCardReviewed(1, deckTitle);
-
-    // Refresh DecksBloc and DashboardBloc for live due count updates
-    if (locator.isRegistered<DecksBloc>()) {
-      locator<DecksBloc>().add(const DecksRefreshed());
-    }
-    if (locator.isRegistered<DashboardBloc>()) {
-      locator<DashboardBloc>().add(const DashboardRefreshed());
-    }
 
     // 6. Advance to next card
     if (_isFlipped) {
@@ -286,7 +269,16 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
       }
     });
 
+    // 7. On deck completion, batch-persist deck card updates and refresh feeds
     if (isComplete && mounted) {
+      if (locator.isRegistered<DecksRepository>()) {
+        unawaited(
+          locator<DecksRepository>().updateDeckCards(
+            widget.roomState.activeDeckId ?? currentCard.deckId,
+            updatedCards,
+          ),
+        );
+      }
       if (locator.isRegistered<DecksBloc>()) {
         locator<DecksBloc>().add(const DecksRefreshed());
       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
@@ -135,8 +136,8 @@ class AddPastQuestionModalSheet extends HookWidget {
     Future<void> handleAiExtraction() async {
       final doc = pickedFile.value;
       if (doc == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a past paper document or image.')),
+        context.showSnackBar(
+          message: 'Please select a past paper document or image.',
         );
         return;
       }
@@ -171,17 +172,16 @@ class AddPastQuestionModalSheet extends HookWidget {
         AppFeedback.heavy();
 
         if (result.questions.isEmpty && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No questions could be isolated from this file. You can enter them manually.'),
-            ),
+          context.showSnackBar(
+            message: 'No questions could be isolated from this file. You can enter them manually.',
           );
         }
       } on Object catch (e) {
         debugPrint('[AddPastQuestion] Extraction error: $e');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Calibration notice: $e')),
+          context.showSnackBar(
+            message: 'Calibration notice: $e',
+            type: SnackBarType.error,
           );
         }
       } finally {
@@ -212,11 +212,9 @@ class AddPastQuestionModalSheet extends HookWidget {
 
         AppFeedback.heavy();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Added ${entities.length} past questions to $courseCode!'),
-              backgroundColor: colors.success,
-            ),
+          context.showSnackBar(
+            message: 'Added ${entities.length} past questions to $courseCode!',
+            type: SnackBarType.success,
           );
           Navigator.of(context).pop(true);
         }
@@ -229,8 +227,8 @@ class AddPastQuestionModalSheet extends HookWidget {
     Future<void> saveManualQuestion() async {
       final prompt = promptController.text.trim();
       if (prompt.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter the question prompt.')),
+        context.showSnackBar(
+          message: 'Please enter the question prompt.',
         );
         return;
       }
@@ -247,8 +245,8 @@ class AddPastQuestionModalSheet extends HookWidget {
         final optD = optionDController.text.trim();
 
         if (optA.isEmpty || optB.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please provide at least Option A and Option B.')),
+          context.showSnackBar(
+            message: 'Please provide at least Option A and Option B.',
           );
           return;
         }
@@ -302,11 +300,9 @@ class AddPastQuestionModalSheet extends HookWidget {
 
         AppFeedback.heavy();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Added question to $courseCode!'),
-              backgroundColor: colors.success,
-            ),
+          context.showSnackBar(
+            message: 'Added question to $courseCode!',
+            type: SnackBarType.success,
           );
           Navigator.of(context).pop(true);
         }

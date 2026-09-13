@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capacity_prompt_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -72,7 +73,6 @@ class SyllabotAiSettingsPage extends HookWidget {
       locator<LocalLlmEngineClient>().isModelDownloaded,
     );
     final isDownloadingOfflineModel = useState<bool>(false);
-    final offlineDownloadProgress = useState<double>(0);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -378,23 +378,20 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   message: 'Offline Neural weights deleted.',
                                 );
                               } else {
-                                isDownloadingOfflineModel.value = true;
-                                offlineDownloadProgress.value = 0.05;
-                                client.downloadModel().listen(
-                                  (p) {
-                                    offlineDownloadProgress.value = p;
-                                  },
-                                  onDone: () {
-                                    isDownloadingOfflineModel.value = false;
-                                    offlineModelDownloaded.value = true;
-                                    if (context.mounted) {
-                                      context.showSnackBar(
-                                        message:
-                                            'Offline weights ready (248 MB)!',
-                                        type: SnackBarType.success,
-                                      );
-                                    }
-                                  },
+                                unawaited(
+                                  LocalLlmCapacityPromptModalSheet.show(
+                                    context,
+                                    onDownloadComplete: () {
+                                      offlineModelDownloaded.value = true;
+                                      if (context.mounted) {
+                                        context.showSnackBar(
+                                          message:
+                                              'Offline weights ready (248 MB)!',
+                                          type: SnackBarType.success,
+                                        );
+                                      }
+                                    },
+                                  ),
                                 );
                               }
                             },

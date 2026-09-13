@@ -26,25 +26,70 @@ class RetentionHeatMapWidget extends StatefulWidget {
 class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
   HeatMapDayEntity? _selectedDay;
 
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  static String _dateKey(DateTime d) {
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  List<HeatMapDayEntity> _getNormalized28Days(List<HeatMapDayEntity> input) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dataMap = <String, HeatMapDayEntity>{};
+    for (final item in input) {
+      dataMap[_dateKey(item.date)] = item;
+    }
+
+    // Weekday in Dart: 1 = Monday, 7 = Sunday
+    final currentMonday = DateTime(
+      today.year,
+      today.month,
+      today.day - (today.weekday - 1),
+    );
+    // 4 weeks starting on Monday 3 weeks ago (21 days prior)
+    final startMonday = DateTime(
+      currentMonday.year,
+      currentMonday.month,
+      currentMonday.day - 21,
+    );
+
+    return List.generate(28, (i) {
+      final cellDate = DateTime(
+        startMonday.year,
+        startMonday.month,
+        startMonday.day + i,
+      );
+      final key = _dateKey(cellDate);
+      final existing = dataMap[key];
+      if (existing != null) {
+        return existing;
+      }
+      return HeatMapDayEntity(
+        date: cellDate,
+        intensityLevel: 0,
+        cardsReviewed: 0,
+        minutesStudied: 0,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    final todayMatch = widget.analytics.heatMapData.where((d) =>
-      d.date.year == now.year && d.date.month == now.month && d.date.day == now.day,
-    ).firstOrNull;
-    _selectedDay = todayMatch ?? widget.analytics.heatMapData.lastOrNull;
+    final normalized = _getNormalized28Days(widget.analytics.heatMapData);
+    final todayMatch = normalized.where((d) => _isSameDay(d.date, now)).firstOrNull;
+    _selectedDay = todayMatch ?? normalized.lastOrNull;
   }
 
   @override
   void didUpdateWidget(RetentionHeatMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_selectedDay != null) {
-      final match = widget.analytics.heatMapData.where((d) =>
-        d.date.year == _selectedDay!.date.year &&
-        d.date.month == _selectedDay!.date.month &&
-        d.date.day == _selectedDay!.date.day,
-      ).firstOrNull;
+      final normalized = _getNormalized28Days(widget.analytics.heatMapData);
+      final match = normalized.where((d) => _isSameDay(d.date, _selectedDay!.date)).firstOrNull;
       if (match != null) {
         _selectedDay = match;
       }
@@ -62,6 +107,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
         .toInt();
 
     const weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final normalizedDays = _getNormalized28Days(widget.analytics.heatMapData);
 
     return Semantics(
       container: true,
@@ -182,7 +228,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                 ),
                 const SizedBox(height: 14),
 
-                // Weekday Headers
+                // Weekday Headers & 4-Week Heat Map Matrix
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final cellWidth = ((constraints.maxWidth - (6 * 6)) / 7)
@@ -191,7 +237,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Weekday labels
+                        // Weekday labels (Mon..Sun)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: weekdayLabels.map((day) {
@@ -210,63 +256,76 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                         ),
                         const SizedBox(height: 6),
 
-                        // Heat Map Matrix (4 rows of 7 days = 28 days)
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: widget.analytics.heatMapData.map((day) {
-                            final isSelected = _selectedDay == day;
-                            final color = _getIntensityColor(
-                              day.intensityLevel,
-                              colors,
-                              isDark,
-                            );
+                        // Heat Map Matrix: exactly 4 rows of 7 days (Monday..Sunday)
+                        ...List.generate(4, (rowIdx) {
+                          final startIdx = rowIdx * 7;
+                          final rowDays = normalizedDays.sublist(
+                            startIdx,
+                            startIdx + 7,
+                          );
 
-                            return Semantics(
-                              label:
-                                  '${day.date.day}/${day.date.month}: '
-                                  '${day.cardsReviewed} cards',
-                              child: InkWell(
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  setState(() {
-                                    _selectedDay = isSelected ? null : day;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(6),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  width: cellWidth,
-                                  height: cellWidth,
-                                  decoration: BoxDecoration(
-                                    color: color,
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: rowIdx < 3 ? 6.0 : 0.0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: rowDays.map((day) {
+                                final isSelected = _selectedDay != null &&
+                                    _isSameDay(_selectedDay!.date, day.date);
+                                final color = _getIntensityColor(
+                                  day.intensityLevel,
+                                  colors,
+                                  isDark,
+                                );
+
+                                return Semantics(
+                                  label:
+                                      '${day.date.day}/${day.date.month}: '
+                                      '${day.cardsReviewed} cards',
+                                  child: InkWell(
+                                    onTap: () {
+                                      unawaited(HapticFeedback.selectionClick());
+                                      setState(() {
+                                        _selectedDay = isSelected ? null : day;
+                                      });
+                                    },
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? colors.textPrimary
-                                          : (day.intensityLevel > 0
-                                                ? colors.primary.withAlpha(
-                                                    isDark ? 90 : 50,
-                                                  )
-                                                : colors.transparent),
-                                      width: isSelected ? 1.8 : 0.8,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 150),
+                                      width: cellWidth,
+                                      height: cellWidth,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? colors.textPrimary
+                                              : (day.intensityLevel > 0
+                                                    ? colors.primary.withAlpha(
+                                                        isDark ? 90 : 50,
+                                                      )
+                                                    : colors.transparent),
+                                          width: isSelected ? 1.8 : 0.8,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: colors.primary.withAlpha(
+                                                    100,
+                                                  ),
+                                                  blurRadius: 6,
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: colors.primary.withAlpha(
-                                                100,
-                                              ),
-                                              blurRadius: 6,
-                                            ),
-                                          ]
-                                        : null,
                                   ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        }),
                       ],
                     );
                   },

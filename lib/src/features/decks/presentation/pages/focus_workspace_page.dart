@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -125,11 +126,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
             listener: (context, state) {
               if (state.status == FocusSessionStatus.error &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.errorMessage!),
-                    backgroundColor: Colors.redAccent,
-                  ),
+                context.showSnackBar(
+                  message: state.errorMessage!,
+                  type: SnackBarType.error,
                 );
               }
             },

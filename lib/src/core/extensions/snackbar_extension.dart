@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 enum SnackBarType {
@@ -16,6 +18,12 @@ extension BuildContextExtension on BuildContext {
     SnackBarType type = SnackBarType.info,
     Duration duration = const Duration(milliseconds: 4500),
     VoidCallback? onTap,
+    DismissType dismissType = DismissType.onSwipe,
+    List<DismissDirection> dismissDirection = const [
+      DismissDirection.up,
+      DismissDirection.horizontal,
+      DismissDirection.down,
+    ],
   }) {
     showTopSnackBar(
       Overlay.of(this),
@@ -28,6 +36,8 @@ extension BuildContextExtension on BuildContext {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
+      dismissType: dismissType,
+      dismissDirection: dismissDirection,
     );
   }
 }
@@ -146,67 +156,80 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                   ),
                 ],
               ),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onTap,
-                child: Row(
-                children: [
-                  // Prominent Status Icon Badge
-                  ScaleTransition(
-                    scale: _badgeScale,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: bgTint,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: accentColor.withAlpha(isDark ? 120 : 80),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: accentColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Message Text
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: typography.caption.bold.copyWith(
-                            color: accentColor,
-                            fontSize: 11,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.message,
-                          style: typography.caption.medium.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 13,
-                            height: 1.3,
-                          ),
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              ),
+              child: widget.onTap != null
+                  ? GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: widget.onTap,
+                      child: _buildContent(accentColor, bgTint, icon, title, colors, typography),
+                    )
+                  : _buildContent(accentColor, bgTint, icon, title, colors, typography),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent(
+    Color accentColor,
+    Color bgTint,
+    IconData icon,
+    String title,
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+  ) {
+    return Row(
+      children: [
+        // Prominent Status Icon Badge
+        ScaleTransition(
+          scale: _badgeScale,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgTint,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: accentColor.withAlpha(200),
+                width: 1.2,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: accentColor,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Message Text
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: typography.caption.bold.copyWith(
+                  color: accentColor,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                widget.message,
+                style: typography.caption.medium.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                  height: 1.3,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

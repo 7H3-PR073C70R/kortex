@@ -28,7 +28,7 @@ class PastQuestionsRemoteDataSourceImpl
     String? subject,
     int? year,
     String? searchQuery,
-    int limit = 100,
+    int limit = 1000,
   }) {
     final params = <String, dynamic>{
       'select': '*',

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -328,13 +329,9 @@ class StudyCircleCard extends StatelessWidget {
                 ShrinkableButton(
                   onTap: () {
                     unawaited(HapticFeedback.lightImpact());
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.studyNudgeSentNotice,
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                    context.showSnackBar(
+                      message: l10n.studyNudgeSentNotice,
+                      type: SnackBarType.success,
                     );
                   },
                   child: Container(

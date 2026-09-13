@@ -176,7 +176,16 @@ void main() {
       }
     });
 
-    test('Repository serves questions from local asset without invoking remote', () async {
+    test('Repository actively queries remote data source and merges with local questions', () async {
+      when(() => mockRemoteDataSource.getPastQuestions(
+            examCategory: any(named: 'examCategory'),
+            subject: any(named: 'subject'),
+            year: any(named: 'year'),
+            searchQuery: any(named: 'searchQuery'),
+            courseId: any(named: 'courseId'),
+            courseCode: any(named: 'courseCode'),
+          )).thenAnswer((_) async => []);
+
       final result = await repository.getPastQuestions(
         examCategory: ExamCategory.jamb,
         subject: 'Physics',
@@ -186,13 +195,15 @@ void main() {
       final questions = result.fold((l) => <PastQuestionEntity>[], (r) => r);
       expect(questions, isNotEmpty);
 
-      // Verify remote data source was never called because local cache served the data
-      verifyNever(() => mockRemoteDataSource.getPastQuestions(
-            examCategory: any(named: 'examCategory'),
-            subject: any(named: 'subject'),
+      // Verify remote data source was called for active Supabase sync
+      verify(() => mockRemoteDataSource.getPastQuestions(
+            examCategory: ExamCategory.jamb,
+            subject: 'Physics',
             year: any(named: 'year'),
             searchQuery: any(named: 'searchQuery'),
-          ));
+            courseId: any(named: 'courseId'),
+            courseCode: any(named: 'courseCode'),
+          )).called(1);
     });
   });
 

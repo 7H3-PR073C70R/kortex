@@ -10,6 +10,12 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -50,6 +56,121 @@ class ForumThreadDetailPage extends HookWidget {
       return null;
     }, [repliesSnapshot.data]);
 
+    // Intelligent Syllabot Socratic Hint generator
+    Future<void> generateSyllabotHint() async {
+      if (isGeneratingAiHint.value) return;
+      isGeneratingAiHint.value = true;
+      unawaited(HapticFeedback.mediumImpact());
+      try {
+        final promptBuffer = StringBuffer()
+          ..writeln('You are Syllabot, an expert academic tutor.')
+          ..writeln(
+            'A student in track "${post.track}" (Subject/Syllabus: "${post.syllabusTag}") posted this question:',
+          )
+          ..writeln('Question Title: "${post.title}"');
+        if (post.content.trim().isNotEmpty) {
+          promptBuffer.writeln('Question Details: "${post.content}"');
+        }
+        if (post.latexContent != null && post.latexContent!.trim().isNotEmpty) {
+          promptBuffer.writeln('Formulas / LaTeX: ${post.latexContent}');
+        }
+        promptBuffer
+          ..writeln()
+          ..writeln(
+            'Provide a high-yield, step-by-step Socratic hint and conceptual breakdown. '
+            'Do NOT provide the final direct answer or multiple-choice option immediately. '
+            'Instead, provide:\n'
+            '1. 💡 Core Governing Principles (the exact physical law, formula, or definition involved)\n'
+            '2. 🔍 Step-by-Step Problem Breakdown & Variables to isolate\n'
+            '3. 🎯 Socratic Checkpoint question to test their understanding.',
+          );
+
+        final isPro = !locator.isRegistered<SubscriptionGuard>() ||
+            locator<SubscriptionGuard>().canAccessCloudAi();
+        final preferredEngine = isPro
+            ? ExecutionEngineType.cloudRemote
+            : ExecutionEngineType.localOnDevice;
+
+        var generatedHint = '';
+        if (locator.isRegistered<StreamSyllabotResponseUseCase>()) {
+          try {
+            final streamUseCase = locator<StreamSyllabotResponseUseCase>();
+            final responseStream = streamUseCase.call(
+              prompt: promptBuffer.toString(),
+              sessionId: 'forum_hint_${post.id}',
+              socraticMode: SocraticMode.stepByStep,
+              preferredEngine: preferredEngine,
+            );
+
+            final tokenBuffer = StringBuffer();
+            await responseStream
+                .timeout(
+                  const Duration(seconds: 15),
+                  onTimeout: (sink) => sink.close(),
+                )
+                .forEach(tokenBuffer.write);
+            generatedHint = tokenBuffer.toString().trim();
+          } on Object catch (e) {
+            debugPrint('[ForumHint] Stream AI note: $e');
+          }
+        }
+
+        if (generatedHint.isEmpty &&
+            locator.isRegistered<LocalLlmEngineClient>()) {
+          try {
+            final localLlm = locator<LocalLlmEngineClient>();
+            final localBuffer = StringBuffer();
+            await localLlm
+                .generate(
+                  prompt: promptBuffer.toString(),
+                  systemInstruction:
+                      'Provide a high-yield Socratic hint for this question.',
+                )
+                .forEach(localBuffer.write);
+            generatedHint = localBuffer.toString().trim();
+          } on Object catch (e) {
+            debugPrint('[ForumHint] Local LLM note: $e');
+          }
+        }
+
+        // Clean formatting and prefix
+        final cleanHint = generatedHint.isNotEmpty
+            ? (generatedHint.startsWith('🤖 Syllabot')
+                ? generatedHint
+                : '🤖 Syllabot Socratic Hint:\n\n$generatedHint')
+            : '🤖 Syllabot Socratic Hint:\n\n'
+                '### 💡 Core Governing Principles:\n'
+                'Review the fundamental theorems and formulas governing ${post.syllabusTag}.\n\n'
+                '### 🔍 Step-by-Step Problem Breakdown:\n'
+                '• Extract the known variables and the target unknown from the problem statement.\n'
+                '• Relate the parameters using conservation laws or standard kinematic/algebraic formulas.\n\n'
+                '### 🎯 Socratic Checkpoint:\n'
+                'How does changing the primary input variable affect the magnitude of the final result?';
+
+        final res = await repo.replyToForumPost(
+          postId: post.id,
+          content: cleanHint,
+        );
+        res.fold(
+          (failure) {
+            if (context.mounted) {
+              context.showSnackBar(
+                message: failure.message ?? 'Could not generate AI hint.',
+                type: SnackBarType.error,
+              );
+            }
+          },
+          (reply) {
+            if (!localReplies.value.any((r) => r.id == reply.id)) {
+              localReplies.value = [...localReplies.value, reply];
+            }
+          },
+        );
+      } finally {
+        isGeneratingAiHint.value = false;
+      }
+    }
+
     final replies = localReplies.value;
 
     return Scaffold(
@@ -82,14 +203,13 @@ class ForumThreadDetailPage extends HookWidget {
             tooltip: 'Report Discussion',
             onPressed: () {
               unawaited(HapticFeedback.lightImpact());
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Thread reported for community safety moderation.',
-                    style: TextStyle(color: colors.textPrimary),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: colors.surfaceSecondary,
+              unawaited(
+                ReportContentModalSheet.show(
+                  context,
+                  contentType: 'forum_post',
+                  contentId: post.id,
+                  postId: post.id,
+                  contentTitle: post.title,
                 ),
               );
             },
@@ -387,6 +507,64 @@ class ForumThreadDetailPage extends HookWidget {
                                   ),
                                 ),
                               ),
+                              const Spacer(),
+                              if (replies.isNotEmpty)
+                                ShrinkableButton(
+                                  onTap: isGeneratingAiHint.value
+                                      ? null
+                                      : generateSyllabotHint,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.syllabotAccent.withAlpha(
+                                        isDark ? 40 : 20,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: colors.syllabotAccent.withAlpha(
+                                          80,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isGeneratingAiHint.value)
+                                          const SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          )
+                                        else
+                                          Icon(
+                                            Icons.auto_awesome_rounded,
+                                            size: 13,
+                                            color: colors.syllabotAccent,
+                                          ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          isGeneratingAiHint.value
+                                              ? 'Thinking...'
+                                              : 'AI Socratic Hint 🤖',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.syllabotAccent,
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -422,45 +600,7 @@ class ForumThreadDetailPage extends HookWidget {
                             ShrinkableButton(
                               onTap: isGeneratingAiHint.value
                                   ? null
-                                  : () async {
-                                      isGeneratingAiHint.value = true;
-                                      unawaited(HapticFeedback.mediumImpact());
-                                      try {
-                                        final hintContent =
-                                            '🤖 Syllabot Socratic Hint:\n'
-                                            '• Identify the core theorem or formula governing "${post.title}".\n'
-                                            '• What boundary conditions or exceptions apply under "${post.syllabusTag}"?\n'
-                                            '• Try substituting the known values to see if the symmetry holds.';
-                                        final res = await repo.replyToForumPost(
-                                          postId: post.id,
-                                          content: hintContent,
-                                        );
-                                        res.fold(
-                                          (failure) {
-                                            if (context.mounted) {
-                                              context.showSnackBar(
-                                                message:
-                                                    failure.message ??
-                                                    'Could not generate AI hint.',
-                                                type: SnackBarType.error,
-                                              );
-                                            }
-                                          },
-                                          (reply) {
-                                            if (!localReplies.value.any(
-                                              (r) => r.id == reply.id,
-                                            )) {
-                                              localReplies.value = [
-                                                ...localReplies.value,
-                                                reply,
-                                              ];
-                                            }
-                                          },
-                                        );
-                                      } finally {
-                                        isGeneratingAiHint.value = false;
-                                      }
-                                    },
+                                  : generateSyllabotHint,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
