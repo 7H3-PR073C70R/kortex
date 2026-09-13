@@ -622,6 +622,282 @@ abstract class AppLocalizations {
   /// **'Toggle between Sign In and Create Account forms'**
   String get authToggleFormTypeSemantics;
 
+  /// Title for email verification OTP dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Account'**
+  String get authVerifyAccountTitle;
+
+  /// Subtitle for email verification OTP dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to your email ({email}).'**
+  String authVerifyAccountSubtitle(String email);
+
+  /// Label for OTP input field
+  ///
+  /// In en, this message translates to:
+  /// **'6-Digit OTP Code'**
+  String get authOtpInputLabel;
+
+  /// Hint for OTP input field
+  ///
+  /// In en, this message translates to:
+  /// **'123456'**
+  String get authOtpInputHint;
+
+  /// Button to verify OTP code
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Code'**
+  String get authVerifyOtpButton;
+
+  /// Button to switch back to sign in from verification
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Sign In'**
+  String get authSwitchToSignIn;
+
+  /// Prompt button to show promo code input field
+  ///
+  /// In en, this message translates to:
+  /// **'Have a promo code?'**
+  String get authPromoCodeQuestion;
+
+  /// Label for promo code field
+  ///
+  /// In en, this message translates to:
+  /// **'Promo Code'**
+  String get authPromoCodeLabel;
+
+  /// Label for optional promo code field
+  ///
+  /// In en, this message translates to:
+  /// **'Promo Code (Optional)'**
+  String get authPromoCodeOptionalLabel;
+
+  /// Hint example for promo code field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. ori0n_pr073c7'**
+  String get authPromoCodeHint;
+
+  /// Accessibility hint for promo code input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter promo code if you have one'**
+  String get authPromoCodeSemanticsHint;
+
+  /// Accessibility hint for email input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email address'**
+  String get authEmailSemanticsHint;
+
+  /// Accessibility hint for password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get authPasswordSemanticsHint;
+
+  /// Accessibility hint for display name input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get authDisplayNameSemanticsHint;
+
+  /// Short label for Google social button
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get authSocialGoogleLabel;
+
+  /// Short label for Apple social button
+  ///
+  /// In en, this message translates to:
+  /// **'Apple'**
+  String get authSocialAppleLabel;
+
+  /// Accessibility hint for Google social button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in quickly using your connected Google account'**
+  String get authSocialGoogleHint;
+
+  /// Accessibility hint for Apple social button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in quickly using your Apple ID'**
+  String get authSocialAppleHint;
+
+  /// Accessibility hint for switching to form mode
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open standard form input fields'**
+  String get authSwitchToFormHint;
+
+  /// Accessibility hint for switching to chat mode
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to interact with Syllabot AI assistant'**
+  String get authSwitchToChatHint;
+
+  /// Welcome notification message on successful account creation
+  ///
+  /// In en, this message translates to:
+  /// **'Account created! Welcome to Kortexify.'**
+  String get authAccountCreatedWelcome;
+
+  /// Snackbar message when password reset email is sent
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset link sent to your email.'**
+  String get authPasswordResetSuccess;
+
+  /// Desktop split view header for chat assistant
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot Assistant'**
+  String get authSyllabotAssistantTitle;
+
+  /// Desktop split view header for account form
+  ///
+  /// In en, this message translates to:
+  /// **'Account Sign In'**
+  String get authAccountSignInTitle;
+
+  /// Indicator text while AI is processing in chat
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking...'**
+  String get authThinking;
+
+  /// Chat thinking label during name validation
+  ///
+  /// In en, this message translates to:
+  /// **'Validating name...'**
+  String get authValidatingName;
+
+  /// Chat thinking label during email validation
+  ///
+  /// In en, this message translates to:
+  /// **'Validating email...'**
+  String get authValidatingEmail;
+
+  /// Chat thinking label during password validation
+  ///
+  /// In en, this message translates to:
+  /// **'Validating password...'**
+  String get authValidatingPassword;
+
+  /// Chat thinking label when transitioning after name input
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing profile setup...'**
+  String get authPreparingProfileSetup;
+
+  /// Chat validation error when name is too short
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your full name so Syllabot can address you properly.'**
+  String get authChatNameTooShort;
+
+  /// Chat greeting asking for email with user's name
+  ///
+  /// In en, this message translates to:
+  /// **'Great to meet you, {name}! 🎓 What is your academic or personal email address?'**
+  String authChatGreetingWithName(String name);
+
+  /// Chat prompt asking for returning user's password
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}! 🎓 What is your password?'**
+  String authChatGreetingExistingUser(String name);
+
+  /// Chat prompt asking for password for new user email
+  ///
+  /// In en, this message translates to:
+  /// **'Nice! We will create your account with {email}. Now set a secure password (at least 6 characters).'**
+  String authChatGreetingNewEmail(String email);
+
+  /// Chat prompt asking for password for existing user email
+  ///
+  /// In en, this message translates to:
+  /// **'Found your account for {email}! Please enter your password to sign in.'**
+  String authChatGreetingLoginEmail(String email);
+
+  /// Title for avatar picker modal sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Profile Avatar'**
+  String get authAvatarPickerTitle;
+
+  /// Subtitle for avatar picker modal sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a photo from your device or pick a scholar avatar'**
+  String get authAvatarPickerSubtitle;
+
+  /// Section header for photo upload options
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Photo'**
+  String get authAvatarPickerUploadPhoto;
+
+  /// Button to take a photo with camera
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get authAvatarPickerTakeCamera;
+
+  /// Button to pick photo from gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get authAvatarPickerChooseGallery;
+
+  /// Section header for emoji/scholar avatar selection
+  ///
+  /// In en, this message translates to:
+  /// **'Or choose a scholar avatar'**
+  String get authAvatarPickerEmojiSection;
+
+  /// Section header for remote avatar URL input
+  ///
+  /// In en, this message translates to:
+  /// **'Or paste an image URL'**
+  String get authAvatarPickerUrlSection;
+
+  /// Hint for remote avatar URL input
+  ///
+  /// In en, this message translates to:
+  /// **'https://example.com/avatar.png'**
+  String get authAvatarPickerUrlHint;
+
+  /// Button to apply remote avatar URL
+  ///
+  /// In en, this message translates to:
+  /// **'Apply URL'**
+  String get authAvatarPickerApplyUrl;
+
+  /// Snackbar message when avatar is successfully updated
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar updated successfully!'**
+  String get authAvatarPickerSuccess;
+
+  /// Error message when photo picker fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not select photo: {error}'**
+  String authAvatarPickerPhotoError(String error);
+
+  /// Error message when syncing avatar to backend fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not sync avatar: {error}'**
+  String authAvatarPickerSyncError(String error);
+
   /// Top header title for calibration wizard
   ///
   /// In en, this message translates to:

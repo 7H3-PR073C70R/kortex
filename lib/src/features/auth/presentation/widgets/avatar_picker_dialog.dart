@@ -12,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -23,6 +24,7 @@ void showAvatarPickerDialog(
   TypographyThemeExtension typography,
 ) {
   AppFeedback.selection();
+  final l10n = context.l10n;
   final urlController = TextEditingController();
 
   final avatars = [
@@ -76,10 +78,9 @@ void showAvatarPickerDialog(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Customize Profile Avatar',
+                  l10n.authAvatarPickerTitle,
                   style: typography.title3.bold.copyWith(
                     color: colors.textPrimary,
-                    fontSize: 17,
                   ),
                 ),
                 IconButton(
@@ -94,10 +95,9 @@ void showAvatarPickerDialog(
             ),
             const SizedBox(height: 4),
             Text(
-              'Upload a photo from your device or pick a scholar avatar',
+              l10n.authAvatarPickerSubtitle,
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary,
-                fontSize: 12,
               ),
             ),
             const SizedBox(height: 18),
@@ -142,10 +142,9 @@ void showAvatarPickerDialog(
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Choose Photo',
+                            l10n.authAvatarPickerChooseGallery,
                             style: typography.caption.bold.copyWith(
                               color: colors.white,
-                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -183,10 +182,9 @@ void showAvatarPickerDialog(
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Take Photo',
+                            l10n.authAvatarPickerTakeCamera,
                             style: typography.caption.bold.copyWith(
                               color: colors.textPrimary,
-                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -201,10 +199,9 @@ void showAvatarPickerDialog(
             const SizedBox(height: 14),
 
             Text(
-              'Or Select an Avatar Icon',
+              l10n.authAvatarPickerEmojiSection,
               style: typography.body.bold.copyWith(
                 color: colors.textPrimary,
-                fontSize: 13,
               ),
             ),
             const SizedBox(height: 12),
@@ -254,8 +251,7 @@ void showAvatarPickerDialog(
                           child: Text(
                             item['emoji']!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 26,
+                            style: typography.title1.regular.copyWith(
                               height: 1.1,
                             ),
                           ),
@@ -266,7 +262,6 @@ void showAvatarPickerDialog(
                         item['label']!,
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 10.5,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -282,10 +277,9 @@ void showAvatarPickerDialog(
 
             // Custom Photo URL Input
             Text(
-              'Or Web Photo Link',
+              l10n.authAvatarPickerUrlSection,
               style: typography.body.bold.copyWith(
                 color: colors.textPrimary,
-                fontSize: 13,
               ),
             ),
             const SizedBox(height: 8),
@@ -294,7 +288,7 @@ void showAvatarPickerDialog(
                 Expanded(
                   child: AppTextField(
                     controller: urlController,
-                    hintText: 'https://example.com/photo.jpg',
+                    hintText: l10n.authAvatarPickerUrlHint,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -316,10 +310,9 @@ void showAvatarPickerDialog(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Apply',
+                      l10n.authAvatarPickerApplyUrl,
                       style: typography.caption.bold.copyWith(
                         color: colors.white,
-                        fontSize: 12.5,
                       ),
                     ),
                   ),
@@ -337,6 +330,7 @@ Future<void> _pickAndUploadPhoto(
   BuildContext context,
   ImageSource source,
 ) async {
+  final l10n = context.l10n;
   try {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
@@ -356,7 +350,7 @@ Future<void> _pickAndUploadPhoto(
   } on Object catch (e) {
     if (context.mounted) {
       context.showSnackBar(
-        message: 'Could not select photo: $e',
+        message: l10n.authAvatarPickerPhotoError(e.toString()),
         type: SnackBarType.error,
       );
     }
@@ -364,6 +358,7 @@ Future<void> _pickAndUploadPhoto(
 }
 
 Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {
+  final l10n = context.l10n;
   AppFeedback.light();
   // 1. Immediately reflect the change in local AuthBloc state
   context.read<AuthBloc>().add(AuthAvatarUpdated(photoUrl));
@@ -374,7 +369,7 @@ Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {
     (failure) {
       if (context.mounted) {
         context.showSnackBar(
-          message: 'Could not sync avatar: ${failure.message}',
+          message: l10n.authAvatarPickerSyncError(failure.message ?? ''),
           type: SnackBarType.error,
         );
       }
@@ -383,7 +378,7 @@ Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {
       if (context.mounted) {
         context.read<AuthBloc>().add(const AuthProfileFetchRequested());
         context.showSnackBar(
-          message: 'Avatar updated successfully!',
+          message: l10n.authAvatarPickerSuccess,
           type: SnackBarType.success,
         );
       }

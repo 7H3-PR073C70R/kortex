@@ -436,6 +436,232 @@
     "@authToggleFormTypeSemantics": {
         "description": "Accessibility label for toggle form type button"
     },
+    "authVerifyAccountTitle": "Verify Your Account",
+    "@authVerifyAccountTitle": {
+        "description": "Title for email verification OTP dialog"
+    },
+    "authVerifyAccountSubtitle": "Enter the 6-digit code sent to your email ({email}).",
+    "@authVerifyAccountSubtitle": {
+        "description": "Subtitle for email verification OTP dialog",
+        "placeholders": {
+            "email": {
+                "type": "String",
+                "example": "student@university.edu"
+            }
+        }
+    },
+    "authOtpInputLabel": "6-Digit OTP Code",
+    "@authOtpInputLabel": {
+        "description": "Label for OTP input field"
+    },
+    "authOtpInputHint": "123456",
+    "@authOtpInputHint": {
+        "description": "Hint for OTP input field"
+    },
+    "authVerifyOtpButton": "Verify Code",
+    "@authVerifyOtpButton": {
+        "description": "Button to verify OTP code"
+    },
+    "authSwitchToSignIn": "Switch to Sign In",
+    "@authSwitchToSignIn": {
+        "description": "Button to switch back to sign in from verification"
+    },
+    "authPromoCodeQuestion": "Have a promo code?",
+    "@authPromoCodeQuestion": {
+        "description": "Prompt button to show promo code input field"
+    },
+    "authPromoCodeLabel": "Promo Code",
+    "@authPromoCodeLabel": {
+        "description": "Label for promo code field"
+    },
+    "authPromoCodeOptionalLabel": "Promo Code (Optional)",
+    "@authPromoCodeOptionalLabel": {
+        "description": "Label for optional promo code field"
+    },
+    "authPromoCodeHint": "e.g. ori0n_pr073c7",
+    "@authPromoCodeHint": {
+        "description": "Hint example for promo code field"
+    },
+    "authPromoCodeSemanticsHint": "Enter promo code if you have one",
+    "@authPromoCodeSemanticsHint": {
+        "description": "Accessibility hint for promo code input field"
+    },
+    "authEmailSemanticsHint": "Enter your email address",
+    "@authEmailSemanticsHint": {
+        "description": "Accessibility hint for email input field"
+    },
+    "authPasswordSemanticsHint": "Enter your password",
+    "@authPasswordSemanticsHint": {
+        "description": "Accessibility hint for password input field"
+    },
+    "authDisplayNameSemanticsHint": "Enter your full name",
+    "@authDisplayNameSemanticsHint": {
+        "description": "Accessibility hint for display name input field"
+    },
+    "authSocialGoogleLabel": "Google",
+    "@authSocialGoogleLabel": {
+        "description": "Short label for Google social button"
+    },
+    "authSocialAppleLabel": "Apple",
+    "@authSocialAppleLabel": {
+        "description": "Short label for Apple social button"
+    },
+    "authSocialGoogleHint": "Sign in quickly using your connected Google account",
+    "@authSocialGoogleHint": {
+        "description": "Accessibility hint for Google social button"
+    },
+    "authSocialAppleHint": "Sign in quickly using your Apple ID",
+    "@authSocialAppleHint": {
+        "description": "Accessibility hint for Apple social button"
+    },
+    "authSwitchToFormHint": "Tap to open standard form input fields",
+    "@authSwitchToFormHint": {
+        "description": "Accessibility hint for switching to form mode"
+    },
+    "authSwitchToChatHint": "Tap to interact with Syllabot AI assistant",
+    "@authSwitchToChatHint": {
+        "description": "Accessibility hint for switching to chat mode"
+    },
+    "authAccountCreatedWelcome": "Account created! Welcome to Kortexify.",
+    "@authAccountCreatedWelcome": {
+        "description": "Welcome notification message on successful account creation"
+    },
+    "authPasswordResetSuccess": "Password reset link sent to your email.",
+    "@authPasswordResetSuccess": {
+        "description": "Snackbar message when password reset email is sent"
+    },
+    "authSyllabotAssistantTitle": "Syllabot Assistant",
+    "@authSyllabotAssistantTitle": {
+        "description": "Desktop split view header for chat assistant"
+    },
+    "authAccountSignInTitle": "Account Sign In",
+    "@authAccountSignInTitle": {
+        "description": "Desktop split view header for account form"
+    },
+    "authThinking": "Thinking...",
+    "@authThinking": {
+        "description": "Indicator text while AI is processing in chat"
+    },
+    "authValidatingName": "Validating name...",
+    "@authValidatingName": {
+        "description": "Chat thinking label during name validation"
+    },
+    "authValidatingEmail": "Validating email...",
+    "@authValidatingEmail": {
+        "description": "Chat thinking label during email validation"
+    },
+    "authValidatingPassword": "Validating password...",
+    "@authValidatingPassword": {
+        "description": "Chat thinking label during password validation"
+    },
+    "authPreparingProfileSetup": "Preparing profile setup...",
+    "@authPreparingProfileSetup": {
+        "description": "Chat thinking label when transitioning after name input"
+    },
+    "authChatNameTooShort": "Please enter your full name so Syllabot can address you properly.",
+    "@authChatNameTooShort": {
+        "description": "Chat validation error when name is too short"
+    },
+    "authChatGreetingWithName": "Great to meet you, {name}! 🎓 What is your academic or personal email address?",
+    "@authChatGreetingWithName": {
+        "description": "Chat greeting asking for email with user's name",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Ada"
+            }
+        }
+    },
+    "authChatGreetingExistingUser": "Welcome back, {name}! 🎓 What is your password?",
+    "@authChatGreetingExistingUser": {
+        "description": "Chat prompt asking for returning user's password",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Ada"
+            }
+        }
+    },
+    "authChatGreetingNewEmail": "Nice! We will create your account with {email}. Now set a secure password (at least 6 characters).",
+    "@authChatGreetingNewEmail": {
+        "description": "Chat prompt asking for password for new user email",
+        "placeholders": {
+            "email": {
+                "type": "String",
+                "example": "student@university.edu"
+            }
+        }
+    },
+    "authChatGreetingLoginEmail": "Found your account for {email}! Please enter your password to sign in.",
+    "@authChatGreetingLoginEmail": {
+        "description": "Chat prompt asking for password for existing user email",
+        "placeholders": {
+            "email": {
+                "type": "String",
+                "example": "student@university.edu"
+            }
+        }
+    },
+    "authAvatarPickerTitle": "Customize Profile Avatar",
+    "@authAvatarPickerTitle": {
+        "description": "Title for avatar picker modal sheet"
+    },
+    "authAvatarPickerSubtitle": "Upload a photo from your device or pick a scholar avatar",
+    "@authAvatarPickerSubtitle": {
+        "description": "Subtitle for avatar picker modal sheet"
+    },
+    "authAvatarPickerUploadPhoto": "Upload Photo",
+    "@authAvatarPickerUploadPhoto": {
+        "description": "Section header for photo upload options"
+    },
+    "authAvatarPickerTakeCamera": "Take Photo",
+    "@authAvatarPickerTakeCamera": {
+        "description": "Button to take a photo with camera"
+    },
+    "authAvatarPickerChooseGallery": "Choose from Gallery",
+    "@authAvatarPickerChooseGallery": {
+        "description": "Button to pick photo from gallery"
+    },
+    "authAvatarPickerEmojiSection": "Or choose a scholar avatar",
+    "@authAvatarPickerEmojiSection": {
+        "description": "Section header for emoji/scholar avatar selection"
+    },
+    "authAvatarPickerUrlSection": "Or paste an image URL",
+    "@authAvatarPickerUrlSection": {
+        "description": "Section header for remote avatar URL input"
+    },
+    "authAvatarPickerUrlHint": "https://example.com/avatar.png",
+    "@authAvatarPickerUrlHint": {
+        "description": "Hint for remote avatar URL input"
+    },
+    "authAvatarPickerApplyUrl": "Apply URL",
+    "@authAvatarPickerApplyUrl": {
+        "description": "Button to apply remote avatar URL"
+    },
+    "authAvatarPickerSuccess": "Avatar updated successfully!",
+    "@authAvatarPickerSuccess": {
+        "description": "Snackbar message when avatar is successfully updated"
+    },
+    "authAvatarPickerPhotoError": "Could not select photo: {error}",
+    "@authAvatarPickerPhotoError": {
+        "description": "Error message when photo picker fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Permission denied"
+            }
+        }
+    },
+    "authAvatarPickerSyncError": "Could not sync avatar: {error}",
+    "@authAvatarPickerSyncError": {
+        "description": "Error message when syncing avatar to backend fails",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Network error"
+            }
+        }
+    },
     "calibrationTitle": "Academic Calibration",
     "@calibrationTitle": {
         "description": "Top header title for calibration wizard"

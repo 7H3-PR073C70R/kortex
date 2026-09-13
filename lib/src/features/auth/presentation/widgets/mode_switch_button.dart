@@ -47,8 +47,8 @@ class ModeSwitchButton extends StatelessWidget {
       button: true,
       label: semanticLabel,
       hint: isChatMode
-          ? 'Tap to open standard form input fields'
-          : 'Tap to interact with Syllabot AI assistant',
+          ? l10n.authSwitchToFormHint
+          : l10n.authSwitchToChatHint,
       child: ShrinkableButton(
         onTap: handleToggle,
         child: ClipRRect(
@@ -99,7 +99,6 @@ class ModeSwitchButton extends StatelessWidget {
                     targetLabel,
                     style: typography.caption.bold.copyWith(
                       color: colors.textPrimary,
-                      fontSize: 12,
                       letterSpacing: 0.2,
                     ),
                   ),

@@ -34,7 +34,7 @@ class SocialAuthBar extends StatelessWidget {
           child: Semantics(
             button: true,
             label: l10n.authSocialGoogleSemantics,
-            hint: 'Sign in quickly using your connected Google account',
+            hint: l10n.authSocialGoogleHint,
             child: ShrinkableButton(
               onTap: isLoading
                   ? null
@@ -77,10 +77,9 @@ class SocialAuthBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Google',
-                          style: typography.callout.bold.copyWith(
+                          l10n.authSocialGoogleLabel,
+                          style: typography.subhead.bold.copyWith(
                             color: colors.textPrimary,
-                            fontSize: 13.5,
                           ),
                         ),
                       ],
@@ -98,7 +97,7 @@ class SocialAuthBar extends StatelessWidget {
           child: Semantics(
             button: true,
             label: l10n.authSocialAppleSemantics,
-            hint: 'Sign in quickly using your Apple ID',
+            hint: l10n.authSocialAppleHint,
             child: ShrinkableButton(
               onTap: isLoading
                   ? null
@@ -141,10 +140,9 @@ class SocialAuthBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Apple',
-                          style: typography.callout.bold.copyWith(
+                          l10n.authSocialAppleLabel,
+                          style: typography.subhead.bold.copyWith(
                             color: colors.textPrimary,
-                            fontSize: 13.5,
                           ),
                         ),
                       ],

@@ -124,7 +124,7 @@ class _AuthView extends HookWidget {
           if (!isChatMode) {
             if (isNewlyRegistered) {
               context.showSnackBar(
-                message: 'Account created! Welcome to Kortexify.',
+                message: l10n.authAccountCreatedWelcome,
               );
             }
             unawaited(
@@ -217,7 +217,7 @@ class _AuthView extends HookWidget {
         } else if (state.isResetSent) {
           if (!isChatMode) {
             context.showSnackBar(
-              message: 'Password reset link sent to your email.',
+              message: l10n.authPasswordResetSuccess,
             );
           }
         } else if (state.status == AuthStatus.error &&
@@ -435,7 +435,6 @@ class _DesktopSplitLayout extends StatelessWidget {
                           l10n.authDesktopHeroTitle,
                           style: typography.largeTitle.bold.copyWith(
                             color: colors.white,
-                            fontSize: 36,
                             height: 1.2,
                           ),
                         ),
@@ -444,7 +443,6 @@ class _DesktopSplitLayout extends StatelessWidget {
                           l10n.authDesktopHeroSubtitle,
                           style: typography.body.regular.copyWith(
                             color: colors.white.withAlpha(220),
-                            fontSize: 16,
                             height: 1.5,
                           ),
                         ),
@@ -503,8 +501,8 @@ class _DesktopSplitLayout extends StatelessWidget {
                         Expanded(
                           child: Text(
                             isChatMode
-                                ? 'Syllabot Assistant'
-                                : 'Account Sign In',
+                                ? l10n.authSyllabotAssistantTitle
+                                : l10n.authAccountSignInTitle,
                             style: typography.headline.bold.copyWith(
                               color: colors.textPrimary,
                             ),
@@ -600,7 +598,6 @@ class _FeatureBullet extends StatelessWidget {
             text,
             style: context.typography.callout.medium.copyWith(
               color: colors.white,
-              fontSize: 14.5,
             ),
           ),
         ),

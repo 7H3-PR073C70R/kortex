@@ -136,7 +136,7 @@ class AuthChatView extends HookWidget {
     final scrollController = useScrollController();
 
     final isThinking = useState<bool>(false);
-    final thinkingLabel = useState<String>('Thinking...');
+    final thinkingLabel = useState<String>(l10n.authThinking);
     final isTyping = useState<bool>(false);
     final latestBotMsgId = useState<String>('');
     final hasInputText = useState<bool>(false);
@@ -237,7 +237,7 @@ class AuthChatView extends HookWidget {
 
     void simulateBotReply(
       String replyText, {
-      String thinkingText = 'Thinking...',
+      String? thinkingText,
       Duration delay = const Duration(milliseconds: 450),
       bool isError = false,
       ChatAuthStep step = ChatAuthStep.initial,
@@ -245,7 +245,7 @@ class AuthChatView extends HookWidget {
       VoidCallback? onComplete,
     }) {
       isThinking.value = true;
-      thinkingLabel.value = thinkingText;
+      thinkingLabel.value = thinkingText ?? l10n.authThinking;
       scrollToBottom(animate: true);
 
       Timer(delay, () {
@@ -276,10 +276,9 @@ class AuthChatView extends HookWidget {
             addUserMessage(input);
             textController.clear();
             simulateBotReply(
-              'Please enter your full name so Syllabot '
-              'can address you properly.',
+              l10n.authChatNameTooShort,
               isError: true,
-              thinkingText: 'Validating name...',
+              thinkingText: l10n.authValidatingName,
             );
             return;
           }
@@ -291,9 +290,8 @@ class AuthChatView extends HookWidget {
           currentFlow.value = _ChatFlowStep.signUpEmail;
 
           simulateBotReply(
-            'Great to meet you, $input! 🎓 '
-            'What is your academic or personal email address?',
-            thinkingText: 'Preparing profile setup...',
+            l10n.authChatGreetingWithName(input),
+            thinkingText: l10n.authPreparingProfileSetup,
           );
 
         case _ChatFlowStep.signUpEmail:

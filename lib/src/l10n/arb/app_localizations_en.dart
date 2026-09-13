@@ -309,6 +309,164 @@ class AppLocalizationsEn extends AppLocalizations {
       'Toggle between Sign In and Create Account forms';
 
   @override
+  String get authVerifyAccountTitle => 'Verify Your Account';
+
+  @override
+  String authVerifyAccountSubtitle(String email) {
+    return 'Enter the 6-digit code sent to your email ($email).';
+  }
+
+  @override
+  String get authOtpInputLabel => '6-Digit OTP Code';
+
+  @override
+  String get authOtpInputHint => '123456';
+
+  @override
+  String get authVerifyOtpButton => 'Verify Code';
+
+  @override
+  String get authSwitchToSignIn => 'Switch to Sign In';
+
+  @override
+  String get authPromoCodeQuestion => 'Have a promo code?';
+
+  @override
+  String get authPromoCodeLabel => 'Promo Code';
+
+  @override
+  String get authPromoCodeOptionalLabel => 'Promo Code (Optional)';
+
+  @override
+  String get authPromoCodeHint => 'e.g. ori0n_pr073c7';
+
+  @override
+  String get authPromoCodeSemanticsHint => 'Enter promo code if you have one';
+
+  @override
+  String get authEmailSemanticsHint => 'Enter your email address';
+
+  @override
+  String get authPasswordSemanticsHint => 'Enter your password';
+
+  @override
+  String get authDisplayNameSemanticsHint => 'Enter your full name';
+
+  @override
+  String get authSocialGoogleLabel => 'Google';
+
+  @override
+  String get authSocialAppleLabel => 'Apple';
+
+  @override
+  String get authSocialGoogleHint =>
+      'Sign in quickly using your connected Google account';
+
+  @override
+  String get authSocialAppleHint => 'Sign in quickly using your Apple ID';
+
+  @override
+  String get authSwitchToFormHint => 'Tap to open standard form input fields';
+
+  @override
+  String get authSwitchToChatHint =>
+      'Tap to interact with Syllabot AI assistant';
+
+  @override
+  String get authAccountCreatedWelcome =>
+      'Account created! Welcome to Kortexify.';
+
+  @override
+  String get authPasswordResetSuccess =>
+      'Password reset link sent to your email.';
+
+  @override
+  String get authSyllabotAssistantTitle => 'Syllabot Assistant';
+
+  @override
+  String get authAccountSignInTitle => 'Account Sign In';
+
+  @override
+  String get authThinking => 'Thinking...';
+
+  @override
+  String get authValidatingName => 'Validating name...';
+
+  @override
+  String get authValidatingEmail => 'Validating email...';
+
+  @override
+  String get authValidatingPassword => 'Validating password...';
+
+  @override
+  String get authPreparingProfileSetup => 'Preparing profile setup...';
+
+  @override
+  String get authChatNameTooShort =>
+      'Please enter your full name so Syllabot can address you properly.';
+
+  @override
+  String authChatGreetingWithName(String name) {
+    return 'Great to meet you, $name! 🎓 What is your academic or personal email address?';
+  }
+
+  @override
+  String authChatGreetingExistingUser(String name) {
+    return 'Welcome back, $name! 🎓 What is your password?';
+  }
+
+  @override
+  String authChatGreetingNewEmail(String email) {
+    return 'Nice! We will create your account with $email. Now set a secure password (at least 6 characters).';
+  }
+
+  @override
+  String authChatGreetingLoginEmail(String email) {
+    return 'Found your account for $email! Please enter your password to sign in.';
+  }
+
+  @override
+  String get authAvatarPickerTitle => 'Customize Profile Avatar';
+
+  @override
+  String get authAvatarPickerSubtitle =>
+      'Upload a photo from your device or pick a scholar avatar';
+
+  @override
+  String get authAvatarPickerUploadPhoto => 'Upload Photo';
+
+  @override
+  String get authAvatarPickerTakeCamera => 'Take Photo';
+
+  @override
+  String get authAvatarPickerChooseGallery => 'Choose from Gallery';
+
+  @override
+  String get authAvatarPickerEmojiSection => 'Or choose a scholar avatar';
+
+  @override
+  String get authAvatarPickerUrlSection => 'Or paste an image URL';
+
+  @override
+  String get authAvatarPickerUrlHint => 'https://example.com/avatar.png';
+
+  @override
+  String get authAvatarPickerApplyUrl => 'Apply URL';
+
+  @override
+  String get authAvatarPickerSuccess => 'Avatar updated successfully!';
+
+  @override
+  String authAvatarPickerPhotoError(String error) {
+    return 'Could not select photo: $error';
+  }
+
+  @override
+  String authAvatarPickerSyncError(String error) {
+    return 'Could not sync avatar: $error';
+  }
+
+  @override
   String get calibrationTitle => 'Academic Calibration';
 
   @override

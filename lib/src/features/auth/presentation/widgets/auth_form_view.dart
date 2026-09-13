@@ -173,27 +173,26 @@ class AuthFormView extends HookWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Verify Your Account',
-                                  style: typography.headline.bold.copyWith(
+                                  l10n.authVerifyAccountTitle,
+                                  style: typography.callout.bold.copyWith(
                                     color: colors.textPrimary,
-                                    fontSize: 16,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Enter the 6-digit code sent to your email '
-                                  '(${emailController.text}).',
+                                  l10n.authVerifyAccountSubtitle(
+                                    emailController.text,
+                                  ),
                                   textAlign: TextAlign.center,
                                   style: typography.caption.regular.copyWith(
                                     color: colors.textSecondary,
-                                    fontSize: 13,
                                     height: 1.4,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 AppTextField(
-                                  label: '6-Digit OTP Code',
-                                  hintText: '123456',
+                                  label: l10n.authOtpInputLabel,
+                                  hintText: l10n.authOtpInputHint,
                                   controller: otpController,
                                   keyboardType: TextInputType.number,
                                   maxLength: 6,
@@ -204,7 +203,7 @@ class AuthFormView extends HookWidget {
                                 ),
                                 const SizedBox(height: 12),
                                 AppButton(
-                                  text: 'Verify Code',
+                                  text: l10n.authVerifyOtpButton,
                                   isLoading: isLoading,
                                   onPressed: isLoading
                                       ? null
@@ -229,10 +228,9 @@ class AuthFormView extends HookWidget {
                                     );
                                   },
                                   child: Text(
-                                    'Switch to Sign In',
+                                    l10n.authSwitchToSignIn,
                                     style: typography.caption.medium.copyWith(
                                       color: colors.primary,
-                                      fontSize: 12.5,
                                     ),
                                   ),
                                 ),
@@ -246,7 +244,7 @@ class AuthFormView extends HookWidget {
                           Semantics(
                             textField: true,
                             label: l10n.authDisplayNameLabel,
-                            hint: 'Enter your full name',
+                            hint: l10n.authDisplayNameSemanticsHint,
                             child: AppTextField(
                               label: l10n.authDisplayNameLabel,
                               hintText: l10n.authDisplayNameHint,
@@ -265,7 +263,7 @@ class AuthFormView extends HookWidget {
                         Semantics(
                           textField: true,
                           label: l10n.authEmailLabel,
-                          hint: 'Enter your email address',
+                          hint: l10n.authEmailSemanticsHint,
                           child: AppTextField(
                             label: l10n.authEmailLabel,
                             hintText: l10n.authEmailHint,
@@ -283,7 +281,7 @@ class AuthFormView extends HookWidget {
                         Semantics(
                           textField: true,
                           label: l10n.authPasswordLabel,
-                          hint: 'Enter your password',
+                          hint: l10n.authPasswordSemanticsHint,
                           child: AppTextField(
                             label: l10n.authPasswordLabel,
                             hintText: l10n.authPasswordHint,
@@ -313,10 +311,9 @@ class AuthFormView extends HookWidget {
                                   color: colors.primary,
                                 ),
                                 label: Text(
-                                  'Have a promo code?',
+                                  l10n.authPromoCodeQuestion,
                                   style: typography.caption.medium.copyWith(
                                     color: colors.primary,
-                                    fontSize: 12.5,
                                   ),
                                 ),
                                 style: TextButton.styleFrom(
@@ -333,11 +330,11 @@ class AuthFormView extends HookWidget {
                           ] else ...[
                             Semantics(
                               textField: true,
-                              label: 'Promo Code',
-                              hint: 'Enter promo code if you have one',
+                              label: l10n.authPromoCodeLabel,
+                              hint: l10n.authPromoCodeSemanticsHint,
                               child: AppTextField(
-                                label: 'Promo Code (Optional)',
-                                hintText: 'e.g. ori0n_pr073c7',
+                                label: l10n.authPromoCodeOptionalLabel,
+                                hintText: l10n.authPromoCodeHint,
                                 controller: promoCodeController,
                                 prefixIcon: const Icon(
                                   Icons.confirmation_number_outlined,
@@ -371,7 +368,6 @@ class AuthFormView extends HookWidget {
                                   l10n.authChipForgotPassword,
                                   style: typography.caption.medium.copyWith(
                                     color: colors.primary,
-                                    fontSize: 12.5,
                                   ),
                                 ),
                               ),
@@ -413,7 +409,6 @@ class AuthFormView extends HookWidget {
                                     : l10n.authNeedAccount,
                                 style: typography.subhead.regular.copyWith(
                                   color: colors.textSecondary,
-                                  fontSize: 13.5,
                                 ),
                               ),
                             ),
