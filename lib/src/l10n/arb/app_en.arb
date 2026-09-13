@@ -478,7 +478,7 @@
     "@authPromoCodeOptionalLabel": {
         "description": "Label for optional promo code field"
     },
-    "authPromoCodeHint": "e.g. ori0n_pr073c7",
+    "authPromoCodeHint": "e.g. kotexify007",
     "@authPromoCodeHint": {
         "description": "Hint example for promo code field"
     },
@@ -2268,6 +2268,62 @@
     "extractedVisualDiagramLabel": "Extracted Diagram / Visual Asset",
     "@extractedVisualDiagramLabel": {
         "description": "Header for extracted diagram visual asset box"
+    },
+    "flashcardsReadyReview": "Flashcards ready! Tap to review.",
+    "@flashcardsReadyReview": {
+        "description": "Notification message when flashcards synthesis is ready"
+    },
+    "uploadingDocStatus": "Uploading {filename}...",
+    "@uploadingDocStatus": {
+        "description": "Status text for file upload in progress",
+        "placeholders": {
+            "filename": {
+                "type": "String"
+            }
+        }
+    },
+    "parsingOcrDocStatus": "Parsing OCR formulas in {filename}...",
+    "@parsingOcrDocStatus": {
+        "description": "Status text for OCR parsing in progress",
+        "placeholders": {
+            "filename": {
+                "type": "String"
+            }
+        }
+    },
+    "synthesizingDeckDocStatus": "Synthesizing flashcards for {filename}...",
+    "@synthesizingDeckDocStatus": {
+        "description": "Status text for flashcards synthesis in progress",
+        "placeholders": {
+            "filename": {
+                "type": "String"
+            }
+        }
+    },
+    "tapToOpenStudyCards": "Tap to open study cards",
+    "@tapToOpenStudyCards": {
+        "description": "Sub-label on background ingestion pill when completed"
+    },
+    "processingInBackgroundTap": "Processing in background • Tap to view",
+    "@processingInBackgroundTap": {
+        "description": "Sub-label on background ingestion pill while processing"
+    },
+    "deckCreatedSuccessTap": "Study Deck created successfully! Tap to view all decks.",
+    "@deckCreatedSuccessTap": {
+        "description": "Snackbar message when a study deck is created"
+    },
+    "subjectOrCourseLabel": "Subject / Course",
+    "@subjectOrCourseLabel": {
+        "description": "Label for subject or course input field"
+    },
+    "previewAndEditCardsTitle": "Preview & Edit Cards ({count})",
+    "@previewAndEditCardsTitle": {
+        "description": "Section header for previewing and editing cards",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
     },
     "communityTitle": "Community & Study Hub",
     "@communityTitle": {

@@ -26,62 +26,74 @@ void main() {
   });
 
   group('PromoCodeRepositoryImpl', () {
-    test('redeemPromoCode saves Pro status on successful redemption and returns result', () async {
-      const model = PromoRedemptionResultModel(
-        success: true,
-        code: 'ori0n_pr073c7',
-        durationDays: 365,
-        message: 'Activated',
-      );
+    test(
+      'redeemPromoCode saves Pro status on successful redemption and returns result',
+      () async {
+        const model = PromoRedemptionResultModel(
+          success: true,
+          code: 'kotexify007',
+          durationDays: 365,
+          message: 'Activated',
+        );
 
-      when(() => mockRemoteDataSource.redeemPromoCode(code: 'ori0n_pr073c7'))
-          .thenAnswer((_) async => model);
-      when(() => mockUserStorageService.saveProStatus(isPro: true))
-          .thenAnswer((_) async {});
+        when(
+          () => mockRemoteDataSource.redeemPromoCode(code: 'kotexify007'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockUserStorageService.saveProStatus(isPro: true),
+        ).thenAnswer((_) async {});
 
-      final result = await repository.redeemPromoCode(code: 'ori0n_pr073c7');
+        final result = await repository.redeemPromoCode(code: 'kotexify007');
 
-      expect(result.isRight, isTrue);
-      result.fold(
-        (failure) => fail('Should be right'),
-        (redemption) {
-          expect(redemption.success, isTrue);
-          expect(redemption.durationDays, equals(365));
-        },
-      );
+        expect(result.isRight, isTrue);
+        result.fold(
+          (failure) => fail('Should be right'),
+          (redemption) {
+            expect(redemption.success, isTrue);
+            expect(redemption.durationDays, equals(365));
+          },
+        );
 
-      verify(() => mockUserStorageService.saveProStatus(isPro: true)).called(1);
-    });
+        verify(
+          () => mockUserStorageService.saveProStatus(isPro: true),
+        ).called(1);
+      },
+    );
 
-    test('redeemPromoCode does not save Pro status when code is invalid/fails', () async {
-      const model = PromoRedemptionResultModel(
-        success: false,
-        errorCode: 'INVALID_CODE',
-        message: 'Invalid code',
-      );
+    test(
+      'redeemPromoCode does not save Pro status when code is invalid/fails',
+      () async {
+        const model = PromoRedemptionResultModel(
+          success: false,
+          errorCode: 'INVALID_CODE',
+          message: 'Invalid code',
+        );
 
-      when(() => mockRemoteDataSource.redeemPromoCode(code: 'fake_code'))
-          .thenAnswer((_) async => model);
+        when(
+          () => mockRemoteDataSource.redeemPromoCode(code: 'fake_code'),
+        ).thenAnswer((_) async => model);
 
-      final result = await repository.redeemPromoCode(code: 'fake_code');
+        final result = await repository.redeemPromoCode(code: 'fake_code');
 
-      expect(result.isRight, isTrue);
-      result.fold(
-        (failure) => fail('Should be right'),
-        (redemption) {
-          expect(redemption.success, isFalse);
-          expect(redemption.errorCode, equals('INVALID_CODE'));
-        },
-      );
+        expect(result.isRight, isTrue);
+        result.fold(
+          (failure) => fail('Should be right'),
+          (redemption) {
+            expect(redemption.success, isFalse);
+            expect(redemption.errorCode, equals('INVALID_CODE'));
+          },
+        );
 
-      verifyNever(() => mockUserStorageService.saveProStatus(isPro: true));
-    });
+        verifyNever(() => mockUserStorageService.saveProStatus(isPro: true));
+      },
+    );
 
     test('redeemPromoCode returns ServerFailure on ServerException', () async {
-      when(() => mockRemoteDataSource.redeemPromoCode(code: 'ori0n_pr073c7'))
-          .thenThrow(const ServerException(message: 'Server unreachable'));
+      when(
+        () => mockRemoteDataSource.redeemPromoCode(code: 'kotexify007'),
+      ).thenThrow(const ServerException(message: 'Server unreachable'));
 
-      final result = await repository.redeemPromoCode(code: 'ori0n_pr073c7');
+      final result = await repository.redeemPromoCode(code: 'kotexify007');
 
       expect(result.isLeft, isTrue);
       result.fold(

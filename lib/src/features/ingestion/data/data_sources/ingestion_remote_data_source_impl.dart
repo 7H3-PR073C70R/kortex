@@ -252,6 +252,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     // 2. Register metadata row in documents table with authenticated user_id
     if (userId.isNotEmpty && token != null && token.isNotEmpty) {
       final payload = <String, dynamic>{
+        'id': docId,
         'filename': filename,
         'file_type': fileType,
         'file_size_bytes': fileBytes.lengthInBytes,

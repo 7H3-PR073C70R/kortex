@@ -338,7 +338,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPromoCodeOptionalLabel => 'Promo Code (Optional)';
 
   @override
-  String get authPromoCodeHint => 'e.g. ori0n_pr073c7';
+  String get authPromoCodeHint => 'e.g. kotexify007';
 
   @override
   String get authPromoCodeSemanticsHint => 'Enter promo code if you have one';
@@ -1609,6 +1609,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extractedVisualDiagramLabel => 'Extracted Diagram / Visual Asset';
+
+  @override
+  String get flashcardsReadyReview => 'Flashcards ready! Tap to review.';
+
+  @override
+  String uploadingDocStatus(String filename) {
+    return 'Uploading $filename...';
+  }
+
+  @override
+  String parsingOcrDocStatus(String filename) {
+    return 'Parsing OCR formulas in $filename...';
+  }
+
+  @override
+  String synthesizingDeckDocStatus(String filename) {
+    return 'Synthesizing flashcards for $filename...';
+  }
+
+  @override
+  String get tapToOpenStudyCards => 'Tap to open study cards';
+
+  @override
+  String get processingInBackgroundTap =>
+      'Processing in background • Tap to view';
+
+  @override
+  String get deckCreatedSuccessTap =>
+      'Study Deck created successfully! Tap to view all decks.';
+
+  @override
+  String get subjectOrCourseLabel => 'Subject / Course';
+
+  @override
+  String previewAndEditCardsTitle(int count) {
+    return 'Preview & Edit Cards ($count)';
+  }
 
   @override
   String get communityTitle => 'Community & Study Hub';

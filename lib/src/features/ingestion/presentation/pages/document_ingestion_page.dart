@@ -38,9 +38,8 @@ class DocumentIngestionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<IngestionBloc>(
-      create: (_) =>
-          locator<IngestionBloc>()..add(const FetchUserDocumentsEvent()),
+    return BlocProvider<IngestionBloc>.value(
+      value: locator<IngestionBloc>()..add(const FetchUserDocumentsEvent()),
       child: _DocumentIngestionView(
         courseId: courseId,
         courseCode: courseCode,

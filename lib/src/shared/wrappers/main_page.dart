@@ -16,6 +16,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/background_ingestion_indicator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
@@ -85,73 +86,79 @@ class MainPage extends HookWidget {
     final isDark = context.isDarkMode;
 
     return FloatingSyllabotOverlay(
-      child: AutoTabsScaffold(
-        routes: _kNavItems.map((item) => item.route).toList(),
-        animationDuration: const Duration(milliseconds: 250),
-        animationCurve: Curves.easeInOut,
-        extendBody: true,
-        transitionBuilder: (context, child, animation) {
-          final tabsRouter = AutoTabsRouter.of(context);
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AutoTabsScaffold(
+            routes: _kNavItems.map((item) => item.route).toList(),
+            animationDuration: const Duration(milliseconds: 250),
+            animationCurve: Curves.easeInOut,
+            extendBody: true,
+            transitionBuilder: (context, child, animation) {
+              final tabsRouter = AutoTabsRouter.of(context);
 
-          return ColoredBox(
-            color: colors.backgroundPrimary,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isDesktop = constraints.maxWidth >= desktopBreakpoint;
+              return ColoredBox(
+                color: colors.backgroundPrimary,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= desktopBreakpoint;
 
-                if (isDesktop) {
-                  return Row(
-                    children: [
-                      _DesktopNavRail(
-                        tabsRouter: tabsRouter,
-                        width: railWidth,
-                      ),
-                      VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                            : colors.surfaceBorder,
-                      ),
-                      Expanded(
-                        child: SafeArea(
-                          top: false,
-                          bottom: false,
-                          left: false,
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
+                    if (isDesktop) {
+                      return Row(
+                        children: [
+                          _DesktopNavRail(
+                            tabsRouter: tabsRouter,
+                            width: railWidth,
                           ),
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(60)
+                                : colors.surfaceBorder,
+                          ),
+                          Expanded(
+                            child: SafeArea(
+                              top: false,
+                              bottom: false,
+                              left: false,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: 60.height),
+                          child: child,
                         ),
                       ),
-                    ],
-                  );
-                }
-
-                return SafeArea(
-                  top: false,
-                  bottom: false,
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: Padding(
-                      padding:  EdgeInsets.only(bottom: 60.height),
-                      child: child,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-        bottomNavigationBuilder: (context, tabsRouter) {
-          final width = MediaQuery.sizeOf(context).width;
-          if (width >= desktopBreakpoint) {
-            return const SizedBox.shrink();
-          }
-          return _AdaptiveBottomNavDock(
-            tabsRouter: tabsRouter,
-          );
-        },
+                    );
+                  },
+                ),
+              );
+            },
+            bottomNavigationBuilder: (context, tabsRouter) {
+              final width = MediaQuery.sizeOf(context).width;
+              if (width >= desktopBreakpoint) {
+                return const SizedBox.shrink();
+              }
+              return _AdaptiveBottomNavDock(
+                tabsRouter: tabsRouter,
+              );
+            },
+          ),
+          const BackgroundIngestionIndicator(),
+        ],
       ),
     );
   }

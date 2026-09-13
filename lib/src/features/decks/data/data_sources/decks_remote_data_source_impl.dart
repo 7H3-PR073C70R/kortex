@@ -211,18 +211,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           return <String, dynamic>{
             'id': c.id,
             'deck_id': deck.id,
+            if (userId.isNotEmpty) 'user_id': userId,
             'front': c.front,
             'back': c.back,
-            if (c.frontLatex != null) 'front_latex': c.frontLatex,
-            if (c.backLatex != null) 'back_latex': c.backLatex,
-            if (c.imageUrl != null) 'image_url': c.imageUrl,
-            if (c.sourceTopic != null) 'source_topic': c.sourceTopic,
+            'front_latex': c.frontLatex,
+            'back_latex': c.backLatex,
+            'source_topic': c.sourceTopic,
             'interval': c.interval,
             'repetitions': c.repetitions,
             'ease_factor': c.easeFactor,
-            if (c.nextDueDate != null)
-              'next_due_date': c.nextDueDate!.toIso8601String(),
-            if (userId.isNotEmpty) 'user_id': userId,
+            'next_due_date':
+                (c.nextDueDate ?? DateTime.now()).toIso8601String(),
           };
         }).toList();
 

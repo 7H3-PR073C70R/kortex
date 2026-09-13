@@ -679,7 +679,7 @@ abstract class AppLocalizations {
   /// Hint example for promo code field
   ///
   /// In en, this message translates to:
-  /// **'e.g. ori0n_pr073c7'**
+  /// **'e.g. kotexify007'**
   String get authPromoCodeHint;
 
   /// Accessibility hint for promo code input field
@@ -2881,6 +2881,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extracted Diagram / Visual Asset'**
   String get extractedVisualDiagramLabel;
+
+  /// Notification message when flashcards synthesis is ready
+  ///
+  /// In en, this message translates to:
+  /// **'Flashcards ready! Tap to review.'**
+  String get flashcardsReadyReview;
+
+  /// Status text for file upload in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {filename}...'**
+  String uploadingDocStatus(String filename);
+
+  /// Status text for OCR parsing in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Parsing OCR formulas in {filename}...'**
+  String parsingOcrDocStatus(String filename);
+
+  /// Status text for flashcards synthesis in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Synthesizing flashcards for {filename}...'**
+  String synthesizingDeckDocStatus(String filename);
+
+  /// Sub-label on background ingestion pill when completed
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open study cards'**
+  String get tapToOpenStudyCards;
+
+  /// Sub-label on background ingestion pill while processing
+  ///
+  /// In en, this message translates to:
+  /// **'Processing in background • Tap to view'**
+  String get processingInBackgroundTap;
+
+  /// Snackbar message when a study deck is created
+  ///
+  /// In en, this message translates to:
+  /// **'Study Deck created successfully! Tap to view all decks.'**
+  String get deckCreatedSuccessTap;
+
+  /// Label for subject or course input field
+  ///
+  /// In en, this message translates to:
+  /// **'Subject / Course'**
+  String get subjectOrCourseLabel;
+
+  /// Section header for previewing and editing cards
+  ///
+  /// In en, this message translates to:
+  /// **'Preview & Edit Cards ({count})'**
+  String previewAndEditCardsTitle(int count);
 
   /// Title of the Community Hub
   ///

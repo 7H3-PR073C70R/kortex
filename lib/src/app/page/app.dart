@@ -14,6 +14,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/biometric_lock_overlay.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
@@ -145,6 +146,9 @@ class _AppState extends State<App> {
         ),
         BlocProvider<AuthBloc>.value(
           value: locator<AuthBloc>(),
+        ),
+        BlocProvider<IngestionBloc>.value(
+          value: locator<IngestionBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeState>(

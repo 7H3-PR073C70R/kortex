@@ -266,7 +266,7 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
 
                       AppTextField(
                         label: 'Promo Code',
-                        hintText: 'e.g. ori0n_pr073c7',
+                        hintText: 'e.g. kotexify007',
                         controller: _codeController,
                         prefixIcon: const Icon(
                           Icons.confirmation_number_outlined,

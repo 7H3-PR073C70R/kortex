@@ -181,7 +181,7 @@ void _initUseCaseLocator() {
         locator<DocumentParserService>(),
       ),
     )
-    ..registerFactory<IngestionBloc>(
+    ..registerLazySingleton<IngestionBloc>(
       () => IngestionBloc(
         uploadUseCase: locator<UploadStudyDocumentUseCase>(),
         processOcrUseCase: locator<ProcessStemOcrUseCase>(),

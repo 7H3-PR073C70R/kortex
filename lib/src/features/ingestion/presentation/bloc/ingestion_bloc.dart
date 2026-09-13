@@ -145,7 +145,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       fileType: event.fileType,
       fileBytes: event.fileBytes,
       onProgress: (progress) {
-        add(UploadProgressUpdatedEvent(progress));
+        if (!isClosed) {
+          add(UploadProgressUpdatedEvent(progress));
+        }
       },
     );
 
@@ -195,16 +197,18 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         }
 
         // Immediately trigger STEM OCR parsing
-        add(
-          TriggerOcrParsingEvent(
-            documentId: doc.id,
-            storagePath: doc.storagePath,
-            fileType: doc.fileType,
-            courseId: event.courseId,
-            courseCode: event.courseCode,
-            courseTitle: event.courseTitle,
-          ),
-        );
+        if (!isClosed) {
+          add(
+            TriggerOcrParsingEvent(
+              documentId: doc.id,
+              storagePath: doc.storagePath,
+              fileType: doc.fileType,
+              courseId: event.courseId,
+              courseCode: event.courseCode,
+              courseTitle: event.courseTitle,
+            ),
+          );
+        }
       },
     );
   }
@@ -509,17 +513,19 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           RegExp(r'\.[a-zA-Z0-9]+$'),
           '',
         );
-        add(
-          GenerateFlashcardsFromSnippetsEvent(
-            documentId:
-                documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
-            deckTitle: cleanDeckTitle,
-            subject: courseTitle ?? courseCode ?? 'General',
-            snippets: snippets,
-            courseId: courseId,
-            courseCode: courseCode,
-          ),
-        );
+        if (!isClosed) {
+          add(
+            GenerateFlashcardsFromSnippetsEvent(
+              documentId:
+                  documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
+              deckTitle: cleanDeckTitle,
+              subject: courseTitle ?? courseCode ?? 'General',
+              snippets: snippets,
+              courseId: courseId,
+              courseCode: courseCode,
+            ),
+          );
+        }
       },
     );
   }

@@ -55,16 +55,18 @@ void main() {
       expect(find.text('Apply Promo Code'), findsOneWidget);
     });
 
-    testWidgets('successful redemption shows Kortex Pro Activated state', (tester) async {
+    testWidgets('successful redemption shows Kortex Pro Activated state', (
+      tester,
+    ) async {
       when(
         () => mockRedeemUseCase(
-          const RedeemPromoCodeParams(code: 'ori0n_pr073c7'),
+          const RedeemPromoCodeParams(code: 'kotexify007'),
         ),
       ).thenAnswer(
         (_) async => const Right(
           PromoRedemptionResult(
             success: true,
-            code: 'ori0n_pr073c7',
+            code: 'kotexify007',
             durationDays: 365,
             message: 'Promo code redeemed successfully!',
           ),
@@ -73,7 +75,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          const PromoCodeModalSheet(initialCode: 'ori0n_pr073c7'),
+          const PromoCodeModalSheet(initialCode: 'kotexify007'),
         ),
       );
 
@@ -81,7 +83,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Kortex Pro Activated!'), findsOneWidget);
-      expect(find.textContaining('365 days of Kortex Pro access'), findsOneWidget);
+      expect(
+        find.textContaining('365 days of Kortex Pro access'),
+        findsOneWidget,
+      );
       expect(find.text('Get Started with Pro'), findsOneWidget);
     });
 
@@ -109,7 +114,10 @@ void main() {
       await tester.tap(find.text('Apply Promo Code'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Promo code not found. Please check and try again.'), findsOneWidget);
+      expect(
+        find.text('Promo code not found. Please check and try again.'),
+        findsOneWidget,
+      );
     });
   });
 }

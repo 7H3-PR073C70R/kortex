@@ -43,6 +43,8 @@ class IngestionState extends Equatable {
   bool get isSyncingDb => status == ProcessingStatus.syncingDb;
   bool get isCompleted => status == ProcessingStatus.completed;
   bool get hasFailed => status == ProcessingStatus.failed;
+  bool get isProcessing =>
+      isUploading || isParsingOcr || isGeneratingCards || isSyncingDb;
 
   IngestionState copyWith({
     ProcessingStatus? status,

@@ -119,6 +119,51 @@ serve(async (req) => {
       );
     }
 
+    // Verify document exists in documents table before inserting foreign key
+    let validDocumentId: string | null = null;
+    const isUuid =
+      documentId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        documentId
+      );
+
+    if (isUuid) {
+      const { data: existingDoc } = await supabase
+        .from("documents")
+        .select("id")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      if (existingDoc) {
+        validDocumentId = existingDoc.id;
+      } else if (userId) {
+        const docTitle =
+          (metadata.filename as string) ||
+          (metadata.documentTitle as string) ||
+          "Study Document";
+        const { data: createdDoc } = await supabase
+          .from("documents")
+          .insert({
+            id: documentId,
+            user_id: userId,
+            filename: docTitle,
+            file_type: (metadata.fileType as string) || "pdf",
+            file_size_bytes: (metadata.fileSizeBytes as number) || 0,
+            storage_path:
+              (metadata.storagePath as string) || `${documentId}.pdf`,
+            content_hash:
+              (metadata.contentHash as string) || `hash_${documentId}`,
+            processing_status: "completed",
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (createdDoc) {
+          validDocumentId = createdDoc.id;
+        }
+      }
+    }
+
     const recordsToInsert = [];
 
     if (chunks && chunks.length > 0) {
@@ -129,17 +174,20 @@ serve(async (req) => {
         const embedding = generateDeterministicVector(content, 1536);
 
         recordsToInsert.push({
-          document_id: documentId,
+          document_id: validDocumentId,
           user_id: userId,
           content,
           metadata: {
             ...metadata,
+            document_id: documentId,
+            client_document_id: documentId,
             ...item.metadata,
             chunk_index: item.chunk_index ?? i,
             total_chunks: chunks.length,
             if_page: item.page_number,
             page_number: item.page_number ?? item.metadata?.page_number,
-            paragraph_number: item.paragraph_number ?? item.metadata?.paragraph_number,
+            paragraph_number:
+              item.paragraph_number ?? item.metadata?.paragraph_number,
             document_title: metadata.filename ?? metadata.documentTitle,
           },
           embedding: JSON.stringify(embedding),
@@ -152,11 +200,13 @@ serve(async (req) => {
         const embedding = generateDeterministicVector(chunk, 1536);
 
         recordsToInsert.push({
-          document_id: documentId,
+          document_id: validDocumentId,
           user_id: userId,
           content: chunk,
           metadata: {
             ...metadata,
+            document_id: documentId,
+            client_document_id: documentId,
             chunk_index: i,
             total_chunks: textChunks.length,
             document_title: metadata.filename ?? metadata.documentTitle,
@@ -179,7 +229,7 @@ serve(async (req) => {
     // Cache precomputed embedding records
     await SemanticCacheProvider.setCachedResponse(
       supabase,
-      `doc_embeddings:${documentId}:${rawText.length}`,
+      cacheKey,
       { records: recordsToInsert },
       { courseCode }
     );

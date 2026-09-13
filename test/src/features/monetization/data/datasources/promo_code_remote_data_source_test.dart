@@ -21,7 +21,7 @@ void main() {
       when(
         () => mockDio.post<dynamic>(
           AppApiEndpoint.redeemPromoCodeRpc,
-          data: {'code_input': 'ori0n_pr073c7'},
+          data: {'code_input': 'kotexify007'},
         ),
       ).thenAnswer(
         (_) async => Response(
@@ -29,17 +29,17 @@ void main() {
           statusCode: 200,
           data: {
             'success': true,
-            'code': 'ori0n_pr073c7',
+            'code': 'kotexify007',
             'duration_days': 365,
             'message': 'Promo code redeemed successfully!',
           },
         ),
       );
 
-      final result = await dataSource.redeemPromoCode(code: 'ori0n_pr073c7');
+      final result = await dataSource.redeemPromoCode(code: 'kotexify007');
 
       expect(result.success, isTrue);
-      expect(result.code, equals('ori0n_pr073c7'));
+      expect(result.code, equals('kotexify007'));
       expect(result.durationDays, equals(365));
     });
 

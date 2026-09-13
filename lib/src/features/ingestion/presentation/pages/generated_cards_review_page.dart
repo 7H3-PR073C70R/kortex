@@ -47,8 +47,8 @@ class GeneratedCardsReviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<IngestionBloc>(
-      create: (_) => locator<IngestionBloc>(),
+    return BlocProvider<IngestionBloc>.value(
+      value: locator<IngestionBloc>(),
       child: _GeneratedCardsReviewView(
         documentId: documentId,
         deckTitle: deckTitle,
@@ -168,8 +168,7 @@ class _GeneratedCardsReviewView extends HookWidget {
                     locator<AppRouter>().navigatorKey.currentContext;
                 if (navContext != null && navContext.mounted) {
                   navContext.showSnackBar(
-                    message:
-                        'Study Deck created successfully! Tap to view all decks.',
+                    message: l10n.deckCreatedSuccessTap,
                     type: SnackBarType.success,
                     duration: const Duration(seconds: 5),
                     onTap: () {
@@ -212,7 +211,7 @@ class _GeneratedCardsReviewView extends HookWidget {
                         const SizedBox(height: 12),
                         AppTextField(
                           controller: subjectController,
-                          label: 'Subject / Course',
+                          label: l10n.subjectOrCourseLabel,
                         ),
                       ],
                     ),
@@ -220,7 +219,7 @@ class _GeneratedCardsReviewView extends HookWidget {
                   const SizedBox(height: 20),
 
                   Text(
-                    'Preview & Edit Cards (${cards.value.length})',
+                    l10n.previewAndEditCardsTitle(cards.value.length),
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                     ),

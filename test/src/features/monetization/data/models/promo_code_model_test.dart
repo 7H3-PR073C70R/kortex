@@ -6,7 +6,7 @@ void main() {
     test('fromJson successfully parses valid 1-year promo redemption payload', () {
       final json = {
         'success': true,
-        'code': 'ori0n_pr073c7',
+        'code': 'kotexify007',
         'duration_days': 365,
         'pro_until': '2027-09-13T03:45:00.000Z',
         'message': 'Promo code redeemed successfully! 365 days of Kortex Pro activated.',
@@ -15,7 +15,7 @@ void main() {
       final model = PromoRedemptionResultModel.fromJson(json);
 
       expect(model.success, isTrue);
-      expect(model.code, equals('ori0n_pr073c7'));
+      expect(model.code, equals('kotexify007'));
       expect(model.durationDays, equals(365));
       expect(model.proUntil, isNotNull);
       expect(model.errorCode, isNull);
@@ -39,7 +39,7 @@ void main() {
     test('toJson serializes model correctly', () {
       final model = PromoRedemptionResultModel(
         success: true,
-        code: 'ori0n_pr073c7',
+        code: 'kotexify007',
         durationDays: 365,
         proUntil: DateTime.parse('2027-09-13T03:45:00.000Z'),
         message: 'Success',
@@ -48,7 +48,7 @@ void main() {
       final json = model.toJson();
 
       expect(json['success'], isTrue);
-      expect(json['code'], equals('ori0n_pr073c7'));
+      expect(json['code'], equals('kotexify007'));
       expect(json['duration_days'], equals(365));
     });
   });

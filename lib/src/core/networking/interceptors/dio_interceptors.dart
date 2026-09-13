@@ -227,11 +227,13 @@ class TokenInterceptor extends QueuedInterceptor {
               debugPrint(
                 '[TokenInterceptor] Retrying request after refresh threw: $retryErr',
               );
+              handler.reject(retryErr);
+              return;
             }
           }
         }
 
-        // Auto-logout and notify user if refresh is unavailable or failed
+        // Auto-logout and notify user only if refresh is completely unavailable or failed
         debugPrint(
           '[TokenInterceptor] Auto logging out due to expired/unauthenticated session.',
         );
@@ -245,9 +247,30 @@ class TokenInterceptor extends QueuedInterceptor {
 
   bool _isJwtExpired(DioException err) {
     final statusCode = err.response?.statusCode;
+    final data = err.response?.data;
+
+    // Check if error is an RLS policy violation or permission error (NOT an expired token)
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final code = map['code']?.toString().toUpperCase() ?? '';
+      final message = map['message']?.toString().toLowerCase() ?? '';
+      if (code == '42501' ||
+          code == 'ACCESSDENIED' ||
+          message.contains('row-level security') ||
+          message.contains('violates row-level')) {
+        return false;
+      }
+    } else if (data is String) {
+      final lower = data.toLowerCase();
+      if (lower.contains('row-level security') ||
+          lower.contains('violates row-level') ||
+          lower.contains('42501')) {
+        return false;
+      }
+    }
+
     if (statusCode == 401) return true;
 
-    final data = err.response?.data;
     if (statusCode == 400 || statusCode == 403 || statusCode == 494) {
       if (data is String) {
         final lower = data.toLowerCase();
