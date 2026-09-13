@@ -68,10 +68,27 @@ class FormulaAwareTextFormatter {
     r'([-+]?\d+(?:\.\d+)?)\s*[xX\*]\s*10\^([-+]?\d+)',
   );
 
+  /// Returns true if the string potentially contains LaTeX syntax, numbers, or formula symbols.
+  static bool _hasFormulaIndicators(String s) {
+    for (var i = 0; i < s.length; i++) {
+      final c = s.codeUnitAt(i);
+      // Math/formula symbols: '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), or non-ascii (e.g. '→', '⇌')
+      if (c == 36 || c == 92 || c == 94 || c == 95 || c == 47 || c == 43 || c == 61 || c == 62 || c == 60 || c > 127) {
+        return true;
+      }
+      // Digits (e.g. "10^8", "H2O", "3/4")
+      if (c >= 48 && c <= 57) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Formats a complete multi-line text block, making options, equations,
   /// and chemical formulas LaTeX-ready while preserving existing markdown and text.
   static String formatFormulaAware(String input) {
     if (input.trim().isEmpty) return input;
+    if (!_hasFormulaIndicators(input)) return input;
 
     final lines = input.split('\n');
     final processedLines = <String>[];

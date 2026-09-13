@@ -295,6 +295,15 @@ class LatexRichViewer extends StatelessWidget {
     String content,
     TextStyle baseStyle,
   ) {
+    if (!content.contains(r'$') &&
+        !content.contains(r'\') &&
+        !content.contains('*') &&
+        !content.contains('_') &&
+        !content.contains('`') &&
+        !content.contains('~')) {
+      return [TextSpan(text: content, style: baseStyle)];
+    }
+
     final spans = <InlineSpan>[];
     var lastIndex = 0;
 

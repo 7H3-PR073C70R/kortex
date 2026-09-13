@@ -144,6 +144,22 @@ class _QuizWorkspaceView extends HookWidget {
       listenWhen: (previous, current) =>
           previous.status != current.status ||
           (previous.audienceDistribution == null && current.audienceDistribution != null),
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.currentIndex != current.currentIndex ||
+          previous.currentQuestion != current.currentQuestion ||
+          previous.totalQuestions != current.totalQuestions ||
+          previous.assessmentMode != current.assessmentMode ||
+          previous.isCurrentQuestionFlagged != current.isCurrentQuestionFlagged ||
+          previous.isHintRevealed != current.isHintRevealed ||
+          previous.activeClueText != current.activeClueText ||
+          previous.isSecondChanceActive != current.isSecondChanceActive ||
+          previous.isSoftFailed != current.isSoftFailed ||
+          previous.bankedTier != current.bankedTier ||
+          previous.currentTier != current.currentTier ||
+          previous.availableLifelines != current.availableLifelines ||
+          previous.eliminatedOptionIndices != current.eliminatedOptionIndices ||
+          previous.errorMessage != current.errorMessage,
       listener: (context, state) {
         if (state.audienceDistribution != null && state.currentQuestion != null) {
           MillionaireAudiencePollDialog.show(
@@ -346,45 +362,7 @@ class _QuizWorkspaceView extends HookWidget {
                 ),
               ),
               // Live Session Timer Badge (with time running low warning)
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: state.isTimeRunningLow
-                      ? colors.error.withValues(alpha: isDark ? 0.2 : 0.1)
-                      : colors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: state.isTimeRunningLow
-                        ? colors.error.withValues(alpha: 0.5)
-                        : colors.surfaceBorder,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 16,
-                      color: state.isTimeRunningLow
-                          ? colors.error
-                          : colors.success,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      state.formattedTimer,
-                      style: typography.caption.bold.copyWith(
-                        color: state.isTimeRunningLow
-                            ? colors.error
-                            : colors.success,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const _QuizTimerBadge(),
             ],
           ),
           body: Column(
@@ -1418,3 +1396,63 @@ class _QuizWorkspaceView extends HookWidget {
     );
   }
 }
+
+class _QuizTimerBadge extends StatelessWidget {
+  const _QuizTimerBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return BlocSelector<QuizSessionCubit, QuizSessionState, ({String timer, bool isLow})>(
+      selector: (state) => (
+        timer: state.formattedTimer,
+        isLow: state.isTimeRunningLow,
+      ),
+      builder: (context, data) {
+        return Container(
+          margin: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: data.isLow
+                ? colors.error.withValues(alpha: isDark ? 0.2 : 0.1)
+                : colors.surfaceSecondary,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: data.isLow
+                  ? colors.error.withValues(alpha: 0.5)
+                  : colors.surfaceBorder,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.timer_outlined,
+                size: 16,
+                color: data.isLow
+                    ? colors.error
+                    : colors.success,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                data.timer,
+                style: typography.caption.bold.copyWith(
+                  color: data.isLow
+                      ? colors.error
+                      : colors.success,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+

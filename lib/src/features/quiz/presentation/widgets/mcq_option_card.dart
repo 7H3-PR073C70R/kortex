@@ -24,9 +24,8 @@ class McqOptionCard extends StatelessWidget {
 
   String get _letterPrefix => String.fromCharCode(65 + index); // A, B, C, D
 
-  String get _displayOptionText => FormulaAwareTextFormatter.formatFormulaAware(
-    QuizContentSanitizer.cleanOptionText(optionText),
-  );
+  String get _displayOptionText =>
+      QuizContentSanitizer.cleanOptionText(optionText);
 
   @override
   Widget build(BuildContext context) {

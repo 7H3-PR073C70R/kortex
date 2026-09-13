@@ -252,6 +252,8 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                                   ? '${state.selectedExam.displayName} Random CBT Mock'
                                   : '${state.selectedExam.displayName} $selectedYear Past Paper');
 
+                          Navigator.of(context).pop();
+
                           unawaited(
                             context.router.push(
                               QuizWorkspaceRoute(
