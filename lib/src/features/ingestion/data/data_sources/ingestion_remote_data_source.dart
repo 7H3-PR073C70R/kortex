@@ -29,5 +29,6 @@ abstract class IngestionRemoteDataSource {
   Future<List<OcrExtractionModel>> fetchExtractedSnippets(String documentId);
 
   Future<List<DocumentUploadModel>> fetchUserDocuments();
+  Future<void> deleteDocument(String documentId);
   void cacheDocumentBytes(String documentId, Uint8List fileBytes, {String? filename});
 }

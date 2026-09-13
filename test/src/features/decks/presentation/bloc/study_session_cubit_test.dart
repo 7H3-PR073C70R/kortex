@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -69,18 +70,41 @@ class _FakeDecksRepository implements DecksRepository {
   }
 }
 
+class _FakeLocalStorageService implements LocalStorageService {
+  final Map<String, String> storage = {};
+
+  @override
+  Future<void> initDB() async {}
+
+  @override
+  Future<void> savePreference({required String key, required String data}) async {
+    storage[key] = data;
+  }
+
+  @override
+  String? getPreference({required String key}) => storage[key];
+
+  @override
+  Future<void> deletePreference({required String key}) async {
+    storage.remove(key);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('StudySessionCubit', () {
     late _FakeDecksRepository fakeRepo;
+    late _FakeLocalStorageService fakeStorage;
     late StudySessionCubit cubit;
 
     setUp(() {
       fakeRepo = _FakeDecksRepository();
+      fakeStorage = _FakeLocalStorageService();
       cubit = StudySessionCubit(
         getDeckCardsUseCase: GetDeckCardsUseCase(fakeRepo),
         saveSessionResultsUseCase: SaveSessionResultsUseCase(fakeRepo),
+        localStorageService: fakeStorage,
       );
     });
 
@@ -148,5 +172,47 @@ void main() {
         expect(cubit.state.goodCount, 1);
       },
     );
+
+    test('checkpoint saves progress on rateCard and restores on next startSession', () async {
+      // 1. Start session on deck with 3 cards
+      fakeRepo.cardsToReturn = const [
+        FlashcardEntity(id: 'c1', deckId: 'd1', front: 'F1', back: 'B1'),
+        FlashcardEntity(id: 'c2', deckId: 'd1', front: 'F2', back: 'B2'),
+        FlashcardEntity(id: 'c3', deckId: 'd1', front: 'F3', back: 'B3'),
+      ];
+
+      await cubit.startSession('d1');
+      expect(cubit.state.currentIndex, 0);
+
+      // 2. Study card 1 -> advances to card 2 (index 1) and saves checkpoint
+      await cubit.rateCard(FsrsRating.good);
+      expect(cubit.state.currentIndex, 1);
+      expect(fakeStorage.storage['__kortex_deck_checkpoint_index_d1'], '1');
+
+      // 3. Take a break (finishEarly)
+      await cubit.finishEarly();
+      expect(cubit.state.status, StudySessionStatus.finished);
+
+      // 4. Start a new session on d1 -> automatically resumes at index 1!
+      final newCubit = StudySessionCubit(
+        getDeckCardsUseCase: GetDeckCardsUseCase(fakeRepo),
+        saveSessionResultsUseCase: SaveSessionResultsUseCase(fakeRepo),
+        localStorageService: fakeStorage,
+      );
+      await newCubit.startSession('d1');
+      expect(newCubit.state.currentIndex, 1);
+      expect(newCubit.state.currentCard?.id, 'c2');
+
+      // 5. Finish remaining cards
+      await newCubit.rateCard(FsrsRating.good); // now at index 2
+      expect(newCubit.state.currentIndex, 2);
+      await newCubit.rateCard(FsrsRating.easy); // finishes deck
+
+      expect(newCubit.state.status, StudySessionStatus.finished);
+      // Checkpoint must be cleared on deck completion
+      expect(fakeStorage.storage['__kortex_deck_checkpoint_index_d1'], isNull);
+
+      unawaited(newCubit.close());
+    });
   });
 }

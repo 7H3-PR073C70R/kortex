@@ -557,4 +557,48 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     } on Object catch (_) {}
     return _getLocalPersistedDocuments();
   }
+
+  @override
+  Future<void> deleteDocument(String documentId) async {
+    // 1. Remove from in-memory cache
+    _documentBytesCache.remove(documentId);
+    _documentFilenamesCache.remove(documentId);
+
+    // 2. Remove from local persisted storage
+    try {
+      final storage = _localStorage;
+      if (storage != null) {
+        final existingDocs = _getLocalPersistedDocuments();
+        final targetDoc = existingDocs.cast<DocumentUploadModel?>().firstWhere(
+              (d) => d?.id == documentId,
+              orElse: () => null,
+            );
+        final updated = existingDocs.where((d) => d.id != documentId).toList();
+        await storage.savePreference(
+          key: PrefKeys.persistedUserDocuments,
+          data: jsonEncode(updated.map((d) => d.toJson()).toList()),
+        );
+
+        if (targetDoc != null) {
+          final baseName = targetDoc.filename
+              .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+              .toLowerCase()
+              .trim();
+          await storage.deletePreference(key: 'extracted_doc_${targetDoc.contentHash}');
+          await storage.deletePreference(key: 'extracted_doc_${targetDoc.id}');
+          await storage.deletePreference(key: 'extracted_doc_$baseName');
+        }
+      }
+    } on Object catch (_) {}
+
+    // 3. Delete from Supabase remote database if authenticated
+    final token = _userStorage?.getToken();
+    if (token != null && token.isNotEmpty) {
+      try {
+        await _dio.delete<dynamic>(
+          '${AppApiEndpoint.baseUri}/rest/v1/documents?id=eq.$documentId',
+        );
+      } on Object catch (_) {}
+    }
+  }
 }

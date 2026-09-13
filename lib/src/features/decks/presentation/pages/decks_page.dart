@@ -14,6 +14,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/focus_mode_setup_modal.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_empty_state.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -666,16 +667,71 @@ class _DecksView extends HookWidget {
 
                   // 4. Decks List / Empty State
                   if (state.filteredDecks.isEmpty)
-                    AppEmptyState(
-                      title: l10n.decksEmptyStateTitle,
-                      subtitle: l10n.decksEmptyStateSubtitle,
-                      primaryActionLabel: l10n.decksCreateDeckButton,
-                      onPrimaryAction: () => _showDeckCreationSheet(context),
-                      secondaryActionLabel: l10n.decksUploadDocTitle,
-                      onSecondaryAction: () => unawaited(
-                        context.router.push(DocumentIngestionRoute()),
-                      ),
-                    )
+                    if (state.activeFilter == 'due')
+                      AppEmptyState(
+                        isHappy: true,
+                        title: 'All Caught Up! 🎉',
+                        subtitle: state.allDecks.isEmpty
+                            ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
+                            : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
+                        primaryActionLabel: state.allDecks.isEmpty
+                            ? l10n.decksCreateDeckButton
+                            : 'Review All Decks',
+                        onPrimaryAction: () {
+                          if (state.allDecks.isEmpty) {
+                            _showDeckCreationSheet(context);
+                          } else {
+                            context.read<DecksBloc>().add(
+                                  const DecksFilterChanged('all'),
+                                );
+                          }
+                        },
+                        secondaryActionLabel: state.allDecks.isEmpty
+                            ? l10n.decksUploadDocTitle
+                            : 'Practice with Syllabot AI',
+                        onSecondaryAction: () {
+                          if (state.allDecks.isEmpty) {
+                            unawaited(
+                              context.router.push(DocumentIngestionRoute()),
+                            );
+                          } else {
+                            unawaited(
+                              context.router.push(
+                                SyllabotChatRoute(
+                                  initialPrompt:
+                                      'Give me a 5-question Socratic review drill across my active subjects.',
+                                  initialMode: SocraticMode.examSim,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      )
+                    else if (state.activeFilter == 'mastered')
+                      AppEmptyState(
+                        title: 'No Mastered Decks Yet 🎯',
+                        subtitle:
+                            'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
+                        primaryActionLabel: 'Review All Decks',
+                        onPrimaryAction: () => context.read<DecksBloc>().add(
+                              const DecksFilterChanged('all'),
+                            ),
+                        secondaryActionLabel: l10n.decksCreateDeckButton,
+                        onSecondaryAction: () =>
+                            _showDeckCreationSheet(context),
+                      )
+                    else
+                      AppEmptyState(
+                        title: l10n.decksEmptyStateTitle,
+                        subtitle: l10n.decksEmptyStateSubtitle,
+                        primaryActionLabel: l10n.decksCreateDeckButton,
+                        onPrimaryAction: () =>
+                            _showDeckCreationSheet(context),
+                        secondaryActionLabel: l10n.decksUploadDocTitle,
+                        onSecondaryAction: () => unawaited(
+                          context.router.push(DocumentIngestionRoute()),
+                        ),
+                      )
                   else
                     ...state.filteredDecks.map((deck) {
                       return Padding(

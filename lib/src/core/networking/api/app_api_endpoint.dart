@@ -114,4 +114,7 @@ class AppApiEndpoint {
       '/rest/v1/notification_preferences';
   static const String notificationsInbox =
       '/rest/v1/notifications?order=created_at.desc';
+
+  // Monetization & Promo Codes
+  static const String redeemPromoCodeRpc = '/rest/v1/rpc/redeem_promo_code';
 }

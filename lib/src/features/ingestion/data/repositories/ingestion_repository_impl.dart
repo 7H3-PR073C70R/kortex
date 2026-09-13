@@ -96,6 +96,13 @@ class IngestionRepositoryImpl implements IngestionRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteDocument(String documentId) {
+    return _remoteDataSource
+        .deleteDocument(documentId)
+        .makeRequest();
+  }
+
+  @override
   Future<Either<Failure, DeckEntity>> generateFlashcardsFromDoc({
     required String documentId,
     required String deckTitle,

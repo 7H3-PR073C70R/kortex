@@ -25,6 +25,8 @@ abstract class UserActivityService {
   int getWeeklyMinutesStudied();
   double getOverallRetentionRate();
   int getXpPoints();
+  int getBonusKarma();
+  Future<void> addBonusKarma(int amount);
   String getAcademicRank();
   List<HeatMapDayModel> getHeatMapData();
   bool hasStudiedToday();
@@ -42,6 +44,7 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _lastStudyDateKey = '__kortex_last_study_date';
   static const String _streakFreezesKey = '__kortex_streak_freezes';
   static const String _spentXpKey = '__kortex_spent_xp';
+  static const String _bonusKarmaKey = '__kortex_bonus_karma';
 
   @override
   int getStreakFreezes() {
@@ -261,6 +264,22 @@ class UserActivityServiceImpl implements UserActivityService {
   }
 
   @override
+  int getBonusKarma() {
+    final raw = _localStorageService.getPreference(key: _bonusKarmaKey);
+    if (raw == null || raw.isEmpty) return 0;
+    return int.tryParse(raw) ?? 0;
+  }
+
+  @override
+  Future<void> addBonusKarma(int amount) async {
+    final current = getBonusKarma();
+    await _localStorageService.savePreference(
+      key: _bonusKarmaKey,
+      data: (current + amount).toString(),
+    );
+  }
+
+  @override
   int getXpPoints() {
     final sessions = _getSessions();
     var xp = 0;
@@ -271,7 +290,7 @@ class UserActivityServiceImpl implements UserActivityService {
       xp += (cards * 10) + (minutes * 5) + 50;
     }
     final streak = getCurrentStreak();
-    final totalEarned = xp + (streak * 30);
+    final totalEarned = xp + (streak * 30) + getBonusKarma();
     return (totalEarned - getSpentXp()).clamp(0, 9999999);
   }
 

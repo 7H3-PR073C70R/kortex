@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
+import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/services/deep_document_dedup_service.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_user_documents_use_case.dart';
@@ -56,6 +57,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     on<UpdateSnippetContentEvent>(_onUpdateSnippetContent);
     on<GenerateFlashcardsFromSnippetsEvent>(_onGenerateFlashcards);
     on<FetchUserDocumentsEvent>(_onFetchUserDocuments);
+    on<DeleteUserDocumentEvent>(_onDeleteUserDocument);
     on<ResetIngestionStateEvent>(_onResetIngestionState);
     on<ProcessCameraImageEvent>(_onProcessCameraImage);
     on<FetchLmsCoursesEvent>(_onFetchLmsCourses);
@@ -689,6 +691,44 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         );
       },
     );
+  }
+
+  Future<void> _onDeleteUserDocument(
+    DeleteUserDocumentEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final targetDoc = state.userDocuments
+        .cast<DocumentUploadEntity?>()
+        .firstWhere((d) => d?.id == event.documentId, orElse: () => null);
+
+    final updatedDocs = state.userDocuments
+        .where((d) => d.id != event.documentId)
+        .toList();
+
+    emit(state.copyWith(userDocuments: updatedDocs));
+
+    // Delete in repository / remote & local cache
+    try {
+      if (locator.isRegistered<IngestionRepository>()) {
+        await locator<IngestionRepository>().deleteDocument(event.documentId);
+      }
+    } on Object catch (_) {}
+
+    // Clean up local storage references
+    try {
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      if (storage != null && targetDoc != null) {
+        final baseName = targetDoc.filename
+            .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+            .toLowerCase()
+            .trim();
+        await storage.deletePreference(key: 'extracted_doc_${targetDoc.contentHash}');
+        await storage.deletePreference(key: 'extracted_doc_${targetDoc.id}');
+        await storage.deletePreference(key: 'extracted_doc_$baseName');
+      }
+    } on Object catch (_) {}
   }
 
   Future<void> _onProcessCameraImage(

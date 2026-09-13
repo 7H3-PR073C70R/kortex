@@ -22,6 +22,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
+import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
@@ -153,6 +154,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               }),
             );
           } on Object catch (_) {}
+          _syncDeviceToken(profile.id);
         }
       },
     );
@@ -172,6 +174,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             : AuthStatus.unauthenticated,
       ),
     );
+  }
+
+  void _syncDeviceToken([String? userId]) {
+    if (locator.isRegistered<NotificationService>()) {
+      try {
+        unawaited(
+          locator<NotificationService>()
+              .syncDeviceTokenWithBackend(userId: userId),
+        );
+      } on Object catch (_) {}
+    }
   }
 
   Future<void> _onLoginRequested(
@@ -218,6 +231,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             try {
               unawaited(RevenueCatService.instance.init(user.id));
             } on Object catch (_) {}
+            _syncDeviceToken(user.id);
           }
           add(const AuthProfileFetchRequested());
         },
@@ -270,6 +284,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                   key: PrefKeys.hasSeenWelcomeWalkthrough,
                 ),
               );
+              if (event.promoCode != null &&
+                  event.promoCode!.trim().isNotEmpty) {
+                unawaited(
+                  locator<RedeemPromoCodeUseCase>()(
+                    RedeemPromoCodeParams(code: event.promoCode!.trim()),
+                  ),
+                );
+              }
             } on Object catch (_) {}
             emit(
               state.copyWith(
@@ -279,8 +301,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 user: user,
               ),
             );
+            if (user.id.isNotEmpty) {
+              _syncDeviceToken(user.id);
+            }
             add(const AuthProfileFetchRequested());
           } else {
+            if (event.promoCode != null &&
+                event.promoCode!.trim().isNotEmpty) {
+              try {
+                unawaited(
+                  locator<LocalStorageService>().savePreference(
+                    key: PrefKeys.pendingPromoCode,
+                    data: event.promoCode!.trim(),
+                  ),
+                );
+              } on Object catch (_) {}
+            }
             emit(
               state.copyWith(
                 status: AuthStatus.needsEmailVerification,
@@ -337,6 +373,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               key: PrefKeys.hasSeenWelcomeWalkthrough,
             ),
           );
+
+          try {
+            final pendingPromo = locator<LocalStorageService>()
+                .getPreference(key: PrefKeys.pendingPromoCode);
+            if (pendingPromo != null && pendingPromo.trim().isNotEmpty) {
+              unawaited(
+                locator<LocalStorageService>().deletePreference(
+                  key: PrefKeys.pendingPromoCode,
+                ),
+              );
+              unawaited(
+                locator<RedeemPromoCodeUseCase>()(
+                  RedeemPromoCodeParams(code: pendingPromo.trim()),
+                ),
+              );
+            }
+          } on Object catch (_) {}
           emit(
             state.copyWith(
               status: AuthStatus.needsOnboarding,
@@ -345,6 +398,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               user: user,
             ),
           );
+          if (user.id.isNotEmpty) {
+            try {
+              unawaited(RevenueCatService.instance.init(user.id));
+            } on Object catch (_) {}
+            _syncDeviceToken(user.id);
+          }
           add(const AuthProfileFetchRequested());
         },
       );
@@ -391,6 +450,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             try {
               unawaited(RevenueCatService.instance.init(user.id));
             } on Object catch (_) {}
+            _syncDeviceToken(user.id);
           }
           add(const AuthProfileFetchRequested());
         },
@@ -534,12 +594,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 : AuthSessionStatus.authenticatedNeedsOnboarding,
           ),
         );
-        try {
-          unawaited(
-            locator<NotificationService>()
-                .syncDeviceTokenWithBackend(userId: profile.id),
-          );
-        } on Object catch (_) {}
+        _syncDeviceToken(profile.id);
         if (profile.id.isNotEmpty) {
           try {
             unawaited(

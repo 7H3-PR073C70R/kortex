@@ -56,30 +56,53 @@ class FileDropZoneWidget extends HookWidget {
       if (storage == null) return null;
 
       final hash = sha256.convert(bytes).toString();
-
-      // Check by content hash
-      final byHash = storage.getPreference(key: 'extracted_doc_$hash');
-      if (byHash != null) {
-        final decoded = jsonDecode(byHash) as Map<String, dynamic>;
-        return {
-          'deckId': decoded['deckId'] as String? ?? 'deck_${hash.substring(0, 8)}',
-          'deckTitle':
-              decoded['deckTitle'] as String? ??
-              filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
-        };
-      }
-
-      // Check by normalized base filename
       final baseName = filename
           .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
           .toLowerCase()
           .trim();
-      final byName = storage.getPreference(key: 'extracted_doc_$baseName');
-      if (byName != null) {
-        final decoded = jsonDecode(byName) as Map<String, dynamic>;
+
+      String? deckId;
+      String? deckTitle;
+
+      // Check by content hash
+      final byHash = storage.getPreference(key: 'extracted_doc_$hash');
+      if (byHash != null) {
+        try {
+          final decoded = jsonDecode(byHash) as Map<String, dynamic>;
+          deckId = decoded['deckId'] as String?;
+          deckTitle = decoded['deckTitle'] as String?;
+        } on Object catch (_) {}
+      }
+
+      // Check by normalized base filename if not found by hash
+      if (deckId == null || deckId.isEmpty) {
+        final byName = storage.getPreference(key: 'extracted_doc_$baseName');
+        if (byName != null) {
+          try {
+            final decoded = jsonDecode(byName) as Map<String, dynamic>;
+            deckId = decoded['deckId'] as String?;
+            deckTitle = decoded['deckTitle'] as String?;
+          } on Object catch (_) {}
+        }
+      }
+
+      if (deckId != null && deckId.isNotEmpty) {
+        // Verify deck actually exists if DecksBloc is loaded
+        if (locator.isRegistered<DecksBloc>()) {
+          final decksBloc = locator<DecksBloc>();
+          final allDecks = decksBloc.state.allDecks;
+          if (allDecks.isNotEmpty && !allDecks.any((d) => d.id == deckId)) {
+            // Deck was deleted! Purge stale extraction markers
+            unawaited(storage.deletePreference(key: 'extracted_doc_$hash'));
+            unawaited(storage.deletePreference(key: 'extracted_doc_$baseName'));
+            unawaited(storage.deletePreference(key: 'extracted_doc_$deckId'));
+            return null;
+          }
+        }
+
         return {
-          'deckId': decoded['deckId'] as String? ?? '',
-          'deckTitle': decoded['deckTitle'] as String? ?? baseName,
+          'deckId': deckId,
+          'deckTitle': deckTitle ?? filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
         };
       }
     } on Object catch (_) {}

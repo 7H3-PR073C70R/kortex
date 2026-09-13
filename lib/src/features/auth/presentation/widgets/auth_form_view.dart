@@ -41,6 +41,8 @@ class AuthFormView extends HookWidget {
     final nameController = useTextEditingController(
       text: draftState.displayName,
     );
+    final promoCodeController = useTextEditingController();
+    final showPromoField = useState<bool>(false);
     final otpController = useTextEditingController();
 
     useEffect(
@@ -84,6 +86,7 @@ class AuthFormView extends HookWidget {
       final email = emailController.text.trim();
       final password = passwordController.text;
       final name = nameController.text.trim();
+      final promoCode = promoCodeController.text.trim();
 
       if (email.isEmpty || password.isEmpty) return;
 
@@ -93,6 +96,7 @@ class AuthFormView extends HookWidget {
             email: email,
             password: password,
             displayName: name.isNotEmpty ? name : null,
+            promoCode: promoCode.isNotEmpty ? promoCode : null,
           ),
         );
       } else {
@@ -284,6 +288,58 @@ class AuthFormView extends HookWidget {
                             ),
                           ),
                         ),
+
+                        // Promo Code Field (Optional, for Register mode)
+                        if (isRegister) ...[
+                          const SizedBox(height: 10),
+                          if (!showPromoField.value &&
+                              promoCodeController.text.isEmpty) ...[
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  showPromoField.value = true;
+                                },
+                                icon: Icon(
+                                  Icons.card_giftcard_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                                label: Text(
+                                  'Have a promo code?',
+                                  style: typography.caption.medium.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            Semantics(
+                              textField: true,
+                              label: 'Promo Code',
+                              hint: 'Enter promo code if you have one',
+                              child: AppTextField(
+                                label: 'Promo Code (Optional)',
+                                hintText: 'e.g. ori0n_pr073c7',
+                                controller: promoCodeController,
+                                prefixIcon: const Icon(
+                                  Icons.confirmation_number_outlined,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
 
                         // Forgot Password Link (Login mode only)
                         if (!isRegister) ...[

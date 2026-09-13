@@ -44,14 +44,16 @@ class AuthRegisterRequested extends AuthEvent {
     required this.email,
     required this.password,
     this.displayName,
+    this.promoCode,
   });
 
   final String email;
   final String password;
   final String? displayName;
+  final String? promoCode;
 
   @override
-  List<Object?> get props => [email, password, displayName];
+  List<Object?> get props => [email, password, displayName, promoCode];
 }
 
 /// Dispatched when a user submits a 6-digit OTP code to verify signup or login.

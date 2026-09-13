@@ -175,5 +175,18 @@ void main() {
       expect(activityService.getSpentXp(), equals(200));
       expect(activityService.getXpPoints(), equals(105)); // 305 - 200 = 105
     });
+
+    test('addBonusKarma persists bonus karma and increases overall XP', () async {
+      expect(activityService.getBonusKarma(), equals(0));
+      expect(activityService.getXpPoints(), equals(0));
+
+      await activityService.addBonusKarma(25);
+      expect(activityService.getBonusKarma(), equals(25));
+      expect(activityService.getXpPoints(), equals(25));
+
+      await activityService.addBonusKarma(50);
+      expect(activityService.getBonusKarma(), equals(75));
+      expect(activityService.getXpPoints(), equals(75));
+    });
   });
 }

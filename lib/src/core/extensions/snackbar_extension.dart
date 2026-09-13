@@ -24,9 +24,22 @@ extension BuildContextExtension on BuildContext {
       DismissDirection.horizontal,
       DismissDirection.down,
     ],
+    OverlayState? overlay,
   }) {
+    var overlayState = overlay ?? Overlay.maybeOf(this);
+    if (overlayState == null) {
+      if (this is StatefulElement &&
+          (this as StatefulElement).state is NavigatorState) {
+        overlayState =
+            ((this as StatefulElement).state as NavigatorState).overlay;
+      } else {
+        overlayState = Navigator.maybeOf(this)?.overlay;
+      }
+    }
+    if (overlayState == null) return;
+
     showTopSnackBar(
-      Overlay.of(this),
+      overlayState,
       _ThemedDistinctSnackBar(
         message: message,
         type: type,

@@ -302,5 +302,8 @@ void _initUseCaseLocator() {
     )
     ..registerLazySingleton<DeleteAccountUseCase>(
       () => DeleteAccountUseCase(locator<ProfileRepository>()),
+    )
+    ..registerLazySingleton<RedeemPromoCodeUseCase>(
+      () => RedeemPromoCodeUseCase(locator<PromoCodeRepository>()),
     );
 }

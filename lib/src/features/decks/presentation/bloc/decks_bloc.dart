@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -47,6 +48,13 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
     if (locator.isRegistered<DashboardBloc>()) {
       locator<DashboardBloc>().add(DashboardDeckDeleted(event.deckId));
     }
+
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        final storage = locator<LocalStorageService>();
+        await storage.deletePreference(key: 'extracted_doc_${event.deckId}');
+      }
+    } on Object catch (_) {}
 
     if (_deleteDeckUseCase != null) {
       await _deleteDeckUseCase(event.deckId);

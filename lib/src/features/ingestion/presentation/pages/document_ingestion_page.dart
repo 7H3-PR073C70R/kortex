@@ -372,6 +372,25 @@ class _DocumentIngestionView extends HookWidget {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: colors.textSecondary.withAlpha(180),
+                                        size: 20,
+                                      ),
+                                      tooltip: 'Delete Document',
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                      onPressed: () => _confirmDeleteDocument(
+                                        context: context,
+                                        doc: doc,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 if (hasCourseContext) ...[
@@ -527,5 +546,58 @@ class _DocumentIngestionView extends HookWidget {
       }
     }
     return false;
+  }
+
+  Future<void> _confirmDeleteDocument({
+    required BuildContext context,
+    required DocumentUploadEntity doc,
+  }) async {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.isDarkMode
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete Document?',
+          style: typography.headline.bold.copyWith(color: colors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to remove "${doc.filename}" from recently ingested documents?',
+          style: typography.body.regular.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: typography.body.bold.copyWith(color: colors.textSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<IngestionBloc>().add(DeleteUserDocumentEvent(doc.id));
+      context.showSnackBar(
+        message: '"${doc.filename}" removed from ingested documents.',
+        type: SnackBarType.success,
+      );
+    }
   }
 }

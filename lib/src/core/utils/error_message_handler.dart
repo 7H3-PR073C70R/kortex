@@ -102,6 +102,18 @@ extension ErrorHandler on Exception {
   static String _cleanUserMessage(String raw) {
     final lower = raw.toLowerCase();
 
+    // HTML error pages from proxies / CDN / CloudFront / Cloudflare
+    if (lower.contains('<!doctype') ||
+        lower.contains('<html') ||
+        lower.contains('cloudfront') ||
+        lower.contains('cloudflare') ||
+        lower.contains('the request could not be satisfied') ||
+        lower.contains('494 error') ||
+        lower.contains('request header or cookie too large') ||
+        lower.contains('bad request')) {
+      return 'The remote service is temporarily unavailable or rejected the request. Please check your credentials or network and try again.';
+    }
+
     // Database or internal technical failure patterns
     if (lower.contains('database error') ||
         lower.contains('saving new user') ||

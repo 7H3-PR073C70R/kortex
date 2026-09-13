@@ -119,7 +119,12 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/process_stem_ocr_
 import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_document_use_case.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/controllers/onboarding_stream_controller.dart';
+import 'package:kortex/src/features/monetization/data/datasources/promo_code_remote_data_source.dart';
+import 'package:kortex/src/features/monetization/data/datasources/promo_code_remote_data_source_impl.dart';
+import 'package:kortex/src/features/monetization/data/repositories/promo_code_repository_impl.dart';
+import 'package:kortex/src/features/monetization/domain/repositories/promo_code_repository.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
+import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/curriculum_remote_data_source.dart';

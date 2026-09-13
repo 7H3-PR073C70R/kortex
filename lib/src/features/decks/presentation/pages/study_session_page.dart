@@ -8,6 +8,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -404,7 +405,12 @@ class _StudySessionView extends HookWidget {
                       elapsedTimeFormatted: context.read<StudySessionCubit>().isSpeedRun
                           ? context.read<StudySessionCubit>().formattedRemainingTime(state.elapsedSeconds)
                           : state.formattedElapsedTime,
-                      onClose: () => unawaited(context.router.maybePop()),
+                      onClose: () async {
+                        await context.read<StudySessionCubit>().saveSessionCheckpoint();
+                        if (context.mounted) {
+                          unawaited(context.router.maybePop());
+                        }
+                      },
                     ),
                     const SizedBox(height: 10),
 
@@ -860,6 +866,26 @@ class _StudySessionView extends HookWidget {
                     onPressed: () {
                       unawaited(HapticFeedback.mediumImpact());
                       Navigator.of(sheetContext).pop();
+
+                      final studyCubit = context.read<StudySessionCubit>();
+                      final cardsCrushed = studyCubit.state.currentIndex;
+                      final deckTitle = studyCubit.state.deckId;
+
+                      if (locator.isRegistered<CommunityHubBloc>()) {
+                        locator<CommunityHubBloc>().add(
+                          CreateForumPostEvent(
+                            title: '🔥 Smashed a $cardsCrushed-Card Sprint Milestone!',
+                            content: 'Crushed $cardsCrushed cards in a focused study sprint ($deckTitle)! Studying with cohort on Kortex. 🚀',
+                            track: 'General',
+                            syllabusTag: 'Sprint Milestone',
+                          ),
+                        );
+                      }
+
+                      if (locator.isRegistered<UserActivityService>()) {
+                        unawaited(locator<UserActivityService>().addBonusKarma(25));
+                      }
+
                       context.showSnackBar(
                         message: 'Milestone shared with your Study Circle! 🎉 +25 Pod Karma',
                         type: SnackBarType.success,

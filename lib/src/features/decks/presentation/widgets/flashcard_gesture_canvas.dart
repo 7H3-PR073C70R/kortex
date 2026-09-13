@@ -84,24 +84,24 @@ class FlashcardGestureCanvas extends HookWidget {
           routeColor = colors.recallGood;
           routeLabel = l10n.studyRatingGood;
           routeIcon = Icons.thumb_up_rounded;
-          dragProgress = (dx / 120).clamp(0.0, 1.0);
+          dragProgress = (dx / 150).clamp(0.0, 1.0);
         } else {
           routeColor = colors.recallHard;
           routeLabel = l10n.studyRatingHard;
           routeIcon = Icons.bolt_rounded;
-          dragProgress = (dx.abs() / 120).clamp(0.0, 1.0);
+          dragProgress = (dx.abs() / 150).clamp(0.0, 1.0);
         }
       } else {
         if (dy < 0) {
           routeColor = colors.recallEasy;
           routeLabel = l10n.studyRatingEasy;
           routeIcon = Icons.rocket_launch_rounded;
-          dragProgress = (dy.abs() / 100).clamp(0.0, 1.0);
+          dragProgress = (dy.abs() / 120).clamp(0.0, 1.0);
         } else {
           routeColor = colors.recallAgain;
           routeLabel = l10n.studyRatingAgain;
           routeIcon = Icons.replay_rounded;
-          dragProgress = (dy / 100).clamp(0.0, 1.0);
+          dragProgress = (dy / 120).clamp(0.0, 1.0);
         }
       }
     }
@@ -125,17 +125,19 @@ class FlashcardGestureCanvas extends HookWidget {
         final currentDx = dragOffset.value.dx;
         final currentDy = dragOffset.value.dy;
         final velocity = details.velocity.pixelsPerSecond;
+        final screenSize = MediaQuery.of(context).size;
 
-        // Velocity & threshold evaluation
-        final isFlickLeft = (velocity.dx < -450 && currentDx < -30) || currentDx < -90;
-        final isFlickRight = (velocity.dx > 450 && currentDx > 30) || currentDx > 90;
-        final isFlickUp = (velocity.dy < -450 && currentDy < -30) || currentDy < -80;
-        final isFlickDown = (velocity.dy > 450 && currentDy > 30) || currentDy > 80;
+        final horizontalThreshold = screenSize.width * 0.42;
+        final verticalThreshold = screenSize.height * 0.35;
+
+        // Velocity & threshold evaluation: must cross 42% screen width or be a strong intentional flick (> 700 px/s)
+        final isFlickLeft = (velocity.dx < -700 && currentDx < -screenSize.width * 0.2) || currentDx < -horizontalThreshold;
+        final isFlickRight = (velocity.dx > 700 && currentDx > screenSize.width * 0.2) || currentDx > horizontalThreshold;
+        final isFlickUp = (velocity.dy < -700 && currentDy < -screenSize.height * 0.15) || currentDy < -verticalThreshold;
+        final isFlickDown = (velocity.dy > 700 && currentDy > screenSize.height * 0.15) || currentDy > verticalThreshold;
 
         VoidCallback? swipeCallback;
         var targetOffset = Offset.zero;
-
-        final screenSize = MediaQuery.of(context).size;
 
         if (currentDx.abs() >= currentDy.abs()) {
           if (isFlickLeft) {
@@ -179,13 +181,13 @@ class FlashcardGestureCanvas extends HookWidget {
           motionController.addListener(flyListener);
           unawaited(motionController.forward());
         } else {
-          // Swiped halfway or canceled: smoothly snap back to center with spring curve
+          // Swiped halfway or less / canceled: smoothly snap back to center with spring curve
           snapStartOffset.value = dragOffset.value;
           snapTargetOffset.value = Offset.zero;
           motionController.reset();
 
           void snapListener() {
-            final t = Curves.easeOutCubic.transform(motionController.value);
+            final t = Curves.easeOutBack.transform(motionController.value);
             dragOffset.value = Offset.lerp(
               snapStartOffset.value,
               snapTargetOffset.value,

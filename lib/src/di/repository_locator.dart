@@ -103,5 +103,11 @@ void _initRepositoryLocator() {
       () => QuizDuelRepositoryImpl(
         client: locator<QuizDuelWebSocketClient>(),
       ),
+    )
+    ..registerLazySingleton<PromoCodeRepository>(
+      () => PromoCodeRepositoryImpl(
+        remoteDataSource: locator<PromoCodeRemoteDataSource>(),
+        userStorageService: locator<UserStorageService>(),
+      ),
     );
 }

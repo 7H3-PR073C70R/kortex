@@ -13,6 +13,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
@@ -131,6 +132,48 @@ class _CalibrationView extends StatelessWidget {
                               CalibrationStepTracker(
                                 currentStep: state.currentStepIndex,
                                 totalSteps: state.totalSteps,
+                              ),
+                              const SizedBox(width: 8),
+                              Semantics(
+                                button: true,
+                                label: 'Redeem Promo Code',
+                                child: GestureDetector(
+                                  onTap: () => unawaited(
+                                    PromoCodeModalSheet.show(context),
+                                  ),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary.withAlpha(context.isDarkMode ? 35 : 25),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: colors.primary.withAlpha(context.isDarkMode ? 90 : 70),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.card_giftcard_rounded,
+                                          size: 13,
+                                          color: colors.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Promo',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.primary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Semantics(

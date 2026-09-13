@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -29,6 +30,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     DecksRepository? decksRepository,
     FsrsScheduler? fsrsScheduler,
     CardSyncQueue? cardSyncQueue,
+    LocalStorageService? localStorageService,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
        _decksRepository = decksRepository ??
@@ -40,6 +42,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
            (locator.isRegistered<CardSyncQueue>()
                ? locator<CardSyncQueue>()
                : CardSyncQueue()),
+       _localStorageService = localStorageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null),
        super(const StudySessionState());
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
@@ -47,6 +53,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   final DecksRepository? _decksRepository;
   final FsrsScheduler _fsrsScheduler;
   final CardSyncQueue _cardSyncQueue;
+  final LocalStorageService? _localStorageService;
 
   /// Exposes active FsrsScheduler for testing and metrics.
   FsrsScheduler get fsrsScheduler => _fsrsScheduler;
@@ -129,12 +136,81 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     return selected..shuffle();
   }
 
+  /// Saves current deck study progress checkpoint to LocalStorage
+  Future<void> saveSessionCheckpoint({int? index, int? elapsedSeconds}) async {
+    if (state.deckId.isEmpty) return;
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage != null) {
+        final saveIdx = index ?? state.currentIndex;
+        final saveElapsed = elapsedSeconds ?? state.elapsedSeconds;
+        await storage.savePreference(
+          key: '__kortex_deck_checkpoint_index_${state.deckId}',
+          data: saveIdx.toString(),
+        );
+        await storage.savePreference(
+          key: '__kortex_deck_checkpoint_elapsed_${state.deckId}',
+          data: saveElapsed.toString(),
+        );
+      }
+    } on Object catch (_) {}
+  }
+
+  /// Clears saved checkpoint when a deck is completed or reset
+  Future<void> clearSessionCheckpoint([String? deckId]) async {
+    final targetId = (deckId != null && deckId.isNotEmpty) ? deckId : state.deckId;
+    if (targetId.isEmpty) return;
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage != null) {
+        await storage.deletePreference(
+          key: '__kortex_deck_checkpoint_index_$targetId',
+        );
+        await storage.deletePreference(
+          key: '__kortex_deck_checkpoint_elapsed_$targetId',
+        );
+      }
+    } on Object catch (_) {}
+  }
+
+  /// Retrieves saved progress checkpoint for a deck
+  ({int index, int elapsedSeconds})? getSessionCheckpoint(String deckId) {
+    if (deckId.isEmpty) return null;
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage != null) {
+        final rawIndex = storage.getPreference(
+          key: '__kortex_deck_checkpoint_index_$deckId',
+        );
+        final rawElapsed = storage.getPreference(
+          key: '__kortex_deck_checkpoint_elapsed_$deckId',
+        );
+        if (rawIndex != null && rawIndex.isNotEmpty) {
+          final idx = int.tryParse(rawIndex) ?? 0;
+          final elapsed = int.tryParse(rawElapsed ?? '') ?? 0;
+          return (index: idx, elapsedSeconds: elapsed);
+        }
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
   Future<void> startSession(
     String deckId, {
     bool triageDebt = false,
     int sprintSize = 15,
     bool randomize = false,
     int? targetDurationSeconds,
+    bool resetProgress = false,
   }) async {
     _targetDurationSeconds = targetDurationSeconds;
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
@@ -196,13 +272,25 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       sessionCards = adaptiveShuffle(sessionCards, sprintSize);
     }
 
+    var initialIndex = 0;
+    var initialElapsed = 0;
+    if (!resetProgress && !randomize) {
+      final checkpoint = getSessionCheckpoint(deckId);
+      if (checkpoint != null &&
+          checkpoint.index > 0 &&
+          checkpoint.index < sessionCards.length) {
+        initialIndex = checkpoint.index;
+        initialElapsed = checkpoint.elapsedSeconds;
+      }
+    }
+
     emit(
       state.copyWith(
         status: StudySessionStatus.studying,
         cards: sessionCards,
-        currentIndex: 0,
+        currentIndex: initialIndex,
         isFlipped: false,
-        elapsedSeconds: 0,
+        elapsedSeconds: initialElapsed,
       ),
     );
 
@@ -468,6 +556,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       // 7. Trigger flush of queued card reviews upon session completion
       unawaited(_cardSyncQueue.flushPendingLogs());
 
+      // Clear checkpoint when all cards in deck are fully reviewed
+      unawaited(clearSessionCheckpoint(state.deckId));
+
       emit(
         state.copyWith(
           status: StudySessionStatus.finished,
@@ -480,10 +571,14 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         ),
       );
     } else {
+      final nextIndex = state.currentIndex + 1;
+      // Persist checkpoint to allow resumption when taking breaks
+      unawaited(saveSessionCheckpoint(index: nextIndex, elapsedSeconds: state.elapsedSeconds));
+
       emit(
         state.copyWith(
           cards: updatedCards,
-          currentIndex: state.currentIndex + 1,
+          currentIndex: nextIndex,
           isFlipped: false,
           againCount: newAgain,
           hardCount: newHard,
@@ -558,6 +653,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     unawaited(_cardSyncQueue.flushPendingLogs());
 
+    // Save checkpoint so the user can resume exactly where they left off when taking a break
+    unawaited(saveSessionCheckpoint(index: state.currentIndex, elapsedSeconds: state.elapsedSeconds));
+
     emit(
       state.copyWith(
         status: StudySessionStatus.finished,
@@ -568,6 +666,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   @override
   Future<void> close() {
     _timer?.cancel();
+    if (state.status == StudySessionStatus.studying) {
+      unawaited(saveSessionCheckpoint(index: state.currentIndex, elapsedSeconds: state.elapsedSeconds));
+    }
     return super.close();
   }
 }

@@ -106,6 +106,12 @@ final class FetchUserDocumentsEvent extends IngestionEvent {
   const FetchUserDocumentsEvent();
 }
 
+/// Delete a previously ingested document.
+final class DeleteUserDocumentEvent extends IngestionEvent {
+  const DeleteUserDocumentEvent(this.documentId);
+  final String documentId;
+}
+
 /// Toggle synthesis mode between Tier 1 (Fast Local) and Tier 2 (AI Smart).
 final class SetSynthesisModeEvent extends IngestionEvent {
   const SetSynthesisModeEvent(this.mode);

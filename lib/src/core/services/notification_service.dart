@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/notification_background_handler.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 
 /// Service managing push notifications, device token synchronization,
@@ -151,6 +152,13 @@ class NotificationService {
   Future<String?> getToken() async {
     if (!_isAvailable) return null;
     try {
+      if (!kIsWeb && (Platform.isIOS || Platform.isMacOS)) {
+        final apnsToken = await _messaging!.getAPNSToken();
+        if (apnsToken == null) {
+          developer.log('APNS token not available yet; FCM token sync will retry on refresh');
+          return null;
+        }
+      }
       return await _messaging!.getToken();
     } on Object catch (e) {
       developer.log('Failed to fetch FCM token: $e');
@@ -159,13 +167,18 @@ class NotificationService {
   }
 
   /// Sets up a listener for token refresh events to keep Supabase synced.
-  void setupTokenRefreshListener(String userId) {
-    if (!_isAvailable || userId.isEmpty) return;
+  void setupTokenRefreshListener([String? userId]) {
+    final effectiveUserId = (userId != null && userId.isNotEmpty)
+        ? userId
+        : (locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>().getUserId() ?? ''
+            : '');
+    if (!_isAvailable || effectiveUserId.isEmpty) return;
     unawaited(_tokenRefreshSubscription?.cancel());
     try {
       _tokenRefreshSubscription = _messaging!.onTokenRefresh.listen((newToken) {
         developer.log('FCM token refreshed: $newToken');
-        unawaited(syncDeviceTokenWithBackend(userId: userId));
+        unawaited(syncDeviceTokenWithBackend(userId: effectiveUserId));
       });
     } on Object catch (e) {
       developer.log('Failed to setup token refresh listener: $e');
@@ -174,17 +187,22 @@ class NotificationService {
 
   /// Synchronize the active FCM device registration token with the Supabase backend.
   Future<bool> syncDeviceTokenWithBackend({
-    required String userId,
+    String? userId,
     Dio? dio,
   }) async {
-    if (userId.isEmpty) return false;
+    final effectiveUserId = (userId != null && userId.isNotEmpty)
+        ? userId
+        : (locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>().getUserId() ?? ''
+            : '');
+    if (effectiveUserId.isEmpty) return false;
     try {
       await requestPermission();
       final token = await getToken();
       if (token == null || token.isEmpty) return false;
 
       // Ensure token refresh listener is active
-      setupTokenRefreshListener(userId);
+      setupTokenRefreshListener(effectiveUserId);
 
       final client = dio ?? _effectiveDio;
       if (client == null) return false;
@@ -209,7 +227,7 @@ class NotificationService {
       );
 
       developer.log(
-        'Device token synced with Supabase for user $userId (HTTP ${response.statusCode})',
+        'Device token synced with Supabase for user $effectiveUserId (HTTP ${response.statusCode})',
       );
       return response.statusCode == 200 || response.statusCode == 204;
     } on Object catch (e) {

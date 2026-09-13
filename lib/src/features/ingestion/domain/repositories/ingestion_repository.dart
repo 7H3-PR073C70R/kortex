@@ -26,6 +26,9 @@ abstract class IngestionRepository {
   /// Fetches all previously ingested documents for the authenticated user.
   Future<Either<Failure, List<DocumentUploadEntity>>> fetchUserDocuments();
 
+  /// Deletes a previously ingested document.
+  Future<Either<Failure, void>> deleteDocument(String documentId);
+
   /// Converts approved OCR snippets into an active recall Spaced
   /// Repetition Deck.
   Future<Either<Failure, DeckEntity>> generateFlashcardsFromDoc({

@@ -12,6 +12,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
+import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -309,7 +310,26 @@ class _PaywallScreenState extends State<PaywallScreen>
                     _buildTierPlansSelector(colors, typography, isDark),
                     SizedBox(height: 24.h),
                     _buildCtaButton(colors, typography, isDark),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 12.h),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed:
+                            _isProcessing ? null : _handlePromoCodeRedemption,
+                        icon: Icon(
+                          Icons.card_giftcard_rounded,
+                          size: 16,
+                          color: colors.primary,
+                        ),
+                        label: Text(
+                          'Have a promo code? Redeem here',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
                     _buildFooter(colors, typography, l10n),
                   ],
                 ),
@@ -682,6 +702,14 @@ class _PaywallScreenState extends State<PaywallScreen>
         ),
       ],
     );
+  }
+
+  Future<void> _handlePromoCodeRedemption() async {
+    final redeemed = await PromoCodeModalSheet.show(context);
+    if (redeemed == true && mounted) {
+      widget.onPurchaseSuccess?.call();
+      Navigator.of(context).pop(true);
+    }
   }
 
   Widget _buildCtaButton(

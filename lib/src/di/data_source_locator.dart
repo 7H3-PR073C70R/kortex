@@ -84,7 +84,12 @@ void _initDataSource() {
     )
     ..registerLazySingleton<LmsImportDataSource>(
       () => LmsImportDataSourceImpl(
-        dio: locator<Dio>(),
+        dio: Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+          ),
+        ),
       ),
     )
     ..registerLazySingleton<PastQuestionsLocalDataSource>(
@@ -106,6 +111,11 @@ void _initDataSource() {
     ..registerLazySingleton<CurriculumRemoteDataSource>(
       () => CurriculumRemoteDataSourceImpl(
         locator<Dio>(),
+      ),
+    )
+    ..registerLazySingleton<PromoCodeRemoteDataSource>(
+      () => PromoCodeRemoteDataSourceImpl(
+        dio: locator<Dio>(),
       ),
     );
 }

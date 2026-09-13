@@ -9,6 +9,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 
 /// AutoRouter guard directing users based on their active authentication
 /// and onboarding session status.
@@ -40,6 +41,7 @@ class AuthRouteGuard extends AutoRouteGuard {
         resolver.next();
       } else {
         resolver.next(false);
+        locator<AuthModeCubit>().resetToLogin();
         unawaited(router.replace(const AuthRoute()));
       }
       return;

@@ -101,6 +101,39 @@ class LocalPdfParserService {
           pageText = extractor.extractText(startPageIndex: i);
         }
 
+        // Restore ligatures
+        pageText = pageText
+            .replaceAll('ﬁ', 'fi')
+            .replaceAll('ﬂ', 'fl')
+            .replaceAll('ﬀ', 'ff')
+            .replaceAll('ﬃ', 'ffi')
+            .replaceAll('ﬄ', 'ffl');
+
+        final lower = pageText.toLowerCase().trim();
+
+        // Skip standard front-matter pages (Table of Contents, Dedication, Copyright)
+        if ((lower.contains('table of contents') || lower.contains('contents')) &&
+            (lower.contains('...') || lower.contains('. . .') || lower.contains('preface'))) {
+          continue;
+        }
+        if (lower.startsWith('preface') ||
+            lower.startsWith('acknowledgment') ||
+            lower.startsWith('acknowledgement') ||
+            lower.startsWith('about the author') ||
+            lower.startsWith('table of contents') ||
+            lower.startsWith('copyright ©') ||
+            lower.startsWith('all rights reserved')) {
+          continue;
+        }
+
+        final dotLines = pageText
+            .split('\n')
+            .where((l) => RegExp(r'\.{3,}|\.\s*\.\s*\.').hasMatch(l))
+            .length;
+        if (dotLines >= 3) {
+          continue;
+        }
+
         if (pageText.trim().isNotEmpty) {
           pageTexts.add(pageText);
         }

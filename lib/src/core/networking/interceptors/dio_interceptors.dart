@@ -66,16 +66,117 @@ class TokenInterceptor extends QueuedInterceptor {
     required this.storageService,
     required this.sessionExpiredService,
     Dio? refreshDio,
-  }) : _refreshDio = refreshDio ?? Dio();
+  }) : _refreshDio = refreshDio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 15),
+                sendTimeout: const Duration(seconds: 15),
+              ),
+            );
 
   final UserStorageService storageService;
   final SessionExpiredService sessionExpiredService;
   final Dio _refreshDio;
 
+  Completer<bool>? _refreshCompleter;
+
+  Future<bool> _refreshAccessToken() async {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    final completer = Completer<bool>();
+    _refreshCompleter = completer;
+
+    try {
+      final rawRefreshToken = storageService.getRefreshToken();
+      final refreshToken = rawRefreshToken?.trim();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        completer.complete(false);
+        return false;
+      }
+
+      debugPrint(
+        '[TokenInterceptor] Refreshing JWT access token with Supabase gateway...',
+      );
+
+      final response = await _refreshDio.post<Map<String, dynamic>>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.refreshToken}',
+        data: <String, dynamic>{
+          'refresh_token': refreshToken,
+        },
+        options: Options(
+          headers: <String, dynamic>{
+            'apikey': AppEnv.apiKey.trim(),
+            'Authorization': 'Bearer ${AppEnv.apiKey.trim()}',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      final data = response.data;
+      if (data != null && data.containsKey('access_token')) {
+        final newAccessToken = data['access_token'] as String;
+        final newRefreshToken =
+            data['refresh_token'] as String? ?? refreshToken;
+
+        await storageService.saveAuthTokens(
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        );
+
+        debugPrint(
+          '[TokenInterceptor] Token refresh successfully completed.',
+        );
+        completer.complete(true);
+        return true;
+      } else {
+        completer.complete(false);
+        return false;
+      }
+    } on Object catch (e) {
+      debugPrint('[TokenInterceptor] Token refresh failed: $e');
+      completer.complete(false);
+      return false;
+    } finally {
+      _refreshCompleter = null;
+    }
+  }
+
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final userToken = storageService.getToken();
-    final anonKey = AppEnv.apiKey;
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final path = options.path;
+    final isAuthEndpoint = path.contains('/auth/v1/token') ||
+        path.contains('/auth/v1/signup') ||
+        path.contains('/auth/v1/recover') ||
+        path.contains('/auth/v1/verify') ||
+        path.contains('/auth/v1/magiclink');
+
+    if (!isAuthEndpoint) {
+      // Pre-emptive check: If token is expired and refresh token is available, refresh it before dispatch
+      if (storageService.isTokenExpired()) {
+        final refreshToken = storageService.getRefreshToken();
+        if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+          debugPrint(
+            '[TokenInterceptor] Token is expired before request to $path. Pre-emptively refreshing...',
+          );
+          await _refreshAccessToken();
+        }
+      }
+    }
+
+    final rawUserToken = storageService.getToken();
+    final userToken = rawUserToken != null &&
+            rawUserToken.isNotEmpty &&
+            !rawUserToken.contains(' ') &&
+            !rawUserToken.contains('\n')
+        ? rawUserToken.trim()
+        : null;
+    final anonKey = AppEnv.apiKey.trim();
 
     if (anonKey.isNotEmpty) {
       options.headers['apikey'] = anonKey;
@@ -97,66 +198,42 @@ class TokenInterceptor extends QueuedInterceptor {
   ) async {
     if (_isJwtExpired(err)) {
       final path = err.requestOptions.path;
-      final isAuthEndpoint =
-          path.contains('/auth/v1/token') ||
+      final isAuthEndpoint = path.contains('/auth/v1/token') ||
           path.contains('/auth/v1/signup') ||
-          path.contains('/auth/v1/recover');
+          path.contains('/auth/v1/recover') ||
+          path.contains('/auth/v1/verify') ||
+          path.contains('/auth/v1/magiclink');
 
       if (!isAuthEndpoint) {
         final refreshToken = storageService.getRefreshToken();
-        if (refreshToken != null && refreshToken.isNotEmpty) {
-          try {
-            debugPrint(
-              '[TokenInterceptor] JWT expired. Attempting token refresh...',
-            );
-            final refreshResponse = await _refreshDio
-                .post<Map<String, dynamic>>(
-                  '${AppApiEndpoint.baseUri}${AppApiEndpoint.refreshToken}',
-                  data: {
-                    'refresh_token': refreshToken,
-                  },
-                  options: Options(
-                    headers: {
-                      'apikey': AppEnv.apiKey,
-                    },
-                  ),
-                );
+        if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+          debugPrint(
+            '[TokenInterceptor] Caught auth/token error on $path. Attempting token refresh...',
+          );
+          final refreshed = await _refreshAccessToken();
+          if (refreshed) {
+            final latestToken = storageService.getToken();
+            final options = err.requestOptions;
+            if (latestToken != null && latestToken.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $latestToken';
+            }
+            options.headers['apikey'] = AppEnv.apiKey.trim();
 
-            final data = refreshResponse.data;
-            if (data != null && data.containsKey('access_token')) {
-              final newAccessToken = data['access_token'] as String;
-              final newRefreshToken =
-                  data['refresh_token'] as String? ?? refreshToken;
-
-              await storageService.saveAuthTokens(
-                accessToken: newAccessToken,
-                refreshToken: newRefreshToken,
-              );
-
-              debugPrint(
-                '[TokenInterceptor] Token refresh succeeded. '
-                'Retrying request...',
-              );
-
-              // Update headers and retry original request
-              final options = err.requestOptions;
-              options.headers['Authorization'] = 'Bearer $newAccessToken';
-              options.headers['apikey'] = AppEnv.apiKey;
-
+            try {
               final response = await _refreshDio.fetch<dynamic>(options);
               handler.resolve(response);
               return;
+            } on DioException catch (retryErr) {
+              debugPrint(
+                '[TokenInterceptor] Retrying request after refresh threw: $retryErr',
+              );
             }
-          } on Object catch (refreshError) {
-            debugPrint(
-              '[TokenInterceptor] Token refresh failed: $refreshError',
-            );
           }
         }
 
         // Auto-logout and notify user if refresh is unavailable or failed
         debugPrint(
-          '[TokenInterceptor] Auto logging out due to expired session.',
+          '[TokenInterceptor] Auto logging out due to expired/unauthenticated session.',
         );
         storageService.clearStorage();
         sessionExpiredService.notifySessionExpired();
@@ -171,27 +248,95 @@ class TokenInterceptor extends QueuedInterceptor {
     if (statusCode == 401) return true;
 
     final data = err.response?.data;
-    if (data is Map<String, dynamic>) {
-      final code = data['code']?.toString().toUpperCase();
-      final message = data['message']?.toString().toLowerCase() ?? '';
-      final error = data['error']?.toString().toLowerCase() ?? '';
-      final errorDesc =
-          data['error_description']?.toString().toLowerCase() ?? '';
+    if (statusCode == 400 || statusCode == 403 || statusCode == 494) {
+      if (data is String) {
+        final lower = data.toLowerCase();
+        if (lower.contains('not authenticated') ||
+            lower.contains('unauthorized') ||
+            lower.contains('request header or cookie too large') ||
+            lower.contains('header too large') ||
+            lower.contains('cloudflare') ||
+            lower.contains('p0001') ||
+            lower.contains('pgrst301') ||
+            lower.contains('pgrst302') ||
+            lower.contains('pgrst303') ||
+            lower.contains('invalid jwt') ||
+            lower.contains('jwt expired') ||
+            lower.contains('token is expired')) {
+          return true;
+        }
+      } else if (data is Map) {
+        final map = Map<String, dynamic>.from(data);
+        final code = map['code']?.toString().toUpperCase() ?? '';
+        final message = map['message']?.toString().toLowerCase() ?? '';
+        final error = map['error']?.toString().toLowerCase() ?? '';
+        final errorDesc =
+            map['error_description']?.toString().toLowerCase() ?? '';
 
-      if (code == 'PGRST303' || code == 'PGRST301' || code == 'PGRST302') {
+        if (code == 'P0001' ||
+            code == 'PGRST303' ||
+            code == 'PGRST301' ||
+            code == 'PGRST302' ||
+            code == '401' ||
+            code == 'UNAUTHORIZED') {
+          return true;
+        }
+        if (message.contains('not authenticated') ||
+            message.contains('unauthorized') ||
+            message.contains('jwt expired') ||
+            message.contains('invalid jwt') ||
+            message.contains('token is expired') ||
+            message.contains('header too large')) {
+          return true;
+        }
+        if (error.contains('invalid_grant') ||
+            error.contains('unauthorized') ||
+            error.contains('not authenticated') ||
+            errorDesc.contains('expired') ||
+            errorDesc.contains('invalid') ||
+            errorDesc.contains('revoked')) {
+          return true;
+        }
+      }
+    }
+
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final code = map['code']?.toString().toUpperCase() ?? '';
+      final message = map['message']?.toString().toLowerCase() ?? '';
+      final error = map['error']?.toString().toLowerCase() ?? '';
+      final errorDesc =
+          map['error_description']?.toString().toLowerCase() ?? '';
+
+      if (code == 'P0001' ||
+          code == 'PGRST303' ||
+          code == 'PGRST301' ||
+          code == 'PGRST302' ||
+          code == '401' ||
+          code == 'UNAUTHORIZED') {
         return true;
       }
-      if (message.contains('jwt expired') ||
+      if (message.contains('not authenticated') ||
+          message.contains('unauthorized') ||
+          message.contains('jwt expired') ||
           message.contains('invalid jwt') ||
           message.contains('token is expired')) {
         return true;
       }
-      if (error.contains('invalid_grant') || errorDesc.contains('expired')) {
+      if (error.contains('invalid_grant') ||
+          error.contains('unauthorized') ||
+          error.contains('not authenticated') ||
+          errorDesc.contains('expired') ||
+          errorDesc.contains('invalid') ||
+          errorDesc.contains('revoked')) {
         return true;
       }
     } else if (data is String) {
       final lower = data.toLowerCase();
-      if (lower.contains('jwt expired') ||
+      if (lower.contains('not authenticated') ||
+          lower.contains('unauthorized') ||
+          lower.contains('p0001') ||
+          lower.contains('jwt expired') ||
           lower.contains('pgrst303') ||
           lower.contains('invalid jwt')) {
         return true;

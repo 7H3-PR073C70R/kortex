@@ -496,7 +496,9 @@ class LatexCardContentViewer extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: LatexRichViewer(
-                    text: opt.text,
+                    text: enableBionicReading
+                        ? BionicTextFormatter.format(opt.text)
+                        : opt.text,
                     style: typography.callout.regular.copyWith(
                       color: colors.textPrimary,
                       fontSize: 14.5,
@@ -520,7 +522,9 @@ class LatexCardContentViewer extends StatelessWidget {
 
     final baseStyle = isBackFace
         ? typography.callout.medium
-        : typography.title3.bold;
+        : enableBionicReading
+            ? typography.title3.regular
+            : typography.title3.bold;
 
     final parsed = isBackFace
         ? ParsedCardFaceContent(prompt: text)

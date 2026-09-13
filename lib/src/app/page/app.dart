@@ -47,16 +47,18 @@ class _AppState extends State<App> {
   }
 
   void _handleSessionExpired(String message) {
-    locator<AuthModeCubit>().resetToAiChat();
+    locator<AuthModeCubit>().resetToLogin();
     unawaited(_appRouter.replaceAll([const AuthRoute()]));
     locator<AuthBloc>().add(const AuthSignOutRequested());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final navContext = _appRouter.navigatorKey.currentContext;
+      final overlay = _appRouter.navigatorKey.currentState?.overlay;
       if (navContext != null && navContext.mounted) {
         navContext.showSnackBar(
           message: message,
           type: SnackBarType.error,
+          overlay: overlay,
         );
       }
     });

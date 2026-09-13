@@ -45,4 +45,5 @@ class PrefKeys {
   static const String lastSyllabotDate = '__kortex_last_syllabot_date__';
   static const String proEntitlementCacheDate =
       '__kortex_pro_entitlement_cache_date__';
+  static const String pendingPromoCode = '__kortex_pending_promo_code__';
 }

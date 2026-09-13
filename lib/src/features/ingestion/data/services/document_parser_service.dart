@@ -368,7 +368,6 @@ class DocumentParserService {
   }
 
   /// Synthesizes comprehensive, high-yield flashcard snippets from
-  /// Synthesizes comprehensive, high-yield flashcard snippets from
   /// the extracted document text using pure structural semantic parsing
   /// and strict NLP grammar validation (zero arbitrary quotas, zero broken fragments).
   List<OcrExtractionModel> synthesizeSnippetsFromDocument({
@@ -397,11 +396,19 @@ class DocumentParserService {
     var sections = _chunkIntoSections(lines);
 
     // Step 2: Semantic Paragraph Fallback for prose documents lacking formal headers
-    if (sections.isEmpty) {
-      sections = _extractSemanticParagraphSections(cleanFullText);
+    if (sections.isEmpty ||
+        (sections.length == 1 &&
+            lines.length >= 5 &&
+            sections.first.title == 'Key Concepts')) {
+      final paragraphSections =
+          _extractSemanticParagraphSections(cleanFullText);
+      if (paragraphSections.length > sections.length) {
+        sections = paragraphSections;
+      }
     }
 
     final snippets = <OcrExtractionModel>[];
+    final seenTopics = <String>{};
 
     for (final section in sections) {
       final cleanBody = _extractCompleteParagraphAnswer(section.content);
@@ -423,14 +430,22 @@ class DocumentParserService {
         continue;
       }
 
+      final normalizedTopic =
+          directQuestion!.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+      if (seenTopics.contains(normalizedTopic)) {
+        continue;
+      }
+      seenTopics.add(normalizedTopic);
+
       // Extract LaTeX if formula or mathematical expression is present
-      final latex = _extractOrGenerateFormula(section.title, cleanBody);
+      final latex = _extractOrGenerateFormula(section.title, section.content) ??
+          _extractOrGenerateFormula(section.title, cleanBody);
 
       snippets.add(
         OcrExtractionModel(
           id: 'ocr_${documentId}_${snippets.length + 1}',
           documentId: documentId,
-          topic: directQuestion!,
+          topic: directQuestion,
           rawText: cleanBody,
           latexContent: latex,
           imageUrl: attachedImage,
@@ -470,7 +485,7 @@ class DocumentParserService {
     final rawBlocks = fullText
         .split(RegExp(r'(?:\r?\n){2,}'))
         .map((b) => b.trim())
-        .where((b) => b.length >= 20 && isMeaningfulEducationalText(b))
+        .where((b) => b.length >= 20 && isMeaningfulEducationalText(b) && !_isNoiseOrFooter(b))
         .toList();
 
     final chunks = <String>[];
@@ -495,7 +510,7 @@ class DocumentParserService {
         final lines = fullText
             .split('\n')
             .map((l) => l.trim())
-            .where((l) => l.isNotEmpty && isMeaningfulEducationalText(l))
+            .where((l) => l.isNotEmpty && isMeaningfulEducationalText(l) && !_isNoiseOrFooter(l))
             .toList();
         for (var i = 0; i < lines.length; i += 3) {
           final group = lines.skip(i).take(3).join(' ');
@@ -511,27 +526,33 @@ class DocumentParserService {
     }
 
     final snippets = <OcrExtractionModel>[];
+    final seen = <String>{};
     for (var i = 0; i < chunks.length; i++) {
       final chunk = chunks[i];
       final cleanBody = _extractCompleteParagraphAnswer(chunk);
-      if (cleanBody.length < 10) continue;
+      if (cleanBody.length < 15 || _isNoiseOrFooter(cleanBody)) continue;
 
       // Generate context-rich question
       String question;
       final firstLine = chunk.split('\n').first.trim();
       if (firstLine.length >= 5 &&
           firstLine.length <= 60 &&
-          !firstLine.contains('.')) {
+          !firstLine.contains('.') &&
+          !_isNoiseOrMetaHeader(firstLine)) {
         question = _synthesizeContextualQuestion(firstLine, cleanBody) ??
             'What are the key concepts of $firstLine?';
       } else {
         final words = cleanBody.split(RegExp(r'\s+')).take(6).join(' ');
-        question = 'What are the main principles explained in "$cleanDocName" regarding: $words...?';
+        question = 'What are the main principles explained in "$cleanDocName" regarding $words...?';
       }
 
       if (!question.endsWith('?')) {
         question = '$question?';
       }
+
+      final norm = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+      if (seen.contains(norm)) continue;
+      seen.add(norm);
 
       final latex = _extractOrGenerateFormula(question, cleanBody);
       final attachedImage =
@@ -563,7 +584,21 @@ class DocumentParserService {
   }) {
     var clean = rawTitle.trim();
 
-    // 1. Strip leading hierarchical numbering and structural prefixes
+    // 0. Discard noisy or meta headers early
+    if (_isNoiseOrMetaHeader(clean)) {
+      return null;
+    }
+
+    // 1. Strip redundant chained prefixes if present (e.g. "Flutter Engineering Core Concepts - Cohesion")
+    if (clean.contains(' - ')) {
+      final parts = clean.split(' - ');
+      final lastPart = parts.last.trim();
+      if (lastPart.length >= 4 && !_isNoiseOrMetaHeader(lastPart)) {
+        clean = lastPart;
+      }
+    }
+
+    // Strip leading hierarchical numbering and structural prefixes
     final stripped = clean
         .replaceAll(
           RegExp(
@@ -574,21 +609,29 @@ class DocumentParserService {
         )
         .trim();
 
-    if (stripped.length >= 3 && !_isCorruptedBinaryString(stripped)) {
+    if (stripped.length >= 3 && !_isCorruptedBinaryString(stripped) && !_isNoiseOrMetaHeader(stripped)) {
       clean = stripped;
-    } else if (clean.length >= 3 && !_isCorruptedBinaryString(clean)) {
-      // Retain structural label (e.g. "Step 1", "Rule 1.2.1")
+    } else if (clean.length >= 3 && !_isCorruptedBinaryString(clean) && !_isNoiseOrMetaHeader(clean)) {
+      // Retain structural label
     } else {
       return null;
     }
 
-    if (RegExp(r'^(?:Step|Rule|Procedure|Part|Phase|Action)\s+[A-Za-z0-9\.]+$', caseSensitive: false).hasMatch(clean)) {
-      final firstWords = cleanBody.split(RegExp(r'\s+')).take(6).join(' ');
-      return 'What does $clean specify regarding $firstWords...?';
+    final structuralPrefixMatch = RegExp(
+      r'^(?:Chapter|Section|Rule|Step|Part)\s+[A-Za-z0-9\.]+',
+      caseSensitive: false,
+    ).firstMatch(rawTitle);
+
+    if (RegExp(r'^(?:Step|Rule|Procedure|Part|Phase|Action|Section|Chapter)\s+[A-Za-z0-9\.]+$', caseSensitive: false).hasMatch(clean)) {
+      final firstWords = cleanBody
+          .split(RegExp(r'\s+'))
+          .take(6)
+          .join(' ')
+          .replaceAll(RegExp(r'[\.\?\!]+$'), '');
+      return 'What does $clean specify regarding $firstWords?';
     }
 
     final lower = clean.toLowerCase();
-    final lowerBody = cleanBody.toLowerCase();
 
     // 2. Visual Diagram / Chart Framing (Item 8)
     if (hasImage) {
@@ -597,51 +640,24 @@ class DocumentParserService {
     }
 
     // 3. Deep Paragraph Content Analysis:
-    // Probe deep into the body text sentences to identify the actual assertion, mechanism, or rule.
     final sentences = _splitIntoCompleteSentences(cleanBody);
 
-    // 3a. Multiple Sub-roles / Timeframes / Chart Distinctive Mechanics
-    if ((lower.contains('timeframe') || lowerBody.contains('timeframe') || lowerBody.contains('chart')) &&
-        (lowerBody.contains('m15') || lowerBody.contains('15-minute') || lowerBody.contains('h1')) &&
-        (lowerBody.contains('m1') || lowerBody.contains('1-minute') || lowerBody.contains('m5'))) {
-      return 'What timeframes are utilized in this strategy, and what is the specific role of each chart?';
-    }
-
-    // 3b. Strategy Core Definition & Entry Rules
-    if (lower.contains('rectangle') || lowerBody.contains('rectangle')) {
-      if (lowerBody.contains('entry') || lowerBody.contains('trading plan')) {
-        return 'What is the role of the rectangle in this trading strategy, and how does it define entries?';
-      }
-      return 'How is the rectangle defined and applied in this strategy?';
-    }
-
-    // 3c. Execution Rules & Criteria (Stop loss, take profit, confirmation, risk-to-reward)
-    if (lowerBody.contains('entry:') ||
-        lowerBody.contains('entry trigger') ||
-        lowerBody.contains('take profit') ||
-        lowerBody.contains('stop loss') ||
-        lowerBody.contains('risk-to-reward') ||
-        lowerBody.contains('risk to reward')) {
-      final subject = clean.replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
-      return 'What are the specific entry criteria and risk management rules for $subject?';
-    }
-
-    // 3d. Core sentence mechanism: "utilizes X to Y" or "is used to Y"
+    // 3a. Universal sentence mechanism: "utilizes X to Y", "relies on X for Y", "is used to Y", "enables X by Y"
     for (final sent in sentences) {
       final utilMatch = RegExp(
-        r'\b(?:utilizes|uses|relies on|is used to|serves to)\s+([^,\.]{5,55})\bto\s+([^,\.]{5,55})',
+        r'\b(?:utilizes|uses|relies on|is used to|serves to|enables|facilitates)\s+([^,\.]{3,50})\b(?:to|for|by)\s+([^,\.]{4,60})',
         caseSensitive: false,
       ).firstMatch(sent);
       if (utilMatch != null) {
         final tool = utilMatch.group(1)!.trim();
         final purpose = utilMatch.group(2)!.trim();
-        if (tool.length >= 3 && purpose.length >= 5) {
+        if (tool.length >= 3 && purpose.length >= 4) {
           return 'How is $tool used to $purpose?';
         }
       }
 
       final depMatch = RegExp(
-        r'\b(?:is dependent on|depends on)\s+([^,\.]{3,45})',
+        r'\b(?:is dependent on|depends on|requires|relies upon)\s+([^,\.]{3,45})',
         caseSensitive: false,
       ).firstMatch(sent);
       if (depMatch != null) {
@@ -771,14 +787,20 @@ class DocumentParserService {
 
     // 12. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
     if (_isValidSubjectNoun(clean)) {
+      final prefix = structuralPrefixMatch != null &&
+              !clean.toLowerCase().contains(
+                    structuralPrefixMatch.group(0)!.toLowerCase(),
+                  )
+          ? ' in ${structuralPrefixMatch.group(0)}'
+          : '';
       if (lower.endsWith('s') &&
           !lower.endsWith('sis') &&
           !lower.endsWith('is') &&
           !lower.endsWith('ss') &&
           !lower.endsWith('us')) {
-        return 'What are the $clean and what are their functions?';
+        return 'What are the $clean$prefix and what are their functions?';
       }
-      return 'What is $clean?';
+      return 'What is $clean$prefix?';
     }
 
     // 13. Deep Paragraph Fallback: derive question from first sentence of body
@@ -796,7 +818,10 @@ class DocumentParserService {
       }
     }
 
-    return 'What are the key concepts and principles of $clean?';
+    if (_isValidSubjectNoun(clean)) {
+      return 'What are the key concepts and principles of $clean?';
+    }
+    return null;
   }
 
   /// Strict NLP question validation: ensures question is complete and free of garbage fragments.
@@ -829,6 +854,25 @@ class DocumentParserService {
   static bool _isValidSubjectNoun(String candidate) {
     final lower = candidate.toLowerCase().trim();
     if (lower.length < 3) return false;
+
+    // Discard demonstrative / reference phrases (e.g. "this approach", "a prime example", "an example of")
+    if (lower.startsWith('this ') ||
+        lower.startsWith('that ') ||
+        lower.startsWith('these ') ||
+        lower.startsWith('those ') ||
+        lower.startsWith('here ') ||
+        lower.startsWith('there ') ||
+        lower.startsWith('a prime ') ||
+        lower.startsWith('the prime ') ||
+        lower.startsWith('an example ') ||
+        lower.startsWith('one example ') ||
+        lower.startsWith('another example ') ||
+        lower.startsWith('such a ') ||
+        lower.startsWith('in some ') ||
+        lower.startsWith('in this ') ||
+        lower.startsWith('in other ')) {
+      return false;
+    }
 
     const invalidTokens = {
       'the',
@@ -923,6 +967,34 @@ class DocumentParserService {
       'again',
       'further',
       'once',
+      'therefore',
+      'additionally',
+      'usually',
+      'furthermore',
+      'moreover',
+      'however',
+      'instead',
+      'meanwhile',
+      'consequently',
+      'specifically',
+      'knowing',
+      'whether',
+      'please',
+      'words',
+      'within',
+      'instances',
+      'detail',
+      'tions',
+      'code',
+      'codes',
+      'example',
+      'examples',
+      'figure',
+      'figures',
+      'note',
+      'notes',
+      'tip',
+      'tips',
     };
 
     if (invalidTokens.contains(lower)) return false;
@@ -933,6 +1005,48 @@ class DocumentParserService {
       }
     }
     return true;
+  }
+
+  /// Identifies noisy front-matter or non-educational meta headers (e.g. Table of Contents,
+  /// Contributors, Book Conventions, Prefaces, Author bios, Figure labels).
+  static bool _isNoiseOrMetaHeader(String text) {
+    final clean = text.trim();
+    if (clean.length < 3) return true;
+    final lower = clean.toLowerCase();
+
+    // Pure structural figures or standalone numbers
+    if (RegExp(
+      r'^(?:figure\s+\d+|table\s+\d+|photo\s+\d+|image\s+\d+|diagram\s+\d+|screenshot\s+\d+)$',
+      caseSensitive: false,
+    ).hasMatch(lower)) {
+      return true;
+    }
+    if (lower.startsWith('figure ') || lower.startsWith('table ')) {
+      return true;
+    }
+
+    const noiseKeywords = [
+      'table of contents',
+      'acknowledgment',
+      'acknowledgement',
+      'preface',
+      'foreword',
+      'dedication',
+      'about the author',
+      'about the contributors',
+      'about the reviewers',
+      'copyright',
+      'all rights reserved',
+      'terms of service',
+      'privacy policy',
+      'license agreement',
+    ];
+
+    for (final k in noiseKeywords) {
+      if (lower.contains(k)) return true;
+    }
+
+    return false;
   }
 
   /// Identifies page footers, watermarks, domains, and non-educational UI artifacts.
@@ -958,6 +1072,11 @@ class DocumentParserService {
       return true;
     }
 
+    // Table of contents line with multiple dots and trailing page number
+    if (RegExp(r'\.{3,}|\.\s*\.\s*\.\s*\d+$').hasMatch(clean)) {
+      return true;
+    }
+
     // Watermark / signature patterns starting with em dash or bullet (e.g. author handle or domain)
     if (clean.startsWith('—') || clean.startsWith('-') || clean.startsWith('–')) {
       final withoutDash = clean.replaceAll(RegExp(r'^[—–\-•*#\s]+'), '').trim();
@@ -975,6 +1094,14 @@ class DocumentParserService {
   String _extractCompleteParagraphAnswer(String rawBody) {
     var text = rawBody.trim();
 
+    // Normalize ligatures
+    text = text
+        .replaceAll('ﬁ', 'fi')
+        .replaceAll('ﬂ', 'fl')
+        .replaceAll('ﬀ', 'ff')
+        .replaceAll('ﬃ', 'ffi')
+        .replaceAll('ﬄ', 'ffl');
+
     // Strip leading A:, Answer:, bullets, dashes, numbers
     text = text
         .replaceAll(
@@ -989,8 +1116,14 @@ class DocumentParserService {
     // Strip URLs
     text = text.replaceAll(RegExp(r'https?://\S+|www\.\S+'), '');
 
-    // Strip markdown formatting symbols (**, ##, ```)
-    text = text.replaceAll(RegExp('[*#_`~]'), '');
+    // Strip markdown formatting symbols (**, ##, ```) without corrupting math
+    text = text.replaceAll(RegExp(r'(\*\*|\*|##+|```|`|~~)'), '');
+
+    // Restore missing spaces after punctuation when lower case is followed by upper case
+    text = text.replaceAllMapped(
+      RegExp(r'([a-z])\.([A-Z])'),
+      (match) => '${match.group(1)}. ${match.group(2)}',
+    );
 
     // Collapse multiple whitespaces and excessive line breaks into clean prose
     text = text
@@ -1043,18 +1176,26 @@ class DocumentParserService {
       return false;
     }
 
-    // 3. Noise, watermark & footer filter
+    // 3. Drop isolated raw code snippets (e.g. testWidgets or class definitions lacking prose)
+    final lowerA = cleanA.toLowerCase();
+    if (lowerA.startsWith('testwidgets(') ||
+        lowerA.startsWith('widgettester ') ||
+        (lowerA.startsWith('class ') && lowerA.contains('extends statelesswidget') && !cleanA.contains('.'))) {
+      return false;
+    }
+
+    // 4. Noise, watermark & footer filter
     if (_isNoiseOrFooter(cleanA) || _isNoiseOrFooter(cleanQ)) {
       return false;
     }
 
-    // 4. Meaningful educational text & binary noise checks
+    // 5. Meaningful educational text & binary noise checks
     if (!isMeaningfulEducationalText(cleanA) ||
         _isCorruptedBinaryString(cleanA)) {
       return false;
     }
 
-    // 5. Reject question & answer echo loops (e.g. "What is high-probability? high-probability.")
+    // 6. Reject question & answer echo loops (e.g. "What is high-probability? high-probability.")
     final normQ = cleanQ.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
     final normA = cleanA.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
     if (normQ == normA || (normQ.contains(normA) && normA.length < 25)) {
@@ -1090,9 +1231,10 @@ class DocumentParserService {
             .join(' ')
             .replaceAll(RegExp(r'\s+'), ' ')
             .trim();
-        // Discard promotional marketing / discount pitches
         final lower = joined.toLowerCase();
         if (joined.length >= 20 &&
+            !_isNoiseOrMetaHeader(currentTitle!) &&
+            !_isNoiseOrFooter(joined) &&
             !RegExp(r'\b(?:\d+%\s+off|discount|\$\d+\s*(?:value|worth|price))\b', caseSensitive: false).hasMatch(lower)) {
           sections.add(
             _DocumentSection(
@@ -1137,31 +1279,50 @@ class DocumentParserService {
         r'^((?:(?:Part|Step|Rule|Section|Chapter|Unit|Module)\s+[A-Za-z0-9\.]+(?:\s+[^:]+)?|(?:\d+\.)+\d*\s+[^:]+|[A-Za-z\s\-/]{3,40})):\s+(.+)$',
         caseSensitive: false,
       ).firstMatch(line);
-      if (colonMatch != null &&
-          colonMatch.group(2)!.split(' ').length >= 3 &&
-          (structuralHeaderRegex.hasMatch(colonMatch.group(1)!) ||
-              colonMatch.group(1)!.split(' ').length <= 6)) {
-        commitCurrentSection();
-        currentTitle = colonMatch.group(1)!.trim();
-        currentLines.add(colonMatch.group(2)!.trim());
-        continue;
+      if (colonMatch != null && colonMatch.group(2)!.trim().isNotEmpty) {
+        final label = colonMatch.group(1)!.trim();
+        final body = colonMatch.group(2)!.trim();
+        final isStructuralLabel = RegExp(
+          r'^(?:Part|Step|Rule|Section|Chapter|Unit|Module)\b',
+          caseSensitive: false,
+        ).hasMatch(label);
+
+        if (isStructuralLabel &&
+            !body.endsWith('.') &&
+            !body.endsWith('!') &&
+            !body.endsWith('?') &&
+            body.split(' ').length <= 8) {
+          commitCurrentSection();
+          currentTitle = '$label: $body';
+          continue;
+        }
+
+        if ((isStructuralLabel || !_isNoiseOrMetaHeader(label)) &&
+            body.split(' ').length >= 3) {
+          commitCurrentSection();
+          currentTitle = label;
+          currentLines.add(body);
+          continue;
+        }
       }
 
       // 3. Section Headers & Structural Markers
       final isStructuralHeader = structuralHeaderRegex.hasMatch(line);
-      final isColonHeader = line.length < 60 &&
+      final words = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final isColonHeader = line.length <= 40 &&
           line.endsWith(':') &&
           !line.contains('http') &&
           !line.contains('.') &&
-          line.split(RegExp(r'\s+')).length >= 2 &&
+          words.length >= 2 &&
+          words.length <= 5 &&
           RegExp('^[A-Z0-9]').hasMatch(line);
       final isAllCapsHeader = line.length >= 6 &&
           line.length <= 50 &&
           line == line.toUpperCase() &&
-          line.split(RegExp(r'\s+')).length >= 2 &&
+          words.length >= 2 &&
+          words.length <= 7 &&
           RegExp('[A-Z]').hasMatch(line);
       final isBullet = RegExp(r'^[•●○\-–—*]').hasMatch(line);
-      final words = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
       final isTitleCase = !isBullet &&
           words.length >= 2 &&
           words.length <= 6 &&
@@ -1177,12 +1338,20 @@ class DocumentParserService {
               RegExp('^[A-Z0-9]').hasMatch(w));
 
       if (isStructuralHeader || isColonHeader || isAllCapsHeader || isTitleCase) {
+        final cleanHeader = line.replaceAll(':', '').trim();
+        if (_isNoiseOrMetaHeader(cleanHeader)) {
+          commitCurrentSection();
+          continue;
+        }
+
         if (currentTitle != null && currentLines.isEmpty) {
-          // Chain hierarchical header context (e.g. Chapter 1 - Section 1.1)
-          currentTitle = '$currentTitle - ${line.replaceAll(':', '').trim()}';
+          // If previous title was just a general chapter header, use specific section header
+          if (cleanHeader.length >= 4) {
+            currentTitle = cleanHeader;
+          }
         } else {
           commitCurrentSection();
-          currentTitle = line.replaceAll(':', '').trim();
+          currentTitle = cleanHeader;
         }
         continue;
       }
@@ -1191,20 +1360,23 @@ class DocumentParserService {
       final termDefMatch = termDefRegex.firstMatch(line);
       if (termDefMatch != null &&
           termDefMatch.group(2)!.trim().split(' ').length >= 3 &&
-          !line.startsWith('http')) {
+          !line.startsWith('http') &&
+          !_isNoiseOrMetaHeader(termDefMatch.group(1)!)) {
         commitCurrentSection();
         currentTitle = termDefMatch.group(1)!.trim();
         currentLines.add(termDefMatch.group(2)!.trim());
         continue;
       }
 
-      // 4b. Single-Line Prose Definition pattern: "Photosynthesis is...", "Cellular respiration occurs in...", "Newton's second law states that..."
+      // 4b. Single-Line Prose Definition pattern: "Photosynthesis is...", "Concept 1 focuses on...", "Newton's second law states that..."
       final standaloneDefMatch = RegExp(
-        r"^([A-Z][a-zA-Z0-9\s']{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that)\b",
+        r"^([A-Z][a-zA-Z0-9\s'\-_/]{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that|focuses\s+on|provides|enables|allows|specifies|governs|requires)\b",
         caseSensitive: false,
       ).firstMatch(line);
       if (standaloneDefMatch != null &&
-          line.split(RegExp(r'\s+')).length >= 4) {
+          line.split(RegExp(r'\s+')).length >= 4 &&
+          _isValidSubjectNoun(standaloneDefMatch.group(1)!) &&
+          !_isNoiseOrMetaHeader(standaloneDefMatch.group(1)!)) {
         commitCurrentSection();
         currentTitle = standaloneDefMatch.group(1)!.trim();
         currentLines.add(line);
@@ -1217,7 +1389,7 @@ class DocumentParserService {
       if (bulletMatch != null) {
         final itemContent =
             (bulletMatch.group(1) ?? bulletMatch.group(2) ?? '').trim();
-        if (itemContent.length >= 8 && isMeaningfulEducationalText(itemContent)) {
+        if (itemContent.length >= 8 && isMeaningfulEducationalText(itemContent) && !_isNoiseOrFooter(itemContent)) {
           if (currentTitle != null) {
             // Keep bullet attached to current topic
             currentLines.add('• $itemContent');
@@ -1246,23 +1418,20 @@ class DocumentParserService {
             prev.endsWith('!') ||
             prev.endsWith('?') ||
             prev.endsWith(':') ||
-            prev.endsWith(';');
-        final isCurrentBullet = line.startsWith('•') ||
-            line.startsWith('●') ||
-            line.startsWith('○') ||
-            line.startsWith('-');
+            prev.endsWith(';') ||
+            prev.endsWith('—') ||
+            prev.endsWith('–');
 
-        if (!isCurrentBullet &&
-            (!prevEndsPunct ||
-                (line.isNotEmpty &&
-                    line[0].toLowerCase() == line[0] &&
-                    RegExp('[a-z]').hasMatch(line[0])))) {
+        if (!prevEndsPunct && isMeaningfulEducationalText(line) && !_isNoiseOrFooter(line)) {
           currentLines[currentLines.length - 1] = '$prev $line';
           continue;
         }
       }
 
-      currentLines.add(line);
+      // 7. General body text line accumulation
+      if (isMeaningfulEducationalText(line) && !_isNoiseOrFooter(line)) {
+        currentLines.add(line);
+      }
     }
 
     commitCurrentSection();
@@ -1270,7 +1439,7 @@ class DocumentParserService {
   }
 
   /// Extracts structured prompt/response pairs from narrative prose using
-  /// paragraph-level sentence grouping (never breaking mid-sentence or mid-clause).
+  /// paragraph-level semantic analysis (targeting definitions, mechanisms, and rules).
   List<_DocumentSection> _extractSemanticParagraphSections(String text) {
     final results = <_DocumentSection>[];
 
@@ -1279,34 +1448,43 @@ class DocumentParserService {
         .map(
           (p) => p.replaceAll(RegExp(r'\s+'), ' ').trim(),
         )
-        .where((p) => p.length >= 15 && isMeaningfulEducationalText(p))
+        .where((p) => p.length >= 25 && isMeaningfulEducationalText(p) && !_isNoiseOrFooter(p))
         .toList();
 
     for (final para in paragraphs) {
       final sentences = _splitIntoCompleteSentences(para);
-      if (sentences.isEmpty) {
-        if (para.length >= 20) {
-          results.add(_DocumentSection(title: para, content: para));
+      if (sentences.isEmpty) continue;
+
+      // 1. Look for definition patterns in the paragraph
+      String? conceptTitle;
+      for (final s in sentences) {
+        final defMatch = RegExp(
+          r"^([A-Z][a-zA-Z0-9\s'\-_/]{2,45})\s+(?:is\s+a|is\s+the|refers\s+to|means|describes|is\s+defined\s+as|occurs\s+in|states\s+that|focuses\s+on|provides|enables|allows|specifies|governs|requires)\b",
+          caseSensitive: false,
+        ).firstMatch(s);
+
+        if (defMatch != null) {
+          final candidate = defMatch.group(1)!.trim();
+          if (_isValidSubjectNoun(candidate) && !_isNoiseOrMetaHeader(candidate)) {
+            conceptTitle = candidate;
+            break;
+          }
         }
-        continue;
       }
 
-      if (sentences.length == 1) {
-        final sentence = sentences.first;
-        results.add(_DocumentSection(title: sentence, content: sentence));
-      } else {
-        for (var i = 0; i < sentences.length; i++) {
-          final sentence = sentences[i];
-          final words = sentence
-              .split(RegExp(r'\s+'))
-              .where((w) => w.isNotEmpty)
-              .toList();
-          if (words.length >= 5) {
-            results.add(_DocumentSection(title: sentence, content: sentence));
-          } else if (i + 1 < sentences.length) {
-            final combined = '$sentence ${sentences[i + 1]}';
-            results.add(_DocumentSection(title: sentence, content: combined));
-            i++;
+      if (conceptTitle != null) {
+        results.add(_DocumentSection(title: conceptTitle, content: para));
+      } else if (sentences.length >= 2 && para.length >= 40) {
+        // Fallback: derive title from first sentence if it's a clean short subject or before verb
+        final first = sentences.first.trim();
+        final verbMatch = RegExp(
+          r"^([A-Z][a-zA-Z0-9\s'\-_/]{2,40})\s+(?:is|are|was|were|can|will|should|must|has|have|contains|includes|consists|serves|operates|functions|acts|exchanges|sends|receives|focuses|focus)\b",
+          caseSensitive: false,
+        ).firstMatch(first);
+        if (verbMatch != null) {
+          final candidate = verbMatch.group(1)!.trim();
+          if (_isValidSubjectNoun(candidate) && !_isNoiseOrMetaHeader(candidate)) {
+            results.add(_DocumentSection(title: candidate, content: para));
           }
         }
       }
@@ -1362,13 +1540,14 @@ class DocumentParserService {
     final clean = text.trim();
     if (clean.length < 3) return false;
 
-    // 1. If line is recognized LaTeX math with known math commands, allow it
+    // 1. If line is recognized LaTeX math or algebraic equation with math symbols, allow it
     if (clean.contains(
           RegExp(
             r'\\(frac|sum|int|begin|text|times|ge|le|alpha|beta|sigma|theta|omega|sqrt|mathbf)',
           ),
         ) ||
-        clean.contains(RegExp(r'\$\$.+\$\$|\$.+\$'))) {
+        clean.contains(RegExp(r'\$\$.+\$\$|\$.+\$')) ||
+        RegExp(r'^[a-zA-Z0-9_()^]{1,15}\s*=\s*[a-zA-Z0-9_()^+\-*/\\ \t]+$').hasMatch(clean)) {
       return true;
     }
 
@@ -1437,47 +1616,50 @@ class DocumentParserService {
 
   String? _extractOrGenerateFormula(String title, String body) {
     final combined = '$title $body';
-    final lower = combined.toLowerCase();
 
-    // 1. If text contains explicit LaTeX math operators or environments, extract it
+    // 1. Explicit LaTeX environments or delimited formulas: $...$, $$...$$, \(...\), \[...\], \begin{...}...\end{...}
     final explicitLatexMatch = RegExp(
-      r'(\$\$.+?\$\$|\$.+?\$|\\begin\{.+?\}.+?\\end\{.+?\}|\\int.+|\\frac\{.+?\}\{.+?\})',
+      r'(\$\$.+?\$\$|\$(?!\$).+?\$|\\\[.+?\\\]|\\\(.+?\\\)|\b\\begin\{[a-zA-Z]+\}[\s\S]+?\\end\{[a-zA-Z]+\})',
       dotAll: true,
     ).firstMatch(combined);
     if (explicitLatexMatch != null) {
       return explicitLatexMatch.group(0);
     }
 
-    // 2. Mathematical expressions with arithmetic operators and relations
-    if (lower.contains('integral') || lower.contains(r'\int')) {
-      return r'\int u \, dv = uv - \int v \, du';
+    // 2. Structured mathematical commands in text (\frac{...}{...}, \int, \sum, \sqrt{...})
+    final mathCommandMatch = RegExp(
+      r'(\\(?:frac|int|sum|sqrt|prod|lim|alpha|beta|gamma|theta|sigma|omega|partial|mathbf|text)\b[\s\S]{3,120})',
+    ).firstMatch(combined);
+    if (mathCommandMatch != null) {
+      final matchStr = mathCommandMatch.group(0)!.trim();
+      if (!matchStr.startsWith(r'\(') && !matchStr.startsWith(r'$$') && !matchStr.startsWith(r'$')) {
+        return r'\(' + matchStr + r'\)';
+      }
+      return matchStr;
     }
-    if (lower.contains('fourier')) {
-      return r'F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-j\omega t}dt';
-    }
-    if (lower.contains('derivative') || lower.contains('differentiation')) {
-      return r'\frac{df}{dx} = \lim_{\Delta x \to 0} \frac{f(x + \Delta x) - f(x)}{\Delta x}';
-    }
-    if (lower.contains('newton') &&
-        (lower.contains('force') ||
-            lower.contains('second law') ||
-            lower.contains('acceleration'))) {
-      return r'\mathbf{F} = m\mathbf{a} = \frac{d\mathbf{p}}{dt}';
-    }
-    if (lower.contains('quadratic') || lower.contains('polynomial')) {
-      return r'x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}';
-    }
-    if (lower.contains('pythagor')) {
-      return 'a^2 + b^2 = c^2';
-    }
-    if (lower.contains('moving average') || lower.contains('ema')) {
-      return r'\text{EMA}_t = \left( \text{Price}_t \times \alpha \right) + \left( \text{EMA}_{t-1} \times (1 - \alpha) \right)';
-    }
-    if (lower.contains('risk') &&
-        (lower.contains('reward') ||
-            lower.contains('ratio') ||
-            lower.contains('take profit'))) {
-      return r'\text{Risk-to-Reward Ratio} = \frac{|\text{Target Price} - \text{Entry Price}|}{|\text{Entry Price} - \text{Stop Loss}|} \ge 3:1';
+
+    // 3. Mathematical equations with algebraic relations: e.g. "E = mc^2", "a^2 + b^2 = c^2", "y = mx + b"
+    final equationMatch = RegExp(
+      r'(?:^|[\s:;,(])([a-zA-Z0-9_()^]{1,15}\s*=\s*[^.,;:\n\r]+)',
+      multiLine: true,
+    ).firstMatch(combined);
+    if (equationMatch != null) {
+      var eq = equationMatch.group(1)!.trim();
+      eq = eq.replaceAll(RegExp(r'^[.,;: ]+|[.,;: ]+$'), '').trim();
+      final hasMathOperator = eq.contains('^') ||
+          eq.contains('+') ||
+          eq.contains('-') ||
+          eq.contains('*') ||
+          eq.contains('/') ||
+          eq.contains(r'\') ||
+          RegExp(r'\d').hasMatch(eq);
+      if (hasMathOperator &&
+          !eq.startsWith('http') &&
+          !eq.contains('import ') &&
+          !eq.contains('final ') &&
+          !eq.contains('const ')) {
+        return r'\(' + eq + r'\)';
+      }
     }
 
     return null;

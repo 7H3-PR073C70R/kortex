@@ -97,15 +97,61 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(initStorage());
   }
 
+  static String? _sanitizeToken(String? raw) {
+    if (raw == null) return null;
+    var clean = raw.trim();
+    if (clean.isEmpty) return null;
+
+    // Strip surrounding quotes if accidentally JSON-encoded
+    if ((clean.startsWith('"') && clean.endsWith('"')) ||
+        (clean.startsWith("'") && clean.endsWith("'"))) {
+      clean = clean.substring(1, clean.length - 1).trim();
+    }
+
+    // Strip duplicate 'Bearer ' prefix if present
+    if (clean.toLowerCase().startsWith('bearer ')) {
+      clean = clean.substring(7).trim();
+    }
+
+    // A valid JWT or key is single-line printable ASCII.
+    // Reject HTML strings, error pages, or error noise.
+    if (clean.contains(' ') ||
+        clean.contains('\n') ||
+        clean.contains('\r') ||
+        clean.contains('\t') ||
+        clean.contains('<html') ||
+        clean.contains('<head') ||
+        clean.contains('400 Bad Request')) {
+      return null;
+    }
+
+    return clean.isNotEmpty ? clean : null;
+  }
+
   @override
   String? getToken() {
-    return _cachedToken ?? _localStorageService.getPreference(key: _tokenKey);
+    final raw = _cachedToken ?? _localStorageService.getPreference(key: _tokenKey);
+    final sanitized = _sanitizeToken(raw);
+    if (raw != null && raw.isNotEmpty && sanitized == null) {
+      // Stored token is corrupted/bloated - auto clear it
+      _cachedToken = null;
+      unawaited(_localStorageService.deletePreference(key: _tokenKey));
+      unawaited(_secureStorage.delete(key: _tokenKey));
+    }
+    return _cachedToken = sanitized;
   }
 
   @override
   String? getRefreshToken() {
-    return _cachedRefreshToken ??
+    final raw = _cachedRefreshToken ??
         _localStorageService.getPreference(key: _refreshTokenKey);
+    final sanitized = _sanitizeToken(raw);
+    if (raw != null && raw.isNotEmpty && sanitized == null) {
+      _cachedRefreshToken = null;
+      unawaited(_localStorageService.deletePreference(key: _refreshTokenKey));
+      unawaited(_secureStorage.delete(key: _refreshTokenKey));
+    }
+    return _cachedRefreshToken = sanitized;
   }
 
   Map<String, dynamic>? _decodeJwtPayload() {
@@ -114,9 +160,16 @@ class UserStorageServiceImpl implements UserStorageService {
     try {
       final parts = token.split('.');
       if (parts.length >= 2) {
-        final normalized = base64Url.normalize(parts[1]);
-        final decoded = utf8.decode(base64Url.decode(normalized));
-        return jsonDecode(decoded) as Map<String, dynamic>;
+        final payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+        final remainder = payload.length % 4;
+        final padded = remainder == 0
+            ? payload
+            : payload.padRight(payload.length + (4 - remainder), '=');
+        final decoded = utf8.decode(base64.decode(padded));
+        final map = jsonDecode(decoded);
+        if (map is Map<String, dynamic>) {
+          return map;
+        }
       }
     } on Object {
       return null;
@@ -130,16 +183,20 @@ class UserStorageServiceImpl implements UserStorageService {
     if (token == null || token.isEmpty) return true;
     final map = _decodeJwtPayload();
     if (map == null) {
-      // If token exists but is not a valid JWT (or cannot be decoded), consider it invalid/expired
-      return true;
+      return false;
     }
     final exp = map['exp'];
     if (exp == null) return false;
     final expSeconds = exp is int ? exp : int.tryParse(exp.toString());
     if (expSeconds == null) return false;
-    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expSeconds * 1000);
+    final expiryTime = DateTime.fromMillisecondsSinceEpoch(
+      expSeconds * 1000,
+      isUtc: true,
+    );
     // Allow a 15-second grace window to prevent edge-case expirations during routing
-    return DateTime.now().isAfter(expiryTime.subtract(const Duration(seconds: 15)));
+    return DateTime.now().toUtc().isAfter(
+          expiryTime.subtract(const Duration(seconds: 15)),
+        );
   }
 
   @override
@@ -223,10 +280,16 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   Future<void> saveToken(String token) async {
-    _cachedToken = token;
+    final clean = _sanitizeToken(token);
+    _cachedToken = clean;
+    if (clean == null) {
+      await _secureStorage.delete(key: _tokenKey);
+      await _localStorageService.deletePreference(key: _tokenKey);
+      return;
+    }
     try {
-      await _secureStorage.write(key: _tokenKey, value: token);
-      await _localStorageService.savePreference(key: _tokenKey, data: token);
+      await _secureStorage.write(key: _tokenKey, value: clean);
+      await _localStorageService.savePreference(key: _tokenKey, data: clean);
     } on Object {
       return;
     }
@@ -234,12 +297,18 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   Future<void> saveRefreshToken(String refreshToken) async {
-    _cachedRefreshToken = refreshToken;
+    final clean = _sanitizeToken(refreshToken);
+    _cachedRefreshToken = clean;
+    if (clean == null) {
+      await _secureStorage.delete(key: _refreshTokenKey);
+      await _localStorageService.deletePreference(key: _refreshTokenKey);
+      return;
+    }
     try {
-      await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
+      await _secureStorage.write(key: _refreshTokenKey, value: clean);
       await _localStorageService.savePreference(
         key: _refreshTokenKey,
-        data: refreshToken,
+        data: clean,
       );
     } on Object {
       return;
@@ -251,22 +320,8 @@ class UserStorageServiceImpl implements UserStorageService {
     required String accessToken,
     required String refreshToken,
   }) async {
-    _cachedToken = accessToken;
-    _cachedRefreshToken = refreshToken;
-    try {
-      await _secureStorage.write(key: _tokenKey, value: accessToken);
-      await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
-      await _localStorageService.savePreference(
-        key: _tokenKey,
-        data: accessToken,
-      );
-      await _localStorageService.savePreference(
-        key: _refreshTokenKey,
-        data: refreshToken,
-      );
-    } on Object {
-      return;
-    }
+    await saveToken(accessToken);
+    await saveRefreshToken(refreshToken);
   }
 
   @override

@@ -98,13 +98,39 @@ Enter on M1 candle close outside rectangle.
         ),
         isTrue,
       );
+    });
 
-      // Verify formulas are generated
-      final emaSnippet = snippets.firstWhere(
-        (s) => s.topic.contains('Indicators') || s.rawText.contains('EMA'),
+    test('extracts explicit LaTeX and mathematical equations from document text', () {
+      const mathDoc = r'''
+Section 1: Calculus Fundamentals
+The Derivative Definition
+The derivative of a function is defined using limits:
+\frac{df}{dx} = \lim_{\Delta x \to 0} \frac{f(x + \Delta x) - f(x)}{\Delta x}
+
+Section 2: Special Relativity
+Mass Energy Equivalence
+Einstein established the relationship between mass and energy:
+E = mc^2
+''';
+
+      final snippets = service.synthesizeSnippetsFromDocument(
+        documentId: 'doc_math',
+        fullText: mathDoc,
+        filename: 'physics_notes.pdf',
       );
-      expect(emaSnippet.latexContent, isNotNull);
-      expect(emaSnippet.latexContent, contains('EMA'));
+
+      expect(snippets.length, greaterThanOrEqualTo(2));
+      final derivativeSnippet = snippets.firstWhere(
+        (s) => s.topic.toLowerCase().contains('derivative'),
+      );
+      expect(derivativeSnippet.latexContent, isNotNull);
+      expect(derivativeSnippet.latexContent, contains(r'\frac{df}{dx}'));
+
+      final energySnippet = snippets.firstWhere(
+        (s) => s.topic.toLowerCase().contains('mass energy') || s.rawText.contains('Einstein'),
+      );
+      expect(energySnippet.latexContent, isNotNull);
+      expect(energySnippet.latexContent, contains('E = mc^2'));
     });
 
     test('gracefully handles empty text without fabricating dummy cards', () {

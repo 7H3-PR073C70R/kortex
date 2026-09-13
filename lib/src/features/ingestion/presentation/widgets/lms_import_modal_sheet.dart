@@ -94,6 +94,7 @@ class LmsImportModalSheet extends HookWidget {
               FetchLmsCoursesEvent(
                 platform: isCanvas ? 'canvas' : 'google_classroom',
                 authToken: result.accessToken,
+                canvasDomain: isCanvas ? effectiveDomain : null,
               ),
             );
       }
@@ -122,11 +123,29 @@ class LmsImportModalSheet extends HookWidget {
               state.snippets.isNotEmpty &&
               state.currentDocument?.fileType == 'lms') {
             Navigator.of(context).pop();
+          } else if (state.status == ProcessingStatus.failed) {
+            // Disconnect immediately on failure
+            connectedAccount.value = null;
+            if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.errorMessage!,
+                    style: typography.caption.medium.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: colors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
         },
         builder: (context, state) {
           final isCanvas = selectedPlatform.value == 'canvas';
-          final isAccountConnected = connectedAccount.value != null;
+          final isAccountConnected =
+              connectedAccount.value != null && state.status != ProcessingStatus.failed;
 
           return SingleChildScrollView(
             child: Column(

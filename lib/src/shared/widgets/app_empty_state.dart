@@ -7,7 +7,7 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// A standardized, reusable empty state presentation component.
 ///
-/// Displays an animated lonely teddy bear illustration, header title,
+/// Displays an animated mascot illustration (sad or happy/celebratory), header title,
 /// descriptive subtitle, and primary/secondary call-to-action buttons.
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
@@ -18,6 +18,8 @@ class AppEmptyState extends StatelessWidget {
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.illustrationSize = 130,
+    this.isHappy = false,
+    this.customIllustration,
     super.key,
   });
 
@@ -28,6 +30,8 @@ class AppEmptyState extends StatelessWidget {
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
   final double illustrationSize;
+  final bool isHappy;
+  final Widget? customIllustration;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +46,12 @@ class AppEmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Animated Lonely Teddy Bear
-            LonelyTeddyBearWidget(size: illustrationSize),
+            // 1. Animated Mascot (Sad or Happy Celebratory)
+            customIllustration ??
+                LonelyTeddyBearWidget(
+                  size: illustrationSize,
+                  isHappy: isHappy,
+                ),
             const SizedBox(height: 24),
 
             // 2. Title
@@ -99,7 +107,9 @@ class AppEmptyState extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.add_rounded,
+                        isHappy
+                            ? Icons.explore_rounded
+                            : Icons.add_rounded,
                         color: colors.white,
                         size: 18,
                       ),
@@ -108,7 +118,6 @@ class AppEmptyState extends StatelessWidget {
                         primaryActionLabel!,
                         style: typography.callout.bold.copyWith(
                           color: colors.white,
-                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -117,24 +126,24 @@ class AppEmptyState extends StatelessWidget {
               ),
             ],
 
-            // 5. Secondary CTA Action (Optional)
-            if (secondaryActionLabel != null && onSecondaryAction != null) ...[
-              const SizedBox(height: 12),
-              ShrinkableButton(
+            // 5. Secondary Action Link
+            if (secondaryActionLabel != null &&
+                onSecondaryAction != null) ...[
+              const SizedBox(height: 16),
+              GestureDetector(
                 onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
+                  unawaited(HapticFeedback.selectionClick());
                   onSecondaryAction!();
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
                     vertical: 8,
+                    horizontal: 16,
                   ),
                   child: Text(
                     secondaryActionLabel!,
-                    style: typography.footnote.medium.copyWith(
+                    style: typography.callout.medium.copyWith(
                       color: colors.primary,
-                      fontSize: 13,
                     ),
                   ),
                 ),
