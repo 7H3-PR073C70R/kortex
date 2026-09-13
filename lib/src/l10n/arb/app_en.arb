@@ -1293,9 +1293,9 @@
     "@navTabDecks": {
         "description": "Decks tab label"
     },
-    "navTabCommunity": "Community",
+    "navTabCommunity": "Forum",
     "@navTabCommunity": {
-        "description": "Community tab label"
+        "description": "Label for Forum bottom navigation tab"
     },
     "navTabProfile": "Profile",
     "@navTabProfile": {
@@ -2325,17 +2325,17 @@
             }
         }
     },
-    "communityTitle": "Community & Study Hub",
+    "communityTitle": "Forum",
     "@communityTitle": {
-        "description": "Title of the Community Hub"
+        "description": "Title of the Forum page"
     },
     "liveRoomsTab": "Live Rooms",
     "@liveRoomsTab": {
         "description": "Label for live study rooms tab"
     },
-    "forumTab": "Track Forum",
+    "forumTab": "Forum",
     "@forumTab": {
-        "description": "Label for track discussion forum tab"
+        "description": "Label for discussion forum"
     },
     "marketplaceTab": "Deck Market",
     "@marketplaceTab": {

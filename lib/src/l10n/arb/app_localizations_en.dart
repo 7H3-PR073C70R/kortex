@@ -925,7 +925,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabDecks => 'Study Decks';
 
   @override
-  String get navTabCommunity => 'Community';
+  String get navTabCommunity => 'Forum';
 
   @override
   String get navTabProfile => 'Profile';
@@ -1648,13 +1648,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get communityTitle => 'Community & Study Hub';
+  String get communityTitle => 'Forum';
 
   @override
   String get liveRoomsTab => 'Live Rooms';
 
   @override
-  String get forumTab => 'Track Forum';
+  String get forumTab => 'Forum';
 
   @override
   String get marketplaceTab => 'Deck Market';

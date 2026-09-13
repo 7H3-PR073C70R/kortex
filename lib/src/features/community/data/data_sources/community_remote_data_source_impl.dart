@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
@@ -16,6 +19,7 @@ import 'package:kortex/src/features/community/data/models/shared_deck_model.dart
 import 'package:kortex/src/features/community/data/models/study_circle_model.dart';
 import 'package:kortex/src/features/community/data/models/study_community_model.dart';
 import 'package:kortex/src/features/community/data/models/study_room_model.dart';
+import 'package:retrofit/retrofit.dart';
 
 class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   CommunityRemoteDataSourceImpl(
@@ -154,12 +158,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<List<ForumPostModel>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
+    String? searchQuery,
     int limit = 15,
     int offset = 0,
   }) async {
     final params = <String, dynamic>{
-      'select': '*,forum_replies(*)',
-      'order': 'created_at.desc',
+      'select': '*',
       'limit': limit,
       'offset': offset,
     };
@@ -169,73 +174,75 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (questionsOnly == true) {
       params['is_question'] = 'eq.true';
     }
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final q = searchQuery.trim();
+      params['or'] = '(title.ilike.*$q*,content.ilike.*$q*,syllabus_tag.ilike.*$q*)';
+    }
+
+    var orderParam = 'created_at.desc';
+    if (sortFilter != null) {
+      switch (sortFilter) {
+        case 'trending':
+          orderParam = 'upvotes.desc,replies_count.desc,created_at.desc';
+        case 'latest':
+          orderParam = 'created_at.desc';
+        case 'topToday':
+        case 'top_today':
+          orderParam = 'upvotes.desc,created_at.desc';
+        case 'questions':
+          params['is_question'] = 'eq.true';
+          orderParam = 'created_at.desc';
+        case 'solved':
+          params['is_verified_solution'] = 'eq.true';
+          orderParam = 'created_at.desc';
+        case 'myPosts':
+        case 'my_posts':
+          final myId = _userStorage?.getUserId();
+          if (myId != null && myId.isNotEmpty) {
+            params['author_id'] = 'eq.$myId';
+          } else {
+            final myName = _userStorage?.getUserDisplayName();
+            if (myName != null && myName.isNotEmpty) {
+              params['author_name'] = 'eq.$myName';
+            }
+          }
+          orderParam = 'created_at.desc';
+        case 'saved':
+        case 'bookmarks':
+          final bookmarked = await getBookmarkedForumPostIds();
+          if (bookmarked.isEmpty) {
+            return [];
+          }
+          params['id'] = 'in.(${bookmarked.join(",")})';
+          orderParam = 'created_at.desc';
+      }
+    }
+    params['order'] = orderParam;
 
     try {
-      dynamic data;
-      try {
-        final res = await _client.fetchForumPosts(params);
-        data = res.data;
-      } on Object catch (_) {
-        // Fallback to scalar select if relation embed fails on remote schema
-        params['select'] = '*';
-        final res = await _client.fetchForumPosts(params);
-        data = res.data;
-      }
-
-      final rawList = data is List ? data : <dynamic>[];
+      final res = await _client.fetchForumPosts(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
       final posts = rawList
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      // Reconcile with in-memory reply cache
-      for (var i = 0; i < posts.length; i++) {
-        final p = posts[i];
-        final cached = _replyCache[p.id];
-        if (cached != null && cached.isNotEmpty) {
-          final mergedReplies = <ForumReplyModel>[...p.replies];
-          for (final r in cached) {
-            if (!mergedReplies.any((m) => m.id == r.id)) {
-              mergedReplies.add(r);
+      if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
+        if (_localDataSource != null) {
+          try {
+            final bookmarked = await getBookmarkedForumPostIds();
+            final cached = await _localDataSource!.getForumPosts(track: track);
+            for (final cp in cached.where((p) => bookmarked.contains(p.id))) {
+              if (!posts.any((p) => p.id == cp.id)) {
+                posts.add(cp);
+              }
             }
-          }
-          final effectiveCount = mergedReplies.length > p.repliesCount
-              ? mergedReplies.length
-              : (p.repliesCount > 0 ? p.repliesCount : mergedReplies.length);
-          posts[i] = ForumPostModel(
-            id: p.id,
-            authorId: p.authorId,
-            authorName: p.authorName,
-            authorAvatar: p.authorAvatar,
-            track: p.track,
-            title: p.title,
-            content: p.content,
-            latexContent: p.latexContent,
-            isQuestion: p.isQuestion,
-            isVerifiedSolution: p.isVerifiedSolution,
-            syllabusTag: p.syllabusTag,
-            upvotes: p.upvotes,
-            repliesCount: effectiveCount,
-            createdAt: p.createdAt,
-            replies: mergedReplies,
-          );
+          } on Object catch (_) {}
         }
       }
 
       // Write-through caching to SQLite
       if (_localDataSource != null && posts.isNotEmpty) {
         unawaited(_localDataSource!.saveForumPosts(posts));
-      }
-
-      // Populate in-memory reply cache
-      for (final post in posts) {
-        if (post.replies.isNotEmpty) {
-          final cache = _replyCache.putIfAbsent(post.id, () => []);
-          for (final reply in post.replies) {
-            if (!cache.any((r) => r.id == reply.id)) {
-              cache.add(reply);
-            }
-          }
-        }
       }
 
       return posts;
@@ -254,11 +261,106 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       // Read-through fallback to local SQLite cache
       if (_localDataSource != null) {
         try {
-          final cachedPosts = await _localDataSource!.getForumPosts(
+          var cachedPosts = await _localDataSource!.getForumPosts(
             track: track,
           );
+          if (sortFilter == 'myPosts' || sortFilter == 'my_posts') {
+            final myId = _userStorage?.getUserId();
+            final myName = _userStorage?.getUserDisplayName();
+            cachedPosts = cachedPosts.where((p) => (myId != null && p.authorId == myId) || (myName != null && p.authorName == myName)).toList();
+          } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
+            final bookmarked = await getBookmarkedForumPostIds();
+            cachedPosts = cachedPosts.where((p) => bookmarked.contains(p.id)).toList();
+          }
           if (cachedPosts.isNotEmpty) {
+            if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+              final q = searchQuery.trim().toLowerCase();
+              return cachedPosts.where((p) {
+                return p.title.toLowerCase().contains(q) ||
+                    p.content.toLowerCase().contains(q) ||
+                    p.syllabusTag.toLowerCase().contains(q) ||
+                    p.tags.any((t) => t.toLowerCase().contains(q));
+              }).toList();
+            }
             return cachedPosts;
+          }
+        } on Object catch (_) {}
+      }
+
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ForumReplyModel>> fetchForumReplies({
+    required String postId,
+    String? parentReplyId,
+    bool topLevelOnly = false,
+    String? sortFilter,
+    int limit = 15,
+    int offset = 0,
+  }) async {
+    final params = <String, dynamic>{
+      'select': '*',
+      'post_id': 'eq.$postId',
+      'limit': limit,
+      'offset': offset,
+      'order': 'upvotes.desc,created_at.asc',
+    };
+    if (topLevelOnly) {
+      params['parent_reply_id'] = 'is.null';
+    } else if (parentReplyId != null && parentReplyId.isNotEmpty) {
+      params['parent_reply_id'] = 'eq.$parentReplyId';
+      params['order'] = 'created_at.asc';
+    }
+
+    try {
+      final res = await _client.fetchForumReplies(params);
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final replies = rawList
+          .map((e) => ForumReplyModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      // Write-through to SQLite and in-memory cache
+      if (replies.isNotEmpty) {
+        final cache = _replyCache.putIfAbsent(postId, () => []);
+        for (final reply in replies) {
+          if (!cache.any((r) => r.id == reply.id)) {
+            cache.add(reply);
+          }
+          if (_localDataSource != null) {
+            unawaited(_localDataSource!.saveForumReply(reply));
+          }
+        }
+      }
+
+      return replies;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason:
+                'CommunityRemoteDataSource.fetchForumReplies failed, checking SQLite cache',
+          ),
+        );
+      }
+
+      if (_localDataSource != null) {
+        try {
+          final cached = await _localDataSource!.getRepliesForPost(postId);
+          if (cached.isNotEmpty) {
+            if (topLevelOnly) {
+              return cached
+                  .where((r) => r.parentReplyId == null || r.parentReplyId!.isEmpty)
+                  .toList();
+            } else if (parentReplyId != null && parentReplyId.isNotEmpty) {
+              return cached
+                  .where((r) => r.parentReplyId == parentReplyId)
+                  .toList();
+            }
+            return cached;
           }
         } on Object catch (_) {}
       }
@@ -275,8 +377,37 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     bool isAnonymous = false,
   }) async {
+    // Duplicate check: verify if an identical question/discussion was already created (local cache + remote)
+    try {
+      if (_localDataSource != null) {
+        final cached = await _localDataSource!.getForumPosts(track: track);
+        if (cached.any((p) => p.title.trim().toLowerCase() == title.trim().toLowerCase())) {
+          throw Exception('A discussion thread with this title already exists in $track.');
+        }
+      }
+
+      final existingRes = await _client.fetchForumPosts({
+        'select': 'id,title',
+        'track': 'eq.$track',
+        'title': 'ilike.${title.trim()}',
+        'limit': 1,
+      });
+      final existingData = existingRes.data is List ? (existingRes.data as List) : <dynamic>[];
+      if (existingData.isNotEmpty) {
+        throw Exception('A discussion thread with this title already exists in $track.');
+      }
+    } on Exception catch (e) {
+      if (e.toString().contains('already exists')) {
+        rethrow;
+      }
+    }
+
     final rawUserId = isAnonymous ? null : _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
         ? rawUserId.trim()
@@ -286,28 +417,124 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         : (_userStorage?.getUserDisplayName() ?? 'Scholar');
     final authorAvatar = isAnonymous ? null : _userStorage?.getUserAvatarUrl();
 
+    var enrichedContent = content.trim();
+    if (mediaUrls != null && mediaUrls.isNotEmpty) {
+      enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
+    }
+    if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty) {
+      final durPart = voiceNoteDurationSeconds != null ? ' duration:$voiceNoteDurationSeconds' : '';
+      enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
+    }
+    if (tags != null && tags.isNotEmpty) {
+      enrichedContent += '\n<!-- tags: ${jsonEncode(tags)} -->';
+    }
+
     final payload = <String, dynamic>{
-      'title': title,
-      'content': content,
+      'title': title.trim(),
+      'content': enrichedContent,
       'track': track,
       if (latexContent != null && latexContent.trim().isNotEmpty)
-        'latex_content': latexContent,
+        'latex_content': latexContent.trim(),
       'is_question': isQuestion,
       'syllabus_tag': syllabusTag,
+      if (tags != null && tags.isNotEmpty)
+        'tags': tags,
+      if (mediaUrls != null && mediaUrls.isNotEmpty)
+        'media_urls': mediaUrls,
+      if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
+        'voice_note_url': voiceNoteUrl.trim(),
+      'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
     };
 
-    final res = await _client.createForumPost(payload);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    final res = await _safeCreateForumPost(payload);
+    final dynamic responseData = res.data;
+    final rawList = responseData is List ? responseData : <dynamic>[];
     if (rawList.isEmpty) {
       throw Exception('Failed to create forum post');
     }
-    final post = ForumPostModel.fromJson(rawList.first as Map<String, dynamic>);
+    var post = ForumPostModel.fromJson(rawList.first as Map<String, dynamic>);
+    if (post.mediaUrls.isEmpty && mediaUrls != null && mediaUrls.isNotEmpty) {
+      post = post.copyWith(mediaUrls: mediaUrls);
+    }
+    if (post.tags.isEmpty && tags != null && tags.isNotEmpty) {
+      post = post.copyWith(tags: tags);
+    }
+    if (post.voiceNoteUrl == null && voiceNoteUrl != null && voiceNoteUrl.isNotEmpty) {
+      post = post.copyWith(
+        voiceNoteUrl: voiceNoteUrl,
+        voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      );
+    }
     unawaited(_localDataSource?.saveForumPost(post));
     return post;
+  }
+
+  String _extractPostgrestErrorString(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      return '${e.message} $data $e';
+    }
+    return e.toString();
+  }
+
+  Future<HttpResponse<dynamic>> _safeCreateForumPost(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      return await _client.createForumPost(payload);
+    } catch (e) {
+      final errStr = _extractPostgrestErrorString(e);
+      if (errStr.contains('PGRST204') || errStr.contains('Could not find the') || errStr.contains('schema cache')) {
+        final match = RegExp("Could not find the '([^']+)' column").firstMatch(errStr);
+        final missingCol = match?.group(1);
+        final fallback = Map<String, dynamic>.from(payload);
+        if (missingCol != null && fallback.containsKey(missingCol)) {
+          fallback.remove(missingCol);
+          return _safeCreateForumPost(fallback);
+        } else {
+          fallback
+            ..remove('media_urls')
+            ..remove('voice_note_url')
+            ..remove('voice_note_duration_seconds')
+            ..remove('tags')
+            ..remove('is_anonymous');
+          return _safeCreateForumPost(fallback);
+        }
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> deleteForumPost(String postId) async {
+    try {
+      await _client.deleteForumPost({'id': 'eq.$postId'});
+      _replyCache.remove(postId);
+      if (_localDataSource != null) {
+        unawaited(_localDataSource!.deleteForumPost(postId));
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.deleteForumPost failed',
+          ),
+        );
+      }
+      // Fallback local deletion
+      _replyCache.remove(postId);
+      if (_localDataSource != null) {
+        unawaited(_localDataSource!.deleteForumPost(postId));
+      }
+      return true;
+    }
   }
 
   @override
@@ -316,6 +543,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String content,
     String? latexContent,
     String? parentReplyId,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
   }) async {
     final rawUserId = _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
@@ -324,27 +554,51 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
     final authorAvatar = _userStorage?.getUserAvatarUrl();
 
+    var enrichedContent = content.trim();
+    if (mediaUrls != null && mediaUrls.isNotEmpty) {
+      enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
+    }
+    if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty) {
+      final durPart = voiceNoteDurationSeconds != null ? ' duration:$voiceNoteDurationSeconds' : '';
+      enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
+    }
+
     final payload = <String, dynamic>{
       'post_id': postId,
-      'content': content,
+      'content': enrichedContent,
       if (latexContent != null && latexContent.trim().isNotEmpty)
         'latex_content': latexContent,
       if (parentReplyId != null && parentReplyId.trim().isNotEmpty)
         'parent_reply_id': parentReplyId,
+      if (mediaUrls != null && mediaUrls.isNotEmpty)
+        'media_urls': mediaUrls,
+      if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
+        'voice_note_url': voiceNoteUrl.trim(),
+      'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
     };
 
-    final res = await _client.replyToForumPost(payload);
-    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    final res = await _safeReplyToForumPost(payload);
+    final dynamic responseData = res.data;
+    final rawList = responseData is List ? responseData : <dynamic>[];
     if (rawList.isEmpty) {
       throw Exception('Failed to add reply');
     }
-    final reply = ForumReplyModel.fromJson(
+    var reply = ForumReplyModel.fromJson(
       rawList.first as Map<String, dynamic>,
     );
+    if (reply.mediaUrls.isEmpty && mediaUrls != null && mediaUrls.isNotEmpty) {
+      reply = reply.copyWith(mediaUrls: mediaUrls);
+    }
+    if (reply.voiceNoteUrl == null && voiceNoteUrl != null && voiceNoteUrl.isNotEmpty) {
+      reply = reply.copyWith(
+        voiceNoteUrl: voiceNoteUrl,
+        voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      );
+    }
     final cache = _replyCache.putIfAbsent(postId, () => []);
     if (!cache.any((r) => r.id == reply.id)) {
       cache.add(reply);
@@ -355,6 +609,33 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       controller.add(List.unmodifiable(cache));
     }
     return reply;
+  }
+
+  Future<HttpResponse<dynamic>> _safeReplyToForumPost(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      return await _client.replyToForumPost(payload);
+    } catch (e) {
+      final errStr = _extractPostgrestErrorString(e);
+      if (errStr.contains('PGRST204') || errStr.contains('Could not find the') || errStr.contains('schema cache')) {
+        final match = RegExp("Could not find the '([^']+)' column").firstMatch(errStr);
+        final missingCol = match?.group(1);
+        final fallback = Map<String, dynamic>.from(payload);
+        if (missingCol != null && fallback.containsKey(missingCol)) {
+          fallback.remove(missingCol);
+          return _safeReplyToForumPost(fallback);
+        } else {
+          fallback
+            ..remove('media_urls')
+            ..remove('voice_note_url')
+            ..remove('voice_note_duration_seconds')
+            ..remove('is_anonymous');
+          return _safeReplyToForumPost(fallback);
+        }
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -378,24 +659,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (newUpvotes < 0) newUpvotes = 0;
         if (newDownvotes < 0) newDownvotes = 0;
 
-        final updated = ForumPostModel(
-          id: currentPost.id,
-          authorId: currentPost.authorId,
-          authorName: currentPost.authorName,
-          authorAvatar: currentPost.authorAvatar,
-          track: currentPost.track,
-          title: currentPost.title,
-          content: currentPost.content,
-          latexContent: currentPost.latexContent,
-          isQuestion: currentPost.isQuestion,
-          isVerifiedSolution: currentPost.isVerifiedSolution,
-          syllabusTag: currentPost.syllabusTag,
+        final updated = currentPost.copyWith(
           upvotes: newUpvotes,
           downvotes: newDownvotes,
           userVote: newVote,
-          repliesCount: currentPost.repliesCount,
-          createdAt: currentPost.createdAt,
-          replies: currentPost.replies,
         );
         await _localDataSource?.saveForumPost(updated);
 
@@ -450,20 +717,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (newUpvotes < 0) newUpvotes = 0;
         if (newDownvotes < 0) newDownvotes = 0;
 
-        final updated = ForumReplyModel(
-          id: currentReply.id,
-          postId: currentReply.postId,
-          parentReplyId: currentReply.parentReplyId,
-          authorId: currentReply.authorId,
-          authorName: currentReply.authorName,
-          authorAvatar: currentReply.authorAvatar,
-          content: currentReply.content,
-          latexContent: currentReply.latexContent,
-          isVerifiedSolution: currentReply.isVerifiedSolution,
+        final updated = currentReply.copyWith(
           upvotes: newUpvotes,
           downvotes: newDownvotes,
           userVote: newVote,
-          createdAt: currentReply.createdAt,
         );
 
         cache[replyIndex] = updated;
@@ -537,17 +794,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (cache != null) {
         for (var i = 0; i < cache.length; i++) {
           final isMatch = cache[i].id == replyId;
-          final updated = ForumReplyModel(
-            id: cache[i].id,
-            postId: cache[i].postId,
-            authorId: cache[i].authorId,
-            authorName: cache[i].authorName,
-            authorAvatar: cache[i].authorAvatar,
-            content: cache[i].content,
-            latexContent: cache[i].latexContent,
+          final updated = cache[i].copyWith(
             isVerifiedSolution: isMatch,
-            upvotes: cache[i].upvotes,
-            createdAt: cache[i].createdAt,
           );
           cache[i] = updated;
           if (isMatch) {
@@ -1225,6 +1473,236 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         );
       }
       return false;
+    }
+  }
+
+  static bool _isSubscriptionRpcAvailable = true;
+
+  @override
+  Future<bool> toggleForumPostSubscription(String postId) async {
+    final storage = _localStorage;
+    final current = await _getSubscribedForumPostIds();
+    final isSubbed = current.contains(postId);
+    final nextState = !isSubbed;
+    final updated = Set<String>.from(current);
+    if (isSubbed) {
+      updated.remove(postId);
+    } else {
+      updated.add(postId);
+    }
+    if (storage != null) {
+      await storage.savePreference(
+        key: 'forum_subscribed_post_ids',
+        data: jsonEncode(updated.toList()),
+      );
+    }
+
+    final userId = _userStorage?.getUserId();
+
+    // 1. Sync device token and FCM topic with NotificationService
+    try {
+      if (locator.isRegistered<NotificationService>()) {
+        final notifService = locator<NotificationService>();
+        if (nextState) {
+          unawaited(notifService.subscribeToTopic('forum_post_$postId'));
+          if (userId != null && userId.isNotEmpty) {
+            unawaited(notifService.syncDeviceTokenWithBackend(userId: userId));
+          }
+        } else {
+          unawaited(notifService.unsubscribeFromTopic('forum_post_$postId'));
+        }
+      }
+    } on Object catch (_) {}
+
+    bool? serverResult;
+
+    // 2. Attempt Supabase stored procedure
+    if (_isSubscriptionRpcAvailable) {
+      try {
+        final res = await _client.toggleForumPostSubscription({
+          'p_post_id': postId,
+          if (userId case final String uid) 'p_user_id': uid,
+        });
+        final data = res.data;
+        if (data is bool) {
+          serverResult = data;
+        } else if (data is Map && data['is_subscribed'] is bool) {
+          serverResult = data['is_subscribed'] as bool;
+        } else if (data is Map && data['subscribed'] is bool) {
+          serverResult = data['subscribed'] as bool;
+        }
+      } on DioException catch (dioErr) {
+        if (dioErr.response?.statusCode == 404) {
+          _isSubscriptionRpcAvailable = false;
+        }
+      } on Object catch (_) {}
+    }
+
+    // 3. Direct REST table fallback on forum_post_subscriptions if RPC is unavailable/failed
+    if (serverResult == null && userId != null && userId.isNotEmpty) {
+      try {
+        if (nextState) {
+          await _client.insertForumPostSubscription({
+            'user_id': userId,
+            'post_id': postId,
+          });
+          serverResult = true;
+        } else {
+          await _client.deleteForumPostSubscription({
+            'post_id': 'eq.$postId',
+            'user_id': 'eq.$userId',
+          });
+          serverResult = false;
+        }
+      } on Object catch (_) {}
+    }
+
+    if (serverResult != null && serverResult != nextState) {
+      final synced = Set<String>.from(updated);
+      if (serverResult) {
+        synced.add(postId);
+      } else {
+        synced.remove(postId);
+      }
+      if (storage != null) {
+        await storage.savePreference(
+          key: 'forum_subscribed_post_ids',
+          data: jsonEncode(synced.toList()),
+        );
+      }
+      return serverResult;
+    }
+
+    return nextState;
+  }
+
+  @override
+  Future<bool> isForumPostSubscribed(String postId) async {
+    final storage = _localStorage;
+    final current = await _getSubscribedForumPostIds();
+    final localSubscribed = current.contains(postId);
+
+    final userId = _userStorage?.getUserId();
+    bool? serverResult;
+
+    if (_isSubscriptionRpcAvailable) {
+      try {
+        final res = await _client.isForumPostSubscribed({
+          'p_post_id': postId,
+          if (userId case final String uid) 'p_user_id': uid,
+        });
+        final data = res.data;
+        if (data is bool) {
+          serverResult = data;
+        } else if (data is Map && data['is_subscribed'] is bool) {
+          serverResult = data['is_subscribed'] as bool;
+        } else if (data is Map && data['subscribed'] is bool) {
+          serverResult = data['subscribed'] as bool;
+        }
+      } on DioException catch (dioErr) {
+        if (dioErr.response?.statusCode == 404) {
+          _isSubscriptionRpcAvailable = false;
+        }
+      } on Object catch (_) {}
+    }
+
+    // Direct REST table query fallback
+    if (serverResult == null && userId != null && userId.isNotEmpty) {
+      try {
+        final res = await _client.fetchForumPostSubscriptions({
+          'post_id': 'eq.$postId',
+          'user_id': 'eq.$userId',
+          'select': 'post_id',
+        });
+        final data = res.data;
+        if (data is List) {
+          serverResult = data.isNotEmpty;
+        }
+      } on Object catch (_) {}
+    }
+
+    if (serverResult != null) {
+      if (serverResult != localSubscribed && storage != null) {
+        final updated = Set<String>.from(current);
+        if (serverResult) {
+          updated.add(postId);
+        } else {
+          updated.remove(postId);
+        }
+        await storage.savePreference(
+          key: 'forum_subscribed_post_ids',
+          data: jsonEncode(updated.toList()),
+        );
+      }
+      return serverResult;
+    }
+
+    return localSubscribed;
+  }
+
+  Future<Set<String>> _getSubscribedForumPostIds() async {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return {};
+      final raw = storage.getPreference(key: 'forum_subscribed_post_ids');
+      if (raw == null || raw.trim().isEmpty) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toSet();
+      }
+      return {};
+    } on Object catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Future<bool> toggleBookmarkForumPost(String postId) async {
+    try {
+      final storage = _localStorage;
+      final current = await getBookmarkedForumPostIds();
+      final isCurrentlyBookmarked = current.contains(postId);
+      final updated = Set<String>.from(current);
+      if (isCurrentlyBookmarked) {
+        updated.remove(postId);
+      } else {
+        updated.add(postId);
+      }
+      if (storage != null) {
+        await storage.savePreference(
+          key: 'forum_bookmarked_post_ids',
+          data: jsonEncode(updated.toList()),
+        );
+      }
+      return !isCurrentlyBookmarked;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.toggleBookmarkForumPost failed',
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
+  Future<Set<String>> getBookmarkedForumPostIds() async {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return {};
+      final raw = storage.getPreference(key: 'forum_bookmarked_post_ids');
+      if (raw == null || raw.trim().isEmpty) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toSet();
+      }
+      return {};
+    } on Object catch (_) {
+      return {};
     }
   }
 }

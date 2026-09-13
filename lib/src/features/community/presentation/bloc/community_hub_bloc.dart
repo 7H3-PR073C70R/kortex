@@ -18,6 +18,10 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<SwitchCommunityTabEvent>(_onSwitchCommunityTab);
     on<ChangeTrackFilterEvent>(_onChangeTrackFilter);
     on<ToggleQuestionsOnlyFilterEvent>(_onToggleQuestionsOnlyFilter);
+    on<ChangeForumSortFilterEvent>(_onChangeForumSortFilter);
+    on<RefreshForumPostsEvent>(_onRefreshForumPosts);
+    on<SearchForumPostsEvent>(_onSearchForumPosts);
+    on<DeleteForumPostEvent>(_onDeleteForumPost);
     on<CreateRoomEvent>(_onCreateRoom);
     on<CreateForumPostEvent>(_onCreateForumPost);
     on<ReplyToPostEvent>(_onReplyToPost);
@@ -32,6 +36,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
     on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
+    on<ToggleBookmarkForumPostEvent>(_onToggleBookmarkForumPost);
     on<ClearCommunityErrorEvent>(_onClearCommunityError);
   }
 
@@ -62,6 +67,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     final forumRes = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
+      sortFilter: state.selectedForumFilter,
+      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
     );
     final circlesRes = await _repository.fetchStudyCircles(
       track: effectiveTrack,
@@ -70,6 +77,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     final leaderboardRes = await _repository.fetchLeaderboards(
       track: effectiveTrack,
     );
+    final bookmarkedRes = await _repository.getBookmarkedForumPostIds();
 
     final rooms = roomsRes.fold((_) => state.studyRooms, (r) => r);
     final forumPosts = forumRes.fold((_) => state.forumPosts, (posts) => posts);
@@ -82,6 +90,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       (_) => state.leaderboardEntries,
       (entries) => entries,
     );
+    final bookmarkedIds = bookmarkedRes.fold((_) => <String>{}, (ids) => ids);
 
     final hasAnyData =
         rooms.isNotEmpty ||
@@ -106,6 +115,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           studyCircles: studyCircles,
           sharedDecks: sharedDecks,
           leaderboardEntries: leaderboardEntries,
+          bookmarkedPostIds: bookmarkedIds,
           hasMoreForumPosts: forumPosts.length >= 15,
           forumPostsOffset: forumPosts.length,
           isLoadingMoreForumPosts: false,
@@ -159,6 +169,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     final res = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: event.questionsOnly,
+      sortFilter: state.selectedForumFilter,
     );
     res.fold(
       (_) {},
@@ -171,6 +182,118 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
     );
+  }
+
+  Future<void> _onChangeForumSortFilter(
+    ChangeForumSortFilterEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        selectedForumFilter: event.sortFilter,
+        isLoadingMoreForumPosts: false,
+      ),
+    );
+    final effectiveTrack = state.selectedTrack == 'All'
+        ? null
+        : state.selectedTrack;
+    final res = await _repository.fetchForumPosts(
+      track: effectiveTrack,
+      questionsOnly: state.questionsOnly,
+      sortFilter: event.sortFilter,
+    );
+    res.fold(
+      (_) {},
+      (posts) => emit(
+        state.copyWith(
+          forumPosts: posts,
+          hasMoreForumPosts: posts.length >= 15,
+          forumPostsOffset: posts.length,
+          isLoadingMoreForumPosts: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onRefreshForumPosts(
+    RefreshForumPostsEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final effectiveTrack = state.selectedTrack == 'All'
+        ? null
+        : state.selectedTrack;
+    final res = await _repository.fetchForumPosts(
+      track: effectiveTrack,
+      questionsOnly: state.questionsOnly,
+      sortFilter: state.selectedForumFilter,
+      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
+    );
+    res.fold(
+      (_) {},
+      (posts) => emit(
+        state.copyWith(
+          forumPosts: posts,
+          hasMoreForumPosts: posts.length >= 15,
+          forumPostsOffset: posts.length,
+          isLoadingMoreForumPosts: false,
+        ),
+      ),
+    );
+    event.completer?.complete();
+  }
+
+  Future<void> _onSearchForumPosts(
+    SearchForumPostsEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    emit(state.copyWith(forumSearchQuery: event.query));
+    final effectiveTrack =
+        state.selectedTrack == 'All' ? null : state.selectedTrack;
+    final res = await _repository.fetchForumPosts(
+      track: effectiveTrack,
+      questionsOnly: state.questionsOnly,
+      sortFilter: state.selectedForumFilter,
+      searchQuery: event.query.trim().isNotEmpty ? event.query.trim() : null,
+    );
+    res.fold(
+      (_) {},
+      (posts) => emit(
+        state.copyWith(
+          forumPosts: posts,
+          hasMoreForumPosts: posts.length >= 15,
+          forumPostsOffset: posts.length,
+          isLoadingMoreForumPosts: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onDeleteForumPost(
+    DeleteForumPostEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final updated = state.forumPosts.where((p) => p.id != event.postId).toList();
+    emit(state.copyWith(forumPosts: updated));
+    await _repository.deleteForumPost(event.postId);
+  }
+
+  Future<void> _onToggleBookmarkForumPost(
+    ToggleBookmarkForumPostEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final current = Set<String>.from(state.bookmarkedPostIds);
+    final isCurrentlyBookmarked = current.contains(event.postId);
+    if (isCurrentlyBookmarked) {
+      current.remove(event.postId);
+    } else {
+      current.add(event.postId);
+    }
+    var updatedPosts = state.forumPosts;
+    if ((state.selectedForumFilter == 'saved' || state.selectedForumFilter == 'bookmarks') && isCurrentlyBookmarked) {
+      updatedPosts = state.forumPosts.where((p) => p.id != event.postId).toList();
+    }
+    emit(state.copyWith(bookmarkedPostIds: current, forumPosts: updatedPosts));
+    await _repository.toggleBookmarkForumPost(event.postId);
   }
 
   Future<void> _onFetchMoreForumPosts(
@@ -189,6 +312,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     final res = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
+      sortFilter: state.selectedForumFilter,
+      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
       offset: currentOffset,
     );
 
@@ -250,6 +375,10 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       latexContent: event.latexContent,
       isQuestion: event.isQuestion,
       syllabusTag: event.syllabusTag,
+      tags: event.tags,
+      mediaUrls: event.mediaUrls,
+      voiceNoteUrl: event.voiceNoteUrl,
+      voiceNoteDurationSeconds: event.voiceNoteDurationSeconds,
       isAnonymous: event.isAnonymous,
     );
     res.fold(
@@ -274,6 +403,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       content: event.content,
       latexContent: event.latexContent,
       parentReplyId: event.parentReplyId,
+      mediaUrls: event.mediaUrls,
+      voiceNoteUrl: event.voiceNoteUrl,
+      voiceNoteDurationSeconds: event.voiceNoteDurationSeconds,
     );
     res.fold(
       (failure) => emit(

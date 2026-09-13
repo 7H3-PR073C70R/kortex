@@ -75,6 +75,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
+    String? searchQuery,
     int limit = 15,
     int offset = 0,
   }) {
@@ -82,6 +84,30 @@ class CommunityRepositoryImpl implements CommunityRepository {
         .fetchForumPosts(
           track: track,
           questionsOnly: questionsOnly,
+          sortFilter: sortFilter,
+          searchQuery: searchQuery,
+          limit: limit,
+          offset: offset,
+        )
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, List<ForumReplyEntity>>> fetchForumReplies({
+    required String postId,
+    String? parentReplyId,
+    bool topLevelOnly = false,
+    String? sortFilter,
+    int limit = 15,
+    int offset = 0,
+  }) {
+    return _remoteDataSource
+        .fetchForumReplies(
+          postId: postId,
+          parentReplyId: parentReplyId,
+          topLevelOnly: topLevelOnly,
+          sortFilter: sortFilter,
           limit: limit,
           offset: offset,
         )
@@ -97,6 +123,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     bool isAnonymous = false,
   }) {
     return _remoteDataSource
@@ -107,9 +137,20 @@ class CommunityRepositoryImpl implements CommunityRepository {
           latexContent: latexContent,
           isQuestion: isQuestion,
           syllabusTag: syllabusTag,
+          tags: tags,
+          mediaUrls: mediaUrls,
+          voiceNoteUrl: voiceNoteUrl,
+          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
           isAnonymous: isAnonymous,
         )
         .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteForumPost(String postId) {
+    return _remoteDataSource
+        .deleteForumPost(postId)
         .makeRequest();
   }
 
@@ -119,6 +160,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String content,
     String? latexContent,
     String? parentReplyId,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
   }) {
     return _remoteDataSource
         .replyToForumPost(
@@ -126,6 +170,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
           content: content,
           latexContent: latexContent,
           parentReplyId: parentReplyId,
+          mediaUrls: mediaUrls,
+          voiceNoteUrl: voiceNoteUrl,
+          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -564,6 +611,34 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }) {
     return _remoteDataSource
         .fetchLiveKitToken(roomId: roomId, userId: userId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> toggleForumPostSubscription(String postId) {
+    return _remoteDataSource
+        .toggleForumPostSubscription(postId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> isForumPostSubscribed(String postId) {
+    return _remoteDataSource
+        .isForumPostSubscribed(postId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId) {
+    return _remoteDataSource
+        .toggleBookmarkForumPost(postId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() {
+    return _remoteDataSource
+        .getBookmarkedForumPostIds()
         .makeRequest();
   }
 }

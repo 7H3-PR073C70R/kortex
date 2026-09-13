@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
@@ -17,6 +18,15 @@ class LoadCommunityHubEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [track, category];
+}
+
+class RefreshForumPostsEvent extends CommunityEvent {
+  const RefreshForumPostsEvent({this.completer});
+
+  final Completer<void>? completer;
+
+  @override
+  List<Object?> get props => [completer];
 }
 
 class SwitchCommunityTabEvent extends CommunityEvent {
@@ -44,6 +54,15 @@ class ToggleQuestionsOnlyFilterEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [questionsOnly];
+}
+
+class ChangeForumSortFilterEvent extends CommunityEvent {
+  const ChangeForumSortFilterEvent(this.sortFilter);
+
+  final String sortFilter;
+
+  @override
+  List<Object?> get props => [sortFilter];
 }
 
 class CreateRoomEvent extends CommunityEvent {
@@ -85,6 +104,10 @@ class CreateForumPostEvent extends CommunityEvent {
     this.latexContent,
     this.isQuestion = false,
     this.syllabusTag = 'General',
+    this.tags = const [],
+    this.mediaUrls = const [],
+    this.voiceNoteUrl,
+    this.voiceNoteDurationSeconds,
     this.isAnonymous = false,
   });
 
@@ -94,6 +117,10 @@ class CreateForumPostEvent extends CommunityEvent {
   final String? latexContent;
   final bool isQuestion;
   final String syllabusTag;
+  final List<String> tags;
+  final List<String> mediaUrls;
+  final String? voiceNoteUrl;
+  final int? voiceNoteDurationSeconds;
   final bool isAnonymous;
 
   @override
@@ -104,8 +131,30 @@ class CreateForumPostEvent extends CommunityEvent {
     latexContent,
     isQuestion,
     syllabusTag,
+    tags,
+    mediaUrls,
+    voiceNoteUrl,
+    voiceNoteDurationSeconds,
     isAnonymous,
   ];
+}
+
+class SearchForumPostsEvent extends CommunityEvent {
+  const SearchForumPostsEvent(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class DeleteForumPostEvent extends CommunityEvent {
+  const DeleteForumPostEvent(this.postId);
+
+  final String postId;
+
+  @override
+  List<Object?> get props => [postId];
 }
 
 class ReplyToPostEvent extends CommunityEvent {
@@ -114,15 +163,29 @@ class ReplyToPostEvent extends CommunityEvent {
     required this.content,
     this.latexContent,
     this.parentReplyId,
+    this.mediaUrls = const [],
+    this.voiceNoteUrl,
+    this.voiceNoteDurationSeconds,
   });
 
   final String postId;
   final String content;
   final String? latexContent;
   final String? parentReplyId;
+  final List<String> mediaUrls;
+  final String? voiceNoteUrl;
+  final int? voiceNoteDurationSeconds;
 
   @override
-  List<Object?> get props => [postId, content, latexContent, parentReplyId];
+  List<Object?> get props => [
+    postId,
+    content,
+    latexContent,
+    parentReplyId,
+    mediaUrls,
+    voiceNoteUrl,
+    voiceNoteDurationSeconds,
+  ];
 }
 
 class VoteForumPostEvent extends CommunityEvent {
@@ -270,4 +333,13 @@ class ClearCommunityErrorEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+class ToggleBookmarkForumPostEvent extends CommunityEvent {
+  const ToggleBookmarkForumPostEvent(this.postId);
+
+  final String postId;
+
+  @override
+  List<Object?> get props => [postId];
 }

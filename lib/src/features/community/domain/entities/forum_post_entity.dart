@@ -19,6 +19,10 @@ class ForumPostEntity extends Equatable {
     this.downvotes = 0,
     this.userVote = 0,
     this.repliesCount = 0,
+    this.tags = const [],
+    this.mediaUrls = const [],
+    this.voiceNoteUrl,
+    this.voiceNoteDurationSeconds,
     this.replies = const [],
   });
 
@@ -37,6 +41,10 @@ class ForumPostEntity extends Equatable {
   final int downvotes;
   final int userVote;
   final int repliesCount;
+  final List<String> tags;
+  final List<String> mediaUrls;
+  final String? voiceNoteUrl;
+  final int? voiceNoteDurationSeconds;
   final DateTime createdAt;
   final List<ForumReplyEntity> replies;
 
@@ -62,6 +70,10 @@ class ForumPostEntity extends Equatable {
     int? downvotes,
     int? userVote,
     int? repliesCount,
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     DateTime? createdAt,
     List<ForumReplyEntity>? replies,
   }) {
@@ -81,6 +93,11 @@ class ForumPostEntity extends Equatable {
       downvotes: downvotes ?? this.downvotes,
       userVote: userVote ?? this.userVote,
       repliesCount: repliesCount ?? this.repliesCount,
+      tags: tags ?? this.tags,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
+      voiceNoteDurationSeconds:
+          voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
       createdAt: createdAt ?? this.createdAt,
       replies: replies ?? this.replies,
     );
@@ -103,6 +120,10 @@ class ForumPostEntity extends Equatable {
     downvotes,
     userVote,
     repliesCount,
+    tags,
+    mediaUrls,
+    voiceNoteUrl,
+    voiceNoteDurationSeconds,
     createdAt,
     replies,
   ];
@@ -124,6 +145,10 @@ class ForumReplyEntity extends Equatable {
     this.upvotes = 0,
     this.downvotes = 0,
     this.userVote = 0,
+    this.repliesCount = 0,
+    this.mediaUrls = const [],
+    this.voiceNoteUrl,
+    this.voiceNoteDurationSeconds,
   });
 
   final String id;
@@ -138,6 +163,10 @@ class ForumReplyEntity extends Equatable {
   final int upvotes;
   final int downvotes;
   final int userVote;
+  final int repliesCount;
+  final List<String> mediaUrls;
+  final String? voiceNoteUrl;
+  final int? voiceNoteDurationSeconds;
   final DateTime createdAt;
 
   int get netVotes => upvotes - downvotes;
@@ -156,6 +185,10 @@ class ForumReplyEntity extends Equatable {
     int? upvotes,
     int? downvotes,
     int? userVote,
+    int? repliesCount,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     DateTime? createdAt,
   }) {
     return ForumReplyEntity(
@@ -171,6 +204,11 @@ class ForumReplyEntity extends Equatable {
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
       userVote: userVote ?? this.userVote,
+      repliesCount: repliesCount ?? this.repliesCount,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
+      voiceNoteDurationSeconds:
+          voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -189,6 +227,10 @@ class ForumReplyEntity extends Equatable {
     upvotes,
     downvotes,
     userVote,
+    repliesCount,
+    mediaUrls,
+    voiceNoteUrl,
+    voiceNoteDurationSeconds,
     createdAt,
   ];
 }

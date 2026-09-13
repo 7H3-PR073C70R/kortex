@@ -24,6 +24,9 @@ class CommunityState extends Equatable {
     this.hasMoreForumPosts = true,
     this.isLoadingMoreForumPosts = false,
     this.forumPostsOffset = 0,
+    this.selectedForumFilter = 'trending',
+    this.forumSearchQuery = '',
+    this.bookmarkedPostIds = const {},
   });
 
   final CommunityStatus status;
@@ -32,6 +35,9 @@ class CommunityState extends Equatable {
   final int selectedTabIndex;
   final String selectedTrack;
   final bool questionsOnly;
+  final String selectedForumFilter;
+  final String forumSearchQuery;
+  final Set<String> bookmarkedPostIds;
   final List<StudyRoomEntity> studyRooms;
   final List<ForumPostEntity> forumPosts;
   final List<StudyCircleEntity> studyCircles;
@@ -49,6 +55,9 @@ class CommunityState extends Equatable {
     int? selectedTabIndex,
     String? selectedTrack,
     bool? questionsOnly,
+    String? selectedForumFilter,
+    String? forumSearchQuery,
+    Set<String>? bookmarkedPostIds,
     List<StudyRoomEntity>? studyRooms,
     List<ForumPostEntity>? forumPosts,
     List<StudyCircleEntity>? studyCircles,
@@ -66,6 +75,9 @@ class CommunityState extends Equatable {
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       selectedTrack: selectedTrack ?? this.selectedTrack,
       questionsOnly: questionsOnly ?? this.questionsOnly,
+      selectedForumFilter: selectedForumFilter ?? this.selectedForumFilter,
+      forumSearchQuery: forumSearchQuery ?? this.forumSearchQuery,
+      bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
       studyRooms: studyRooms ?? this.studyRooms,
       forumPosts: forumPosts ?? this.forumPosts,
       studyCircles: studyCircles ?? this.studyCircles,
@@ -88,6 +100,9 @@ class CommunityState extends Equatable {
     selectedTabIndex,
     selectedTrack,
     questionsOnly,
+    selectedForumFilter,
+    forumSearchQuery,
+    bookmarkedPostIds,
     studyRooms,
     forumPosts,
     studyCircles,

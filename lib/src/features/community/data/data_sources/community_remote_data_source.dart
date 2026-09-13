@@ -24,6 +24,17 @@ abstract class CommunityRemoteDataSource {
   Future<List<ForumPostModel>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
+    String? searchQuery,
+    int limit = 15,
+    int offset = 0,
+  });
+
+  Future<List<ForumReplyModel>> fetchForumReplies({
+    required String postId,
+    String? parentReplyId,
+    bool topLevelOnly = false,
+    String? sortFilter,
     int limit = 15,
     int offset = 0,
   });
@@ -35,14 +46,23 @@ abstract class CommunityRemoteDataSource {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     bool isAnonymous = false,
   });
+
+  Future<bool> deleteForumPost(String postId);
 
   Future<ForumReplyModel> replyToForumPost({
     required String postId,
     required String content,
     String? latexContent,
     String? parentReplyId,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
   });
 
   Future<bool> voteForumPost({
@@ -113,4 +133,16 @@ abstract class CommunityRemoteDataSource {
     String? details,
     String? postId,
   });
+
+  /// Toggles push notification subscription for a forum post.
+  Future<bool> toggleForumPostSubscription(String postId);
+
+  /// Checks if current user is subscribed to notifications for a forum post.
+  Future<bool> isForumPostSubscribed(String postId);
+
+  /// Toggles bookmark / save state for a forum post.
+  Future<bool> toggleBookmarkForumPost(String postId);
+
+  /// Retrieves all bookmarked forum post IDs for the current user.
+  Future<Set<String>> getBookmarkedForumPostIds();
 }

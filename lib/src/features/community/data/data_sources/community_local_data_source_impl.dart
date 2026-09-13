@@ -94,6 +94,10 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
         ? replies.length
         : (entry.repliesCount > 0 ? entry.repliesCount : replies.length);
 
+    final mediaUrls = ForumPostModel.extractMediaUrls(entry.content);
+    final tags = ForumPostModel.extractTags(entry.content);
+    final voiceNote = ForumPostModel.extractVoiceNote(entry.content);
+
     return ForumPostModel(
       id: entry.id,
       authorId: entry.authorId,
@@ -107,6 +111,10 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
       downvotes: entry.downvotes,
       userVote: entry.userVote,
       repliesCount: effectiveRepliesCount,
+      tags: tags,
+      mediaUrls: mediaUrls,
+      voiceNoteUrl: voiceNote.url,
+      voiceNoteDurationSeconds: voiceNote.duration,
       createdAt: entry.createdAt,
       replies: replies,
     );
@@ -136,6 +144,9 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
   }
 
   ForumReplyModel _replyFromEntry(ForumReplyEntry entry) {
+    final mediaUrls = ForumReplyModel.extractMediaUrls(entry.content);
+    final voiceNote = ForumReplyModel.extractVoiceNote(entry.content);
+
     return ForumReplyModel(
       id: entry.id,
       postId: entry.postId,
@@ -148,6 +159,9 @@ class CommunityLocalDataSourceImpl implements CommunityLocalDataSource {
       upvotes: entry.upvotes,
       downvotes: entry.downvotes,
       userVote: entry.userVote,
+      mediaUrls: mediaUrls,
+      voiceNoteUrl: voiceNote.url,
+      voiceNoteDurationSeconds: voiceNote.duration,
       createdAt: entry.createdAt,
     );
   }

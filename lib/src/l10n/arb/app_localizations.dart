@@ -1718,10 +1718,10 @@ abstract class AppLocalizations {
   /// **'Study Decks'**
   String get navTabDecks;
 
-  /// Community tab label
+  /// Label for Forum bottom navigation tab
   ///
   /// In en, this message translates to:
-  /// **'Community'**
+  /// **'Forum'**
   String get navTabCommunity;
 
   /// Profile tab label
@@ -2936,10 +2936,10 @@ abstract class AppLocalizations {
   /// **'Preview & Edit Cards ({count})'**
   String previewAndEditCardsTitle(int count);
 
-  /// Title of the Community Hub
+  /// Title of the Forum page
   ///
   /// In en, this message translates to:
-  /// **'Community & Study Hub'**
+  /// **'Forum'**
   String get communityTitle;
 
   /// Label for live study rooms tab
@@ -2948,10 +2948,10 @@ abstract class AppLocalizations {
   /// **'Live Rooms'**
   String get liveRoomsTab;
 
-  /// Label for track discussion forum tab
+  /// Label for discussion forum
   ///
   /// In en, this message translates to:
-  /// **'Track Forum'**
+  /// **'Forum'**
   String get forumTab;
 
   /// Label for community deck marketplace tab

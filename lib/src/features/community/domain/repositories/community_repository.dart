@@ -28,10 +28,22 @@ abstract class CommunityRepository {
     bool isSilentFocus = true,
   });
 
-  /// Fetches discussion forum posts filtered by track.
+  /// Fetches discussion forum posts filtered by track and backend sort mode.
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
+    String? searchQuery,
+    int limit = 15,
+    int offset = 0,
+  });
+
+  /// Fetches paginated replies for a forum post on demand.
+  Future<Either<Failure, List<ForumReplyEntity>>> fetchForumReplies({
+    required String postId,
+    String? parentReplyId,
+    bool topLevelOnly = false,
+    String? sortFilter,
     int limit = 15,
     int offset = 0,
   });
@@ -44,8 +56,15 @@ abstract class CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     bool isAnonymous = false,
   });
+
+  /// Deletes a forum post created by the user.
+  Future<Either<Failure, bool>> deleteForumPost(String postId);
 
   /// Adds a reply to a forum post.
   Future<Either<Failure, ForumReplyEntity>> replyToForumPost({
@@ -53,6 +72,9 @@ abstract class CommunityRepository {
     required String content,
     String? latexContent,
     String? parentReplyId,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
   });
 
   /// Upvotes, downvotes, or clears vote on a forum post.
@@ -136,4 +158,16 @@ abstract class CommunityRepository {
     required String roomId,
     required String userId,
   });
+
+  /// Toggles push notification subscription for a forum post.
+  Future<Either<Failure, bool>> toggleForumPostSubscription(String postId);
+
+  /// Checks if the current user is subscribed to a forum post's notifications.
+  Future<Either<Failure, bool>> isForumPostSubscribed(String postId);
+
+  /// Toggles bookmark / saved status for a forum post.
+  Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId);
+
+  /// Retrieves the set of bookmarked forum post IDs.
+  Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds();
 }

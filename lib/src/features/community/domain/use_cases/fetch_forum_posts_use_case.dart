@@ -11,12 +11,14 @@ class FetchForumPostsUseCase {
   Future<Either<Failure, List<ForumPostEntity>>> call({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
     int limit = 15,
     int offset = 0,
   }) {
     return _repository.fetchForumPosts(
       track: track,
       questionsOnly: questionsOnly,
+      sortFilter: sortFilter,
       limit: limit,
       offset: offset,
     );

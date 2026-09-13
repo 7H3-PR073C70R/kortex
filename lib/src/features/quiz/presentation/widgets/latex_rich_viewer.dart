@@ -47,7 +47,7 @@ class LatexRichViewer extends StatelessWidget {
 
   /// Matches inline markdown tokens: bold-italic, bold, italic, code, strikethrough
   static final RegExp _inlineMarkdownRegex = RegExp(
-    r'(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|(?<!\w)\*(?!\s)(.+?)(?<!\s)\*(?!\w)|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)|`([^`]+)`|~~(.+?)~~)',
+    r'(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|(?<!\*)\*([^\*\n]+?)\*(?!\*)|(?<!_)_([^_\n]+?)_(?!_)|`([^`]+)`|~~(.+?)~~)',
     multiLine: true,
   );
 
@@ -67,10 +67,11 @@ class LatexRichViewer extends StatelessWidget {
     return LatexAstCache.instance.getOrComputeSanitized(input, (raw) {
       var s = raw;
 
-      // Strip reasoning tags & model prompt tokens
+      // Strip reasoning tags & model prompt tokens & metadata comments
       s = s.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
       s = s.replaceAll(RegExp(r'<\/?think>', caseSensitive: false), '');
       s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
+      s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
 
       // Replace common HTML tags and entities
       s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
@@ -118,50 +119,49 @@ class LatexRichViewer extends StatelessWidget {
     TextStyle defaultStyle,
   ) {
     final widgets = <Widget>[];
-    var lastIndex = 0;
+    final matches = _blockMathRegex.allMatches(content);
+    var lastEnd = 0;
 
-    for (final match in _blockMathRegex.allMatches(content)) {
-      if (match.start > lastIndex) {
-        final textChunk = content.substring(lastIndex, match.start).trim();
-        if (textChunk.isNotEmpty) {
+    for (final match in matches) {
+      if (match.start > lastEnd) {
+        final textBlock = content.substring(lastEnd, match.start).trim();
+        if (textBlock.isNotEmpty) {
           widgets
-            ..add(_buildParagraphLayout(context, textChunk, defaultStyle))
+            ..add(_buildParagraphLayout(context, textBlock, defaultStyle))
             ..add(const SizedBox(height: 8));
         }
       }
 
-      final rawBlock = match.group(0) ?? '';
-      var formula = rawBlock;
-      if (formula.startsWith(r'\[') && formula.endsWith(r'\]')) {
-        formula = formula.substring(2, formula.length - 2);
-      } else if (formula.startsWith(r'$$') && formula.endsWith(r'$$')) {
-        formula = formula.substring(2, formula.length - 2);
+      final rawMath = match.group(0) ?? '';
+      var cleanFormula = rawMath;
+      if (cleanFormula.startsWith(r'\[') && cleanFormula.endsWith(r'\]')) {
+        cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
+      } else if (cleanFormula.startsWith(r'$$') && cleanFormula.endsWith(r'$$')) {
+        cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
       }
-      formula = formula.trim();
+      cleanFormula = cleanFormula.trim();
 
-      if (formula.isNotEmpty) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: LatexFormulaBlock(
-              formula: formula,
-              textStyle: defaultStyle.copyWith(
-                fontSize: (defaultStyle.fontSize ?? 15) * 1.05,
+      if (cleanFormula.isNotEmpty) {
+        widgets
+          ..add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: LatexFormulaBlock(
+                formula: cleanFormula,
+                textStyle: defaultStyle,
               ),
             ),
-          ),
-        );
+          )
+          ..add(const SizedBox(height: 8));
       }
 
-      lastIndex = match.end;
+      lastEnd = match.end;
     }
 
-    if (lastIndex < content.length) {
-      final remaining = content.substring(lastIndex).trim();
+    if (lastEnd < content.length) {
+      final remaining = content.substring(lastEnd).trim();
       if (remaining.isNotEmpty) {
-        widgets
-          ..add(const SizedBox(height: 8))
-          ..add(_buildParagraphLayout(context, remaining, defaultStyle));
+        widgets.add(_buildParagraphLayout(context, remaining, defaultStyle));
       }
     }
 
@@ -393,40 +393,73 @@ class LatexRichViewer extends StatelessWidget {
 
       // 1. Bold Italic: ***text*** (group 2) or ___text___ (group 3)
       if (match.group(2) != null || match.group(3) != null) {
-        final inner = match.group(2) ?? match.group(3) ?? '';
-        spans.add(
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.bold,
-              fontStyle: FontStyle.italic,
+        final rawInner = match.group(2) ?? match.group(3) ?? '';
+        final leadingSpace = rawInner.startsWith(' ') ? ' ' : '';
+        final trailingSpace = rawInner.endsWith(' ') ? ' ' : '';
+        final inner = rawInner.trim();
+        if (leadingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: leadingSpace, style: baseStyle));
+        }
+        if (inner.isNotEmpty) {
+          spans.add(
+            TextSpan(
+              text: inner,
+              style: baseStyle.copyWith(
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        if (trailingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: trailingSpace, style: baseStyle));
+        }
       }
       // 2. Bold: **text** (group 4) or __text__ (group 5)
       else if (match.group(4) != null || match.group(5) != null) {
-        final inner = match.group(4) ?? match.group(5) ?? '';
-        spans.add(
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.bold,
+        final rawInner = match.group(4) ?? match.group(5) ?? '';
+        final leadingSpace = rawInner.startsWith(' ') ? ' ' : '';
+        final trailingSpace = rawInner.endsWith(' ') ? ' ' : '';
+        final inner = rawInner.trim();
+        if (leadingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: leadingSpace, style: baseStyle));
+        }
+        if (inner.isNotEmpty) {
+          spans.add(
+            TextSpan(
+              text: inner,
+              style: baseStyle.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        if (trailingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: trailingSpace, style: baseStyle));
+        }
       }
       // 3. Italic: *text* (group 6) or _text_ (group 7)
       else if (match.group(6) != null || match.group(7) != null) {
-        final inner = match.group(6) ?? match.group(7) ?? '';
-        spans.add(
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(
-              fontStyle: FontStyle.italic,
+        final rawInner = match.group(6) ?? match.group(7) ?? '';
+        final leadingSpace = rawInner.startsWith(' ') ? ' ' : '';
+        final trailingSpace = rawInner.endsWith(' ') ? ' ' : '';
+        final inner = rawInner.trim();
+        if (leadingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: leadingSpace, style: baseStyle));
+        }
+        if (inner.isNotEmpty) {
+          spans.add(
+            TextSpan(
+              text: inner,
+              style: baseStyle.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        if (trailingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: trailingSpace, style: baseStyle));
+        }
       }
       // 4. Inline Code: `text` (group 8)
       else if (match.group(8) != null) {
@@ -445,15 +478,26 @@ class LatexRichViewer extends StatelessWidget {
       }
       // 5. Strikethrough: ~~text~~ (group 9)
       else if (match.group(9) != null) {
-        final inner = match.group(9) ?? '';
-        spans.add(
-          TextSpan(
-            text: inner,
-            style: baseStyle.copyWith(
-              decoration: TextDecoration.lineThrough,
+        final rawInner = match.group(9) ?? '';
+        final leadingSpace = rawInner.startsWith(' ') ? ' ' : '';
+        final trailingSpace = rawInner.endsWith(' ') ? ' ' : '';
+        final inner = rawInner.trim();
+        if (leadingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: leadingSpace, style: baseStyle));
+        }
+        if (inner.isNotEmpty) {
+          spans.add(
+            TextSpan(
+              text: inner,
+              style: baseStyle.copyWith(
+                decoration: TextDecoration.lineThrough,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        if (trailingSpace.isNotEmpty) {
+          spans.add(TextSpan(text: trailingSpace, style: baseStyle));
+        }
       }
 
       lastIndex = match.end;

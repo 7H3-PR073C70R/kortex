@@ -52,6 +52,18 @@ class MockCommunityRepository implements CommunityRepository {
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    String? sortFilter,
+    String? searchQuery,
+    int limit = 15,
+    int offset = 0,
+  }) async => const Right([]);
+
+  @override
+  Future<Either<Failure, List<ForumReplyEntity>>> fetchForumReplies({
+    required String postId,
+    String? parentReplyId,
+    bool topLevelOnly = false,
+    String? sortFilter,
     int limit = 15,
     int offset = 0,
   }) async => const Right([]);
@@ -64,8 +76,16 @@ class MockCommunityRepository implements CommunityRepository {
     String? latexContent,
     bool isQuestion = false,
     String syllabusTag = 'General',
+    List<String>? tags,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
     bool isAnonymous = false,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, bool>> deleteForumPost(String postId) async =>
+      const Right(true);
 
   @override
   Future<Either<Failure, ForumReplyEntity>> replyToForumPost({
@@ -73,6 +93,9 @@ class MockCommunityRepository implements CommunityRepository {
     required String content,
     String? latexContent,
     String? parentReplyId,
+    List<String>? mediaUrls,
+    String? voiceNoteUrl,
+    int? voiceNoteDurationSeconds,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
@@ -93,6 +116,14 @@ class MockCommunityRepository implements CommunityRepository {
     required String postId,
     required String replyId,
   }) async => const Right(true);
+
+  @override
+  Future<Either<Failure, bool>> toggleForumPostSubscription(String postId) async =>
+      const Right(true);
+
+  @override
+  Future<Either<Failure, bool>> isForumPostSubscribed(String postId) async =>
+      const Right(false);
 
   @override
   Future<Either<Failure, List<StudyCircleEntity>>> fetchStudyCircles({
@@ -161,6 +192,14 @@ class MockCommunityRepository implements CommunityRepository {
     required String roomId,
     required String userId,
   }) async => const Right('authenticated_livekit_test_token');
+
+  @override
+  Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() async =>
+      const Right({});
+
+  @override
+  Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId) async =>
+      const Right(true);
 
   Future<void> dispose() async {
     await _roomController.close();

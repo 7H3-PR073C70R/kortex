@@ -30,6 +30,11 @@ abstract class CommunityApiClient {
     @Header('Prefer') String prefer = 'return=representation',
   });
 
+  @DELETE(AppApiEndpoint.forumPosts)
+  Future<HttpResponse<dynamic>> deleteForumPost(
+    @Queries() Map<String, dynamic> query,
+  );
+
   @GET(AppApiEndpoint.forumReplies)
   Future<HttpResponse<dynamic>> fetchForumReplies(
     @Queries() Map<String, dynamic> query,
@@ -44,6 +49,32 @@ abstract class CommunityApiClient {
   @POST(AppApiEndpoint.verifyForumReplyRpc)
   Future<HttpResponse<dynamic>> verifyForumReply(
     @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.toggleForumPostSubscriptionRpc)
+  Future<HttpResponse<dynamic>> toggleForumPostSubscription(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.isForumPostSubscribedRpc)
+  Future<HttpResponse<dynamic>> isForumPostSubscribed(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @GET(AppApiEndpoint.forumPostSubscriptions)
+  Future<HttpResponse<dynamic>> fetchForumPostSubscriptions(
+    @Queries() Map<String, dynamic> query,
+  );
+
+  @POST(AppApiEndpoint.forumPostSubscriptions)
+  Future<HttpResponse<dynamic>> insertForumPostSubscription(
+    @Body() Map<String, dynamic> body, {
+    @Header('Prefer') String prefer = 'resolution=ignore-duplicates',
+  });
+
+  @DELETE(AppApiEndpoint.forumPostSubscriptions)
+  Future<HttpResponse<dynamic>> deleteForumPostSubscription(
+    @Queries() Map<String, dynamic> query,
   );
 
   @PATCH(AppApiEndpoint.forumReplies)

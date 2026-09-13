@@ -279,6 +279,36 @@ class NotificationService {
     }
   }
 
+  /// Subscribe device to a notification topic (e.g. forum thread notifications).
+  Future<bool> subscribeToTopic(String topic) async {
+    if (!_isAvailable) return false;
+    try {
+      final sanitizedTopic =
+          topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
+      await _messaging!.subscribeToTopic(sanitizedTopic);
+      developer.log('Subscribed to FCM topic: $sanitizedTopic');
+      return true;
+    } on Object catch (e) {
+      developer.log('Failed to subscribe to topic $topic: $e');
+      return false;
+    }
+  }
+
+  /// Unsubscribe device from a notification topic.
+  Future<bool> unsubscribeFromTopic(String topic) async {
+    if (!_isAvailable) return false;
+    try {
+      final sanitizedTopic =
+          topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
+      await _messaging!.unsubscribeFromTopic(sanitizedTopic);
+      developer.log('Unsubscribed from FCM topic: $sanitizedTopic');
+      return true;
+    } on Object catch (e) {
+      developer.log('Failed to unsubscribe from topic $topic: $e');
+      return false;
+    }
+  }
+
   void dispose() {
     unawaited(_tokenRefreshSubscription?.cancel());
     unawaited(_messageStreamController.close());

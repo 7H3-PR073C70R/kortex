@@ -95,6 +95,12 @@ class AppApiEndpoint {
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
   static const String studyCommunities = '/rest/v1/study_communities';
+  static const String forumPostSubscriptions =
+      '/rest/v1/forum_post_subscriptions';
+  static const String toggleForumPostSubscriptionRpc =
+      '/rest/v1/rpc/toggle_forum_post_subscription';
+  static const String isForumPostSubscribedRpc =
+      '/rest/v1/rpc/is_forum_post_subscribed';
   static const String generateLiveKitToken =
       '/functions/v1/generate-livekit-token';
 

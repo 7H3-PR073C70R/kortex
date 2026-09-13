@@ -35,6 +35,24 @@ class ProfileNavigationMenu extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // 0. Leaderboard & Academic Leagues
+          _buildNavTile(
+            context: context,
+            icon: Icons.emoji_events_rounded,
+            iconColor: colors.warning,
+            title: 'Leaderboard & Leagues',
+            subtitle: 'Weekly streaks, cohort rankings & podium tiers',
+            onTap: () {
+              AppFeedback.selection();
+              unawaited(
+                context.router.push(const LeaderboardRoute()),
+              );
+            },
+            colors: colors,
+            typography: typography,
+            showDivider: true,
+          ),
+
           // 1. Academic Track & Goal Calibration
           _buildNavTile(
             context: context,

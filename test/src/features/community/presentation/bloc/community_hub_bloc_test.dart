@@ -71,6 +71,9 @@ void main() {
     when(
       () => mockRepository.streamLeaderboards(track: any(named: 'track')),
     ).thenAnswer((_) => Stream.value([testLeaderboardEntry]));
+    when(
+      () => mockRepository.getBookmarkedForumPostIds(),
+    ).thenAnswer((_) async => const Right(<String>{}));
     bloc = CommunityHubBloc(repository: mockRepository);
   });
 
@@ -98,6 +101,10 @@ void main() {
           () => mockRepository.fetchForumPosts(
             track: any(named: 'track'),
             questionsOnly: any(named: 'questionsOnly'),
+            sortFilter: any(named: 'sortFilter'),
+            searchQuery: any(named: 'searchQuery'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => Right([testPost]));
 

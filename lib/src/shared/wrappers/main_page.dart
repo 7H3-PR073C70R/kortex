@@ -53,9 +53,15 @@ final List<_MainNavItem> _kNavItems = [
   ),
   const _MainNavItem(
     route: CommunityHubRoute(),
-    icon: Icons.people_alt_outlined,
-    activeIcon: Icons.people_alt_rounded,
-    labelBuilder: _getCommunityLabel,
+    icon: Icons.forum_outlined,
+    activeIcon: Icons.forum_rounded,
+    labelBuilder: _getForumLabel,
+  ),
+  const _MainNavItem(
+    route: StudyHubRoute(),
+    icon: Icons.hub_outlined,
+    activeIcon: Icons.hub_rounded,
+    labelBuilder: _getStudyHubLabel,
   ),
   const _MainNavItem(
     route: ProfileRoute(),
@@ -67,7 +73,8 @@ final List<_MainNavItem> _kNavItems = [
 
 String _getHomeLabel(AppLocalizations l10n) => l10n.navTabHome;
 String _getDecksLabel(AppLocalizations l10n) => l10n.navTabDecks;
-String _getCommunityLabel(AppLocalizations l10n) => l10n.navTabCommunity;
+String _getForumLabel(AppLocalizations l10n) => l10n.forumTab;
+String _getStudyHubLabel(AppLocalizations l10n) => 'Study Hub';
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
 
 /// Main application shell wrapper using [AutoTabsScaffold], responsive
