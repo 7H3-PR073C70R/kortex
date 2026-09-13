@@ -140,6 +140,8 @@ void main() {
           leaderboardEntries: const [testLeaderboardEntry],
           hasMoreForumPosts: false,
           forumPostsOffset: 1,
+          lastCreatedAt: testPost.createdAt,
+          lastId: testPost.id,
         ),
       ],
     );

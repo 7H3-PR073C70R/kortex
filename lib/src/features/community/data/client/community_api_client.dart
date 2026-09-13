@@ -51,6 +51,16 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.voteForumPostAtomicRpc)
+  Future<HttpResponse<dynamic>> voteForumPostAtomic(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.voteForumReplyAtomicRpc)
+  Future<HttpResponse<dynamic>> voteForumReplyAtomic(
+    @Body() Map<String, dynamic> body,
+  );
+
   @POST(AppApiEndpoint.toggleForumPostSubscriptionRpc)
   Future<HttpResponse<dynamic>> toggleForumPostSubscription(
     @Body() Map<String, dynamic> body,
@@ -58,6 +68,21 @@ abstract class CommunityApiClient {
 
   @POST(AppApiEndpoint.isForumPostSubscribedRpc)
   Future<HttpResponse<dynamic>> isForumPostSubscribed(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.fetchForumPostsKeysetRpc)
+  Future<HttpResponse<dynamic>> fetchForumPostsKeyset(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.fetchForumThreadTreeRpc)
+  Future<HttpResponse<dynamic>> fetchForumThreadTree(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.saveForumSocraticHintRpc)
+  Future<HttpResponse<dynamic>> saveForumSocraticHint(
     @Body() Map<String, dynamic> body,
   );
 

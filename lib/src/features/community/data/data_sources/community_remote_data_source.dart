@@ -28,6 +28,32 @@ abstract class CommunityRemoteDataSource {
     String? searchQuery,
     int limit = 15,
     int offset = 0,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+  });
+
+  /// High-performance Keyset (cursor-based) pagination fetching.
+  Future<List<ForumPostModel>> fetchForumPostsKeyset({
+    String? track,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+    int limit = 15,
+    String sortFilter = 'latest',
+    String? searchQuery,
+    bool questionsOnly = false,
+  });
+
+  /// Fetches complete hierarchical thread tree (post + pre-nested replies) in 1 roundtrip.
+  Future<Map<String, dynamic>?> fetchForumThreadTree({
+    required String postId,
+    int limit = 20,
+    int subReplyLimit = 5,
+  });
+
+  /// Persists a generated Socratic hint to the server.
+  Future<bool> saveForumSocraticHint({
+    required String postId,
+    required String hint,
   });
 
   Future<List<ForumReplyModel>> fetchForumReplies({

@@ -23,6 +23,8 @@ class ForumPostEntity extends Equatable {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.socraticHint,
+    this.socraticHintGeneratedAt,
     this.replies = const [],
   });
 
@@ -45,6 +47,8 @@ class ForumPostEntity extends Equatable {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? socraticHint;
+  final DateTime? socraticHintGeneratedAt;
   final DateTime createdAt;
   final List<ForumReplyEntity> replies;
 
@@ -74,6 +78,8 @@ class ForumPostEntity extends Equatable {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? socraticHint,
+    DateTime? socraticHintGeneratedAt,
     DateTime? createdAt,
     List<ForumReplyEntity>? replies,
   }) {
@@ -98,6 +104,9 @@ class ForumPostEntity extends Equatable {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      socraticHint: socraticHint ?? this.socraticHint,
+      socraticHintGeneratedAt:
+          socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
       createdAt: createdAt ?? this.createdAt,
       replies: replies ?? this.replies,
     );
@@ -124,6 +133,8 @@ class ForumPostEntity extends Equatable {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    socraticHint,
+    socraticHintGeneratedAt,
     createdAt,
     replies,
   ];

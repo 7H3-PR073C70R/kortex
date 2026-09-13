@@ -69,6 +69,21 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   final Map<String, List<ForumReplyModel>> _replyCache = {};
   final Map<String, StreamController<List<ForumReplyModel>>> _replyControllers =
       {};
+  static const int _maxCachedThreads = 25;
+
+  void _pruneStaleReplyControllers() {
+    if (_replyControllers.length > _maxCachedThreads) {
+      final toRemoveCount = _replyControllers.length - _maxCachedThreads;
+      final keysToRemove = _replyControllers.keys.take(toRemoveCount).toList();
+      for (final key in keysToRemove) {
+        final ctrl = _replyControllers.remove(key);
+        if (ctrl != null && !ctrl.isClosed) {
+          unawaited(ctrl.close());
+        }
+        _replyCache.remove(key);
+      }
+    }
+  }
 
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
@@ -162,7 +177,26 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String? searchQuery,
     int limit = 15,
     int offset = 0,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
   }) async {
+    // If keyset cursor is provided, prioritize fast RPC
+    if (cursorCreatedAt != null && (sortFilter == null || sortFilter == 'latest' || sortFilter == 'trending')) {
+      try {
+        return await fetchForumPostsKeyset(
+          track: track,
+          cursorCreatedAt: cursorCreatedAt,
+          cursorId: cursorId,
+          limit: limit,
+          sortFilter: sortFilter ?? 'latest',
+          searchQuery: searchQuery,
+          questionsOnly: questionsOnly ?? false,
+        );
+      } on Object catch (_) {
+        // Fallback to REST query below
+      }
+    }
+
     final params = <String, dynamic>{
       'select': '*',
       'limit': limit,
@@ -176,7 +210,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     }
     if (searchQuery != null && searchQuery.trim().isNotEmpty) {
       final q = searchQuery.trim();
-      params['or'] = '(title.ilike.*$q*,content.ilike.*$q*,syllabus_tag.ilike.*$q*)';
+      params['search_tsv'] = 'wfts.$q';
     }
 
     var orderParam = 'created_at.desc';
@@ -220,7 +254,23 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     params['order'] = orderParam;
 
     try {
-      final res = await _client.fetchForumPosts(params);
+      HttpResponse<dynamic> res;
+      try {
+        res = await _client.fetchForumPosts(params);
+      } on DioException catch (dioErr) {
+        if (params.containsKey('search_tsv') &&
+            (dioErr.response?.statusCode == 400 ||
+                dioErr.response?.statusCode == 404)) {
+          final fallbackParams = Map<String, dynamic>.from(params)
+            ..remove('search_tsv');
+          final q = searchQuery!.trim();
+          fallbackParams['or'] =
+              '(title.ilike.*$q*,content.ilike.*$q*,syllabus_tag.ilike.*$q*)';
+          res = await _client.fetchForumPosts(fallbackParams);
+        } else {
+          rethrow;
+        }
+      }
       final rawList = res.data is List ? (res.data as List) : <dynamic>[];
       final posts = rawList
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
@@ -288,6 +338,150 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
 
       rethrow;
+    }
+  }
+
+  @override
+  Future<List<ForumPostModel>> fetchForumPostsKeyset({
+    String? track,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+    int limit = 15,
+    String sortFilter = 'latest',
+    String? searchQuery,
+    bool questionsOnly = false,
+  }) async {
+    try {
+      final res = await _client.fetchForumPostsKeyset({
+        if (track != null && track.isNotEmpty && track != 'All') 'p_track': track,
+        if (cursorCreatedAt != null) 'p_cursor_created_at': cursorCreatedAt.toIso8601String(),
+        if (cursorId != null && cursorId.isNotEmpty) 'p_cursor_id': cursorId,
+        'p_limit': limit,
+        'p_sort': sortFilter,
+        if (searchQuery != null && searchQuery.trim().isNotEmpty) 'p_search_query': searchQuery.trim(),
+        'p_questions_only': questionsOnly,
+      });
+
+      final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final posts = rawList
+          .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      if (_localDataSource != null && posts.isNotEmpty) {
+        unawaited(_localDataSource!.saveForumPosts(posts));
+      }
+
+      return posts;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.fetchForumPostsKeyset failed, falling back',
+          ),
+        );
+      }
+      return fetchForumPosts(
+        track: track,
+        questionsOnly: questionsOnly,
+        sortFilter: sortFilter,
+        searchQuery: searchQuery,
+        limit: limit,
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> fetchForumThreadTree({
+    required String postId,
+    int limit = 20,
+    int subReplyLimit = 5,
+  }) async {
+    try {
+      final res = await _client.fetchForumThreadTree({
+        'p_post_id': postId,
+        'p_limit': limit,
+        'p_sub_reply_limit': subReplyLimit,
+      });
+      if (res.data is Map<String, dynamic>) {
+        final data = res.data as Map<String, dynamic>;
+        // Cache post and replies to local data source
+        if (data['post'] is Map<String, dynamic> && _localDataSource != null) {
+          final post = ForumPostModel.fromJson(data['post'] as Map<String, dynamic>);
+          unawaited(_localDataSource!.saveForumPost(post));
+        }
+        if (data['replies'] is List && _localDataSource != null) {
+          final repliesList = data['replies'] as List;
+          final cache = _replyCache.putIfAbsent(postId, () => []);
+          for (final r in repliesList) {
+            if (r is Map<String, dynamic>) {
+              final topReply = ForumReplyModel.fromJson(r);
+              if (!cache.any((item) => item.id == topReply.id)) {
+                cache.add(topReply);
+              }
+              unawaited(_localDataSource!.saveForumReply(topReply));
+              if (r['subReplies'] is List) {
+                for (final sr in r['subReplies'] as List) {
+                  if (sr is Map<String, dynamic>) {
+                    final subReply = ForumReplyModel.fromJson(sr);
+                    if (!cache.any((item) => item.id == subReply.id)) {
+                      cache.add(subReply);
+                    }
+                    unawaited(_localDataSource!.saveForumReply(subReply));
+                  }
+                }
+              }
+            }
+          }
+          final ctrl = _replyControllers[postId];
+          if (ctrl != null && !ctrl.isClosed) {
+            ctrl.add(List.unmodifiable(cache));
+          }
+        }
+        return data;
+      }
+      return null;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.fetchForumThreadTree failed',
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> saveForumSocraticHint({
+    required String postId,
+    required String hint,
+  }) async {
+    try {
+      final res = await _client.saveForumSocraticHint({
+        'p_post_id': postId,
+        'p_hint': hint,
+      });
+      if (res.data is Map<String, dynamic>) {
+        final data = res.data as Map<String, dynamic>;
+        return data['success'] as bool? ?? true;
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.saveForumSocraticHint failed',
+          ),
+        );
+      }
+      return false;
     }
   }
 
@@ -645,39 +839,66 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }) async {
     try {
       final currentPost = await _localDataSource?.getForumPost(postId);
+      final prevVote = currentPost?.userVote ?? 0;
+      final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
+      var newUpvotes = currentPost?.upvotes ?? 0;
+      var newDownvotes = currentPost?.downvotes ?? 0;
+
+      if (prevVote == 1) newUpvotes -= 1;
+      if (prevVote == -1) newDownvotes -= 1;
+      if (newVote == 1) newUpvotes += 1;
+      if (newVote == -1) newDownvotes += 1;
+
+      if (newUpvotes < 0) newUpvotes = 0;
+      if (newDownvotes < 0) newDownvotes = 0;
+
       if (currentPost != null) {
-        final prevVote = currentPost.userVote;
-        final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
-        var newUpvotes = currentPost.upvotes;
-        var newDownvotes = currentPost.downvotes;
-
-        if (prevVote == 1) newUpvotes -= 1;
-        if (prevVote == -1) newDownvotes -= 1;
-        if (newVote == 1) newUpvotes += 1;
-        if (newVote == -1) newDownvotes += 1;
-
-        if (newUpvotes < 0) newUpvotes = 0;
-        if (newDownvotes < 0) newDownvotes = 0;
-
-        final updated = currentPost.copyWith(
+        final optimistic = currentPost.copyWith(
           upvotes: newUpvotes,
           downvotes: newDownvotes,
           userVote: newVote,
         );
-        await _localDataSource?.saveForumPost(updated);
-
-        try {
-          await _client.updateForumPost(
-            {'id': 'eq.$postId'},
-            {
-              'upvotes': newUpvotes,
-              'downvotes': newDownvotes,
-            },
-          );
-        } on Object catch (_) {
-          // Ignore network errors to preserve optimistic offline-first update
-        }
+        await _localDataSource?.saveForumPost(optimistic);
       }
+
+      // 1. Attempt Atomic RPC
+      try {
+        final res = await _client.voteForumPostAtomic({
+          'p_post_id': postId,
+          'p_vote_direction': voteDirection,
+        });
+        if (res.data is Map<String, dynamic>) {
+          final data = res.data as Map<String, dynamic>;
+          final serverUpvotes = data['upvotes'] as int? ?? newUpvotes;
+          final serverDownvotes = data['downvotes'] as int? ?? newDownvotes;
+          final serverUserVote = data['userVote'] as int? ?? newVote;
+          if (currentPost != null) {
+            final reconciled = currentPost.copyWith(
+              upvotes: serverUpvotes,
+              downvotes: serverDownvotes,
+              userVote: serverUserVote,
+            );
+            await _localDataSource?.saveForumPost(reconciled);
+          }
+        }
+      } on DioException catch (dioErr) {
+        // Fallback to direct REST PATCH if running against unmigrated database
+        if (dioErr.response?.statusCode == 404 ||
+            dioErr.response?.statusCode == 400) {
+          try {
+            await _client.updateForumPost(
+              {'id': 'eq.$postId'},
+              {
+                'upvotes': newUpvotes,
+                'downvotes': newDownvotes,
+              },
+            );
+          } on Object catch (_) {}
+        }
+      } on Object catch (_) {
+        // Preserve optimistic local-first state
+      }
+
       return true;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
@@ -700,50 +921,86 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required int voteDirection,
   }) async {
     try {
-      final cache = _replyCache[postId] ?? await _localDataSource?.getRepliesForPost(postId) ?? [];
+      final cache = _replyCache[postId] ??
+          await _localDataSource?.getRepliesForPost(postId) ??
+          [];
       final replyIndex = cache.indexWhere((r) => r.id == replyId);
-      if (replyIndex != -1) {
-        final currentReply = cache[replyIndex];
-        final prevVote = currentReply.userVote;
-        final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
-        var newUpvotes = currentReply.upvotes;
-        var newDownvotes = currentReply.downvotes;
+      final currentReply = replyIndex != -1 ? cache[replyIndex] : null;
+      final prevVote = currentReply?.userVote ?? 0;
+      final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
+      var newUpvotes = currentReply?.upvotes ?? 0;
+      var newDownvotes = currentReply?.downvotes ?? 0;
 
-        if (prevVote == 1) newUpvotes -= 1;
-        if (prevVote == -1) newDownvotes -= 1;
-        if (newVote == 1) newUpvotes += 1;
-        if (newVote == -1) newDownvotes += 1;
+      if (prevVote == 1) newUpvotes -= 1;
+      if (prevVote == -1) newDownvotes -= 1;
+      if (newVote == 1) newUpvotes += 1;
+      if (newVote == -1) newDownvotes += 1;
 
-        if (newUpvotes < 0) newUpvotes = 0;
-        if (newDownvotes < 0) newDownvotes = 0;
+      if (newUpvotes < 0) newUpvotes = 0;
+      if (newDownvotes < 0) newDownvotes = 0;
 
-        final updated = currentReply.copyWith(
+      if (currentReply != null) {
+        final optimistic = currentReply.copyWith(
           upvotes: newUpvotes,
           downvotes: newDownvotes,
           userVote: newVote,
         );
 
-        cache[replyIndex] = updated;
+        cache[replyIndex] = optimistic;
         _replyCache[postId] = cache;
-        await _localDataSource?.saveForumReply(updated);
+        await _localDataSource?.saveForumReply(optimistic);
 
         final controller = _replyControllers[postId];
         if (controller != null && !controller.isClosed) {
           controller.add(List.unmodifiable(cache));
         }
-
-        try {
-          await _client.updateForumReply(
-            {'id': 'eq.$replyId'},
-            {
-              'upvotes': newUpvotes,
-              'downvotes': newDownvotes,
-            },
-          );
-        } on Object catch (_) {
-          // Ignore network errors to preserve optimistic offline-first update
-        }
       }
+
+      // 1. Attempt Atomic RPC
+      try {
+        final res = await _client.voteForumReplyAtomic({
+          'p_post_id': postId,
+          'p_reply_id': replyId,
+          'p_vote_direction': voteDirection,
+        });
+        if (res.data is Map<String, dynamic>) {
+          final data = res.data as Map<String, dynamic>;
+          final serverUpvotes = data['upvotes'] as int? ?? newUpvotes;
+          final serverDownvotes = data['downvotes'] as int? ?? newDownvotes;
+          final serverUserVote = data['userVote'] as int? ?? newVote;
+          if (currentReply != null && replyIndex != -1) {
+            final reconciled = currentReply.copyWith(
+              upvotes: serverUpvotes,
+              downvotes: serverDownvotes,
+              userVote: serverUserVote,
+            );
+            cache[replyIndex] = reconciled;
+            _replyCache[postId] = cache;
+            await _localDataSource?.saveForumReply(reconciled);
+
+            final controller = _replyControllers[postId];
+            if (controller != null && !controller.isClosed) {
+              controller.add(List.unmodifiable(cache));
+            }
+          }
+        }
+      } on DioException catch (dioErr) {
+        if (dioErr.response?.statusCode == 404 ||
+            dioErr.response?.statusCode == 400) {
+          try {
+            await _client.updateForumReply(
+              {'id': 'eq.$replyId'},
+              {
+                'upvotes': newUpvotes,
+                'downvotes': newDownvotes,
+              },
+            );
+          } on Object catch (_) {}
+        }
+      } on Object catch (_) {
+        // Preserve optimistic local-first state
+      }
+
       return true;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
@@ -824,6 +1081,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
   @override
   Stream<List<ForumReplyModel>> watchForumReplies(String postId) {
+    _pruneStaleReplyControllers();
+
     final streamController = _replyControllers.putIfAbsent(
       postId,
       StreamController<List<ForumReplyModel>>.broadcast,
@@ -903,7 +1162,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           }
         });
 
-    streamController.onCancel = () => wsSub.cancel().ignore();
+    streamController.onCancel = () {
+      wsSub.cancel().ignore();
+      _replyControllers.remove(postId);
+      _replyCache.remove(postId);
+    };
 
     return streamController.stream;
   }

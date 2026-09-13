@@ -24,6 +24,8 @@ class CommunityState extends Equatable {
     this.hasMoreForumPosts = true,
     this.isLoadingMoreForumPosts = false,
     this.forumPostsOffset = 0,
+    this.lastCreatedAt,
+    this.lastId,
     this.selectedForumFilter = 'trending',
     this.forumSearchQuery = '',
     this.bookmarkedPostIds = const {},
@@ -49,6 +51,8 @@ class CommunityState extends Equatable {
   final bool hasMoreForumPosts;
   final bool isLoadingMoreForumPosts;
   final int forumPostsOffset;
+  final DateTime? lastCreatedAt;
+  final String? lastId;
 
   CommunityState copyWith({
     CommunityStatus? status,
@@ -69,6 +73,8 @@ class CommunityState extends Equatable {
     bool? hasMoreForumPosts,
     bool? isLoadingMoreForumPosts,
     int? forumPostsOffset,
+    DateTime? lastCreatedAt,
+    String? lastId,
   }) {
     return CommunityState(
       status: status ?? this.status,
@@ -91,6 +97,8 @@ class CommunityState extends Equatable {
       isLoadingMoreForumPosts:
           isLoadingMoreForumPosts ?? this.isLoadingMoreForumPosts,
       forumPostsOffset: forumPostsOffset ?? this.forumPostsOffset,
+      lastCreatedAt: lastCreatedAt ?? this.lastCreatedAt,
+      lastId: lastId ?? this.lastId,
     );
   }
 
@@ -114,5 +122,7 @@ class CommunityState extends Equatable {
     hasMoreForumPosts,
     isLoadingMoreForumPosts,
     forumPostsOffset,
+    lastCreatedAt,
+    lastId,
   ];
 }

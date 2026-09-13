@@ -136,23 +136,6 @@ class ForumThreadDetailPage extends HookWidget {
 
     final repo = locator<CommunityRepository>();
 
-    // Initial check for thread subscription and bookmark state
-    useEffect(() {
-      Future<void> checkSubscriptionAndBookmark() async {
-        final subRes = await repo.isForumPostSubscribed(post.id);
-        subRes.fold((_) {}, (sub) => isSubscribed.value = sub);
-
-        final bookRes = await repo.getBookmarkedForumPostIds();
-        bookRes.fold(
-          (_) {},
-          (ids) => isBookmarked.value = ids.contains(post.id),
-        );
-      }
-
-      unawaited(checkSubscriptionAndBookmark());
-      return null;
-    }, [post.id]);
-
     Future<void> fetchTopLevelReplies({bool isLoadMore = false}) async {
       if (isLoadMore) {
         if (isLoadingMoreTopLevel.value || !hasMoreTopLevel.value) return;
@@ -202,6 +185,37 @@ class ForumThreadDetailPage extends HookWidget {
         },
       );
     }
+
+    // Initial check for thread subscription and bookmark state
+    useEffect(() {
+      Future<void> checkSubscriptionAndBookmark() async {
+        final subRes = await repo.isForumPostSubscribed(post.id);
+        subRes.fold((_) {}, (sub) => isSubscribed.value = sub);
+
+        final bookRes = await repo.getBookmarkedForumPostIds();
+        bookRes.fold(
+          (_) {},
+          (ids) => isBookmarked.value = ids.contains(post.id),
+        );
+      }
+
+      Future<void> initialLoadThreadTree() async {
+        final treeRes = await repo.fetchForumThreadTree(postId: post.id);
+        treeRes.fold(
+          (_) => unawaited(fetchTopLevelReplies()),
+          (treeData) {
+            currentPost.value = treeData.post;
+            localReplies.value = treeData.replies;
+            isInitialLoadingReplies.value = false;
+            topLevelOffset.value = treeData.replies.where((r) => !r.isNested).length;
+          },
+        );
+      }
+
+      unawaited(checkSubscriptionAndBookmark());
+      unawaited(initialLoadThreadTree());
+      return null;
+    }, [post.id]);
 
     Future<void> loadSubRepliesForParent(
       String parentReplyId, {
@@ -748,9 +762,10 @@ class ForumThreadDetailPage extends HookWidget {
             : null;
 
         final finalHintContent = await ForumSocraticHintService.generateHint(
-          post: post,
+          post: currentPost.value,
           streamUseCase: streamUseCase,
           localLlmClient: localLlmClient,
+          onHintGenerated: (hint) => repo.saveForumSocraticHint(postId: post.id, hint: hint),
         );
 
         final res = await repo.replyToForumPost(

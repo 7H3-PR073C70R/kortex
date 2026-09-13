@@ -22,6 +22,8 @@ class ForumPostModel {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.socraticHint,
+    this.socraticHintGeneratedAt,
     required this.createdAt,
     this.replies = const [],
   });
@@ -45,6 +47,8 @@ class ForumPostModel {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? socraticHint;
+  final DateTime? socraticHintGeneratedAt;
   final DateTime createdAt;
   final List<ForumReplyModel> replies;
 
@@ -257,6 +261,12 @@ class ForumPostModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
+      socraticHint: json['socratic_hint'] as String? ?? json['socraticHint'] as String?,
+      socraticHintGeneratedAt: json['socratic_hint_generated_at'] != null
+          ? DateTime.tryParse(json['socratic_hint_generated_at'] as String)
+          : (json['socraticHintGeneratedAt'] != null
+              ? DateTime.tryParse(json['socraticHintGeneratedAt'] as String)
+              : null),
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -286,6 +296,9 @@ class ForumPostModel {
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (voiceNoteDurationSeconds != null)
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
+      if (socraticHint != null) 'socratic_hint': socraticHint,
+      if (socraticHintGeneratedAt != null)
+        'socratic_hint_generated_at': socraticHintGeneratedAt!.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'forum_replies': replies.map((r) => r.toJson()).toList(),
     };
@@ -311,6 +324,8 @@ class ForumPostModel {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? socraticHint,
+    DateTime? socraticHintGeneratedAt,
     DateTime? createdAt,
     List<ForumReplyModel>? replies,
   }) {
@@ -335,6 +350,9 @@ class ForumPostModel {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      socraticHint: socraticHint ?? this.socraticHint,
+      socraticHintGeneratedAt:
+          socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
       createdAt: createdAt ?? this.createdAt,
       replies: replies ?? this.replies,
     );
@@ -361,6 +379,8 @@ class ForumPostModel {
       mediaUrls: mediaUrls,
       voiceNoteUrl: voiceNoteUrl,
       voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      socraticHint: socraticHint,
+      socraticHintGeneratedAt: socraticHintGeneratedAt,
       createdAt: createdAt,
       replies: replies.map((r) => r.toEntity()).toList(),
     );

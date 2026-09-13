@@ -36,6 +36,32 @@ abstract class CommunityRepository {
     String? searchQuery,
     int limit = 15,
     int offset = 0,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+  });
+
+  /// High-performance Keyset (cursor-based) pagination fetching.
+  Future<Either<Failure, List<ForumPostEntity>>> fetchForumPostsKeyset({
+    String? track,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+    int limit = 15,
+    String sortFilter = 'latest',
+    String? searchQuery,
+    bool questionsOnly = false,
+  });
+
+  /// Fetches complete hierarchical thread tree in 1 database roundtrip.
+  Future<Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>> fetchForumThreadTree({
+    required String postId,
+    int limit = 20,
+    int subReplyLimit = 5,
+  });
+
+  /// Persists a generated Socratic hint to the server.
+  Future<Either<Failure, bool>> saveForumSocraticHint({
+    required String postId,
+    required String hint,
   });
 
   /// Fetches paginated replies for a forum post on demand.

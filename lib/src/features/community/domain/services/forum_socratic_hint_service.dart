@@ -109,7 +109,18 @@ class ForumSocraticHintService {
     required ForumPostEntity post,
     StreamSyllabotResponseUseCase? streamUseCase,
     LocalLlmEngineClient? localLlmClient,
+    Future<void> Function(String hint)? onHintGenerated,
   }) async {
+    // Step 0: Fast path - if post already has a cached Socratic hint, return immediately
+    if (post.socraticHint != null &&
+        post.socraticHint!.trim().isNotEmpty &&
+        !isTemplateOrGenericEcho(post.socraticHint!)) {
+      final cachedText = post.socraticHint!
+          .replaceAll(RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false), '')
+          .trim();
+      return '🤖 Syllabot Socratic Hint:\n\n$cachedText';
+    }
+
     final prompt = buildPrompt(post);
     var candidate = '';
 
@@ -193,6 +204,11 @@ class ForumSocraticHintService {
         .replaceAll(RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false), '')
         .trim();
 
-    return '🤖 Syllabot Socratic Hint:\n\n$cleanText';
+    final result = '🤖 Syllabot Socratic Hint:\n\n$cleanText';
+    if (onHintGenerated != null) {
+      unawaited(onHintGenerated(result));
+    }
+
+    return result;
   }
 }

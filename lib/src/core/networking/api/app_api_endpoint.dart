@@ -92,6 +92,10 @@ class AppApiEndpoint {
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
+  static const String voteForumPostAtomicRpc =
+      '/rest/v1/rpc/vote_forum_post_atomic';
+  static const String voteForumReplyAtomicRpc =
+      '/rest/v1/rpc/vote_forum_reply_atomic';
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
   static const String studyCommunities = '/rest/v1/study_communities';
@@ -101,6 +105,12 @@ class AppApiEndpoint {
       '/rest/v1/rpc/toggle_forum_post_subscription';
   static const String isForumPostSubscribedRpc =
       '/rest/v1/rpc/is_forum_post_subscribed';
+  static const String fetchForumPostsKeysetRpc =
+      '/rest/v1/rpc/fetch_forum_posts_keyset';
+  static const String fetchForumThreadTreeRpc =
+      '/rest/v1/rpc/fetch_forum_thread_tree';
+  static const String saveForumSocraticHintRpc =
+      '/rest/v1/rpc/save_forum_socratic_hint';
   static const String generateLiveKitToken =
       '/functions/v1/generate-livekit-token';
 

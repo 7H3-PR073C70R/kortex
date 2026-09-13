@@ -8,6 +8,7 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
+import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
@@ -79,6 +80,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String? searchQuery,
     int limit = 15,
     int offset = 0,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
   }) {
     return _remoteDataSource
         .fetchForumPosts(
@@ -88,8 +91,83 @@ class CommunityRepositoryImpl implements CommunityRepository {
           searchQuery: searchQuery,
           limit: limit,
           offset: offset,
+          cursorCreatedAt: cursorCreatedAt,
+          cursorId: cursorId,
         )
         .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, List<ForumPostEntity>>> fetchForumPostsKeyset({
+    String? track,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+    int limit = 15,
+    String sortFilter = 'latest',
+    String? searchQuery,
+    bool questionsOnly = false,
+  }) {
+    return _remoteDataSource
+        .fetchForumPostsKeyset(
+          track: track,
+          cursorCreatedAt: cursorCreatedAt,
+          cursorId: cursorId,
+          limit: limit,
+          sortFilter: sortFilter,
+          searchQuery: searchQuery,
+          questionsOnly: questionsOnly,
+        )
+        .then((models) => models.map((m) => m.toEntity()).toList())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>> fetchForumThreadTree({
+    required String postId,
+    int limit = 20,
+    int subReplyLimit = 5,
+  }) {
+    return _remoteDataSource
+        .fetchForumThreadTree(
+          postId: postId,
+          limit: limit,
+          subReplyLimit: subReplyLimit,
+        )
+        .then((data) {
+          if (data == null || data['post'] == null) {
+            throw Exception('Forum thread not found');
+          }
+          final postModel = ForumPostModel.fromJson(data['post'] as Map<String, dynamic>);
+          final repliesList = data['replies'] is List ? (data['replies'] as List) : <dynamic>[];
+          final allReplies = <ForumReplyModel>[];
+          for (final r in repliesList) {
+            if (r is Map<String, dynamic>) {
+              allReplies.add(ForumReplyModel.fromJson(r));
+              if (r['subReplies'] is List) {
+                for (final sr in r['subReplies'] as List) {
+                  if (sr is Map<String, dynamic>) {
+                    allReplies.add(ForumReplyModel.fromJson(sr));
+                  }
+                }
+              }
+            }
+          }
+          return (
+            post: postModel.toEntity(),
+            replies: allReplies.map((r) => r.toEntity()).toList(),
+          );
+        })
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> saveForumSocraticHint({
+    required String postId,
+    required String hint,
+  }) {
+    return _remoteDataSource
+        .saveForumSocraticHint(postId: postId, hint: hint)
         .makeRequest();
   }
 

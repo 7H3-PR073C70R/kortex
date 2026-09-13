@@ -107,6 +107,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       );
     } else {
+      final lastPost = forumPosts.isNotEmpty ? forumPosts.last : null;
       emit(
         state.copyWith(
           status: CommunityStatus.loaded,
@@ -118,6 +119,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           bookmarkedPostIds: bookmarkedIds,
           hasMoreForumPosts: forumPosts.length >= 15,
           forumPostsOffset: forumPosts.length,
+          lastCreatedAt: lastPost?.createdAt,
+          lastId: lastPost?.id,
           isLoadingMoreForumPosts: false,
         ),
       );
@@ -173,14 +176,19 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
     res.fold(
       (_) {},
-      (posts) => emit(
-        state.copyWith(
-          forumPosts: posts,
-          hasMoreForumPosts: posts.length >= 15,
-          forumPostsOffset: posts.length,
-          isLoadingMoreForumPosts: false,
-        ),
-      ),
+      (posts) {
+        final lastPost = posts.isNotEmpty ? posts.last : null;
+        emit(
+          state.copyWith(
+            forumPosts: posts,
+            hasMoreForumPosts: posts.length >= 15,
+            forumPostsOffset: posts.length,
+            lastCreatedAt: lastPost?.createdAt,
+            lastId: lastPost?.id,
+            isLoadingMoreForumPosts: false,
+          ),
+        );
+      },
     );
   }
 
@@ -204,14 +212,19 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
     res.fold(
       (_) {},
-      (posts) => emit(
-        state.copyWith(
-          forumPosts: posts,
-          hasMoreForumPosts: posts.length >= 15,
-          forumPostsOffset: posts.length,
-          isLoadingMoreForumPosts: false,
-        ),
-      ),
+      (posts) {
+        final lastPost = posts.isNotEmpty ? posts.last : null;
+        emit(
+          state.copyWith(
+            forumPosts: posts,
+            hasMoreForumPosts: posts.length >= 15,
+            forumPostsOffset: posts.length,
+            lastCreatedAt: lastPost?.createdAt,
+            lastId: lastPost?.id,
+            isLoadingMoreForumPosts: false,
+          ),
+        );
+      },
     );
   }
 
@@ -230,14 +243,19 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
     res.fold(
       (_) {},
-      (posts) => emit(
-        state.copyWith(
-          forumPosts: posts,
-          hasMoreForumPosts: posts.length >= 15,
-          forumPostsOffset: posts.length,
-          isLoadingMoreForumPosts: false,
-        ),
-      ),
+      (posts) {
+        final lastPost = posts.isNotEmpty ? posts.last : null;
+        emit(
+          state.copyWith(
+            forumPosts: posts,
+            hasMoreForumPosts: posts.length >= 15,
+            forumPostsOffset: posts.length,
+            lastCreatedAt: lastPost?.createdAt,
+            lastId: lastPost?.id,
+            isLoadingMoreForumPosts: false,
+          ),
+        );
+      },
     );
     event.completer?.complete();
   }
@@ -257,14 +275,19 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
     res.fold(
       (_) {},
-      (posts) => emit(
-        state.copyWith(
-          forumPosts: posts,
-          hasMoreForumPosts: posts.length >= 15,
-          forumPostsOffset: posts.length,
-          isLoadingMoreForumPosts: false,
-        ),
-      ),
+      (posts) {
+        final lastPost = posts.isNotEmpty ? posts.last : null;
+        emit(
+          state.copyWith(
+            forumPosts: posts,
+            hasMoreForumPosts: posts.length >= 15,
+            forumPostsOffset: posts.length,
+            lastCreatedAt: lastPost?.createdAt,
+            lastId: lastPost?.id,
+            isLoadingMoreForumPosts: false,
+          ),
+        );
+      },
     );
   }
 
@@ -315,6 +338,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       sortFilter: state.selectedForumFilter,
       searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
       offset: currentOffset,
+      cursorCreatedAt: state.lastCreatedAt,
+      cursorId: state.lastId,
     );
 
     res.fold(
@@ -326,11 +351,14 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         final uniqueNewPosts =
             newPosts.where((p) => !existingIds.contains(p.id)).toList();
         final updatedPosts = [...state.forumPosts, ...uniqueNewPosts];
+        final lastPost = updatedPosts.isNotEmpty ? updatedPosts.last : null;
         emit(
           state.copyWith(
             isLoadingMoreForumPosts: false,
             forumPosts: updatedPosts,
             forumPostsOffset: updatedPosts.length,
+            lastCreatedAt: lastPost?.createdAt,
+            lastId: lastPost?.id,
             hasMoreForumPosts: newPosts.length >= 15,
           ),
         );
