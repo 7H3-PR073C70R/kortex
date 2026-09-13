@@ -14,4 +14,4 @@ watch:
 	(dart run build_runner watch -d)
 
 apk:
-	(flutter build apk --flavor production --target lib/main_production.dart)
+	(flutter build apk --flavor production --target lib/main_production.dart --release)
