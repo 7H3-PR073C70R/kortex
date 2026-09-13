@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
+import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -32,7 +34,7 @@ class _ProFeatureItem {
 }
 
 /// Full-Screen Membership & Kortexify Pro Tier Screen.
-/// Delivers an ultra-premium experience aligned with Kortex's dark aesthetic.
+/// Delivers an ultra-premium, high-converting experience with a persistent, sticky CTA dock.
 @RoutePage(name: 'PaywallRoute')
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({
@@ -70,7 +72,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
     unawaited(_glowController.repeat(reverse: true));
 
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1).animate(
+    _glowAnimation = Tween<double>(begin: 0.6, end: 1).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
@@ -84,6 +86,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   void _selectPlan(int index) {
+    AppFeedback.selection();
     setState(() {
       _selectedPlanIndex = index;
       final offerings = _offerings;
@@ -138,14 +141,12 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _handlePurchase() async {
-    // Ensure package is mapped to currently selected plan index
     if (_selectedPackage == null) {
       _selectPlan(_selectedPlanIndex);
     }
 
     final package = _selectedPackage;
     if (package == null) {
-      // If store offerings could not be loaded (e.g. dev/sandbox or network error)
       if (!RevenueCatService.instance.isInitialized || _offerings == null) {
         if (kDebugMode) {
           context.read<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
@@ -184,6 +185,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
       if (mounted) {
         if (success) {
+          AppFeedback.celebration();
           context.read<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
           context.read<AuthBloc>().add(const AuthProfileFetchRequested());
           context.showSnackBar(
@@ -256,6 +258,14 @@ class _PaywallScreenState extends State<PaywallScreen>
     }
   }
 
+  Future<void> _handlePromoCodeRedemption() async {
+    final redeemed = await PromoCodeModalSheet.show(context);
+    if (redeemed == true && mounted) {
+      widget.onPurchaseSuccess?.call();
+      Navigator.of(context).pop(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -263,77 +273,82 @@ class _PaywallScreenState extends State<PaywallScreen>
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    return Scaffold(
-      backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+    return AuraMeshNebula(
+      child: Scaffold(
         backgroundColor: colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.close_rounded,
-            color: colors.textPrimary,
-            size: 22,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(false),
-        ),
-        actions: [
-          if (!kIsWeb)
-            TextButton(
-              onPressed: _isProcessing ? null : _handleRestore,
-              child: Text(
-                l10n.paywallRestore,
-                style: typography.callout.semiBold.copyWith(
-                  color: colors.primary,
-                  fontSize: 13,
+        appBar: AppBar(
+          backgroundColor: colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceSecondary.withAlpha(180)
+                    : colors.surfacePrimary.withAlpha(200),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colors.surfaceBorder.withAlpha(80),
                 ),
+              ),
+              child: Icon(
+                Icons.close_rounded,
+                color: colors.textPrimary,
+                size: 18,
               ),
             ),
-        ],
-      ),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: AppLogoLoader(size: 56),
-              )
-            : SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 20.w,
-                  vertical: 8.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeroHeader(colors, typography, isDark),
-                    SizedBox(height: 24.h),
-                    _buildFeatureMatrix(colors, typography, isDark),
-                    SizedBox(height: 24.h),
-                    _buildTierPlansSelector(colors, typography, isDark),
-                    SizedBox(height: 24.h),
-                    _buildCtaButton(colors, typography, isDark),
-                    SizedBox(height: 12.h),
-                    Center(
-                      child: TextButton.icon(
-                        onPressed:
-                            _isProcessing ? null : _handlePromoCodeRedemption,
-                        icon: Icon(
-                          Icons.card_giftcard_rounded,
-                          size: 16,
-                          color: colors.primary,
-                        ),
-                        label: Text(
-                          'Have a promo code? Redeem here',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
+            onPressed: () => Navigator.of(context).maybePop(false),
+          ),
+          actions: [
+            if (!kIsWeb)
+              Padding(
+                padding: EdgeInsets.only(right: 8.w),
+                child: TextButton(
+                  onPressed: _isProcessing ? null : _handleRestore,
+                  child: Text(
+                    l10n.paywallRestore,
+                    style: typography.callout.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 13.sp,
                     ),
-                    SizedBox(height: 16.h),
-                    _buildFooter(colors, typography, l10n),
-                  ],
+                  ),
                 ),
               ),
+          ],
+        ),
+        // Persistent Sticky Bottom Dock ensures primary CTA and promo code are always 1-tap accessible
+        bottomNavigationBar: _isLoading
+            ? null
+            : _buildStickyBottomDock(colors, typography, l10n, isDark),
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(
+                  child: AppLogoLoader(size: 56),
+                )
+              : SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 4.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeroHeader(colors, typography, l10n, isDark),
+                      SizedBox(height: 14.h),
+                      _buildSocialProofStrip(colors, typography, l10n, isDark),
+                      SizedBox(height: 18.h),
+                      _buildTierPlansSelector(colors, typography, l10n, isDark),
+                      SizedBox(height: 16.h),
+                      _buildTransparentTimeline(colors, typography, l10n, isDark),
+                      SizedBox(height: 18.h),
+                      _buildFeatureMatrix(colors, typography, l10n, isDark),
+                      SizedBox(height: 16.h),
+                      _buildFooter(colors, typography, l10n),
+                      SizedBox(height: 16.h),
+                    ],
+                  ),
+                ),
+        ),
       ),
     );
   }
@@ -341,6 +356,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   Widget _buildHeroHeader(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
+    AppLocalizations l10n,
     bool isDark,
   ) {
     return Column(
@@ -348,9 +364,9 @@ class _PaywallScreenState extends State<PaywallScreen>
         AnimatedBuilder(
           animation: _glowAnimation,
           builder: (context, child) {
-            final alphaPrimary = (80 * _glowAnimation.value).toInt();
-            final alphaAccent = (60 * _glowAnimation.value).toInt();
-            final shadowAlpha = (40 * _glowAnimation.value).toInt();
+            final alphaPrimary = (90 * _glowAnimation.value).toInt();
+            final alphaAccent = (70 * _glowAnimation.value).toInt();
+            final shadowAlpha = (50 * _glowAnimation.value).toInt();
 
             return Container(
               padding: EdgeInsets.symmetric(
@@ -364,15 +380,15 @@ class _PaywallScreenState extends State<PaywallScreen>
                     colors.syllabotAccent.withAlpha(alphaAccent),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: colors.primary.withAlpha(120),
+                  color: colors.primary.withAlpha(140),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: colors.primary.withAlpha(shadowAlpha),
-                    blurRadius: 16,
+                    blurRadius: 18,
                     spreadRadius: 2,
                   ),
                 ],
@@ -383,14 +399,14 @@ class _PaywallScreenState extends State<PaywallScreen>
                   Icon(
                     Icons.auto_awesome_rounded,
                     color: colors.warning,
-                    size: 16,
+                    size: 15,
                   ),
                   SizedBox(width: 6.w),
                   Text(
-                    'KORTEXIFY PRO SCHOLAR',
+                    l10n.paywallScholarBadge,
                     style: typography.caption.bold.copyWith(
                       color: colors.white,
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -399,23 +415,23 @@ class _PaywallScreenState extends State<PaywallScreen>
             );
           },
         ),
-        SizedBox(height: 14.h),
+        SizedBox(height: 10.h),
         Text(
-          'Supercharge Your Academic Mastery',
+          l10n.paywallHeroTitle,
           textAlign: TextAlign.center,
           style: typography.title2.bold.copyWith(
             color: colors.textPrimary,
             fontSize: 22.sp,
+            height: 1.2,
           ),
         ),
         SizedBox(height: 6.h),
         Text(
-          'Unlimited Syllabot AI reasoning, instant multimodal Document OCR, '
-          'and cloud-synced FSRS spaced repetition.',
+          l10n.paywallHeroSubtitle,
           textAlign: TextAlign.center,
           style: typography.caption.regular.copyWith(
             color: colors.textSecondary,
-            fontSize: 12.5.sp,
+            fontSize: 12.sp,
             height: 1.4,
           ),
         ),
@@ -423,120 +439,105 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
   }
 
-  Widget _buildFeatureMatrix(
+  Widget _buildSocialProofStrip(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
+    AppLocalizations l10n,
     bool isDark,
   ) {
-    const features = [
-      _ProFeatureItem(
-        icon: Icons.psychology_rounded,
-        title: 'Unlimited Syllabot AI Reasoning',
-        subtitle: 'Deep Socratic tutoring without token limits',
-      ),
-      _ProFeatureItem(
-        icon: Icons.document_scanner_rounded,
-        title: 'Instant Multimodal OCR Drop',
-        subtitle: 'Convert textbooks, notes & past papers instantly',
-      ),
-      _ProFeatureItem(
-        icon: Icons.auto_mode_rounded,
-        title: 'FSRS Spaced Repetition Engine',
-        subtitle: 'High-retention memory scheduling',
-      ),
-      _ProFeatureItem(
-        icon: Icons.cloud_sync_rounded,
-        title: 'Seamless Cloud Backup & Sync',
-        subtitle: 'Zero-latency sync across all your devices',
-      ),
-      _ProFeatureItem(
-        icon: Icons.download_rounded,
-        title: 'Anki, CSV & Study Sheets Export',
-        subtitle: 'Full data portability with study notes',
-      ),
-    ];
-
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(140)
+            : colors.surfacePrimary.withAlpha(180),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: colors.surfaceBorder.withAlpha(isDark ? 90 : 60),
+          color: colors.surfaceBorder.withAlpha(60),
         ),
       ),
-      child: Column(
-        children: features
-            .map(
-              (f) => Padding(
-                padding: EdgeInsets.symmetric(vertical: 6.h),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(25),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        f.icon,
-                        color: colors.primary,
-                        size: 18,
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            f.title,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 13.sp,
-                            ),
-                          ),
-                          Text(
-                            f.subtitle,
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11.sp,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: colors.success,
-                      size: 18,
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildTrustBadge(
+            icon: Icons.star_rounded,
+            iconColor: colors.warning,
+            label: l10n.paywallSocialProofRating,
+            colors: colors,
+            typography: typography,
+          ),
+          Container(
+            width: 1,
+            height: 16.h,
+            color: colors.surfaceBorder.withAlpha(90),
+          ),
+          _buildTrustBadge(
+            icon: Icons.school_rounded,
+            iconColor: colors.success,
+            label: l10n.paywallSocialProofRetention,
+            colors: colors,
+            typography: typography,
+          ),
+          Container(
+            width: 1,
+            height: 16.h,
+            color: colors.surfaceBorder.withAlpha(90),
+          ),
+          _buildTrustBadge(
+            icon: Icons.bolt_rounded,
+            iconColor: colors.primary,
+            label: l10n.paywallSocialProofSpeed,
+            colors: colors,
+            typography: typography,
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTrustBadge({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: iconColor, size: 15),
+        SizedBox(width: 4.w),
+        Text(
+          label,
+          style: typography.footnote.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 10.5.sp,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildTierPlansSelector(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
+    AppLocalizations l10n,
     bool isDark,
   ) {
     return Column(
       children: [
-        // Annual Plan Card (Selected / Featured)
+        // Annual Plan Card (Featured & Best Value)
         ShrinkableButton(
           onTap: () => _selectPlan(0),
           child: Container(
-            padding: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(14.r),
             decoration: BoxDecoration(
               color: _selectedPlanIndex == 0
-                  ? colors.primary.withAlpha(isDark ? 40 : 20)
-                  : colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(18),
+                  ? colors.primary.withAlpha(isDark ? 45 : 22)
+                  : (isDark
+                      ? colors.surfaceSecondary.withAlpha(180)
+                      : colors.surfacePrimary.withAlpha(200)),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _selectedPlanIndex == 0
                     ? colors.primary
@@ -546,9 +547,9 @@ class _PaywallScreenState extends State<PaywallScreen>
               boxShadow: _selectedPlanIndex == 0
                   ? [
                       BoxShadow(
-                        color: colors.primary.withAlpha(30),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
+                        color: colors.primary.withAlpha(40),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ]
                   : null,
@@ -564,7 +565,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                       : colors.textSecondary,
                   size: 20,
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,28 +574,34 @@ class _PaywallScreenState extends State<PaywallScreen>
                         children: [
                           Flexible(
                             child: Text(
-                              'Annual Pass',
+                              l10n.paywallAnnualPlanTitle,
                               style: typography.body.bold.copyWith(
                                 color: colors.textPrimary,
                                 fontSize: 14.5.sp,
                               ),
                             ),
                           ),
-                          SizedBox(width: 8.w),
+                          SizedBox(width: 6.w),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
+                              horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: colors.success,
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.success,
+                                  colors.success.withAlpha(200),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'SAVE 45%',
+                              l10n.paywallAnnualSaveBadge,
                               style: typography.caption.bold.copyWith(
                                 color: colors.white,
-                                fontSize: 9.5,
+                                fontSize: 8.5.sp,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
@@ -602,45 +609,76 @@ class _PaywallScreenState extends State<PaywallScreen>
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        r'Billed annually at $59.99 / yr (approx. $4.99 / mo)',
+                        l10n.paywallAnnualPlanSubtitle,
                         style: typography.caption.regular.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 11.sp,
+                          fontSize: 10.5.sp,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        l10n.paywallAnnualWeeklyNote,
+                        style: typography.footnote.medium.copyWith(
+                          color: colors.primary,
+                          fontSize: 10.sp,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  r'$4.99',
-                  style: typography.title3.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 18.sp,
-                  ),
-                ),
-                Text(
-                  '/mo',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11.sp,
-                  ),
+                SizedBox(width: 8.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          r'$4.99',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 18.sp,
+                          ),
+                        ),
+                        Text(
+                          l10n.paywallPerMonth,
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 10.5.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      r'$8.99/mo',
+                      style: typography.footnote.regular.copyWith(
+                        color: colors.textSecondary.withAlpha(120),
+                        decoration: TextDecoration.lineThrough,
+                        fontSize: 10.5.sp,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 8.h),
 
         // Monthly Plan Card
         ShrinkableButton(
           onTap: () => _selectPlan(1),
           child: Container(
-            padding: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(14.r),
             decoration: BoxDecoration(
               color: _selectedPlanIndex == 1
-                  ? colors.primary.withAlpha(isDark ? 40 : 20)
-                  : colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(18),
+                  ? colors.primary.withAlpha(isDark ? 45 : 22)
+                  : (isDark
+                      ? colors.surfaceSecondary.withAlpha(180)
+                      : colors.surfacePrimary.withAlpha(200)),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _selectedPlanIndex == 1
                     ? colors.primary
@@ -659,13 +697,13 @@ class _PaywallScreenState extends State<PaywallScreen>
                       : colors.textSecondary,
                   size: 20,
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Monthly Pass',
+                        l10n.paywallMonthlyPlanTitle,
                         style: typography.body.bold.copyWith(
                           color: colors.textPrimary,
                           fontSize: 14.5.sp,
@@ -673,28 +711,38 @@ class _PaywallScreenState extends State<PaywallScreen>
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        'Flexible billing, cancel anytime',
+                        l10n.paywallMonthlyPlanSubtitle,
                         style: typography.caption.regular.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 11.sp,
+                          fontSize: 10.5.sp,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  r'$8.99',
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 17.sp,
-                  ),
-                ),
-                Text(
-                  '/mo',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11.sp,
-                  ),
+                SizedBox(width: 8.w),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      r'$8.99',
+                      style: typography.title3.bold.copyWith(
+                        color: _selectedPlanIndex == 1
+                            ? colors.primary
+                            : colors.textPrimary,
+                        fontSize: 17.sp,
+                      ),
+                    ),
+                    Text(
+                      l10n.paywallPerMonth,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 10.5.sp,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -704,72 +752,358 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
   }
 
-  Future<void> _handlePromoCodeRedemption() async {
-    final redeemed = await PromoCodeModalSheet.show(context);
-    if (redeemed == true && mounted) {
-      widget.onPurchaseSuccess?.call();
-      Navigator.of(context).pop(true);
-    }
-  }
-
-  Widget _buildCtaButton(
+  Widget _buildTransparentTimeline(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
+    AppLocalizations l10n,
     bool isDark,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_errorMessage != null) ...[
-          Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: typography.caption.medium.copyWith(
-              color: colors.error,
-              fontSize: 12,
-            ),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(120)
+            : colors.surfacePrimary.withAlpha(160),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: colors.surfaceBorder.withAlpha(50),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildTimelineItem(
+            step: '1',
+            label: l10n.paywallTimelineToday,
+            colors: colors,
+            typography: typography,
           ),
-          SizedBox(height: 8.h),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textSecondary.withAlpha(100),
+            size: 15,
+          ),
+          _buildTimelineItem(
+            step: '2',
+            label: l10n.paywallTimelineBilling,
+            colors: colors,
+            typography: typography,
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textSecondary.withAlpha(100),
+            size: 15,
+          ),
+          _buildTimelineItem(
+            step: '3',
+            label: l10n.paywallTimelineCancel,
+            colors: colors,
+            typography: typography,
+          ),
         ],
-        ShrinkableButton(
-          onTap: _isProcessing ? null : _handlePurchase,
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 16.h),
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem({
+    required String step,
+    required String label,
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+  }) {
+    return Expanded(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 15,
+            height: 15,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  colors.primary,
-                  colors.syllabotAccent,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.primary.withAlpha(isDark ? 100 : 60),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: colors.primary.withAlpha(35),
+              shape: BoxShape.circle,
             ),
             child: Center(
-              child: _isProcessing
-                  ? const AppLogoLoader(
-                      size: 20,
-                      showMessage: false,
-                    )
-                  : Text(
-                      'Unlock Kortexify Pro Access',
-                      style: typography.body.bold.copyWith(
-                        color: colors.white,
-                        fontSize: 15.sp,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+              child: Text(
+                step,
+                style: typography.footnote.bold.copyWith(
+                  color: colors.primary,
+                  fontSize: 8.5.sp,
+                ),
+              ),
             ),
           ),
+          SizedBox(width: 4.w),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: typography.footnote.regular.copyWith(
+                color: colors.textSecondary,
+                fontSize: 9.sp,
+                height: 1.15,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureMatrix(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final features = [
+      _ProFeatureItem(
+        icon: Icons.psychology_rounded,
+        title: l10n.paywallFeature1Title,
+        subtitle: l10n.paywallFeature1Subtitle,
+      ),
+      _ProFeatureItem(
+        icon: Icons.document_scanner_rounded,
+        title: l10n.paywallFeature2Title,
+        subtitle: l10n.paywallFeature2Subtitle,
+      ),
+      _ProFeatureItem(
+        icon: Icons.auto_mode_rounded,
+        title: l10n.paywallFeature3Title,
+        subtitle: l10n.paywallFeature3Subtitle,
+      ),
+      _ProFeatureItem(
+        icon: Icons.cloud_sync_rounded,
+        title: l10n.paywallFeature4Title,
+        subtitle: l10n.paywallFeature4Subtitle,
+      ),
+      _ProFeatureItem(
+        icon: Icons.download_rounded,
+        title: l10n.paywallFeature5Title,
+        subtitle: l10n.paywallFeature5Subtitle,
+      ),
+    ];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(200)
+                : colors.surfacePrimary.withAlpha(220),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(isDark ? 90 : 60),
+            ),
+          ),
+          child: Column(
+            children: features
+                .map(
+                  (f) => Padding(
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(28),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Icon(
+                            f.icon,
+                            color: colors.primary,
+                            size: 16,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                f.title,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 12.5.sp,
+                                ),
+                              ),
+                              SizedBox(height: 1.h),
+                              Text(
+                                f.subtitle,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10.5.sp,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: colors.success,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  /// Pinned bottom action bar containing the primary CTA, guarantee, and promo code entry.
+  /// Guarantees instant 1-tap access with zero scrolling.
+  Widget _buildStickyBottomDock(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(245)
+            : colors.surfacePrimary.withAlpha(250),
+        border: Border(
+          top: BorderSide(
+            color: colors.surfaceBorder.withAlpha(isDark ? 100 : 70),
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.black.withAlpha(isDark ? 140 : 30),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_errorMessage != null) ...[
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: typography.caption.medium.copyWith(
+                    color: colors.error,
+                    fontSize: 11.5.sp,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+              ],
+              ShrinkableButton(
+                onTap: _isProcessing ? null : _handlePurchase,
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colors.primary,
+                        colors.syllabotAccent,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(isDark ? 110 : 70),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: _isProcessing
+                        ? const AppLogoLoader(
+                            size: 20,
+                            showMessage: false,
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.lock_open_rounded,
+                                color: colors.white,
+                                size: 17,
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                l10n.paywallCtaButton,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.white,
+                                  fontSize: 15.sp,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 11.sp,
+                    color: colors.textSecondary.withAlpha(150),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    l10n.paywallSecurityGuarantee,
+                    textAlign: TextAlign.center,
+                    style: typography.footnote.medium.copyWith(
+                      color: colors.textSecondary.withAlpha(160),
+                      fontSize: 10.5.sp,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 2.h),
+              Center(
+                child: GestureDetector(
+                  onTap: _isProcessing ? null : _handlePromoCodeRedemption,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 8.w),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.card_giftcard_rounded,
+                          size: 14.sp,
+                          color: colors.primary,
+                        ),
+                        SizedBox(width: 5.w),
+                        Text(
+                          l10n.paywallHavePromoCode,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -781,16 +1115,15 @@ class _PaywallScreenState extends State<PaywallScreen>
     return Column(
       children: [
         Text(
-          'Subscriptions renew automatically unless cancelled at least '
-          '24 hours before the end of the current billing period.',
+          l10n.paywallAutoRenewDisclaimer,
           textAlign: TextAlign.center,
           style: typography.caption.regular.copyWith(
             color: colors.textSecondary.withAlpha(120),
-            fontSize: 10.5.sp,
-            height: 1.4,
+            fontSize: 10.sp,
+            height: 1.35,
           ),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 8.h),
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -803,10 +1136,9 @@ class _PaywallScreenState extends State<PaywallScreen>
                 l10n.privacyPolicy,
                 style: typography.caption.medium.copyWith(
                   color: colors.primary,
-                  fontSize: 11,
+                  fontSize: 10.5.sp,
                   decoration: TextDecoration.underline,
                   decorationColor: colors.primary.withAlpha(180),
-                  decorationStyle: TextDecorationStyle.solid,
                 ),
               ),
             ),
@@ -814,7 +1146,7 @@ class _PaywallScreenState extends State<PaywallScreen>
               '•',
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary.withAlpha(120),
-                fontSize: 11,
+                fontSize: 10.5.sp,
               ),
             ),
             GestureDetector(
@@ -823,10 +1155,9 @@ class _PaywallScreenState extends State<PaywallScreen>
                 l10n.termsOfService,
                 style: typography.caption.medium.copyWith(
                   color: colors.primary,
-                  fontSize: 11,
+                  fontSize: 10.5.sp,
                   decoration: TextDecoration.underline,
                   decorationColor: colors.primary.withAlpha(180),
-                  decorationStyle: TextDecorationStyle.solid,
                 ),
               ),
             ),

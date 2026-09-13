@@ -4238,6 +4238,240 @@ abstract class AppLocalizations {
   /// **'Restore'**
   String get paywallRestore;
 
+  /// Floating badge on paywall header
+  ///
+  /// In en, this message translates to:
+  /// **'KORTEXIFY PRO SCHOLAR'**
+  String get paywallScholarBadge;
+
+  /// Hero title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Supercharge Your Academic Mastery'**
+  String get paywallHeroTitle;
+
+  /// Hero subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Join 25,000+ top scholars studying 3x faster with unlimited Socratic AI tutoring, smart OCR ingestion, and calibrated memory retention.'**
+  String get paywallHeroSubtitle;
+
+  /// Social proof rating on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'4.9/5 Rating'**
+  String get paywallSocialProofRating;
+
+  /// Social proof retention rate on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'94% Exam Pass Rate'**
+  String get paywallSocialProofRetention;
+
+  /// Social proof speed metric on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'3x Faster Mastery'**
+  String get paywallSocialProofSpeed;
+
+  /// Feature 1 title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited Syllabot AI Reasoning'**
+  String get paywallFeature1Title;
+
+  /// Feature 1 subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'24/7 Socratic problem-solving & step-by-step LaTeX math derivations without token limits'**
+  String get paywallFeature1Subtitle;
+
+  /// Feature 2 title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Instant Multimodal OCR Drop'**
+  String get paywallFeature2Title;
+
+  /// Feature 2 subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Convert textbooks, lecture slides & past papers into active-recall cards instantly'**
+  String get paywallFeature2Subtitle;
+
+  /// Feature 3 title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'FSRS-6 Spaced Repetition Engine'**
+  String get paywallFeature3Title;
+
+  /// Feature 3 subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Long-term memory scheduling calibrated for WAEC, JAMB, NECO & Finals'**
+  String get paywallFeature3Subtitle;
+
+  /// Feature 4 title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Seamless Cloud Backup & Sync'**
+  String get paywallFeature4Title;
+
+  /// Feature 4 subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Zero-latency offline study cache with instant multi-device sync'**
+  String get paywallFeature4Subtitle;
+
+  /// Feature 5 title on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Full Data Portability & Export'**
+  String get paywallFeature5Title;
+
+  /// Feature 5 subtitle on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Export study sets to Anki, CSV, Markdown, and print-ready study sheets'**
+  String get paywallFeature5Subtitle;
+
+  /// Title of annual subscription plan
+  ///
+  /// In en, this message translates to:
+  /// **'Annual Pass'**
+  String get paywallAnnualPlanTitle;
+
+  /// Badge for annual plan savings
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE 45% • BEST VALUE'**
+  String get paywallAnnualSaveBadge;
+
+  /// Subtitle of annual subscription plan
+  ///
+  /// In en, this message translates to:
+  /// **'Billed annually at \$59.99/yr (approx. \$4.99/mo)'**
+  String get paywallAnnualPlanSubtitle;
+
+  /// Weekly breakdown micro-copy for annual plan
+  ///
+  /// In en, this message translates to:
+  /// **'Just \$1.15/week — less than a cup of coffee'**
+  String get paywallAnnualWeeklyNote;
+
+  /// Title of monthly subscription plan
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Pass'**
+  String get paywallMonthlyPlanTitle;
+
+  /// Subtitle of monthly subscription plan
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible billing, cancel anytime'**
+  String get paywallMonthlyPlanSubtitle;
+
+  /// Per month suffix for pricing
+  ///
+  /// In en, this message translates to:
+  /// **'/mo'**
+  String get paywallPerMonth;
+
+  /// Timeline step 1 on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Today: Instant Full Access'**
+  String get paywallTimelineToday;
+
+  /// Timeline step 2 on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible: Zero Commitments'**
+  String get paywallTimelineBilling;
+
+  /// Timeline step 3 on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'1-Tap Cancellation in Settings'**
+  String get paywallTimelineCancel;
+
+  /// Main CTA button on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Kortexify Pro Access'**
+  String get paywallCtaButton;
+
+  /// Security and guarantee sub-label under CTA
+  ///
+  /// In en, this message translates to:
+  /// **'🔒 256-Bit Encrypted Checkout • Risk-Free'**
+  String get paywallSecurityGuarantee;
+
+  /// Promo code redemption link on paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Have a promo code? Redeem here'**
+  String get paywallHavePromoCode;
+
+  /// Legal disclaimer for auto-renewing subscriptions
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current billing period.'**
+  String get paywallAutoRenewDisclaimer;
+
+  /// Title for promo code redemption modal
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem Promo Code'**
+  String get promoCodeTitle;
+
+  /// Subtitle for promo code redemption modal
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your special access code below'**
+  String get promoCodeSubtitle;
+
+  /// Input field label for promo code
+  ///
+  /// In en, this message translates to:
+  /// **'Promo Code'**
+  String get promoCodeInputLabel;
+
+  /// Placeholder hint for promo code
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. kotexify007'**
+  String get promoCodeInputHint;
+
+  /// Submit button for promo code redemption
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Promo Code'**
+  String get promoCodeApplyButton;
+
+  /// Title shown upon successful promo code redemption
+  ///
+  /// In en, this message translates to:
+  /// **'Kortex Pro Activated!'**
+  String get promoCodeActivatedTitle;
+
+  /// Description shown upon successful promo code redemption
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! You have unlocked {days} days of Kortex Pro access. Enjoy unlimited AI generation, deep diagnostics, and full offline study powers.'**
+  String promoCodeActivatedDesc(int days);
+
+  /// Dismiss button after successful redemption
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started with Pro'**
+  String get promoCodeGetStarted;
+
+  /// Validation error when promo code input is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a promo code.'**
+  String get promoCodeEmptyError;
+
   /// Action button to study now
   ///
   /// In en, this message translates to:

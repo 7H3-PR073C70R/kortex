@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -13,12 +14,15 @@ class MockRedeemPromoCodeUseCase extends Mock
     implements RedeemPromoCodeUseCase {}
 
 Widget createTestApp(Widget child) {
-  return MaterialApp(
-    theme: AppTheme.darkTheme,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: SingleChildScrollView(child: child),
+  return ScreenUtilInit(
+    designSize: const Size(375, 812),
+    builder: (context, _) => MaterialApp(
+      theme: AppTheme.darkTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: child,
+      ),
     ),
   );
 }
@@ -80,6 +84,7 @@ void main() {
       );
 
       await tester.tap(find.text('Apply Promo Code'));
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(find.text('Kortex Pro Activated!'), findsOneWidget);

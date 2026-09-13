@@ -2418,6 +2418,135 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallRestore => 'Restore';
 
   @override
+  String get paywallScholarBadge => 'KORTEXIFY PRO SCHOLAR';
+
+  @override
+  String get paywallHeroTitle => 'Supercharge Your Academic Mastery';
+
+  @override
+  String get paywallHeroSubtitle =>
+      'Join 25,000+ top scholars studying 3x faster with unlimited Socratic AI tutoring, smart OCR ingestion, and calibrated memory retention.';
+
+  @override
+  String get paywallSocialProofRating => '4.9/5 Rating';
+
+  @override
+  String get paywallSocialProofRetention => '94% Exam Pass Rate';
+
+  @override
+  String get paywallSocialProofSpeed => '3x Faster Mastery';
+
+  @override
+  String get paywallFeature1Title => 'Unlimited Syllabot AI Reasoning';
+
+  @override
+  String get paywallFeature1Subtitle =>
+      '24/7 Socratic problem-solving & step-by-step LaTeX math derivations without token limits';
+
+  @override
+  String get paywallFeature2Title => 'Instant Multimodal OCR Drop';
+
+  @override
+  String get paywallFeature2Subtitle =>
+      'Convert textbooks, lecture slides & past papers into active-recall cards instantly';
+
+  @override
+  String get paywallFeature3Title => 'FSRS-6 Spaced Repetition Engine';
+
+  @override
+  String get paywallFeature3Subtitle =>
+      'Long-term memory scheduling calibrated for WAEC, JAMB, NECO & Finals';
+
+  @override
+  String get paywallFeature4Title => 'Seamless Cloud Backup & Sync';
+
+  @override
+  String get paywallFeature4Subtitle =>
+      'Zero-latency offline study cache with instant multi-device sync';
+
+  @override
+  String get paywallFeature5Title => 'Full Data Portability & Export';
+
+  @override
+  String get paywallFeature5Subtitle =>
+      'Export study sets to Anki, CSV, Markdown, and print-ready study sheets';
+
+  @override
+  String get paywallAnnualPlanTitle => 'Annual Pass';
+
+  @override
+  String get paywallAnnualSaveBadge => 'SAVE 45% • BEST VALUE';
+
+  @override
+  String get paywallAnnualPlanSubtitle =>
+      'Billed annually at \$59.99/yr (approx. \$4.99/mo)';
+
+  @override
+  String get paywallAnnualWeeklyNote =>
+      'Just \$1.15/week — less than a cup of coffee';
+
+  @override
+  String get paywallMonthlyPlanTitle => 'Monthly Pass';
+
+  @override
+  String get paywallMonthlyPlanSubtitle => 'Flexible billing, cancel anytime';
+
+  @override
+  String get paywallPerMonth => '/mo';
+
+  @override
+  String get paywallTimelineToday => 'Today: Instant Full Access';
+
+  @override
+  String get paywallTimelineBilling => 'Flexible: Zero Commitments';
+
+  @override
+  String get paywallTimelineCancel => '1-Tap Cancellation in Settings';
+
+  @override
+  String get paywallCtaButton => 'Unlock Kortexify Pro Access';
+
+  @override
+  String get paywallSecurityGuarantee =>
+      '🔒 256-Bit Encrypted Checkout • Risk-Free';
+
+  @override
+  String get paywallHavePromoCode => 'Have a promo code? Redeem here';
+
+  @override
+  String get paywallAutoRenewDisclaimer =>
+      'Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current billing period.';
+
+  @override
+  String get promoCodeTitle => 'Redeem Promo Code';
+
+  @override
+  String get promoCodeSubtitle => 'Enter your special access code below';
+
+  @override
+  String get promoCodeInputLabel => 'Promo Code';
+
+  @override
+  String get promoCodeInputHint => 'e.g. kotexify007';
+
+  @override
+  String get promoCodeApplyButton => 'Apply Promo Code';
+
+  @override
+  String get promoCodeActivatedTitle => 'Kortex Pro Activated!';
+
+  @override
+  String promoCodeActivatedDesc(int days) {
+    return 'Congratulations! You have unlocked $days days of Kortex Pro access. Enjoy unlimited AI generation, deep diagnostics, and full offline study powers.';
+  }
+
+  @override
+  String get promoCodeGetStarted => 'Get Started with Pro';
+
+  @override
+  String get promoCodeEmptyError => 'Please enter a promo code.';
+
+  @override
   String get studyNowAction => 'Study Now';
 
   @override

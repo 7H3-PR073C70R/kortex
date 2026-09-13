@@ -3428,6 +3428,167 @@
     "@paywallRestore": {
         "description": "Restore purchases button on paywall"
     },
+    "paywallScholarBadge": "KORTEXIFY PRO SCHOLAR",
+    "@paywallScholarBadge": {
+        "description": "Floating badge on paywall header"
+    },
+    "paywallHeroTitle": "Supercharge Your Academic Mastery",
+    "@paywallHeroTitle": {
+        "description": "Hero title on paywall"
+    },
+    "paywallHeroSubtitle": "Join 25,000+ top scholars studying 3x faster with unlimited Socratic AI tutoring, smart OCR ingestion, and calibrated memory retention.",
+    "@paywallHeroSubtitle": {
+        "description": "Hero subtitle on paywall"
+    },
+    "paywallSocialProofRating": "4.9/5 Rating",
+    "@paywallSocialProofRating": {
+        "description": "Social proof rating on paywall"
+    },
+    "paywallSocialProofRetention": "94% Exam Pass Rate",
+    "@paywallSocialProofRetention": {
+        "description": "Social proof retention rate on paywall"
+    },
+    "paywallSocialProofSpeed": "3x Faster Mastery",
+    "@paywallSocialProofSpeed": {
+        "description": "Social proof speed metric on paywall"
+    },
+    "paywallFeature1Title": "Unlimited Syllabot AI Reasoning",
+    "@paywallFeature1Title": {
+        "description": "Feature 1 title on paywall"
+    },
+    "paywallFeature1Subtitle": "24/7 Socratic problem-solving & step-by-step LaTeX math derivations without token limits",
+    "@paywallFeature1Subtitle": {
+        "description": "Feature 1 subtitle on paywall"
+    },
+    "paywallFeature2Title": "Instant Multimodal OCR Drop",
+    "@paywallFeature2Title": {
+        "description": "Feature 2 title on paywall"
+    },
+    "paywallFeature2Subtitle": "Convert textbooks, lecture slides & past papers into active-recall cards instantly",
+    "@paywallFeature2Subtitle": {
+        "description": "Feature 2 subtitle on paywall"
+    },
+    "paywallFeature3Title": "FSRS-6 Spaced Repetition Engine",
+    "@paywallFeature3Title": {
+        "description": "Feature 3 title on paywall"
+    },
+    "paywallFeature3Subtitle": "Long-term memory scheduling calibrated for WAEC, JAMB, NECO & Finals",
+    "@paywallFeature3Subtitle": {
+        "description": "Feature 3 subtitle on paywall"
+    },
+    "paywallFeature4Title": "Seamless Cloud Backup & Sync",
+    "@paywallFeature4Title": {
+        "description": "Feature 4 title on paywall"
+    },
+    "paywallFeature4Subtitle": "Zero-latency offline study cache with instant multi-device sync",
+    "@paywallFeature4Subtitle": {
+        "description": "Feature 4 subtitle on paywall"
+    },
+    "paywallFeature5Title": "Full Data Portability & Export",
+    "@paywallFeature5Title": {
+        "description": "Feature 5 title on paywall"
+    },
+    "paywallFeature5Subtitle": "Export study sets to Anki, CSV, Markdown, and print-ready study sheets",
+    "@paywallFeature5Subtitle": {
+        "description": "Feature 5 subtitle on paywall"
+    },
+    "paywallAnnualPlanTitle": "Annual Pass",
+    "@paywallAnnualPlanTitle": {
+        "description": "Title of annual subscription plan"
+    },
+    "paywallAnnualSaveBadge": "SAVE 45% • BEST VALUE",
+    "@paywallAnnualSaveBadge": {
+        "description": "Badge for annual plan savings"
+    },
+    "paywallAnnualPlanSubtitle": "Billed annually at $59.99/yr (approx. $4.99/mo)",
+    "@paywallAnnualPlanSubtitle": {
+        "description": "Subtitle of annual subscription plan"
+    },
+    "paywallAnnualWeeklyNote": "Just $1.15/week — less than a cup of coffee",
+    "@paywallAnnualWeeklyNote": {
+        "description": "Weekly breakdown micro-copy for annual plan"
+    },
+    "paywallMonthlyPlanTitle": "Monthly Pass",
+    "@paywallMonthlyPlanTitle": {
+        "description": "Title of monthly subscription plan"
+    },
+    "paywallMonthlyPlanSubtitle": "Flexible billing, cancel anytime",
+    "@paywallMonthlyPlanSubtitle": {
+        "description": "Subtitle of monthly subscription plan"
+    },
+    "paywallPerMonth": "/mo",
+    "@paywallPerMonth": {
+        "description": "Per month suffix for pricing"
+    },
+    "paywallTimelineToday": "Today: Instant Full Access",
+    "@paywallTimelineToday": {
+        "description": "Timeline step 1 on paywall"
+    },
+    "paywallTimelineBilling": "Flexible: Zero Commitments",
+    "@paywallTimelineBilling": {
+        "description": "Timeline step 2 on paywall"
+    },
+    "paywallTimelineCancel": "1-Tap Cancellation in Settings",
+    "@paywallTimelineCancel": {
+        "description": "Timeline step 3 on paywall"
+    },
+    "paywallCtaButton": "Unlock Kortexify Pro Access",
+    "@paywallCtaButton": {
+        "description": "Main CTA button on paywall"
+    },
+    "paywallSecurityGuarantee": "🔒 256-Bit Encrypted Checkout • Risk-Free",
+    "@paywallSecurityGuarantee": {
+        "description": "Security and guarantee sub-label under CTA"
+    },
+    "paywallHavePromoCode": "Have a promo code? Redeem here",
+    "@paywallHavePromoCode": {
+        "description": "Promo code redemption link on paywall"
+    },
+    "paywallAutoRenewDisclaimer": "Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current billing period.",
+    "@paywallAutoRenewDisclaimer": {
+        "description": "Legal disclaimer for auto-renewing subscriptions"
+    },
+    "promoCodeTitle": "Redeem Promo Code",
+    "@promoCodeTitle": {
+        "description": "Title for promo code redemption modal"
+    },
+    "promoCodeSubtitle": "Enter your special access code below",
+    "@promoCodeSubtitle": {
+        "description": "Subtitle for promo code redemption modal"
+    },
+    "promoCodeInputLabel": "Promo Code",
+    "@promoCodeInputLabel": {
+        "description": "Input field label for promo code"
+    },
+    "promoCodeInputHint": "e.g. kotexify007",
+    "@promoCodeInputHint": {
+        "description": "Placeholder hint for promo code"
+    },
+    "promoCodeApplyButton": "Apply Promo Code",
+    "@promoCodeApplyButton": {
+        "description": "Submit button for promo code redemption"
+    },
+    "promoCodeActivatedTitle": "Kortex Pro Activated!",
+    "@promoCodeActivatedTitle": {
+        "description": "Title shown upon successful promo code redemption"
+    },
+    "promoCodeActivatedDesc": "Congratulations! You have unlocked {days} days of Kortex Pro access. Enjoy unlimited AI generation, deep diagnostics, and full offline study powers.",
+    "@promoCodeActivatedDesc": {
+        "description": "Description shown upon successful promo code redemption",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "promoCodeGetStarted": "Get Started with Pro",
+    "@promoCodeGetStarted": {
+        "description": "Dismiss button after successful redemption"
+    },
+    "promoCodeEmptyError": "Please enter a promo code.",
+    "@promoCodeEmptyError": {
+        "description": "Validation error when promo code input is empty"
+    },
     "studyNowAction": "Study Now",
     "@studyNowAction": {
         "description": "Action button to study now"
