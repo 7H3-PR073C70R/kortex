@@ -1,33 +1,18 @@
 -- ==============================================================================
 -- Migration: 20260914030000_create_start_mock_exam_rpc.sql
 -- Description: Creates the start_mock_exam RPC endpoint in Supabase to initialize
--- mock exam sessions with parameters (examId, subject).
+-- mock exam sessions with parameters (examId, subject, p_exam_id, p_subject).
 -- ==============================================================================
 
-CREATE OR REPLACE FUNCTION public.start_mock_exam(
-    "examId" TEXT DEFAULT '',
-    "subject" TEXT DEFAULT ''
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_session_id UUID := gen_random_uuid();
-BEGIN
-    RETURN jsonb_build_object(
-        'sessionId', v_session_id::text,
-        'examId', "examId",
-        'subject', "subject",
-        'startedAt', now()
-    );
-END;
-$$;
+DROP FUNCTION IF EXISTS public.start_mock_exam(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.start_mock_exam(TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.start_mock_exam();
 
--- Support snake_case parameters if called with p_exam_id / p_subject
 CREATE OR REPLACE FUNCTION public.start_mock_exam(
     p_exam_id TEXT DEFAULT '',
-    p_subject TEXT DEFAULT ''
+    p_subject TEXT DEFAULT '',
+    "examId" TEXT DEFAULT NULL,
+    "subject" TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -35,14 +20,18 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_session_id UUID := gen_random_uuid();
+    v_actual_exam_id TEXT;
+    v_actual_subject TEXT;
 BEGIN
+    v_actual_exam_id := COALESCE(NULLIF("examId", ''), p_exam_id, '');
+    v_actual_subject := COALESCE(NULLIF("subject", ''), p_subject, '');
     RETURN jsonb_build_object(
         'sessionId', v_session_id::text,
-        'examId', p_exam_id,
-        'subject', p_subject,
+        'examId', v_actual_exam_id,
+        'subject', v_actual_subject,
         'startedAt', now()
     );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.start_mock_exam(TEXT, TEXT) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.start_mock_exam(TEXT, TEXT, TEXT, TEXT) TO authenticated, anon;

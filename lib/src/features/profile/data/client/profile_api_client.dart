@@ -33,14 +33,22 @@ class ProfileApiClient {
       );
     }
 
+    final isDataUri = photoUrl != null &&
+        (photoUrl.startsWith('data:') || photoUrl.length > 500);
+    final sanitizedAuthPhotoUrl = isDataUri ? null : photoUrl;
+
     final authData = <String, dynamic>{
       if (displayName != null) ...{
         'display_name': displayName,
         'full_name': displayName,
       },
-      if (photoUrl != null) ...{
-        'photo_url': photoUrl,
-        'avatar_url': photoUrl,
+      if (sanitizedAuthPhotoUrl != null) ...{
+        'photo_url': sanitizedAuthPhotoUrl,
+        'avatar_url': sanitizedAuthPhotoUrl,
+      },
+      if (isDataUri) ...{
+        'photo_url': null,
+        'avatar_url': null,
       },
     };
 

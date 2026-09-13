@@ -32,6 +32,8 @@ class AuthFormView extends HookWidget {
     final draftCubit = context.read<AuthDraftCubit>();
     final draftState = context.watch<AuthDraftCubit>().state;
     final authMode = context.watch<AuthModeCubit>().state;
+    final authState = context.watch<AuthBloc>().state;
+    final isLoading = authState.isLoading;
     final isRegister = authMode.formType == AuthFormType.register;
 
     final emailController = useTextEditingController(text: draftState.email);
@@ -83,6 +85,7 @@ class AuthFormView extends HookWidget {
     );
 
     void handleSubmit() {
+      if (isLoading) return;
       final email = emailController.text.trim();
       final password = passwordController.text;
       final name = nameController.text.trim();
@@ -202,17 +205,21 @@ class AuthFormView extends HookWidget {
                                 const SizedBox(height: 12),
                                 AppButton(
                                   text: 'Verify Code',
-                                  onPressed: () {
-                                    final otp = otpController.text.trim();
-                                    if (otp.length == 6) {
-                                      context.read<AuthBloc>().add(
-                                        AuthVerifyOtpRequested(
-                                          email: emailController.text.trim(),
-                                          token: otp,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  isLoading: isLoading,
+                                  onPressed: isLoading
+                                      ? null
+                                      : () {
+                                          final otp = otpController.text.trim();
+                                          if (otp.length == 6) {
+                                            context.read<AuthBloc>().add(
+                                              AuthVerifyOtpRequested(
+                                                email:
+                                                    emailController.text.trim(),
+                                                token: otp,
+                                              ),
+                                            );
+                                          }
+                                        },
                                 ),
                                 const SizedBox(height: 8),
                                 TextButton(
@@ -383,7 +390,8 @@ class AuthFormView extends HookWidget {
                             text: isRegister
                                 ? l10n.authSubmitRegister
                                 : l10n.authSubmitLogin,
-                            onPressed: handleSubmit,
+                            isLoading: isLoading,
+                            onPressed: isLoading ? null : handleSubmit,
                           ),
                         ),
                         const SizedBox(height: 14),

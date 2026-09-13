@@ -616,11 +616,24 @@ class AuthChatView extends HookWidget {
           lastRetryDescription.value = '';
           currentFlow.value = _ChatFlowStep.accountActive;
           final name = state.user?.displayName ?? 'Scholar';
-          addBotMessage(
-            '🎉 Welcome to Kortexify, **$name**! Your account is active.\n\n'
-            "Let's calibrate your academic track and study profile to "
-            'personalize your learning engine.',
-          );
+          final isNewlyRegistered =
+              locator.isRegistered<LocalStorageService>() &&
+              locator<LocalStorageService>()
+                      .getPreference(key: PrefKeys.isNewlyRegistered) ==
+                  'true';
+          if (isNewlyRegistered) {
+            addBotMessage(
+              '🎉 Welcome to Kortexify, **$name**! Your account is active.\n\n'
+              "Let's calibrate your academic track and study profile to "
+              'personalize your learning engine.',
+            );
+          } else {
+            addBotMessage(
+              '👋 Welcome back, **$name**!\n\n'
+              "Let's calibrate your academic track and study profile to "
+              'personalize your learning engine.',
+            );
+          }
         } else if (state.status == AuthStatus.authenticated &&
             state.user != null) {
           isThinking.value = false;

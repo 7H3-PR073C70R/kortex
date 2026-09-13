@@ -114,11 +114,19 @@ class _AuthView extends HookWidget {
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
+        final isNewlyRegistered =
+            locator.isRegistered<LocalStorageService>() &&
+            locator<LocalStorageService>()
+                    .getPreference(key: PrefKeys.isNewlyRegistered) ==
+                'true';
+
         if (state.status == AuthStatus.needsOnboarding && state.user != null) {
           if (!isChatMode) {
-            context.showSnackBar(
-              message: 'Account created! Welcome to Kortexify.',
-            );
+            if (isNewlyRegistered) {
+              context.showSnackBar(
+                message: 'Account created! Welcome to Kortexify.',
+              );
+            }
             unawaited(
               context.router.replace(const OnboardingCalibrationRoute()),
             );
