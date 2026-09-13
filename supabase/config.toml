@@ -431,7 +431,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.generate-livekit-token]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-embeddings]
 verify_jwt = true
@@ -446,11 +446,12 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-flashcards-stream]
-verify_jwt = false
+verify_jwt = true
 
 [functions.revenuecat-webhook]
 verify_jwt = false
 
 [functions.presence-heartbeat]
 verify_jwt = true
+
 

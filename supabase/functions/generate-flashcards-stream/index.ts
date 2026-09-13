@@ -66,7 +66,12 @@ serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // 2. Enforce Daily AI Quota (Free tier: 50 AI questions/day)
+    // 2. Parse and validate request payload
+    const body: GenerateFlashcardsRequest = await req.json().catch(() => ({}));
+    const rawTopic = body.topic?.trim() || "Academic Foundations";
+    const rawSourceText = body.sourceText?.trim();
+
+    // 3. Enforce Daily AI Quota (Free tier: 50 AI questions/day)
     const quotaCheck = await enforceDailyQuota(
       userId,
       "ai_question",
@@ -80,8 +85,8 @@ serve(async (req: Request) => {
 
     const requestedCount = body.count;
     const dynamicCount =
-      sourceText && sourceText.length > 5000
-        ? Math.max(10, Math.ceil(sourceText.length / 2000))
+      rawSourceText && rawSourceText.length > 5000
+        ? Math.max(10, Math.ceil(rawSourceText.length / 2000))
         : 10;
     const totalCount =
       requestedCount && requestedCount > 0
@@ -89,7 +94,8 @@ serve(async (req: Request) => {
         : dynamicCount;
     const deckId = body.deckId || `deck_${Date.now()}`;
     const difficulty = body.difficulty || "intermediate";
-    const sourceText = body.sourceText;
+    const topic = rawTopic;
+    const sourceText = rawSourceText;
 
     // 3. Genuine LLM Streaming Server-Sent Events (SSE) Pipeline
     const stream = new ReadableStream({

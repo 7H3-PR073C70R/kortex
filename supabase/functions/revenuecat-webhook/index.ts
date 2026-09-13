@@ -50,19 +50,30 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const webhookSecret = Deno.env.get("REVENUECAT_WEBHOOK_SECRET");
 
-    if (webhookSecret) {
-      const expectedAuth = `Bearer ${webhookSecret}`;
-      const isMatch = await timingSafeEqualString(authHeader, expectedAuth);
-
-      if (!isMatch) {
-        console.warn(
-          "[RevenueCat Webhook] Cryptographic authentication failure."
-        );
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
+    if (!webhookSecret) {
+      console.error(
+        "[RevenueCat Webhook] Server Misconfiguration: REVENUECAT_WEBHOOK_SECRET is not configured."
+      );
+      return new Response(
+        JSON.stringify({ error: "Server Misconfiguration: Webhook secret not set" }),
+        {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        }
+      );
+    }
+
+    const expectedAuth = `Bearer ${webhookSecret}`;
+    const isMatch = await timingSafeEqualString(authHeader, expectedAuth);
+
+    if (!isMatch) {
+      console.warn(
+        "[RevenueCat Webhook] Cryptographic authentication failure."
+      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // 3. Parse Inbound RevenueCat Event
@@ -80,21 +91,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 4. Replay Attack Defense (Check timestamp within 300 seconds if provided)
+    // 4. Mandatory Replay Attack Defense (Check timestamp within 300 seconds)
     const timestampToCheck =
       event.event_timestamp_ms ?? event.purchased_at_ms;
 
     if (
-      timestampToCheck &&
+      !timestampToCheck ||
       !verifyTimestampFreshness(timestampToCheck, 300)
     ) {
       console.warn(
-        `[RevenueCat Webhook] Replay attack guard triggered: Event timestamp ${timestampToCheck} exceeds allowable drift.`
+        `[RevenueCat Webhook] Replay attack guard triggered: Event timestamp ${timestampToCheck} is missing or exceeds allowable drift.`
       );
       return new Response(
         JSON.stringify({
-          error: "STALE_TIMESTAMP",
-          message: "Event timestamp exceeds acceptable window.",
+          error: "STALE_OR_MISSING_TIMESTAMP",
+          message: "Event timestamp is missing or exceeds allowable 300s window.",
         }),
         {
           status: 400,

@@ -71,16 +71,19 @@ serve(async (req) => {
 
     let effectiveUserId: string | null = null;
     if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-      } = await supabase.auth.getUser(token);
-      effectiveUserId = user?.id ?? null;
+      const token = authHeader.replace("Bearer ", "").trim();
+      const isServiceRole = supabaseServiceKey && token === supabaseServiceKey;
+      if (!isServiceRole) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser(token);
+        effectiveUserId = user?.id ?? null;
+      }
     }
 
     const payload: EmbedRequest = await req.json();
     const { documentId, rawText, chunks, metadata = {}, courseCode } = payload;
-    const userId = payload.userId || effectiveUserId;
+    const userId = effectiveUserId || payload.userId;
 
     if (!documentId || (!rawText && (!chunks || chunks.length === 0))) {
       return new Response(
@@ -90,6 +93,22 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Zero-Trust BOLA Guard: Verify the document belongs to caller if caller is a standard user
+    if (effectiveUserId) {
+      const { data: existingDocRecord } = await supabase
+        .from("documents")
+        .select("id, user_id")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      if (existingDocRecord && existingDocRecord.user_id !== effectiveUserId) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: You do not own this document" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const cacheKey = `doc_embeddings:${documentId}:${rawText?.length ?? chunks?.length ?? 0}`;

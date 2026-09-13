@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { AccessToken } from "npm:livekit-server-sdk@^2.6.0";
 
 const corsHeaders = {
@@ -14,6 +15,9 @@ interface TokenRequestPayload {
   user_id?: string;
   userId?: string;
   username?: string;
+  isVoicePodEnabled?: boolean;
+  is_voice_pod?: boolean;
+  canPublish?: boolean;
 }
 
 serve(async (req: Request) => {
@@ -22,14 +26,51 @@ serve(async (req: Request) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const authClient = createClient(supabaseUrl, supabaseAnonKey);
+    const {
+      data: { user },
+      error: authError,
+    } = await authClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Invalid or expired session token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authenticatedUserId = user.id;
+
     const body: TokenRequestPayload = await req.json().catch(() => ({}));
     const roomId = body.room_id || body.roomId;
-    const userId = body.user_id || body.userId;
-    const username = body.username || userId || "Scholar";
+    const requestedUserId = body.user_id || body.userId;
 
-    if (!roomId || !userId) {
+    // Zero-Trust IDOR Guard: Prevent impersonating other users
+    if (requestedUserId && requestedUserId !== authenticatedUserId) {
       return new Response(
-        JSON.stringify({ error: "room_id and user_id are required" }),
+        JSON.stringify({ error: "Forbidden: Cannot generate token for another user identity" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = authenticatedUserId;
+    const username = body.username || (user.user_metadata?.display_name as string) || "Scholar";
+
+    if (!roomId) {
+      return new Response(
+        JSON.stringify({ error: "roomId is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -47,7 +88,7 @@ serve(async (req: Request) => {
     if (!apiKey || !apiSecret) {
       return new Response(
         JSON.stringify({
-          error: "LiveKit server credentials (LIVEKIT_API_KEY / LIVEKIT_API_SECRET) are not configured.",
+          error: "LiveKit server credentials are not configured on the backend.",
         }),
         {
           status: 503,
@@ -57,7 +98,6 @@ serve(async (req: Request) => {
     }
 
     // Determine audio publishing permissions:
-    // Silent focus rooms restrict microphone publishing unless voice pod mode is explicitly toggled
     const isVoicePod = body.isVoicePodEnabled === true || body.is_voice_pod === true;
     const canPublishAudio = body.canPublish ?? isVoicePod;
 
@@ -75,11 +115,11 @@ serve(async (req: Request) => {
       canPublishData: true,
     });
 
-    const token = await at.toJwt();
+    const livekitToken = await at.toJwt();
 
     return new Response(
       JSON.stringify({
-        token,
+        token: livekitToken,
         roomId,
         userId,
         expiresIn: 21600,

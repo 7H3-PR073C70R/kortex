@@ -115,11 +115,36 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceKey || supabaseAnonKey
-    );
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRole = supabaseServiceKey && token === supabaseServiceKey;
+
+    let authenticatedUserId: string | null = null;
+    if (!isServiceRole) {
+      const authClient = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+        error: authError,
+      } = await authClient.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized: Invalid or expired session token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      authenticatedUserId = user.id;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: PushNotificationPayload = await req.json().catch(() => ({}));
     const {
@@ -153,6 +178,17 @@ serve(async (req: Request) => {
         JSON.stringify({ error: "No target userId or userIds specified" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Zero-Trust BOLA Guard: Normal authenticated users can ONLY send notifications to themselves
+    if (!isServiceRole && authenticatedUserId) {
+      const isTargetingOthers = targetUserIds.some((id) => id !== authenticatedUserId);
+      if (isTargetingOthers) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: Cannot send push notifications to other users" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // 1. Check user notification preferences

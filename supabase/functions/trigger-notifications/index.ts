@@ -35,12 +35,27 @@ serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceKey || supabaseAnonKey
-    );
+    // Zero-Trust Guard: Only internal service_role or authenticated cron schedulers can trigger bulk notifications
+    const isServiceRole =
+      supabaseServiceKey &&
+      authHeader.replace(/^Bearer\s+/i, "").trim() === supabaseServiceKey;
+    const isCronSecretMatch =
+      cronSecret &&
+      (customCronHeader === cronSecret ||
+        authHeader.replace(/^Bearer\s+/i, "").trim() === cronSecret);
+
+    if (!isServiceRole && !isCronSecretMatch) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Endpoint restricted to internal server triggers" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: TriggerNotificationRequest = await req.json().catch(() => ({}));
     const { action, documentId, roomId, deckId, userId } = body;
@@ -55,7 +70,7 @@ serve(async (req: Request) => {
     let notificationsDispatched = 0;
     const sendPushUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
     const headers = {
-      Authorization: `Bearer ${supabaseServiceKey || supabaseAnonKey}`,
+      Authorization: `Bearer ${supabaseServiceKey}`,
       "Content-Type": "application/json",
     };
 

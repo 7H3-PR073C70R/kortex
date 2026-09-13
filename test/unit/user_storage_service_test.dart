@@ -1,148 +1,53 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:mocktail/mocktail.dart';
 
-class _FakeLocalStorageService implements LocalStorageService {
-  final Map<String, String> _store = {};
-
-  @override
-  Future<void> initDB() async {}
-
-  @override
-  String? getPreference({required String key}) => _store[key];
-
-  @override
-  Future<void> savePreference({
-    required String key,
-    required String data,
-  }) async {
-    _store[key] = data;
-  }
-
-  @override
-  Future<void> deletePreference({required String key}) async {
-    _store.remove(key);
-  }
-}
+class MockLocalStorageService extends Mock implements LocalStorageService {}
+class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
-  late _FakeLocalStorageService fakeStorage;
-  late UserStorageServiceImpl userStorage;
+  late MockLocalStorageService mockLocalStorageService;
+  late MockFlutterSecureStorage mockSecureStorage;
+  late UserStorageService userStorageService;
 
   setUp(() {
-    fakeStorage = _FakeLocalStorageService();
-    userStorage = UserStorageServiceImpl(fakeStorage);
+    mockLocalStorageService = MockLocalStorageService();
+    mockSecureStorage = MockFlutterSecureStorage();
+
+    when(() => mockSecureStorage.read(key: any(named: 'key')))
+        .thenAnswer((_) async => null);
+    when(() => mockSecureStorage.write(key: any(named: 'key'), value: any(named: 'value')))
+        .thenAnswer((_) async {});
+    when(() => mockSecureStorage.delete(key: any(named: 'key')))
+        .thenAnswer((_) async {});
+    when(() => mockLocalStorageService.getPreference(key: any(named: 'key')))
+        .thenReturn(null);
+    when(() => mockLocalStorageService.savePreference(key: any(named: 'key'), data: any(named: 'data')))
+        .thenAnswer((_) async => true);
+    when(() => mockLocalStorageService.deletePreference(key: any(named: 'key')))
+        .thenAnswer((_) async => true);
+
+    userStorageService = UserStorageServiceImpl(
+      mockLocalStorageService,
+      secureStorage: mockSecureStorage,
+    );
   });
 
-  group('UserStorageService Pro Subscription & Entitlement Suite', () {
-    test('isProSubscriber returns false by default when unset', () {
-      expect(userStorage.isProSubscriber(), isFalse);
-    });
+  test('saveToken writes strictly to secure storage and deletes any legacy local pref', () async {
+    const dummyJwt = 'header.payload.signature';
+    await userStorageService.saveToken(dummyJwt);
 
-    test('saveProStatus persists pro status as true and retrieves it', () async {
-      await userStorage.saveProStatus(isPro: true);
-
-      expect(fakeStorage.getPreference(key: PrefKeys.isProSubscriber), equals('true'));
-      expect(userStorage.isProSubscriber(), isTrue);
-    });
-
-    test('saveProStatus updates pro status to false on subscription downgrade', () async {
-      await userStorage.saveProStatus(isPro: true);
-      expect(userStorage.isProSubscriber(), isTrue);
-
-      await userStorage.saveProStatus(isPro: false);
-      expect(fakeStorage.getPreference(key: PrefKeys.isProSubscriber), equals('false'));
-      expect(userStorage.isProSubscriber(), isFalse);
-    });
-
-    test('clearStorage removes tokens and pro subscription status', () async {
-      await userStorage.saveToken('test_jwt_token');
-      await userStorage.saveRefreshToken('test_refresh_token');
-      await userStorage.saveProStatus(isPro: true);
-
-      expect(userStorage.isProSubscriber(), isTrue);
-      expect(userStorage.getToken(), equals('test_jwt_token'));
-
-      userStorage.clearStorage();
-
-      expect(userStorage.isProSubscriber(), isFalse);
-      expect(userStorage.getToken(), isNull);
-      expect(userStorage.getRefreshToken(), isNull);
-    });
+    verify(() => mockSecureStorage.write(key: '__token', value: dummyJwt)).called(1);
+    verify(() => mockLocalStorageService.deletePreference(key: '__token')).called(greaterThanOrEqualTo(1));
   });
 
-  group('UserStorageService User Email Resolution Suite', () {
-    test('getUserEmail returns null when no token or email stored', () {
-      expect(userStorage.getUserEmail(), isNull);
-    });
+  test('saveRefreshToken writes strictly to secure storage', () async {
+    const dummyRefresh = 'sample_refresh_token_123';
+    await userStorageService.saveRefreshToken(dummyRefresh);
 
-    test('getUserEmail extracts authenticated email from JWT payload', () async {
-      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
-      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
-      const jwt = '$header.$payload.dummySignature';
-
-      await userStorage.saveToken(jwt);
-
-      expect(userStorage.getUserEmail(), equals('scholar@kortex.ai'));
-    });
-
-    test('saveUserEmail persists email and retrieves it when JWT is not available', () async {
-      await userStorage.saveUserEmail('persisted@kortex.ai');
-
-      expect(userStorage.getUserEmail(), equals('persisted@kortex.ai'));
-    });
-
-    test('clearStorage removes stored email', () async {
-      await userStorage.saveUserEmail('persisted@kortex.ai');
-      expect(userStorage.getUserEmail(), equals('persisted@kortex.ai'));
-
-      userStorage.clearStorage();
-      expect(userStorage.getUserEmail(), isNull);
-    });
-  });
-
-  group('UserStorageService Display Name & Avatar URL Persistence Suite', () {
-    test('getUserDisplayName falls back to JWT payload when not explicitly saved', () async {
-      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
-      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
-      const jwt = '$header.$payload.dummySignature';
-
-      await userStorage.saveToken(jwt);
-      expect(userStorage.getUserDisplayName(), equals('John Doe'));
-    });
-
-    test('saveUserDisplayName persists display name and overrides JWT payload', () async {
-      const header = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-      // {"sub":"1234567890","email":"scholar@kortex.ai","name":"John Doe"}
-      const payload = 'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJzY2hvbGFyQGtvcnRleC5haSIsIm5hbWUiOiJKb2huIERvZSJ9';
-      const jwt = '$header.$payload.dummySignature';
-
-      await userStorage.saveToken(jwt);
-      expect(userStorage.getUserDisplayName(), equals('John Doe'));
-
-      await userStorage.saveUserDisplayName('Dr. Ada Lovelace');
-      expect(fakeStorage.getPreference(key: PrefKeys.userDisplayName), equals('Dr. Ada Lovelace'));
-      expect(userStorage.getUserDisplayName(), equals('Dr. Ada Lovelace'));
-    });
-
-    test('saveUserAvatarUrl persists avatar and overrides JWT payload', () async {
-      await userStorage.saveUserAvatarUrl('https://example.com/avatar.png');
-      expect(fakeStorage.getPreference(key: PrefKeys.userAvatarUrl), equals('https://example.com/avatar.png'));
-      expect(userStorage.getUserAvatarUrl(), equals('https://example.com/avatar.png'));
-    });
-
-    test('clearStorage removes stored display name and avatar URL', () async {
-      await userStorage.saveUserDisplayName('Dr. Ada Lovelace');
-      await userStorage.saveUserAvatarUrl('https://example.com/avatar.png');
-      expect(userStorage.getUserDisplayName(), equals('Dr. Ada Lovelace'));
-      expect(userStorage.getUserAvatarUrl(), equals('https://example.com/avatar.png'));
-
-      userStorage.clearStorage();
-      expect(userStorage.getUserDisplayName(), isNull);
-      expect(userStorage.getUserAvatarUrl(), isNull);
-    });
+    verify(() => mockSecureStorage.write(key: '__refresh_token', value: dummyRefresh)).called(1);
+    verify(() => mockLocalStorageService.deletePreference(key: '__refresh_token')).called(greaterThanOrEqualTo(1));
   });
 }

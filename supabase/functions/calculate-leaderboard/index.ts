@@ -14,6 +14,27 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
+
+    const isServiceRole =
+      supabaseServiceKey &&
+      authHeader.replace(/^Bearer\s+/i, "").trim() === supabaseServiceKey;
+    const isCronMatch =
+      cronSecret &&
+      (customCronHeader === cronSecret ||
+        authHeader.replace(/^Bearer\s+/i, "").trim() === cronSecret);
+
+    if (!isServiceRole && !isCronMatch) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Restricted to scheduled background cron jobs" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

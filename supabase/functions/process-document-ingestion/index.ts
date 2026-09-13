@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { chunkMarkdown } from "../_shared/markdown_chunker.ts";
+import { isSafeOutboundUrl } from "../_shared/security_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,23 +29,51 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") ?? "";
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceKey || supabaseAnonKey
-    );
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRole = supabaseServiceKey && token === supabaseServiceKey;
+
+    let authenticatedUserId: string | null = null;
+    if (!isServiceRole) {
+      const authClient = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+        error: authError,
+      } = await authClient.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized: Invalid or expired session token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      authenticatedUserId = user.id;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: IngestionJobPayload = await req.json().catch(() => ({}));
     const {
       documentId,
       fileUrl,
       rawText,
-      userId,
+      userId: requestedUserId,
       courseCode,
       metadata = {},
       parser = "llamaparse",
     } = payload;
+
+    const userId = isServiceRole
+      ? (requestedUserId || "system")
+      : (authenticatedUserId as string);
 
     if (!documentId || !userId) {
       return new Response(
@@ -54,6 +83,22 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Zero-Trust Ownership Check: If authenticated user, verify they own the document
+    if (!isServiceRole && authenticatedUserId) {
+      const { data: docRecord, error: docErr } = await supabase
+        .from("documents")
+        .select("id, user_id")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      if (docRecord && docRecord.user_id !== authenticatedUserId) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden: You do not have permission to ingest this document" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // 1. Asynchronous Layout-Aware Parsing (LlamaParse / Docling / Native)
@@ -210,6 +255,10 @@ async function parseWithLlamaParse(
   fileUrl: string,
   apiKey: string
 ): Promise<string> {
+  if (!isSafeOutboundUrl(fileUrl)) {
+    throw new Error("Security Alert: Blocked outbound connection to private, loopback, or cloud metadata IP address (SSRF Guard).");
+  }
+
   const fileRes = await fetch(fileUrl);
   if (!fileRes.ok) {
     throw new Error(`Failed to download file from ${fileUrl}`);

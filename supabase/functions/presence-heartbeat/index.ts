@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,13 +31,32 @@ serve(async (req: Request) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization");
+
+    let authenticatedUserId: string | null = null;
+    let authUserMetadata: Record<string, any> = {};
+
+    if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+      const authClient = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+      } = await authClient.auth.getUser(token).catch(() => ({ data: { user: null } }));
+      if (user) {
+        authenticatedUserId = user.id;
+        authUserMetadata = user.user_metadata || {};
+      }
+    }
+
     const url = new URL(req.url);
     const body: PresenceHeartbeatPayload =
       req.method === "POST" ? await req.json().catch(() => ({})) : ({} as any);
 
     const action = body.action || (req.method === "GET" ? "query" : "heartbeat");
     const roomId = body.roomId || url.searchParams.get("roomId") || "";
-    const userId = body.userId || url.searchParams.get("userId") || "";
+    const userId = authenticatedUserId || body.userId || url.searchParams.get("userId") || "";
 
     if (!roomId) {
       return new Response(
@@ -54,9 +74,9 @@ serve(async (req: Request) => {
     if (action === "heartbeat") {
       if (!userId) {
         return new Response(
-          JSON.stringify({ error: "userId is required for heartbeat" }),
+          JSON.stringify({ error: "Unauthorized: User session or userId required for heartbeat" }),
           {
-            status: 400,
+            status: 401,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
@@ -65,8 +85,8 @@ serve(async (req: Request) => {
       const presenceData = {
         userId,
         roomId,
-        username: body.username || "Scholar",
-        avatarUrl: body.avatarUrl,
+        username: body.username || authUserMetadata.display_name || "Scholar",
+        avatarUrl: body.avatarUrl || authUserMetadata.avatar_url,
         focusStatus: body.focusStatus || "active",
         activeCursor: body.activeCursor,
         timerState: body.timerState,

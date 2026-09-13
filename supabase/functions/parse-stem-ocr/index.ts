@@ -268,6 +268,23 @@ serve(async (req) => {
       });
     }
 
+    // Zero-Trust Ownership Verification: Ensure the document belongs to the requesting user
+    const { data: documentRecord, error: docLookupError } = await supabase
+      .from("documents")
+      .select("id, user_id")
+      .eq("id", documentId)
+      .maybeSingle();
+
+    if (documentRecord && documentRecord.user_id !== userId) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: You do not own this document" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // 1. Check Semantic Cache for pre-extracted OCR text
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabase,

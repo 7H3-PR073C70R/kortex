@@ -17,26 +17,26 @@ CREATE INDEX IF NOT EXISTS idx_flashcards_deck_user
     ON public.flashcards(deck_id, user_id);
 
 -- Forum: High-concurrency community feed listings and nested replies
-CREATE INDEX IF NOT EXISTS idx_forum_posts_community_feed 
-    ON public.forum_posts(community_id, is_pinned DESC, created_at DESC)
-    INCLUDE (id, user_id, title, upvotes_count, replies_count, view_count);
+CREATE INDEX IF NOT EXISTS idx_forum_posts_track_feed 
+    ON public.forum_posts(track, created_at DESC)
+    INCLUDE (id, author_id, title, upvotes, replies_count);
 
 CREATE INDEX IF NOT EXISTS idx_forum_replies_post_tree 
     ON public.forum_replies(post_id, parent_reply_id, created_at ASC)
-    INCLUDE (id, user_id, is_verified, upvotes_count);
+    INCLUDE (id, author_id, is_verified_solution, upvotes);
 
 -- Dashboard & Analytics: Ultra-fast user stats and streak aggregations
-CREATE INDEX IF NOT EXISTS idx_heatmap_activity_user_date 
-    ON public.heatmap_activity(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_heatmap_activity_user_activity_date 
+    ON public.heatmap_activity(user_id, activity_date DESC);
 
-CREATE INDEX IF NOT EXISTS idx_user_curated_courses_enrolled 
-    ON public.user_curated_courses(user_id, is_enrolled) 
-    INCLUDE (course_id, target_score, study_frequency);
+CREATE INDEX IF NOT EXISTS idx_user_curated_courses_covering 
+    ON public.user_curated_courses(user_id, course_id) 
+    INCLUDE (syllabus_coverage, enrolled_at);
 
 -- Past Questions: Fast deterministic indexed filtering
 CREATE INDEX IF NOT EXISTS idx_past_questions_subject_exam_year 
-    ON public.past_questions(subject_id, exam_type, year)
-    INCLUDE (id, question_text, correct_option);
+    ON public.past_questions(subject, exam_type, year)
+    INCLUDE (id, prompt, correct_option_label);
 
 -- Study Review Logs: Idempotent checkpointing index
 CREATE INDEX IF NOT EXISTS idx_study_review_logs_sync_lookup 
@@ -174,7 +174,6 @@ CREATE TABLE IF NOT EXISTS public.quiz_submissions (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     transaction_uuid UUID NOT NULL,
     quiz_id UUID REFERENCES public.quizzes(id) ON DELETE SET NULL,
-    subject_id UUID REFERENCES public.subjects(id) ON DELETE SET NULL,
     score DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     total_questions INT NOT NULL DEFAULT 0,
     correct_count INT NOT NULL DEFAULT 0,
@@ -224,7 +223,6 @@ BEGIN
     FOR v_sub IN SELECT * FROM jsonb_to_recordset(submissions) AS x(
         transaction_uuid UUID,
         quiz_id UUID,
-        subject_id UUID,
         score DOUBLE PRECISION,
         total_questions INT,
         correct_count INT,
@@ -246,7 +244,6 @@ BEGIN
             user_id,
             transaction_uuid,
             quiz_id,
-            subject_id,
             score,
             total_questions,
             correct_count,
@@ -257,7 +254,6 @@ BEGIN
             v_user_id,
             v_sub.transaction_uuid,
             v_sub.quiz_id,
-            v_sub.subject_id,
             COALESCE(v_sub.score, 0.0),
             COALESCE(v_sub.total_questions, 0),
             COALESCE(v_sub.correct_count, 0),
@@ -297,21 +293,23 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ------------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.get_past_questions_fast(
-    p_subject_id UUID,
+    p_subject TEXT DEFAULT NULL,
     p_exam_type TEXT DEFAULT NULL,
     p_limit INT DEFAULT 40,
     p_random_seed FLOAT DEFAULT 0.5
 )
 RETURNS TABLE (
-    id UUID,
-    subject_id UUID,
+    id TEXT,
     exam_type TEXT,
+    subject TEXT,
     year INT,
     question_number INT,
-    question_text TEXT,
+    prompt TEXT,
     options JSONB,
-    correct_option TEXT,
-    explanation TEXT
+    correct_option_index INT,
+    correct_option_label TEXT,
+    explanation TEXT,
+    topic TEXT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -320,19 +318,21 @@ BEGIN
     RETURN QUERY
     SELECT
         pq.id,
-        pq.subject_id,
         pq.exam_type,
+        pq.subject,
         pq.year,
         pq.question_number,
-        pq.question_text,
+        pq.prompt,
         pq.options,
-        pq.correct_option,
-        pq.explanation
+        pq.correct_option_index,
+        pq.correct_option_label,
+        pq.explanation,
+        pq.topic
     FROM public.past_questions pq
-    WHERE (p_subject_id IS NULL OR pq.subject_id = p_subject_id)
-      AND (p_exam_type IS NULL OR pq.exam_type = p_exam_type)
+    WHERE (p_subject IS NULL OR pq.subject ILIKE '%' || p_subject || '%')
+      AND (p_exam_type IS NULL OR pq.exam_type ILIKE '%' || p_exam_type || '%')
     -- Deterministic hash-based distribution provides pseudorandom sampling using indexes
-    ORDER BY md5(pq.id::text || p_random_seed::text)
+    ORDER BY md5(pq.id || p_random_seed::text)
     LIMIT p_limit;
 END;
 $$;

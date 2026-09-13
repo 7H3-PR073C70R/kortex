@@ -67,18 +67,20 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   Future<void> initStorage() async {
     try {
-      _cachedToken = await _secureStorage.read(key: _tokenKey) ??
-          _localStorageService.getPreference(key: _tokenKey);
-      _cachedRefreshToken = await _secureStorage.read(key: _refreshTokenKey) ??
-          _localStorageService.getPreference(key: _refreshTokenKey);
+      _cachedToken = await _secureStorage.read(key: _tokenKey);
+      _cachedRefreshToken = await _secureStorage.read(key: _refreshTokenKey);
       _cachedEmail = await _secureStorage.read(key: _emailKey) ??
           _localStorageService.getPreference(key: _emailKey);
     } on Object {
-      _cachedToken = _localStorageService.getPreference(key: _tokenKey);
-      _cachedRefreshToken =
-          _localStorageService.getPreference(key: _refreshTokenKey);
+      _cachedToken = null;
+      _cachedRefreshToken = null;
       _cachedEmail = _localStorageService.getPreference(key: _emailKey);
     }
+
+    // Defensive migration: Purge legacy sensitive tokens from plaintext SharedPreferences if present
+    unawaited(_safeLocalDelete(_tokenKey));
+    unawaited(_safeLocalDelete(_refreshTokenKey));
+
     _cachedDisplayName =
         _localStorageService.getPreference(key: PrefKeys.userDisplayName);
     _cachedAvatarUrl =
@@ -86,14 +88,6 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   void _initCache() {
-    _cachedToken ??= _localStorageService.getPreference(key: _tokenKey);
-    _cachedRefreshToken ??=
-        _localStorageService.getPreference(key: _refreshTokenKey);
-    _cachedEmail ??= _localStorageService.getPreference(key: _emailKey);
-    _cachedDisplayName ??=
-        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
-    _cachedAvatarUrl ??=
-        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
     unawaited(initStorage());
   }
 
@@ -130,26 +124,20 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   String? getToken() {
-    final raw = _cachedToken ?? _localStorageService.getPreference(key: _tokenKey);
-    final sanitized = _sanitizeToken(raw);
-    if (raw != null && raw.isNotEmpty && sanitized == null) {
-      // Stored token is corrupted/bloated - auto clear it
+    final sanitized = _sanitizeToken(_cachedToken);
+    if (_cachedToken != null && _cachedToken!.isNotEmpty && sanitized == null) {
       _cachedToken = null;
-      unawaited(_localStorageService.deletePreference(key: _tokenKey));
-      unawaited(_secureStorage.delete(key: _tokenKey));
+      unawaited(_safeSecureDelete(_tokenKey));
     }
     return _cachedToken = sanitized;
   }
 
   @override
   String? getRefreshToken() {
-    final raw = _cachedRefreshToken ??
-        _localStorageService.getPreference(key: _refreshTokenKey);
-    final sanitized = _sanitizeToken(raw);
-    if (raw != null && raw.isNotEmpty && sanitized == null) {
+    final sanitized = _sanitizeToken(_cachedRefreshToken);
+    if (_cachedRefreshToken != null && _cachedRefreshToken!.isNotEmpty && sanitized == null) {
       _cachedRefreshToken = null;
-      unawaited(_localStorageService.deletePreference(key: _refreshTokenKey));
-      unawaited(_secureStorage.delete(key: _refreshTokenKey));
+      unawaited(_safeSecureDelete(_refreshTokenKey));
     }
     return _cachedRefreshToken = sanitized;
   }
@@ -283,13 +271,14 @@ class UserStorageServiceImpl implements UserStorageService {
     final clean = _sanitizeToken(token);
     _cachedToken = clean;
     if (clean == null) {
-      await _secureStorage.delete(key: _tokenKey);
-      await _localStorageService.deletePreference(key: _tokenKey);
+      await _safeSecureDelete(_tokenKey);
+      await _safeLocalDelete(_tokenKey);
       return;
     }
     try {
       await _secureStorage.write(key: _tokenKey, value: clean);
-      await _localStorageService.savePreference(key: _tokenKey, data: clean);
+      // Ensure plaintext preference is deleted
+      await _safeLocalDelete(_tokenKey);
     } on Object {
       return;
     }
@@ -300,16 +289,14 @@ class UserStorageServiceImpl implements UserStorageService {
     final clean = _sanitizeToken(refreshToken);
     _cachedRefreshToken = clean;
     if (clean == null) {
-      await _secureStorage.delete(key: _refreshTokenKey);
-      await _localStorageService.deletePreference(key: _refreshTokenKey);
+      await _safeSecureDelete(_refreshTokenKey);
+      await _safeLocalDelete(_refreshTokenKey);
       return;
     }
     try {
       await _secureStorage.write(key: _refreshTokenKey, value: clean);
-      await _localStorageService.savePreference(
-        key: _refreshTokenKey,
-        data: clean,
-      );
+      // Ensure plaintext preference is deleted
+      await _safeLocalDelete(_refreshTokenKey);
     } on Object {
       return;
     }
