@@ -264,3 +264,10 @@ class PublishDeckEvent extends CommunityEvent {
 class FetchMoreForumPostsEvent extends CommunityEvent {
   const FetchMoreForumPostsEvent();
 }
+
+class ClearCommunityErrorEvent extends CommunityEvent {
+  const ClearCommunityErrorEvent();
+
+  @override
+  List<Object?> get props => [];
+}

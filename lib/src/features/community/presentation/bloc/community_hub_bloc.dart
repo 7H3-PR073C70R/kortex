@@ -32,10 +32,18 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
     on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
+    on<ClearCommunityErrorEvent>(_onClearCommunityError);
   }
 
   final CommunityRepository _repository;
   StreamSubscription<dynamic>? _leaderboardSubscription;
+
+  void _onClearCommunityError(
+    ClearCommunityErrorEvent event,
+    Emitter<CommunityState> emit,
+  ) {
+    emit(state.copyWith());
+  }
 
   Future<void> _onLoadCommunityHub(
     LoadCommunityHubEvent event,

@@ -469,9 +469,9 @@ class ForumThreadDetailPage extends HookWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text(
+                                        Text(
                                           '❓',
-                                          style: TextStyle(fontSize: 12),
+                                          style: typography.caption.medium.copyWith(fontSize: 12),
                                         ),
                                         const SizedBox(width: 5),
                                         Text(
@@ -505,9 +505,9 @@ class ForumThreadDetailPage extends HookWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text(
+                                        Text(
                                           '📚',
-                                          style: TextStyle(fontSize: 11),
+                                          style: typography.caption.medium.copyWith(fontSize: 11),
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -680,14 +680,14 @@ class ForumThreadDetailPage extends HookWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (isGeneratingAiHint.value)
-                                          const SizedBox(
+                                          SizedBox(
                                             width: 12,
                                             height: 12,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               valueColor:
                                                   AlwaysStoppedAnimation<Color>(
-                                                    Colors.white,
+                                                    colors.white,
                                                   ),
                                             ),
                                           )
@@ -811,22 +811,22 @@ class ForumThreadDetailPage extends HookWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (isGeneratingAiHint.value)
-                                          const SizedBox(
+                                          SizedBox(
                                             width: 14,
                                             height: 14,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               valueColor:
                                                   AlwaysStoppedAnimation<Color>(
-                                                    Colors.white,
+                                                    colors.white,
                                                   ),
                                             ),
                                           )
                                         else
-                                          const Icon(
+                                          Icon(
                                             Icons.auto_awesome_rounded,
                                             size: 16,
-                                            color: Colors.white,
+                                            color: colors.white,
                                           ),
                                         const SizedBox(width: 8),
                                         Text(
@@ -834,7 +834,7 @@ class ForumThreadDetailPage extends HookWidget {
                                               ? 'Consulting Syllabot...'
                                               : 'Ask Syllabot for Socratic Hint',
                                           style: typography.caption.bold.copyWith(
-                                            color: Colors.white,
+                                            color: colors.white,
                                             letterSpacing: 0.2,
                                           ),
                                         ),
@@ -1646,7 +1646,7 @@ class _ForumAnswerCard extends HookWidget {
                           shape: BoxShape.circle,
                           color: isUpvoted
                               ? colors.primary.withAlpha(30)
-                              : Colors.transparent,
+                              : colors.transparent,
                         ),
                         child: Icon(
                           Icons.arrow_drop_up_rounded,
@@ -1676,7 +1676,7 @@ class _ForumAnswerCard extends HookWidget {
                           shape: BoxShape.circle,
                           color: isDownvoted
                               ? colors.error.withAlpha(30)
-                              : Colors.transparent,
+                              : colors.transparent,
                         ),
                         child: Icon(
                           Icons.arrow_drop_down_rounded,
@@ -1917,11 +1917,10 @@ class _ForumAnswerCard extends HookWidget {
                                         : (reply.authorName.isNotEmpty
                                             ? reply.authorName[0].toUpperCase()
                                             : '?'),
-                                    style: TextStyle(
+                                    style: typography.caption.bold.copyWith(
                                       fontSize: reply.authorName.contains('Syllabot')
                                           ? 10
                                           : 9,
-                                      fontWeight: FontWeight.bold,
                                       color: colors.primary,
                                     ),
                                   ),
@@ -2067,9 +2066,8 @@ class _ForumNestedReplyItem extends HookWidget {
                       : (childReply.authorName.isNotEmpty
                           ? childReply.authorName[0].toUpperCase()
                           : '?'),
-                  style: TextStyle(
+                  style: typography.caption.bold.copyWith(
                     fontSize: childReply.authorName.contains('Syllabot') ? 9 : 8,
-                    fontWeight: FontWeight.bold,
                     color: colors.primary,
                   ),
                 ),
@@ -2298,5 +2296,3 @@ class _ForumNestedReplyItem extends HookWidget {
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 }
-
-

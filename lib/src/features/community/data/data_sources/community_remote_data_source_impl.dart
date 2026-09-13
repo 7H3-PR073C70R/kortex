@@ -277,7 +277,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String syllabusTag = 'General',
     bool isAnonymous = false,
   }) async {
-    final userId = isAnonymous ? null : _userStorage?.getUserId();
+    final rawUserId = isAnonymous ? null : _userStorage?.getUserId();
+    final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
+        ? rawUserId.trim()
+        : null;
     final authorName = isAnonymous
         ? 'Anonymous Scholar'
         : (_userStorage?.getUserDisplayName() ?? 'Scholar');
@@ -287,12 +290,14 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       'title': title,
       'content': content,
       'track': track,
-      'latex_content': latexContent,
+      if (latexContent != null && latexContent.trim().isNotEmpty)
+        'latex_content': latexContent,
       'is_question': isQuestion,
       'syllabus_tag': syllabusTag,
       'author_name': authorName,
       'author_id': ?userId,
-      'author_avatar': ?authorAvatar,
+      if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
+        'author_avatar': authorAvatar,
     };
 
     final res = await _client.createForumPost(payload);
@@ -312,18 +317,24 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String? latexContent,
     String? parentReplyId,
   }) async {
-    final userId = _userStorage?.getUserId();
+    final rawUserId = _userStorage?.getUserId();
+    final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
+        ? rawUserId.trim()
+        : null;
     final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
     final authorAvatar = _userStorage?.getUserAvatarUrl();
 
     final payload = <String, dynamic>{
       'post_id': postId,
       'content': content,
-      'latex_content': latexContent,
-      'parent_reply_id': ?parentReplyId,
+      if (latexContent != null && latexContent.trim().isNotEmpty)
+        'latex_content': latexContent,
+      if (parentReplyId != null && parentReplyId.trim().isNotEmpty)
+        'parent_reply_id': parentReplyId,
       'author_name': authorName,
       'author_id': ?userId,
-      'author_avatar': ?authorAvatar,
+      if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
+        'author_avatar': authorAvatar,
     };
 
     final res = await _client.replyToForumPost(payload);

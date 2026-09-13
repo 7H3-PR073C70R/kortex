@@ -103,10 +103,23 @@ class _CommunityHubView extends HookWidget {
       return () => tabController.removeListener(listener);
     }, [tabController]);
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? colors.backgroundPrimary
-          : colors.surfacePrimary,
+    return BlocListener<CommunityHubBloc, CommunityState>(
+      listenWhen: (previous, current) =>
+          current.errorMessage != null &&
+          current.errorMessage != previous.errorMessage,
+      listener: (context, state) {
+        if (state.errorMessage != null && state.errorMessage!.trim().isNotEmpty) {
+          context.showSnackBar(
+            message: state.errorMessage!,
+            type: SnackBarType.error,
+          );
+          context.read<CommunityHubBloc>().add(const ClearCommunityErrorEvent());
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? colors.backgroundPrimary
+            : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
@@ -333,6 +346,7 @@ class _CommunityHubView extends HookWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

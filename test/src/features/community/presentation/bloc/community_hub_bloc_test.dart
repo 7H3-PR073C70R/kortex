@@ -131,6 +131,8 @@ void main() {
           studyCircles: const [testCircle],
           sharedDecks: const [testDeck],
           leaderboardEntries: const [testLeaderboardEntry],
+          hasMoreForumPosts: false,
+          forumPostsOffset: 1,
         ),
       ],
     );

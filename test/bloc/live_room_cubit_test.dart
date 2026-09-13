@@ -52,6 +52,8 @@ class MockCommunityRepository implements CommunityRepository {
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
   }) async => const Right([]);
 
   @override
