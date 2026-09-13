@@ -1,89 +1,65 @@
 /* ==========================================================================
    KORTEXIFY DESIGN SYSTEM: CSS TOKENS & VARIABLES
-   Elite Obsidian, Electric Cyan (#00C2FF), and Neural Purple (#7000FF)
+   Obsidian Dark & Clean Light Modes, Electric Cyan (#00C2FF), Neural Purple (#7000FF)
    ========================================================================== */
 
 :root {
   /* ------------------------------------------------------------------------
-     1. Official Brand Color Palette
+     1. Brand Accent Palette
      ------------------------------------------------------------------------ */
-  /* Electric Cyan */
   --color-cyan-electric: #00C2FF;
   --color-cyan-light: #38D4FF;
   --color-cyan-dark: #0099CC;
   --color-cyan-glow: rgba(0, 194, 255, 0.35);
   --color-cyan-subtle: rgba(0, 194, 255, 0.12);
 
-  /* Neural Purple */
   --color-neural-purple: #7000FF;
   --color-neural-purple-light: #9D4EDD;
   --color-neural-purple-dark: #5200CC;
   --color-neural-glow: rgba(112, 0, 255, 0.35);
   --color-neural-subtle: rgba(112, 0, 255, 0.12);
 
-  /* Academic Blue & Engine Accents */
   --color-academic-blue: #3B82F6;
   --color-academic-blue-light: #60A5FA;
   --color-academic-blue-glow: rgba(59, 130, 246, 0.35);
 
-  /* Semantic Accents */
   --color-emerald-stem: #10B981;
   --color-emerald-light: #34D399;
   --color-emerald-glow: rgba(16, 185, 129, 0.35);
+
   --color-amber-gold: #F59E0B;
+  --color-amber-light: #FCD34D;
   --color-rose-coral: #F43F5E;
 
   /* ------------------------------------------------------------------------
-     2. Surfaces & Deep Obsidian Canvas (#0A0C14)
+     2. Dark Mode Canvas & Glass Surfaces (Default)
      ------------------------------------------------------------------------ */
   --bg-canvas: #0A0C14;
   --bg-canvas-deep: #06070B;
   --bg-canvas-subtle: #0E121E;
   
   --bg-card: #121626;
-  --bg-card-glass: rgba(18, 22, 38, 0.75);
-  --bg-card-glass-hover: rgba(24, 30, 52, 0.88);
+  --bg-card-glass: rgba(18, 22, 38, 0.78);
+  --bg-card-glass-hover: rgba(24, 30, 52, 0.9);
   
   --bg-surface-elevated1: #161C30;
   --bg-surface-elevated2: #1C243D;
   --bg-surface-elevated3: #263050;
 
-  /* ------------------------------------------------------------------------
-     3. Glassmorphic Borders & Radial Glows
-     ------------------------------------------------------------------------ */
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(0, 194, 255, 0.2);
-  --border-highlight-hover: rgba(0, 194, 255, 0.45);
-  --border-neural: rgba(112, 0, 255, 0.25);
+  --border-highlight: rgba(0, 194, 255, 0.25);
+  --border-highlight-hover: rgba(0, 194, 255, 0.5);
+  --border-neural: rgba(112, 0, 255, 0.3);
   --border-glass: rgba(255, 255, 255, 0.12);
-  --border-glass-glow: rgba(0, 194, 255, 0.35);
 
-  /* ------------------------------------------------------------------------
-     4. Typography & High-Contrast Colors
-     ------------------------------------------------------------------------ */
   --text-primary: #FFFFFF;
   --text-secondary: #94A3B8;
   --text-muted: #64748B;
   --text-inverse: #0A0C14;
 
-  /* Font Families */
-  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --nav-bg: rgba(10, 12, 20, 0.85);
 
-  /* Fluid Typography Scale */
-  --text-display: clamp(2rem, 5.5vw + 0.5rem, 4.25rem);
-  --text-h1: clamp(1.65rem, 3.8vw + 0.5rem, 3rem);
-  --text-h2: clamp(1.4rem, 2.6vw + 0.35rem, 2.25rem);
-  --text-h3: clamp(1.15rem, 1.8vw + 0.25rem, 1.5rem);
-  --text-body-lg: clamp(0.98rem, 1vw + 0.4rem, 1.18rem);
-  --text-body: 0.95rem;
-  --text-body-sm: 0.85rem;
-  --text-caption: 0.75rem;
-
-  /* ------------------------------------------------------------------------
-     5. Shadows, Glows & Elevations
-     ------------------------------------------------------------------------ */
+  /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.7);
@@ -92,15 +68,70 @@
   --shadow-glow-card: 0 0 30px rgba(0, 194, 255, 0.15);
 
   /* ------------------------------------------------------------------------
-     6. Layout & Radii
+     3. Typography & Sizing
      ------------------------------------------------------------------------ */
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-dyslexic: 'OpenDyslexic', 'Comic Sans MS', sans-serif;
+
+  --text-display: clamp(2.1rem, 5.5vw + 0.5rem, 4.25rem);
+  --text-h1: clamp(1.75rem, 3.8vw + 0.5rem, 3.1rem);
+  --text-h2: clamp(1.4rem, 2.6vw + 0.35rem, 2.25rem);
+  --text-h3: clamp(1.15rem, 1.8vw + 0.25rem, 1.5rem);
+  --text-body-lg: clamp(1rem, 1.1vw + 0.3rem, 1.2rem);
+  --text-body: 0.95rem;
+  --text-body-sm: 0.85rem;
+  --text-caption: 0.75rem;
+
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
   --radius-full: 9999px;
 
-  --container-max-width: 1240px;
-  --container-padding: clamp(1rem, 4vw, 2.5rem);
-  --section-spacing: clamp(4.5rem, 8vw, 8.5rem);
+  --container-max-width: 1200px;
+  --section-spacing: clamp(3.5rem, 7vw, 6.5rem);
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+   4. High-Contrast Light Mode Theme Tokens
+   -------------------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg-canvas: #F8FAFC;
+  --bg-canvas-deep: #F1F5F9;
+  --bg-canvas-subtle: #FFFFFF;
+
+  --bg-card: #FFFFFF;
+  --bg-card-glass: rgba(255, 255, 255, 0.88);
+  --bg-card-glass-hover: rgba(255, 255, 255, 0.98);
+
+  --bg-surface-elevated1: #FFFFFF;
+  --bg-surface-elevated2: #F1F5F9;
+  --bg-surface-elevated3: #E2E8F0;
+
+  --border-subtle: rgba(15, 23, 42, 0.09);
+  --border-highlight: rgba(0, 153, 204, 0.35);
+  --border-highlight-hover: rgba(0, 153, 204, 0.65);
+  --border-neural: rgba(112, 0, 255, 0.35);
+  --border-glass: rgba(15, 23, 42, 0.12);
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
+
+  --nav-bg: rgba(248, 250, 252, 0.9);
+
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+  --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.14);
+  --shadow-glow-cyan: 0 0 30px rgba(0, 194, 255, 0.18);
+  --shadow-glow-purple: 0 0 30px rgba(112, 0, 255, 0.18);
+  --shadow-glow-card: 0 4px 20px rgba(0, 194, 255, 0.1);
 }

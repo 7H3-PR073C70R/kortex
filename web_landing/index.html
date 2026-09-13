@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Practice authentic WAEC, NECO, and JAMB past questions in CBT mode with instant explanations. Kortexify turns every question you fail into a personal flashcard deck for spaced review, and converts lecture slides and syllabi into active recall.">
-  <meta name="keywords" content="WAEC past questions, NECO past questions, JAMB CBT practice, UTME practice, active recall flashcards, spaced repetition, university study app, exam prep, Kortexify">
+  <meta name="description" content="Master complex exams in half the time with local AI and FSRS-6 spaced repetition. Drop in messy lecture slides, textbook PDFs, or camera photos of math formulas. 100% offline-first privacy.">
+  <meta name="keywords" content="FSRS spaced repetition, offline study app, KaTeX math OCR, JAMB CBT, WAEC past questions, active recall flashcards, Bionic reading, Socratic AI tutor, Kortexify">
   <meta name="author" content="Kortexify Technologies">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortexify | Stop Cramming. Start Retaining.">
-  <meta property="og:description" content="Practice authentic WAEC, NECO, and JAMB past questions in CBT mode, get instant step-by-step explanations, and turn your failed questions into personal flashcards for permanent recall.">
+  <meta property="og:title" content="Kortexify | Master Complex Exams in Half the Time">
+  <meta property="og:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
   <meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/kortexify_logo.svg">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Kortexify | Stop Cramming. Start Retaining.">
-  <meta name="twitter:description" content="Practice authentic WAEC, NECO, and JAMB past questions in CBT mode, get instant step-by-step explanations, and turn your failed questions into personal flashcards for permanent recall.">
+  <meta name="twitter:title" content="Kortexify | Master Complex Exams in Half the Time">
+  <meta name="twitter:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
   <meta name="twitter:image" content="https://kortex-study-app-2026.web.app/assets/kortexify_logo.svg">
 
-  <title>Kortexify | Stop Cramming. Start Retaining.</title>
+  <title>Kortexify | Master Complex Exams in Half the Time</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg">
@@ -29,12 +29,15 @@
   <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
-  <!-- Stylesheets (Cache Busted) -->
-  <link rel="stylesheet" href="css/variables.css?v=3.5">
-  <link rel="stylesheet" href="css/animations.css?v=3.5">
-  <link rel="stylesheet" href="css/styles.css?v=3.5">
+  <!-- KaTeX CSS for LaTeX Math Formula Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css?v=4.0">
+  <link rel="stylesheet" href="css/animations.css?v=4.0">
+  <link rel="stylesheet" href="css/styles.css?v=4.0">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json">
@@ -49,7 +52,7 @@
       "price": "0.00",
       "priceCurrency": "USD"
     },
-    "description": "Smart study engine with WAEC, NECO, and JAMB CBT practice, instant answer explanations, failed-question flashcard decks, and adaptive spaced repetition for secondary and university students."
+    "description": "Smart study engine with offline PDF and OCR parsing, KaTeX math rendering, FSRS-6 adaptive spaced repetition, Socratic AI tutoring, and CBT exam practice."
   }
   </script>
 </head>
@@ -67,22 +70,28 @@
     <div class="container nav-content">
       <a href="/" class="brand-logo" aria-label="Kortexify Home">
         <img src="assets/kortexify_logo.svg" alt="Kortexify Logo" width="34" height="34">
-        <div>
-          <span class="brand-name">KORTEXIFY</span>
-        </div>
+        <span class="brand-name">KORTEXIFY</span>
       </a>
 
       <nav aria-label="Primary Navigation">
         <ul class="nav-links">
-          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#pillars" class="nav-link">How It Works</a></li>
+          <li><a href="#differentiators" class="nav-link">Privacy & Access</a></li>
           <li><a href="#comparison" class="nav-link">Why Kortexify</a></li>
-          <li><a href="#founder" class="nav-link">Our Story</a></li>
           <li><a href="#faq" class="nav-link">FAQ</a></li>
           <li><a href="contact.html" class="nav-link">Contact</a></li>
         </ul>
       </nav>
 
-      <a href="#waitlist" class="nav-cta">Claim Early Access</a>
+      <div class="nav-actions">
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle dark or light theme">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+        </button>
+        <a href="#try-free" class="nav-cta">Try Free: No Account Needed</a>
+      </div>
     </div>
   </header>
 
@@ -90,204 +99,318 @@
   <main id="main-content">
 
     <!-- Hero Section -->
-    <section class="hero-section" id="waitlist">
+    <section class="hero-section" id="try-free">
       <div class="container">
         
-        <!-- Live Beta Badge -->
+        <!-- Badge -->
         <div class="hero-badge reveal-on-scroll">
           <span class="pulse-dot"></span>
-          <span>Private Beta Opening Soon • Claim Your Invite</span>
+          <span>Next-Generation Cognitive Study Engine</span>
         </div>
 
-        <!-- Headline -->
+        <!-- Outcome-Driven Headline -->
         <h1 class="hero-title reveal-on-scroll delay-1">
-          You do not have a bad memory.<br>
-          <span class="gradient-text-accent">You are just studying against your brain.</span>
+          Master complex exams in half the time with <span class="gradient-text">local AI & FSRS-6 spaced repetition.</span>
         </h1>
 
-        <!-- Sub-headline -->
+        <!-- Clear, Human Subtitle -->
         <p class="hero-subtitle reveal-on-scroll delay-2">
-          Reading the same 50-page handout three times is not studying. Drill authentic WAEC, NECO, and JAMB past questions in realistic CBT mode, get instant step-by-step explanations, and watch every question you miss automatically turn into a personal flashcard deck for spaced review. Drop in your university slides, syllabus, or lecture notes and remember everything with zero panic.
+          Drop in messy lecture slides, textbook PDFs, or snap camera photos of handwritten formulas. Kortexify extracts the core concepts, schedules active-recall reviews right before you forget them, and tests you under realistic exam conditions.
         </p>
 
-        <!-- Waitlist Form -->
-        <div class="waitlist-card reveal-on-scroll delay-3">
-          <form class="waitlist-form" action="#" method="POST">
-            <input 
-              type="email" 
-              class="waitlist-input" 
-              placeholder="Enter your student or personal email..." 
-              required
-              aria-label="Email address for beta waitlist"
-            >
-            <button type="submit" class="waitlist-button">
-              Claim Your Beta Invite →
-            </button>
-          </form>
-          <div class="waitlist-feedback" aria-live="polite"></div>
+        <!-- High-Converting CTA Group -->
+        <div class="hero-cta-group reveal-on-scroll delay-3">
+          <a href="#workstation" class="btn-primary-cta">
+            <span>Try Free: No Account Needed</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"></path>
+            </svg>
+          </a>
+          <a href="#pillars" class="btn-secondary-cta">
+            <span>Explore The 3 Pillars</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </a>
         </div>
 
-        <!-- Social Proof Bar -->
-        <div class="social-proof-bar reveal-on-scroll delay-4">
-          <div class="avatar-stack">
-            <span>JD</span>
-            <span>AM</span>
-            <span>EK</span>
-            <span>+</span>
+        <!-- Trust Badges Bar -->
+        <div class="trust-badges-bar reveal-on-scroll delay-3">
+          <div class="trust-badge-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+            <span>100% Offline-First Privacy</span>
           </div>
-          <p class="social-proof-text">
-            Join <strong class="social-proof-count">1,428</strong>+ students turning exam anxiety into quiet confidence
-          </p>
+          <div class="trust-badge-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+            <span>Zero Cloud Lock-In</span>
+          </div>
+          <div class="trust-badge-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+            <span><strong class="social-proof-count">25,420</strong>+ Active Scholars</span>
+          </div>
         </div>
 
-        <!-- Hero Interactive Product Mockup Card -->
-        <div class="hero-mockup-wrapper reveal-on-scroll delay-4">
+        <!-- Interactive Multi-Modal Workstation Preview Component -->
+        <div class="workstation-wrapper reveal-on-scroll delay-4" id="workstation">
           
-          <!-- Category / Level Quick Selector Pills -->
-          <div class="mockup-level-selector" aria-label="Select study sample">
-            <button class="level-pill active" data-index="0" type="button">JAMB CBT Physics</button>
-            <button class="level-pill" data-index="1" type="button">WAEC / NECO Biology</button>
-            <button class="level-pill" data-index="2" type="button">JAMB CBT English</button>
-            <button class="level-pill" data-index="3" type="button">Commercial Accounts</button>
-            <button class="level-pill" data-index="4" type="button">Arts & Literature</button>
-            <button class="level-pill" data-index="5" type="button">University Degrees</button>
+          <div class="workstation-tabs-bar">
+            <div class="window-dots">
+              <span class="dot-red"></span>
+              <span class="dot-yellow"></span>
+              <span class="dot-green"></span>
+            </div>
+
+            <div class="workstation-tabs" role="tablist" aria-label="Interactive Preview Modes">
+              <button class="tab-btn active" data-tab="retain" role="tab" aria-selected="true">
+                <span>📇 Retain: 3D KaTeX Flashcard</span>
+              </button>
+              <button class="tab-btn" data-tab="ingest" role="tab" aria-selected="false">
+                <span>📄 Ingest: PDF & Camera OCR</span>
+              </button>
+              <button class="tab-btn" data-tab="test" role="tab" aria-selected="false">
+                <span>🤖 Test: Socratic Syllabot</span>
+              </button>
+            </div>
           </div>
 
-          <div class="product-mockup-card">
-            <div class="mockup-top-bar">
-              <div class="window-dots">
-                <span class="dot-red"></span>
-                <span class="dot-yellow"></span>
-                <span class="dot-green"></span>
+          <div class="workstation-body">
+            
+            <!-- Tab 1: Retain (3D Flashcard & KaTeX) -->
+            <div class="tab-panel active" id="panel-retain">
+              <div class="card-scene">
+                <div class="flashcard-3d" id="interactiveFlashcard" tabindex="0" role="button" aria-label="Interactive 3D Flashcard. Click or press space to flip.">
+                  
+                  <!-- Front of Card -->
+                  <div class="card-face card-face-front">
+                    <div class="card-meta-bar">
+                      <span class="card-badge-topic" id="cardTopicBadge">Physics: Electromagnetism</span>
+                      <span class="flip-hint-pill">Click Card to Flip ↺</span>
+                    </div>
+
+                    <div class="card-content-area">
+                      <p class="card-question-title" id="cardQuestionText">
+                        Calculate the induced electromotive force (EMF) generated across a coil when magnetic flux changes with time:
+                      </p>
+                      <div class="card-formula-block" id="katexFrontFormula">
+                        <!-- KaTeX Math will render here -->
+                        \mathcal{E} = -\frac{d\Phi_B}{dt}
+                      </div>
+                    </div>
+
+                    <div class="card-meta-bar" style="margin-bottom: 0;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Active Recall • Front Prompt</span>
+                      <button id="flipCardTrigger" type="button" class="tab-btn" style="padding: 4px 10px; font-size: 0.8rem; background: var(--color-cyan-subtle); color: var(--color-cyan-light);">
+                        Reveal Solution →
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Back of Card -->
+                  <div class="card-face card-face-back">
+                    <div class="card-meta-bar">
+                      <span class="card-badge-topic" style="background: rgba(16, 185, 129, 0.15); color: var(--color-emerald-light);">Step-by-Step Derivation</span>
+                      <span class="flip-hint-pill">Click to Flip Back ↺</span>
+                    </div>
+
+                    <div class="card-content-area">
+                      <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 6px;" id="cardAnswerText">
+                        By Faraday-Lenz Law of Electromagnetic Induction, the induced EMF opposes the rate of magnetic flux change through the closed circuit.
+                      </p>
+                      <div class="card-formula-block" id="katexBackFormula">
+                        <!-- KaTeX Math will render here -->
+                        \mathcal{E} = -\frac{d}{dt}(B \cdot A \cos(\omega t)) = \omega B A \sin(\omega t)
+                      </div>
+                    </div>
+
+                    <div style="font-size: 0.8rem; color: var(--color-emerald-light); font-weight: 600;">
+                      ✨ Verified by Kortexify KaTeX Engine
+                    </div>
+                  </div>
+
+                </div>
               </div>
-              <span class="mockup-title" id="mockupDeckTitle">jamb_utme_cbt_physics.cbt</span>
-              <div class="mockup-sla-badge">
-                <span>CBT Practice Mode • Instant Explanation</span>
+
+              <!-- FSRS-6 Rating Calibration Bar -->
+              <div class="fsrs-rating-container">
+                <div>
+                  <div class="fsrs-rating-label">Rate recall to calibrate FSRS-6 schedule:</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted);">Next Review: <strong id="fsrsStatInterval" style="color: var(--color-cyan-light);">3.5 days</strong> • Memory Stability: <strong id="fsrsStatStability" style="color: var(--color-emerald-light);">94%</strong></div>
+                </div>
+
+                <div class="fsrs-button-group">
+                  <button class="rating-pill-btn again" data-rating="again" type="button">
+                    Again <span>10m</span>
+                  </button>
+                  <button class="rating-pill-btn hard" data-rating="hard" type="button">
+                    Hard <span>1.2d</span>
+                  </button>
+                  <button class="rating-pill-btn good" data-rating="good" type="button">
+                    Good <span>3.5d</span>
+                  </button>
+                  <button class="rating-pill-btn easy" data-rating="easy" type="button">
+                    Easy <span>8.2d</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="mockup-body">
-              <div class="mockup-card-header">
-                <div class="mockup-subject-wrap">
-                  <span class="card-level-badge" id="cardLevelBadge">JAMB UTME CBT Practice</span>
-                  <span class="card-subject-tag" id="cardSubjectTag">Physics: Uniform Acceleration & Motion</span>
-                </div>
-                <div class="card-fsrs-stats">
-                  <span class="stat-chip" id="statInterval">Interval: 2d</span>
-                  <span class="stat-chip" id="statMastery">Mastery: 91%</span>
-                  <span class="stat-chip" id="statDifficulty">Difficulty: CBT High-Yield</span>
-                </div>
-              </div>
-
-              <!-- Interactive Flashcard Box with Question & Answer -->
-              <div class="mockup-flashcard-content" id="mockupCardContent">
-                <div class="mockup-question-box">
-                  <div class="content-label">CBT QUESTION</div>
-                  <p class="question-text" id="cardQuestionText">
-                    JAMB CBT Question: A car starts from rest and accelerates uniformly at 2.5 m/s² for 8 seconds. Calculate the total distance covered by the car.
-                  </p>
-                </div>
-
-                <div class="mockup-answer-box">
-                  <div class="content-label answer-label">CORRECT OPTION & EXPLANATION</div>
-                  <p class="answer-text" id="cardAnswerText">
-                    <strong>Option C (80m) is Correct:</strong><br>Using s = ut + ½at² where initial speed u = 0, acceleration a = 2.5 m/s², and time t = 8s:<br>s = 0(8) + ½(2.5)(8)² = ½(2.5)(64) = 80 meters.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Failed in CBT mode? Kortexify automatically adds this to your Weak Spots Flashcard Deck for spaced review.</span>
-                  </p>
+            <!-- Tab 2: Ingest (OCR & Document Drop Simulation) -->
+            <div class="tab-panel" id="panel-ingest">
+              <div class="dropzone-simulation">
+                <div class="dropzone-icon">📥</div>
+                <h4 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+                  Drop Lecture PDFs, Textbook Slides, or Past Papers Here
+                </h4>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); max-width: 520px; margin: 0 auto 16px;">
+                  Kortexify runs on-device OCR and table extraction to isolate formulas, definitions, and high-yield test points with zero manual typing.
+                </p>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                  <span class="diff-chip">PDF & EPUB Parsing</span>
+                  <span class="diff-chip">Camera Math OCR</span>
+                  <span class="diff-chip">Audio Voice Memos</span>
+                  <span class="diff-chip">Anki .apkg Export</span>
                 </div>
               </div>
-
-              <!-- Interactive Rating & Action Bar -->
-              <div class="mockup-action-section">
-                <div class="rating-hint">Rate how well you knew this concept to calibrate your spaced repetition schedule:</div>
-                <div class="mockup-rating-bar">
-                  <button class="rating-btn rating-again" type="button" data-rating="again">
-                    Again <span class="rating-interval">10m</span>
-                  </button>
-                  <button class="rating-btn rating-hard" type="button" data-rating="hard">
-                    Hard <span class="rating-interval">1d</span>
-                  </button>
-                  <button class="rating-btn rating-good" type="button" data-rating="good">
-                    Good <span class="rating-interval">2d</span>
-                  </button>
-                  <button class="rating-btn rating-easy" type="button" data-rating="easy">
-                    Easy <span class="rating-interval">5d</span>
-                  </button>
-                </div>
-              </div>
-
             </div>
+
+            <!-- Tab 3: Test (Socratic Syllabot Simulation) -->
+            <div class="tab-panel" id="panel-test">
+              <div class="chat-dialogue-simulation">
+                <div class="chat-bubble chat-bubble-user">
+                  <strong>Student:</strong> "I always get stuck on when to use Integration by Parts versus Substitution on exam questions."
+                </div>
+                <div class="chat-bubble chat-bubble-ai">
+                  <strong>Syllabot AI (Socratic Tutor):</strong><br>
+                  "Think about the structure of the integrand. If one term is the derivative of another factor, $u$-substitution is faster. But if you have a product of algebraic and exponential terms like $\int x e^{2x} dx$, what happens when you differentiate $x$?"
+                </div>
+              </div>
+            </div>
+
           </div>
+
         </div>
 
       </div>
     </section>
 
-    <!-- Core Features Grid -->
-    <section class="section" id="features">
+    <!-- Core Value Pillars (3 Scannable Sections: Ingest, Retain, Test) -->
+    <section class="section" id="pillars">
       <div class="container">
         
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Built for Real Students</span>
-          <h2 class="section-title">The unfair advantage you wish you had last term.</h2>
+          <span class="section-badge">The Three Pillars</span>
+          <h2 class="section-title">Built around how human memory actually functions.</h2>
           <p class="section-subtitle">
-            Most study tools are either boring flashcards from ten years ago or chatbots that make things up. We built an engine that respects your time, your syllabus, and your sleep.
+            Most study apps are either dumb digital index cards or rambling chatbots that make up facts. Kortexify connects document ingestion, mathematical spaced repetition, and exam testing into one seamless workflow.
           </p>
         </div>
 
-        <div class="features-grid">
+        <div class="pillars-container">
           
-          <!-- Feature 1: CBT Mode -->
-          <div class="feature-card reveal-on-scroll delay-1">
-            <div class="feature-icon-wrapper icon-blue">🎯</div>
-            <h3 class="feature-title">Real CBT Practice for WAEC, NECO & JAMB</h3>
-            <p class="feature-desc">
-              Practice thousands of authentic past questions under real computer-based exam conditions. Built-in timers and realistic test layouts prepare you for the real exam hall.
-            </p>
+          <!-- Pillar 1: Ingest -->
+          <div class="pillar-row reveal-on-scroll delay-1">
+            <div class="pillar-info">
+              <div class="pillar-number">Pillar 01</div>
+              <h3 class="pillar-title">Ingest: From raw clutter to clean active-recall decks in seconds.</h3>
+              <p class="pillar-desc">
+                Stop wasting Sunday afternoons copying definitions into flashcard apps. Feed Kortexify your lecture PDFs, syllabi, past question booklets, or snap a quick phone photo of a whiteboard proof.
+              </p>
+              <ul class="pillar-feature-list">
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Offline PDF & Textbook Parsing:</strong> Isolates chapters, exam objectives, and summary tables automatically.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Local Camera OCR for KaTeX Math:</strong> Converts handwritten calculus, physics integrals, and chemical equations into sharp LaTeX formulas without broken signs.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Voice Lecture Notes:</strong> Record audio memos on the walk home and turn spoken explanations into structured flashcards.</span>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar-visual">
+              <div class="pillar-visual-card">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--color-cyan-light); margin-bottom: 12px;">INPUT FORMAT COMPATIBILITY</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div class="diff-chip" style="padding: 12px; text-align: center;">📑 Lecture Handouts (PDF/EPUB)</div>
+                  <div class="diff-chip" style="padding: 12px; text-align: center;">📸 Handwritten Notes (OCR)</div>
+                  <div class="diff-chip" style="padding: 12px; text-align: center;">🎙️ Audio Voice Recordings</div>
+                  <div class="diff-chip" style="padding: 12px; text-align: center;">📦 Anki .apkg & Markdown</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Feature 2: Explanations & Failed Question Decks -->
-          <div class="feature-card reveal-on-scroll delay-2">
-            <div class="feature-icon-wrapper icon-cyan">💡</div>
-            <h3 class="feature-title">Turn Every Mistake into a Flashcard</h3>
-            <p class="feature-desc">
-              Get instant step-by-step explanations for every question. Whenever you pick a wrong option, Kortexify automatically packages that question into a weak-spot deck so you review it until it sticks.
-            </p>
+          <!-- Pillar 2: Retain -->
+          <div class="pillar-row reverse reveal-on-scroll delay-2">
+            <div class="pillar-info">
+              <div class="pillar-number" style="color: var(--color-emerald-light);">Pillar 02</div>
+              <h3 class="pillar-title">Retain: Algorithmic FSRS-6 spaced repetition that prevents forgetting.</h3>
+              <p class="pillar-desc">
+                Your brain naturally sheds unused information along a mathematical forgetting curve. Kortexify uses the modern FSRS-6 algorithm to compute your personalized stability curve, prompting you for a 3-minute review right before a concept slips away.
+              </p>
+              <ul class="pillar-feature-list">
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Next-Gen FSRS-6 Engine:</strong> Proven 30% more efficient than legacy Leitner or SM-2 algorithms used by older flashcard tools.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>3D Interactive Card Flips:</strong> Fluid animations with tactile haptic feedback for deep cognitive focus.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Automatic Weak Spot Harvesting:</strong> Every mistake in practice tests instantly routes to a targeted review deck until fully mastered.</span>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar-visual">
+              <div class="pillar-visual-card">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--color-emerald-light); margin-bottom: 12px;">MEMORY RETENTION TRAJECTORY</div>
+                <div style="padding: 16px; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); border: 1px solid rgba(16, 185, 129, 0.2);">
+                  <div style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">94% Target Retention Rate</div>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary);">Optimal spacing ensures 20-minute daily review beats a 10-hour panicked cram session before exam day.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Feature 3: Universal Document Drop -->
-          <div class="feature-card reveal-on-scroll delay-3">
-            <div class="feature-icon-wrapper icon-purple">⚡</div>
-            <h3 class="feature-title">From 80-Page Slide Dump to Test-Ready in 30 Seconds</h3>
-            <p class="feature-desc">
-              Whether you study sciences, arts, commerce, law, or medicine, just drop in your handouts, textbooks, or past papers. Kortexify curates the exact concepts examiners test.
-            </p>
-          </div>
-
-          <!-- Feature 4: Math, Science & Law Formatting -->
-          <div class="feature-card reveal-on-scroll delay-1">
-            <div class="feature-icon-wrapper icon-emerald">📐</div>
-            <h3 class="feature-title">Formulas and Cases That Never Break</h3>
-            <p class="feature-desc">
-              Calculus proofs, chemical equations, accounting balance sheets, and legal citations render with clean, crisp formatting. No scrambled signs, no broken symbols.
-            </p>
-          </div>
-
-          <!-- Feature 5: Spaced Repetition Math -->
-          <div class="feature-card reveal-on-scroll delay-2">
-            <div class="feature-icon-wrapper icon-blue">🔮</div>
-            <h3 class="feature-title">The Science Behind Never Forgetting</h3>
-            <p class="feature-desc">
-              Your brain naturally forgets new information on a predictable curve. Our spaced repetition engine calculates your retention drop-off and prompts you right before a concept fades away.
-            </p>
-          </div>
-
-          <!-- Feature 6: True Offline Freedom -->
-          <div class="feature-card reveal-on-scroll delay-3">
-            <div class="feature-icon-wrapper icon-purple">✈️</div>
-            <h3 class="feature-title">Works 100% Offline on Your Phone or Laptop</h3>
-            <p class="feature-desc">
-              No Wi-Fi? Cell signal dropped in the lecture hall or on the commute? Run full CBT practice sessions and flip your cards offline. Your scores sync the second you reconnect.
-            </p>
+          <!-- Pillar 3: Test -->
+          <div class="pillar-row reveal-on-scroll delay-3">
+            <div class="pillar-info">
+              <div class="pillar-number" style="color: var(--color-neural-purple-light);">Pillar 03</div>
+              <h3 class="pillar-title">Test: Realistic CBT exam halls and Socratic guidance.</h3>
+              <p class="pillar-desc">
+                Reading your notes creates the illusion of mastery. Real confidence comes from active retrieval under timed exam pressure. Practice with authentic past questions and get step-by-step guidance when you stumble.
+              </p>
+              <ul class="pillar-feature-list">
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Socratic AI Tutor (Syllabot):</strong> Instead of dumping raw answers, Syllabot asks probing questions to help you derive the solution yourself.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Authentic CBT Exam Practice:</strong> Realistic simulation for JAMB UTME, WAEC, NECO, SAT, and university finals with authentic timers.</span>
+                </li>
+                <li class="pillar-feature-item">
+                  <svg class="pillar-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <span><strong>Live Quiz Duels:</strong> Challenge study partners to timed head-to-head concept battles to test recall speed.</span>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar-visual">
+              <div class="pillar-visual-card">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--color-neural-purple-light); margin-bottom: 12px;">AUTHENTIC EXAM TIMERS & PALETTES</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <span class="diff-chip" style="background: rgba(112, 0, 255, 0.12); color: var(--color-neural-purple-light); border-color: var(--border-neural);">JAMB UTME CBT</span>
+                  <span class="diff-chip" style="background: rgba(112, 0, 255, 0.12); color: var(--color-neural-purple-light); border-color: var(--border-neural);">WAEC / NECO Senior</span>
+                  <span class="diff-chip" style="background: rgba(112, 0, 255, 0.12); color: var(--color-neural-purple-light); border-color: var(--border-neural);">SAT & AP Prep</span>
+                  <span class="diff-chip" style="background: rgba(112, 0, 255, 0.12); color: var(--color-neural-purple-light); border-color: var(--border-neural);">University STEM Finals</span>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -295,15 +418,64 @@
       </div>
     </section>
 
-    <!-- Comparison Matrix: Legacy vs Kortexify -->
+    <!-- Key Differentiators (Dedicated Badges: 100% Offline-First Privacy & Neurodivergent Accessibility) -->
+    <section class="section" id="differentiators" style="background: rgba(0, 0, 0, 0.15);">
+      <div class="container">
+        
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">Built With Principles</span>
+          <h2 class="section-title">Designed for privacy, speed, and every type of brain.</h2>
+          <p class="section-subtitle">
+            Two non-negotiable commitments that set Kortexify apart from generic commercial study platforms.
+          </p>
+        </div>
+
+        <div class="differentiators-grid">
+          
+          <!-- Differentiator 1: 100% Offline-First Privacy -->
+          <div class="differentiator-card reveal-on-scroll delay-1">
+            <span class="diff-badge">🛡️ 100% Offline-First Privacy</span>
+            <h3 class="diff-title">Your study notes and exam data stay on your device.</h3>
+            <p class="diff-desc">
+              Kortexify stores your flashcards, OCR transcripts, and review schedules in a local, lightning-fast on-device database. You can study in lecture basements, off-grid cabins, or on flights with zero internet. No required accounts, no tracking pixels, and no selling your study habits to ad brokers.
+            </p>
+            <div class="diff-chips-row">
+              <span class="diff-chip">Local SQLite Engine</span>
+              <span class="diff-chip">Zero Required Login</span>
+              <span class="diff-chip">Instant Cold Boot</span>
+              <span class="diff-chip">End-to-End Sync</span>
+            </div>
+          </div>
+
+          <!-- Differentiator 2: Neurodivergent Accessibility -->
+          <div class="differentiator-card differentiator-card-purple reveal-on-scroll delay-2">
+            <span class="diff-badge diff-badge-purple">🧠 Neurodivergent Accessibility</span>
+            <h3 class="diff-title">Engineered for ADHD, Dyslexia, and Sensory Focus.</h3>
+            <p class="diff-desc">
+              Studying with a non-linear brain should not feel like wading through concrete. Kortexify includes built-in cognitive accessibility tools that you can toggle on with a single tap:
+            </p>
+            <div class="diff-chips-row">
+              <span class="diff-chip"><strong>Bio</strong>nic Reading Mode</span>
+              <span class="diff-chip">OpenDyslexic Typography</span>
+              <span class="diff-chip">Low-Sensory Dark Theme</span>
+              <span class="diff-chip">Distraction-Free Focus Timer</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Comparison Matrix Table -->
     <section class="section" id="comparison">
       <div class="container">
         
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Why Kortexify</span>
-          <h2 class="section-title">Why old-school studying feels like running in place.</h2>
+          <span class="section-badge">Direct Comparison</span>
+          <h2 class="section-title">Why traditional studying feels like running in place.</h2>
           <p class="section-subtitle">
-            Highlighting handouts feels productive because your hands are moving. But when the test paper lands face down on your desk, recognition is not recall.
+            Highlighting handouts feels productive because your hands are moving. But recognition is not recall when the exam paper is face down on your desk.
           </p>
         </div>
 
@@ -311,7 +483,7 @@
           <table class="comparison-table">
             <thead>
               <tr>
-                <th>Capability</th>
+                <th>Feature / Capability</th>
                 <th>Paper Notes & Booklets</th>
                 <th>Generic Chatbots</th>
                 <th class="col-highlight">Kortexify</th>
@@ -321,38 +493,32 @@
               <tr>
                 <td>CBT Past Questions</td>
                 <td><span class="cross-red">✗ Smudged booklets with misprinted answer keys</span></td>
-                <td><span class="cross-red">✗ No authentic CBT timing or real exam layouts</span></td>
+                <td><span class="cross-red">✗ No authentic exam timers or CBT layouts</span></td>
                 <td class="col-highlight"><span class="check-green">✓ Authentic WAEC, NECO & JAMB CBT mode</span></td>
               </tr>
               <tr>
-                <td>Targeting Weak Points</td>
+                <td>Weak Spot Targeting</td>
                 <td><span class="cross-red">✗ Mistakes get lost in notebooks and forgotten</span></td>
-                <td><span class="cross-red">✗ Answer is forgotten the moment you close the chat</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Auto-generates flashcards from failed questions</span></td>
+                <td><span class="cross-red">✗ Explanations disappear when you close the chat</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Auto-generates decks from missed questions</span></td>
               </tr>
               <tr>
-                <td>Answer Explanations</td>
-                <td><span class="cross-red">✗ Only gives single letters (A, B, C) with zero reasons</span></td>
-                <td><span class="cross-red">✗ Rambles on with hallucinations and fake facts</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Step-by-step logic showing why the answer is right</span></td>
-              </tr>
-              <tr>
-                <td>Subject Coverage</td>
-                <td><span class="cross-red">✗ Difficult to manage across multiple bulky folders</span></td>
-                <td><span class="cross-red">✗ Chokes on complex formulas, accounting, and case citations</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Built for all subjects (Arts, Commercial, Science, Law & Med)</span></td>
+                <td>Formula & Math Formatting</td>
+                <td><span class="cross-red">✗ Messy handwriting prone to copying errors</span></td>
+                <td><span class="cross-red">✗ Scrambled symbols and broken LaTeX proofs</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Clean KaTeX math, chemistry, and case formatting</span></td>
               </tr>
               <tr>
                 <td>The Forgetting Curve</td>
-                <td><span class="cross-red">✗ Guesswork and stressful all-nighters</span></td>
-                <td><span class="cross-red">✗ No review schedule or memory retention math</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Scientifically timed reviews right before memory decay</span></td>
+                <td><span class="cross-red">✗ Random guesswork and stressful all-nighters</span></td>
+                <td><span class="cross-red">✗ No review schedule or memory calculation</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Algorithmic FSRS-6 spaced review scheduling</span></td>
               </tr>
               <tr>
                 <td>Offline Reliability</td>
-                <td><span class="cross-red">✗ Heavy backpacks and loose sheets of paper</span></td>
+                <td><span class="cross-red">✗ Heavy backpacks and bulky binders</span></td>
                 <td><span class="cross-red">✗ Completely unusable without strong internet</span></td>
-                <td class="col-highlight"><span class="check-green">✓ 100% Offline mode with background auto-sync</span></td>
+                <td class="col-highlight"><span class="check-green">✓ 100% Offline mode with local SQLite database</span></td>
               </tr>
             </tbody>
           </table>
@@ -361,19 +527,19 @@
       </div>
     </section>
 
-    <!-- Founder's Note Section -->
+    <!-- Founder's Note -->
     <section class="section" id="founder">
       <div class="container">
         <div class="founder-card reveal-on-scroll">
           <div class="founder-quote-icon">“</div>
           <p class="founder-text">
-            We have all been there: 2:30 AM, surrounded by loose handouts, re-reading the exact same page for the fifth time because your eyes are tired and nothing is sticking. Cramming does not make you smarter; it just wears you out. We built Kortexify for every student who wants to pass their exams with confidence without sacrificing their sleep or their sanity. Whether you are aiming for high scores in JAMB and WAEC or clearing tough university courses, we built the tool we wish we had when we were sitting in those exam halls. You have enough on your plate. Forgetting what you studied should not be one of them.
+            We have all been there: 2:30 AM, surrounded by loose lecture slides, re-reading the exact same paragraph for the fifth time because your eyes are tired and nothing is sticking. Cramming does not make you smarter; it just wears you out. We built Kortexify for every student who wants to pass their exams with confidence without sacrificing their sleep or their sanity. Whether you are aiming for top percentiles in JAMB and WAEC or clearing tough university STEM exams, you have enough on your plate. Forgetting what you studied should not be one of them.
           </p>
           <div class="founder-profile">
             <div class="founder-avatar">KX</div>
             <div>
-              <div class="founder-name">The Kortexify Team</div>
-              <div class="founder-title">Building the Future of Confident Learning</div>
+              <div style="font-weight: 800; color: var(--text-primary);">The Kortexify Team</div>
+              <div style="font-size: 0.88rem; color: var(--text-secondary);">Building the Future of Confident Learning</div>
             </div>
           </div>
         </div>
@@ -385,7 +551,7 @@
       <div class="container">
         
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Got Questions?</span>
+          <span class="section-badge">Common Questions</span>
           <h2 class="section-title">Frequently Asked Questions</h2>
         </div>
 
@@ -393,51 +559,41 @@
           
           <div class="faq-item">
             <button class="faq-question" type="button" aria-expanded="false">
-              <span>When can I get access to the Private Beta?</span>
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-answer">
-              Invites are rolling out in small, managed batches so our servers and study engines deliver lightning-fast speed for everyone. Waitlist members get priority access keys sent straight to their inbox in the order they joined.
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Which past questions are included in CBT mode?</span>
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-answer">
-              You get access to authentic WAEC, NECO, and JAMB UTME past questions across science, commercial, and arts subjects. Practice under realistic exam time limits, view detailed step-by-step explanations, and let Kortexify automatically convert every question you miss into a personal flashcard deck for later review.
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Can I upload my own school notes, lecture slides, and PDFs?</span>
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-answer">
-              Yes. You can drop in university lecture slides, syllabus outlines, textbook chapters, or scanned class notes. Kortexify reads the material and builds active recall flashcards with questions and answers ready for practice in seconds.
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
               <span>How does Kortexify help me study faster without forgetting?</span>
               <span class="faq-icon">+</span>
             </button>
             <div class="faq-answer">
-              Most students waste hours re-reading notes they already know. Kortexify uses adaptive spaced repetition math to calculate your personal forgetting curve. It only tests you on concepts right when they are about to fade from your memory, cutting overall study hours while boosting long-term recall.
+              Most students waste hours re-reading chapters they already know. Kortexify uses the FSRS-6 algorithm to track your personalized memory decay curve. It only presents cards when they are on the verge of fading from memory, cutting wasted study time while locking concepts into long-term recall.
             </div>
           </div>
 
           <div class="faq-item">
             <button class="faq-question" type="button" aria-expanded="false">
-              <span>Will this work when I do not have an internet connection?</span>
+              <span>Can I upload my own class notes, slides, and math equations?</span>
               <span class="faq-icon">+</span>
             </button>
             <div class="faq-answer">
-              Completely. You can run full CBT practice sessions, flip flashcards, and review your weak-spot decks offline on the bus, in class, or during power cuts. Your scores and streaks sync quietly the moment you are back online.
+              Yes. You can drop in university lecture slides, textbook chapters, or snap photos of handwritten chalkboard proofs. Kortexify uses local OCR and KaTeX rendering to extract equations and definitions into active-recall cards automatically.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>Does this app work when I have no internet connection?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Completely. All flashcard reviews, FSRS-6 scheduling, and offline CBT practice sessions run locally on your device without needing mobile data or Wi-Fi.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>What exams are supported in CBT mode?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              You get authentic past questions and mock environments for WAEC, NECO, JAMB UTME, SAT, and customized university degree modules. Every question you miss automatically turns into a targeted flashcard deck.
             </div>
           </div>
 
@@ -450,26 +606,19 @@
     <section class="final-cta-section">
       <div class="container">
         <div class="section-header reveal-on-scroll">
-          <h2 class="section-title">Ready to stop cramming and start remembering?</h2>
+          <h2 class="section-title">Ready to master your exams with quiet confidence?</h2>
           <p class="section-subtitle">
-            Lock in your priority invite today. Practice real CBT questions, conquer your weak spots, and walk into your exam room ready.
+            Experience the three pillars of modern active recall: Ingest, Retain, and Test.
           </p>
         </div>
 
-        <div class="waitlist-card reveal-on-scroll delay-1">
-          <form class="waitlist-form" action="#" method="POST">
-            <input 
-              type="email" 
-              class="waitlist-input" 
-              placeholder="Enter your student or personal email to claim your spot..." 
-              required
-              aria-label="Email address for beta waitlist"
-            >
-            <button type="submit" class="waitlist-button">
-              Claim Your Beta Invite →
-            </button>
-          </form>
-          <div class="waitlist-feedback" aria-live="polite"></div>
+        <div class="hero-cta-group reveal-on-scroll delay-1">
+          <a href="#workstation" class="btn-primary-cta">
+            <span>Try Free: No Account Needed</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"></path>
+            </svg>
+          </a>
         </div>
       </div>
     </section>
@@ -496,8 +645,11 @@
     </div>
   </footer>
 
-  <!-- Scripts (Cache Busted) -->
-  <script src="js/animations.js?v=3.5"></script>
-  <script src="js/main.js?v=3.5"></script>
+  <!-- KaTeX Core Library for Math Formula Rendering -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+
+  <!-- Scripts -->
+  <script src="js/animations.js?v=4.0"></script>
+  <script src="js/main.js?v=4.0"></script>
 </body>
 </html>

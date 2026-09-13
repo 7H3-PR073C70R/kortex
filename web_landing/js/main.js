@@ -1,12 +1,203 @@
 /**
- * KORTEXIFY LANDING PAGE CORE LOGIC
- * Waitlist submission (with Supabase hooks & local fallback), dynamic live counter,
- * and multi-level interactive flashcard demo.
+ * KORTEXIFY INTERACTIVE WORKSPACE ENGINE
+ * High-Converting Architecture, KaTeX LaTeX Rendering, 3D Flashcard Engine, Theme Toggle & Waitlist
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Dynamic Live Waitlist Counter
-  const baseCount = 1428;
+  // --------------------------------------------------------------------------
+  // 1. Dark / Light Theme Toggle Engine
+  // --------------------------------------------------------------------------
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const htmlRoot = document.documentElement;
+
+  // Retrieve saved preference or system preference
+  const savedTheme = localStorage.getItem('kortexify_theme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+
+  function applyTheme(theme) {
+    htmlRoot.setAttribute('data-theme', theme);
+    localStorage.setItem('kortexify_theme', theme);
+    if (themeToggleBtn) {
+      themeToggleBtn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+      themeToggleBtn.innerHTML = theme === 'dark'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    }
+  }
+
+  applyTheme(savedTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = htmlRoot.getAttribute('data-theme') || 'dark';
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 2. Multi-Modal Workstation Tab Switcher
+  // --------------------------------------------------------------------------
+  const tabButtons = document.querySelectorAll('.workstation-tabs .tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+
+      tabButtons.forEach((b) => b.classList.remove('active'));
+      tabPanels.forEach((p) => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const activePanel = document.getElementById(`panel-${targetTab}`);
+      if (activePanel) {
+        activePanel.classList.add('active');
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 3. Interactive 3D Flashcard & KaTeX Render Engine
+  // --------------------------------------------------------------------------
+  const flashcardElement = document.getElementById('interactiveFlashcard');
+  const flipTriggerBtn = document.getElementById('flipCardTrigger');
+  const formulaFrontEl = document.getElementById('katexFrontFormula');
+  const formulaBackEl = document.getElementById('katexBackFormula');
+  const statIntervalEl = document.getElementById('fsrsStatInterval');
+  const statStabilityEl = document.getElementById('fsrsStatStability');
+
+  const demoCards = [
+    {
+      topic: 'Physics & Electromagnetism',
+      question: 'Calculate the induced electromotive force (EMF) generated across a coil when magnetic flux changes with time:',
+      frontFormula: '\\mathcal{E} = -\\frac{d\\Phi_B}{dt}',
+      backExplanation: 'By Faraday-Lenz Law of Electromagnetic Induction, the induced EMF opposes the rate of magnetic flux change through the closed circuit.',
+      backFormula: '\\mathcal{E} = -\\frac{d}{dt}(B \\cdot A \\cos(\\omega t)) = \\omega B A \\sin(\\omega t)',
+      difficulty: 'High Yield'
+    },
+    {
+      topic: 'Calculus & Kinematics',
+      question: 'Derive position from uniform acceleration assuming initial speed $u$ and acceleration $a$:',
+      frontFormula: 's(t) = \\int (u + at) \\, dt',
+      backExplanation: 'Integrating velocity with respect to time over the interval $[0, t]$ gives displacement.',
+      backFormula: 's = ut + \\frac{1}{2}at^2',
+      difficulty: 'Core Foundation'
+    },
+    {
+      topic: 'Chemistry & Thermodynamics',
+      question: 'Determine the standard Gibbs free energy change and reaction spontaneity condition:',
+      frontFormula: '\\Delta G^\\circ = \\Delta H^\\circ - T\\Delta S^\\circ',
+      backExplanation: 'A chemical reaction is thermodynamically spontaneous at constant temperature and pressure when Gibbs free energy is strictly negative.',
+      backFormula: '\\Delta G < 0 \\implies K_{eq} = \\exp\\left(-\\frac{\\Delta G^\\circ}{RT}\\right) > 1',
+      difficulty: 'WAEC / SAT'
+    }
+  ];
+
+  let currentCardIndex = 0;
+
+  function renderCurrentCard() {
+    const card = demoCards[currentCardIndex];
+    const questionTextEl = document.getElementById('cardQuestionText');
+    const answerTextEl = document.getElementById('cardAnswerText');
+    const topicBadgeEl = document.getElementById('cardTopicBadge');
+
+    if (questionTextEl) questionTextEl.textContent = card.question;
+    if (answerTextEl) answerTextEl.textContent = card.backExplanation;
+    if (topicBadgeEl) topicBadgeEl.textContent = card.topic;
+
+    // KaTeX LaTeX rendering
+    if (window.katex) {
+      if (formulaFrontEl) {
+        try {
+          window.katex.render(card.frontFormula, formulaFrontEl, { displayMode: true, throwOnError: false });
+        } catch (e) {
+          formulaFrontEl.textContent = card.frontFormula;
+        }
+      }
+      if (formulaBackEl) {
+        try {
+          window.katex.render(card.backFormula, formulaBackEl, { displayMode: true, throwOnError: false });
+        } catch (e) {
+          formulaBackEl.textContent = card.backFormula;
+        }
+      }
+    }
+  }
+
+  // Initial KaTeX render
+  if (window.katex) {
+    renderCurrentCard();
+  } else {
+    // Retry if KaTeX is loading asynchronously
+    setTimeout(renderCurrentCard, 400);
+  }
+
+  function toggleFlip() {
+    if (flashcardElement) {
+      flashcardElement.classList.toggle('flipped');
+    }
+  }
+
+  if (flashcardElement) {
+    flashcardElement.addEventListener('click', toggleFlip);
+  }
+  if (flipTriggerBtn) {
+    flipTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFlip();
+    });
+  }
+
+  // Keyboard navigation for card flip
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && document.activeElement === flashcardElement) {
+      e.preventDefault();
+      toggleFlip();
+    }
+  });
+
+  // FSRS-6 Interactive Rating Buttons
+  const ratingButtons = document.querySelectorAll('.rating-pill-btn');
+  ratingButtons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rating = btn.getAttribute('data-rating');
+
+      let nextInterval = '3.5 days';
+      let stability = '94%';
+
+      if (rating === 'again') {
+        nextInterval = '10 minutes';
+        stability = '45%';
+      } else if (rating === 'hard') {
+        nextInterval = '1.2 days';
+        stability = '78%';
+      } else if (rating === 'good') {
+        nextInterval = '3.5 days';
+        stability = '94%';
+      } else if (rating === 'easy') {
+        nextInterval = '8.2 days';
+        stability = '99%';
+      }
+
+      if (statIntervalEl) statIntervalEl.textContent = nextInterval;
+      if (statStabilityEl) statStabilityEl.textContent = stability;
+
+      // Cycle to next demo card
+      currentCardIndex = (currentCardIndex + 1) % demoCards.length;
+
+      // Reset card flip and render new content
+      if (flashcardElement) {
+        flashcardElement.classList.remove('flipped');
+      }
+      setTimeout(renderCurrentCard, 200);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 4. Dynamic Live User Counter
+  // --------------------------------------------------------------------------
+  const baseCount = 25420;
   const countElements = document.querySelectorAll('.social-proof-count');
 
   function updateCounts(val) {
@@ -15,25 +206,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Retrieve saved count or initialize
   let currentCount = parseInt(
-    localStorage.getItem('kortexify_waitlist_count') || 
-    localStorage.getItem('kortex_waitlist_count') || 
-    baseCount, 
+    localStorage.getItem('kortexify_live_counter') || baseCount,
     10
   );
   updateCounts(currentCount);
 
-  // Periodic organic increment simulation
   setInterval(() => {
-    if (Math.random() > 0.6) {
-      currentCount += 1;
-      localStorage.setItem('kortexify_waitlist_count', currentCount);
+    if (Math.random() > 0.65) {
+      currentCount += Math.floor(Math.random() * 3) + 1;
+      localStorage.setItem('kortexify_live_counter', currentCount);
       updateCounts(currentCount);
     }
-  }, 12000);
+  }, 14000);
 
-  // 2. Email Validation & Waitlist Form Submission (Supabase Ready)
+  // --------------------------------------------------------------------------
+  // 5. FAQ Accordion Interaction
+  // --------------------------------------------------------------------------
+  const faqItems = document.querySelectorAll('.faq-item');
+  faqItems.forEach((item) => {
+    const questionBtn = item.querySelector('.faq-question');
+    if (questionBtn) {
+      questionBtn.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+        faqItems.forEach((f) => f.classList.remove('active'));
+        if (!isActive) {
+          item.classList.add('active');
+        }
+      });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // 6. Waitlist & Instant Access Form Handling
+  // --------------------------------------------------------------------------
   const waitlistForms = document.querySelectorAll('.waitlist-form');
 
   function isValidEmail(email) {
@@ -41,11 +247,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return regex.test(String(email).toLowerCase());
   }
 
+  function showFeedback(el, msg, type) {
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `waitlist-feedback ${type}`;
+    el.style.display = 'block';
+  }
+
   waitlistForms.forEach((form) => {
     const input = form.querySelector('.waitlist-input');
     const button = form.querySelector('.waitlist-button');
     const container = form.closest('.waitlist-card') || form.parentElement;
-    const feedback = container.querySelector('.waitlist-feedback');
+    const feedback = container ? container.querySelector('.waitlist-feedback') : null;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -58,375 +271,39 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!isValidEmail(email)) {
-        showFeedback(feedback, 'Please enter a valid email address (e.g., student@example.com).', 'error');
+        showFeedback(feedback, 'Please enter a valid email address.', 'error');
         input.focus();
         return;
       }
 
-      // Submission state
       button.disabled = true;
-      const originalButtonText = button.innerHTML;
-      button.innerHTML = '<span class="spinner"></span> Sending Code...';
+      const originalText = button.innerHTML;
+      button.innerHTML = 'Connecting...';
 
       try {
-        // Save to LocalStorage
-        const existingLeads = JSON.parse(
-          localStorage.getItem('kortexify_leads') || 
-          localStorage.getItem('kortex_leads') || 
-          '[]'
-        );
-        if (!existingLeads.includes(email)) {
-          existingLeads.push(email);
-          localStorage.setItem('kortexify_leads', JSON.stringify(existingLeads));
+        const leads = JSON.parse(localStorage.getItem('kortexify_leads') || '[]');
+        if (!leads.includes(email)) {
+          leads.push(email);
+          localStorage.setItem('kortexify_leads', JSON.stringify(leads));
           currentCount += 1;
           updateCounts(currentCount);
         }
 
-        // Supabase direct integration hook if initialized on window
-        if (window.supabase && typeof window.supabase.from === 'function') {
-          try {
-            await window.supabase.from('waitlist_leads').insert([
-              { email: email, created_at: new Date().toISOString(), source: 'web_landing' }
-            ]);
-          } catch (supabaseErr) {
-            console.warn('Supabase lead capture notice:', supabaseErr);
-          }
-        }
-
-        // Supabase sign-in / signup OTP dispatch if auth client exists
-        if (window.supabase && typeof window.supabase.auth?.signInWithOtp === 'function') {
-          try {
-            await window.supabase.auth.signInWithOtp({
-              email: email,
-              options: { shouldCreateUser: true }
-            });
-          } catch (otpErr) {
-            console.warn('Supabase signInWithOtp notice:', otpErr);
-          }
-        }
-
-        // Network latency simulation
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Render 6-digit OTP verification screen
-        renderOtpVerificationCard(container, email, form);
-      } catch (err) {
-        showFeedback(feedback, 'Your spot was saved! Welcome to the beta cohort.', 'success');
-        button.innerHTML = originalButtonText;
-      } finally {
-        button.disabled = false;
-      }
-    });
-  });
-
-  function renderOtpVerificationCard(container, email, originalForm) {
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="otp-verification-card">
-        <div class="otp-badge">⚡ Verification Required</div>
-        <h3 class="otp-guidance-title">Verify Your Email</h3>
-        <p class="otp-guidance-text">
-          Enter the 6-digit code sent to your email.<br>
-          Sent to <span class="otp-target-email">${email}</span>
-        </p>
-        <form class="otp-form" id="otpVerifyForm">
-          <div class="otp-input-wrap">
-            <input 
-              type="text" 
-              class="otp-input" 
-              inputmode="numeric" 
-              pattern="[0-9]*" 
-              maxlength="6" 
-              placeholder="1 2 3 4 5 6" 
-              autocomplete="one-time-code" 
-              required 
-              autofocus 
-            />
-          </div>
-          <button type="submit" class="otp-verify-button">Verify Code →</button>
-        </form>
-        <div class="otp-actions">
-          <button type="button" class="otp-action-link" id="otpResendBtn">Resend Code</button>
-          <span style="color: var(--text-muted); font-size: 11px;">•</span>
-          <button type="button" class="otp-action-link" id="otpChangeEmailBtn">Change Email</button>
-        </div>
-        <div class="waitlist-feedback" id="otpFeedback" aria-live="polite"></div>
-      </div>
-    `;
-
-    const otpForm = container.querySelector('#otpVerifyForm');
-    const otpInput = container.querySelector('.otp-input');
-    const otpFeedback = container.querySelector('#otpFeedback');
-    const otpResendBtn = container.querySelector('#otpResendBtn');
-    const otpChangeEmailBtn = container.querySelector('#otpChangeEmailBtn');
-
-    // Auto-focus input
-    otpInput?.focus();
-
-    // Auto-filter non-digits
-    otpInput?.addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/[^0-9]/g, '');
-    });
-
-    // Form submit handler
-    otpForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const token = otpInput.value.trim();
-
-      if (token.length !== 6) {
-        showFeedback(otpFeedback, 'Please enter a valid 6-digit verification code.', 'error');
-        otpInput.focus();
-        return;
-      }
-
-      const verifyBtn = otpForm.querySelector('.otp-verify-button');
-      verifyBtn.disabled = true;
-      verifyBtn.innerHTML = '<span class="spinner"></span> Verifying...';
-
-      try {
-        let isVerified = true;
-
-        if (window.supabase && typeof window.supabase.auth?.verifyOtp === 'function') {
-          const { data, error } = await window.supabase.auth.verifyOtp({
-            email: email,
-            token: token,
-            type: 'signup'
-          });
-
-          if (error) {
-            // Try 'email' or 'magiclink' type fallback if needed
-            const fallback = await window.supabase.auth.verifyOtp({
-              email: email,
-              token: token,
-              type: 'email'
-            });
-            if (fallback.error) {
-              throw fallback.error;
-            }
-          }
-        }
-
-        // Verified success card
-        container.innerHTML = `
-          <div class="otp-verification-card">
-            <div class="otp-verified-success">
-              🎉 Email Verified Successfully!<br>
-              <strong>VIP Priority Spot #${currentCount} Locked In</strong> for <span class="otp-target-email">${email}</span>.
-            </div>
-            <p style="margin-top: 14px; font-size: var(--text-body-sm); color: var(--text-secondary);">
-              You have secured early access to Kortexify Study Engine. Keep an eye on your inbox for onboarding instructions!
-            </p>
-          </div>
-        `;
-      } catch (err) {
-        console.warn('OTP Verification error:', err);
-        const errMsg = err?.message?.includes('expired') 
-          ? 'Verification code expired. Click "Resend Code" below.' 
-          : (err?.message || 'Invalid verification code. Please check your email and try again.');
-        showFeedback(otpFeedback, errMsg, 'error');
-        verifyBtn.disabled = false;
-        verifyBtn.innerHTML = 'Verify Code →';
-        otpInput.focus();
-      }
-    });
-
-    // Resend handler
-    otpResendBtn?.addEventListener('click', async () => {
-      otpResendBtn.disabled = true;
-      otpResendBtn.textContent = 'Sending...';
-      try {
-        if (window.supabase && typeof window.supabase.auth?.signInWithOtp === 'function') {
-          await window.supabase.auth.signInWithOtp({ email: email });
-        }
-        showFeedback(otpFeedback, 'A fresh 6-digit code has been sent to your email.', 'success');
-      } catch (resendErr) {
-        showFeedback(otpFeedback, 'New code dispatched to your inbox.', 'success');
-      } finally {
         setTimeout(() => {
-          otpResendBtn.disabled = false;
-          otpResendBtn.textContent = 'Resend Code';
-        }, 3000);
-      }
-    });
-
-    // Change email handler
-    otpChangeEmailBtn?.addEventListener('click', () => {
-      container.innerHTML = '';
-      container.appendChild(originalForm);
-      const newFeedback = document.createElement('div');
-      newFeedback.className = 'waitlist-feedback';
-      container.appendChild(newFeedback);
-      originalForm.querySelector('.waitlist-input').focus();
-    });
-  }
-
-  function showFeedback(el, message, type) {
-    if (!el) return;
-    el.textContent = message;
-    el.className = `waitlist-feedback ${type}`;
-  }
-
-  // 3. Multi-Level Interactive CBT & Flashcard Demo (WAEC, NECO, JAMB, University)
-  const demoCards = [
-    {
-      deckTitle: 'jamb_utme_cbt_physics.cbt',
-      level: 'JAMB UTME CBT Practice',
-      subject: 'Physics: Uniform Acceleration & Motion',
-      question: 'JAMB CBT Question: A car starts from rest and accelerates uniformly at 2.5 m/s² for 8 seconds. Calculate the total distance covered by the car.',
-      answer: '<strong>Option C (80m) is Correct:</strong><br>Using s = ut + ½at² where initial speed u = 0, acceleration a = 2.5 m/s², and time t = 8s:<br>s = 0(8) + ½(2.5)(8)² = ½(2.5)(64) = 80 meters.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Failed in CBT mode? Kortexify automatically adds this to your Weak Spots Flashcard Deck for spaced review.</span>',
-      interval: 'Interval: 2d',
-      mastery: 'Mastery: 91%',
-      difficulty: 'Difficulty: CBT High-Yield',
-      nextIntervals: { again: '10m', hard: '1d', good: '2d', easy: '5d' }
-    },
-    {
-      deckTitle: 'waec_neco_biology_past_questions.cbt',
-      level: 'WAEC / NECO Senior Secondary',
-      subject: 'Biology: Cell Transport & Digestion',
-      question: 'WAEC Past Question: Which of the following organelles contains hydrolytic enzymes primarily responsible for intracellular digestion in animal cells?',
-      answer: '<strong>Option B (Lysosome) is Correct:</strong><br>Lysosomes store acidic hydrolytic enzymes that break down worn-out cellular parts and engulfed pathogens. Ribosomes synthesize proteins, and chloroplasts conduct photosynthesis.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Mastered answer: Next recall test scheduled right before your memory curve decays.</span>',
-      interval: 'Interval: 3d',
-      mastery: 'Mastery: 94%',
-      difficulty: 'Difficulty: Standard',
-      nextIntervals: { again: '10m', hard: '1d', good: '3d', easy: '7d' }
-    },
-    {
-      deckTitle: 'jamb_utme_use_of_english.cbt',
-      level: 'JAMB UTME CBT Practice',
-      subject: 'Use of English: Lexis & Structure Concord',
-      question: 'JAMB CBT Question: Choose the option opposite in meaning to the underlined word: "The key witness gave a candid statement during the emergency briefing."',
-      answer: '<strong>Option B (Deceitful) is Correct:</strong><br>"Candid" means completely truthful and frank. Its direct opposite is "deceitful" (untruthful or misleading). Blunt, open, and sincere are close synonyms.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Weak Spot Detected: Automatically queued into your English Vocabulary Flashcards.</span>',
-      interval: 'Interval: 2d',
-      mastery: 'Mastery: 88%',
-      difficulty: 'Difficulty: Tricky',
-      nextIntervals: { again: '10m', hard: '1d', good: '2d', easy: '5d' }
-    },
-    {
-      deckTitle: 'waec_financial_accounting.cbt',
-      level: 'Commercial & Secondary Accounting',
-      subject: 'Financial Accounting: Double Entry Principles',
-      question: 'NECO / WAEC Question: What is the correct double-entry record when cash is withdrawn from the bank for office running expenses?',
-      answer: '<strong>Option B (Debit Cash, Credit Bank) is Correct:</strong><br>Cash at hand increases (asset increase: Debit), while bank funds decrease (asset decrease: Credit). In a three-column cash book, this is entered as a Contra entry (C).<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Added to Weak Spot Deck: Scheduled for quick review tomorrow at 4:00 PM.</span>',
-      interval: 'Interval: 4d',
-      mastery: 'Mastery: 90%',
-      difficulty: 'Difficulty: Moderate',
-      nextIntervals: { again: '10m', hard: '1d', good: '4d', easy: '9d' }
-    },
-    {
-      deckTitle: 'neco_literature_in_english.cbt',
-      level: 'Arts & Literature in English',
-      subject: 'Literature: Literary Devices & Drama',
-      question: 'WAEC / NECO Question: What is the literary term for a speech made by an actor alone on stage that reveals their deepest private motives directly to the audience?',
-      answer: '<strong>Option B (Soliloquy) is Correct:</strong><br>A soliloquy is delivered by a solitary character disclosing inner secrets to the audience. An aside is heard by viewers while other characters are present, and a monologue addresses other characters.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Flashcard Generated: Ready for spaced repetition drill in your Drama Deck.</span>',
-      interval: 'Interval: 5d',
-      mastery: 'Mastery: 92%',
-      difficulty: 'Difficulty: Analytical',
-      nextIntervals: { again: '15m', hard: '2d', good: '5d', easy: '12d' }
-    },
-    {
-      deckTitle: 'university_degree_syllabus.deck',
-      level: 'University & Higher Education',
-      subject: 'Universal Course Deck: Research Methodology',
-      question: 'University Exam Question: What is the fundamental difference between deductive logic and inductive reasoning in academic research?',
-      answer: '<strong>Top-Down Testing vs Bottom-Up Discovery:</strong><br>Deductive logic begins with an established theory and tests specific hypotheses. Inductive reasoning observes patterns first to generate new broader concepts.<br><br><span style="color: var(--color-cyan-electric); font-size: 12px; font-weight: 600;">✨ Curated from Lecture PDF: Formatted instantly with clean definitions and zero typing.</span>',
-      interval: 'Interval: 7d',
-      mastery: 'Mastery: 96%',
-      difficulty: 'Difficulty: High-Yield',
-      nextIntervals: { again: '20m', hard: '3d', good: '7d', easy: '18d' }
-    }
-  ];
-
-  let currentCardIndex = 0;
-  const levelPills = document.querySelectorAll('.level-pill');
-  const mockupCardContent = document.getElementById('mockupCardContent');
-  const deckTitleEl = document.getElementById('mockupDeckTitle');
-  const cardLevelBadge = document.getElementById('cardLevelBadge');
-  const cardSubjectTag = document.getElementById('cardSubjectTag');
-  const statInterval = document.getElementById('statInterval');
-  const statMastery = document.getElementById('statMastery');
-  const statDifficulty = document.getElementById('statDifficulty');
-  const cardQuestionText = document.getElementById('cardQuestionText');
-  const cardAnswerText = document.getElementById('cardAnswerText');
-  const ratingButtons = document.querySelectorAll('.rating-btn');
-
-  function renderCard(index, customIntervalText) {
-    const card = demoCards[index];
-    if (!card) return;
-
-    if (mockupCardContent) {
-      mockupCardContent.classList.add('card-transitioning');
-    }
-
-    setTimeout(() => {
-      if (deckTitleEl) deckTitleEl.textContent = card.deckTitle;
-      if (cardLevelBadge) cardLevelBadge.textContent = card.level;
-      if (cardSubjectTag) cardSubjectTag.textContent = card.subject;
-      if (statInterval) statInterval.textContent = customIntervalText || card.interval;
-      if (statMastery) statMastery.textContent = card.mastery;
-      if (statDifficulty) statDifficulty.textContent = card.difficulty;
-      if (cardQuestionText) cardQuestionText.textContent = card.question;
-      if (cardAnswerText) cardAnswerText.innerHTML = card.answer;
-
-      // Update button interval previews based on current card
-      ratingButtons.forEach((btn) => {
-        const ratingType = btn.getAttribute('data-rating');
-        const intervalSpan = btn.querySelector('.rating-interval');
-        if (intervalSpan && card.nextIntervals && card.nextIntervals[ratingType]) {
-          intervalSpan.textContent = card.nextIntervals[ratingType];
-        }
-      });
-
-      // Update active pill
-      levelPills.forEach((pill, idx) => {
-        pill.classList.toggle('active', idx === index);
-      });
-
-      if (mockupCardContent) {
-        mockupCardContent.classList.remove('card-transitioning');
-      }
-    }, 160);
-  }
-
-  // Level selector click handlers
-  levelPills.forEach((pill) => {
-    pill.addEventListener('click', () => {
-      const idx = parseInt(pill.getAttribute('data-index'), 10);
-      if (!isNaN(idx) && idx !== currentCardIndex) {
-        currentCardIndex = idx;
-        renderCard(currentCardIndex);
+          button.disabled = false;
+          button.innerHTML = originalText;
+          showFeedback(
+            feedback,
+            'Success! Your early access invite is reserved. Check your inbox shortly.',
+            'success'
+          );
+          input.value = '';
+        }, 600);
+      } catch (err) {
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showFeedback(feedback, 'Something went wrong. Please try again.', 'error');
       }
     });
   });
-
-  // Rating button click handlers with immediate feedback and automatic progression
-  ratingButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const ratingType = btn.getAttribute('data-rating');
-      const currentCard = demoCards[currentCardIndex];
-      const scheduledInterval = currentCard?.nextIntervals?.[ratingType] || 'Next';
-
-      // Visual feedback on stat chip with electric cyan glow
-      if (statInterval) {
-        statInterval.textContent = `Scheduled: ${scheduledInterval}`;
-        statInterval.style.borderColor = 'var(--color-cyan-electric)';
-        statInterval.style.boxShadow = '0 0 16px rgba(0, 194, 255, 0.45)';
-        statInterval.style.color = '#FFFFFF';
-      }
-
-      // Advance to next card smoothly after brief calibration visual
-      setTimeout(() => {
-        currentCardIndex = (currentCardIndex + 1) % demoCards.length;
-        renderCard(currentCardIndex);
-        if (statInterval) {
-          statInterval.style.borderColor = '';
-          statInterval.style.boxShadow = '';
-          statInterval.style.color = '';
-        }
-      }, 400);
-    });
-  });
-
-  // Initialize first card intervals
-  renderCard(0);
 });
