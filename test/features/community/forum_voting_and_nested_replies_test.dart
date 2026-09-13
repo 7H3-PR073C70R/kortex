@@ -210,10 +210,10 @@ void main() {
       );
       await localDataSource.saveForumPost(initialPost);
 
-      when(() => mockClient.updateForumPost(any(), any())).thenAnswer(
+      when(() => mockClient.voteForumPostAtomic(any())).thenAnswer(
         (_) async => HttpResponse(
-          [initialPost.toJson()],
-          Response(requestOptions: RequestOptions(path: '/rest/v1/forum_posts')),
+          {'success': true, 'upvotes': 6, 'downvotes': 1},
+          Response(requestOptions: RequestOptions(path: '/rest/v1/rpc/vote_forum_post_atomic')),
         ),
       );
 
@@ -234,10 +234,10 @@ void main() {
       expect(updated.userVote, equals(1));
       expect(updated.netVotes, equals(5));
 
-      verify(() => mockClient.updateForumPost(
-        {'id': 'eq.test-post'},
-        {'upvotes': 6, 'downvotes': 1},
-      )).called(1);
+      verify(() => mockClient.voteForumPostAtomic({
+        'p_post_id': 'test-post',
+        'p_vote_direction': 1,
+      })).called(1);
     });
 
     test('replyToForumPost sends parent_reply_id for nested replies', () async {

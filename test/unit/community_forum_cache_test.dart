@@ -137,6 +137,13 @@ void main() {
         'created_at': now,
       };
 
+      when(() => mockApiClient.fetchForumPosts(any())).thenAnswer(
+        (_) async => HttpResponse<dynamic>(
+          [],
+          Response(requestOptions: RequestOptions()),
+        ),
+      );
+
       when(() => mockApiClient.createForumPost(any())).thenAnswer(
         (_) async => HttpResponse<dynamic>(
           [postPayload],

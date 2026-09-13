@@ -17,12 +17,14 @@ interface TriggerNotificationRequest {
     | "room_started"
     | "document_completed"
     | "welcome_user"
-    | "forum_solution_verified";
+    | "forum_solution_verified"
+    | "process_outbox";
   documentId?: string;
   roomId?: string;
   deckId?: string;
   userId?: string;
   topicTitle?: string;
+  batchSize?: number;
 }
 
 serve(async (req: Request) => {
@@ -362,6 +364,62 @@ serve(async (req: Request) => {
             }),
           });
           notificationsDispatched++;
+        }
+        break;
+      }
+
+      // 9. Process Notification Outbox Queue (SKIP LOCKED High-Concurrency Worker)
+      case "process_outbox": {
+        const batchSize = Math.min(body.batchSize ?? 100, 500);
+        const { data: outboxItems, error: outboxErr } = await supabase.rpc(
+          "dequeue_notification_outbox",
+          { p_batch_size: batchSize }
+        );
+
+        if (outboxErr) {
+          console.error("Error dequeuing notification outbox:", outboxErr);
+          break;
+        }
+
+        if (outboxItems && outboxItems.length > 0) {
+          const successIds: string[] = [];
+          const failedIds: string[] = [];
+          const errorMap: Record<string, string> = {};
+
+          for (const item of outboxItems) {
+            try {
+              const res = await fetch(sendPushUrl, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                  userId: item.target_user_id,
+                  title: item.title,
+                  body: item.body,
+                  category: item.notification_type,
+                  data: item.payload ?? {},
+                }),
+              });
+
+              if (res.ok) {
+                successIds.push(item.outbox_id);
+                notificationsDispatched++;
+              } else {
+                const errText = await res.text();
+                failedIds.push(item.outbox_id);
+                errorMap[item.outbox_id] = errText;
+              }
+            } catch (itemErr: any) {
+              failedIds.push(item.outbox_id);
+              errorMap[item.outbox_id] = itemErr?.message ?? "Network error";
+            }
+          }
+
+          // Complete batch state update in database
+          await supabase.rpc("complete_notification_outbox_batch", {
+            p_success_ids: successIds,
+            p_failed_ids: failedIds,
+            p_error_map: errorMap,
+          });
         }
         break;
       }

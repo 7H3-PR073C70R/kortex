@@ -56,7 +56,33 @@ class MockCommunityRepository implements CommunityRepository {
     String? searchQuery,
     int limit = 15,
     int offset = 0,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
   }) async => const Right([]);
+
+  @override
+  Future<Either<Failure, List<ForumPostEntity>>> fetchForumPostsKeyset({
+    String? track,
+    DateTime? cursorCreatedAt,
+    String? cursorId,
+    int limit = 15,
+    String sortFilter = 'latest',
+    String? searchQuery,
+    bool questionsOnly = false,
+  }) async => const Right([]);
+
+  @override
+  Future<Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>> fetchForumThreadTree({
+    required String postId,
+    int limit = 20,
+    int subReplyLimit = 5,
+  }) async => const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, bool>> saveForumSocraticHint({
+    required String postId,
+    required String hint,
+  }) async => const Right(true);
 
   @override
   Future<Either<Failure, List<ForumReplyEntity>>> fetchForumReplies({
