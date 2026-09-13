@@ -9,12 +9,15 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
@@ -259,6 +262,14 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     // 5. Log card completion to LiveRoomCubit & broadcast to room members
     context.read<LiveRoomCubit>().logCardReviewed(1, deckTitle);
 
+    // Refresh DecksBloc and DashboardBloc for live due count updates
+    if (locator.isRegistered<DecksBloc>()) {
+      locator<DecksBloc>().add(const DecksRefreshed());
+    }
+    if (locator.isRegistered<DashboardBloc>()) {
+      locator<DashboardBloc>().add(const DashboardRefreshed());
+    }
+
     // 6. Advance to next card
     if (_isFlipped) {
       await _flipController.reverse();
@@ -276,6 +287,12 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     });
 
     if (isComplete && mounted) {
+      if (locator.isRegistered<DecksBloc>()) {
+        locator<DecksBloc>().add(const DecksRefreshed());
+      }
+      if (locator.isRegistered<DashboardBloc>()) {
+        locator<DashboardBloc>().add(const DashboardRefreshed());
+      }
       unawaited(
         GratificationCelebrationOverlay.show(
           context,
@@ -767,8 +784,8 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
           Expanded(
             child: _FsrsGradeButton(
               label: 'Again',
-              sublabel: '< 1m',
               grade: 1,
+              icon: Icons.replay_rounded,
               color: colors.error,
               onTap: () => unawaited(_rateCard(1)),
               isDark: isDark,
@@ -778,8 +795,8 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
           Expanded(
             child: _FsrsGradeButton(
               label: 'Hard',
-              sublabel: '10m',
               grade: 2,
+              icon: Icons.bolt_rounded,
               color: colors.recallHard,
               onTap: () => unawaited(_rateCard(2)),
               isDark: isDark,
@@ -789,8 +806,8 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
           Expanded(
             child: _FsrsGradeButton(
               label: 'Good',
-              sublabel: '1d',
               grade: 3,
+              icon: Icons.thumb_up_rounded,
               color: colors.recallGood,
               onTap: () => unawaited(_rateCard(3)),
               isDark: isDark,
@@ -800,8 +817,8 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
           Expanded(
             child: _FsrsGradeButton(
               label: 'Easy',
-              sublabel: '4d',
               grade: 4,
+              icon: Icons.rocket_launch_rounded,
               color: colors.recallEasy,
               onTap: () => unawaited(_rateCard(4)),
               isDark: isDark,
@@ -821,7 +838,19 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
     final decksBloc = locator.isRegistered<DecksBloc>()
         ? locator<DecksBloc>()
         : null;
-    final allDecks = decksBloc?.state.allDecks ?? const <DeckEntity>[];
+    final allDecks = List<DeckEntity>.from(
+      decksBloc?.state.allDecks ?? const <DeckEntity>[],
+    )..sort((a, b) {
+        final aDue = a.dueCards > 0;
+        final bDue = b.dueCards > 0;
+        if (aDue && !bDue) return -1;
+        if (!aDue && bDue) return 1;
+        if (aDue && bDue) {
+          final countCmp = b.dueCards.compareTo(a.dueCards);
+          if (countCmp != 0) return countCmp;
+        }
+        return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      });
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1099,16 +1128,16 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
 class _FsrsGradeButton extends StatelessWidget {
   const _FsrsGradeButton({
     required this.label,
-    required this.sublabel,
     required this.grade,
+    required this.icon,
     required this.color,
     required this.onTap,
     required this.isDark,
   });
 
   final String label;
-  final String sublabel;
   final int grade;
+  final IconData icon;
   final Color color;
   final VoidCallback onTap;
   final bool isDark;
@@ -1120,7 +1149,7 @@ class _FsrsGradeButton extends StatelessWidget {
     return ShrinkableButton(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: color.withAlpha(isDark ? 42 : 25),
           borderRadius: BorderRadius.circular(16),
@@ -1139,19 +1168,17 @@ class _FsrsGradeButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(height: 6),
             Text(
               label,
               style: typography.caption.bold.copyWith(
                 color: color,
                 fontSize: 13.5,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              sublabel,
-              style: typography.caption.regular.copyWith(
-                fontSize: 10.5,
-                color: color.withAlpha(210),
               ),
             ),
           ],

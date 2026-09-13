@@ -26,7 +26,6 @@ class FsrsRatingActionBar extends StatelessWidget {
     final buttons = [
       (
         label: l10n.studyRatingAgain,
-        interval: l10n.studyRatingAgainInterval,
         rating: FsrsRating.again,
         quality: 0,
         color: colors.recallAgain,
@@ -35,7 +34,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       ),
       (
         label: l10n.studyRatingHard,
-        interval: l10n.studyRatingHardInterval,
         rating: FsrsRating.hard,
         quality: 3,
         color: colors.recallHard,
@@ -44,7 +42,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       ),
       (
         label: l10n.studyRatingGood,
-        interval: l10n.studyRatingGoodInterval,
         rating: FsrsRating.good,
         quality: 4,
         color: colors.recallGood,
@@ -53,7 +50,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       ),
       (
         label: l10n.studyRatingEasy,
-        interval: l10n.studyRatingEasyInterval,
         rating: FsrsRating.easy,
         quality: 5,
         color: colors.recallEasy,
@@ -73,7 +69,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Semantics(
                   button: true,
-                  label: '${b.label}, review in ${b.interval}',
+                  label: b.label,
                   child: ShrinkableButton(
                     key: ValueKey('fsrs_rating_${b.rating.name}'),
                     onTap: () {
@@ -86,7 +82,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            vertical: 13,
+                            vertical: 14,
                             horizontal: 6,
                           ),
                           decoration: BoxDecoration(
@@ -109,25 +105,13 @@ class FsrsRatingActionBar extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Top Interval Pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: b.color.withAlpha(isDark ? 60 : 35),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  b.interval,
-                                  style: typography.caption.bold.copyWith(
-                                    color: b.color,
-                                    fontSize: 10.5,
-                                  ),
-                                ),
+                              // Icon indicator
+                              Icon(
+                                b.icon,
+                                color: b.color,
+                                size: 20,
                               ),
-                              const SizedBox(height: 7),
+                              const SizedBox(height: 8),
 
                               // Button Label
                               Text(
@@ -136,7 +120,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                                   color: isDark
                                       ? colors.white
                                       : colors.textPrimary,
-                                  fontSize: 13.5,
+                                  fontSize: 14,
                                 ),
                               ),
                               const SizedBox(height: 4),

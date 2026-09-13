@@ -124,7 +124,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
       final durationMinutes = isMillionaire.value
           ? null
-          : (isMockExam ? (quizQuestions.length * 1.5).round() : null);
+          : (isMockExam ? quizQuestions.length : null);
 
       Navigator.of(context).pop();
 
@@ -245,7 +245,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                           const SizedBox(height: 2),
                           Text(
                             isMockExam
-                                ? 'Simulates official CBT conditions (~1.5m per question) with score analysis.'
+                                ? 'Simulates official CBT conditions (1 min per question) with score analysis.'
                                 : 'Untimed drill with instant answer checks and step-by-step solutions.',
                             style: typography.footnote.regular.copyWith(
                               color: colors.textSecondary,
@@ -258,6 +258,8 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 18),
+
               // Practice Mode Selector
               Text(
                 'Practice Mode',

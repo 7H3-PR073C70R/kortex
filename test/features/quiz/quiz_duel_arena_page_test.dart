@@ -71,7 +71,7 @@ void main() {
         ),
       );
 
-      expect(find.text('MATCH FOUND!'), findsOneWidget);
+      expect(find.text('MATCH FOUND • 1v1 DUEL'), findsOneWidget);
       expect(find.text('Scholar One'), findsOneWidget);
       expect(find.text('Syllabot Rival'), findsOneWidget);
       expect(find.text('VS'), findsOneWidget);

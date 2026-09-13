@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -30,12 +31,13 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     String initialExamBoard = 'WAEC',
   }) {
     final colors = context.colors;
+    final cubit = locator<QuizDuelCubit>();
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: colors.transparent,
-      builder: (_) => BlocProvider<QuizDuelCubit>(
-        create: (_) => locator<QuizDuelCubit>(),
+      builder: (_) => BlocProvider<QuizDuelCubit>.value(
+        value: cubit,
         child: QuizDuelMatchmakingSheet(
           initialSubject: initialSubject,
           initialExamBoard: initialExamBoard,
@@ -52,10 +54,33 @@ class QuizDuelMatchmakingSheet extends HookWidget {
 
     final selectedSubject = useState<String>(initialSubject);
     final selectedExamBoard = useState<String>(initialExamBoard);
+    final selectedQuestionCount = useState<int>(10);
     final isSearching = useState<bool>(false);
 
-    final subjects = ['Physics', 'Mathematics', 'Chemistry', 'Biology', 'Economics', 'English'];
-    final examBoards = ['WAEC', 'JAMB', 'NECO', 'IGCSE', 'SAT'];
+    // Dynamic subjects based on user's active decks + core subjects
+    final decksBloc = locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null;
+    final deckSubjects = decksBloc?.state.allDecks.map((d) => d.subject).where((s) => s.isNotEmpty).toSet().toList() ?? [];
+    
+    final baseSubjects = [
+      'Physics',
+      'Mathematics',
+      'Chemistry',
+      'Biology',
+      'Economics',
+      'English',
+      'Computer Science',
+      'Law',
+      'Medicine',
+      'General Science',
+    ];
+    
+    final subjects = {...deckSubjects, ...baseSubjects}.toList();
+    if (!subjects.contains(selectedSubject.value) && subjects.isNotEmpty) {
+      selectedSubject.value = subjects.first;
+    }
+
+    final examBoards = ['WAEC', 'JAMB', 'NECO', 'IGCSE', 'SAT', 'University'];
+    final questionCounts = [5, 10, 15];
 
     final pulseController = useAnimationController(
       duration: const Duration(milliseconds: 1400),
@@ -76,6 +101,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
           userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
           displayName: 'You',
           avatarUrl: '⚡',
+          questionCount: selectedQuestionCount.value,
         ),
       );
     }
@@ -84,12 +110,13 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       listener: (context, state) {
         if (state.status == QuizDuelStatus.countdown ||
             state.status == QuizDuelStatus.inRound) {
+          final cubit = context.read<QuizDuelCubit>();
           Navigator.of(context).pop();
           unawaited(
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => BlocProvider.value(
-                  value: context.read<QuizDuelCubit>(),
+                builder: (_) => BlocProvider<QuizDuelCubit>.value(
+                  value: cubit,
                   child: const QuizDuelArenaPage(),
                 ),
               ),
@@ -317,7 +344,41 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Question Count Selector
+                Text(
+                  'Questions per Duel',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: questionCounts.map((count) {
+                    final isSelected = selectedQuestionCount.value == count;
+                    return ChoiceChip(
+                      label: Text('$count Questions${count == 10 ? ' (Standard)' : ''}'),
+                      selected: isSelected,
+                      selectedColor: colors.primary.withValues(alpha: 0.2),
+                      backgroundColor: colors.surfaceSecondary,
+                      labelStyle: TextStyle(
+                        color: isSelected ? colors.primary : colors.textPrimary,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (val) {
+                        if (val) {
+                          AppFeedback.selection();
+                          selectedQuestionCount.value = count;
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
 
                 // Match Rule Highlights
                 Container(
@@ -333,7 +394,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '5 Questions • 15s per Question • Max 150 pts/round with Speed Bonus',
+                          '${selectedQuestionCount.value} Questions • 15s per Question • Max 150 pts/round with Speed Bonus',
                           style: typography.caption.regular.copyWith(
                             color: colors.textSecondary,
                           ),

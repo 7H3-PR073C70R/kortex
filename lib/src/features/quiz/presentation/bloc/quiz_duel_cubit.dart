@@ -24,6 +24,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    int questionCount = 10,
   }) async {
     emit(state.copyWith(
       status: QuizDuelStatus.matching,
@@ -37,6 +38,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
       userId: userId,
       displayName: displayName,
       avatarUrl: avatarUrl,
+      questionCount: questionCount,
     );
 
     result.fold(

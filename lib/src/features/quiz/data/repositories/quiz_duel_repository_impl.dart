@@ -19,6 +19,7 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    int questionCount = 10,
   }) async {
     try {
       final match = await _client.findOrCreateDuel(
@@ -27,6 +28,7 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
         userId: userId,
         displayName: displayName,
         avatarUrl: avatarUrl,
+        questionCount: questionCount,
       );
       return Right(match);
     } on Exception catch (e) {

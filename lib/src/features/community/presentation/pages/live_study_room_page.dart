@@ -77,6 +77,7 @@ class _LiveStudyRoomView extends StatefulWidget {
 
 class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
     with WidgetsBindingObserver {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Set<String> _announcedHandRaises = {};
   final FloatingReactionController _reactionController =
       FloatingReactionController();
@@ -746,6 +747,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         return FloatingReactionOverlay(
           controller: _reactionController,
           child: Scaffold(
+            key: _scaffoldKey,
             backgroundColor: isDark
                 ? colors.backgroundPrimary
                 : colors.surfacePrimary,
@@ -977,7 +979,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
                     },
                     onOpenDrawer: () {
-                      Scaffold.of(context).openDrawer();
+                      _scaffoldKey.currentState?.openDrawer();
                     },
                     onOpenDeckPicker: () {
                       unawaited(InRoomDeckPickerModal.show(context));
@@ -2407,12 +2409,12 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
   final VoidCallback onOpenDrawer;
   final VoidCallback onOpenDeckPicker;
 
-  static const List<String> _quickEmojis = ['🔥', '👏', '💡', '❤️', '✨'];
+  static const List<String> _quickEmojis = ['🔥', '👏', '💡', '❤️'];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
         border: Border(
@@ -2420,94 +2422,101 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Drawer trigger button
-          ShrinkableButton(
-            onTap: onOpenDrawer,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.surfaceTertiary,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.tune_rounded, size: 16, color: colors.primary),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Tools',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 11.5,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drawer trigger button
+              ShrinkableButton(
+                onTap: onOpenDrawer,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceTertiary,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Deck switch button
-          ShrinkableButton(
-            onTap: onOpenDeckPicker,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.primary.withAlpha(isDark ? 40 : 20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.primary.withAlpha(isDark ? 80 : 40),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.tune_rounded, size: 15, color: colors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tools',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_stories_rounded,
-                    size: 15,
-                    color: colors.primary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Decks',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 11.5,
+              const SizedBox(width: 6),
+
+              // Deck switch button
+              ShrinkableButton(
+                onTap: onOpenDeckPicker,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 40 : 20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 40),
                     ),
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_stories_rounded,
+                        size: 14,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Decks',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-
-          const Spacer(),
 
           // Quick reactions
-          ..._quickEmojis.map((emoji) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: ShrinkableButton(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
-                  onReact(emoji);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 18),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _quickEmojis.map((emoji) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    onReact(emoji);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 3,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 17),
+                    ),
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

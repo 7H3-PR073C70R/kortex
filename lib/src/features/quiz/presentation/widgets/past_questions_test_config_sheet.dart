@@ -262,9 +262,7 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                                     : state.selectedSubject,
                                 durationMinutes: isMillionaireMode
                                     ? null
-                                    : (isTimedMode
-                                        ? (count * 1.5).round().clamp(5, 90)
-                                        : null),
+                                    : (isTimedMode ? count : null),
                                 initialQuestions: testQuestions,
                                 assessmentMode: isMillionaireMode
                                     ? AssessmentMode.millionaireMode

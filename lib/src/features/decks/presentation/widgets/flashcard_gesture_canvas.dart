@@ -82,26 +82,24 @@ class FlashcardGestureCanvas extends HookWidget {
       if (dx.abs() >= dy.abs()) {
         if (dx > 0) {
           routeColor = colors.recallGood;
-          routeLabel = l10n.studySessionRouteGood(l10n.studyRatingGoodInterval);
+          routeLabel = l10n.studyRatingGood;
           routeIcon = Icons.thumb_up_rounded;
           dragProgress = (dx / 120).clamp(0.0, 1.0);
         } else {
           routeColor = colors.recallHard;
-          routeLabel = l10n.studySessionRouteHard(l10n.studyRatingHardInterval);
+          routeLabel = l10n.studyRatingHard;
           routeIcon = Icons.bolt_rounded;
           dragProgress = (dx.abs() / 120).clamp(0.0, 1.0);
         }
       } else {
         if (dy < 0) {
           routeColor = colors.recallEasy;
-          routeLabel = l10n.studySessionRouteEasy(l10n.studyRatingEasyInterval);
+          routeLabel = l10n.studyRatingEasy;
           routeIcon = Icons.rocket_launch_rounded;
           dragProgress = (dy.abs() / 100).clamp(0.0, 1.0);
         } else {
           routeColor = colors.recallAgain;
-          routeLabel = l10n.studySessionRouteAgain(
-            l10n.studyRatingAgainInterval,
-          );
+          routeLabel = l10n.studyRatingAgain;
           routeIcon = Icons.replay_rounded;
           dragProgress = (dy / 100).clamp(0.0, 1.0);
         }

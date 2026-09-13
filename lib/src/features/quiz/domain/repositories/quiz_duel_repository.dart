@@ -11,6 +11,7 @@ abstract class QuizDuelRepository {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    int questionCount = 10,
   });
 
   /// Streams real-time updates for an active duel match.

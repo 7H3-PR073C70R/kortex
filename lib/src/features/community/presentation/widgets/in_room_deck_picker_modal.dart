@@ -78,7 +78,18 @@ class _InRoomDeckPickerModalState extends State<InRoomDeckPickerModal> {
       final subject = deck.subject.toLowerCase();
       return resolvedTitle.contains(_searchQuery) ||
           subject.contains(_searchQuery);
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final aDue = a.dueCards > 0;
+        final bDue = b.dueCards > 0;
+        if (aDue && !bDue) return -1;
+        if (!aDue && bDue) return 1;
+        if (aDue && bDue) {
+          final countCmp = b.dueCards.compareTo(a.dueCards);
+          if (countCmp != 0) return countCmp;
+        }
+        return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      });
 
     return Container(
       constraints: BoxConstraints(

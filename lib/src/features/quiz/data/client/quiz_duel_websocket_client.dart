@@ -31,8 +31,12 @@ class QuizDuelWebSocketClient {
   static const int defaultQuestionTimeSeconds = 15;
 
   /// Default fallback past questions when starting a duel
-  static List<QuizQuestionEntity> getDefaultDuelQuestions(String subject, String examBoard) {
-    return [
+  static List<QuizQuestionEntity> getDefaultDuelQuestions(
+    String subject,
+    String examBoard, {
+    int count = 10,
+  }) {
+    final bank = [
       const QuizQuestionEntity(
         id: 'duel_q_1',
         prompt: 'What is the SI unit of electric potential difference?',
@@ -83,7 +87,99 @@ class QuizDuelWebSocketClient {
         explanation: 'The Law of Conservation of Energy (First Law of Thermodynamics) states energy can only change forms.',
         subTopic: 'Thermodynamics',
       ),
+      const QuizQuestionEntity(
+        id: 'duel_q_6',
+        prompt: 'In Computer Science, what is the average time complexity of searching in a Balanced Binary Search Tree (AVL/Red-Black)?',
+        type: QuizQuestionType.multipleChoice,
+        options: [r'\(O(1)\)', r'\(O(\log n)\)', r'\(O(n)\)', r'\(O(n \log n)\)'],
+        correctAnswer: r'\(O(\log n)\)',
+        explanation: 'Balanced BST operations divide the search space in half at each step, yielding logarithmic time O(log n).',
+        subTopic: 'Data Structures & Algorithms',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_7',
+        prompt: 'Which gas is released during photosynthesis when water molecules are split in the light reaction?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Carbon dioxide', 'Oxygen', 'Nitrogen', 'Methane'],
+        correctAnswer: 'Oxygen',
+        explanation: 'Photolysis of water in the thylakoid membrane during the light-dependent reactions produces oxygen gas.',
+        subTopic: 'Biochemistry & Botany',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_8',
+        prompt: r'What is the derivative of \(f(x) = \sin(3x)\)?',
+        type: QuizQuestionType.multipleChoice,
+        options: [r'\(3\cos(3x)\)', r'\(-\cos(3x)\)', r'\(3\sin(3x)\)', r'\(-3\cos(3x)\)'],
+        correctAnswer: r'\(3\cos(3x)\)',
+        explanation: r'Applying the chain rule: \(\frac{d}{dx}[\sin(3x)] = \cos(3x) \cdot 3 = 3\cos(3x)\).',
+        subTopic: 'Calculus',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_9',
+        prompt: 'What is the pH of a neutral aqueous solution at 25°C?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['0', '7', '14', '10'],
+        correctAnswer: '7',
+        explanation: 'At 25°C, pure neutral water has equal hydronium and hydroxide concentrations of 10^-7 M, corresponding to pH 7.',
+        subTopic: 'Physical Chemistry',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_10',
+        prompt: 'Which legal principle states that no one can be judged twice for the same offense?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Double Jeopardy', 'Habeas Corpus', 'Mens Rea', 'Stare Decisis'],
+        correctAnswer: 'Double Jeopardy',
+        explanation: 'The doctrine against double jeopardy prevents an accused person from being tried again on the same or similar charges and on the same facts.',
+        subTopic: 'Jurisprudence & Constitutional Law',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_11',
+        prompt: 'Which normal human organ filters blood and produces urine as a byproduct?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Liver', 'Kidney', 'Pancreas', 'Spleen'],
+        correctAnswer: 'Kidney',
+        explanation: 'The nephrons inside the kidneys filter metabolic waste from the bloodstream to form urine.',
+        subTopic: 'Human Anatomy & Physiology',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_12',
+        prompt: 'Which acceleration is experienced by an object in uniform circular motion with velocity v and radius r?',
+        type: QuizQuestionType.multipleChoice,
+        options: [r'\(a = \frac{v^2}{r}\)', r'\(a = v \cdot r\)', r'\(a = \frac{r}{v^2}\)', r'\(a = \frac{1}{2}vr\)'],
+        correctAnswer: r'\(a = \frac{v^2}{r}\)',
+        explanation: r'Centripetal acceleration is directed toward the center of curvature and equals \(v^2 / r\).',
+        subTopic: 'Mechanics',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_13',
+        prompt: 'In macroeconomics, what does GDP stand for?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Gross Domestic Product', 'General Development Price', 'Global Domestic Performance', 'Government Debt Percentage'],
+        correctAnswer: 'Gross Domestic Product',
+        explanation: 'Gross Domestic Product (GDP) is the total monetary or market value of all finished goods and services produced within a country.',
+        subTopic: 'Macroeconomics',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_14',
+        prompt: 'Which type of bond is formed by the sharing of electron pairs between atoms?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Ionic bond', 'Covalent bond', 'Hydrogen bond', 'Metallic bond'],
+        correctAnswer: 'Covalent bond',
+        explanation: 'A covalent bond consists of the mutual sharing of one or more pairs of electrons between two non-metallic atoms.',
+        subTopic: 'Chemical Bonding',
+      ),
+      const QuizQuestionEntity(
+        id: 'duel_q_15',
+        prompt: 'Which of the following is a fundamental principle of Object-Oriented Programming (OOP)?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Encapsulation', 'Compilation', 'Paging', 'Quantization'],
+        correctAnswer: 'Encapsulation',
+        explanation: 'The four core pillars of OOP are Encapsulation, Abstraction, Inheritance, and Polymorphism.',
+        subTopic: 'Software Engineering',
+      ),
     ];
+
+    return bank.take(count.clamp(1, bank.length)).toList();
   }
 
   /// Finds or creates a duel match room.
@@ -93,12 +189,13 @@ class QuizDuelWebSocketClient {
     required String userId,
     required String displayName,
     required String avatarUrl,
+    int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
   }) async {
     final duelId = 'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
     final questions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
-        : getDefaultDuelQuestions(subject, examBoard);
+        : getDefaultDuelQuestions(subject, examBoard, count: questionCount);
 
     final player1 = QuizDuelParticipant(
       userId: userId,
@@ -371,9 +468,13 @@ class QuizDuelWebSocketClient {
   }
 
   /// Streams real-time updates for a duel.
-  Stream<QuizDuelMatch> streamDuel(String duelId) {
+  Stream<QuizDuelMatch> streamDuel(String duelId) async* {
+    final current = _activeMatches[duelId];
+    if (current != null) {
+      yield current;
+    }
     final ctrl = _getOrCreateController(duelId);
-    return ctrl.stream;
+    yield* ctrl.stream;
   }
 
   /// Leaves or terminates a duel match.

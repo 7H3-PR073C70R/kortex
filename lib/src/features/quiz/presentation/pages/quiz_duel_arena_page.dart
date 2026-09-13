@@ -65,62 +65,250 @@ class QuizDuelArenaPage extends HookWidget {
             backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             body: SafeArea(
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'MATCH FOUND!',
-                      style: typography.largeTitle.bold.copyWith(
-                        color: colors.primary,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    // VS Avatar Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Column(
-                          children: [
-                            AppAvatar(name: myPlayer.displayName, customDimension: 68),
-                            const SizedBox(height: 8),
-                            Text(myPlayer.displayName, style: typography.body.bold),
-                            Text('Rating: ${myPlayer.eloRating}', style: typography.caption.regular.copyWith(color: colors.textSecondary)),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: colors.error.withValues(alpha: 0.15),
-                              border: Border.all(color: colors.error, width: 2),
-                            ),
-                            child: Text(
-                              'VS',
-                              style: typography.title2.bold.copyWith(color: colors.error),
-                            ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Arena Battle Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary.withAlpha(isDark ? 60 : 35),
+                              colors.secondary.withAlpha(isDark ? 60 : 35),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(120),
+                            width: 1.2,
                           ),
                         ),
-                        Column(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            AppAvatar(name: opponent.displayName, customDimension: 68),
-                            const SizedBox(height: 8),
-                            Text(opponent.displayName, style: typography.body.bold),
-                            Text('Rating: ${opponent.eloRating}', style: typography.caption.regular.copyWith(color: colors.textSecondary)),
+                            const Icon(Icons.bolt_rounded, color: Colors.amber, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              'MATCH FOUND • 1v1 DUEL',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                letterSpacing: 1.2,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 48),
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Duel Starting in 3...',
-                      style: typography.title3.bold.copyWith(color: colors.textSecondary),
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Match Details Subtitle
+                      Text(
+                        '${match?.subject ?? "Academic"} (${match?.examBoard ?? "Standard"}) • ${match?.totalQuestions ?? 10} Questions',
+                        style: typography.body.medium.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 36),
+
+                      // VS Battle Ring Cards
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceTertiary.withAlpha(180)
+                              : colors.surfaceSecondary.withAlpha(200),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 80 : 40),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(isDark ? 40 : 15),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Player 1 (You)
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: colors.primary,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.primary.withAlpha(90),
+                                        blurRadius: 14,
+                                      ),
+                                    ],
+                                  ),
+                                  child: AppAvatar(
+                                    name: myPlayer.displayName,
+                                    customDimension: 68,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  myPlayer.displayName,
+                                  style: typography.body.bold.copyWith(
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(35),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${myPlayer.eloRating} ELO',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Glowing VS Emblem
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.error,
+                                    colors.warning,
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.error.withAlpha(120),
+                                    blurRadius: 16,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'VS',
+                                style: typography.title2.bold.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+
+                            // Opponent (Rival)
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: colors.secondary,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.secondary.withAlpha(90),
+                                        blurRadius: 14,
+                                      ),
+                                    ],
+                                  ),
+                                  child: AppAvatar(
+                                    name: opponent.displayName,
+                                    customDimension: 68,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  opponent.displayName,
+                                  style: typography.body.bold.copyWith(
+                                    fontSize: 15,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 3),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.secondary.withAlpha(35),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${opponent.eloRating} ELO',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.secondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+
+                      // Countdown Indicator Pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(80),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Battle Starting in 3s...',
+                              style: typography.body.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
