@@ -32,6 +32,8 @@ abstract class CommunityRepository {
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
   });
 
   /// Creates a new forum thread post or peer question.
@@ -50,6 +52,20 @@ abstract class CommunityRepository {
     required String postId,
     required String content,
     String? latexContent,
+    String? parentReplyId,
+  });
+
+  /// Upvotes, downvotes, or clears vote on a forum post.
+  Future<Either<Failure, bool>> voteForumPost({
+    required String postId,
+    required int voteDirection,
+  });
+
+  /// Upvotes, downvotes, or clears vote on a forum reply.
+  Future<Either<Failure, bool>> voteForumReply({
+    required String postId,
+    required String replyId,
+    required int voteDirection,
   });
 
   /// Verifies a peer answer and awards solution bounty XP.

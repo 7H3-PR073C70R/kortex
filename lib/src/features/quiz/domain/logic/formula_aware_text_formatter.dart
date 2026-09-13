@@ -70,15 +70,23 @@ class FormulaAwareTextFormatter {
 
   /// Returns true if the string potentially contains LaTeX syntax, numbers, or formula symbols.
   static bool _hasFormulaIndicators(String s) {
+    var upperCount = 0;
     for (var i = 0; i < s.length; i++) {
       final c = s.codeUnitAt(i);
-      // Math/formula symbols: '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), or non-ascii (e.g. '→', '⇌')
-      if (c == 36 || c == 92 || c == 94 || c == 95 || c == 47 || c == 43 || c == 61 || c == 62 || c == 60 || c > 127) {
+      // Math/formula symbols: '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), '(', ')', '[', ']', or non-ascii (e.g. '→', '⇌')
+      if (c == 36 || c == 92 || c == 94 || c == 95 || c == 47 || c == 43 || c == 61 || c == 62 || c == 60 || c == 40 || c == 41 || c == 91 || c == 93 || c > 127) {
         return true;
       }
       // Digits (e.g. "10^8", "H2O", "3/4")
       if (c >= 48 && c <= 57) {
         return true;
+      }
+      // Count uppercase letters (e.g. "NaCl", "HCl", "NaOH", "CO")
+      if (c >= 65 && c <= 90) {
+        upperCount++;
+        if (upperCount >= 2) {
+          return true;
+        }
       }
     }
     return false;

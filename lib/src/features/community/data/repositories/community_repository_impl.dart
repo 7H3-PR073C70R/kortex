@@ -75,9 +75,16 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, List<ForumPostEntity>>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
   }) {
     return _remoteDataSource
-        .fetchForumPosts(track: track, questionsOnly: questionsOnly)
+        .fetchForumPosts(
+          track: track,
+          questionsOnly: questionsOnly,
+          limit: limit,
+          offset: offset,
+        )
         .then((models) => models.map((m) => m.toEntity()).toList())
         .makeRequest();
   }
@@ -111,14 +118,41 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String postId,
     required String content,
     String? latexContent,
+    String? parentReplyId,
   }) {
     return _remoteDataSource
         .replyToForumPost(
           postId: postId,
           content: content,
           latexContent: latexContent,
+          parentReplyId: parentReplyId,
         )
         .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> voteForumPost({
+    required String postId,
+    required int voteDirection,
+  }) {
+    return _remoteDataSource
+        .voteForumPost(postId: postId, voteDirection: voteDirection)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> voteForumReply({
+    required String postId,
+    required String replyId,
+    required int voteDirection,
+  }) {
+    return _remoteDataSource
+        .voteForumReply(
+          postId: postId,
+          replyId: replyId,
+          voteDirection: voteDirection,
+        )
         .makeRequest();
   }
 

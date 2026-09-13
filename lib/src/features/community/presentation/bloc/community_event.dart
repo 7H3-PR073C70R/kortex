@@ -113,14 +113,44 @@ class ReplyToPostEvent extends CommunityEvent {
     required this.postId,
     required this.content,
     this.latexContent,
+    this.parentReplyId,
   });
 
   final String postId;
   final String content;
   final String? latexContent;
+  final String? parentReplyId;
 
   @override
-  List<Object?> get props => [postId, content, latexContent];
+  List<Object?> get props => [postId, content, latexContent, parentReplyId];
+}
+
+class VoteForumPostEvent extends CommunityEvent {
+  const VoteForumPostEvent({
+    required this.postId,
+    required this.direction,
+  });
+
+  final String postId;
+  final int direction; // 1 = upvote, -1 = downvote, 0 = clear
+
+  @override
+  List<Object?> get props => [postId, direction];
+}
+
+class VoteForumReplyEvent extends CommunityEvent {
+  const VoteForumReplyEvent({
+    required this.postId,
+    required this.replyId,
+    required this.direction,
+  });
+
+  final String postId;
+  final String replyId;
+  final int direction; // 1 = upvote, -1 = downvote, 0 = clear
+
+  @override
+  List<Object?> get props => [postId, replyId, direction];
 }
 
 class ForumPostRepliesIncrementedEvent extends CommunityEvent {
@@ -229,4 +259,8 @@ class PublishDeckEvent extends CommunityEvent {
     cardsJson,
     syllabusTag,
   ];
+}
+
+class FetchMoreForumPostsEvent extends CommunityEvent {
+  const FetchMoreForumPostsEvent();
 }

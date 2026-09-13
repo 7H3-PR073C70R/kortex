@@ -145,8 +145,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    isDark ? colors.surfaceSecondary : colors.cardBackground,
-                    isDark ? colors.backgroundSecondary : colors.surfaceSecondary,
+                    if (isDark) colors.surfaceSecondary else colors.cardBackground,
+                    if (isDark) colors.backgroundSecondary else colors.surfaceSecondary,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

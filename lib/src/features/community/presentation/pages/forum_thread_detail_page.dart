@@ -7,6 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -14,6 +15,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
@@ -39,9 +41,12 @@ class ForumThreadDetailPage extends HookWidget {
     final isDark = context.isDarkMode;
 
     final replyController = useTextEditingController();
+    final focusNode = useFocusNode();
     final isSubmitting = useState<bool>(false);
     final isGeneratingAiHint = useState<bool>(false);
+    final currentPost = useState<ForumPostEntity>(post);
     final localReplies = useState<List<ForumReplyEntity>>(post.replies);
+    final replyingToReply = useState<ForumReplyEntity?>(null);
 
     // Real-time replies stream — seeded with initial replies from the post
     final repo = locator<CommunityRepository>();
@@ -58,6 +63,80 @@ class ForumThreadDetailPage extends HookWidget {
       return null;
     }, [repliesSnapshot.data]);
 
+    void votePost(int direction) {
+      final p = currentPost.value;
+      final prevVote = p.userVote;
+      final newVote = (prevVote == direction) ? 0 : direction;
+      var newUpvotes = p.upvotes;
+      var newDownvotes = p.downvotes;
+      if (prevVote == 1) newUpvotes -= 1;
+      if (prevVote == -1) newDownvotes -= 1;
+      if (newVote == 1) newUpvotes += 1;
+      if (newVote == -1) newDownvotes += 1;
+      if (newUpvotes < 0) newUpvotes = 0;
+      if (newDownvotes < 0) newDownvotes = 0;
+
+      final updated = p.copyWith(
+        upvotes: newUpvotes,
+        downvotes: newDownvotes,
+        userVote: newVote,
+      );
+      currentPost.value = updated;
+      unawaited(HapticFeedback.selectionClick());
+
+      if (locator.isRegistered<CommunityHubBloc>()) {
+        locator<CommunityHubBloc>().add(
+          VoteForumPostEvent(postId: post.id, direction: direction),
+        );
+      } else {
+        unawaited(
+          repo.voteForumPost(postId: post.id, voteDirection: direction),
+        );
+      }
+    }
+
+    void voteReply(ForumReplyEntity targetReply, int direction) {
+      final prevVote = targetReply.userVote;
+      final newVote = (prevVote == direction) ? 0 : direction;
+      var newUpvotes = targetReply.upvotes;
+      var newDownvotes = targetReply.downvotes;
+      if (prevVote == 1) newUpvotes -= 1;
+      if (prevVote == -1) newDownvotes -= 1;
+      if (newVote == 1) newUpvotes += 1;
+      if (newVote == -1) newDownvotes += 1;
+      if (newUpvotes < 0) newUpvotes = 0;
+      if (newDownvotes < 0) newDownvotes = 0;
+
+      final updated = targetReply.copyWith(
+        upvotes: newUpvotes,
+        downvotes: newDownvotes,
+        userVote: newVote,
+      );
+
+      localReplies.value = localReplies.value
+          .map((r) => r.id == targetReply.id ? updated : r)
+          .toList();
+      unawaited(HapticFeedback.selectionClick());
+
+      if (locator.isRegistered<CommunityHubBloc>()) {
+        locator<CommunityHubBloc>().add(
+          VoteForumReplyEvent(
+            postId: post.id,
+            replyId: targetReply.id,
+            direction: direction,
+          ),
+        );
+      } else {
+        unawaited(
+          repo.voteForumReply(
+            postId: post.id,
+            replyId: targetReply.id,
+            voteDirection: direction,
+          ),
+        );
+      }
+    }
+
     // Intelligent Syllabot Socratic Hint generator
     Future<void> generateSyllabotHint() async {
       if (isGeneratingAiHint.value) return;
@@ -65,26 +144,24 @@ class ForumThreadDetailPage extends HookWidget {
       unawaited(HapticFeedback.mediumImpact());
       try {
         final promptBuffer = StringBuffer()
-          ..writeln('You are Syllabot, an expert academic tutor.')
-          ..writeln(
-            'A student in track "${post.track}" (Subject/Syllabus: "${post.syllabusTag}") posted this question:',
-          )
+          ..writeln('You are Syllabot, an elite academic AI tutor with deep subject mastery across STEM and Humanities.')
+          ..writeln('A student in "${post.track}" (${post.syllabusTag.isNotEmpty ? post.syllabusTag : post.track}) needs a high-yield conceptual hint for this question:')
+          ..writeln()
           ..writeln('Question Title: "${post.title}"');
         if (post.content.trim().isNotEmpty) {
-          promptBuffer.writeln('Question Details: "${post.content}"');
+          promptBuffer.writeln('Question Content:\n${post.content}');
         }
         if (post.latexContent != null && post.latexContent!.trim().isNotEmpty) {
-          promptBuffer.writeln('Formulas / LaTeX: ${post.latexContent}');
+          promptBuffer.writeln('Formulas / Equations:\n${post.latexContent}');
         }
         promptBuffer
           ..writeln()
           ..writeln(
-            'Provide a high-yield, step-by-step Socratic hint and conceptual breakdown. '
-            'Do NOT provide the final direct answer or multiple-choice option immediately. '
-            'Instead, provide:\n'
-            '1. 💡 Core Governing Principles (the exact physical law, formula, or definition involved)\n'
-            '2. 🔍 Step-by-Step Problem Breakdown & Variables to isolate\n'
-            '3. 🎯 Socratic Checkpoint question to test their understanding.',
+            'Provide an authentic, highly insightful Socratic hint tailored specifically to the exact subject matter of this question:\n\n'
+            '1. 💡 **Core Subject Principle**: Explain the specific biological, chemical, physical, mathematical, or academic concept/definition involved in direct, engaging terms. Do NOT cite generic physical formulas for non-physics questions.\n'
+            '2. 🔍 **Concept Breakdown & Distinctions**: Analyze the specific structures, variables, mechanisms, or options mentioned in the problem, highlighting key differences or common student misconceptions.\n'
+            '3. 🎯 **Socratic Checkpoint**: A sharp, thought-provoking guiding question that empowers the student to deduce the correct answer themselves.\n\n'
+            'Ensure the response is concise, sharp, pedagogically brilliant, and free from repetitive filler.',
           );
 
         final isPro = !locator.isRegistered<SubscriptionGuard>() ||
@@ -93,13 +170,16 @@ class ForumThreadDetailPage extends HookWidget {
             ? ExecutionEngineType.cloudRemote
             : ExecutionEngineType.localOnDevice;
 
+        String? aiErrorMessage;
         var generatedHint = '';
         if (locator.isRegistered<StreamSyllabotResponseUseCase>()) {
           try {
             final streamUseCase = locator<StreamSyllabotResponseUseCase>();
             final responseStream = streamUseCase.call(
               prompt: promptBuffer.toString(),
-              sessionId: 'forum_hint_${post.id}',
+              sessionId: UuidUtils.isValidUuid(post.id)
+                  ? post.id
+                  : UuidUtils.generate(),
               socraticMode: SocraticMode.stepByStep,
               preferredEngine: preferredEngine,
             );
@@ -107,12 +187,13 @@ class ForumThreadDetailPage extends HookWidget {
             final tokenBuffer = StringBuffer();
             await responseStream
                 .timeout(
-                  const Duration(seconds: 15),
+                  const Duration(seconds: 20),
                   onTimeout: (sink) => sink.close(),
                 )
                 .forEach(tokenBuffer.write);
             generatedHint = tokenBuffer.toString().trim();
           } on Object catch (e) {
+            aiErrorMessage = e.toString();
             debugPrint('[ForumHint] Stream AI note: $e');
           }
         }
@@ -126,38 +207,79 @@ class ForumThreadDetailPage extends HookWidget {
                 .generate(
                   prompt: promptBuffer.toString(),
                   systemInstruction:
-                      'Provide a high-yield Socratic hint for this question.',
+                      'You are Syllabot, an expert academic tutor. Provide an insightful, subject-specific Socratic hint.',
                 )
                 .forEach(localBuffer.write);
             generatedHint = localBuffer.toString().trim();
           } on Object catch (e) {
+            aiErrorMessage ??= e.toString();
             debugPrint('[ForumHint] Local LLM note: $e');
           }
         }
 
-        // Clean formatting and prefix
-        final cleanHint = generatedHint.isNotEmpty
-            ? (generatedHint.startsWith('🤖 Syllabot')
-                ? generatedHint
-                : '🤖 Syllabot Socratic Hint:\n\n$generatedHint')
-            : '🤖 Syllabot Socratic Hint:\n\n'
-                '### 💡 Core Governing Principles:\n'
-                'Review the fundamental theorems and formulas governing ${post.syllabusTag}.\n\n'
-                '### 🔍 Step-by-Step Problem Breakdown:\n'
-                '• Extract the known variables and the target unknown from the problem statement.\n'
-                '• Relate the parameters using conservation laws or standard kinematic/algebraic formulas.\n\n'
-                '### 🎯 Socratic Checkpoint:\n'
-                'How does changing the primary input variable affect the magnitude of the final result?';
+        if (generatedHint.trim().isEmpty) {
+          if (context.mounted) {
+            final isNotDownloaded = aiErrorMessage != null &&
+                (aiErrorMessage.contains('LocalLlmNotDownloadedException') ||
+                 aiErrorMessage.contains('On-device neural engine is not downloaded') ||
+                 aiErrorMessage.contains('248MB model weights') ||
+                 aiErrorMessage.contains('248 MB model weights'));
+
+            if (isNotDownloaded) {
+              context.showModelDownloadSnackBar(
+                onDownloadComplete: () {
+                  unawaited(generateSyllabotHint());
+                },
+              );
+            } else {
+              context.showSnackBar(
+                message: aiErrorMessage != null
+                    ? 'Could not generate Syllabot hint: $aiErrorMessage'
+                    : 'Unable to generate Syllabot AI hint. Please check your internet connection.',
+                type: SnackBarType.error,
+              );
+            }
+          }
+          return;
+        }
+
+        // Clean formatting and remove any degenerate repetition loops
+        var cleanHint = generatedHint.replaceAll(
+          RegExp(r'[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]+'),
+          '',
+        );
+        final lines = cleanHint.split('\n');
+        final deduplicatedLines = <String>[];
+        String? previousLine;
+        var repeatCount = 0;
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed == previousLine && trimmed.isNotEmpty) {
+            repeatCount++;
+            if (repeatCount < 2) {
+              deduplicatedLines.add(line);
+            }
+          } else {
+            repeatCount = 0;
+            previousLine = trimmed;
+            deduplicatedLines.add(line);
+          }
+        }
+        cleanHint = deduplicatedLines.join('\n').trim();
+
+        final finalHintContent = cleanHint.startsWith('🤖 Syllabot')
+            ? cleanHint
+            : '🤖 Syllabot Socratic Hint:\n\n$cleanHint';
 
         final res = await repo.replyToForumPost(
           postId: post.id,
-          content: cleanHint,
+          content: finalHintContent,
         );
         res.fold(
           (failure) {
             if (context.mounted) {
               context.showSnackBar(
-                message: failure.message ?? 'Could not generate AI hint.',
+                message: failure.message ?? 'Could not post AI hint.',
                 type: SnackBarType.error,
               );
             }
@@ -180,8 +302,6 @@ class ForumThreadDetailPage extends HookWidget {
         isGeneratingAiHint.value = false;
       }
     }
-
-    final replies = localReplies.value;
 
     return Scaffold(
       backgroundColor: isDark
@@ -271,58 +391,67 @@ class ForumThreadDetailPage extends HookWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Author row
+                          // Author row & Post Upvote/Downvote Capsule
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: colors.primary.withAlpha(40),
-                                child: Text(
-                                  post.authorName.isNotEmpty
-                                      ? post.authorName[0].toUpperCase()
-                                      : '?',
-                                  style: typography.footnote.bold.copyWith(
-                                    color: colors.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post.authorName,
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: colors.primary.withAlpha(40),
+                                    child: Text(
+                                      currentPost.value.authorName.isNotEmpty
+                                          ? currentPost.value.authorName[0].toUpperCase()
+                                          : '?',
                                       style: typography.footnote.bold.copyWith(
-                                        color: colors.textPrimary,
+                                        color: colors.primary,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Text(
-                                      _formatTime(post.createdAt, l10n),
-                                      style: typography.caption.regular
-                                          .copyWith(
-                                            color: colors.textSecondary,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        currentPost.value.authorName,
+                                        style: typography.footnote.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        _formatTime(currentPost.value.createdAt, l10n),
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              // Stack Overflow Post Vote Widget
+                              _ForumVoteCapsule(
+                                netVotes: currentPost.value.netVotes,
+                                userVote: currentPost.value.userVote,
+                                onUpvote: () => votePost(1),
+                                onDownvote: () => votePost(-1),
                               ),
                             ],
                           ),
                           const SizedBox(height: 14),
 
                           // Badges Row (Question Bounty, Syllabus Module, Solved Status)
-                          if (post.isQuestion ||
-                              post.syllabusTag.isNotEmpty) ...[
+                          if (currentPost.value.isQuestion ||
+                              currentPost.value.syllabusTag.isNotEmpty) ...[
                             Wrap(
                               spacing: 8,
                               runSpacing: 6,
                               children: [
-                                if (post.isQuestion)
+                                if (currentPost.value.isQuestion)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 10,
@@ -356,7 +485,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       ],
                                     ),
                                   ),
-                                if (post.syllabusTag.isNotEmpty)
+                                if (currentPost.value.syllabusTag.isNotEmpty)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 9,
@@ -382,7 +511,7 @@ class ForumThreadDetailPage extends HookWidget {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          post.syllabusTag,
+                                          currentPost.value.syllabusTag,
                                           style: typography.caption.bold
                                               .copyWith(
                                                 color: colors.syllabotAccent,
@@ -392,8 +521,8 @@ class ForumThreadDetailPage extends HookWidget {
                                       ],
                                     ),
                                   ),
-                                if (post.isVerifiedSolution ||
-                                    replies.any((r) => r.isVerifiedSolution))
+                                if (currentPost.value.isVerifiedSolution ||
+                                    localReplies.value.any((r) => r.isVerifiedSolution))
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -435,7 +564,7 @@ class ForumThreadDetailPage extends HookWidget {
 
                           // Title (Cleaned up from redundant prompt duplication)
                           Text(
-                            _cleanTitle(post.title, post.syllabusTag, post.track),
+                            _cleanTitle(currentPost.value.title, currentPost.value.syllabusTag, currentPost.value.track),
                             style: typography.title2.bold.copyWith(
                               color: colors.textPrimary,
                               fontSize: 18,
@@ -444,11 +573,11 @@ class ForumThreadDetailPage extends HookWidget {
                           const SizedBox(height: 14),
 
                           // Structured Content Card
-                          _ForumThreadStructuredBody(post: post),
+                          _ForumThreadStructuredBody(post: currentPost.value),
 
                           // LaTeX block
-                          if (post.latexContent != null &&
-                              post.latexContent!.isNotEmpty) ...[
+                          if (currentPost.value.latexContent != null &&
+                              currentPost.value.latexContent!.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             Container(
                               width: double.infinity,
@@ -474,10 +603,9 @@ class ForumThreadDetailPage extends HookWidget {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    post.latexContent!,
+                                    currentPost.value.latexContent!,
                                     style: typography.body.bold.copyWith(
                                       color: colors.primary,
-                                      fontFamily: 'monospace',
                                     ),
                                   ),
                                 ],
@@ -500,7 +628,7 @@ class ForumThreadDetailPage extends HookWidget {
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 300),
                                 child: Container(
-                                  key: ValueKey(replies.length),
+                                  key: ValueKey(localReplies.value.length),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 2,
@@ -510,7 +638,7 @@ class ForumThreadDetailPage extends HookWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '${replies.length}',
+                                    '${localReplies.value.length}',
                                     style: typography.caption.bold.copyWith(
                                       color: colors.primary,
                                     ),
@@ -518,7 +646,16 @@ class ForumThreadDetailPage extends HookWidget {
                                 ),
                               ),
                               const Spacer(),
-                              if (replies.isNotEmpty)
+                              if (localReplies.value.isNotEmpty &&
+                                  !localReplies.value.any(
+                                    (r) =>
+                                        r.authorName
+                                            .toLowerCase()
+                                            .contains('syllabot') ||
+                                        r.content.contains('Syllabot') ||
+                                        r.content.contains('🤖') ||
+                                        r.content.contains('Socratic Hint'),
+                                  ))
                                 ShrinkableButton(
                                   onTap: isGeneratingAiHint.value
                                       ? null
@@ -583,352 +720,255 @@ class ForumThreadDetailPage extends HookWidget {
                     ),
                   ),
 
-                  // Replies list
-                  if (replies.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 28,
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline_rounded,
-                              size: 36,
-                              color: colors.textSecondary.withAlpha(100),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              l10n.noRepliesYet,
-                              style: typography.footnote.medium.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ShrinkableButton(
-                              onTap: isGeneratingAiHint.value
-                                  ? null
-                                  : generateSyllabotHint,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.syllabotAccent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.syllabotAccent.withAlpha(
-                                        isDark ? 80 : 40,
-                                      ),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isGeneratingAiHint.value)
-                                      const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                    else
-                                      const Icon(
-                                        Icons.auto_awesome_rounded,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      isGeneratingAiHint.value
-                                          ? 'Consulting Syllabot...'
-                                          : 'Ask Syllabot for Socratic Hint',
-                                      style: typography.caption.bold.copyWith(
-                                        color: Colors.white,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final reply = replies[index];
-                          final hasVerifiedSolution = replies.any(
-                            (r) => r.isVerifiedSolution,
-                          );
-                          final userStorage = locator<UserStorageService>();
-                          final currentUserId = userStorage.getUserId();
-                          final isAuthor =
-                              currentUserId == null ||
-                              currentUserId == post.authorId;
+                  // Replies list & Nested Threads
+                  Builder(
+                    builder: (context) {
+                      final allReplies = localReplies.value;
+                      // Order top-level replies by netVotes descending (highest upvote first)
+                      final topLevelReplies = allReplies
+                          .where((r) =>
+                              r.parentReplyId == null ||
+                              r.parentReplyId!.isEmpty)
+                          .toList()
+                        ..sort((a, b) {
+                          if (a.isVerifiedSolution != b.isVerifiedSolution) {
+                            return a.isVerifiedSolution ? -1 : 1;
+                          }
+                          final voteComp = b.netVotes.compareTo(a.netVotes);
+                          if (voteComp != 0) return voteComp;
+                          return b.createdAt.compareTo(a.createdAt);
+                        });
 
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfaceSecondary.withAlpha(100),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: reply.isVerifiedSolution
-                                      ? colors.recallEasy
-                                      : colors.primary.withAlpha(
-                                          isDark ? 30 : 15,
-                                        ),
-                                  width: reply.isVerifiedSolution ? 1.5 : 1.0,
+                      // Group nested replies and sort by date descending (most recent first)
+                      final nestedRepliesMap =
+                          <String, List<ForumReplyEntity>>{};
+                      for (final reply in allReplies) {
+                        if (reply.parentReplyId != null &&
+                            reply.parentReplyId!.isNotEmpty) {
+                          nestedRepliesMap
+                              .putIfAbsent(reply.parentReplyId!, () => [])
+                              .add(reply);
+                        }
+                      }
+                      for (final list in nestedRepliesMap.values) {
+                        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                      }
+
+                      final hasAiHintInEmpty = allReplies.any(
+                        (r) =>
+                            r.authorName.toLowerCase().contains('syllabot') ||
+                            r.content.contains('Syllabot') ||
+                            r.content.contains('🤖') ||
+                            r.content.contains('Socratic Hint'),
+                      );
+
+                      if (topLevelReplies.isEmpty) {
+                        return SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 28,
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline_rounded,
+                                  size: 36,
+                                  color: colors.textSecondary.withAlpha(100),
                                 ),
-                                boxShadow: reply.isVerifiedSolution
-                                    ? [
-                                        BoxShadow(
-                                          color: colors.recallEasy.withAlpha(
-                                            isDark ? 50 : 25,
-                                          ),
-                                          blurRadius: 8,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Verified Solution Notice Badge
-                                  if (reply.isVerifiedSolution)
-                                    Container(
-                                      margin: const EdgeInsets.only(bottom: 10),
+                                const SizedBox(height: 10),
+                                Text(
+                                  l10n.noRepliesYet,
+                                  style: typography.footnote.medium.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (!hasAiHintInEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  ShrinkableButton(
+                                    onTap: isGeneratingAiHint.value
+                                        ? null
+                                        : generateSyllabotHint,
+                                    child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
+                                        horizontal: 16,
+                                        vertical: 10,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: colors.recallEasy.withAlpha(
-                                          isDark ? 40 : 20,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: colors.recallEasy,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.check_circle_rounded,
-                                            size: 14,
-                                            color: colors.recallEasy,
+                                    decoration: BoxDecoration(
+                                      color: colors.syllabotAccent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.syllabotAccent.withAlpha(
+                                            isDark ? 80 : 40,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Verified Solution',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.recallEasy,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
                                     ),
-
-                                  // Reply Author Row
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 14,
-                                        backgroundColor:
-                                            reply.authorName.contains('Syllabot')
-                                                ? colors.syllabotAccent.withAlpha(
-                                                    50,
-                                                  )
-                                                : colors.primary.withAlpha(40),
-                                        child: Text(
-                                          reply.authorName.contains('Syllabot')
-                                              ? '🤖'
-                                              : (reply.authorName.isNotEmpty
-                                                  ? reply.authorName[0]
-                                                      .toUpperCase()
-                                                  : '?'),
-                                          style: TextStyle(
-                                            fontSize:
-                                                reply.authorName.contains(
-                                                      'Syllabot',
-                                                    )
-                                                    ? 12
-                                                    : 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: colors.primary,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isGeneratingAiHint.value)
+                                          const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          )
+                                        else
+                                          const Icon(
+                                            Icons.auto_awesome_rounded,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isGeneratingAiHint.value
+                                              ? 'Consulting Syllabot...'
+                                              : 'Ask Syllabot for Socratic Hint',
+                                          style: typography.caption.bold.copyWith(
+                                            color: Colors.white,
+                                            letterSpacing: 0.2,
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              reply.authorName,
-                                              style: typography.footnote.bold
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                  ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              _formatTime(
-                                                reply.createdAt,
-                                                l10n,
-                                              ),
-                                              style: typography.caption.regular
-                                                  .copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 10,
-                                                  ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  // Reply Body rendered without markdown asterisks
-                                  _CleanFormattedText(
-                                    text: reply.content,
-                                    baseStyle: typography.body.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      height: 1.5,
-                                      fontSize: 13.5,
+                                      ],
                                     ),
                                   ),
-                                  if (reply.latexContent != null &&
-                                      reply.latexContent!.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      reply.latexContent!,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontFamily: 'monospace',
-                                      ),
-                                    ),
-                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }
 
-                                  // Mark as Verified Solution Button (Post Author action on questions)
-                                  if (post.isQuestion &&
-                                      !reply.isVerifiedSolution &&
-                                      (!hasVerifiedSolution || isAuthor)) ...[
-                                    const SizedBox(height: 10),
-                                    ShrinkableButton(
-                                      onTap: () async {
-                                        final res = await repo.verifyForumReply(
-                                          postId: post.id,
-                                          replyId: reply.id,
+                      return SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final reply = topLevelReplies[index];
+                            final children = nestedRepliesMap[reply.id] ?? const [];
+                            final hasVerifiedSolution = allReplies.any(
+                              (r) => r.isVerifiedSolution,
+                            );
+                            final userStorage = locator<UserStorageService>();
+                            final currentUserId = userStorage.getUserId();
+                            final isAuthor =
+                                currentUserId == null ||
+                                currentUserId == currentPost.value.authorId;
+
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              child: _ForumAnswerCard(
+                                reply: reply,
+                                children: children,
+                                nestedRepliesMap: nestedRepliesMap,
+                                isQuestion: currentPost.value.isQuestion,
+                                isAuthor: isAuthor,
+                                hasVerifiedSolution: hasVerifiedSolution,
+                                onVote: (direction) => voteReply(reply, direction),
+                                onChildVote: voteReply,
+                                onReplyTap: () {
+                                  replyingToReply.value = reply;
+                                  focusNode.requestFocus();
+                                },
+                                onChildReplyTap: (target) {
+                                  replyingToReply.value = target;
+                                  focusNode.requestFocus();
+                                },
+                                onVerifySolution: () async {
+                                  final res = await repo.verifyForumReply(
+                                    postId: currentPost.value.id,
+                                    replyId: reply.id,
+                                  );
+                                  res.fold(
+                                    (failure) {
+                                      if (context.mounted) {
+                                        context.showSnackBar(
+                                          message: failure.message ?? 'Failed to verify solution',
+                                          type: SnackBarType.error,
                                         );
-                                        res.fold(
-                                          (failure) {
-                                            if (context.mounted) {
-                                              context.showSnackBar(
-                                                message:
-                                                    failure.message ??
-                                                    'Failed to verify solution',
-                                                type: SnackBarType.error,
-                                              );
-                                            }
-                                          },
-                                          (_) {
-                                            localReplies.value = localReplies
-                                                .value
-                                                .map(
-                                                  (r) => r.id == reply.id
-                                                      ? r.copyWith(
-                                                          isVerifiedSolution:
-                                                              true,
-                                                        )
-                                                      : r,
-                                                )
-                                                .toList();
-                                            if (context.mounted) {
-                                              context.showSnackBar(
-                                                message:
-                                                    'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
-                                              );
-                                            }
-                                          },
+                                      }
+                                    },
+                                    (_) {
+                                      localReplies.value = localReplies.value
+                                          .map(
+                                            (r) => r.id == reply.id
+                                                ? r.copyWith(isVerifiedSolution: true)
+                                                : r,
+                                          )
+                                          .toList();
+                                      if (context.mounted) {
+                                        context.showSnackBar(
+                                          message:
+                                              'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
                                         );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.warning.withAlpha(
-                                            isDark ? 40 : 25,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: colors.warning.withAlpha(90),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.verified_outlined,
-                                              size: 13,
-                                              color: colors.warning,
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              'Mark as Solution (+100 XP)',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.warning,
-                                                    fontSize: 10.5,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                                      }
+                                    },
+                                  );
+                                },
                               ),
-                            ),
-                          );
-                        },
-                        childCount: replies.length,
-                      ),
-                    ),
+                            );
+                          },
+                          childCount: topLevelReplies.length,
+                        ),
+                      );
+                    },
+                  ),
 
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 ],
               ),
             ),
+
+            // Active Reply Context Banner (Stack Overflow / Reddit style)
+            if (replyingToReply.value != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 30 : 15),
+                  border: Border(
+                    top: BorderSide(color: colors.primary.withAlpha(40)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.reply_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Replying to @${replyingToReply.value!.authorName}',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    ShrinkableButton(
+                      onTap: () => replyingToReply.value = null,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Bottom reply input bar
             Container(
@@ -944,9 +984,14 @@ class ForumThreadDetailPage extends HookWidget {
                   Expanded(
                     child: TextField(
                       controller: replyController,
+                      focusNode: focusNode,
+                      maxLines: 5,
+                      minLines: 1,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: l10n.writeHelpfulReply,
+                        hintText: replyingToReply.value != null
+                            ? 'Reply to @${replyingToReply.value!.authorName}...'
+                            : l10n.writeHelpfulReply,
                         hintStyle: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -972,10 +1017,12 @@ class ForumThreadDetailPage extends HookWidget {
                         : () async {
                             final text = replyController.text.trim();
                             if (text.isEmpty) return;
+                            final targetParentId = replyingToReply.value?.id;
                             isSubmitting.value = true;
                             final res = await repo.replyToForumPost(
-                              postId: post.id,
+                              postId: currentPost.value.id,
                               content: text,
+                              parentReplyId: targetParentId,
                             );
                             isSubmitting.value = false;
                             res.fold(
@@ -990,6 +1037,7 @@ class ForumThreadDetailPage extends HookWidget {
                               },
                               (createdReply) {
                                 replyController.clear();
+                                replyingToReply.value = null;
                                 if (!localReplies.value.any(
                                   (r) => r.id == createdReply.id,
                                 )) {
@@ -1001,7 +1049,7 @@ class ForumThreadDetailPage extends HookWidget {
                                 if (locator.isRegistered<CommunityHubBloc>()) {
                                   locator<CommunityHubBloc>().add(
                                     ForumPostRepliesIncrementedEvent(
-                                      postId: post.id,
+                                      postId: currentPost.value.id,
                                       reply: createdReply,
                                     ),
                                   );
@@ -1052,12 +1100,8 @@ String _cleanTitle(String title, String syllabusTag, String track) {
   var cleaned = title.replaceAll(RegExp(r'\*\*|__'), '').trim();
   if (cleaned.toLowerCase().startsWith('question discussion:')) {
     cleaned = cleaned.substring('question discussion:'.length).trim();
-  }
-  if (cleaned.length > 90) {
-    if (syllabusTag.isNotEmpty) {
-      return '$syllabusTag ($track) Question Breakdown';
-    }
-    return '${cleaned.substring(0, 87)}...';
+  } else if (cleaned.toLowerCase().startsWith('question:')) {
+    cleaned = cleaned.substring('question:'.length).trim();
   }
   return cleaned.isEmpty ? '$syllabusTag ($track) Discussion' : cleaned;
 }
@@ -1075,7 +1119,7 @@ class _ForumThreadStructuredBody extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final rawContent = post.content;
-    
+
     // Parse options, prompt, explanation, and answer comparison if available
     final lines = rawContent.split('\n');
     final promptLines = <String>[];
@@ -1087,60 +1131,94 @@ class _ForumThreadStructuredBody extends StatelessWidget {
     var readingOptions = false;
     var readingExplanation = false;
 
-    final optionRegex = RegExp(r'^([A-Da-d0-9][\.\:\)]|\([A-Da-d0-9]\))\s*(.*)');
+    final optionPrefixRegex =
+        RegExp(r'^([A-Da-d0-9][\.\:\)]|\([A-Da-d0-9]\)|[\•\-\*])\s*(.*)');
+    final letterPrefixRegex =
+        RegExp(r'^([A-Da-d0-9][\.\:\)]|\([A-Da-d0-9]\))\s*(.*)');
 
     for (final rawLine in lines) {
       final line = rawLine.trim();
       if (line.isEmpty) continue;
 
       final lower = line.toLowerCase();
-      if (lower.startsWith('options:') || lower.startsWith('choices:')) {
+      if (lower.startsWith('**options:**') ||
+          lower.startsWith('options:') ||
+          lower.startsWith('choices:')) {
         readingOptions = true;
         readingExplanation = false;
         continue;
       }
-      if (lower.startsWith('explanation:') || lower.startsWith('solution:') || lower.startsWith('why is this correct?')) {
+      if (lower.startsWith('**explanation:**') ||
+          lower.startsWith('explanation:') ||
+          lower.startsWith('solution:') ||
+          lower.startsWith('why is this correct?')) {
         readingExplanation = true;
         readingOptions = false;
         final colonIdx = line.indexOf(':');
         if (colonIdx != -1 && colonIdx < line.length - 1) {
-          final contentAfter = line.substring(colonIdx + 1).trim();
+          final contentAfter =
+              line.substring(colonIdx + 1).replaceAll('*', '').trim();
           if (contentAfter.isNotEmpty) {
             explanationLines.add(contentAfter);
           }
         }
         continue;
       }
-      if (lower.startsWith('correct answer:') || lower.startsWith('correct:')) {
+      if (lower.startsWith('**correct answer:**') ||
+          lower.startsWith('correct answer:') ||
+          lower.startsWith('correct:')) {
         final colonIdx = line.indexOf(':');
-        correctAnswer = colonIdx != -1 ? line.substring(colonIdx + 1).trim() : line;
+        correctAnswer = colonIdx != -1
+            ? line.substring(colonIdx + 1).replaceAll('*', '').trim()
+            : line.replaceAll('*', '').trim();
+        readingOptions = false;
         continue;
       }
-      if (lower.startsWith('your answer:') || lower.startsWith('selected answer:') || lower.startsWith('user answer:')) {
+      if (lower.startsWith('**your answer:**') ||
+          lower.startsWith('your answer:') ||
+          lower.startsWith('selected answer:') ||
+          lower.startsWith('user answer:')) {
         final colonIdx = line.indexOf(':');
-        userAnswer = colonIdx != -1 ? line.substring(colonIdx + 1).trim() : line;
+        userAnswer = colonIdx != -1
+            ? line.substring(colonIdx + 1).replaceAll('*', '').trim()
+            : line.replaceAll('*', '').trim();
+        readingOptions = false;
+        continue;
+      }
+      if (lower.startsWith('**question:**') || lower.startsWith('question:')) {
+        final colonIdx = line.indexOf(':');
+        if (colonIdx != -1 && colonIdx < line.length - 1) {
+          final after =
+              line.substring(colonIdx + 1).replaceAll('*', '').trim();
+          if (after.isNotEmpty) {
+            promptLines.add(after);
+          }
+        }
         continue;
       }
 
       if (readingExplanation) {
         explanationLines.add(line);
-      } else if (optionRegex.hasMatch(line)) {
-        options.add(line);
-        readingOptions = true;
       } else if (readingOptions) {
-        // If it was already reading options and starts with a letter, add to options
-        if (RegExp('^[A-Da-d]').hasMatch(line)) {
+        if (optionPrefixRegex.hasMatch(line) ||
+            RegExp('^[A-Da-d]').hasMatch(line)) {
           options.add(line);
         } else {
           readingOptions = false;
           promptLines.add(line);
         }
+      } else if (letterPrefixRegex.hasMatch(line)) {
+        options.add(line);
+        readingOptions = true;
       } else {
         promptLines.add(line);
       }
     }
 
-    final promptText = promptLines.join('\n').trim();
+    final promptText = promptLines
+        .join('\n')
+        .replaceAll(RegExp(r'^\*\*Question:\*\*\s*', caseSensitive: false), '')
+        .trim();
     final explanationText = explanationLines.join('\n').trim();
 
     return Column(
@@ -1157,7 +1235,7 @@ class _ForumThreadStructuredBody extends StatelessWidget {
                   : colors.surfaceSecondary.withAlpha(120),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: colors.primary.withAlpha(25),
+                color: colors.primary.withAlpha(isDark ? 40 : 25),
               ),
             ),
             child: Column(
@@ -1166,9 +1244,12 @@ class _ForumThreadStructuredBody extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(25),
+                        color: colors.primary.withAlpha(isDark ? 40 : 25),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -1185,9 +1266,9 @@ class _ForumThreadStructuredBody extends StatelessWidget {
                 const SizedBox(height: 10),
                 _CleanFormattedText(
                   text: promptText,
-                  baseStyle: typography.body.regular.copyWith(
+                  baseStyle: typography.body.medium.copyWith(
                     color: colors.textPrimary,
-                    fontSize: 14.5,
+                    fontSize: 15,
                     height: 1.5,
                   ),
                 ),
@@ -1195,7 +1276,7 @@ class _ForumThreadStructuredBody extends StatelessWidget {
             ),
           ),
 
-        // Options List (if structured)
+        // Neutral Question Options List (Never styled as selected or checked)
         if (options.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(
@@ -1206,83 +1287,72 @@ class _ForumThreadStructuredBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...options.map((opt) {
+          ...options.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final opt = entry.value;
             var letter = '';
             var optText = opt;
-            final match = optionRegex.firstMatch(opt);
-            if (match != null) {
-              letter = match.group(1)?.replaceAll(RegExp(r'[\(\)\.\:\s]'), '') ?? '';
-              optText = match.group(2) ?? opt;
+
+            final letterMatch = letterPrefixRegex.firstMatch(opt);
+            if (letterMatch != null) {
+              letter = letterMatch
+                      .group(1)
+                      ?.replaceAll(RegExp(r'[\(\)\.\:\s]'), '') ??
+                  '';
+              optText = letterMatch.group(2) ?? opt;
+            } else if (opt.startsWith('•') ||
+                opt.startsWith('-') ||
+                opt.startsWith('*')) {
+              letter = String.fromCharCode(65 + idx);
+              optText = opt.replaceFirst(RegExp(r'^[\•\-\*]\s*'), '');
             }
-
-            final isCorrect = correctAnswer != null &&
-                (correctAnswer.toLowerCase().contains(optText.toLowerCase()) ||
-                    (letter.isNotEmpty && correctAnswer.toUpperCase().contains(letter.toUpperCase())));
-
-            final isUserSelected = userAnswer != null &&
-                (userAnswer.toLowerCase().contains(optText.toLowerCase()) ||
-                    (letter.isNotEmpty && userAnswer.toUpperCase().contains(letter.toUpperCase())));
 
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isCorrect
-                    ? colors.success.withAlpha(20)
-                    : isUserSelected
-                        ? colors.error.withAlpha(20)
-                        : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                color: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfaceSecondary.withAlpha(120),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isCorrect
-                      ? colors.success.withAlpha(100)
-                      : isUserSelected
-                          ? colors.error.withAlpha(100)
-                          : colors.primary.withAlpha(20),
+                  color: colors.primary.withAlpha(isDark ? 30 : 15),
                 ),
               ),
               child: Row(
                 children: [
                   if (letter.isNotEmpty) ...[
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 26,
+                      height: 26,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isCorrect
-                            ? colors.success
-                            : isUserSelected
-                                ? colors.error
-                                : colors.primary.withAlpha(30),
+                        color: colors.primary.withAlpha(isDark ? 35 : 20),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 60 : 35),
+                        ),
                       ),
                       child: Text(
                         letter.toUpperCase(),
                         style: typography.caption.bold.copyWith(
-                          color: (isCorrect || isUserSelected)
-                              ? colors.white
-                              : colors.primary,
-                          fontSize: 11,
+                          color: colors.primary,
+                          fontSize: 11.5,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                   ],
                   Expanded(
                     child: _CleanFormattedText(
                       text: optText,
                       baseStyle: typography.footnote.regular.copyWith(
                         color: colors.textPrimary,
-                        fontSize: 13,
+                        fontSize: 13.5,
+                        height: 1.4,
                       ),
                     ),
                   ),
-                  if (isCorrect)
-                    Icon(
-                      Icons.check_circle_rounded,
-                      size: 16,
-                      color: colors.success,
-                    ),
                 ],
               ),
             );
@@ -1295,16 +1365,20 @@ class _ForumThreadStructuredBody extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: colors.surfaceSecondary,
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colors.primary.withAlpha(20),
+                color: colors.primary.withAlpha(isDark ? 30 : 20),
               ),
             ),
             child: Row(
               children: [
                 if (correctAnswer != null) ...[
-                  Icon(Icons.check_circle_outline, size: 16, color: colors.success),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: colors.success,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: _CleanFormattedText(
@@ -1331,17 +1405,17 @@ class _ForumThreadStructuredBody extends StatelessWidget {
           ),
         ],
 
-        // Explanation Card
+        // Concept Explanation Card
         if (explanationText.isNotEmpty) ...[
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colors.primary.withAlpha(15),
+              color: colors.primary.withAlpha(isDark ? 25 : 15),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: colors.primary.withAlpha(50),
+                color: colors.primary.withAlpha(isDark ? 60 : 40),
               ),
             ),
             child: Column(
@@ -1369,7 +1443,7 @@ class _ForumThreadStructuredBody extends StatelessWidget {
                   text: explanationText,
                   baseStyle: typography.footnote.regular.copyWith(
                     color: colors.textPrimary,
-                    height: 1.45,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -1392,43 +1466,837 @@ class _CleanFormattedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Parse **bold** markdown tokens into rich text spans without showing raw asterisks
-    final spans = <InlineSpan>[];
-    final pattern = RegExp(r'\*\*(.*?)\*\*|__(.*?)__');
-    var lastIndex = 0;
-
-    for (final match in pattern.allMatches(text)) {
-      if (match.start > lastIndex) {
-        spans.add(
-          TextSpan(
-            text: text.substring(lastIndex, match.start),
-            style: baseStyle,
-          ),
-        );
-      }
-      final boldContent = match.group(1) ?? match.group(2) ?? '';
-      spans.add(
-        TextSpan(
-          text: boldContent,
-          style: baseStyle.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: baseStyle,
-        ),
-      );
-    }
-
-    return Text.rich(
-      TextSpan(children: spans),
+    return LatexRichViewer(
+      text: text,
+      style: baseStyle,
     );
   }
 }
+
+/// Bidirectional vote capsule for post or replies
+class _ForumVoteCapsule extends StatelessWidget {
+  const _ForumVoteCapsule({
+    required this.netVotes,
+    required this.userVote,
+    required this.onUpvote,
+    required this.onDownvote,
+  });
+
+  final int netVotes;
+  final int userVote;
+  final VoidCallback onUpvote;
+  final VoidCallback onDownvote;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final isUpvoted = userVote == 1;
+    final isDownvoted = userVote == -1;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: (isUpvoted || isDownvoted)
+            ? (isUpvoted
+                ? colors.primary.withAlpha(isDark ? 35 : 20)
+                : colors.error.withAlpha(isDark ? 35 : 20))
+            : (isDark
+                ? colors.surfaceSecondary
+                : colors.surfaceSecondary.withAlpha(120)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (isUpvoted || isDownvoted)
+              ? (isUpvoted
+                  ? colors.primary.withAlpha(120)
+                  : colors.error.withAlpha(120))
+              : colors.primary.withAlpha(isDark ? 30 : 15),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ShrinkableButton(
+            onTap: onUpvote,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 3,
+              ),
+              child: Icon(
+                Icons.keyboard_arrow_up_rounded,
+                size: 20,
+                color: isUpvoted ? colors.primary : colors.textSecondary,
+              ),
+            ),
+          ),
+          Text(
+            '$netVotes',
+            style: typography.caption.bold.copyWith(
+              color: isUpvoted
+                  ? colors.primary
+                  : isDownvoted
+                      ? colors.error
+                      : colors.textPrimary,
+              fontSize: 12.5,
+            ),
+          ),
+          ShrinkableButton(
+            onTap: onDownvote,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 3,
+              ),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20,
+                color: isDownvoted ? colors.error : colors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stack Overflow style top-level answer card with voting column & nested sub-replies
+class _ForumAnswerCard extends HookWidget {
+  const _ForumAnswerCard({
+    required this.reply,
+    required this.children,
+    required this.nestedRepliesMap,
+    required this.isQuestion,
+    required this.isAuthor,
+    required this.hasVerifiedSolution,
+    required this.onVote,
+    required this.onChildVote,
+    required this.onReplyTap,
+    required this.onChildReplyTap,
+    required this.onVerifySolution,
+  });
+
+  final ForumReplyEntity reply;
+  final List<ForumReplyEntity> children;
+  final Map<String, List<ForumReplyEntity>> nestedRepliesMap;
+  final bool isQuestion;
+  final bool isAuthor;
+  final bool hasVerifiedSolution;
+  final void Function(int direction) onVote;
+  final void Function(ForumReplyEntity child, int direction) onChildVote;
+  final VoidCallback onReplyTap;
+  final void Function(ForumReplyEntity child) onChildReplyTap;
+  final VoidCallback onVerifySolution;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    final isExpanded = useState<bool>(true);
+    final isUpvoted = reply.userVote == 1;
+    final isDownvoted = reply.userVote == -1;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfaceSecondary
+            : colors.surfaceSecondary.withAlpha(100),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: reply.isVerifiedSolution
+              ? colors.recallEasy
+              : colors.primary.withAlpha(isDark ? 30 : 15),
+          width: reply.isVerifiedSolution ? 1.5 : 1.0,
+        ),
+        boxShadow: reply.isVerifiedSolution
+            ? [
+                BoxShadow(
+                  color: colors.recallEasy.withAlpha(isDark ? 50 : 25),
+                  blurRadius: 8,
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left Column: Stack Overflow Voting gutter & Accepted solution checkmark
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ShrinkableButton(
+                      onTap: () => onVote(1),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isUpvoted
+                              ? colors.primary.withAlpha(30)
+                              : Colors.transparent,
+                        ),
+                        child: Icon(
+                          Icons.arrow_drop_up_rounded,
+                          size: 32,
+                          color: isUpvoted
+                              ? colors.primary
+                              : colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${reply.netVotes}',
+                      style: typography.body.bold.copyWith(
+                        color: isUpvoted
+                            ? colors.primary
+                            : isDownvoted
+                                ? colors.error
+                                : colors.textPrimary,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    ShrinkableButton(
+                      onTap: () => onVote(-1),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDownvoted
+                              ? colors.error.withAlpha(30)
+                              : Colors.transparent,
+                        ),
+                        child: Icon(
+                          Icons.arrow_drop_down_rounded,
+                          size: 32,
+                          color: isDownvoted
+                              ? colors.error
+                              : colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    if (reply.isVerifiedSolution) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.recallEasy.withAlpha(30),
+                        ),
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 20,
+                          color: colors.recallEasy,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(width: 12),
+
+                // Right Column: Answer Body, Stack Overflow Author signature card, Actions
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Verified Solution Pill
+                      if (reply.isVerifiedSolution)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: colors.recallEasy),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 12,
+                                color: colors.recallEasy,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Verified Solution',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.recallEasy,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Answer Content
+                      _CleanFormattedText(
+                        text: reply.content,
+                        baseStyle: typography.body.regular.copyWith(
+                          color: colors.textPrimary,
+                          height: 1.5,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (reply.latexContent != null &&
+                          reply.latexContent!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          reply.latexContent!,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+
+                      // Author & Action Bar Row (Stack Overflow layout)
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          // Left actions: Reply + Comments toggle + Mark solution
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              ShrinkableButton(
+                                onTap: onReplyTap,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(isDark ? 25 : 15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.reply_rounded,
+                                        size: 14,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Reply',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (children.isNotEmpty)
+                                ShrinkableButton(
+                                  onTap: () {
+                                    unawaited(HapticFeedback.selectionClick());
+                                    isExpanded.value = !isExpanded.value;
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfacePrimary.withAlpha(isDark ? 120 : 80),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isExpanded.value
+                                              ? Icons.keyboard_arrow_up_rounded
+                                              : Icons.keyboard_arrow_down_rounded,
+                                          size: 14,
+                                          color: colors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          isExpanded.value
+                                              ? 'Hide (${children.length})'
+                                              : '💬 ${children.length}',
+                                          style: typography.caption.medium.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (isQuestion &&
+                                  !reply.isVerifiedSolution &&
+                                  (!hasVerifiedSolution || isAuthor))
+                                ShrinkableButton(
+                                  onTap: onVerifySolution,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.warning
+                                          .withAlpha(isDark ? 40 : 25),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: colors.warning.withAlpha(90),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.verified_outlined,
+                                          size: 12,
+                                          color: colors.warning,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Mark Solution (+100 XP)',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.warning,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          // Right author card
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfacePrimary.withAlpha(140)
+                                  : colors.surfaceSecondary.withAlpha(120),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor:
+                                      reply.authorName.contains('Syllabot')
+                                          ? colors.syllabotAccent.withAlpha(50)
+                                          : colors.primary.withAlpha(40),
+                                  child: Text(
+                                    reply.authorName.contains('Syllabot')
+                                        ? '🤖'
+                                        : (reply.authorName.isNotEmpty
+                                            ? reply.authorName[0].toUpperCase()
+                                            : '?'),
+                                    style: TextStyle(
+                                      fontSize: reply.authorName.contains('Syllabot')
+                                          ? 10
+                                          : 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      reply.authorName,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      'answered ${_formatTime(reply.createdAt, l10n)}',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Sleek Stack Overflow Nested Comments Section
+          if (children.isNotEmpty && isExpanded.value) ...[
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: colors.primary.withAlpha(isDark ? 25 : 15),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final child = entry.value;
+                  final grandChildren = nestedRepliesMap[child.id] ?? const [];
+                  return Column(
+                    children: [
+                      if (idx > 0)
+                        Divider(
+                          height: 12,
+                          thickness: 0.5,
+                          color: colors.primary.withAlpha(isDark ? 20 : 10),
+                        ),
+                      _ForumNestedReplyItem(
+                        childReply: child,
+                        children: grandChildren,
+                        onVote: (direction) => onChildVote(child, direction),
+                        onReplyTap: () => onChildReplyTap(child),
+                        onChildVote: onChildVote,
+                        onChildReplyTap: onChildReplyTap,
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dt, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return l10n.justNow;
+    if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+/// Stack Overflow style comment item (Supports Depth 1 and Depth 2 with depth limit of 2)
+class _ForumNestedReplyItem extends HookWidget {
+  const _ForumNestedReplyItem({
+    required this.childReply,
+    required this.onVote,
+    this.children = const [],
+    this.depth = 1,
+    this.onReplyTap,
+    this.onChildVote,
+    this.onChildReplyTap,
+  });
+
+  final ForumReplyEntity childReply;
+  final List<ForumReplyEntity> children;
+  final int depth;
+  final void Function(int direction) onVote;
+  final VoidCallback? onReplyTap;
+  final void Function(ForumReplyEntity child, int direction)? onChildVote;
+  final void Function(ForumReplyEntity child)? onChildReplyTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    final isExpanded = useState<bool>(true);
+    final isUpvoted = childReply.userVote == 1;
+    final isDownvoted = childReply.userVote == -1;
+
+    // Hard depth limit of 2: Depth 2 comments CANNOT have a reply button
+    final canReply = depth < 2 && onReplyTap != null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Avatar + Author name + timestamp + sleek compact vote pill
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 9,
+                backgroundColor: childReply.authorName.contains('Syllabot')
+                    ? colors.syllabotAccent.withAlpha(50)
+                    : colors.primary.withAlpha(35),
+                child: Text(
+                  childReply.authorName.contains('Syllabot')
+                      ? '🤖'
+                      : (childReply.authorName.isNotEmpty
+                          ? childReply.authorName[0].toUpperCase()
+                          : '?'),
+                  style: TextStyle(
+                    fontSize: childReply.authorName.contains('Syllabot') ? 9 : 8,
+                    fontWeight: FontWeight.bold,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  childReply.authorName,
+                  style: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '• ${_formatTime(childReply.createdAt, l10n)}',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 9.5,
+                ),
+              ),
+              const Spacer(),
+              // Minimal sleek vote pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: (isUpvoted || isDownvoted)
+                      ? (isUpvoted
+                          ? colors.primary.withAlpha(isDark ? 35 : 20)
+                          : colors.error.withAlpha(isDark ? 35 : 20))
+                      : colors.surfacePrimary.withAlpha(isDark ? 100 : 60),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ShrinkableButton(
+                      onTap: () => onVote(1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          size: 15,
+                          color: isUpvoted ? colors.primary : colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${childReply.netVotes}',
+                      style: typography.caption.bold.copyWith(
+                        color: isUpvoted
+                            ? colors.primary
+                            : isDownvoted
+                                ? colors.error
+                                : colors.textPrimary,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                    ShrinkableButton(
+                      onTap: () => onVote(-1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 15,
+                          color: isDownvoted ? colors.error : colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // Comment body
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CleanFormattedText(
+                  text: childReply.content,
+                  baseStyle: typography.footnote.regular.copyWith(
+                    color: colors.textPrimary,
+                    height: 1.4,
+                    fontSize: 12.5,
+                  ),
+                ),
+                if (childReply.latexContent != null &&
+                    childReply.latexContent!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    childReply.latexContent!,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+
+                // Action buttons: Reply + Sub-comments toggle
+                Row(
+                  children: [
+                    if (canReply)
+                      ShrinkableButton(
+                        onTap: onReplyTap,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.reply_rounded,
+                              size: 13,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Reply',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (canReply && children.isNotEmpty)
+                      const SizedBox(width: 12),
+                    if (children.isNotEmpty)
+                      ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          isExpanded.value = !isExpanded.value;
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isExpanded.value
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 13,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              isExpanded.value
+                                  ? 'Hide'
+                                  : '${children.length} ${children.length == 1 ? 'reply' : 'replies'}',
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Grandchildren comments list (Depth 2) with elegant left thread guide line
+          if (children.isNotEmpty && isExpanded.value && depth < 2) ...[
+            const SizedBox(height: 6),
+            Container(
+              margin: const EdgeInsets.only(left: 14),
+              padding: const EdgeInsets.only(left: 10),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: colors.primary.withAlpha(isDark ? 45 : 25),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final grandChild = entry.value;
+                  return Column(
+                    children: [
+                      if (idx > 0)
+                        Divider(
+                          height: 10,
+                          thickness: 0.5,
+                          color: colors.primary.withAlpha(isDark ? 20 : 10),
+                        ),
+                      _ForumNestedReplyItem(
+                        childReply: grandChild,
+                        depth: 2,
+                        onVote: (direction) {
+                          if (onChildVote != null) {
+                            onChildVote!(grandChild, direction);
+                          } else {
+                            onVote(direction);
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dt, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return l10n.justNow;
+    if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}
+
+

@@ -8,7 +8,17 @@ class FetchForumPostsUseCase {
 
   final CommunityRepository _repository;
 
-  Future<Either<Failure, List<ForumPostEntity>>> call({String? track}) {
-    return _repository.fetchForumPosts(track: track);
+  Future<Either<Failure, List<ForumPostEntity>>> call({
+    String? track,
+    bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
+  }) {
+    return _repository.fetchForumPosts(
+      track: track,
+      questionsOnly: questionsOnly,
+      limit: limit,
+      offset: offset,
+    );
   }
 }

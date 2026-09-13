@@ -70,7 +70,21 @@ class MockCommunityRepository implements CommunityRepository {
     required String postId,
     required String content,
     String? latexContent,
+    String? parentReplyId,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, bool>> voteForumPost({
+    required String postId,
+    required int voteDirection,
+  }) async => const Right(true);
+
+  @override
+  Future<Either<Failure, bool>> voteForumReply({
+    required String replyId,
+    required String postId,
+    required int voteDirection,
+  }) async => const Right(true);
 
   @override
   Future<Either<Failure, bool>> verifyForumReply({

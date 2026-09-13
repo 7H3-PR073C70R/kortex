@@ -26,6 +26,7 @@ void main() {
     testWidgets('renders App widget', (tester) async {
       await tester.pumpWidget(const App());
       expect(find.byType(App), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
     });
   });
 }

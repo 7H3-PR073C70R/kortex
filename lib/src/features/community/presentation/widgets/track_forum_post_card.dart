@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class TrackForumPostCard extends StatelessWidget {
@@ -8,12 +12,14 @@ class TrackForumPostCard extends StatelessWidget {
     required this.post,
     required this.onTap,
     this.onUpvoteTap,
+    this.onDownvoteTap,
     super.key,
   });
 
   final ForumPostEntity post;
   final VoidCallback onTap;
   final VoidCallback? onUpvoteTap;
+  final VoidCallback? onDownvoteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +27,12 @@ class TrackForumPostCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final isUpvoted = post.userVote == 1;
+    final isDownvoted = post.userVote == -1;
+
     final semanticsLabel =
         'Forum Post: ${post.title}, Track: ${post.track}, '
-        'By ${post.authorName}';
+        'By ${post.authorName}, Score: ${post.netVotes}';
 
     return Semantics(
       label: semanticsLabel,
@@ -137,13 +146,32 @@ class TrackForumPostCard extends StatelessWidget {
               const SizedBox(height: 6),
 
               // Content snippet
-              Text(
-                post.content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: typography.footnote.regular.copyWith(
-                  color: colors.textSecondary,
-                ),
+              Builder(
+                builder: (context) {
+                  var snippet = post.content;
+                  if (snippet.contains('**Question:**')) {
+                    final parts = snippet.split('**Question:**');
+                    if (parts.length > 1) snippet = parts[1];
+                  } else if (snippet.startsWith('Question:')) {
+                    snippet = snippet.substring(9);
+                  }
+                  if (snippet.contains('**Options:**')) {
+                    snippet = snippet.split('**Options:**').first;
+                  } else if (snippet.contains('Options:')) {
+                    snippet = snippet.split('Options:').first;
+                  }
+                  snippet = snippet.trim();
+                  if (snippet.isEmpty) snippet = post.content;
+
+                  return LatexRichViewer(
+                    text: snippet,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  );
+                },
               ),
 
               // LaTeX Formula Preview if present
@@ -170,32 +198,95 @@ class TrackForumPostCard extends StatelessWidget {
               ],
               const SizedBox(height: 14),
 
-              // Bottom Stats: Upvotes and Replies count
+              // Bottom Stats: Bidirectional Upvote/Downvote Pill and Replies count
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      ShrinkableButton(
-                        onTap: onUpvoteTap ?? () {},
+                      // Stack Overflow style bidirectional vote capsule
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isUpvoted || isDownvoted)
+                              ? (isUpvoted
+                                  ? colors.primary.withAlpha(isDark ? 35 : 20)
+                                  : colors.error.withAlpha(isDark ? 35 : 20))
+                              : (isDark
+                                  ? colors.surfacePrimary
+                                  : colors.surfaceSecondary.withAlpha(150)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: (isUpvoted || isDownvoted)
+                                ? (isUpvoted
+                                    ? colors.primary.withAlpha(120)
+                                    : colors.error.withAlpha(120))
+                                : colors.primary.withAlpha(isDark ? 30 : 15),
+                          ),
+                        ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 18,
-                              color: colors.primary,
+                            ShrinkableButton(
+                              onTap: onUpvoteTap == null
+                                  ? null
+                                  : () {
+                                      unawaited(HapticFeedback.selectionClick());
+                                      onUpvoteTap!();
+                                    },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 4,
+                                ),
+                                child: Icon(
+                                  Icons.keyboard_arrow_up_rounded,
+                                  size: 20,
+                                  color: isUpvoted
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 4),
                             Text(
-                              '${post.upvotes}',
+                              '${post.netVotes}',
                               style: typography.caption.bold.copyWith(
-                                color: colors.primary,
+                                color: isUpvoted
+                                    ? colors.primary
+                                    : isDownvoted
+                                        ? colors.error
+                                        : colors.textPrimary,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            ShrinkableButton(
+                              onTap: onDownvoteTap == null
+                                  ? null
+                                  : () {
+                                      unawaited(HapticFeedback.selectionClick());
+                                      onDownvoteTap!();
+                                    },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 4,
+                                ),
+                                child: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 20,
+                                  color: isDownvoted
+                                      ? colors.error
+                                      : colors.textSecondary,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 16),
                       Row(
                         children: [
                           Icon(
@@ -206,9 +297,7 @@ class TrackForumPostCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Builder(
                             builder: (context) {
-                              final count = post.replies.length > post.repliesCount
-                                  ? post.replies.length
-                                  : post.repliesCount;
+                              final count = post.topLevelRepliesCount;
                               return Text(
                                 count == 1 ? '1 reply' : '$count replies',
                                 style: typography.caption.medium.copyWith(

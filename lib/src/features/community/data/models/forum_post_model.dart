@@ -14,6 +14,8 @@ class ForumPostModel {
     this.isVerifiedSolution = false,
     this.syllabusTag = 'General',
     this.upvotes = 0,
+    this.downvotes = 0,
+    this.userVote = 0,
     this.repliesCount = 0,
     required this.createdAt,
     this.replies = const [],
@@ -31,21 +33,30 @@ class ForumPostModel {
   final bool isVerifiedSolution;
   final String syllabusTag;
   final int upvotes;
+  final int downvotes;
+  final int userVote;
   final int repliesCount;
   final DateTime createdAt;
   final List<ForumReplyModel> replies;
+
+  int get netVotes => upvotes - downvotes;
+  int get topLevelRepliesCount =>
+      replies.isNotEmpty
+          ? replies.where((r) => !r.isNested).length
+          : repliesCount;
 
   factory ForumPostModel.fromJson(Map<String, dynamic> json) {
     final rawReplies = json['forum_replies'] as List<dynamic>? ?? [];
     final parsedReplies = rawReplies
         .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
         .toList();
+    final topLevelCount = parsedReplies.where((r) => !r.isNested).length;
     final explicitCount = (json['replies_count'] as num?)?.toInt() ??
         (json['reply_count'] as num?)?.toInt() ??
         (json['comments_count'] as num?)?.toInt();
     final repliesCount = explicitCount != null && explicitCount > 0
         ? explicitCount
-        : parsedReplies.length;
+        : topLevelCount;
 
     return ForumPostModel(
       id: json['id'] as String,
@@ -60,6 +71,10 @@ class ForumPostModel {
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
       syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
+      downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
+      userVote: (json['user_vote'] as num?)?.toInt() ??
+          (json['userVote'] as num?)?.toInt() ??
+          0,
       repliesCount: repliesCount,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
@@ -82,6 +97,8 @@ class ForumPostModel {
       'is_verified_solution': isVerifiedSolution,
       'syllabus_tag': syllabusTag,
       'upvotes': upvotes,
+      'downvotes': downvotes,
+      'user_vote': userVote,
       'replies_count': repliesCount,
       'created_at': createdAt.toIso8601String(),
       'forum_replies': replies.map((r) => r.toJson()).toList(),
@@ -102,6 +119,8 @@ class ForumPostModel {
       isVerifiedSolution: isVerifiedSolution,
       syllabusTag: syllabusTag,
       upvotes: upvotes,
+      downvotes: downvotes,
+      userVote: userVote,
       repliesCount: repliesCount,
       createdAt: createdAt,
       replies: replies.map((r) => r.toEntity()).toList(),
@@ -115,16 +134,20 @@ class ForumReplyModel {
     required this.postId,
     required this.authorId,
     required this.authorName,
+    this.parentReplyId,
     this.authorAvatar,
     required this.content,
     this.latexContent,
     this.isVerifiedSolution = false,
     this.upvotes = 0,
+    this.downvotes = 0,
+    this.userVote = 0,
     required this.createdAt,
   });
 
   final String id;
   final String postId;
+  final String? parentReplyId;
   final String authorId;
   final String authorName;
   final String? authorAvatar;
@@ -132,12 +155,19 @@ class ForumReplyModel {
   final String? latexContent;
   final bool isVerifiedSolution;
   final int upvotes;
+  final int downvotes;
+  final int userVote;
   final DateTime createdAt;
+
+  int get netVotes => upvotes - downvotes;
+  bool get isNested => parentReplyId != null && parentReplyId!.isNotEmpty;
 
   factory ForumReplyModel.fromJson(Map<String, dynamic> json) {
     return ForumReplyModel(
       id: json['id'] as String,
       postId: json['post_id'] as String? ?? '',
+      parentReplyId: json['parent_reply_id'] as String? ??
+          json['parentReplyId'] as String?,
       authorId: json['author_id'] as String? ?? '',
       authorName: json['author_name'] as String? ?? 'Peer',
       authorAvatar: json['author_avatar'] as String?,
@@ -145,6 +175,10 @@ class ForumReplyModel {
       latexContent: json['latex_content'] as String?,
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
+      downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
+      userVote: (json['user_vote'] as num?)?.toInt() ??
+          (json['userVote'] as num?)?.toInt() ??
+          0,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -155,6 +189,7 @@ class ForumReplyModel {
     return {
       'id': id,
       'post_id': postId,
+      'parent_reply_id': parentReplyId,
       'author_id': authorId,
       'author_name': authorName,
       'author_avatar': authorAvatar,
@@ -162,6 +197,8 @@ class ForumReplyModel {
       'latex_content': latexContent,
       'is_verified_solution': isVerifiedSolution,
       'upvotes': upvotes,
+      'downvotes': downvotes,
+      'user_vote': userVote,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -170,6 +207,7 @@ class ForumReplyModel {
     return ForumReplyEntity(
       id: id,
       postId: postId,
+      parentReplyId: parentReplyId,
       authorId: authorId,
       authorName: authorName,
       authorAvatar: authorAvatar,
@@ -177,6 +215,8 @@ class ForumReplyModel {
       latexContent: latexContent,
       isVerifiedSolution: isVerifiedSolution,
       upvotes: upvotes,
+      downvotes: downvotes,
+      userVote: userVote,
       createdAt: createdAt,
     );
   }

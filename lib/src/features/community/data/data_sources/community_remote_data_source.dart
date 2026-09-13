@@ -24,6 +24,8 @@ abstract class CommunityRemoteDataSource {
   Future<List<ForumPostModel>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
   });
 
   Future<ForumPostModel> createForumPost({
@@ -40,6 +42,18 @@ abstract class CommunityRemoteDataSource {
     required String postId,
     required String content,
     String? latexContent,
+    String? parentReplyId,
+  });
+
+  Future<bool> voteForumPost({
+    required String postId,
+    required int voteDirection,
+  });
+
+  Future<bool> voteForumReply({
+    required String postId,
+    required String replyId,
+    required int voteDirection,
   });
 
   Future<bool> verifyForumReply({

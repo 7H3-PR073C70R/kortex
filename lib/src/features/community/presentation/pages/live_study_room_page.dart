@@ -345,6 +345,8 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               TextField(
                 controller: controller,
                 autofocus: true,
+                maxLines: 5,
+                minLines: 1,
                 style: typography.body.regular.copyWith(
                   color: colors.textPrimary,
                 ),
@@ -771,239 +773,245 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 typography: typography,
                 isDark: isDark,
                 l10n: l10n,
-                onEditGoal: () => _showGoalEditDialog(context, state.activeGoal),
+                onEditGoal: () =>
+                    _showGoalEditDialog(context, state.activeGoal),
                 onOpenDeckPicker: () => InRoomDeckPickerModal.show(context),
                 onLaunchSprint: () => _showStartCoOpSprintDialog(context),
                 onLeaveRoom: () => _handleExit(context),
               ),
               appBar: AppBar(
-              backgroundColor: colors.transparent,
-              elevation: 0,
-              leading: Builder(
-                builder: (drawerCtx) => IconButton(
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    color: colors.textPrimary,
-                    size: 22,
-                  ),
-                  tooltip: 'Room Tools & Audio',
-                  onPressed: () => Scaffold.of(drawerCtx).openDrawer(),
-                ),
-              ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    state.room.title,
-                    style: typography.headline.bold.copyWith(
+                backgroundColor: colors.transparent,
+                elevation: 0,
+                leading: Builder(
+                  builder: (drawerCtx) => IconButton(
+                    icon: Icon(
+                      Icons.tune_rounded,
                       color: colors.textPrimary,
+                      size: 22,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    tooltip: 'Room Tools & Audio',
+                    onPressed: () => Scaffold.of(drawerCtx).openDrawer(),
                   ),
-                  Text(
-                    state.room.subject,
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                _LivePulseBadge(colors: colors),
-                const SizedBox(width: 6),
-                _PomodoroMiniPill(
-                  state: state,
-                  colors: colors,
-                  typography: typography,
                 ),
-                const SizedBox(width: 4),
-                // Chat trigger with unread badge
-                Stack(
-                  clipBehavior: Clip.none,
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.forum_rounded,
+                    Text(
+                      state.room.title,
+                      style: typography.headline.bold.copyWith(
                         color: colors.textPrimary,
-                        size: 21,
                       ),
-                      tooltip: 'Room Discussion',
-                      onPressed: () => RoomChatDrawer.show(
-                        context,
-                        currentUserId: widget.currentUserId,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      state.room.subject,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
                       ),
                     ),
-                    if (state.unreadChatCount > 0)
-                      Positioned(
-                        right: 6,
-                        top: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: colors.error,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${state.unreadChatCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
+                  ],
+                ),
+                actions: [
+                  _LivePulseBadge(colors: colors),
+                  const SizedBox(width: 6),
+                  _PomodoroMiniPill(
+                    state: state,
+                    colors: colors,
+                    typography: typography,
+                  ),
+                  const SizedBox(width: 4),
+                  // Chat trigger with unread badge
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.forum_rounded,
+                          color: colors.textPrimary,
+                          size: 21,
+                        ),
+                        tooltip: 'Room Discussion',
+                        onPressed: () => RoomChatDrawer.show(
+                          context,
+                          currentUserId: widget.currentUserId,
+                        ),
+                      ),
+                      if (state.unreadChatCount > 0)
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${state.unreadChatCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.logout_rounded,
+                      color: colors.error.withAlpha(220),
+                      size: 20,
+                    ),
+                    tooltip: 'Leave Room',
+                    onPressed: () => _handleExit(context),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    if (state.isCoOpSprintActive) ...[
+                      const SizedBox(height: 4),
+                      _CoOpSprintBanner(
+                        state: state,
+                        isDark: isDark,
                       ),
-                  ],
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.logout_rounded,
-                    color: colors.error.withAlpha(220),
-                    size: 20,
-                  ),
-                  tooltip: 'Leave Room',
-                  onPressed: () => _handleExit(context),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-            body: SafeArea(
-              child: Column(
-                children: [
-                  if (state.isCoOpSprintActive) ...[
+                    ],
+                    if (state.activeSpeakerIds.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      _ActiveSpeakersBanner(
+                        speakerIds: state.activeSpeakerIds,
+                        participants: state.ephemeralParticipants,
+                        isDark: isDark,
+                      ),
+                    ],
                     const SizedBox(height: 4),
-                    _CoOpSprintBanner(
-                      state: state,
+
+                    // Compact In-Room View Mode Switcher
+                    _InRoomModeSwitcherBar(
+                      activeMode: state.activeViewMode,
+                      onSelectMode: (mode) =>
+                          context.read<LiveRoomCubit>().switchViewMode(mode),
                       isDark: isDark,
+                      cardsReviewed: state.cardsReviewedInSprint,
                     ),
-                  ],
-                  if (state.activeSpeakerIds.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    _ActiveSpeakersBanner(
-                      speakerIds: state.activeSpeakerIds,
-                      participants: state.ephemeralParticipants,
-                      isDark: isDark,
-                    ),
-                  ],
-                  const SizedBox(height: 4),
 
-                  // Compact In-Room View Mode Switcher
-                  _InRoomModeSwitcherBar(
-                    activeMode: state.activeViewMode,
-                    onSelectMode: (mode) =>
-                        context.read<LiveRoomCubit>().switchViewMode(mode),
-                    isDark: isDark,
-                    cardsReviewed: state.cardsReviewedInSprint,
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Main maximized workspace
-                  Expanded(
-                    child: state.activeViewMode == RoomViewMode.deckStudy
-                        ? InRoomDeckStudyWorkspace(roomState: state)
-                        : state.activeViewMode == RoomViewMode.whiteboard
-                        ? WhiteboardCanvasWidget(
-                            strokes: state.whiteboardStrokes,
-                            canUndo: state.whiteboardStrokes.any(
-                              (s) => s.userId == widget.currentUserId,
-                            ),
-                            canRedo: state.whiteboardRedoStack.isNotEmpty,
-                            isDark: isDark,
-                            currentUserId: widget.currentUserId,
-                            currentUserName: widget.currentUserName,
-                            onStrokeDrawn: (stroke) {
-                              context.read<LiveRoomCubit>().addWhiteboardStroke(
-                                stroke,
-                              );
-                            },
-                            onUndo: () => context
-                                .read<LiveRoomCubit>()
-                                .undoWhiteboardStroke(),
-                            onRedo: () => context
-                                .read<LiveRoomCubit>()
-                                .redoWhiteboardStroke(),
-                            onClear: () =>
-                                context.read<LiveRoomCubit>().clearWhiteboard(),
-                          )
-                        : Column(
-                            children: [
-                              // Silent Focus Cockpit: Body-doubling flow state
-                              Expanded(
-                                flex: 5,
-                                child: _FocusCockpitSection(
-                                  participants: state.ephemeralParticipants,
-                                  activeSpeakerIds: state.activeSpeakerIds,
-                                  fallbackNames: hasEphemeral
-                                      ? const []
-                                      : state.participants,
-                                  colors: colors,
-                                  typography: typography,
-                                  isDark: isDark,
-                                  subject: state.room.subject,
-                                  participantCount: hasEphemeral
-                                      ? state.ephemeralParticipants.length
-                                      : state.participants.length,
-                                  activeGoal: state.activeGoal,
-                                  isVoicePodEnabled: state.isVoicePodEnabled,
-                                  l10n: l10n,
-                                ),
+                    // Main maximized workspace
+                    Expanded(
+                      child: state.activeViewMode == RoomViewMode.deckStudy
+                          ? InRoomDeckStudyWorkspace(roomState: state)
+                          : state.activeViewMode == RoomViewMode.whiteboard
+                          ? WhiteboardCanvasWidget(
+                              strokes: state.whiteboardStrokes,
+                              canUndo: state.whiteboardStrokes.any(
+                                (s) => s.userId == widget.currentUserId,
                               ),
-
-                              const SizedBox(height: 2),
-
-                              // Audience / Other Scholars section
-                              if (audience.isNotEmpty ||
-                                  (!hasEphemeral &&
-                                      state.participants.length > 1))
+                              canRedo: state.whiteboardRedoStack.isNotEmpty,
+                              isDark: isDark,
+                              currentUserId: widget.currentUserId,
+                              currentUserName: widget.currentUserName,
+                              onStrokeDrawn: (stroke) {
+                                context
+                                    .read<LiveRoomCubit>()
+                                    .addWhiteboardStroke(
+                                      stroke,
+                                    );
+                              },
+                              onUndo: () => context
+                                  .read<LiveRoomCubit>()
+                                  .undoWhiteboardStroke(),
+                              onRedo: () => context
+                                  .read<LiveRoomCubit>()
+                                  .redoWhiteboardStroke(),
+                              onClear: () => context
+                                  .read<LiveRoomCubit>()
+                                  .clearWhiteboard(),
+                            )
+                          : Column(
+                              children: [
+                                // Silent Focus Cockpit: Body-doubling flow state
                                 Expanded(
-                                  flex: 3,
-                                  child: _AudienceSection(
-                                    audience: audience,
+                                  flex: 5,
+                                  child: _FocusCockpitSection(
+                                    participants: state.ephemeralParticipants,
+                                    activeSpeakerIds: state.activeSpeakerIds,
                                     fallbackNames: hasEphemeral
                                         ? const []
-                                        : state.participants.skip(1).toList(),
+                                        : state.participants,
                                     colors: colors,
                                     typography: typography,
                                     isDark: isDark,
+                                    subject: state.room.subject,
+                                    participantCount: hasEphemeral
+                                        ? state.ephemeralParticipants.length
+                                        : state.participants.length,
+                                    activeGoal: state.activeGoal,
+                                    isVoicePodEnabled: state.isVoicePodEnabled,
                                     l10n: l10n,
                                   ),
                                 ),
-                            ],
-                          ),
-                  ),
 
-                  // Sleek Bottom Control & Reaction Bar
-                  _MinimalInRoomBottomBar(
-                    state: state,
-                    currentUserId: widget.currentUserId,
-                    colors: colors,
-                    typography: typography,
-                    isDark: isDark,
-                    onReact: (emoji) {
-                      _lastReaction = emoji;
-                      _reactionController.spawn(emoji);
-                      context.read<LiveRoomCubit>().triggerMicroReaction(emoji);
-                    },
-                    onOpenDrawer: () {
-                      _scaffoldKey.currentState?.openDrawer();
-                    },
-                    onOpenDeckPicker: () {
-                      unawaited(InRoomDeckPickerModal.show(context));
-                    },
-                  ),
-                ],
+                                const SizedBox(height: 2),
+
+                                // Audience / Other Scholars section
+                                if (audience.isNotEmpty ||
+                                    (!hasEphemeral &&
+                                        state.participants.length > 1))
+                                  Expanded(
+                                    flex: 3,
+                                    child: _AudienceSection(
+                                      audience: audience,
+                                      fallbackNames: hasEphemeral
+                                          ? const []
+                                          : state.participants.skip(1).toList(),
+                                      colors: colors,
+                                      typography: typography,
+                                      isDark: isDark,
+                                      l10n: l10n,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
+
+                    // Sleek Bottom Control & Reaction Bar
+                    _MinimalInRoomBottomBar(
+                      state: state,
+                      currentUserId: widget.currentUserId,
+                      colors: colors,
+                      typography: typography,
+                      isDark: isDark,
+                      onReact: (emoji) {
+                        _lastReaction = emoji;
+                        _reactionController.spawn(emoji);
+                        context.read<LiveRoomCubit>().triggerMicroReaction(
+                          emoji,
+                        );
+                      },
+                      onOpenDrawer: () {
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                      onOpenDeckPicker: () {
+                        unawaited(InRoomDeckPickerModal.show(context));
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
       },
     );
   }
@@ -1974,8 +1982,6 @@ class _AudienceSection extends StatelessWidget {
   }
 }
 
-
-
 // ── Active Speakers Banner ───────────────────────────────────────────────────
 
 class _ActiveSpeakersBanner extends StatelessWidget {
@@ -2445,7 +2451,10 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
               ShrinkableButton(
                 onTap: onOpenDrawer,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.surfaceTertiary,
                     borderRadius: BorderRadius.circular(12),
@@ -2475,7 +2484,10 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
               ShrinkableButton(
                 onTap: onOpenDeckPicker,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(isDark ? 40 : 20),
                     borderRadius: BorderRadius.circular(12),
@@ -2986,7 +2998,8 @@ class _RoomControlDrawer extends StatelessWidget {
                                             ? Icons.mic_off_rounded
                                             : Icons.mic_rounded),
                                   size: 16,
-                                  color: state.isVoicePodEnabled && !state.isMuted
+                                  color:
+                                      state.isVoicePodEnabled && !state.isMuted
                                       ? colors.recallEasy
                                       : colors.textSecondary,
                                 ),
@@ -2998,9 +3011,9 @@ class _RoomControlDrawer extends StatelessWidget {
                                   style: typography.caption.bold.copyWith(
                                     color:
                                         state.isVoicePodEnabled &&
-                                                !state.isMuted
-                                            ? colors.recallEasy
-                                            : colors.textPrimary,
+                                            !state.isMuted
+                                        ? colors.recallEasy
+                                        : colors.textPrimary,
                                   ),
                                 ),
                               ],

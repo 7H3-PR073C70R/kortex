@@ -7,6 +7,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/offline_ai/offline_ai.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 
 enum StudyEngineExecutionMode {
   cloudRemote,
@@ -144,23 +145,66 @@ class StudyEngineRouter {
 
     if (mode == StudyEngineExecutionMode.cloudRemote) {
       debugPrint('[StudyEngineRouter] Online: Routing payload to Cloud API...');
-      final cards = await _fetchFromCloud(
-        topic: topic,
-        count: count,
-        sourceText: sourceText,
-      );
-      return StudyPackResult(
-        cards: cards,
-        executionMode: StudyEngineExecutionMode.cloudRemote,
-      );
+      try {
+        final cards = await _fetchFromCloud(
+          topic: topic,
+          count: count,
+          sourceText: sourceText,
+        );
+        if (cards.isEmpty) {
+          return const StudyPackResult(
+            cards: [],
+            executionMode: StudyEngineExecutionMode.unavailable,
+            userMessage:
+                'AI engine could not generate cards for this topic. Please provide more source text or try a different topic.',
+          );
+        }
+        return StudyPackResult(
+          cards: cards,
+          executionMode: StudyEngineExecutionMode.cloudRemote,
+        );
+      } on Object catch (err) {
+        debugPrint('[StudyEngineRouter] Cloud API error: $err');
+        return StudyPackResult(
+          cards: [],
+          executionMode: StudyEngineExecutionMode.unavailable,
+          userMessage:
+              'Cloud AI generation failed ($err). Please check your internet connection and try again.',
+        );
+      }
     }
 
     if (mode == StudyEngineExecutionMode.offlineOnDevice) {
-      debugPrint('[StudyEngineRouter] Offline: Instant on-device concept synthesis...');
-      return StudyPackResult(
-        cards: _createSyntheticLocalCards(topic, count),
-        executionMode: StudyEngineExecutionMode.offlineOnDevice,
-      );
+      debugPrint('[StudyEngineRouter] Offline: Checking on-device model availability...');
+      final sharedModelPath = await LocalLlmEngineClient.findSharedModelPath();
+      if (sharedModelPath == null) {
+        return const StudyPackResult(
+          cards: [],
+          executionMode: StudyEngineExecutionMode.unavailable,
+          isOfflineModelMissing: true,
+          userMessage:
+              'On-device AI model weights are not downloaded. Please download the 248MB offline model from Settings or connect to the internet.',
+        );
+      }
+
+      try {
+        final rawCards = await _isolateManager.executeChunkedInference(
+          modelPath: sharedModelPath,
+          topic: topic,
+          sourceText: sourceText,
+        );
+        final cards = rawCards.map(GeneratedFlashcard.fromJson).toList();
+        return StudyPackResult(
+          cards: cards,
+          executionMode: StudyEngineExecutionMode.offlineOnDevice,
+        );
+      } on Object catch (err) {
+        return StudyPackResult(
+          cards: [],
+          executionMode: StudyEngineExecutionMode.unavailable,
+          userMessage: 'On-device AI synthesis failed ($err).',
+        );
+      }
     }
 
     debugPrint('[StudyEngineRouter] Engine unavailable: Prompting user...');
@@ -211,8 +255,8 @@ class StudyEngineRouter {
       sourceText: sourceText,
     );
 
-    if (result.isOfflineModelMissing) {
-      throw StateError(result.userMessage ?? offlineModelMissingPrompt);
+    if (result.cards.isEmpty) {
+      throw StateError(result.userMessage ?? 'No flashcards generated');
     }
 
     for (final card in result.cards) {
@@ -225,146 +269,33 @@ class StudyEngineRouter {
     required int count,
     String? sourceText,
   }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
-        data: {
-          'topic': topic,
-          'sourceText': sourceText,
-          'count': count,
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
+      data: {
+        'topic': topic,
+        'sourceText': sourceText,
+        'count': count,
+      },
+      options: Options(
+        headers: {
+          'apikey': AppEnv.apiKey,
+          'Authorization': 'Bearer ${AppEnv.apiKey}',
         },
-        options: Options(
-          headers: {
-            'apikey': AppEnv.apiKey,
-            'Authorization': 'Bearer ${AppEnv.apiKey}',
-          },
-        ),
-      );
+      ),
+    );
 
-      final data = response.data;
-      if (data != null) {
-        final cardsList = data['cards'] as List<dynamic>?;
-        if (cardsList != null && cardsList.isNotEmpty) {
-          return cardsList
-              .map(
-                (c) => GeneratedFlashcard.fromJson(c as Map<String, dynamic>),
-              )
-              .toList();
-        }
+    final data = response.data;
+    if (data != null) {
+      final cardsList = data['cards'] as List<dynamic>?;
+      if (cardsList != null && cardsList.isNotEmpty) {
+        return cardsList
+            .map(
+              (c) => GeneratedFlashcard.fromJson(c as Map<String, dynamic>),
+            )
+            .toList();
       }
-    } on Object catch (err) {
-      debugPrint('[StudyEngineRouter] Cloud API note: $err');
     }
 
-    return _createSyntheticCloudCards(topic, count);
-  }
-
-  bool _isStemTopic(String topic) {
-    final lower = topic.toLowerCase();
-    return lower.contains('math') ||
-        lower.contains('phys') ||
-        lower.contains('chem') ||
-        lower.contains('calc') ||
-        lower.contains('algeb') ||
-        lower.contains('quantum') ||
-        lower.contains('eng');
-  }
-
-  static final List<({String front, String back, String explanation})> _academicTemplates = [
-    (
-      front: 'What is the foundational principle and scope of {topic}?',
-      back: '{topic} establishes the fundamental principles, taxonomies, and methodologies governing its domain.',
-      explanation: 'Core foundational definition and analytical scope for {topic}.',
-    ),
-    (
-      front: 'What is the primary governing framework or mechanism of {topic}?',
-      back: 'The governing mechanism of {topic} balances conceptual rules with empirical observations to predict outcomes.',
-      explanation: 'Primary operational framework and predictive model of {topic}.',
-    ),
-    (
-      front: 'What are the essential structural components of {topic}?',
-      back: 'The system structure of {topic} comprises core assumptions, mediating factors, and observable implications.',
-      explanation: 'Structural architecture and component analysis of {topic}.',
-    ),
-    (
-      front: 'How is {topic} practically applied to resolve domain problems?',
-      back: 'Practitioners apply {topic} to calibrate models, optimize decision-making, and diagnose operational anomalies.',
-      explanation: 'Real-world application and problem-solving methodology in {topic}.',
-    ),
-    (
-      front: 'What boundary conditions or limitations constrain {topic}?',
-      back: 'Limitations in {topic} emerge when environmental assumptions degrade or scale factors exceed baseline bounds.',
-      explanation: 'Critical evaluation of constraints and boundary limits in {topic}.',
-    ),
-  ];
-
-  static final List<({String front, String back, String explanation})> _stemTemplates = [
-    (
-      front: 'State the governing relation and dimensional formula in {topic}.',
-      back: r'$$\mathbf{F} = \frac{d\mathbf{p}}{dt} = m\mathbf{a}$$. Fundamental rate of change relation.',
-      explanation: 'Dynamical formulation and physical dimension analysis in {topic}.',
-    ),
-    (
-      front: 'State the conservation principle governing {topic}.',
-      back: r'$$\sum E_{\text{in}} = \sum E_{\text{out}}$$. Total energy and mass balance across boundary states.',
-      explanation: 'Thermodynamic and mechanistic balance laws for {topic}.',
-    ),
-    (
-      front: 'What is the integral formulation for boundary flux in {topic}?',
-      back: r'$$\oint_{\partial \Omega} \mathbf{v} \cdot d\mathbf{A} = \iiint_{\Omega} (\nabla \cdot \mathbf{v}) dV$$ (Gauss-Divergence).',
-      explanation: 'Vector field divergence theorem applied to boundary surfaces in {topic}.',
-    ),
-    (
-      front: 'Explain the steady-state equilibrium criterion in {topic}.',
-      back: r'$$\frac{\partial u}{\partial t} = \alpha \nabla^2 u = 0 \implies \nabla^2 u = 0$$. Laplace equilibrium condition.',
-      explanation: 'Harmonic balance and zero time-rate flux in {topic}.',
-    ),
-  ];
-
-  List<GeneratedFlashcard> _createSyntheticCloudCards(
-    String topic,
-    int count,
-  ) {
-    final isStem = _isStemTopic(topic);
-    final templates = isStem ? _stemTemplates : _academicTemplates;
-
-    return List.generate(
-      count,
-      (i) {
-        final t = templates[i % templates.length];
-        return GeneratedFlashcard(
-          id: 'cloud_card_${i + 1}',
-          front: t.front.replaceAll('{topic}', topic),
-          back: t.back.replaceAll('{topic}', topic),
-          explanation: t.explanation.replaceAll('{topic}', topic),
-          isLocalInference: false,
-          tags: [topic],
-        );
-      },
-    );
-  }
-
-  List<GeneratedFlashcard> _createSyntheticLocalCards(
-    String topic,
-    int count,
-  ) {
-    final isStem = _isStemTopic(topic);
-    final templates = isStem ? _stemTemplates : _academicTemplates;
-
-    return List.generate(
-      count,
-      (i) {
-        final t = templates[i % templates.length];
-        return GeneratedFlashcard(
-          id: 'local_card_${i + 1}',
-          front: 'On-Device: ${t.front.replaceAll("{topic}", topic)}',
-          back: t.back.replaceAll('{topic}', topic),
-          explanation:
-              'Synthesized securely on-device for $topic without cloud connectivity.',
-          isLocalInference: true,
-          tags: [topic, 'OfflineOnDevice'],
-        );
-      },
-    );
+    return const [];
   }
 }

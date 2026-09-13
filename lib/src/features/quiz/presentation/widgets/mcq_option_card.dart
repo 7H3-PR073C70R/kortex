@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 

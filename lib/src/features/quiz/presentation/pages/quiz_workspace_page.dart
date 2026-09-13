@@ -1455,4 +1455,3 @@ class _QuizTimerBadge extends StatelessWidget {
     );
   }
 }
-

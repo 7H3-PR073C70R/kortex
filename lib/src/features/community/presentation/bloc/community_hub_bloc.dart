@@ -21,6 +21,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CreateRoomEvent>(_onCreateRoom);
     on<CreateForumPostEvent>(_onCreateForumPost);
     on<ReplyToPostEvent>(_onReplyToPost);
+    on<VoteForumPostEvent>(_onVoteForumPost);
+    on<VoteForumReplyEvent>(_onVoteForumReply);
     on<ForumPostRepliesIncrementedEvent>(_onForumPostRepliesIncremented);
     on<VerifyForumReplyEvent>(_onVerifyForumReply);
     on<LoadStudyCirclesEvent>(_onLoadStudyCircles);
@@ -29,6 +31,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CloneDeckEvent>(_onCloneDeck);
     on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
+    on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
   }
 
   final CommunityRepository _repository;
@@ -95,6 +98,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           studyCircles: studyCircles,
           sharedDecks: sharedDecks,
           leaderboardEntries: leaderboardEntries,
+          hasMoreForumPosts: forumPosts.length >= 15,
+          forumPostsOffset: forumPosts.length,
+          isLoadingMoreForumPosts: false,
         ),
       );
     }
@@ -148,7 +154,54 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     );
     res.fold(
       (_) {},
-      (posts) => emit(state.copyWith(forumPosts: posts)),
+      (posts) => emit(
+        state.copyWith(
+          forumPosts: posts,
+          hasMoreForumPosts: posts.length >= 15,
+          forumPostsOffset: posts.length,
+          isLoadingMoreForumPosts: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onFetchMoreForumPosts(
+    FetchMoreForumPostsEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    if (state.isLoadingMoreForumPosts || !state.hasMoreForumPosts) return;
+
+    emit(state.copyWith(isLoadingMoreForumPosts: true));
+
+    final effectiveTrack = state.selectedTrack == 'All'
+        ? null
+        : state.selectedTrack;
+
+    final currentOffset = state.forumPosts.length;
+    final res = await _repository.fetchForumPosts(
+      track: effectiveTrack,
+      questionsOnly: state.questionsOnly,
+      offset: currentOffset,
+    );
+
+    res.fold(
+      (failure) {
+        emit(state.copyWith(isLoadingMoreForumPosts: false));
+      },
+      (newPosts) {
+        final existingIds = state.forumPosts.map((p) => p.id).toSet();
+        final uniqueNewPosts =
+            newPosts.where((p) => !existingIds.contains(p.id)).toList();
+        final updatedPosts = [...state.forumPosts, ...uniqueNewPosts];
+        emit(
+          state.copyWith(
+            isLoadingMoreForumPosts: false,
+            forumPosts: updatedPosts,
+            forumPostsOffset: updatedPosts.length,
+            hasMoreForumPosts: newPosts.length >= 15,
+          ),
+        );
+      },
     );
   }
 
@@ -212,6 +265,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       postId: event.postId,
       content: event.content,
       latexContent: event.latexContent,
+      parentReplyId: event.parentReplyId,
     );
     res.fold(
       (failure) => emit(
@@ -232,6 +286,84 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         }).toList();
         emit(state.copyWith(forumPosts: updatedPosts));
       },
+    );
+  }
+
+  Future<void> _onVoteForumPost(
+    VoteForumPostEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final updatedPosts = state.forumPosts.map((p) {
+      if (p.id == event.postId) {
+        final prevVote = p.userVote;
+        final newVote = (prevVote == event.direction) ? 0 : event.direction;
+        var newUpvotes = p.upvotes;
+        var newDownvotes = p.downvotes;
+
+        if (prevVote == 1) newUpvotes -= 1;
+        if (prevVote == -1) newDownvotes -= 1;
+        if (newVote == 1) newUpvotes += 1;
+        if (newVote == -1) newDownvotes += 1;
+
+        if (newUpvotes < 0) newUpvotes = 0;
+        if (newDownvotes < 0) newDownvotes = 0;
+
+        return p.copyWith(
+          upvotes: newUpvotes,
+          downvotes: newDownvotes,
+          userVote: newVote,
+        );
+      }
+      return p;
+    }).toList();
+
+    emit(state.copyWith(forumPosts: updatedPosts));
+    await _repository.voteForumPost(
+      postId: event.postId,
+      voteDirection: event.direction,
+    );
+  }
+
+  Future<void> _onVoteForumReply(
+    VoteForumReplyEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final updatedPosts = state.forumPosts.map((p) {
+      if (p.id == event.postId) {
+        final updatedReplies = p.replies.map((r) {
+          if (r.id == event.replyId) {
+            final prevVote = r.userVote;
+            final newVote = (prevVote == event.direction) ? 0 : event.direction;
+            var newUpvotes = r.upvotes;
+            var newDownvotes = r.downvotes;
+
+            if (prevVote == 1) newUpvotes -= 1;
+            if (prevVote == -1) newDownvotes -= 1;
+            if (newVote == 1) newUpvotes += 1;
+            if (newVote == -1) newDownvotes += 1;
+
+            if (newUpvotes < 0) newUpvotes = 0;
+            if (newDownvotes < 0) newDownvotes = 0;
+
+            return r.copyWith(
+              upvotes: newUpvotes,
+              downvotes: newDownvotes,
+              userVote: newVote,
+            );
+          }
+          return r;
+        }).toList();
+
+        return p.copyWith(replies: updatedReplies);
+      }
+      return p;
+    }).toList();
+
+    emit(state.copyWith(forumPosts: updatedPosts));
+    await _repository.voteForumReply(
+      postId: event.postId,
+      replyId: event.replyId,
+      voteDirection: event.direction,
     );
   }
 

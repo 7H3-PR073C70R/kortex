@@ -21,6 +21,9 @@ class CommunityState extends Equatable {
     this.errorMessage,
     this.lastClonedDeckId,
     this.verifiedSolutionNotice,
+    this.hasMoreForumPosts = true,
+    this.isLoadingMoreForumPosts = false,
+    this.forumPostsOffset = 0,
   });
 
   final CommunityStatus status;
@@ -37,6 +40,9 @@ class CommunityState extends Equatable {
   final String? errorMessage;
   final String? lastClonedDeckId;
   final String? verifiedSolutionNotice;
+  final bool hasMoreForumPosts;
+  final bool isLoadingMoreForumPosts;
+  final int forumPostsOffset;
 
   CommunityState copyWith({
     CommunityStatus? status,
@@ -51,6 +57,9 @@ class CommunityState extends Equatable {
     String? errorMessage,
     String? lastClonedDeckId,
     String? verifiedSolutionNotice,
+    bool? hasMoreForumPosts,
+    bool? isLoadingMoreForumPosts,
+    int? forumPostsOffset,
   }) {
     return CommunityState(
       status: status ?? this.status,
@@ -66,6 +75,10 @@ class CommunityState extends Equatable {
       lastClonedDeckId: lastClonedDeckId ?? this.lastClonedDeckId,
       verifiedSolutionNotice:
           verifiedSolutionNotice ?? this.verifiedSolutionNotice,
+      hasMoreForumPosts: hasMoreForumPosts ?? this.hasMoreForumPosts,
+      isLoadingMoreForumPosts:
+          isLoadingMoreForumPosts ?? this.isLoadingMoreForumPosts,
+      forumPostsOffset: forumPostsOffset ?? this.forumPostsOffset,
     );
   }
 
@@ -83,5 +96,8 @@ class CommunityState extends Equatable {
     errorMessage,
     lastClonedDeckId,
     verifiedSolutionNotice,
+    hasMoreForumPosts,
+    isLoadingMoreForumPosts,
+    forumPostsOffset,
   ];
 }

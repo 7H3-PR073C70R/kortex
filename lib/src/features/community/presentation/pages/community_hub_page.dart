@@ -702,6 +702,8 @@ class _ForumPostsList extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final scrollController = useScrollController();
+
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
     final effectiveTrack =
@@ -720,7 +722,26 @@ class _ForumPostsList extends HookWidget {
       return null;
     }, [effectiveTrack]);
 
+    useEffect(() {
+      void onScroll() {
+        if (!scrollController.hasClients) return;
+        final maxScroll = scrollController.position.maxScrollExtent;
+        final currentScroll = scrollController.position.pixels;
+        if (maxScroll - currentScroll <= 200) {
+          if (!state.isLoadingMoreForumPosts && state.hasMoreForumPosts) {
+            context.read<CommunityHubBloc>().add(
+              const FetchMoreForumPostsEvent(),
+            );
+          }
+        }
+      }
+
+      scrollController.addListener(onScroll);
+      return () => scrollController.removeListener(onScroll);
+    }, [scrollController, state.isLoadingMoreForumPosts, state.hasMoreForumPosts]);
+
     return ListView(
+      controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
         // Track Forum Header Scoped exclusively to active track
@@ -907,7 +928,7 @@ class _ForumPostsList extends HookWidget {
               ],
             ),
           )
-        else
+        else ...[
           ...state.forumPosts.map((post) {
             return TrackForumPostCard(
               post: post,
@@ -916,8 +937,33 @@ class _ForumPostsList extends HookWidget {
                   context.router.push(ForumThreadDetailRoute(post: post)),
                 );
               },
+              onUpvoteTap: () {
+                context.read<CommunityHubBloc>().add(
+                  VoteForumPostEvent(postId: post.id, direction: 1),
+                );
+              },
+              onDownvoteTap: () {
+                context.read<CommunityHubBloc>().add(
+                  VoteForumPostEvent(postId: post.id, direction: -1),
+                );
+              },
             );
           }),
+          if (state.isLoadingMoreForumPosts)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }

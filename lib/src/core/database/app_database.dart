@@ -28,12 +28,28 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
+          // Self-healing check in case columns are missing on existing device databases
+          try {
+            await customStatement('ALTER TABLE forum_posts ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE forum_posts ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE forum_replies ADD COLUMN parent_reply_id TEXT REFERENCES forum_replies(id) ON DELETE CASCADE;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE forum_replies ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
         },
         onCreate: (m) async {
           await m.createAll();
@@ -67,6 +83,26 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(thoughtParkingLots);
             await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_thought_parking_lots_created_at ON thought_parking_lots(created_at DESC);',
+            );
+          }
+          if (from < 4) {
+            try {
+              await m.addColumn(forumPosts, forumPosts.downvotes);
+            } on Object catch (_) {}
+            try {
+              await m.addColumn(forumPosts, forumPosts.userVote);
+            } on Object catch (_) {}
+            try {
+              await m.addColumn(forumReplies, forumReplies.parentReplyId);
+            } on Object catch (_) {}
+            try {
+              await m.addColumn(forumReplies, forumReplies.downvotes);
+            } on Object catch (_) {}
+            try {
+              await m.addColumn(forumReplies, forumReplies.userVote);
+            } on Object catch (_) {}
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_forum_replies_parent_reply_id ON forum_replies(parent_reply_id);',
             );
           }
         },

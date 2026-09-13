@@ -587,9 +587,6 @@ class _StudySessionView extends HookWidget {
                               final topicName = currentCard.sourceTopic?.trim().isNotEmpty == true
                                   ? currentCard.sourceTopic!.trim()
                                   : 'Flashcard';
-                              final shortPrompt = firstLinePrompt.length > 55
-                                  ? '${firstLinePrompt.substring(0, 52)}...'
-                                  : firstLinePrompt;
 
                               unawaited(
                                 CreatePostBottomSheet.show(
@@ -597,7 +594,7 @@ class _StudySessionView extends HookWidget {
                                   lockedTrack: (currentCard.sourceTopic?.isNotEmpty ?? false)
                                       ? currentCard.sourceTopic
                                       : null,
-                                  initialTitle: '[$topicName] Question on: $shortPrompt',
+                                  initialTitle: '[$topicName] Question on: $firstLinePrompt',
                                   initialContent:
                                       '${currentCard.front}\n\n'
                                       '💡 I am reviewing this flashcard and need help understanding the underlying concept. '

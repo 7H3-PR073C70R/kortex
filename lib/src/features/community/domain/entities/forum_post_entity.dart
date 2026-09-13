@@ -16,6 +16,8 @@ class ForumPostEntity extends Equatable {
     this.isVerifiedSolution = false,
     this.syllabusTag = 'General',
     this.upvotes = 0,
+    this.downvotes = 0,
+    this.userVote = 0,
     this.repliesCount = 0,
     this.replies = const [],
   });
@@ -32,9 +34,17 @@ class ForumPostEntity extends Equatable {
   final bool isVerifiedSolution;
   final String syllabusTag;
   final int upvotes;
+  final int downvotes;
+  final int userVote;
   final int repliesCount;
   final DateTime createdAt;
   final List<ForumReplyEntity> replies;
+
+  int get netVotes => upvotes - downvotes;
+  int get topLevelRepliesCount =>
+      replies.isNotEmpty
+          ? replies.where((r) => !r.isNested).length
+          : repliesCount;
 
   ForumPostEntity copyWith({
     String? id,
@@ -49,6 +59,8 @@ class ForumPostEntity extends Equatable {
     bool? isVerifiedSolution,
     String? syllabusTag,
     int? upvotes,
+    int? downvotes,
+    int? userVote,
     int? repliesCount,
     DateTime? createdAt,
     List<ForumReplyEntity>? replies,
@@ -66,6 +78,8 @@ class ForumPostEntity extends Equatable {
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
       syllabusTag: syllabusTag ?? this.syllabusTag,
       upvotes: upvotes ?? this.upvotes,
+      downvotes: downvotes ?? this.downvotes,
+      userVote: userVote ?? this.userVote,
       repliesCount: repliesCount ?? this.repliesCount,
       createdAt: createdAt ?? this.createdAt,
       replies: replies ?? this.replies,
@@ -86,6 +100,8 @@ class ForumPostEntity extends Equatable {
     isVerifiedSolution,
     syllabusTag,
     upvotes,
+    downvotes,
+    userVote,
     repliesCount,
     createdAt,
     replies,
@@ -101,14 +117,18 @@ class ForumReplyEntity extends Equatable {
     required this.authorName,
     required this.content,
     required this.createdAt,
+    this.parentReplyId,
     this.authorAvatar,
     this.latexContent,
     this.isVerifiedSolution = false,
     this.upvotes = 0,
+    this.downvotes = 0,
+    this.userVote = 0,
   });
 
   final String id;
   final String postId;
+  final String? parentReplyId;
   final String authorId;
   final String authorName;
   final String? authorAvatar;
@@ -116,11 +136,17 @@ class ForumReplyEntity extends Equatable {
   final String? latexContent;
   final bool isVerifiedSolution;
   final int upvotes;
+  final int downvotes;
+  final int userVote;
   final DateTime createdAt;
+
+  int get netVotes => upvotes - downvotes;
+  bool get isNested => parentReplyId != null && parentReplyId!.isNotEmpty;
 
   ForumReplyEntity copyWith({
     String? id,
     String? postId,
+    String? parentReplyId,
     String? authorId,
     String? authorName,
     String? authorAvatar,
@@ -128,11 +154,14 @@ class ForumReplyEntity extends Equatable {
     String? latexContent,
     bool? isVerifiedSolution,
     int? upvotes,
+    int? downvotes,
+    int? userVote,
     DateTime? createdAt,
   }) {
     return ForumReplyEntity(
       id: id ?? this.id,
       postId: postId ?? this.postId,
+      parentReplyId: parentReplyId ?? this.parentReplyId,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
       authorAvatar: authorAvatar ?? this.authorAvatar,
@@ -140,6 +169,8 @@ class ForumReplyEntity extends Equatable {
       latexContent: latexContent ?? this.latexContent,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
       upvotes: upvotes ?? this.upvotes,
+      downvotes: downvotes ?? this.downvotes,
+      userVote: userVote ?? this.userVote,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -148,6 +179,7 @@ class ForumReplyEntity extends Equatable {
   List<Object?> get props => [
     id,
     postId,
+    parentReplyId,
     authorId,
     authorName,
     authorAvatar,
@@ -155,6 +187,8 @@ class ForumReplyEntity extends Equatable {
     latexContent,
     isVerifiedSolution,
     upvotes,
+    downvotes,
+    userVote,
     createdAt,
   ];
 }

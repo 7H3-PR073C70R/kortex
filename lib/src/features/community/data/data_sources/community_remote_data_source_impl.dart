@@ -154,10 +154,14 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<List<ForumPostModel>> fetchForumPosts({
     String? track,
     bool? questionsOnly,
+    int limit = 15,
+    int offset = 0,
   }) async {
     final params = <String, dynamic>{
       'select': '*,forum_replies(*)',
       'order': 'created_at.desc',
+      'limit': limit,
+      'offset': offset,
     };
     if (track != null && track.isNotEmpty && track != 'All') {
       params['track'] = 'eq.$track';
@@ -178,7 +182,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         data = res.data;
       }
 
-      final rawList = data is List ? (data as List) : <dynamic>[];
+      final rawList = data is List ? data : <dynamic>[];
       final posts = rawList
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -306,6 +310,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required String postId,
     required String content,
     String? latexContent,
+    String? parentReplyId,
   }) async {
     final userId = _userStorage?.getUserId();
     final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
@@ -315,6 +320,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       'post_id': postId,
       'content': content,
       'latex_content': latexContent,
+      'parent_reply_id': ?parentReplyId,
       'author_name': authorName,
       'author_id': ?userId,
       'author_avatar': ?authorAvatar,
@@ -338,6 +344,151 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       controller.add(List.unmodifiable(cache));
     }
     return reply;
+  }
+
+  @override
+  Future<bool> voteForumPost({
+    required String postId,
+    required int voteDirection,
+  }) async {
+    try {
+      final currentPost = await _localDataSource?.getForumPost(postId);
+      if (currentPost != null) {
+        final prevVote = currentPost.userVote;
+        final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
+        var newUpvotes = currentPost.upvotes;
+        var newDownvotes = currentPost.downvotes;
+
+        if (prevVote == 1) newUpvotes -= 1;
+        if (prevVote == -1) newDownvotes -= 1;
+        if (newVote == 1) newUpvotes += 1;
+        if (newVote == -1) newDownvotes += 1;
+
+        if (newUpvotes < 0) newUpvotes = 0;
+        if (newDownvotes < 0) newDownvotes = 0;
+
+        final updated = ForumPostModel(
+          id: currentPost.id,
+          authorId: currentPost.authorId,
+          authorName: currentPost.authorName,
+          authorAvatar: currentPost.authorAvatar,
+          track: currentPost.track,
+          title: currentPost.title,
+          content: currentPost.content,
+          latexContent: currentPost.latexContent,
+          isQuestion: currentPost.isQuestion,
+          isVerifiedSolution: currentPost.isVerifiedSolution,
+          syllabusTag: currentPost.syllabusTag,
+          upvotes: newUpvotes,
+          downvotes: newDownvotes,
+          userVote: newVote,
+          repliesCount: currentPost.repliesCount,
+          createdAt: currentPost.createdAt,
+          replies: currentPost.replies,
+        );
+        await _localDataSource?.saveForumPost(updated);
+
+        try {
+          await _client.updateForumPost(
+            {'id': 'eq.$postId'},
+            {
+              'upvotes': newUpvotes,
+              'downvotes': newDownvotes,
+            },
+          );
+        } on Object catch (_) {
+          // Ignore network errors to preserve optimistic offline-first update
+        }
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.voteForumPost failed',
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> voteForumReply({
+    required String postId,
+    required String replyId,
+    required int voteDirection,
+  }) async {
+    try {
+      final cache = _replyCache[postId] ?? await _localDataSource?.getRepliesForPost(postId) ?? [];
+      final replyIndex = cache.indexWhere((r) => r.id == replyId);
+      if (replyIndex != -1) {
+        final currentReply = cache[replyIndex];
+        final prevVote = currentReply.userVote;
+        final newVote = (prevVote == voteDirection) ? 0 : voteDirection;
+        var newUpvotes = currentReply.upvotes;
+        var newDownvotes = currentReply.downvotes;
+
+        if (prevVote == 1) newUpvotes -= 1;
+        if (prevVote == -1) newDownvotes -= 1;
+        if (newVote == 1) newUpvotes += 1;
+        if (newVote == -1) newDownvotes += 1;
+
+        if (newUpvotes < 0) newUpvotes = 0;
+        if (newDownvotes < 0) newDownvotes = 0;
+
+        final updated = ForumReplyModel(
+          id: currentReply.id,
+          postId: currentReply.postId,
+          parentReplyId: currentReply.parentReplyId,
+          authorId: currentReply.authorId,
+          authorName: currentReply.authorName,
+          authorAvatar: currentReply.authorAvatar,
+          content: currentReply.content,
+          latexContent: currentReply.latexContent,
+          isVerifiedSolution: currentReply.isVerifiedSolution,
+          upvotes: newUpvotes,
+          downvotes: newDownvotes,
+          userVote: newVote,
+          createdAt: currentReply.createdAt,
+        );
+
+        cache[replyIndex] = updated;
+        _replyCache[postId] = cache;
+        await _localDataSource?.saveForumReply(updated);
+
+        final controller = _replyControllers[postId];
+        if (controller != null && !controller.isClosed) {
+          controller.add(List.unmodifiable(cache));
+        }
+
+        try {
+          await _client.updateForumReply(
+            {'id': 'eq.$replyId'},
+            {
+              'upvotes': newUpvotes,
+              'downvotes': newDownvotes,
+            },
+          );
+        } on Object catch (_) {
+          // Ignore network errors to preserve optimistic offline-first update
+        }
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.voteForumReply failed',
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   @override

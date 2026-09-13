@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/offline_ai/data/services/local_inference_isolate_manager.dart';
@@ -9,6 +10,8 @@ class MockConnectivity extends Mock implements Connectivity {}
 
 class MockLocalInferenceIsolateManager extends Mock
     implements LocalInferenceIsolateManager {}
+
+class MockDio extends Mock implements Dio {}
 
 void main() {
   group('1. Offline Engine Instant Readiness & Safeguards', () {
@@ -117,10 +120,12 @@ void main() {
   group('3. StudyEngineRouter Central Switching Strategy', () {
     late MockConnectivity mockConnectivity;
     late MockLocalInferenceIsolateManager mockIsolateManager;
+    late MockDio mockDio;
 
     setUp(() {
       mockConnectivity = MockConnectivity();
       mockIsolateManager = MockLocalInferenceIsolateManager();
+      mockDio = MockDio();
     });
 
     test('Online: Routes to Cloud API', () async {
@@ -128,9 +133,47 @@ void main() {
         (_) async => [ConnectivityResult.wifi],
       );
 
+      when(
+        () => mockDio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response(
+          data: {
+            'cards': [
+              {
+                'id': 'card_1',
+                'front': 'What is a derivative?',
+                'back': 'The instantaneous rate of change of a function.',
+                'explanation': 'Fundamental definition of differential calculus.',
+                'isLocalInference': false,
+              },
+              {
+                'id': 'card_2',
+                'front': 'What is an integral?',
+                'back': 'The accumulation of quantities / area under curve.',
+                'explanation': 'Fundamental definition of integral calculus.',
+                'isLocalInference': false,
+              },
+              {
+                'id': 'card_3',
+                'front': 'State the Fundamental Theorem of Calculus.',
+                'back': 'Differentiation and integration are inverse operations.',
+                'explanation': 'Connects differential and integral calculus.',
+                'isLocalInference': false,
+              },
+            ],
+          },
+          requestOptions: RequestOptions(path: '/generate-flashcards-stream'),
+        ),
+      );
+
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
         isolateManager: mockIsolateManager,
+        dio: mockDio,
       );
 
       final result = await router.generateStudyPack(
@@ -147,7 +190,7 @@ void main() {
       expect(result.cards.first.isLocalInference, isFalse);
     });
 
-    test('Offline: Routes to instant on-device engine without data consumption', () async {
+    test('Offline: Reports missing offline model weights when not present', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
         (_) async => [ConnectivityResult.none],
       );
@@ -155,6 +198,7 @@ void main() {
       final router = StudyEngineRouter(
         connectivity: mockConnectivity,
         isolateManager: mockIsolateManager,
+        dio: mockDio,
       );
 
       final result = await router.generateStudyPack(
@@ -164,11 +208,10 @@ void main() {
 
       expect(
         result.executionMode,
-        equals(StudyEngineExecutionMode.offlineOnDevice),
+        equals(StudyEngineExecutionMode.unavailable),
       );
-      expect(result.isOfflineModelMissing, isFalse);
-      expect(result.cards.length, equals(2));
-      expect(result.cards.first.isLocalInference, isTrue);
+      expect(result.isOfflineModelMissing, isTrue);
+      expect(result.cards, isEmpty);
     });
   });
 }

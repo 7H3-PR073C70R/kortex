@@ -141,6 +141,8 @@ class ForumPosts extends Table {
   TextColumn get content => text()();
   TextColumn get latexContent => text().nullable()();
   IntColumn get upvotes => integer().withDefault(const Constant(0))();
+  IntColumn get downvotes => integer().withDefault(const Constant(0))();
+  IntColumn get userVote => integer().withDefault(const Constant(0))();
   IntColumn get repliesCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get cachedAt => dateTime()();
@@ -154,12 +156,15 @@ class ForumReplies extends Table {
   TextColumn get id => text()();
   TextColumn get postId =>
       text().references(ForumPosts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get parentReplyId => text().nullable()();
   TextColumn get authorId => text()();
   TextColumn get authorName => text()();
   TextColumn get authorAvatar => text().nullable()();
   TextColumn get content => text()();
   TextColumn get latexContent => text().nullable()();
   IntColumn get upvotes => integer().withDefault(const Constant(0))();
+  IntColumn get downvotes => integer().withDefault(const Constant(0))();
+  IntColumn get userVote => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get cachedAt => dateTime()();
 
