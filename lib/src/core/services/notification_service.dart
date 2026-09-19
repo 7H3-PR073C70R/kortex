@@ -135,6 +135,7 @@ class NotificationService {
 
   /// Request push notification permissions from user.
   Future<NotificationSettings?> requestPermission() async {
+    await requestLocalPermission();
     if (!_isAvailable) return null;
     try {
       final settings = await _messaging!.requestPermission();
@@ -250,7 +251,13 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
     );
-    const darwinDetails = DarwinNotificationDetails();
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      presentBanner: true,
+      presentList: true,
+    );
     const platformDetails = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
@@ -268,6 +275,64 @@ class NotificationService {
     } on Object catch (e) {
       developer.log('Failed to show local notification: $e');
     }
+  }
+
+  /// Request local notification permissions on iOS/macOS and Android.
+  Future<bool?> requestLocalPermission() async {
+    try {
+      if (!kIsWeb && Platform.isIOS) {
+        return await _localNotifications
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            );
+      } else if (!kIsWeb && Platform.isMacOS) {
+        return await _localNotifications
+            .resolvePlatformSpecificImplementation<
+                MacOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            );
+      } else if (!kIsWeb && Platform.isAndroid) {
+        return await _localNotifications
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestNotificationsPermission();
+      }
+    } on Object catch (e) {
+      developer.log('Error requesting local notification permission: $e');
+    }
+    return null;
+  }
+
+  /// Send a local notification when document processing completes.
+  Future<void> notifyDocumentProcessingComplete({
+    required String filename,
+    int? cardCount,
+    String? documentId,
+    String? deckId,
+  }) async {
+    final countText = (cardCount != null && cardCount > 0)
+        ? ' ($cardCount conceptual cards synthesized)'
+        : '';
+    final body = '"$filename" is ready$countText. Tap to review and study.';
+    final payload = deckId != null
+        ? 'deck:$deckId'
+        : (documentId != null ? 'doc:$documentId' : '/ingestion');
+
+    await showLocalNotification(
+      id: documentId != null
+          ? documentId.hashCode
+          : DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: 'Document Ready! ⚡',
+      body: body,
+      payload: payload,
+    );
   }
 
   /// Cancel all pending and scheduled local notifications.

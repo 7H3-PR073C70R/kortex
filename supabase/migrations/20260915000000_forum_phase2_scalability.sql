@@ -167,7 +167,11 @@ BEGIN
             r.is_verified_solution,
             r.upvotes,
             r.downvotes,
-            r.replies_count,
+            (
+                SELECT COUNT(*)::int 
+                FROM public.forum_replies sub 
+                WHERE sub.parent_reply_id = r.id
+            ) AS replies_count,
             r.media_urls,
             r.voice_note_url,
             r.voice_note_duration_seconds,
@@ -176,8 +180,8 @@ BEGIN
         FROM public.forum_replies r
         LEFT JOIN public.forum_reply_votes rv
             ON rv.reply_id = r.id AND rv.user_id = v_user_id
-        WHERE r.post_id = p_post_id AND (r.parent_reply_id IS NULL OR r.parent_reply_id = '')
-        ORDER BY r.upvotes DESC, r.created_at ASC
+        WHERE r.post_id = p_post_id AND r.parent_reply_id IS NULL
+        ORDER BY r.is_verified_solution DESC, r.upvotes DESC, r.created_at ASC
         LIMIT LEAST(p_limit, 50)
     ),
     ranked_sub_replies AS (
@@ -193,7 +197,7 @@ BEGIN
             sr.is_verified_solution,
             sr.upvotes,
             sr.downvotes,
-            sr.replies_count,
+            0 AS replies_count,
             sr.media_urls,
             sr.voice_note_url,
             sr.voice_note_duration_seconds,
@@ -204,7 +208,7 @@ BEGIN
         LEFT JOIN public.forum_reply_votes srv
             ON srv.reply_id = sr.id AND srv.user_id = v_user_id
         WHERE sr.post_id = p_post_id 
-          AND sr.parent_reply_id IN (SELECT id::text FROM top_replies)
+          AND sr.parent_reply_id IN (SELECT id FROM top_replies)
     ),
     aggregated_sub_replies AS (
         SELECT 
@@ -224,7 +228,7 @@ BEGIN
     )
     INTO v_replies
     FROM top_replies tr
-    LEFT JOIN aggregated_sub_replies asr ON asr.parent_reply_id = tr.id::text;
+    LEFT JOIN aggregated_sub_replies asr ON asr.parent_reply_id = tr.id;
 
     RETURN jsonb_build_object(
         'post', v_post,

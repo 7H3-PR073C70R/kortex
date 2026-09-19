@@ -139,7 +139,7 @@ void main() {
 
       when(() => mockApiClient.fetchForumPosts(any())).thenAnswer(
         (_) async => HttpResponse<dynamic>(
-          [],
+          <dynamic>[],
           Response(requestOptions: RequestOptions()),
         ),
       );

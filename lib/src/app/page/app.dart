@@ -28,6 +28,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final AppRouter _appRouter;
+  late final RouterConfig<UrlState> _routerConfig;
   StreamSubscription<String>? _sessionExpiredSubscription;
   StreamSubscription<String>? _notificationPayloadSubscription;
 
@@ -35,6 +36,10 @@ class _AppState extends State<App> {
   void initState() {
     super.initState();
     _appRouter = locator<AppRouter>();
+    _routerConfig = _appRouter.config(
+      reevaluateListenable:
+          ReevaluateListenable.stream(locator<AuthBloc>().stream),
+    );
 
     _sessionExpiredSubscription = locator<SessionExpiredService>()
         .onSessionExpired
@@ -86,6 +91,13 @@ class _AppState extends State<App> {
 
         if (clean == '/past-questions' || clean == 'past-questions') {
           unawaited(_appRouter.push(PastQuestionsBoardRoute()));
+          return;
+        }
+
+        if (clean == '/ingestion' ||
+            clean == 'ingestion' ||
+            clean.startsWith('doc:')) {
+          unawaited(_appRouter.push(DocumentIngestionRoute()));
           return;
         }
 
@@ -165,10 +177,7 @@ class _AppState extends State<App> {
                 debugShowCheckedModeBanner: false,
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: _appRouter.config(
-                  reevaluateListenable:
-                      ReevaluateListenable.stream(locator<AuthBloc>().stream),
-                ),
+                routerConfig: _routerConfig,
                 builder: (context, child) => BiometricLockOverlay(
                   child: child ?? const SizedBox.shrink(),
                 ),

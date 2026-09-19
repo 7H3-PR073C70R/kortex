@@ -59,9 +59,13 @@ class RealtimeClient {
 
   Future<void> _ensureConnected() async {
     if (_connected) return;
+    final url = _wsUrl;
+    if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+      return;
+    }
     _connected = true;
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _channel = WebSocketChannel.connect(Uri.parse(url));
       _subscription = _channel!.stream.listen(
         _onMessage,
         onDone: _onDisconnect,
@@ -73,7 +77,7 @@ class RealtimeClient {
         _send({'event': 'heartbeat', 'topic': 'phoenix', 'payload': <String, dynamic>{}, 'ref': null});
       });
       await _rejoinAllChannels();
-    } on Exception catch (_) {
+    } on Object catch (_) {
       _connected = false;
     }
   }
@@ -184,7 +188,11 @@ class RealtimeClient {
   Stream<Map<String, dynamic>> watchPresence(String channelName) {
     if (!_presenceControllers.containsKey(channelName)) {
       final ctrl = StreamController<Map<String, dynamic>>.broadcast(
-        onListen: () => unawaited(_ensureConnected().then((_) => _joinPresenceTopic(channelName))),
+        onListen: () => unawaited(
+          _ensureConnected()
+              .then((_) => _joinPresenceTopic(channelName))
+              .catchError((Object _) {}),
+        ),
       );
       _presenceControllers[channelName] = ctrl;
     }

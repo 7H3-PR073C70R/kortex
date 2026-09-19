@@ -6,7 +6,6 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
-import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_badge.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
@@ -171,10 +170,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                widget.message.engineType ==
-                                        ExecutionEngineType.cloudRemote
-                                    ? l10n.engineCloudSupabase
-                                    : l10n.engineLocalOnDevice,
+                                l10n.engineCloudSupabase,
                                 style: typography.caption.medium.copyWith(
                                   color: colors.syllabotAccent,
                                   fontSize: 10,

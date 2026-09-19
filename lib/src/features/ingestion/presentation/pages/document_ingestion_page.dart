@@ -17,7 +17,6 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.
 import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanner_overlay.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_modal_sheet.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/synthesis_mode_toggle.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
@@ -177,17 +176,6 @@ class _DocumentIngestionView extends HookWidget {
                 final uploadSection = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Two-Tier Synthesis Mode Toggle (Fast Local vs AI Smart)
-                    SynthesisModeToggle(
-                      currentMode: state.synthesisMode,
-                      onModeSelected: (mode) {
-                        context.read<IngestionBloc>().add(
-                          SetSynthesisModeEvent(mode),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
                     // File drop zone
                     FileDropZoneWidget(
                       courseId: courseId,

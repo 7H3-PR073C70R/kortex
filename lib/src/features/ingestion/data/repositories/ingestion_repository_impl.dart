@@ -123,7 +123,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
             deckId: deckId,
             front: snippet.topic.isNotEmpty
                 ? snippet.topic
-                : 'Formula / Concept ${i + 1}',
+                : 'Concept ${i + 1}',
             back: snippet.rawText,
             backLatex: snippet.latexContent,
             imageUrl: snippet.imageUrl,

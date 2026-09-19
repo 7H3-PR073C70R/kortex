@@ -211,17 +211,20 @@ PEDAGOGICAL & FORMATTING RULES:
 ${imageContext}
 
 OUTPUT FORMAT:
-Return ONLY a valid JSON array of flashcard objects. No markdown code fences, no conversational preamble.
-Schema for each item:
+Return a valid JSON object containing a "cards" array with the flashcard objects:
 {
-  "front": "string",
-  "back": "string",
-  "latex_content": "string or null",
-  "explanation": "string or null",
-  "hints": "string or null",
-  "tags": ["string"],
-  "image_url": "string or null",
-  "confidence_score": 0.98
+  "cards": [
+    {
+      "front": "string",
+      "back": "string",
+      "latex_content": "string or null",
+      "explanation": "string or null",
+      "hints": "string or null",
+      "tags": ["string"],
+      "image_url": "string or null",
+      "confidence_score": 0.98
+    }
+  ]
 }`;
 
     const userPrompt = `DOCUMENT TOPIC: ${topic}
@@ -230,7 +233,7 @@ COURSE: ${courseCode || "General"}
 DOCUMENT BODY:
 ${content.length > 60000 ? content.slice(0, 60000) : content}
 
-Generate the JSON array of flashcards now:`;
+Generate the JSON object with the "cards" array now:`;
 
     const rawResponse = await this.complete({
       messages: [

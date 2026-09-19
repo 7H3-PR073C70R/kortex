@@ -405,14 +405,38 @@ class _ForumPostsList extends HookWidget {
         ? userTrack.trim()
         : 'WAEC';
 
+    final isInitialTrackApplied = useRef(false);
     useEffect(() {
-      if (state.selectedTrack != effectiveTrack) {
-        context.read<CommunityHubBloc>().add(
-          ChangeTrackFilterEvent(effectiveTrack),
-        );
+      if (!isInitialTrackApplied.value && effectiveTrack.isNotEmpty) {
+        isInitialTrackApplied.value = true;
+        if (state.selectedTrack == 'All') {
+          context.read<CommunityHubBloc>().add(
+            ChangeTrackFilterEvent(effectiveTrack),
+          );
+        }
       }
       return null;
     }, [effectiveTrack]);
+
+    final availableTracks = useMemoized(() {
+      final base = <String>[
+        'WAEC',
+        'JAMB',
+        'Mathematics',
+        'Physics',
+        'Chemistry',
+        'Computer Science',
+        'Medicine',
+        'SAT',
+      ];
+      if (userTrack != null &&
+          userTrack.trim().isNotEmpty &&
+          userTrack != 'General' &&
+          !base.contains(userTrack.trim())) {
+        base.insert(0, userTrack.trim());
+      }
+      return base;
+    }, [userTrack]);
 
     useEffect(() {
       void onScroll() {
@@ -458,11 +482,55 @@ class _ForumPostsList extends HookWidget {
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Interactive Sticky Filter Bar
+          // 1. Academic Track Selection Filter
           SliverToBoxAdapter(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  _buildTrackChip(
+                    context: context,
+                    label: 'All Tracks',
+                    icon: Icons.public_rounded,
+                    isSelected: state.selectedTrack == 'All',
+                    onTap: () {
+                      unawaited(HapticFeedback.selectionClick());
+                      context.read<CommunityHubBloc>().add(
+                        const ChangeTrackFilterEvent('All'),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ...availableTracks.map((trk) {
+                    final isUserHomeTrack = trk == effectiveTrack;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _buildTrackChip(
+                        context: context,
+                        label: trk,
+                        icon: _getTrackIcon(trk),
+                        isSelected: state.selectedTrack == trk,
+                        isHomeTrack: isUserHomeTrack,
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          context.read<CommunityHubBloc>().add(
+                            ChangeTrackFilterEvent(trk),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+
+          // 2. Interactive Sticky Sort Filter Bar
+          SliverToBoxAdapter(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   // 1. Trending Filter
@@ -690,7 +758,7 @@ class _ForumPostsList extends HookWidget {
                                         ),
                                         TextSpan(
                                           text:
-                                              'discussing $effectiveTrack syllabus shifts',
+                                              'discussing ${state.selectedTrack == 'All' ? 'community' : state.selectedTrack} syllabus shifts',
                                           style: typography.caption.medium.copyWith(
                                             color: colors.textPrimary,
                                             fontSize: 12,
@@ -767,7 +835,9 @@ class _ForumPostsList extends HookWidget {
                       Text(
                         searchQuery.isNotEmpty
                             ? 'No threads found for "$searchQuery". Try searching a different keyword or topic tag.'
-                            : 'Be the first scholar in $effectiveTrack to ask a question or start a discussion.',
+                            : (state.selectedTrack == 'All'
+                                ? 'No discussions have been posted in the community yet. Be the first to start a conversation!'
+                                : 'Be the first scholar in ${state.selectedTrack} to ask a question or start a discussion.'),
                         textAlign: TextAlign.center,
                         style: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
@@ -802,45 +872,113 @@ class _ForumPostsList extends HookWidget {
                           ),
                         )
                       else
-                        ShrinkableButton(
-                          onTap: () async {
-                            final hubBloc = context.read<CommunityHubBloc>();
-                            final created = await Navigator.of(context).push<bool>(
-                              MaterialPageRoute(
-                                builder: (_) => BlocProvider.value(
-                                  value: hubBloc,
-                                  child: CreateForumDiscussionPage(
-                                    initialTrack: effectiveTrack,
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ShrinkableButton(
+                              onTap: () async {
+                                final hubBloc = context.read<CommunityHubBloc>();
+                                final created = await Navigator.of(context).push<bool>(
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: hubBloc,
+                                      child: CreateForumDiscussionPage(
+                                        initialTrack: state.selectedTrack == 'All'
+                                            ? effectiveTrack
+                                            : state.selectedTrack,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                                if (created == true) {
+                                  hubBloc.add(
+                                    ChangeForumSortFilterEvent(
+                                      hubBloc.state.selectedForumFilter,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.primary.withAlpha(isDark ? 90 : 60),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 18,
+                                      color: colors.white,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Start a Discussion',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.white,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (state.selectedTrack != 'All') ...[
+                              const SizedBox(height: 12),
+                              ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  context.read<CommunityHubBloc>().add(
+                                    const ChangeTrackFilterEvent('All'),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfaceSecondary.withAlpha(120),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.public_rounded,
+                                        size: 15,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Explore All Community Discussions',
+                                        style: typography.caption.medium.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                            if (created == true) {
-                              hubBloc.add(
-                                ChangeForumSortFilterEvent(
-                                  hubBloc.state.selectedForumFilter,
-                                ),
-                              );
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add_rounded, size: 16, color: colors.white),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Start a Discussion',
-                                  style: typography.caption.bold.copyWith(color: colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
+                            ],
+                          ],
                         ),
                     ],
                   ),
@@ -917,6 +1055,93 @@ class _ForumPostsList extends HookWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  IconData _getTrackIcon(String track) {
+    switch (track.toLowerCase()) {
+      case 'waec':
+        return Icons.school_rounded;
+      case 'jamb':
+        return Icons.menu_book_rounded;
+      case 'mathematics':
+        return Icons.calculate_rounded;
+      case 'physics':
+        return Icons.bolt_rounded;
+      case 'chemistry':
+        return Icons.science_rounded;
+      case 'computer science':
+        return Icons.terminal_rounded;
+      case 'medicine':
+        return Icons.health_and_safety_rounded;
+      case 'sat':
+        return Icons.edit_note_rounded;
+      default:
+        return Icons.auto_stories_rounded;
+    }
+  }
+
+  Widget _buildTrackChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    bool isHomeTrack = false,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ShrinkableButton(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withAlpha(isDark ? 60 : 40)
+              : (isDark
+                  ? colors.surfaceSecondary.withAlpha(160)
+                  : colors.surfaceSecondary.withAlpha(90)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? colors.primary : colors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(
+                color: isSelected ? colors.primary : colors.textPrimary,
+                fontSize: 11.5,
+              ),
+            ),
+            if (isHomeTrack) ...[
+              const SizedBox(width: 5),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? colors.primary : colors.syllabotAccent,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

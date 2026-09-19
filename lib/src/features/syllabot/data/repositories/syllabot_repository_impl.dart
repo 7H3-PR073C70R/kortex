@@ -42,15 +42,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     required ExecutionEngineType preferredEngine,
     List<ChatMessageEntity> contextHistory = const [],
   }) {
-    if (preferredEngine == ExecutionEngineType.localOnDevice) {
-      return _local.generateOfflineResponse(
-        prompt: prompt,
-        socraticMode: socraticMode,
-        contextHistory: contextHistory,
-      );
-    }
-
-    // Cloud engine with transparent stream error propagation
+    // All Syllabot responses are routed to Luna AI on the server
     final controller = StreamController<String>();
 
     _remote
@@ -58,7 +50,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           prompt: prompt,
           sessionId: sessionId,
           socraticMode: socraticMode,
-          engine: preferredEngine,
+          engine: ExecutionEngineType.cloudRemote,
           contextHistory: contextHistory,
         )
         .listen(
@@ -66,8 +58,8 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           onError: (Object err) {
             if (!controller.isClosed) {
               controller.addError(
-                'Unable to reach Cloud Neural Engine. '
-                'Check internet or switch to Offline LLM.',
+                'Unable to reach Luna AI. '
+                'Please check your network connection and try again.',
               );
             }
           },

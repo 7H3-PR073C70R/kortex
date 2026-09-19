@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
@@ -33,12 +34,15 @@ class MockFetchUserDocumentsUseCase extends Mock
 
 class MockDecksRemoteDataSource extends Mock implements DecksRemoteDataSource {}
 
+class MockNotificationService extends Mock implements NotificationService {}
+
 void main() {
   late MockUploadStudyDocumentUseCase mockUpload;
   late MockProcessStemOcrUseCase mockProcessOcr;
   late MockGenerateFlashcardsFromDocUseCase mockGenerateDeck;
   late MockFetchUserDocumentsUseCase mockFetchUserDocs;
   late MockDecksRemoteDataSource mockDecksDataSource;
+  late MockNotificationService mockNotificationService;
   late IngestionBloc bloc;
 
   final testDoc = DocumentUploadEntity(
@@ -84,6 +88,16 @@ void main() {
     mockGenerateDeck = MockGenerateFlashcardsFromDocUseCase();
     mockFetchUserDocs = MockFetchUserDocumentsUseCase();
     mockDecksDataSource = MockDecksRemoteDataSource();
+    mockNotificationService = MockNotificationService();
+
+    when(
+      () => mockNotificationService.notifyDocumentProcessingComplete(
+        filename: any(named: 'filename'),
+        cardCount: any(named: 'cardCount'),
+        documentId: any(named: 'documentId'),
+        deckId: any(named: 'deckId'),
+      ),
+    ).thenAnswer((_) async {});
 
     bloc = IngestionBloc(
       uploadUseCase: mockUpload,
@@ -91,6 +105,7 @@ void main() {
       generateDeckUseCase: mockGenerateDeck,
       fetchUserDocsUseCase: mockFetchUserDocs,
       decksRemoteDataSource: mockDecksDataSource,
+      notificationService: mockNotificationService,
     );
   });
 
@@ -146,13 +161,13 @@ void main() {
         ),
         IngestionState(
           status: ProcessingStatus.parsingOcr,
-          stageMessage: 'Reading document locally...',
+          stageMessage: 'Extracting document on server compute...',
           uploadProgress: 1,
           currentDocument: testDoc,
         ),
         IngestionState(
           status: ProcessingStatus.completed,
-          stageMessage: 'Extracted 1 study cards locally',
+          stageMessage: 'Luna synthesized 1 conceptual cards',
           uploadProgress: 1,
           currentDocument: testDoc,
           snippets: const [testSnippet],
@@ -284,11 +299,11 @@ void main() {
       'updates synthesis mode on SetSynthesisModeEvent',
       build: () => bloc,
       act: (bloc) => bloc.add(
-        const SetSynthesisModeEvent(SynthesisMode.aiSmart),
+        const SetSynthesisModeEvent(SynthesisMode.fastLocal),
       ),
       expect: () => [
         const IngestionState(
-          synthesisMode: SynthesisMode.aiSmart,
+          synthesisMode: SynthesisMode.fastLocal,
         ),
       ],
     );
@@ -357,6 +372,37 @@ void main() {
               'MTH 101',
             ),
       ],
+    );
+
+    blocTest<IngestionBloc, IngestionState>(
+      'triggers notifyDocumentProcessingComplete on TriggerOcrParsingEvent success',
+      setUp: () {
+        when(
+          () => mockProcessOcr(
+            documentId: any(named: 'documentId'),
+            storagePath: any(named: 'storagePath'),
+            fileType: any(named: 'fileType'),
+          ),
+        ).thenAnswer((_) async => const Right([testSnippet]));
+      },
+      build: () => bloc,
+      act: (bloc) => bloc.add(
+        const TriggerOcrParsingEvent(
+          documentId: 'doc_123',
+          storagePath: 'doc_123.pdf',
+          fileType: 'pdf',
+        ),
+      ),
+      verify: (_) {
+        verify(
+          () => mockNotificationService.notifyDocumentProcessingComplete(
+            filename: any(named: 'filename'),
+            cardCount: 1,
+            documentId: 'doc_123',
+            deckId: any(named: 'deckId'),
+          ),
+        ).called(1);
+      },
     );
   });
 }

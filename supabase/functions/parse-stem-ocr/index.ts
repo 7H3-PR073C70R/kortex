@@ -164,18 +164,32 @@ serve(async (req) => {
     const parser = new ServerDocumentParser(supabase);
     let parsedDoc = {
       fullText: extractedText || "",
-      sections: [{ title: cleanDeckTitle, text: extractedText || "", index: 1 }],
+      sections: [] as Array<{ title: string; text: string; index: number }>,
       images: [] as Array<{ url: string; label: string }>,
       isScannedOrImage: false,
     };
 
     if (fileBytes && fileBytes.length > 0) {
-      parsedDoc = await parser.parseDocument({
+      const parsedFromFile = await parser.parseDocument({
         documentId,
         bytes: fileBytes,
         fileType,
         filename: resolvedFilename,
       });
+      parsedDoc.images = parsedFromFile.images;
+      parsedDoc.isScannedOrImage = parsedFromFile.isScannedOrImage;
+      if (parsedFromFile.fullText && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
+        parsedDoc.fullText = parsedFromFile.fullText;
+        parsedDoc.sections = parsedFromFile.sections;
+      }
+    }
+
+    if ((!parsedDoc.fullText || parsedDoc.fullText.trim().length === 0) && extractedText) {
+      parsedDoc.fullText = extractedText;
+    }
+
+    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0) {
+      parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
     // Stage 3: OCR processing verification (55%)
@@ -183,8 +197,8 @@ serve(async (req) => {
       status: "parsingOcr",
       progress: 0.55,
       stageMessage: parsedDoc.isScannedOrImage
-        ? "Processing visual OCR and mathematical formulas..."
-        : `Extracted ${parsedDoc.fullText.length > 0 ? "document text" : "empty content"} and ${parsedDoc.images.length} diagrams...`,
+        ? "Processing visual OCR and diagram assets..."
+        : `Extracted ${parsedDoc.fullText.length > 0 ? `${parsedDoc.sections.length} document sections` : "empty content"} and ${parsedDoc.images.length} diagrams...`,
     });
 
     // Stage 4: Semantic Mapping via Luna (75%)
@@ -208,7 +222,7 @@ serve(async (req) => {
     // Synthesize cards with Luna across sections
     for (const section of parsedDoc.sections) {
       try {
-        console.log(`[parse-stem-ocr] Passing section "${section.title}" to Luna...`);
+        console.log(`[parse-stem-ocr] Passing section "${section.title}" (${section.text.length} chars) to Luna...`);
         const cards = await luna.generateFlashcardsFromSemanticMapping({
           content: section.text,
           topic: section.title,
@@ -232,7 +246,30 @@ serve(async (req) => {
       }
     }
 
-    // Fallback if Luna returned 0 cards or was unreachable
+    // Fallback if Luna returned 0 cards or was unreachable: extract multiple high-yield cards from document sections
+    if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
+      console.warn("[parse-stem-ocr] Luna returned 0 cards; generating structural cards from sections...");
+      for (const sec of parsedDoc.sections) {
+        const lines = sec.text.split("\n").map((l) => l.trim()).filter((l) => l.length > 15);
+        if (lines.length > 0) {
+          const front = sec.title.length > 3
+            ? (sec.title.endsWith("?") ? sec.title : `What are the core principles and rules of ${sec.title}?`)
+            : `What is the key takeaway of ${cleanDeckTitle}?`;
+          const back = lines.slice(0, 6).join("\n");
+          generatedCards.push({
+            id: crypto.randomUUID(),
+            front,
+            back,
+            back_latex: null,
+            explanation: `Core summary for ${sec.title}`,
+            image_url: parsedDoc.images[0]?.url ?? null,
+            tags: [sec.title, cleanDeckTitle, courseCode],
+          });
+        }
+      }
+    }
+
+    // Ultimate fallback if text was entirely blank
     if (generatedCards.length === 0) {
       const fallbackPrompt = `What are the core concepts covered in ${cleanDeckTitle}?`;
       const fallbackBody = parsedDoc.fullText.slice(0, 500) || "Study content extracted from document.";

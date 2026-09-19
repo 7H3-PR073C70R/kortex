@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -13,11 +12,8 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capacity_prompt_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for Syllabot AI settings, reasoning preferences,
@@ -69,10 +65,6 @@ class SyllabotAiSettingsPage extends HookWidget {
     final socraticMode = useState<SocraticMode>(initialMode);
     final voiceGender = useState<VoiceGender>(initialGender);
     final speechRate = useState<double>(initialRate);
-    final offlineModelDownloaded = useState<bool>(
-      locator<LocalLlmEngineClient>().isModelDownloaded,
-    );
-    final isDownloadingOfflineModel = useState<bool>(false);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -322,180 +314,6 @@ class SyllabotAiSettingsPage extends HookWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
-
-              // 3. Offline Neural Weights Storage
-              _buildSectionCard(
-                title: 'Offline On-Device Weights',
-                subtitle: 'Quantized LLM for study sessions without internet',
-                colors: colors,
-                typography: typography,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              offlineModelDownloaded.value
-                                  ? 'Downloaded (248 MB)'
-                                  : 'Not Downloaded',
-                              style: typography.body.bold.copyWith(
-                                color: offlineModelDownloaded.value
-                                    ? colors.success
-                                    : colors.textPrimary,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              offlineModelDownloaded.value
-                                  ? 'Ready for offline reasoning'
-                                  : 'Requires ~248 MB local storage',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isDownloadingOfflineModel.value)
-                          const AppLogoLoader(
-                            size: 26,
-                            showMessage: false,
-                          )
-                        else
-                          ShrinkableButton(
-                            onTap: () {
-                              final client = locator<LocalLlmEngineClient>();
-                              if (offlineModelDownloaded.value) {
-                                unawaited(client.deleteModel());
-                                offlineModelDownloaded.value = false;
-                                context.showSnackBar(
-                                  message: 'Offline Neural weights deleted.',
-                                );
-                              } else {
-                                unawaited(
-                                  LocalLlmCapacityPromptModalSheet.show(
-                                    context,
-                                    onDownloadComplete: () {
-                                      offlineModelDownloaded.value = true;
-                                      if (context.mounted) {
-                                        context.showSnackBar(
-                                          message:
-                                              'Offline weights ready (248 MB)!',
-                                          type: SnackBarType.success,
-                                        );
-                                      }
-                                    },
-                                  ),
-                                );
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: offlineModelDownloaded.value
-                                    ? colors.error.withAlpha(25)
-                                    : colors.primary.withAlpha(30),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: offlineModelDownloaded.value
-                                      ? colors.error.withAlpha(80)
-                                      : colors.primary.withAlpha(80),
-                                ),
-                              ),
-                              child: Text(
-                                offlineModelDownloaded.value
-                                    ? 'Delete Model'
-                                    : 'Download (248 MB)',
-                                style: typography.caption.bold.copyWith(
-                                  color: offlineModelDownloaded.value
-                                      ? colors.error
-                                      : colors.primary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Divider(
-                      height: 1,
-                      thickness: 0.8,
-                      color: colors.surfaceBorder.withAlpha(50),
-                    ),
-                    const SizedBox(height: 12),
-                    ShrinkableButton(
-                      onTap: () {
-                        unawaited(HapticFeedback.lightImpact());
-                        unawaited(
-                          context.router.push(
-                            OfflineFlashcardGenerationRoute(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceSecondary,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(60),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.offline_bolt_rounded,
-                              size: 18,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Launch Offline Card Generator',
-                                    style: typography.body.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Synthesize flashcards using local on-device LLM',
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
 
               // Save Action

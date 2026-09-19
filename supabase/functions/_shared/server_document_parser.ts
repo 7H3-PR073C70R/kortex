@@ -294,7 +294,7 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
   /**
    * Segments long text into chapter / logical sections for optimal LLM context windows.
    */
-  private segmentIntoSections(
+  public segmentIntoSections(
     fullText: string,
     defaultTitle: string
   ): Array<{ title: string; text: string; index: number }> {

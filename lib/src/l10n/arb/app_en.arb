@@ -2005,9 +2005,9 @@
     "@socraticDeepResearch": {
         "description": "Socratic mode label for theoretical research breakdown"
     },
-    "engineCloudSupabase": "Cloud Neural Engine",
+    "engineCloudSupabase": "Luna AI",
     "@engineCloudSupabase": {
-        "description": "Engine status label for remote Supabase LLM"
+        "description": "Engine status label for remote Luna LLM"
     },
     "engineLocalOnDevice": "Offline On-Device LLM",
     "@engineLocalOnDevice": {
@@ -2115,21 +2115,21 @@
     "@uploadingStatus": {
         "description": "Progress message during file upload"
     },
-    "processingOcrStatus": "Extracting formulas & text...",
+    "processingOcrStatus": "Extracting study notes & concepts...",
     "@processingOcrStatus": {
-        "description": "Progress message during OCR processing"
+        "description": "Progress message during document processing"
     },
     "generatingCardsStatus": "Generating active recall cards...",
     "@generatingCardsStatus": {
         "description": "Progress message during flashcard generation"
     },
-    "ocrPreviewTitle": "Document OCR Live Editor",
+    "ocrPreviewTitle": "Study Cards Live Editor",
     "@ocrPreviewTitle": {
-        "description": "Title for the OCR preview and editor page"
+        "description": "Title for the study cards preview and editor page"
     },
     "saveToDecksButton": "Convert to Flashcards",
     "@saveToDecksButton": {
-        "description": "Button to convert OCR snippets into cards"
+        "description": "Button to convert extracted snippets into cards"
     },
     "invalidFileFormatError": "Unsupported file format. Please choose a PDF, PPTX, or Image file.",
     "@invalidFileFormatError": {
@@ -2139,9 +2139,9 @@
     "@supportedFormatsNotice": {
         "description": "Footnote describing supported document types"
     },
-    "extractedSnippetsCount": "{count} formulas & concepts extracted",
+    "extractedSnippetsCount": "{count} study concepts & cards extracted",
     "@extractedSnippetsCount": {
-        "description": "Count banner in OCR preview",
+        "description": "Count banner in study cards preview",
         "placeholders": {
             "count": {
                 "type": "int",
@@ -2149,9 +2149,9 @@
             }
         }
     },
-    "generateCardsAction": "Generate FSRS-6 Cards",
+    "generateCardsAction": "Save & Generate Deck",
     "@generateCardsAction": {
-        "description": "Action button in OCR preview"
+        "description": "Action button in study cards preview"
     },
     "reviewCardsTitle": "Review Generated Flashcards",
     "@reviewCardsTitle": {
@@ -2253,17 +2253,17 @@
     "@cardAnswerHint": {
         "description": "Hint text for flashcard answer field"
     },
-    "cardEquationLabel": "LaTeX Equation / Formula (Optional)",
+    "cardEquationLabel": "Key Formula, Rule, or Code (Optional)",
     "@cardEquationLabel": {
-        "description": "Label for LaTeX equation block editor"
+        "description": "Label for formula or rule block editor"
     },
-    "cardEquationHint": "e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1",
+    "cardEquationHint": "e.g. 3:1 RR Minimum, or \\\\int f(x) dx, or rule summary",
     "@cardEquationHint": {
-        "description": "Hint text for LaTeX formula input"
+        "description": "Hint text for formula or key rule input"
     },
-    "liveFormulaPreviewLabel": "Live Formula Preview",
+    "liveFormulaPreviewLabel": "Formula / Rule Preview",
     "@liveFormulaPreviewLabel": {
-        "description": "Header for live LaTeX math rendering preview"
+        "description": "Header for live math and rule rendering preview"
     },
     "extractedVisualDiagramLabel": "Extracted Diagram / Visual Asset",
     "@extractedVisualDiagramLabel": {
@@ -2282,9 +2282,9 @@
             }
         }
     },
-    "parsingOcrDocStatus": "Parsing OCR formulas in {filename}...",
+    "parsingOcrDocStatus": "Extracting concepts from {filename}...",
     "@parsingOcrDocStatus": {
-        "description": "Status text for OCR parsing in progress",
+        "description": "Status text for document parsing in progress",
         "placeholders": {
             "filename": {
                 "type": "String"

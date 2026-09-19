@@ -8,7 +8,6 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
-import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -66,12 +65,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     await _streamSubscription?.cancel();
     _currentRagReferences = [];
 
-    final isPro = !locator.isRegistered<SubscriptionGuard>() ||
-        locator<SubscriptionGuard>().canAccessCloudAi();
-    final effectiveEngine =
-        (!isPro && event.engineType == ExecutionEngineType.cloudRemote)
-            ? ExecutionEngineType.localOnDevice
-            : event.engineType;
+    // All normal interactions use the requested engine without Pro downgrade to on-device LLM
+    final effectiveEngine = event.engineType;
 
     final effectiveSessionId = event.sessionId.isNotEmpty
         ? event.sessionId
@@ -110,9 +105,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         messages: updatedMessages,
         sessionId: effectiveSessionId,
         socraticMode: event.socraticMode,
-        engineType: event.engineType,
+        engineType: effectiveEngine,
         lastPrompt: event.prompt,
-        lastEngine: event.engineType,
+        lastEngine: effectiveEngine,
         lastSocraticMode: event.socraticMode,
       ),
     );

@@ -8,7 +8,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -20,10 +19,8 @@ import 'package:kortex/src/features/community/presentation/bloc/community_hub_bl
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
-import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
-import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/models/prompt_suggestion_model.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -34,7 +31,6 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_eve
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/convert_to_deck_action_sheet.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capacity_prompt_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_download_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
@@ -63,18 +59,15 @@ class SyllabotChatPage extends HookWidget {
     final bloc = useMemoized(locator.call<SyllabotChatBloc>);
 
     useEffect(() {
+      bloc.add(const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote));
       if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
         final sid = UuidUtils.generate();
-        final isPro = locator.isRegistered<SubscriptionGuard>() &&
-            locator<SubscriptionGuard>().canAccessCloudAi();
         bloc.add(
           SubmitPromptEvent(
             prompt: initialPrompt!.trim(),
             sessionId: sid,
             socraticMode: initialMode ?? bloc.state.socraticMode,
-            engineType: isPro
-                ? ExecutionEngineType.cloudRemote
-                : ExecutionEngineType.localOnDevice,
+            engineType: ExecutionEngineType.cloudRemote,
           ),
         );
       }
@@ -182,71 +175,9 @@ class _SyllabotChatView extends HookWidget {
       BuildContext pageContext,
       ExecutionEngineType targetEngine,
     ) {
-      if (targetEngine == ExecutionEngineType.cloudRemote) {
-        final isPro = locator.isRegistered<SubscriptionGuard>() &&
-            locator<SubscriptionGuard>().canAccessCloudAi();
-        if (!isPro) {
-          AppFeedback.medium();
-          if (locator.isRegistered<SubscriptionGuard>()) {
-            unawaited(
-              locator<SubscriptionGuard>()
-                  .requirePro(pageContext, featureName: 'Cloud AI Reasoning')
-                  .then((upgraded) {
-                if (upgraded && pageContext.mounted) {
-                  pageContext.read<SyllabotChatBloc>().add(
-                    const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
-                  );
-                  pageContext.showSnackBar(
-                    message: l10n.engineCloudSupabase,
-                    type: SnackBarType.success,
-                  );
-                }
-              }),
-            );
-          }
-          return;
-        }
-
-        pageContext.read<SyllabotChatBloc>().add(
-          const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
-        );
-        pageContext.showSnackBar(
-          message: l10n.engineCloudSupabase,
-        );
-        return;
-      }
-
-      // Switching to Local On-Device LLM
-      final localLlm = locator<LocalLlmEngineClient>();
-      if (localLlm.isModelDownloaded) {
-        pageContext.read<SyllabotChatBloc>().add(
-          const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
-        );
-        pageContext.showSnackBar(
-          message: l10n.engineLocalOnDevice,
-          type: SnackBarType.success,
-        );
-      } else {
-        // Audit device capacity and prompt user with interactive modal sheet
-        unawaited(
-          LocalLlmCapacityPromptModalSheet.show(
-            pageContext,
-            onDownloadComplete: () {
-              if (pageContext.mounted) {
-                pageContext.read<SyllabotChatBloc>().add(
-                  const ChangeEngineTypeEvent(
-                    ExecutionEngineType.localOnDevice,
-                  ),
-                );
-                pageContext.showSnackBar(
-                  message: 'On-Device Neural Engine ready! Activated.',
-                  type: SnackBarType.success,
-                );
-              }
-            },
-          ),
-        );
-      }
+      pageContext.read<SyllabotChatBloc>().add(
+        const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+      );
     }
 
     void cancelModelDownload(BuildContext pageContext) {
@@ -835,7 +766,7 @@ class _SyllabotChatView extends HookWidget {
                                   prompt: prompt,
                                   sessionId: sid,
                                   socraticMode: state.socraticMode,
-                                  engineType: state.engineType,
+                                  engineType: ExecutionEngineType.cloudRemote,
                                 ),
                               );
                               scrollToBottom();

@@ -56,9 +56,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
   ) async {
     emit(state.copyWith(status: CommunityStatus.loading));
 
-    final effectiveTrack =
-        event.track ??
-        (state.selectedTrack == 'All' ? null : state.selectedTrack);
+    final rawTrack = event.track ?? state.selectedTrack;
+    final effectiveTrack = rawTrack == 'All' ? null : rawTrack;
     final effectiveCategory = event.category ?? effectiveTrack;
 
     final roomsRes = await _repository.fetchStudyRooms(

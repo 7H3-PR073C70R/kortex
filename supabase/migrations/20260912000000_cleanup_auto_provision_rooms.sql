@@ -12,7 +12,10 @@ WHERE course_code ~* '^[0-9a-f]{16,}'
    OR course_code ~* '^[0-9a-f]{8}-[0-9a-f]{4}'
    OR title ~* '^[0-9a-f]{16,}';
 
--- 3. Update auto_provision_community_rpc to ignore document hash-like codes
+-- 3. Ensure role column exists on community_members
+ALTER TABLE community_members ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
+
+-- 4. Update auto_provision_community_rpc to ignore document hash-like codes
 CREATE OR REPLACE FUNCTION auto_provision_community_rpc(
     p_course_code TEXT,
     p_title TEXT,
@@ -101,9 +104,20 @@ BEGIN
 
     -- Ensure user is a member of this community
     IF v_user_id IS NOT NULL THEN
-        INSERT INTO community_members (community_id, user_id, role)
-        VALUES (v_community_id, v_user_id, CASE WHEN v_is_founding THEN 'admin' ELSE 'member' END)
-        ON CONFLICT (community_id, user_id) DO NOTHING;
+        INSERT INTO community_members (
+            community_id,
+            user_id,
+            is_founding_member,
+            role
+        ) VALUES (
+            v_community_id,
+            v_user_id,
+            v_is_founding,
+            CASE WHEN v_is_founding THEN 'admin' ELSE 'member' END
+        )
+        ON CONFLICT (community_id, user_id) DO UPDATE
+        SET is_founding_member = community_members.is_founding_member OR EXCLUDED.is_founding_member,
+            role = COALESCE(community_members.role, EXCLUDED.role);
     END IF;
 
     RETURN jsonb_build_object(

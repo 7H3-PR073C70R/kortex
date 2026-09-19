@@ -1395,26 +1395,22 @@ class ForumThreadDetailPage extends HookWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: Container(
-                              key: ValueKey(localReplies.value.length),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : const Color(0xFFE2E8F0),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${localReplies.value.length}',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : const Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${localReplies.value.length}',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
                               ),
                             ),
                           ),

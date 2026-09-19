@@ -1404,7 +1404,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get socraticDeepResearch => 'Deep Research';
 
   @override
-  String get engineCloudSupabase => 'Cloud Neural Engine';
+  String get engineCloudSupabase => 'Luna AI';
 
   @override
   String get engineLocalOnDevice => 'Offline On-Device LLM';
@@ -1490,13 +1490,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadingStatus => 'Uploading document...';
 
   @override
-  String get processingOcrStatus => 'Extracting formulas & text...';
+  String get processingOcrStatus => 'Extracting study notes & concepts...';
 
   @override
   String get generatingCardsStatus => 'Generating active recall cards...';
 
   @override
-  String get ocrPreviewTitle => 'Document OCR Live Editor';
+  String get ocrPreviewTitle => 'Study Cards Live Editor';
 
   @override
   String get saveToDecksButton => 'Convert to Flashcards';
@@ -1511,11 +1511,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String extractedSnippetsCount(int count) {
-    return '$count formulas & concepts extracted';
+    return '$count study concepts & cards extracted';
   }
 
   @override
-  String get generateCardsAction => 'Generate FSRS-6 Cards';
+  String get generateCardsAction => 'Save & Generate Deck';
 
   @override
   String get reviewCardsTitle => 'Review Generated Flashcards';
@@ -1598,14 +1598,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardAnswerHint => 'Enter answer or detailed explanation...';
 
   @override
-  String get cardEquationLabel => 'LaTeX Equation / Formula (Optional)';
+  String get cardEquationLabel => 'Key Formula, Rule, or Code (Optional)';
 
   @override
   String get cardEquationHint =>
-      'e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1';
+      'e.g. 3:1 RR Minimum, or \\\\int f(x) dx, or rule summary';
 
   @override
-  String get liveFormulaPreviewLabel => 'Live Formula Preview';
+  String get liveFormulaPreviewLabel => 'Formula / Rule Preview';
 
   @override
   String get extractedVisualDiagramLabel => 'Extracted Diagram / Visual Asset';
@@ -1620,7 +1620,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String parsingOcrDocStatus(String filename) {
-    return 'Parsing OCR formulas in $filename...';
+    return 'Extracting concepts from $filename...';
   }
 
   @override

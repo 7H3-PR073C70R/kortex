@@ -361,6 +361,42 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     var fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
 
+    // If bytes not in memory cache, attempt download from storage bucket
+    if ((fileBytes == null || fileBytes.isEmpty) && storagePath.isNotEmpty) {
+      try {
+        final res = await _dio.get<List<int>>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.storageBucket}/$storagePath',
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (res.data != null && res.data!.isNotEmpty) {
+          fileBytes = Uint8List.fromList(res.data!);
+          _documentBytesCache[documentId] = fileBytes;
+        }
+      } on Object catch (_) {}
+    }
+
+    String? extractedText;
+    final isPdf = fileType.toLowerCase().contains('pdf') ||
+        storagePath.toLowerCase().endsWith('.pdf') ||
+        filename.toLowerCase().endsWith('.pdf');
+
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      try {
+        if (isPdf) {
+          extractedText = await _pdfParserService.extractText(
+            fileBytes,
+            filename: filename,
+          );
+        } else {
+          extractedText = _parserService.extractTextFromBytes(
+            fileBytes,
+            fileType: fileType,
+            filename: filename,
+          );
+        }
+      } on Object catch (_) {}
+    }
+
     // 1. Remote Server Compute & Luna AI Synthesis
     try {
       final payload = <String, dynamic>{
@@ -368,6 +404,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         'storagePath': storagePath,
         'fileType': fileType,
         'filename': filename,
+        if (extractedText != null && extractedText.trim().isNotEmpty)
+          'extractedText': extractedText,
       };
 
       final res = await _client.triggerParseStemOcr(payload);
@@ -376,7 +414,19 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           ? (res.data as Map<String, dynamic>)
           : <String, dynamic>{};
       final rawList = result['snippets'] as List<dynamic>? ?? [];
-      if (rawList.isNotEmpty) {
+
+      // Detect if server returned the 1-card dummy fallback rather than real content
+      final isDummyFallback = rawList.length == 1 &&
+          () {
+            final first = rawList.first;
+            if (first is! Map) return false;
+            final rawText = first['raw_text']?.toString() ?? '';
+            final topic = first['topic']?.toString() ?? '';
+            return rawText.contains('Study content extracted') ||
+                topic.contains('What are the core concepts covered in');
+          }();
+
+      if (rawList.isNotEmpty && !isDummyFallback) {
         return rawList
             .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -398,7 +448,10 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     // 2. Try fetch from DB directly if available
     try {
       final snippets = await fetchExtractedSnippets(documentId);
-      if (snippets.isNotEmpty) return snippets;
+      final isDbDummy = snippets.length == 1 &&
+          (snippets.first.rawText.contains('Study content extracted') ||
+           snippets.first.topic.contains('What are the core concepts covered in'));
+      if (snippets.isNotEmpty && !isDbDummy) return snippets;
     } on Object catch (e, stack) {
       final crashlytics = _crashlyticsService;
       if (crashlytics != null) {
@@ -413,39 +466,13 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       }
     }
 
-    // 3. Document Parsing Engine: Extract text & images from uploaded document
-
-    // If bytes not in memory cache, attempt download from storage bucket
-    if ((fileBytes == null || fileBytes.isEmpty) && storagePath.isNotEmpty) {
-      try {
-        final res = await _dio.get<List<int>>(
-          '${AppApiEndpoint.baseUri}${AppApiEndpoint.storageBucket}/$storagePath',
-          options: Options(responseType: ResponseType.bytes),
-        );
-        if (res.data != null && res.data!.isNotEmpty) {
-          fileBytes = Uint8List.fromList(res.data!);
-          _documentBytesCache[documentId] = fileBytes;
-        }
-      } on Object catch (_) {}
-    }
-
+    // 3. Document Parsing Engine: Synthesize rich, high-yield cards from document
     if (fileBytes != null && fileBytes.isNotEmpty) {
-      String text;
-      final isPdf = fileType.toLowerCase().contains('pdf') ||
-          storagePath.toLowerCase().endsWith('.pdf') ||
-          filename.toLowerCase().endsWith('.pdf');
-      if (isPdf) {
-        text = await _pdfParserService.extractText(
-          fileBytes,
-          filename: filename,
-        );
-      } else {
-        text = _parserService.extractTextFromBytes(
-          fileBytes,
-          fileType: fileType,
-          filename: filename,
-        );
-      }
+      final text = (extractedText != null && extractedText.trim().isNotEmpty)
+          ? extractedText
+          : (isPdf
+              ? await _pdfParserService.extractText(fileBytes, filename: filename)
+              : _parserService.extractTextFromBytes(fileBytes, fileType: fileType, filename: filename));
 
       final token = _userStorage?.getToken();
       final extractedImages = _parserService.extractImagesFromPdfBytes(
@@ -485,7 +512,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
 
     return _parserService.synthesizeSnippetsFromDocument(
       documentId: documentId,
-      fullText: '',
+      fullText: extractedText ?? '',
       filename: filename,
     );
   }

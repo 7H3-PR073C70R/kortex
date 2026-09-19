@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -38,6 +39,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     ImportLmsCourseUseCase? importLmsCourseUseCase,
     OnboardingStreamController? streamController,
     DeepDocumentDedupService? dedupService,
+    NotificationService? notificationService,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
@@ -48,6 +50,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _importLmsCourse = importLmsCourseUseCase,
        _streamController = streamController,
        _dedupService = dedupService ?? DeepDocumentDedupService(),
+       _notificationService = notificationService,
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -75,8 +78,33 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final ImportLmsCourseUseCase? _importLmsCourse;
   final OnboardingStreamController? _streamController;
   final DeepDocumentDedupService _dedupService;
+  final NotificationService? _notificationService;
 
   OnboardingStreamController? get streamController => _streamController;
+
+  void _notifyProcessingCompleted({
+    required String filename,
+    int? cardCount,
+    String? documentId,
+    String? deckId,
+  }) {
+    try {
+      final service = _notificationService ??
+          (locator.isRegistered<NotificationService>()
+              ? locator<NotificationService>()
+              : null);
+      if (service != null) {
+        unawaited(
+          service.notifyDocumentProcessingComplete(
+            filename: filename,
+            cardCount: cardCount,
+            documentId: documentId,
+            deckId: deckId,
+          ),
+        );
+      }
+    } on Object catch (_) {}
+  }
 
   void _onSetSynthesisMode(
     SetSynthesisModeEvent event,
@@ -265,7 +293,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             ),
           );
         }
-      });
+      }, onError: (_) {});
     } on Object catch (_) {}
 
     try {
@@ -293,6 +321,12 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
                   : 'Luna synthesized ${snippets.length} conceptual cards',
               snippets: snippets,
             ),
+          );
+
+          _notifyProcessingCompleted(
+            filename: state.currentDocument?.filename ?? 'Document',
+            cardCount: snippets.length,
+            documentId: event.documentId,
           );
         },
       );
@@ -492,6 +526,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           attachedDocumentIds: updatedAttached,
         ),
       );
+
+      _notifyProcessingCompleted(
+        filename: docFilename,
+        cardCount: newCards.length,
+        documentId: documentId,
+        deckId: assignedDeck.id,
+      );
       return;
     }
 
@@ -670,6 +711,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             stageMessage: 'Deck & flashcards synced to Supabase',
             generatedDeck: deck,
           ),
+        );
+
+        _notifyProcessingCompleted(
+          filename: state.currentDocument?.filename ?? event.deckTitle,
+          cardCount: deck.totalCards,
+          documentId: event.documentId,
+          deckId: deck.id,
         );
       },
     );

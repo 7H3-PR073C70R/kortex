@@ -70,7 +70,6 @@ dependencies:
   path: ^1.9.1
   drift: ^2.34.4
   drift_flutter: ^0.3.1
-  sqlite3_flutter_libs: ^0.6.0+eol
   audioplayers: ^6.7.1
 
 dev_dependencies:

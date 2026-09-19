@@ -111,6 +111,120 @@ ACADEMIC_IMAGES = {
 # Post Templates covering varied domains, image configurations, and LaTeX formulations
 POST_TEMPLATES = [
     {
+        "title": "WAEC WASSCE General Maths: Circle Geometry - Angle at Centre vs Circumference",
+        "track": "WAEC",
+        "syllabus_tag": "Circle Theorems & Geometry",
+        "content": "In WASSCE Theory Question 4b, we are given a cyclic quadrilateral ABCD where chord AB is subtending an angle at the centre O. What is the fastest systematic way to deduce angles in alternate segments without mixing up cyclic quadrilateral opposite angles adding to 180°?",
+        "latex_content": "\\angle AOB = 2\\angle ACB, \\quad \\angle DAB + \\angle BCD = 180^\\circ",
+        "tags": ["WAEC", "WASSCE", "Mathematics", "CircleTheorems", "PastQuestions"],
+        "media_type": "single",
+        "media_keys": ["calculus_board"],
+        "is_question": True,
+        "replies": [
+            {
+                "author_idx": 6,
+                "content": "Always remember this two-step check for WAEC circle theorem questions:\n1. Look for the radius forming an isosceles triangle (angles opposite equal radii are equal).\n2. For cyclic quads, opposite angles sum to $180^\\circ$, and the exterior angle equals the interior opposite angle!",
+                "is_verified": True,
+                "sub_replies": [
+                    {
+                        "author_idx": 0,
+                        "content": "Spot on Chinedu. Also in WAEC marking schemes, remember to always write the theorem reason in parentheses (e.g. 'opp. $\\angle$s of cyclic quad.') or examiners will penalize step marks.",
+                    }
+                ],
+            },
+            {
+                "is_ai": True,
+                "content": "### Syllabot WAEC Step-by-Step Breakdown\n\n1. **Angle at Centre:** The angle subtended by an arc at the center is twice the angle subtended by it at any point on the circumference: $\\angle AOB = 2\\angle APB$.\n2. **Angles in Alternate Segments:** The angle between a tangent and a chord through the point of contact equals the angle in the alternate segment: $\\angle TAB = \\angle ACB$.\n3. **Cyclic Quadrilateral:** Opposite angles are supplementary: $\\angle A + \\angle C = 180^\\circ$.\n\n*Examiner Tip:* Always quote the theorem reason beside each angle deduction to guarantee full method marks!",
+            },
+        ],
+    },
+    {
+        "title": "WAEC Chemistry: Esterification vs Saponification & Reflux Reaction Conditions",
+        "track": "WAEC",
+        "syllabus_tag": "Organic Chemistry",
+        "content": "When preparing ethyl ethanoate from ethanol and ethanoic acid using concentrated H2SO4 as catalyst, why do WAEC practical questions always specify heating under reflux, and why is sodium carbonate added during separation?",
+        "latex_content": "CH_3COOH + C_2H_5OH \\xrightleftharpoons{\\text{conc. } H_2SO_4} CH_3COOC_2H_5 + H_2O",
+        "tags": ["WAEC", "Chemistry", "OrganicChemistry", "Practicals", "Esters"],
+        "media_type": "single",
+        "media_keys": ["lab_chemistry"],
+        "is_question": True,
+        "replies": [
+            {
+                "author_idx": 5,
+                "content": "Reflux prevents the volatile organic reactants (ethanol boiling point 78°C and ethyl ethanoate 77°C) from evaporating before the reversible equilibrium is reached. The Na2CO3 is added to neutralize any unreacted ethanoic acid!",
+                "is_verified": True,
+                "sub_replies": [
+                    {
+                        "author_idx": 7,
+                        "content": "That makes total sense! And the characteristic sweet fruity smell confirms ester formation.",
+                    }
+                ],
+            },
+            {
+                "is_ai": True,
+                "content": "**Syllabot Practical Summary:**\n- **Role of Conc. $H_2SO_4$:** Acts as both an acid catalyst and a dehydrating agent, shifting equilibrium forward via Le Chatelier's principle.\n- **Reflux:** Condenses vapors back into the flask to prevent yield loss.\n- **Separation:** $Na_2CO_3$ converts $CH_3COOH$ to water-soluble $CH_3COONa$, which separates cleanly into the aqueous layer in a separating funnel.",
+            },
+        ],
+    },
+    {
+        "title": "WAEC Physics: Ideal Transformer Calculations and Eddy Current Core Lamination",
+        "track": "WAEC",
+        "syllabus_tag": "Electromagnetism & AC Current",
+        "content": "A step-down transformer is used to operate a 12V, 24W lamp from a 240V mains supply. If the efficiency is 80%, what is the current drawn from the primary coil?",
+        "latex_content": "\\eta = \\frac{P_{out}}{P_{in}} \\times 100\\% \\implies 0.80 = \\frac{24}{240 \\times I_p}",
+        "tags": ["WAEC", "Physics", "Transformers", "Electromagnetism", "WASSCE"],
+        "media_type": "single",
+        "media_keys": ["circuit"],
+        "is_question": True,
+        "replies": [
+            {
+                "author_idx": 1,
+                "content": "Let's solve step by step:\n$$P_{in} = \\frac{P_{out}}{0.80} = \\frac{24}{0.80} = 30\\text{ W}$$\nSince $P_{in} = V_p I_p$:\n$$I_p = \\frac{30}{240} = 0.125\\text{ A}$$\nSuper common 5-mark question in WAEC Paper 2!",
+                "is_verified": True,
+            },
+            {
+                "author_idx": 0,
+                "content": "Also remember why transformer cores are laminated with soft iron: to minimize eddy current energy losses through heat, and soft iron has low hysteresis loss.",
+            },
+        ],
+    },
+    {
+        "title": "WAEC English Language: Navigating Concord, Subjunctive Mood & Phrasal Verbs",
+        "track": "WAEC",
+        "syllabus_tag": "English Grammar & Lexis",
+        "content": "Can someone explain why in subjunctive mood we say 'I wish I were' instead of 'I was', and how to handle concord with expressions like 'together with', 'as well as', and 'neither... nor' in WAEC Section 1?",
+        "latex_content": "\\text{Subject}_1 + \\text{ 'as well as' } + \\text{Subject}_2 \\implies \\text{Verb agrees with Subject}_1",
+        "tags": ["WAEC", "English", "Concord", "Grammar", "WASSCE"],
+        "media_type": "none",
+        "media_keys": [],
+        "is_question": True,
+        "replies": [
+            {
+                "author_idx": 6,
+                "content": "Remember the golden rule for WAEC lexis:\n1. 'As well as', 'together with', 'in addition to' are parenthetical — the verb strictly agrees with the FIRST subject: 'The teacher as well as the students **is** coming.'\n2. 'Neither... nor' / 'Either... or' follows proximity rule — verb agrees with the NEAREST subject: 'Neither John nor the boys **are** here.'",
+                "is_verified": True,
+            },
+        ],
+    },
+    {
+        "title": "WAEC Biology: Dihybrid Cross & Calculating 9:3:3:1 Phenotypic Ratio Shortcuts",
+        "track": "WAEC",
+        "syllabus_tag": "Genetics & Heredity",
+        "content": "In a cross between two heterozygous round yellow pea plants (RrYy x RrYy), what fraction of the offspring will be homozygous recessive for at least one trait?",
+        "latex_content": "P(\\text{homozygous recessive for } R \\text{ or } Y) = 1 - P(R\\_ Y\\_) = 1 - \\frac{9}{16} = \\frac{7}{16}",
+        "tags": ["WAEC", "Biology", "Genetics", "Mendel", "PunnettSquare"],
+        "media_type": "single",
+        "media_keys": ["microscope_biology"],
+        "is_question": True,
+        "replies": [
+            {
+                "author_idx": 3,
+                "content": "Using the complement probability $1 - 9/16 = 7/16$ is 10x faster than drawing a 16-box Punnett square in the exam hall! The 7 are: 3 round green (R_yy) + 3 wrinkled yellow (rrY_) + 1 wrinkled green (rryy).",
+                "is_verified": True,
+            },
+        ],
+    },
+    {
         "title": "Stuck on evaluating this tricky contour integral using Cauchy's Residue Theorem",
         "track": "Mathematics",
         "syllabus_tag": "Complex Analysis",
@@ -383,10 +497,13 @@ def generate_and_seed_forum(
     api_url: str = DEFAULT_API_URL,
     anon_key: str = DEFAULT_ANON_KEY,
     service_key: str = None,
+    track: str = None,
 ):
     print("=" * 70)
     print(f"🚀 KORTEX FORUM SEEDING GENERATOR")
     print(f"Targeting: {api_url}")
+    if track:
+        print(f"Target Track Filter: {track}")
     print(f"Generating {post_count} realistic posts with dynamic replies & nested threads...")
     print("=" * 70)
 
@@ -399,8 +516,13 @@ def generate_and_seed_forum(
 
     now = datetime.datetime.now(datetime.timezone.utc)
 
+    templates_pool = [t for t in POST_TEMPLATES if t["track"].lower() == track.lower()] if track else POST_TEMPLATES
+    if not templates_pool:
+        print(f"⚠️ No templates found for track '{track}'. Falling back to all templates.")
+        templates_pool = POST_TEMPLATES
+
     for p_idx in range(post_count):
-        template = POST_TEMPLATES[p_idx % len(POST_TEMPLATES)]
+        template = templates_pool[p_idx % len(templates_pool)]
         author_persona = PERSONAS[p_idx % len(PERSONAS)]
         
         # Build media URLs based on template specification
@@ -558,6 +680,7 @@ def main():
     parser.add_argument("--api-url", type=str, default=DEFAULT_API_URL, help="Supabase API URL")
     parser.add_argument("--anon-key", type=str, default=DEFAULT_ANON_KEY, help="Supabase Anon Key")
     parser.add_argument("--service-key", type=str, default=None, help="Optional Supabase Service Role Key")
+    parser.add_argument("--track", type=str, default=None, help="Optional academic track filter (e.g. WAEC, JAMB, Mathematics)")
 
     args = parser.parse_args()
 
@@ -570,6 +693,7 @@ def main():
         api_url=args.api_url,
         anon_key=args.anon_key,
         service_key=args.service_key,
+        track=args.track,
     )
 
 if __name__ == "__main__":

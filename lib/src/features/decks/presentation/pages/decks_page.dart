@@ -99,31 +99,13 @@ class _DecksView extends HookWidget {
                     icon: Icons.layers_rounded,
                     iconColor: colors.primary,
                     title: 'Create Study Deck',
-                    subtitle: 'Upload past questions or create flashcards manually',
+                    subtitle:
+                        'Upload past questions or create flashcards manually',
                     onTap: () {
                       Navigator.pop(bottomSheetContext);
                       unawaited(
                         context.router.push(
                           CreateDeckRoute(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Option 1: AI Generation
-                  _ActionOptionTile(
-                    icon: Icons.auto_awesome_rounded,
-                    iconColor: colors.syllabotAccent,
-                    title: context.l10n.decksGenerateWithAiTitle,
-                    subtitle: context.l10n.decksGenerateWithAiSubtitle,
-                    onTap: () {
-                      Navigator.pop(bottomSheetContext);
-                      unawaited(
-                        context.router.push(
-                          SyllabotChatRoute(
-                            initialPrompt: context.l10n.decksAiPromptDefault,
-                          ),
                         ),
                       );
                     },
@@ -141,40 +123,6 @@ class _DecksView extends HookWidget {
                       unawaited(
                         context.router.push(
                           DocumentIngestionRoute(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Option 3: Import from LMS
-                  _ActionOptionTile(
-                    icon: Icons.school_rounded,
-                    iconColor: colors.warning,
-                    title: context.l10n.decksImportLmsTitle,
-                    subtitle: context.l10n.decksImportLmsSubtitle,
-                    onTap: () {
-                      Navigator.pop(bottomSheetContext);
-                      unawaited(
-                        context.router.push(
-                          DocumentIngestionRoute(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Option 4: Offline On-Device Generator
-                  _ActionOptionTile(
-                    icon: Icons.offline_bolt_rounded,
-                    iconColor: colors.success,
-                    title: 'Offline Flashcard Generator',
-                    subtitle: 'Synthesize flashcards locally using on-device models',
-                    onTap: () {
-                      Navigator.pop(bottomSheetContext);
-                      unawaited(
-                        context.router.push(
-                          OfflineFlashcardGenerationRoute(),
                         ),
                       );
                     },
@@ -306,16 +254,26 @@ class _DecksView extends HookWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
-                              ? [const Color(0xFF1E1B4B), const Color(0xFF31104B)]
-                              : [const Color(0xFFEEF2FF), const Color(0xFFFAF5FF)],
+                              ? [
+                                  const Color(0xFF1E1B4B),
+                                  const Color(0xFF31104B),
+                                ]
+                              : [
+                                  const Color(0xFFEEF2FF),
+                                  const Color(0xFFFAF5FF),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(0xFF818CF8).withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFF818CF8,
+                          ).withValues(alpha: 0.35),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.2 : 0.08),
+                            color: const Color(
+                              0xFF6366F1,
+                            ).withValues(alpha: isDark ? 0.2 : 0.08),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -329,7 +287,9 @@ class _DecksView extends HookWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                                  color: const Color(
+                                    0xFF6366F1,
+                                  ).withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -352,10 +312,11 @@ class _DecksView extends HookWidget {
                                     ),
                                     Text(
                                       'Randomized flashcards to beat predictive boredom',
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 12,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -368,7 +329,8 @@ class _DecksView extends HookWidget {
                               Expanded(
                                 child: ShrinkableButton(
                                   onTap: () {
-                                    final targetDeckId = state.allDecks.length > 1
+                                    final targetDeckId =
+                                        state.allDecks.length > 1
                                         ? 'all'
                                         : state.allDecks.first.id;
                                     AppFeedback.selection();
@@ -381,23 +343,31 @@ class _DecksView extends HookWidget {
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF6366F1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     alignment: Alignment.center,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.flash_on_rounded, color: Colors.white, size: 16),
+                                        const Icon(
+                                          Icons.flash_on_rounded,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Quick 10',
-                                          style: typography.caption.bold.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -408,7 +378,8 @@ class _DecksView extends HookWidget {
                               Expanded(
                                 child: ShrinkableButton(
                                   onTap: () {
-                                    final targetDeckId = state.allDecks.length > 1
+                                    final targetDeckId =
+                                        state.allDecks.length > 1
                                         ? 'all'
                                         : state.allDecks.first.id;
                                     AppFeedback.selection();
@@ -421,26 +392,40 @@ class _DecksView extends HookWidget {
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06),
+                                      color: isDark
+                                          ? Colors.white12
+                                          : Colors.black.withValues(
+                                              alpha: 0.06,
+                                            ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: colors.surfaceBorder.withValues(alpha: 0.6),
+                                        color: colors.surfaceBorder.withValues(
+                                          alpha: 0.6,
+                                        ),
                                       ),
                                     ),
                                     alignment: Alignment.center,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.track_changes_rounded, color: colors.textPrimary, size: 16),
+                                        Icon(
+                                          Icons.track_changes_rounded,
+                                          color: colors.textPrimary,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Power 20',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.textPrimary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -455,39 +440,55 @@ class _DecksView extends HookWidget {
                               Expanded(
                                 child: ShrinkableButton(
                                   onTap: () {
-                                    final targetDeckId = state.allDecks.length > 1
+                                    final targetDeckId =
+                                        state.allDecks.length > 1
                                         ? 'all'
                                         : state.allDecks.first.id;
                                     AppFeedback.selection();
                                     unawaited(
                                       context.router.push(
                                         StudySessionRoute(
-                                          deckId: 'sprint:speed:3:$targetDeckId',
+                                          deckId:
+                                              'sprint:speed:3:$targetDeckId',
                                         ),
                                       ),
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.2) : const Color(0xFFFEF3C7),
+                                      color: isDark
+                                          ? const Color(
+                                              0xFFF59E0B,
+                                            ).withValues(alpha: 0.2)
+                                          : const Color(0xFFFEF3C7),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                                        color: const Color(
+                                          0xFFF59E0B,
+                                        ).withValues(alpha: 0.6),
                                       ),
                                     ),
                                     alignment: Alignment.center,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.timer_outlined, color: Color(0xFFD97706), size: 16),
+                                        const Icon(
+                                          Icons.timer_outlined,
+                                          color: Color(0xFFD97706),
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Speed Run (3m)',
-                                          style: typography.caption.bold.copyWith(
-                                            color: const Color(0xFFD97706),
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: const Color(0xFFD97706),
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -511,25 +512,36 @@ class _DecksView extends HookWidget {
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                                        colors: [
+                                          Color(0xFF8B5CF6),
+                                          Color(0xFF6366F1),
+                                        ],
                                       ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     alignment: Alignment.center,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
+                                        const Icon(
+                                          Icons.bolt_rounded,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Hyperdrive',
-                                          style: typography.caption.bold.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -682,8 +694,8 @@ class _DecksView extends HookWidget {
                             _showDeckCreationSheet(context);
                           } else {
                             context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('all'),
-                                );
+                              const DecksFilterChanged('all'),
+                            );
                           }
                         },
                         secondaryActionLabel: state.allDecks.isEmpty
@@ -714,8 +726,8 @@ class _DecksView extends HookWidget {
                             'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
                         primaryActionLabel: 'Review All Decks',
                         onPrimaryAction: () => context.read<DecksBloc>().add(
-                              const DecksFilterChanged('all'),
-                            ),
+                          const DecksFilterChanged('all'),
+                        ),
                         secondaryActionLabel: l10n.decksCreateDeckButton,
                         onSecondaryAction: () =>
                             _showDeckCreationSheet(context),
@@ -725,8 +737,7 @@ class _DecksView extends HookWidget {
                         title: l10n.decksEmptyStateTitle,
                         subtitle: l10n.decksEmptyStateSubtitle,
                         primaryActionLabel: l10n.decksCreateDeckButton,
-                        onPrimaryAction: () =>
-                            _showDeckCreationSheet(context),
+                        onPrimaryAction: () => _showDeckCreationSheet(context),
                         secondaryActionLabel: l10n.decksUploadDocTitle,
                         onSecondaryAction: () => unawaited(
                           context.router.push(DocumentIngestionRoute()),

@@ -192,6 +192,9 @@ void _initUseCaseLocator() {
         fetchLmsCoursesUseCase: locator<FetchLmsCoursesUseCase>(),
         importLmsCourseUseCase: locator<ImportLmsCourseUseCase>(),
         streamController: locator<OnboardingStreamController>(),
+        notificationService: locator.isRegistered<NotificationService>()
+            ? locator<NotificationService>()
+            : null,
       ),
     )
     ..registerLazySingleton<JoinLiveStudyRoomUseCase>(

@@ -10,7 +10,7 @@ class IngestionState extends Equatable {
   const IngestionState({
     this.status = ProcessingStatus.idle,
     this.uploadProgress = 0.0,
-    this.synthesisMode = SynthesisMode.fastLocal,
+    this.synthesisMode = SynthesisMode.aiSmart,
     this.currentDocument,
     this.snippets = const [],
     this.userDocuments = const [],
