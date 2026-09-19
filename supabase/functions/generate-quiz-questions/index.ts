@@ -1,5 +1,6 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { LunaClient } from "../_shared/luna_client.ts";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 
 const corsHeaders = {
@@ -136,17 +137,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. Attempt LLM Generation (Groq -> Gemini)
-    const groqApiKey = Deno.env.get("GROQ_API_KEY") || "";
-    const geminiApiKey =
-      Deno.env.get("GEMINI_API_KEY") ||
-      Deno.env.get("GOOGLE_AI_API_KEY") ||
-      "";
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
-
+    // 3. LLM Generation via Luna
+    const luna = new LunaClient();
     let generatedQuestions: RawQuizQuestion[] | null = null;
 
-    const systemPrompt = `You are an expert academic examiner and professor.
+    const systemPrompt = `You are Luna, an expert academic examiner and professor.
 Create exactly ${finalQuestionCount} high-yield multiple-choice quiz questions based on the provided topic/material.
 Difficulty level: ${difficulty}.
 Context material:
@@ -176,128 +171,33 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
   ]
 }`;
 
-    // Try Groq first (llama-3.3-70b-versatile)
-    if (groqApiKey && !generatedQuestions) {
-      try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${groqApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              {
-                role: "user",
-                content: `Generate ${finalQuestionCount} ${difficulty}-level quiz questions in structured JSON format now.`,
-              },
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.3,
-          }),
-        });
-
-        if (groqRes.ok) {
-          const groqData = await groqRes.json();
-          const content = groqData.choices?.[0]?.message?.content;
-          if (content) {
-            const parsed = JSON.parse(content);
-            if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-              generatedQuestions = parsed.questions;
-              if (parsed.quiz_title) deckTitle = parsed.quiz_title;
-            }
-          }
-        } else {
-          console.warn("[generate-quiz-questions] Groq API returned error status:", groqRes.status);
-        }
-      } catch (err) {
-        console.warn("[generate-quiz-questions] Groq call failed:", err);
-      }
-    }
-
-    // Try Gemini if Groq was not available or failed
-    if (geminiApiKey && !generatedQuestions) {
-      try {
-        const geminiRes = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    try {
+      console.log(`[generate-quiz-questions] Requesting quiz from Luna (${luna.modelName})...`);
+      const lunaResponse = await luna.complete({
+        messages: [
+          { role: "system", content: systemPrompt },
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${geminiApiKey}`,
-            },
-            body: JSON.stringify({
-              model: "gemini-1.5-flash",
-              messages: [
-                { role: "system", content: systemPrompt },
-                {
-                  role: "user",
-                  content: `Generate ${finalQuestionCount} ${difficulty}-level quiz questions in structured JSON format now.`,
-                },
-              ],
-              response_format: { type: "json_object" },
-              temperature: 0.3,
-            }),
-          }
-        );
-
-        if (geminiRes.ok) {
-          const geminiData = await geminiRes.json();
-          const content = geminiData.choices?.[0]?.message?.content;
-          if (content) {
-            const parsed = JSON.parse(content);
-            if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-              generatedQuestions = parsed.questions;
-              if (parsed.quiz_title) deckTitle = parsed.quiz_title;
-            }
-          }
-        } else {
-          console.warn("[generate-quiz-questions] Gemini API error:", geminiRes.status);
-        }
-      } catch (err) {
-        console.warn("[generate-quiz-questions] Gemini call failed:", err);
-      }
-    }
-
-    // Try OpenAI as additional backup if available
-    if (openaiApiKey && !generatedQuestions) {
-      try {
-        const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiApiKey}`,
+            role: "user",
+            content: `Generate ${finalQuestionCount} ${difficulty}-level quiz questions in structured JSON format now.`,
           },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: systemPrompt },
-              {
-                role: "user",
-                content: `Generate ${finalQuestionCount} ${difficulty}-level quiz questions in structured JSON format now.`,
-              },
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.3,
-          }),
-        });
+        ],
+        responseFormat: { type: "json_object" },
+        temperature: 0.3,
+      });
 
-        if (openaiRes.ok) {
-          const openaiData = await openaiRes.json();
-          const content = openaiData.choices?.[0]?.message?.content;
-          if (content) {
-            const parsed = JSON.parse(content);
-            if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-              generatedQuestions = parsed.questions;
-              if (parsed.quiz_title) deckTitle = parsed.quiz_title;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("[generate-quiz-questions] OpenAI call failed:", err);
+      const parsed = JSON.parse(
+        lunaResponse
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/, "")
+          .replace(/```$/, "")
+          .trim()
+      );
+      if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+        generatedQuestions = parsed.questions;
+        if (parsed.quiz_title) deckTitle = parsed.quiz_title;
       }
+    } catch (err) {
+      console.warn("[generate-quiz-questions] Luna call failed:", err);
     }
 
     // 4. Fallback mock response if LLM keys are missing or calls fail in dev environments

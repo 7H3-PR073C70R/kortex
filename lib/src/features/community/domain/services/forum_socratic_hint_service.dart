@@ -124,7 +124,7 @@ class ForumSocraticHintService {
     final prompt = buildPrompt(post);
     var candidate = '';
 
-    // Step 1: Cloud AI Streaming via Gemini / DeepSeek edge routing
+    // Step 1: Cloud AI Streaming via Luna edge routing
     if (streamUseCase != null) {
       try {
         final stream = streamUseCase.call(

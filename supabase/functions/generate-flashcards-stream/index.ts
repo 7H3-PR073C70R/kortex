@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { enforceDailyQuota } from "../_shared/quota_limiter.ts";
+import { LunaClient } from "../_shared/luna_client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,16 +150,10 @@ serve(async (req: Request) => {
         // PHASE 2: Genuine LLM Streaming for Remaining Cards
         const remainingCount = totalCount - generatedCards.length;
         if (remainingCount > 0) {
-          const groqApiKey = Deno.env.get("GROQ_API_KEY") || "";
-          const geminiApiKey =
-            Deno.env.get("GEMINI_API_KEY") ||
-            Deno.env.get("GOOGLE_AI_API_KEY") ||
-            "";
-          const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
-
+          const luna = new LunaClient();
           let streamSuccess = false;
 
-          const systemPrompt = `You are a world-class academic tutor and flashcard specialist.
+          const systemPrompt = `You are Luna, a world-class academic tutor and flashcard specialist.
 Generate high-quality, rigorous flashcards for the student.
 Topic: "${topic}"
 Difficulty: ${difficulty}
@@ -172,218 +167,165 @@ CRITICAL OUTPUT INSTRUCTIONS:
 - Each line MUST be a complete, parsable JSON object with the following schema:
 {"front": "Concept or Question", "back": "Mathematical definition or answer with LaTeX $$...$$", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
 
-          // Provider candidates
-          const providers = [
-            ...(groqApiKey
-              ? [
-                  {
-                    name: "Groq",
-                    url: "https://api.groq.com/openai/v1/chat/completions",
-                    key: groqApiKey,
-                    model: "llama-3.3-70b-versatile",
-                  },
-                ]
-              : []),
-            ...(geminiApiKey
-              ? [
-                  {
-                    name: "Gemini",
-                    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-                    key: geminiApiKey,
-                    model: "gemini-1.5-flash",
-                  },
-                ]
-              : []),
-            ...(openaiApiKey
-              ? [
-                  {
-                    name: "OpenAI",
-                    url: "https://api.openai.com/v1/chat/completions",
-                    key: openaiApiKey,
-                    model: "gpt-4o-mini",
-                  },
-                ]
-              : []),
-          ];
-
-          for (const provider of providers) {
-            try {
-              console.log(`[generate-flashcards-stream] Streaming from ${provider.name} (${provider.model})...`);
-              const response = await fetch(provider.url, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${provider.key}`,
+          try {
+            console.log(`[generate-flashcards-stream] Streaming from Luna (${luna.modelName})...`);
+            const bodyStream = await luna.stream({
+              messages: [
+                { role: "system", content: systemPrompt },
+                {
+                  role: "user",
+                  content: `Generate ${remainingCount} flashcards in NDJSON format now.`,
                 },
-                body: JSON.stringify({
-                  model: provider.model,
-                  messages: [
-                    { role: "system", content: systemPrompt },
-                    {
-                      role: "user",
-                      content: `Generate ${remainingCount} flashcards in NDJSON format now.`,
-                    },
-                  ],
-                  stream: true,
-                  temperature: 0.3,
-                }),
-              });
+              ],
+              temperature: 0.3,
+            });
 
-              if (!response.ok || !response.body) {
-                console.warn(
-                  `[generate-flashcards-stream] ${provider.name} responded with status ${response.status}`
-                );
-                continue;
-              }
+            const reader = bodyStream.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let sseBuffer = "";
+            let cardJsonBuffer = "";
 
-              const reader = response.body.getReader();
-              const decoder = new TextDecoder("utf-8");
-              let sseBuffer = "";
-              let cardJsonBuffer = "";
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+              sseBuffer += decoder.decode(value, { stream: true });
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() ?? "";
 
-                sseBuffer += decoder.decode(value, { stream: true });
-                const lines = sseBuffer.split("\n");
-                sseBuffer = lines.pop() ?? "";
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith(":")) continue;
+                if (trimmed === "data: [DONE]") break;
 
-                for (const line of lines) {
-                  const trimmed = line.trim();
-                  if (!trimmed || trimmed.startsWith(":")) continue;
-                  if (trimmed === "data: [DONE]") break;
+                if (trimmed.startsWith("data:")) {
+                  const jsonStr = trimmed.replace(/^data:\s*/, "");
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const deltaText =
+                      parsed.choices?.[0]?.delta?.content ??
+                      parsed.choices?.[0]?.delta?.text ??
+                      "";
 
-                  if (trimmed.startsWith("data:")) {
-                    const jsonStr = trimmed.replace(/^data:\s*/, "");
-                    try {
-                      const parsed = JSON.parse(jsonStr);
-                      const deltaText =
-                        parsed.choices?.[0]?.delta?.content ??
-                        parsed.choices?.[0]?.delta?.text ??
-                        "";
+                    if (deltaText) {
+                      cardJsonBuffer += deltaText;
 
-                      if (deltaText) {
-                        cardJsonBuffer += deltaText;
+                      // Process any complete lines in cardJsonBuffer
+                      while (cardJsonBuffer.includes("\n")) {
+                        const newlineIdx = cardJsonBuffer.indexOf("\n");
+                        const rawLine = cardJsonBuffer.slice(0, newlineIdx).trim();
+                        cardJsonBuffer = cardJsonBuffer.slice(newlineIdx + 1);
 
-                        // Process any complete lines in cardJsonBuffer
-                        while (cardJsonBuffer.includes("\n")) {
-                          const newlineIdx = cardJsonBuffer.indexOf("\n");
-                          const rawLine = cardJsonBuffer.slice(0, newlineIdx).trim();
-                          cardJsonBuffer = cardJsonBuffer.slice(newlineIdx + 1);
+                        if (!rawLine) continue;
 
-                          if (!rawLine) continue;
+                        const cleanedLine = rawLine
+                          .replace(/^```json\s*/i, "")
+                          .replace(/^```\s*/, "")
+                          .replace(/```$/, "")
+                          .replace(/^,\s*/, "")
+                          .trim();
 
-                          const cleanedLine = rawLine
-                            .replace(/^```json\s*/i, "")
-                            .replace(/^```\s*/, "")
-                            .replace(/```$/, "")
-                            .replace(/^,\s*/, "")
-                            .trim();
+                        if (!cleanedLine.startsWith("{")) continue;
 
-                          if (!cleanedLine.startsWith("{")) continue;
+                        try {
+                          const parsedCard: ParsedCard = JSON.parse(cleanedLine);
+                          if (parsedCard.front && parsedCard.back) {
+                            const cardIndex = generatedCards.length + 1;
+                            const card = {
+                              id: `card_${deckId}_${cardIndex}`,
+                              deckId,
+                              index: cardIndex,
+                              front: parsedCard.front,
+                              back: parsedCard.back,
+                              explanation:
+                                parsedCard.hints || parsedCard.explanation || "",
+                              hints:
+                                parsedCard.hints || parsedCard.explanation || "",
+                              tags:
+                                Array.isArray(parsedCard.tags) &&
+                                parsedCard.tags.length > 0
+                                  ? parsedCard.tags
+                                  : [topic, difficulty],
+                              createdAt: new Date().toISOString(),
+                              isImmediate: false,
+                            };
+                            generatedCards.push(card);
 
-                          try {
-                            const parsedCard: ParsedCard = JSON.parse(cleanedLine);
-                            if (parsedCard.front && parsedCard.back) {
-                              const cardIndex = generatedCards.length + 1;
-                              const card = {
-                                id: `card_${deckId}_${cardIndex}`,
-                                deckId,
-                                index: cardIndex,
-                                front: parsedCard.front,
-                                back: parsedCard.back,
-                                explanation:
-                                  parsedCard.hints || parsedCard.explanation || "",
-                                hints:
-                                  parsedCard.hints || parsedCard.explanation || "",
-                                tags:
-                                  Array.isArray(parsedCard.tags) &&
-                                  parsedCard.tags.length > 0
-                                    ? parsedCard.tags
-                                    : [topic, difficulty],
-                                createdAt: new Date().toISOString(),
-                                isImmediate: false,
-                              };
-                              generatedCards.push(card);
+                            sendEvent("card", {
+                              card,
+                              isInitialBatch: false,
+                              currentCount: generatedCards.length,
+                              targetCount: totalCount,
+                            });
 
-                              sendEvent("card", {
-                                card,
-                                isInitialBatch: false,
-                                currentCount: generatedCards.length,
-                                targetCount: totalCount,
-                              });
-
-                              if (generatedCards.length >= totalCount) {
-                                break;
-                              }
+                            if (generatedCards.length >= totalCount) {
+                              break;
                             }
-                          } catch {
-                            // Non-parsable line chunk, continue
                           }
+                        } catch {
+                          // Non-parsable line chunk, continue
                         }
                       }
-                    } catch {
-                      // Non-json ping chunk
                     }
+                  } catch {
+                    // Non-json ping chunk
                   }
-                }
-
-                if (generatedCards.length >= totalCount) {
-                  break;
                 }
               }
 
-              // Parse any trailing JSON block left in cardJsonBuffer
-              if (cardJsonBuffer.trim() && generatedCards.length < totalCount) {
-                const cleanedTrailing = cardJsonBuffer
-                  .trim()
-                  .replace(/^```json\s*/i, "")
-                  .replace(/^```\s*/, "")
-                  .replace(/```$/, "")
-                  .trim();
-                try {
-                  const parsedCard: ParsedCard = JSON.parse(cleanedTrailing);
-                  if (parsedCard.front && parsedCard.back) {
-                    const cardIndex = generatedCards.length + 1;
-                    const card = {
-                      id: `card_${deckId}_${cardIndex}`,
-                      deckId,
-                      index: cardIndex,
-                      front: parsedCard.front,
-                      back: parsedCard.back,
-                      explanation:
-                        parsedCard.hints || parsedCard.explanation || "",
-                      hints:
-                        parsedCard.hints || parsedCard.explanation || "",
-                      tags:
-                        Array.isArray(parsedCard.tags) && parsedCard.tags.length > 0
-                          ? parsedCard.tags
-                          : [topic, difficulty],
-                      createdAt: new Date().toISOString(),
-                      isImmediate: false,
-                    };
-                    generatedCards.push(card);
-
-                    sendEvent("card", {
-                      card,
-                      isInitialBatch: false,
-                      currentCount: generatedCards.length,
-                      targetCount: totalCount,
-                    });
-                  }
-                } catch {
-                  // Trailing snippet wasn't complete JSON
-                }
-              }
-
-              if (generatedCards.length >= seedCount + 1) {
-                streamSuccess = true;
+              if (generatedCards.length >= totalCount) {
                 break;
               }
-            } catch (err) {
-              console.warn(`[generate-flashcards-stream] ${provider.name} stream error:`, err);
             }
+
+            // Parse any trailing JSON block left in cardJsonBuffer
+            if (cardJsonBuffer.trim() && generatedCards.length < totalCount) {
+              const cleanedTrailing = cardJsonBuffer
+                .trim()
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/, "")
+                .replace(/```$/, "")
+                .trim();
+              try {
+                const parsedCard: ParsedCard = JSON.parse(cleanedTrailing);
+                if (parsedCard.front && parsedCard.back) {
+                  const cardIndex = generatedCards.length + 1;
+                  const card = {
+                    id: `card_${deckId}_${cardIndex}`,
+                    deckId,
+                    index: cardIndex,
+                    front: parsedCard.front,
+                    back: parsedCard.back,
+                    explanation:
+                      parsedCard.hints || parsedCard.explanation || "",
+                    hints:
+                      parsedCard.hints || parsedCard.explanation || "",
+                    tags:
+                      Array.isArray(parsedCard.tags) && parsedCard.tags.length > 0
+                        ? parsedCard.tags
+                        : [topic, difficulty],
+                    createdAt: new Date().toISOString(),
+                    isImmediate: false,
+                  };
+                  generatedCards.push(card);
+
+                  sendEvent("card", {
+                    card,
+                    isInitialBatch: false,
+                    currentCount: generatedCards.length,
+                    targetCount: totalCount,
+                  });
+                }
+              } catch {
+                // Trailing snippet wasn't complete JSON
+              }
+            }
+
+            if (generatedCards.length >= seedCount + 1) {
+              streamSuccess = true;
+            }
+          } catch (err) {
+            console.warn("[generate-flashcards-stream] Luna stream error:", err);
           }
 
           // Dev/Offline Fallback: If LLM failed or no keys configured, synthesize topic-aligned cards

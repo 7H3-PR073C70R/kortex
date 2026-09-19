@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
+import { LunaClient } from "../_shared/luna_client.ts";
 import { corsHeaders } from "./_shared/cors.ts";
 import {
   Message,
@@ -18,16 +19,6 @@ interface RequestPayload {
   contextHistory?: Array<{ sender: string; text: string }>;
   courseCode?: string;
 }
-
-interface ProviderTarget {
-  name: string;
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  headers?: Record<string, string>;
-}
-
-const UPSTREAM_CONNECT_TIMEOUT_MS = 8000;
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -123,87 +114,10 @@ serve(async (req: Request) => {
       ? (cacheResult.data?.tokens as string[])
       : null;
 
-    // D. Multi-Provider Fallback Target Configuration
-    const primaryBaseUrl =
-      Deno.env.get("LLM_BASE_URL") ||
-      Deno.env.get("DEEPSEEK_BASE_URL") ||
-      "https://api.deepseek.com/chat/completions";
-    const primaryApiKey =
-      Deno.env.get("LLM_API_KEY") ||
-      Deno.env.get("DEEPSEEK_API_KEY") ||
-      "";
+    // D. Luna Unified LLM Client Configuration
+    const luna = new LunaClient();
 
-    const secondaryBaseUrl =
-      Deno.env.get("FALLBACK_LLM_BASE_URL") ||
-      Deno.env.get("OPENROUTER_BASE_URL") ||
-      "https://openrouter.ai/api/v1/chat/completions";
-    const openRouterApiKey =
-      Deno.env.get("FALLBACK_LLM_API_KEY") ||
-      Deno.env.get("OPENROUTER_API_KEY") ||
-      "";
-
-    const groqApiKey = Deno.env.get("GROQ_API_KEY") || "";
-    const geminiApiKey =
-      Deno.env.get("GEMINI_API_KEY") ||
-      Deno.env.get("GOOGLE_AI_API_KEY") ||
-      "";
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
-
-    const providers: ProviderTarget[] = [
-      ...(geminiApiKey
-        ? [
-            {
-              name: "Google Gemini",
-              baseUrl:
-                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-              apiKey: geminiApiKey,
-              model: normalizeModelForBaseUrl(selectedModel, "https://generativelanguage.googleapis.com"),
-            },
-          ]
-        : []),
-      ...(groqApiKey
-        ? [
-            {
-              name: "Groq Fast Inference",
-              baseUrl: "https://api.groq.com/openai/v1/chat/completions",
-              apiKey: groqApiKey,
-              model: normalizeModelForBaseUrl(selectedModel, "https://api.groq.com"),
-            },
-          ]
-        : []),
-      {
-        name: "Primary LLM Endpoint",
-        baseUrl: primaryBaseUrl,
-        apiKey: primaryApiKey,
-        model: normalizeModelForBaseUrl(selectedModel, primaryBaseUrl),
-      },
-      ...(openRouterApiKey
-        ? [
-            {
-              name: "Secondary OpenRouter Gateway",
-              baseUrl: secondaryBaseUrl,
-              apiKey: openRouterApiKey,
-              model: normalizeModelForBaseUrl(selectedModel, secondaryBaseUrl),
-              headers: {
-                "HTTP-Referer": "https://kortex.app",
-                "X-Title": "Kortex Academic Workspace",
-              },
-            },
-          ]
-        : []),
-      ...(openaiApiKey
-        ? [
-            {
-              name: "OpenAI",
-              baseUrl: "https://api.openai.com/v1/chat/completions",
-              apiKey: openaiApiKey,
-              model: "gpt-4o-mini",
-            },
-          ]
-        : []),
-    ].filter((p) => Boolean(p.apiKey && p.baseUrl));
-
-    // 2. Server-Sent Events (SSE) Streaming Pipeline with Timeout & Failover
+    // 2. Server-Sent Events (SSE) Streaming Pipeline
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -216,7 +130,7 @@ serve(async (req: Request) => {
 
         sendEvent("start", {
           status: "generating",
-          model: selectedModel,
+          model: luna.modelName,
           reasoning_effort: reasoningEffort,
           reasoningDetected: routing.reasoningDetected,
           matchedCriteria: routing.matchedCriteria,
@@ -238,126 +152,83 @@ serve(async (req: Request) => {
             await new Promise((r) => setTimeout(r, 10));
           }
           providerSuccess = true;
-        } else if (providers.length > 0) {
-          // 2. Upstream provider iteration with 8-second connection timeout & failover
-          for (const provider of providers) {
-            const abortController = new AbortController();
-            let isConnected = false;
+        } else if (luna.isConfigured()) {
+          // 2. Stream directly from Luna LLM
+          try {
+            console.log(
+              `[syllabot-stream] Streaming response from Luna (${luna.modelName})...`
+            );
 
-            const timeoutId = setTimeout(() => {
-              if (!isConnected) {
-                console.warn(
-                  `[Reliability Gateway] Connection timeout (${UPSTREAM_CONNECT_TIMEOUT_MS}ms) on ${provider.name}. Aborting.`
-                );
-                abortController.abort("CONNECTION_TIMEOUT");
-              }
-            }, UPSTREAM_CONNECT_TIMEOUT_MS);
+            const bodyStream = await luna.stream({
+              messages,
+              temperature: 0.6,
+            });
 
-            try {
-              console.log(
-                `[Reliability Gateway] Attempting request to ${provider.name} using model ${provider.model}...`
-              );
+            const reader = bodyStream.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let sseBuffer = "";
 
-              const payload: Record<string, unknown> = {
-                model: provider.model,
-                messages,
-                stream: true,
-                temperature: 0.6,
-              };
-              if (reasoningEffort && provider.name.includes("DeepSeek")) {
-                payload["reasoning_effort"] = reasoningEffort;
-              }
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-              const response = await fetch(provider.baseUrl, {
-                method: "POST",
-                signal: abortController.signal,
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${provider.apiKey}`,
-                  ...(provider.headers ?? {}),
-                },
-                body: JSON.stringify(payload),
-              });
+              sseBuffer += decoder.decode(value, { stream: true });
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() ?? "";
 
-              isConnected = true;
-              clearTimeout(timeoutId);
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith(":")) continue;
 
-              if (!response.ok || !response.body) {
-                const errBody = await response.text().catch(() => "");
-                throw new Error(
-                  `${provider.name} returned HTTP error status ${response.status}: ${errBody || response.statusText}`
-                );
-              }
+                if (trimmed === "data: [DONE]") {
+                  break;
+                }
 
-              const reader = response.body.getReader();
-              const decoder = new TextDecoder("utf-8");
-              let sseBuffer = "";
+                if (trimmed.startsWith("data:")) {
+                  const jsonStr = trimmed.replace(/^data:\s*/, "");
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const deltaText =
+                      parsed.choices?.[0]?.delta?.content ??
+                      parsed.choices?.[0]?.delta?.text ??
+                      parsed.content ??
+                      "";
 
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                sseBuffer += decoder.decode(value, { stream: true });
-                const lines = sseBuffer.split("\n");
-                sseBuffer = lines.pop() ?? "";
-
-                for (const line of lines) {
-                  const trimmed = line.trim();
-                  if (!trimmed || trimmed.startsWith(":")) continue;
-
-                  if (trimmed === "data: [DONE]") {
-                    break;
-                  }
-
-                  if (trimmed.startsWith("data:")) {
-                    const jsonStr = trimmed.replace(/^data:\s*/, "");
-                    try {
-                      const parsed = JSON.parse(jsonStr);
-                      const deltaText =
-                        parsed.choices?.[0]?.delta?.content ??
-                        parsed.choices?.[0]?.delta?.text ??
-                        "";
-
-                      if (deltaText) {
-                        fullResponse += deltaText;
-                        recordedTokens.push(deltaText);
-                        sendEvent("token", { text: deltaText });
-                      }
-                    } catch {
-                      // Skip non-JSON ping/keepalive chunks
+                    if (deltaText) {
+                      fullResponse += deltaText;
+                      recordedTokens.push(deltaText);
+                      sendEvent("token", { text: deltaText });
                     }
+                  } catch {
+                    // Skip non-JSON ping/keepalive chunks
                   }
                 }
               }
+            }
 
-              if (fullResponse.trim().length > 0) {
-                providerSuccess = true;
-                console.log(
-                  `[Reliability Gateway] Stream successfully finished from ${provider.name}`
-                );
-                break; // Successfully streamed from this provider
-              }
-            } catch (providerError: any) {
-              clearTimeout(timeoutId);
-              const errMsg = providerError.message ?? String(providerError);
-              providerErrors.push(errMsg);
-              console.warn(
-                `[Reliability Gateway] Provider ${provider.name} failed: ${errMsg}. Failing over...`
+            if (fullResponse.trim().length > 0) {
+              providerSuccess = true;
+              console.log(
+                `[syllabot-stream] Stream successfully completed from Luna (${luna.modelName})`
               );
             }
+          } catch (lunaError: any) {
+            const errMsg = lunaError.message ?? String(lunaError);
+            providerErrors.push(errMsg);
+            console.warn(`[syllabot-stream] Luna stream error: ${errMsg}`);
           }
         }
 
         // 3. Fallback and Edge Error Handling
         if (!providerSuccess) {
-          if (providers.length > 0) {
+          if (luna.isConfigured()) {
             console.error(
-              "[Reliability Gateway] All upstream providers failed or timed out:",
+              "[syllabot-stream] Luna upstream stream failed:",
               providerErrors
             );
             sendEvent("error", {
-              error: "UPSTREAM_TIMEOUT",
-              message: "All upstream providers busy or unreachable. Engaging neural fallback.",
+              error: "LUNA_STREAM_ERROR",
+              message: "Luna upstream unreachable. Engaging neural fallback.",
               details: providerErrors,
             });
           }

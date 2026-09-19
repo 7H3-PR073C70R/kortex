@@ -358,38 +358,17 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String storagePath,
     required String fileType,
   }) async {
-    // Pre-extract text from cache if available so Edge function gets it immediately
     var fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
-    var initialText = '';
-    if (fileBytes != null && fileBytes.isNotEmpty) {
-      final isPdf = fileType.toLowerCase().contains('pdf') ||
-          storagePath.toLowerCase().endsWith('.pdf') ||
-          filename.toLowerCase().endsWith('.pdf');
-      if (isPdf) {
-        initialText = await _pdfParserService.extractText(
-          fileBytes,
-          filename: filename,
-        );
-      } else {
-        initialText = _parserService.extractTextFromBytes(
-          fileBytes,
-          fileType: fileType,
-          filename: filename,
-        );
-      }
-    }
 
-    // 1. Try remote Edge Function (AI Smart Synthesis)
+    // 1. Remote Server Compute & Luna AI Synthesis
     try {
       final payload = <String, dynamic>{
         'documentId': documentId,
         'storagePath': storagePath,
         'fileType': fileType,
+        'filename': filename,
       };
-      if (initialText.isNotEmpty) {
-        payload['extractedText'] = initialText;
-      }
 
       final res = await _client.triggerParseStemOcr(payload);
 
@@ -410,7 +389,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             e,
             stack,
             reason:
-                'Remote OCR Edge Function unavailable, fallback to local parsing',
+                'Remote Server OCR / Luna Function unavailable, fallback to local parsing',
           ),
         );
       }

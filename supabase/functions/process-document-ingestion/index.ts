@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { chunkMarkdown } from "../_shared/markdown_chunker.ts";
-import { isSafeOutboundUrl } from "../_shared/security_guard.ts";
+import { ServerDocumentParser } from "../_shared/server_document_parser.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +17,7 @@ interface IngestionJobPayload {
   userId: string;
   courseCode?: string;
   metadata?: Record<string, unknown>;
-  parser?: "llamaparse" | "docling" | "native_ocr";
+  parser?: "server_compute" | "native_ocr";
 }
 
 serve(async (req: Request) => {
@@ -68,7 +68,7 @@ serve(async (req: Request) => {
       userId: requestedUserId,
       courseCode,
       metadata = {},
-      parser = "llamaparse",
+      parser = "server_compute",
     } = payload;
 
     const userId = isServiceRole
@@ -101,16 +101,26 @@ serve(async (req: Request) => {
       }
     }
 
-    // 1. Asynchronous Layout-Aware Parsing (LlamaParse / Docling / Native)
+    // 1. Asynchronous Layout-Aware Parsing on Server Compute
     let structuredMarkdown = rawText ?? "";
-    const llamaParseApiKey = Deno.env.get("LLAMAPARSE_API_KEY");
 
-    if (fileUrl && llamaParseApiKey && parser === "llamaparse") {
+    if (fileUrl && (!structuredMarkdown || structuredMarkdown.length === 0)) {
       try {
-        console.log(`[IngestionWorker] Parsing document ${documentId} via LlamaParse...`);
-        structuredMarkdown = await parseWithLlamaParse(fileUrl, llamaParseApiKey);
+        console.log(`[IngestionWorker] Parsing document ${documentId} on server compute...`);
+        const fileRes = await fetch(fileUrl);
+        if (fileRes.ok) {
+          const buf = await fileRes.arrayBuffer();
+          const parser = new ServerDocumentParser(supabase);
+          const parsed = await parser.parseDocument({
+            documentId,
+            bytes: new Uint8Array(buf),
+            fileType: "pdf",
+            filename: `doc_${documentId}.pdf`,
+          });
+          structuredMarkdown = parsed.fullText;
+        }
       } catch (err) {
-        console.warn(`[IngestionWorker] LlamaParse failed, falling back: ${err}`);
+        console.warn(`[IngestionWorker] Server compute parsing failed: ${err}`);
       }
     }
 
@@ -250,61 +260,6 @@ serve(async (req: Request) => {
     );
   }
 });
-
-async function parseWithLlamaParse(
-  fileUrl: string,
-  apiKey: string
-): Promise<string> {
-  if (!isSafeOutboundUrl(fileUrl)) {
-    throw new Error("Security Alert: Blocked outbound connection to private, loopback, or cloud metadata IP address (SSRF Guard).");
-  }
-
-  const fileRes = await fetch(fileUrl);
-  if (!fileRes.ok) {
-    throw new Error(`Failed to download file from ${fileUrl}`);
-  }
-  const fileBlob = await fileRes.blob();
-
-  const formData = new FormData();
-  formData.append("file", fileBlob, "document.pdf");
-  formData.append("result_type", "markdown");
-  formData.append("parsing_instruction", "Extract all text, headers, LaTeX formulas, and Markdown tables accurately.");
-
-  const uploadRes = await fetch("https://api.cloud.llamaindex.ai/api/parsing/upload", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error(`LlamaParse upload failed with status ${uploadRes.status}`);
-  }
-
-  const uploadData = await uploadRes.json();
-  const jobId = uploadData.id;
-
-  // Poll job status
-  for (let attempt = 0; attempt < 30; attempt++) {
-    await new Promise((r) => setTimeout(r, 1000));
-    const statusRes = await fetch(
-      `https://api.cloud.llamaindex.ai/api/parsing/job/${jobId}/result/markdown`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      }
-    );
-
-    if (statusRes.ok) {
-      const data = await statusRes.json();
-      return data.markdown ?? "";
-    }
-  }
-
-  throw new Error("LlamaParse parsing timed out");
-}
 
 function generateDeterministicVector(text: string, dim = 1536): number[] {
   const vector = new Array(dim).fill(0);

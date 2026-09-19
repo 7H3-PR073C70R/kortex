@@ -88,34 +88,35 @@ const CODE_KEYWORDS = [
 ];
 
 /**
- * Inspects conversation history and last user message to automatically
- * determine whether to route to deep reasoning models (`deepseek-reasoner`)
- * or fast conversational models (`deepseek-chat`).
+ * Inspects conversation history and last user message to detect
+ * complex STEM, LaTeX, or coding questions for reasoning effort while
+ * standardizing exclusively on Luna.
  */
 export function selectModelAndParams(
   messages: Message[],
   options?: RouterOptions
 ): ModelSelectionResult {
-  const defaultModel =
+  const lunaModel =
+    options?.forceModel ||
     options?.defaultModel ||
+    Deno.env.get("LUNA_MODEL") ||
     Deno.env.get("DEFAULT_MODEL") ||
-    "deepseek-chat";
-  const proModel = options?.proModel || "deepseek-reasoner";
+    "luna";
 
-  // 1. Check for manual/admin caller override
+  // 1. Check for manual caller override
   if (options?.forceModel) {
     const isPro = options.forceModel.includes("pro") || options.forceModel.includes("reasoner") || options.forceModel.includes("r1");
     return {
       model: options.forceModel,
       reasoning_effort: isPro ? "high" : undefined,
       reasoningDetected: isPro,
-      matchedCriteria: ["admin_forced_override"],
+      matchedCriteria: ["caller_override"],
     };
   }
 
   if (!messages || messages.length === 0) {
     return {
-      model: defaultModel,
+      model: lunaModel,
       reasoningDetected: false,
     };
   }
@@ -170,55 +171,14 @@ export function selectModelAndParams(
   // Determine routing
   const reasoningDetected = matchedCriteria.length > 0;
 
-  if (reasoningDetected) {
-    return {
-      model: proModel,
-      reasoning_effort: "high",
-      reasoningDetected: true,
-      matchedCriteria,
-    };
-  }
-
   return {
-    model: defaultModel,
-    reasoningDetected: false,
+    model: lunaModel,
+    reasoning_effort: reasoningDetected ? "high" : undefined,
+    reasoningDetected,
+    matchedCriteria: reasoningDetected ? matchedCriteria : undefined,
   };
 }
 
-export function normalizeModelForBaseUrl(model: string, baseUrl: string): string {
-  const lowerUrl = baseUrl.toLowerCase();
-  const lowerModel = model.toLowerCase();
-
-  if (lowerUrl.includes("api.deepseek.com")) {
-    if (lowerModel.includes("reasoner") || lowerModel.includes("r1") || lowerModel.includes("pro")) {
-      return "deepseek-reasoner";
-    }
-    return "deepseek-chat";
-  }
-
-  if (lowerUrl.includes("openrouter.ai")) {
-    if (lowerModel.includes("reasoner") || lowerModel.includes("r1") || lowerModel.includes("pro")) {
-      return "deepseek/deepseek-r1";
-    }
-    if (lowerModel.startsWith("deepseek/") || lowerModel.startsWith("google/") || lowerModel.startsWith("meta-llama/")) {
-      return model;
-    }
-    return "deepseek/deepseek-chat";
-  }
-
-  if (lowerUrl.includes("groq.com")) {
-    if (lowerModel.includes("reasoner") || lowerModel.includes("r1")) {
-      return "deepseek-r1-distill-llama-70b";
-    }
-    return "llama-3.3-70b-versatile";
-  }
-
-  if (lowerUrl.includes("generativelanguage.googleapis.com")) {
-    if (lowerModel.includes("pro")) {
-      return "gemini-2.5-pro";
-    }
-    return "gemini-2.5-flash";
-  }
-
-  return model;
+export function normalizeModelForBaseUrl(model: string, _baseUrl: string): string {
+  return Deno.env.get("LUNA_MODEL") || model || "luna";
 }

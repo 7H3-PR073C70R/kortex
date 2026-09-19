@@ -33,6 +33,17 @@ final class UploadProgressUpdatedEvent extends IngestionEvent {
   final double progress;
 }
 
+/// Progress update pushed from server compute pipeline (Luna synthesis, OCR).
+final class IngestionServerProgressEvent extends IngestionEvent {
+  const IngestionServerProgressEvent({
+    required this.progress,
+    required this.stageMessage,
+  });
+
+  final double progress;
+  final String stageMessage;
+}
+
 /// Trigger STEM OCR parsing for the uploaded document.
 final class TriggerOcrParsingEvent extends IngestionEvent {
   const TriggerOcrParsingEvent({

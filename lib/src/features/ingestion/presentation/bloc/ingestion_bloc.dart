@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -12,7 +13,6 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
-import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/services/deep_document_dedup_service.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
@@ -51,6 +51,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
+    on<IngestionServerProgressEvent>(_onServerProgressUpdated);
     on<SetSynthesisModeEvent>(_onSetSynthesisMode);
     on<TriggerOcrParsingEvent>(_onTriggerOcrParsing);
     on<AttachDocumentToCourseEvent>(_onAttachDocumentToCourse);
@@ -220,11 +221,22 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     emit(state.copyWith(uploadProgress: event.progress));
   }
 
+  void _onServerProgressUpdated(
+    IngestionServerProgressEvent event,
+    Emitter<IngestionState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        uploadProgress: event.progress,
+        stageMessage: event.stageMessage,
+      ),
+    );
+  }
+
   Future<void> _onTriggerOcrParsing(
     TriggerOcrParsingEvent event,
     Emitter<IngestionState> emit,
   ) async {
-    final isAi = state.synthesisMode.isAiSmart;
     final isDeduplicated = state.wasDeduplicated;
 
     emit(
@@ -232,41 +244,61 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         status: ProcessingStatus.parsingOcr,
         stageMessage: isDeduplicated
             ? 'Loading cached study deck...'
-            : (isAi
-                ? 'Synthesizing with AI Smart Synthesis...'
-                : 'Reading document locally...'),
+            : 'Extracting document on server compute...',
       ),
     );
 
-    final ocrResult = await _processOcr(
-      documentId: event.documentId,
-      storagePath: event.storagePath,
-      fileType: event.fileType,
-    );
+    // Listen to real-time server compute progress broadcasts
+    StreamSubscription<Map<String, dynamic>>? progressSub;
+    try {
+      progressSub = RealtimeClient.instance
+          .watchPresence('document_ingestion:${event.documentId}')
+          .listen((msg) {
+        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+        final progress = (payload['progress'] as num?)?.toDouble();
+        final stageMessage = payload['stageMessage'] as String?;
+        if (progress != null && stageMessage != null && !isClosed) {
+          add(
+            IngestionServerProgressEvent(
+              progress: progress,
+              stageMessage: stageMessage,
+            ),
+          );
+        }
+      });
+    } on Object catch (_) {}
 
-    ocrResult.fold(
-      (failure) {
-        emit(
-          state.copyWith(
-            status: ProcessingStatus.failed,
-            errorMessage: failure.message,
-          ),
-        );
-      },
-      (snippets) {
-        emit(
-          state.copyWith(
-            status: ProcessingStatus.completed,
-            stageMessage: isDeduplicated
-                ? 'Pre-processed asset detected. Study deck synthesized!'
-                : (isAi
-                    ? 'AI synthesized ${snippets.length} conceptual cards'
-                    : 'Extracted ${snippets.length} study cards locally'),
-            snippets: snippets,
-          ),
-        );
-      },
-    );
+    try {
+      final ocrResult = await _processOcr(
+        documentId: event.documentId,
+        storagePath: event.storagePath,
+        fileType: event.fileType,
+      );
+
+      ocrResult.fold(
+        (failure) {
+          emit(
+            state.copyWith(
+              status: ProcessingStatus.failed,
+              errorMessage: failure.message,
+            ),
+          );
+        },
+        (snippets) {
+          emit(
+            state.copyWith(
+              status: ProcessingStatus.completed,
+              stageMessage: isDeduplicated
+                  ? 'Pre-processed asset detected. Study deck synthesized!'
+                  : 'Luna synthesized ${snippets.length} conceptual cards',
+              snippets: snippets,
+            ),
+          );
+        },
+      );
+    } finally {
+      unawaited(progressSub?.cancel() ?? Future<void>.value());
+    }
   }
 
   Future<void> _onAttachDocumentToCourse(
