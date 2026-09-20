@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -297,6 +298,20 @@ class CalibrationCubit extends Cubit<CalibrationState> {
             }),
           );
         }
+        try {
+          if (locator.isRegistered<NotificationService>()) {
+            unawaited(
+              locator<NotificationService>().showLocalNotification(
+                id: 1004,
+                title: '🎓 Your study profile is set!',
+                body: 'FSRS tuned for 90% retention. Your first deck is ready.',
+                payload: 'route:/dashboard',
+                channelId: 'kortex_system',
+              ),
+            );
+          }
+        } on Object catch (_) {}
+
         emit(
           state.copyWith(
             status: CalibrationStatus.completed,

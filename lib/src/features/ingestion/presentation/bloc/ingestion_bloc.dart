@@ -106,6 +106,28 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     } on Object catch (_) {}
   }
 
+  void _notifyProcessingFailed({
+    required String filename,
+    String? documentId,
+    String? reason,
+  }) {
+    try {
+      final service = _notificationService ??
+          (locator.isRegistered<NotificationService>()
+              ? locator<NotificationService>()
+              : null);
+      if (service != null) {
+        unawaited(
+          service.notifyDocumentProcessingFailed(
+            filename: filename,
+            documentId: documentId,
+            reason: reason,
+          ),
+        );
+      }
+    } on Object catch (_) {}
+  }
+
   void _onSetSynthesisMode(
     SetSynthesisModeEvent event,
     Emitter<IngestionState> emit,
@@ -190,6 +212,10 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             status: ProcessingStatus.failed,
             errorMessage: failure.message,
           ),
+        );
+        _notifyProcessingFailed(
+          filename: event.filename,
+          reason: failure.message,
         );
       },
       (doc) async {
@@ -330,6 +356,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               status: ProcessingStatus.failed,
               errorMessage: failure.message,
             ),
+          );
+          _notifyProcessingFailed(
+            filename: state.currentDocument?.filename ?? event.documentId,
+            documentId: event.documentId,
+            reason: failure.message,
           );
         },
         (snippets) {

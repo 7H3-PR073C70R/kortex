@@ -18,11 +18,20 @@ interface TriggerNotificationRequest {
     | "document_completed"
     | "welcome_user"
     | "forum_solution_verified"
+    | "quiz_duel_challenge"
+    | "quiz_duel_result"
+    | "streak_milestone"
+    | "subscription_expiry"
     | "process_outbox";
   documentId?: string;
   roomId?: string;
   deckId?: string;
   userId?: string;
+  challengerId?: string;
+  challengerName?: string;
+  duelId?: string;
+  duelWinnerId?: string;
+  streakDays?: number;
   topicTitle?: string;
   batchSize?: number;
 }
@@ -435,6 +444,143 @@ serve(async (req: Request) => {
             p_failed_ids: failedIds,
             p_error_map: errorMap,
           });
+        }
+        break;
+      }
+
+      // 10. Quiz Duel Challenge — notify the challenged peer
+      case "quiz_duel_challenge": {
+        if (body.userId && body.challengerId) {
+          const { data: challenger } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", body.challengerId)
+            .single();
+
+          const challengerName = challenger?.display_name
+            ?? body.challengerName
+            ?? "A peer";
+
+          await fetch(sendPushUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              userId: body.userId,
+              title: `⚔️ Quiz Duel Challenge!`,
+              body: `${challengerName} challenged you to a quiz duel! Tap to accept and prove your mastery.`,
+              category: "quiz_duel",
+              data: {
+                route: "/quiz-duel",
+                duelId: body.duelId ?? "",
+                challengerId: body.challengerId,
+                action: "quiz_duel_challenge",
+              },
+            }),
+          });
+          notificationsDispatched++;
+        }
+        break;
+      }
+
+      // 11. Quiz Duel Result — notify both players
+      case "quiz_duel_result": {
+        if (body.duelId) {
+          const { data: duel } = await supabase
+            .from("quiz_duels")
+            .select("player1_id, player2_id, winner_id, player1_score, player2_score")
+            .eq("id", body.duelId)
+            .single();
+
+          if (duel) {
+            const players = [duel.player1_id, duel.player2_id].filter(Boolean);
+            for (const playerId of players) {
+              const isWinner = duel.winner_id === playerId;
+              await fetch(sendPushUrl, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                  userId: playerId,
+                  title: isWinner ? "🏆 You won the Quiz Duel!" : "📚 Duel Complete",
+                  body: isWinner
+                    ? "You dominated! Your knowledge proved superior. Collect your XP reward."
+                    : "Close match! Review the deck and challenge again to reclaim your rank.",
+                  category: "quiz_duel",
+                  data: {
+                    route: "/quiz-duel",
+                    duelId: body.duelId ?? "",
+                    result: isWinner ? "win" : "loss",
+                    action: "quiz_duel_result",
+                  },
+                }),
+              });
+              notificationsDispatched++;
+            }
+          }
+        }
+        break;
+      }
+
+      // 12. Streak Milestone — server-side celebration push (complements local notification)
+      case "streak_milestone": {
+        if (body.userId && body.streakDays) {
+          const streakEmoji = body.streakDays >= 100 ? "🏆"
+            : body.streakDays >= 30 ? "⚡"
+            : body.streakDays >= 7 ? "🔥"
+            : "📈";
+
+          await fetch(sendPushUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              userId: body.userId,
+              title: `${streakEmoji} ${body.streakDays}-Day Streak Milestone!`,
+              body: `You've studied ${body.streakDays} days in a row. Your dedication is extraordinary!`,
+              category: "streak_protection",
+              data: {
+                route: "/dashboard",
+                streakDays: String(body.streakDays),
+                action: "streak_milestone",
+              },
+            }),
+          });
+          notificationsDispatched++;
+        }
+        break;
+      }
+
+      // 13. Subscription Expiry alert — notifies users whose Pro subscription expires in 3 days or 1 day
+      case "subscription_expiry": {
+        const now = new Date();
+        const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: expiringUsers, error: subError } = await supabase
+          .from("profiles")
+          .select("id, email, subscription_tier, subscription_expires_at")
+          .eq("subscription_tier", "pro")
+          .lte("subscription_expires_at", inThreeDays)
+          .gte("subscription_expires_at", now.toISOString());
+
+        if (!subError && expiringUsers) {
+          for (const user of expiringUsers) {
+            const expiresAt = new Date(user.subscription_expires_at);
+            const daysLeft = Math.max(1, Math.ceil((expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+
+            await fetch(sendPushUrl, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                userId: user.id,
+                title: "📅 Your Kortex Pro is expiring soon",
+                body: `${daysLeft} day${daysLeft > 1 ? "s" : ""} left. Renew now to keep AI features and unlimited sync active.`,
+                category: "subscription",
+                data: {
+                  route: "/subscription",
+                  daysLeft: String(daysLeft),
+                  action: "subscription_expiry",
+                },
+              }),
+            });
+            notificationsDispatched++;
+          }
         }
         break;
       }

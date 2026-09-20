@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -236,6 +237,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   }) async {
     _targetDurationSeconds = targetDurationSeconds;
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
+
+    // Cancel daily study reminder — user is actively studying now.
+    try {
+      if (locator.isRegistered<NotificationService>()) {
+        unawaited(locator<NotificationService>().cancelStudyReminder());
+      }
+    } on Object catch (_) {}
 
     List<FlashcardEntity> cards;
     if (deckId == 'all' || deckId == 'all_decks' || deckId == 'cross_deck') {
@@ -693,7 +701,29 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     _timer?.cancel();
     if (state.status == StudySessionStatus.studying) {
       unawaited(saveSessionCheckpoint(index: state.currentIndex, elapsedSeconds: state.elapsedSeconds));
+      // Session was interrupted — reschedule the daily reminder so the user
+      // is notified at their preferred time the next day.
+      _rescheduleReminder();
     }
     return super.close();
+  }
+
+  /// Re-arms the daily study reminder from [FsrsUserSettings] after an
+  /// interrupted session. Falls back silently if NotificationService is
+  /// unavailable (e.g. during unit tests).
+  void _rescheduleReminder() {
+    try {
+      if (!locator.isRegistered<NotificationService>()) return;
+      final notifs = locator<NotificationService>();
+      final raw = _localStorageService
+          ?.getPreference(key: FsrsUserSettings.storageKey);
+      final settings = raw != null
+          ? FsrsUserSettings.fromJson(StudySessionCubit._decodeSettings(raw))
+          : const FsrsUserSettings();
+      unawaited(notifs.scheduleStudyReminder(
+        hour: settings.preferredReminderHour,
+        minute: settings.preferredReminderMinute,
+      ));
+    } on Object catch (_) {}
   }
 }

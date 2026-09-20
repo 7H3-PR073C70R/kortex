@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 
 /// Service responsible for recording user learning activities (flashcard
@@ -171,6 +174,60 @@ class UserActivityServiceImpl implements UserActivityService {
       key: _streakLongestKey,
       data: longestStreak.toString(),
     );
+
+    // Fire a local notification on streak milestones.
+    _notifyStreakMilestone(currentStreak);
+  }
+
+  /// Fires a local streak-channel notification when [streak] hits a milestone.
+  /// Milestones: 3, 7, 14, 30, 60, 100, 365 days.
+  void _notifyStreakMilestone(int streak) {
+    const milestones = {3, 7, 14, 30, 60, 100, 365};
+    if (!milestones.contains(streak)) return;
+    try {
+      if (!locator.isRegistered<NotificationService>()) return;
+      final notifs = locator<NotificationService>();
+      final (title, body) = switch (streak) {
+        3 => (
+            '🔥 3-Day Streak!',
+            'You studied 3 days in a row. Keep it up — the habit is forming!',
+          ),
+        7 => (
+            '🏅 One Week Streak!',
+            'A full week of studying! Your memory retention is compounding fast.',
+          ),
+        14 => (
+            '💪 Two-Week Warrior!',
+            '14 consecutive days. Your brain is rewiring for mastery. Incredible!',
+          ),
+        30 => (
+            '🌙 30-Day Scholar!',
+            'A whole month of daily study. WAEC/JAMB mastery is within reach!',
+          ),
+        60 => (
+            '⚡ 60-Day Legend!',
+            '60 days straight — you are in the top 1% of all Kortex scholars.',
+          ),
+        100 => (
+            '🏆 Century Streak!',
+            '100 days of relentless studying. You are unstoppable. Keep pushing!',
+          ),
+        365 => (
+            '🌟 One-Year Champion!',
+            'A full year of daily study! The Kortex Scholar Award is yours — infinite respect!',
+          ),
+        _ => ('🔥 Streak Milestone!', 'You hit a $streak-day streak! Keep going!'),
+      };
+
+      unawaited(
+        notifs.showLocalNotification(
+          id: 9_000_000 + streak,
+          title: title,
+          body: body,
+          channelId: NotificationService.channelStreak,
+        ),
+      );
+    } on Object catch (_) {}
   }
 
   @override

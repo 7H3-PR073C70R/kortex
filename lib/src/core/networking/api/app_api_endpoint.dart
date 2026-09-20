@@ -128,6 +128,8 @@ class AppApiEndpoint {
   // Push Notifications & Device Tokens
   static const String registerDeviceTokenRpc =
       '/rest/v1/rpc/register_device_token';
+  static const String upsertNotificationPreferencesRpc =
+      '/rest/v1/rpc/upsert_notification_preferences';
   static const String notificationPreferences =
       '/rest/v1/notification_preferences';
   static const String notificationsInbox =

@@ -185,7 +185,7 @@ void main() {
           );
 
           // 5. Compute FSRS-6 Review Transition for newly generated card
-          final initialFsrs = FsrsCardState.initial();
+          final initialFsrs = FsrsMemoryState.initial();
           final reviewResult = schedulerFactory.calculate(
             rating: 3, // Good
             previousFsrsState: initialFsrs,

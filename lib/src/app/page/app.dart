@@ -132,6 +132,48 @@ class _AppState extends State<App> {
           return;
         }
 
+        // FCM data payload route keys (from trigger-notifications)
+        if (clean == '/study-session' || clean.startsWith('/study-session?')) {
+          // Parse optional deckId query param: /study-session?deckId=xxx
+          final uri = Uri.tryParse(clean);
+          final deckId = uri?.queryParameters['deckId'];
+          if (deckId != null && deckId.isNotEmpty) {
+            unawaited(_appRouter.push(StudySessionRoute(deckId: deckId)));
+          } else {
+            unawaited(_appRouter.push(const DecksRoute()));
+          }
+          return;
+        }
+
+        if (clean == '/quiz-duel' || clean.startsWith('/quiz-duel?')) {
+          // Navigate to the Community hub where Quiz Duels are initiated.
+          // The duelId can be passed via query param when deep-linking is added.
+          unawaited(_appRouter.push(const CommunityHubRoute()));
+          return;
+        }
+
+        if (clean == '/deck-detail' || clean.startsWith('/deck-detail?')) {
+          final uri = Uri.tryParse(clean);
+          final deckId = uri?.queryParameters['deckId'];
+          if (deckId != null && deckId.isNotEmpty) {
+            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
+          } else {
+            unawaited(_appRouter.push(const DecksRoute()));
+          }
+          return;
+        }
+
+        if (clean == '/dashboard' || clean == 'dashboard') {
+          // Pop to root (dashboard is the root scaffold tab).
+          _appRouter.popUntilRoot();
+          return;
+        }
+
+        if (clean == '/community' || clean == 'community') {
+          unawaited(_appRouter.push(const CommunityHubRoute()));
+          return;
+        }
+
         // Generic named route fallback
         if (clean.startsWith('/')) {
           unawaited(_appRouter.pushPath(clean));

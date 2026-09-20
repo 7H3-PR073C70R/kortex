@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -57,6 +58,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
   StreamSubscription<String>? _streamSubscription;
   List<DocumentChunkEntity> _currentRagReferences = [];
+  DateTime? _streamStartTime;
 
   Future<void> _onSubmitPrompt(
     SubmitPromptEvent event,
@@ -64,6 +66,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   ) async {
     await _streamSubscription?.cancel();
     _currentRagReferences = [];
+    _streamStartTime = DateTime.now();
 
     // All normal interactions use the requested engine without Pro downgrade to on-device LLM
     final effectiveEngine = event.engineType;
@@ -199,6 +202,24 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     _currentRagReferences = [];
 
     unawaited(_getChatHistory.cacheMessage(botMessage));
+
+    if (_streamStartTime != null &&
+        DateTime.now().difference(_streamStartTime!).inSeconds >= 10) {
+      try {
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(
+            locator<NotificationService>().showLocalNotification(
+              id: 1005,
+              title: '🤖 Syllabot finished thinking',
+              body: 'Your question has been answered.',
+              payload: 'route:/syllabot',
+              channelId: 'kortex_processing',
+            ),
+          );
+        }
+      } on Object catch (_) {}
+    }
+    _streamStartTime = null;
 
     emit(
       state.copyWith(

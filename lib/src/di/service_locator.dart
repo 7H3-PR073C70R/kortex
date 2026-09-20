@@ -47,6 +47,9 @@ void _initServices() {
     ..registerLazySingleton<BiometricAuthService>(
       () => BiometricAuthServiceImpl(locator()),
     )
+    ..registerLazySingleton<FsrsSettingsSyncService>(
+      FsrsSettingsSyncService.new,
+    )
     ..registerLazySingleton<FilePickerService>(
       FilePickerService.new,
     )

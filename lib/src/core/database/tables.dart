@@ -41,8 +41,8 @@ class Flashcards extends Table {
   TextColumn get sourceTopic => text().nullable()();
   // FSRS-6 native columns — authoritative source of truth for memory scheduling.
   // Column names match remote Supabase schema (migration 20260831140000) exactly.
-  RealColumn get stability => real().withDefault(const Constant(0.0))();
-  RealColumn get difficulty => real().withDefault(const Constant(0.0))();
+  RealColumn get stability => real().withDefault(const Constant(0))();
+  RealColumn get difficulty => real().withDefault(const Constant(0))();
   IntColumn get elapsedDays => integer().withDefault(const Constant(0))();
   IntColumn get scheduledDays => integer().withDefault(const Constant(0))();
   IntColumn get lapses => integer().withDefault(const Constant(0))();
