@@ -176,6 +176,13 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
       lastReviewed: entry.lastReviewed,
       nextDueDate: entry.nextDueDate,
       sourceTopic: entry.sourceTopic,
+      // FSRS-6 native memory state
+      fsrsStability: entry.stability,
+      fsrsDifficulty: entry.difficulty,
+      fsrsElapsedDays: entry.elapsedDays,
+      fsrsScheduledDays: entry.scheduledDays,
+      fsrsLapses: entry.lapses,
+      fsrsState: entry.fsrsState,
     );
   }
 
@@ -221,6 +228,13 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
       lastReviewed: Value(card.lastReviewed),
       nextDueDate: Value(card.nextDueDate),
       sourceTopic: Value(card.sourceTopic),
+      // FSRS-6 native memory state — persisted to enable lossless session resume.
+      stability: Value(card.fsrsStability),
+      difficulty: Value(card.fsrsDifficulty),
+      elapsedDays: Value(card.fsrsElapsedDays),
+      scheduledDays: Value(card.fsrsScheduledDays),
+      lapses: Value(card.fsrsLapses),
+      fsrsState: Value(card.fsrsState),
       createdAt: Value(now),
       updatedAt: Value(now),
     );

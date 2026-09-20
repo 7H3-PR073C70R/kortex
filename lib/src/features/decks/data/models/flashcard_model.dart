@@ -14,12 +14,21 @@ abstract class FlashcardModel with _$FlashcardModel {
     String? frontLatex,
     String? backLatex,
     String? imageUrl,
+    // SM-2 legacy fields — retained for backward compatibility and display.
     @Default(1) int interval,
     @Default(0) int repetitions,
     @Default(2.5) double easeFactor,
     DateTime? lastReviewed,
     DateTime? nextDueDate,
     String? sourceTopic,
+    // FSRS-6 native memory state — authoritative source of truth.
+    @Default(0.0) double fsrsStability,
+    @Default(0.0) double fsrsDifficulty,
+    @Default(0) int fsrsElapsedDays,
+    @Default(0) int fsrsScheduledDays,
+    @Default(0) int fsrsLapses,
+    /// FSRS learning state: 0=new, 1=learning, 2=review, 3=relearning.
+    @Default(0) int fsrsState,
   }) = _FlashcardModel;
 
   const FlashcardModel._();
@@ -51,6 +60,12 @@ abstract class FlashcardModel with _$FlashcardModel {
       lastReviewed: entity.lastReviewed,
       nextDueDate: entity.nextDueDate,
       sourceTopic: entity.sourceTopic,
+      fsrsStability: entity.fsrsStability,
+      fsrsDifficulty: entity.fsrsDifficulty,
+      fsrsElapsedDays: entity.fsrsElapsedDays,
+      fsrsScheduledDays: entity.fsrsScheduledDays,
+      fsrsLapses: entity.fsrsLapses,
+      fsrsState: entity.fsrsState,
     );
   }
 
@@ -69,6 +84,12 @@ abstract class FlashcardModel with _$FlashcardModel {
       lastReviewed: lastReviewed,
       nextDueDate: nextDueDate,
       sourceTopic: sourceTopic,
+      fsrsStability: fsrsStability,
+      fsrsDifficulty: fsrsDifficulty,
+      fsrsElapsedDays: fsrsElapsedDays,
+      fsrsScheduledDays: fsrsScheduledDays,
+      fsrsLapses: fsrsLapses,
+      fsrsState: fsrsState,
     );
   }
 }

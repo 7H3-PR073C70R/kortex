@@ -7,7 +7,7 @@ void main() {
     final engine = FsrsAlgorithmEngine();
 
     test('first review assigns initial stability and difficulty by rating', () {
-      final initial = FsrsCardState.initial();
+      final initial = FsrsMemoryState.initial();
 
       // Rating Good (3)
       final afterGood = engine.review(
@@ -35,7 +35,7 @@ void main() {
 
     test('consecutive recall increases stability and scheduled interval', () {
       final state1 = engine.review(
-        currentState: FsrsCardState.initial(),
+        currentState: FsrsMemoryState.initial(),
         rating: FsrsRating.good,
         reviewTime: DateTime(2026, 9, 2),
       );
@@ -53,7 +53,7 @@ void main() {
 
     test('lapse (Again) increases lapse counter and limits stability', () {
       final state1 = engine.review(
-        currentState: FsrsCardState.initial(),
+        currentState: FsrsMemoryState.initial(),
         rating: FsrsRating.good,
         reviewTime: DateTime(2026, 9, 2),
       );

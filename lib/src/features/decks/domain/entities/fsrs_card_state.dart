@@ -3,8 +3,12 @@ export 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart'
     show FsrsRating;
 
 /// Represents the mathematical memory state of a card in the FSRS-6 engine.
-class FsrsCardState extends Equatable {
-  const FsrsCardState({
+///
+/// Named [FsrsMemoryState] to avoid ambiguity with the `FsrsCardState` enum
+/// (defined in `fsrs_scheduler.dart`) which encodes the learning phase
+/// (new / learning / review / relearning).
+class FsrsMemoryState extends Equatable {
+  const FsrsMemoryState({
     required this.stability,
     required this.difficulty,
     required this.retrievability,
@@ -17,8 +21,8 @@ class FsrsCardState extends Equatable {
   });
 
   /// Initial fresh state before any reviews.
-  factory FsrsCardState.initial() {
-    return FsrsCardState(
+  factory FsrsMemoryState.initial() {
+    return FsrsMemoryState(
       stability: 0,
       difficulty: 0,
       retrievability: 1,
@@ -57,7 +61,7 @@ class FsrsCardState extends Equatable {
   /// Calculated next due date.
   final DateTime nextDueDate;
 
-  FsrsCardState copyWith({
+  FsrsMemoryState copyWith({
     double? stability,
     double? difficulty,
     double? retrievability,
@@ -68,7 +72,7 @@ class FsrsCardState extends Equatable {
     DateTime? lastReview,
     DateTime? nextDueDate,
   }) {
-    return FsrsCardState(
+    return FsrsMemoryState(
       stability: stability ?? this.stability,
       difficulty: difficulty ?? this.difficulty,
       retrievability: retrievability ?? this.retrievability,

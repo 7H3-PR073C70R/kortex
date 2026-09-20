@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -16,6 +17,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
@@ -37,7 +39,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
            (locator.isRegistered<DecksRepository>()
                ? locator<DecksRepository>()
                : null),
-       _fsrsScheduler = fsrsScheduler ?? FsrsScheduler(),
+       _fsrsScheduler = fsrsScheduler ?? _buildScheduler(
+           localStorageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null)),
        _cardSyncQueue = cardSyncQueue ??
            (locator.isRegistered<CardSyncQueue>()
                ? locator<CardSyncQueue>()
@@ -47,6 +53,22 @@ class StudySessionCubit extends Cubit<StudySessionState> {
                ? locator<LocalStorageService>()
                : null),
        super(const StudySessionState());
+
+  static FsrsScheduler _buildScheduler(LocalStorageService? storage) {
+    final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
+    final settings = raw != null
+        ? FsrsUserSettings.fromJson(_decodeSettings(raw))
+        : const FsrsUserSettings();
+    return FsrsScheduler(requestRetention: settings.clampedRetention);
+  }
+
+  static Map<String, dynamic> _decodeSettings(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on Object catch (_) {}
+    return {};
+  }
 
   final GetDeckCardsUseCase _getDeckCardsUseCase;
   final SaveSessionResultsUseCase _saveSessionResultsUseCase;
@@ -413,29 +435,25 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         newEasy++;
     }
 
-    // 3. FSRS-6 Review State Transition & UTC Timestamps
+    // 3. FSRS-6 Review State Transition — read native FSRS state, not SM-2 surrogates.
     final nowUtc = DateTime.now().toUtc();
     final lastReviewUtc = currentCard.lastReviewed?.toUtc();
     final elapsedDays = lastReviewUtc == null
         ? 0
         : nowUtc.difference(lastReviewUtc).inDays.clamp(0, 36500);
 
-    final isNewCard =
-        currentCard.repetitions == 0 && currentCard.lastReviewed == null;
-    final initialStability =
-        currentCard.interval > 0 ? currentCard.interval.toDouble() : 0.0;
-    final initialDifficulty =
-        ((3.0 - currentCard.easeFactor) * 5.0).clamp(1.0, 10.0);
-
     final fsrsCard = FsrsCard(
       cardId: currentCard.id,
       due: currentCard.nextDueDate?.toUtc(),
-      stability: initialStability,
-      difficulty: initialDifficulty,
+      stability: currentCard.fsrsStability,
+      difficulty: currentCard.fsrsDifficulty,
       elapsedDays: elapsedDays,
-      scheduledDays: currentCard.interval,
+      scheduledDays: currentCard.fsrsScheduledDays > 0
+          ? currentCard.fsrsScheduledDays
+          : currentCard.interval,
       reps: currentCard.repetitions,
-      state: isNewCard ? FsrsCardState.newCard : FsrsCardState.review,
+      lapses: currentCard.fsrsLapses,
+      state: FsrsCardState.values[currentCard.fsrsState.clamp(0, 3)],
       lastReview: lastReviewUtc,
       lastReviewedEpoch: lastReviewUtc?.millisecondsSinceEpoch ?? 0,
     );
@@ -456,7 +474,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     // 4. Enqueue into CardSyncQueue for robust local persistence (batched to remote on deck completion)
     unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));
 
-    // 5. Update flashcard entity with latest repetition, interval, and next due date
+    // 5. Update flashcard entity — write native FSRS state AND SM-2 compat fields.
     final updatedCard = currentCard.copyWith(
       repetitions: reviewResult.card.reps,
       interval: reviewResult.card.scheduledDays,
@@ -467,6 +485,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
               days: reviewResult.card.scheduledDays > 0
                   ? reviewResult.card.scheduledDays
                   : 1)),
+      // Native FSRS-6 fields — authoritative write-back
+      fsrsStability: reviewResult.card.stability,
+      fsrsDifficulty: reviewResult.card.difficulty,
+      fsrsElapsedDays: reviewResult.card.elapsedDays,
+      fsrsScheduledDays: reviewResult.card.scheduledDays,
+      fsrsLapses: reviewResult.card.lapses,
+      fsrsState: reviewResult.card.state.index,
     );
 
     final updatedCards = List<FlashcardEntity>.from(state.cards);

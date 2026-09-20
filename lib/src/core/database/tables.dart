@@ -32,12 +32,22 @@ class Flashcards extends Table {
   TextColumn get frontLatex => text().nullable()();
   TextColumn get backLatex => text().nullable()();
   TextColumn get imageUrl => text().nullable()();
+  // SM-2 legacy columns — retained for backward compatibility; derived/display-only going forward.
   IntColumn get interval => integer().withDefault(const Constant(1))();
   IntColumn get repetitions => integer().withDefault(const Constant(0))();
   RealColumn get easeFactor => real().withDefault(const Constant(2.5))();
   DateTimeColumn get lastReviewed => dateTime().nullable()();
   DateTimeColumn get nextDueDate => dateTime().nullable()();
   TextColumn get sourceTopic => text().nullable()();
+  // FSRS-6 native columns — authoritative source of truth for memory scheduling.
+  // Column names match remote Supabase schema (migration 20260831140000) exactly.
+  RealColumn get stability => real().withDefault(const Constant(0.0))();
+  RealColumn get difficulty => real().withDefault(const Constant(0.0))();
+  IntColumn get elapsedDays => integer().withDefault(const Constant(0))();
+  IntColumn get scheduledDays => integer().withDefault(const Constant(0))();
+  IntColumn get lapses => integer().withDefault(const Constant(0))();
+  /// FSRS card state: 0=new, 1=learning, 2=review, 3=relearning
+  IntColumn get fsrsState => integer().named('state').withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

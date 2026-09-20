@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_use_case.dart';
@@ -40,10 +41,11 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
             (locator.isRegistered<DecksRepository>()
                 ? locator<DecksRepository>()
                 : null),
-        _fsrsScheduler = fsrsScheduler ??
-            (locator.isRegistered<FsrsScheduler>()
-                ? locator<FsrsScheduler>()
-                : FsrsScheduler()),
+        _fsrsScheduler = fsrsScheduler ?? _buildScheduler(
+            localStorageService ??
+            (locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null)),
         _cardSyncQueue = cardSyncQueue ??
             (locator.isRegistered<CardSyncQueue>()
                 ? locator<CardSyncQueue>()
@@ -55,6 +57,22 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
         _ttsHandler = ttsHandler,
         super(const FocusSessionState()) {
     _initTtsListener();
+  }
+
+  static FsrsScheduler _buildScheduler(LocalStorageService? storage) {
+    final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
+    final settings = raw != null
+        ? FsrsUserSettings.fromJson(_decodeSettings(raw))
+        : const FsrsUserSettings();
+    return FsrsScheduler(requestRetention: settings.clampedRetention);
+  }
+
+  static Map<String, dynamic> _decodeSettings(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on Object catch (_) {}
+    return {};
   }
 
   final GetDeckCardsUseCase? _getDeckCardsUseCase;
@@ -295,29 +313,25 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
         AppFeedback.medium();
     }
 
-    // 2. FSRS State Transition
+    // 2. FSRS State Transition — read native FSRS state, not SM-2 surrogates.
     final nowUtc = DateTime.now().toUtc();
     final lastReviewUtc = currentCard.lastReviewed?.toUtc();
     final elapsedDays = lastReviewUtc == null
         ? 0
         : nowUtc.difference(lastReviewUtc).inDays.clamp(0, 36500);
 
-    final isNewCard =
-        currentCard.repetitions == 0 && currentCard.lastReviewed == null;
-    final initialStability =
-        currentCard.interval > 0 ? currentCard.interval.toDouble() : 0.0;
-    final initialDifficulty =
-        ((3.0 - currentCard.easeFactor) * 5.0).clamp(1.0, 10.0);
-
     final fsrsCard = FsrsCard(
       cardId: currentCard.id,
       due: currentCard.nextDueDate?.toUtc(),
-      stability: initialStability,
-      difficulty: initialDifficulty,
+      stability: currentCard.fsrsStability,
+      difficulty: currentCard.fsrsDifficulty,
       elapsedDays: elapsedDays,
-      scheduledDays: currentCard.interval,
+      scheduledDays: currentCard.fsrsScheduledDays > 0
+          ? currentCard.fsrsScheduledDays
+          : currentCard.interval,
       reps: currentCard.repetitions,
-      state: isNewCard ? FsrsCardState.newCard : FsrsCardState.review,
+      lapses: currentCard.fsrsLapses,
+      state: FsrsCardState.values[currentCard.fsrsState.clamp(0, 3)],
       lastReview: lastReviewUtc,
       lastReviewedEpoch: lastReviewUtc?.millisecondsSinceEpoch ?? 0,
     );
@@ -343,6 +357,13 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
                   : 1,
             ),
           ),
+      // Native FSRS-6 fields — authoritative write-back
+      fsrsStability: reviewResult.card.stability,
+      fsrsDifficulty: reviewResult.card.difficulty,
+      fsrsElapsedDays: reviewResult.card.elapsedDays,
+      fsrsScheduledDays: reviewResult.card.scheduledDays,
+      fsrsLapses: reviewResult.card.lapses,
+      fsrsState: reviewResult.card.state.index,
     );
 
     final updatedCards = List<FlashcardEntity>.from(state.cards);

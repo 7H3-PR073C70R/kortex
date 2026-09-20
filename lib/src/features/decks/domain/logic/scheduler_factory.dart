@@ -16,7 +16,7 @@ class UnifiedReviewResult {
   final SpacedRepetitionAlgorithm algorithm;
   final int nextIntervalDays;
   final DateTime nextDueDate;
-  final FsrsCardState? fsrsState;
+  final FsrsMemoryState? fsrsState;
 }
 
 /// Unified scheduler factory configured strictly to use FSRS Version 6.
@@ -33,7 +33,7 @@ class SchedulerFactory {
     int previousInterval = 1,
     int previousReps = 0,
     double previousEaseFactor = 2.5,
-    FsrsCardState? previousFsrsState,
+    FsrsMemoryState? previousFsrsState,
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
@@ -55,7 +55,7 @@ class SchedulerFactory {
     }
 
     final currentState = previousFsrsState ??
-        FsrsCardState(
+        FsrsMemoryState(
           stability: previousInterval > 0 ? previousInterval.toDouble() : 0.0,
           difficulty: ((3.0 - previousEaseFactor) * 5.0).clamp(1.0, 10.0),
           retrievability: 1,

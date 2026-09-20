@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -49,6 +49,25 @@ class AppDatabase extends _$AppDatabase {
           } on Object catch (_) {}
           try {
             await customStatement('ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          // Self-healing: FSRS-6 native columns on flashcards table
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
+          } on Object catch (_) {}
+          try {
+            await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
           } on Object catch (_) {}
         },
         onCreate: (m) async {
@@ -104,6 +123,29 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_forum_replies_parent_reply_id ON forum_replies(parent_reply_id);',
             );
+          }
+          if (from < 5) {
+            // Add FSRS-6 native memory state columns to local flashcards table.
+            // Names match the remote Supabase schema (migration 20260831140000) exactly
+            // to guarantee seamless upsert_fsrs_review_batch RPC round-trips.
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
+            } on Object catch (_) {}
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
+            } on Object catch (_) {}
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
+            } on Object catch (_) {}
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
+            } on Object catch (_) {}
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
+            } on Object catch (_) {}
+            try {
+              await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
+            } on Object catch (_) {}
           }
         },
       );

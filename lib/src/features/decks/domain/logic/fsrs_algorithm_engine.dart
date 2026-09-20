@@ -48,8 +48,8 @@ class FsrsAlgorithmEngine {
 
   /// Evaluates state progression given a card's current state and new review
   /// rating using FSRS-6.
-  FsrsCardState review({
-    required FsrsCardState currentState,
+  FsrsMemoryState review({
+    required FsrsMemoryState currentState,
     required FsrsRating rating,
     DateTime? reviewTime,
   }) {
@@ -78,7 +78,7 @@ class FsrsAlgorithmEngine {
       now: now,
     );
 
-    return FsrsCardState(
+    return FsrsMemoryState(
       stability: double.parse(result.card.stability.toStringAsFixed(3)),
       difficulty: double.parse(result.card.difficulty.toStringAsFixed(3)),
       retrievability: calculateRetrievability(

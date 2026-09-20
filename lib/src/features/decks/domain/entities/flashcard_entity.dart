@@ -15,6 +15,13 @@ class FlashcardEntity extends Equatable {
     this.lastReviewed,
     this.nextDueDate,
     this.sourceTopic,
+    // FSRS-6 native memory state fields
+    this.fsrsStability = 0.0,
+    this.fsrsDifficulty = 0.0,
+    this.fsrsElapsedDays = 0,
+    this.fsrsScheduledDays = 0,
+    this.fsrsLapses = 0,
+    this.fsrsState = 0,
   });
 
   final String id;
@@ -24,12 +31,33 @@ class FlashcardEntity extends Equatable {
   final String? frontLatex;
   final String? backLatex;
   final String? imageUrl;
+
+  // SM-2 legacy fields — retained for backward compatibility and display.
   final int interval;
   final int repetitions;
   final double easeFactor;
   final DateTime? lastReviewed;
   final DateTime? nextDueDate;
   final String? sourceTopic;
+
+  // FSRS-6 native memory state — authoritative source of truth.
+  /// Memory stability S in days.
+  final double fsrsStability;
+
+  /// Card difficulty D on scale [1.0, 10.0].
+  final double fsrsDifficulty;
+
+  /// Days elapsed since the previous review.
+  final int fsrsElapsedDays;
+
+  /// Next scheduled interval in days.
+  final int fsrsScheduledDays;
+
+  /// Total forgetting lapses count.
+  final int fsrsLapses;
+
+  /// FSRS learning state: 0=new, 1=learning, 2=review, 3=relearning.
+  final int fsrsState;
 
   bool get isDueToday {
     if (nextDueDate == null) return true;
@@ -39,6 +67,9 @@ class FlashcardEntity extends Equatable {
             nextDueDate!.month == now.month &&
             nextDueDate!.day == now.day);
   }
+
+  /// Whether this card has been seen before (has real FSRS state or legacy repetitions).
+  bool get hasBeenReviewed => fsrsState > 0 || repetitions > 0;
 
   FlashcardEntity copyWith({
     String? id,
@@ -54,6 +85,12 @@ class FlashcardEntity extends Equatable {
     DateTime? lastReviewed,
     DateTime? nextDueDate,
     String? sourceTopic,
+    double? fsrsStability,
+    double? fsrsDifficulty,
+    int? fsrsElapsedDays,
+    int? fsrsScheduledDays,
+    int? fsrsLapses,
+    int? fsrsState,
   }) {
     return FlashcardEntity(
       id: id ?? this.id,
@@ -69,6 +106,12 @@ class FlashcardEntity extends Equatable {
       lastReviewed: lastReviewed ?? this.lastReviewed,
       nextDueDate: nextDueDate ?? this.nextDueDate,
       sourceTopic: sourceTopic ?? this.sourceTopic,
+      fsrsStability: fsrsStability ?? this.fsrsStability,
+      fsrsDifficulty: fsrsDifficulty ?? this.fsrsDifficulty,
+      fsrsElapsedDays: fsrsElapsedDays ?? this.fsrsElapsedDays,
+      fsrsScheduledDays: fsrsScheduledDays ?? this.fsrsScheduledDays,
+      fsrsLapses: fsrsLapses ?? this.fsrsLapses,
+      fsrsState: fsrsState ?? this.fsrsState,
     );
   }
 
@@ -87,5 +130,11 @@ class FlashcardEntity extends Equatable {
     lastReviewed,
     nextDueDate,
     sourceTopic,
+    fsrsStability,
+    fsrsDifficulty,
+    fsrsElapsedDays,
+    fsrsScheduledDays,
+    fsrsLapses,
+    fsrsState,
   ];
 }
