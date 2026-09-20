@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
       : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -51,24 +51,7 @@ class AppDatabase extends _$AppDatabase {
             await customStatement('ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
           } on Object catch (_) {}
           // Self-healing: FSRS-6 native columns on flashcards table
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
+          await ensureFsrsColumnsExist();
         },
         onCreate: (m) async {
           await m.createAll();
@@ -146,6 +129,9 @@ class AppDatabase extends _$AppDatabase {
             try {
               await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
             } on Object catch (_) {}
+          }
+          if (from < 6) {
+            await ensureFsrsColumnsExist();
           }
         },
       );
@@ -436,42 +422,53 @@ class AppDatabase extends _$AppDatabase {
       await recalculateDeckStatsForId(card.deckId.value);
     }
   }
+  bool _fsrsColumnsChecked = false;
+
+  /// Ensures all native FSRS-6 columns exist on the flashcards table even if
+  /// migrations were skipped due to background isolate persistence or hot reload.
+  Future<void> ensureFsrsColumnsExist() async {
+    if (_fsrsColumnsChecked) return;
+    try {
+      final info = await customSelect('PRAGMA table_info(flashcards);').get();
+      final cols = info.map((r) => r.read<String>('name')).toSet();
+      if (!cols.contains('stability')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
+      }
+      if (!cols.contains('difficulty')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
+      }
+      if (!cols.contains('elapsed_days')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
+      }
+      if (!cols.contains('scheduled_days')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
+      }
+      if (!cols.contains('lapses')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
+      }
+      if (!cols.contains('state')) {
+        await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
+      }
+      _fsrsColumnsChecked = true;
+    } on Object catch (_) {}
+  }
 
   Future<void> batchUpsertFlashcards(List<FlashcardsCompanion> cardsList) async {
     if (cardsList.isEmpty) return;
-    final deckIds = <String>{};
 
-    for (final card in cardsList) {
-      if (card.deckId.present && card.deckId.value.isNotEmpty) {
-        deckIds.add(card.deckId.value);
-      }
-    }
+    final deckIds = cardsList
+        .where((c) => c.deckId.present)
+        .map((c) => c.deckId.value)
+        .toSet();
 
-    final now = DateTime.now();
     for (final deckId in deckIds) {
-      final existing =
-          await (select(decks)..where((d) => d.id.equals(deckId)))
-              .getSingleOrNull();
-      if (existing == null) {
-        final resolvedTitle = DeckTitleResolver.resolveTitle(deckId: deckId);
-        final resolvedSubject = DeckTitleResolver.resolveSubject(deckId: deckId);
-        final resolvedCategory = DeckTitleResolver.resolveCategory(deckId: deckId);
-        await into(decks).insert(
-          DecksCompanion.insert(
-            id: deckId,
-            title: resolvedTitle,
-            subject: Value(resolvedSubject),
-            category: Value(resolvedCategory),
-            createdAt: now,
-            updatedAt: now,
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-      } else if (DeckTitleResolver.isGenericTitle(existing.title)) {
+      final existing = await (select(decks)..where((d) => d.id.equals(deckId)))
+          .getSingleOrNull();
+
+      if (existing != null) {
         final resolvedTitle = DeckTitleResolver.resolveTitle(
           deckId: deckId,
           currentTitle: existing.title,
-          subject: existing.subject,
         );
         final resolvedSubject = DeckTitleResolver.resolveSubject(
           deckId: deckId,
@@ -491,9 +488,18 @@ class AppDatabase extends _$AppDatabase {
       }
     }
 
-    await batch((b) {
-      b.insertAllOnConflictUpdate(flashcards, cardsList);
-    });
+    await ensureFsrsColumnsExist();
+    try {
+      await batch((b) {
+        b.insertAllOnConflictUpdate(flashcards, cardsList);
+      });
+    } on Object catch (_) {
+      _fsrsColumnsChecked = false;
+      await ensureFsrsColumnsExist();
+      await batch((b) {
+        b.insertAllOnConflictUpdate(flashcards, cardsList);
+      });
+    }
 
     for (final deckId in deckIds) {
       await recalculateDeckStatsForId(deckId);
@@ -504,12 +510,24 @@ class AppDatabase extends _$AppDatabase {
     DecksCompanion deck,
     List<FlashcardsCompanion> cardsList,
   ) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(decks, [deck]);
-      if (cardsList.isNotEmpty) {
-        b.insertAllOnConflictUpdate(flashcards, cardsList);
-      }
-    });
+    await ensureFsrsColumnsExist();
+    try {
+      await batch((b) {
+        b.insertAllOnConflictUpdate(decks, [deck]);
+        if (cardsList.isNotEmpty) {
+          b.insertAllOnConflictUpdate(flashcards, cardsList);
+        }
+      });
+    } on Object catch (_) {
+      _fsrsColumnsChecked = false;
+      await ensureFsrsColumnsExist();
+      await batch((b) {
+        b.insertAllOnConflictUpdate(decks, [deck]);
+        if (cardsList.isNotEmpty) {
+          b.insertAllOnConflictUpdate(flashcards, cardsList);
+        }
+      });
+    }
 
     if (deck.id.present) {
       await recalculateDeckStatsForId(deck.id.value);
