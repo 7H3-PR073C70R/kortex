@@ -173,6 +173,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       filename: event.filename,
       fileType: event.fileType,
       fileBytes: event.fileBytes,
+      courseId: event.courseId,
+      courseCode: event.courseCode,
+      deckTitle: event.courseTitle,
       onProgress: (progress) {
         if (!isClosed) {
           add(UploadProgressUpdatedEvent(progress));
@@ -203,6 +206,23 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             wasDeduplicated: doc.isDeduplicated,
           ),
         );
+
+        // CASE 1: Instant match via Content-Addressable Storage (deck already provisioned)
+        if (doc.isDeduplicated && doc.deckId != null) {
+          emit(
+            state.copyWith(
+              status: ProcessingStatus.completed,
+              stageMessage: 'Instant match found! Deck added to your library.',
+            ),
+          );
+
+          _notifyProcessingCompleted(
+            filename: doc.filename,
+            documentId: doc.id,
+            deckId: doc.deckId,
+          );
+          return;
+        }
 
         if (doc.isDeduplicated) {
           emit(

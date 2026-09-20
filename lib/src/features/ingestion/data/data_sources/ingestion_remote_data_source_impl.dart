@@ -126,6 +126,34 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> claimOrCreateDocumentPreflight({
+    required String contentHash,
+    required String filename,
+    required String fileType,
+    required int fileSizeBytes,
+    String? courseId,
+    String? courseCode,
+    String? deckTitle,
+  }) async {
+    final payload = <String, dynamic>{
+      'p_content_hash': contentHash,
+      'p_filename': filename,
+      'p_file_type': fileType,
+      'p_file_size_bytes': fileSizeBytes,
+      'p_course_id': ?courseId,
+      'p_course_code': ?courseCode,
+      if (deckTitle != null && deckTitle.trim().isNotEmpty)
+        'p_deck_title': deckTitle.trim(),
+    };
+
+    final res = await _client.claimOrCreateDocumentPreflight(payload);
+    if (res.data is Map<String, dynamic>) {
+      return res.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
+  }
+
+  @override
   Future<DocumentUploadModel?> findDocumentByHash(String contentHash) async {
     final res = await _client.fetchDocuments(
       {
@@ -165,6 +193,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String fileType,
     required Uint8List fileBytes,
     required String contentHash,
+    String? customStoragePath,
+    String? customDocId,
     void Function(double progress)? onProgress,
   }) async {
     final performance = _performanceService;
@@ -179,6 +209,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           fileType: fileType,
           fileBytes: fileBytes,
           contentHash: contentHash,
+          customStoragePath: customStoragePath,
+          customDocId: customDocId,
           onProgress: onProgress,
         );
       });
@@ -189,6 +221,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       fileType: fileType,
       fileBytes: fileBytes,
       contentHash: contentHash,
+      customStoragePath: customStoragePath,
+      customDocId: customDocId,
       onProgress: onProgress,
     );
   }
@@ -198,11 +232,13 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String fileType,
     required Uint8List fileBytes,
     required String contentHash,
+    String? customStoragePath,
+    String? customDocId,
     void Function(double progress)? onProgress,
   }) async {
-    final docId = generateUuid();
-    final ext = fileType.replaceAll('.', '');
-    final storagePath = '$docId.$ext';
+    final ext = fileType.replaceAll('.', '').toLowerCase();
+    final docId = customDocId ?? generateUuid();
+    final storagePath = customStoragePath ?? 'canonical/$contentHash.$ext';
 
     var contentType = 'application/octet-stream';
     if (ext == 'pdf') {
@@ -235,6 +271,22 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             }
           },
         );
+      } on DioException catch (e, stack) {
+        // Storage Lock Handling: 409 Conflict indicates the file already exists in canonical storage.
+        // This is a benign redundant upload from a concurrent user, proceed without failing.
+        if (e.response?.statusCode != 409) {
+          final crashlytics = _crashlyticsService;
+          if (crashlytics != null) {
+            unawaited(
+              crashlytics.recordError(
+                e,
+                stack,
+                reason:
+                    'Document storage upload error, proceeding with local cache',
+              ),
+            );
+          }
+        }
       } on Object catch (e, stack) {
         final crashlytics = _crashlyticsService;
         if (crashlytics != null) {
@@ -250,8 +302,25 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       }
     }
 
-    // 2. Register metadata row in documents table with authenticated user_id
+    // 2. Register or return metadata row in documents table
     if (userId.isNotEmpty && token != null && token.isNotEmpty) {
+      // If customDocId was provided from preflight RPC, the row was already registered in documents table!
+      if (customDocId != null) {
+        final doc = DocumentUploadModel(
+          id: customDocId,
+          userId: userId,
+          filename: filename,
+          fileType: ext,
+          fileSizeBytes: fileBytes.lengthInBytes,
+          storagePath: storagePath,
+          contentHash: contentHash,
+          processingStatus: 'uploaded',
+          createdAt: DateTime.now(),
+        );
+        unawaited(_persistDocumentLocally(doc));
+        return doc;
+      }
+
       final payload = <String, dynamic>{
         'id': docId,
         'filename': filename,
@@ -280,7 +349,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             crashlytics.recordError(
               e,
               stack,
-              reason: 'Document record insert error, attempting RPC reference',
+              reason:
+                  'Document metadata creation error, proceeding with local mock',
             ),
           );
         }

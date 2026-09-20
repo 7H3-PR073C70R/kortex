@@ -61,8 +61,9 @@ export class ServerDocumentParser {
     bytes: Uint8Array;
     fileType: string;
     filename: string;
+    contentHash?: string;
   }): Promise<ParsedDocumentResult> {
-    const { documentId, bytes, fileType, filename } = params;
+    const { documentId, bytes, fileType, filename, contentHash } = params;
     const ext = (fileType || filename.split(".").pop() || "").toLowerCase().replace(/^\./, "");
 
     let rawText = "";
@@ -103,7 +104,10 @@ export class ServerDocumentParser {
     for (let i = 0; i < extractedMedia.length; i++) {
       const media = extractedMedia[i];
       try {
-        const storagePath = `${documentId}_diagram_${i + 1}_${Date.now()}.${media.mimeType.includes("png") ? "png" : "jpg"}`;
+        const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
+        const storagePath = contentHash
+          ? `canonical/${contentHash}/fig_${i + 1}.${imgExt}`
+          : `${documentId}_diagram_${i + 1}_${Date.now()}.${imgExt}`;
         const { error: uploadErr } = await this.supabase.storage
           .from("card-assets")
           .upload(storagePath, media.bytes, {

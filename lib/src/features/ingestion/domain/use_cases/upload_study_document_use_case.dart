@@ -13,12 +13,18 @@ class UploadStudyDocumentUseCase {
     required String filename,
     required String fileType,
     required Uint8List fileBytes,
+    String? courseId,
+    String? courseCode,
+    String? deckTitle,
     void Function(double progress)? onProgress,
   }) {
     return _repository.uploadDocument(
       filename: filename,
       fileType: fileType,
       fileBytes: fileBytes,
+      courseId: courseId,
+      courseCode: courseCode,
+      deckTitle: deckTitle,
       onProgress: onProgress,
     );
   }

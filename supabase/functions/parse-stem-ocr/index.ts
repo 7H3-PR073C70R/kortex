@@ -103,7 +103,7 @@ serve(async (req) => {
     // Zero-Trust Ownership Verification
     const { data: documentRecord } = await supabase
       .from("documents")
-      .select("id, user_id, filename")
+      .select("id, user_id, filename, content_hash")
       .eq("id", documentId)
       .maybeSingle();
 
@@ -117,6 +117,7 @@ serve(async (req) => {
       );
     }
 
+    const contentHash = documentRecord?.content_hash;
     const resolvedFilename = documentRecord?.filename || filename;
     const cleanDeckTitle =
       requestedDeckTitle ||
@@ -175,6 +176,7 @@ serve(async (req) => {
         bytes: fileBytes,
         fileType,
         filename: resolvedFilename,
+        contentHash,
       });
       parsedDoc.images = parsedFromFile.images;
       parsedDoc.isScannedOrImage = parsedFromFile.isScannedOrImage;
@@ -397,10 +399,89 @@ serve(async (req) => {
     const deckId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
-    // 1. Create Deck Record in public.decks
+    // Canonical Deck & Cards population for Content-Addressed Storage
+    let canonicalDeckId: string | null = null;
+    if (contentHash) {
+      const { data: canonicalDoc } = await supabase
+        .from("canonical_documents")
+        .select("id")
+        .eq("content_hash", contentHash)
+        .maybeSingle();
+
+      if (canonicalDoc?.id) {
+        const canonicalDocId = canonicalDoc.id;
+
+        const { data: existingCanonicalDeck } = await supabase
+          .from("canonical_decks")
+          .select("id")
+          .eq("canonical_document_id", canonicalDocId)
+          .maybeSingle();
+
+        if (existingCanonicalDeck?.id) {
+          canonicalDeckId = existingCanonicalDeck.id;
+        } else {
+          canonicalDeckId = crypto.randomUUID();
+          await supabase.from("canonical_decks").insert({
+            id: canonicalDeckId,
+            canonical_document_id: canonicalDocId,
+            default_title: cleanDeckTitle,
+            subject: courseTitle || courseCode,
+            total_cards: generatedCards.length,
+            created_at: nowIso,
+          });
+
+          const canonicalCardsInserts = generatedCards.map((c, idx) => ({
+            id: crypto.randomUUID(),
+            canonical_deck_id: canonicalDeckId,
+            order_index: idx,
+            front: c.front,
+            back: c.back,
+            front_latex: c.front_latex || null,
+            back_latex: c.back_latex || null,
+            explanation: c.explanation || null,
+            image_url: c.image_url || null,
+            source_topic: c.tags?.[0] || "General",
+            tags: c.tags || [],
+            created_at: nowIso,
+          }));
+
+          if (canonicalCardsInserts.length > 0) {
+            await supabase.from("canonical_cards").insert(canonicalCardsInserts);
+          }
+        }
+
+        // Mark canonical document completed
+        await supabase
+          .from("canonical_documents")
+          .update({
+            processing_status: "completed",
+            updated_at: nowIso,
+          })
+          .eq("id", canonicalDocId);
+
+        // Broadcast to any concurrent listeners on canonical channel
+        try {
+          const canonicalChannel = supabase.channel(`canonical_synthesis:${canonicalDocId}`);
+          await canonicalChannel.send({
+            type: "broadcast",
+            event: "synthesis_completed",
+            payload: {
+              canonicalDocId,
+              deckId,
+              totalCards: generatedCards.length,
+              timestamp: nowIso,
+            },
+          });
+          await supabase.removeChannel(canonicalChannel);
+        } catch (_) {}
+      }
+    }
+
+    // 1. Create User Deck Record in public.decks
     const deckRecord = {
       id: deckId,
       user_id: userId,
+      canonical_deck_id: canonicalDeckId,
       title: cleanDeckTitle,
       subject: courseTitle || courseCode,
       category: "Academic",
@@ -409,6 +490,8 @@ serve(async (req) => {
       mastery_rate: 0.0,
       retention_rate: 0.0,
       estimated_minutes: Math.max(5, Math.ceil(generatedCards.length * 1.5)),
+      course_id: courseId || null,
+      course_code: courseCode || null,
       created_at: nowIso,
       updated_at: nowIso,
     };
@@ -508,6 +591,28 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error("[parse-stem-ocr] Fatal error:", error);
+
+    // If canonical doc exists, mark it failed to allow clean retries
+    try {
+      const payload: OcrRequestPayload = await req.clone().json().catch(() => ({}));
+      if (payload.documentId) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: doc } = await supabase
+          .from("documents")
+          .select("content_hash")
+          .eq("id", payload.documentId)
+          .maybeSingle();
+        if (doc?.content_hash) {
+          await supabase
+            .from("canonical_documents")
+            .update({ processing_status: "failed", updated_at: new Date().toISOString() })
+            .eq("content_hash", doc.content_hash);
+        }
+      }
+    } catch (_) {}
+
     return new Response(
       JSON.stringify({ error: error.message || "Internal server error" }),
       {

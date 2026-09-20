@@ -13,6 +13,9 @@ abstract class IngestionRepository {
     required String filename,
     required String fileType,
     required Uint8List fileBytes,
+    String? courseId,
+    String? courseCode,
+    String? deckTitle,
     void Function(double progress)? onProgress,
   });
 

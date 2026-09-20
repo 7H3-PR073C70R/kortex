@@ -164,6 +164,63 @@ void main() {
       },
     );
 
+    test(
+      'instantly provisions deck via preflight without storage upload or OCR',
+      () async {
+        when(
+          () => mockDataSource.claimOrCreateDocumentPreflight(
+            contentHash: expectedHash,
+            filename: 'chemistry_101.pdf',
+            fileType: 'pdf',
+            fileSizeBytes: 4,
+            courseId: 'chem_1',
+            courseCode: 'CHEM101',
+            deckTitle: 'Organic Chemistry',
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'status': 'ready',
+            'is_deduplicated': true,
+            'canonical_doc_id': 'canonical_doc_999',
+            'user_doc_id': 'user_doc_888',
+            'deck_id': 'deck_instant_777',
+            'total_cards': 15,
+          },
+        );
+
+        final result = await repository.uploadDocument(
+          filename: 'chemistry_101.pdf',
+          fileType: 'pdf',
+          fileBytes: testBytes,
+          courseId: 'chem_1',
+          courseCode: 'CHEM101',
+          deckTitle: 'Organic Chemistry',
+        );
+
+        expect(result.isRight, isTrue);
+        result.fold(
+          (l) => fail('Should succeed with instant match'),
+          (doc) {
+            expect(doc.id, 'user_doc_888');
+            expect(doc.isDeduplicated, isTrue);
+            expect(doc.deckId, 'deck_instant_777');
+          },
+        );
+
+        verifyNever(
+          () => mockDataSource.uploadDocument(
+            filename: any(named: 'filename'),
+            fileType: any(named: 'fileType'),
+            fileBytes: any(named: 'fileBytes'),
+            contentHash: any(named: 'contentHash'),
+            customStoragePath: any(named: 'customStoragePath'),
+            customDocId: any(named: 'customDocId'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      },
+    );
+
     test('generates DeckEntity with LaTeX flashcards correctly', () async {
       const snippets = [
         OcrExtractionEntity(

@@ -78,6 +78,8 @@ class AppApiEndpoint {
   static const String parseStemOcr = '/functions/v1/parse-stem-ocr';
   static const String findOrCreateDocumentReference =
       '/rest/v1/rpc/find_or_create_document_reference';
+  static const String claimOrCreateDocumentPreflight =
+      '/rest/v1/rpc/claim_or_create_document_preflight';
 
   static String getCardAssetPublicUrl(String path) =>
       '$baseUri/storage/v1/object/public/card-assets/$path';

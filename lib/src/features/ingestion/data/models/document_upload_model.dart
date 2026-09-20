@@ -13,6 +13,7 @@ class DocumentUploadModel {
     required this.processingStatus,
     required this.createdAt,
     this.isDeduplicated = false,
+    this.deckId,
   });
 
   final String id;
@@ -25,10 +26,12 @@ class DocumentUploadModel {
   final String processingStatus;
   final DateTime createdAt;
   final bool isDeduplicated;
+  final String? deckId;
 
   factory DocumentUploadModel.fromJson(
     Map<String, dynamic> json, {
     bool isDeduplicated = false,
+    String? deckId,
   }) {
     return DocumentUploadModel(
       id: json['id'] as String,
@@ -41,6 +44,7 @@ class DocumentUploadModel {
       processingStatus: json['processing_status'] as String? ?? 'uploaded',
       createdAt: DateTime.parse(json['created_at'] as String),
       isDeduplicated: isDeduplicated,
+      deckId: deckId ?? json['deck_id'] as String?,
     );
   }
 
@@ -55,6 +59,7 @@ class DocumentUploadModel {
       'content_hash': contentHash,
       'processing_status': processingStatus,
       'created_at': createdAt.toIso8601String(),
+      if (deckId != null) 'deck_id': deckId,
     };
   }
 
@@ -70,6 +75,7 @@ class DocumentUploadModel {
       status: ProcessingStatusX.fromString(processingStatus),
       createdAt: createdAt,
       isDeduplicated: isDeduplicated,
+      deckId: deckId,
     );
   }
 
@@ -85,6 +91,7 @@ class DocumentUploadModel {
       processingStatus: entity.status.nameString,
       createdAt: entity.createdAt,
       isDeduplicated: entity.isDeduplicated,
+      deckId: entity.deckId,
     );
   }
 }

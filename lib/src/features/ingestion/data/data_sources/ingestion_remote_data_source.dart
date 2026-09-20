@@ -10,6 +10,16 @@ abstract class IngestionRemoteDataSource {
     required int fileSizeBytes,
   });
 
+  Future<Map<String, dynamic>> claimOrCreateDocumentPreflight({
+    required String contentHash,
+    required String filename,
+    required String fileType,
+    required int fileSizeBytes,
+    String? courseId,
+    String? courseCode,
+    String? deckTitle,
+  });
+
   Future<DocumentUploadModel?> findDocumentByHash(String contentHash);
 
   Future<DocumentUploadModel> uploadDocument({
@@ -17,6 +27,8 @@ abstract class IngestionRemoteDataSource {
     required String fileType,
     required Uint8List fileBytes,
     required String contentHash,
+    String? customStoragePath,
+    String? customDocId,
     void Function(double progress)? onProgress,
   });
 

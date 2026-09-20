@@ -14,6 +14,11 @@ abstract class IngestionApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.claimOrCreateDocumentPreflight)
+  Future<HttpResponse<dynamic>> claimOrCreateDocumentPreflight(
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET(AppApiEndpoint.documents)
   Future<HttpResponse<dynamic>> fetchDocuments(
     @Queries() Map<String, dynamic> query,
@@ -52,7 +57,7 @@ extension IngestionStorageUpload on Dio {
         extra: {'silent': true},
         headers: {
           'Content-Type': contentType,
-          'x-upsert': 'true',
+          'x-upsert': 'false',
         },
       ),
       onSendProgress: onProgress,
