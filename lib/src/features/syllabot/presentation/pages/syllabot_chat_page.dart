@@ -8,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/device_capability_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -21,6 +22,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/models/prompt_suggestion_model.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -31,6 +33,7 @@ import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_eve
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/convert_to_deck_action_sheet.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capacity_prompt_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_download_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
@@ -171,13 +174,72 @@ class _SyllabotChatView extends HookWidget {
       });
     }
 
-    void handleEngineSwitch(
+    Future<void> handleEngineSwitch(
       BuildContext pageContext,
       ExecutionEngineType targetEngine,
-    ) {
-      pageContext.read<SyllabotChatBloc>().add(
-        const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
-      );
+    ) async {
+      if (targetEngine == ExecutionEngineType.cloudRemote) {
+        pageContext.read<SyllabotChatBloc>().add(
+          const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+        );
+        pageContext.showSnackBar(
+          message: l10n.engineSwitched(l10n.engineCloudSupabase),
+        );
+        return;
+      }
+
+      // Check device capacity (CPU cores, available memory, storage)
+      final capabilityService = DeviceCapabilityService();
+      final report = await capabilityService.auditDeviceCapacity();
+
+      if (!report.isSupported) {
+        if (pageContext.mounted) {
+          pageContext.showSnackBar(
+            message: report.unsupportedReason ??
+                'Your device does not meet the hardware requirements for On-Device AI.',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
+
+      // Check if model weights are already downloaded
+      final client = locator.isRegistered<LocalLlmEngineClient>()
+          ? locator<LocalLlmEngineClient>()
+          : LocalLlmEngineClient();
+      final isDownloaded = await client.checkModelDownloaded();
+
+      if (!isDownloaded) {
+        if (pageContext.mounted) {
+          final downloaded = await LocalLlmCapacityPromptModalSheet.show(
+            pageContext,
+            onDownloadComplete: () {
+              if (pageContext.mounted) {
+                pageContext.read<SyllabotChatBloc>().add(
+                  const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
+                );
+              }
+            },
+          );
+          if (downloaded == true && pageContext.mounted) {
+            pageContext.read<SyllabotChatBloc>().add(
+              const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
+            );
+          }
+        }
+        return;
+      }
+
+      // Already downloaded & hardware supported -> switch to on-device AI
+      if (pageContext.mounted) {
+        pageContext.read<SyllabotChatBloc>().add(
+          const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
+        );
+        pageContext.showSnackBar(
+          message: l10n.engineSwitched(l10n.engineLocalOnDevice),
+          type: SnackBarType.success,
+        );
+      }
     }
 
     void cancelModelDownload(BuildContext pageContext) {
@@ -624,8 +686,8 @@ class _SyllabotChatView extends HookWidget {
                                 isCloudError
                                     ? (state.errorMessage ??
                                           'Network error. Connect to network or '
-                                              'switch to Offline On-Device LLM.')
-                                    : 'Offline Engine encountered an issue. '
+                                              'switch to On-Device AI.')
+                                    : 'On-Device Engine encountered an issue. '
                                           'Tap retry.',
                                 style: typography.caption.medium.copyWith(
                                   color: colors.textPrimary,
@@ -639,7 +701,7 @@ class _SyllabotChatView extends HookWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // 1-Tap Switch to Offline LLM
+                            // 1-Tap Switch to On-Device AI
                             if (state.engineType ==
                                 ExecutionEngineType.cloudRemote)
                               ShrinkableButton(
@@ -666,12 +728,12 @@ class _SyllabotChatView extends HookWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Text(
-                                        '🟠',
+                                        '⚡',
                                         style: TextStyle(fontSize: 10),
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        'Use Offline LLM',
+                                        'Use On-Device AI',
                                         style: typography.caption.bold.copyWith(
                                           color: colors.textPrimary,
                                           fontSize: 11.5,
@@ -766,7 +828,7 @@ class _SyllabotChatView extends HookWidget {
                                   prompt: prompt,
                                   sessionId: sid,
                                   socraticMode: state.socraticMode,
-                                  engineType: ExecutionEngineType.cloudRemote,
+                                  engineType: state.engineType,
                                 ),
                               );
                               scrollToBottom();

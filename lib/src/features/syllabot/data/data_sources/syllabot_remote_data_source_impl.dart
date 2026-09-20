@@ -101,9 +101,12 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
   @override
   Future<void> saveChatMessage(ChatMessageEntity message) async {
     final userId = _userStorage?.getUserId() ?? '';
+    final messageId = UuidUtils.isValidUuid(message.id)
+        ? message.id
+        : UuidUtils.generate();
     try {
       final payload = <String, dynamic>{
-        'id': message.id,
+        'id': messageId,
         'session_id': message.sessionId,
         'sender': message.sender == MessageSender.user ? 'user' : 'syllabot',
         'text': message.text,
@@ -113,6 +116,11 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
       await _dio.post<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.syllabotMessages}',
         data: payload,
+        options: Options(
+          headers: {
+            'Prefer': 'resolution=merge-duplicates',
+          },
+        ),
       );
     } on Object catch (_) {}
   }

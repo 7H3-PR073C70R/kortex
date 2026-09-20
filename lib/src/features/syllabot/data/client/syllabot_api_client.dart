@@ -77,6 +77,20 @@ extension SyllabotStreamExtension on Dio {
         if (line.startsWith('data:')) {
           final jsonStr = line.substring(5).trim();
           try {
+            final decoded = jsonDecode(jsonStr);
+            if (decoded is Map<String, dynamic>) {
+              if (decoded.containsKey('error')) {
+                final rawMsg = decoded['message']?.toString() ??
+                    decoded['error']?.toString() ??
+                    'AI provider error';
+                final cleanedMsg = _cleanErrorMessage(rawMsg);
+                throw Exception(cleanedMsg);
+              }
+              if (decoded.containsKey('text')) {
+                yield decoded['text'] as String;
+              }
+            }
+          } on FormatException {
             if (jsonStr.contains('"text"')) {
               final textMatch = RegExp(
                 r'"text"\s*:\s*"((?:[^"\\]|\\.)*)"',
@@ -90,8 +104,6 @@ extension SyllabotStreamExtension on Dio {
                 yield text;
               }
             }
-          } on Object {
-            // Ignore malformed chunks
           }
         }
       }
@@ -100,5 +112,38 @@ extension SyllabotStreamExtension on Dio {
         buffer.write(lines.last);
       }
     }
+
+    final remaining = buffer.toString().trim();
+    if (remaining.startsWith('data:')) {
+      final jsonStr = remaining.substring(5).trim();
+      try {
+        final decoded = jsonDecode(jsonStr);
+        if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
+          final rawMsg = decoded['message']?.toString() ??
+              decoded['error']?.toString() ??
+              'AI provider error';
+          final cleanedMsg = _cleanErrorMessage(rawMsg);
+          throw Exception(cleanedMsg);
+        }
+      } on FormatException catch (_) {}
+    }
+  }
+
+  static String _cleanErrorMessage(String rawMessage) {
+    try {
+      final jsonStart = rawMessage.indexOf('{');
+      if (jsonStart != -1) {
+        final jsonPart = rawMessage.substring(jsonStart);
+        final decoded = jsonDecode(jsonPart);
+        if (decoded is Map && decoded['error'] is Map) {
+          final nestedMsg = (decoded['error'] as Map)['message']?.toString();
+          if (nestedMsg != null && nestedMsg.isNotEmpty) {
+            final prefix = rawMessage.substring(0, jsonStart).trim();
+            return prefix.isNotEmpty ? '$prefix: $nestedMsg' : nestedMsg;
+          }
+        }
+      }
+    } on Object catch (_) {}
+    return rawMessage;
   }
 }

@@ -73,7 +73,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         : (state.sessionId.isNotEmpty ? state.sessionId : UuidUtils.generate());
 
     final userMessage = ChatMessageEntity(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+      id: UuidUtils.generate(),
       sessionId: effectiveSessionId,
       sender: MessageSender.user,
       text: event.prompt,
@@ -124,7 +124,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
             _currentRagReferences = chunks;
             final snippets = chunks.map((c) => c.content).join('\n---\n');
             final ragContextMsg = ChatMessageEntity(
-              id: 'rag_${DateTime.now().millisecondsSinceEpoch}',
+              id: UuidUtils.generate(),
               sessionId: effectiveSessionId,
               sender: MessageSender.syllabot,
               text:
@@ -188,7 +188,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     }
 
     final botMessage = ChatMessageEntity(
-      id: 'msg_bot_${DateTime.now().millisecondsSinceEpoch}',
+      id: UuidUtils.generate(),
       sessionId: state.sessionId,
       sender: MessageSender.syllabot,
       text: sanitizedText,
@@ -213,13 +213,18 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     StreamErrorEvent event,
     Emitter<SyllabotChatState> emit,
   ) {
+    final rawError = event.message.trim();
+    final displayError = rawError.isNotEmpty
+        ? rawError
+        : (state.streamingText.isNotEmpty
+            ? state.streamingText
+            : 'Failed to complete Syllabot response. Tap retry to reconnect.');
+
     final errorMessage = ChatMessageEntity(
-      id: 'msg_err_${DateTime.now().millisecondsSinceEpoch}',
+      id: UuidUtils.generate(),
       sessionId: state.sessionId,
       sender: MessageSender.syllabot,
-      text: state.streamingText.isNotEmpty
-          ? state.streamingText
-          : 'Failed to complete Syllabot response. Tap retry to reconnect.',
+      text: displayError,
       timestamp: DateTime.now(),
       engineType: state.engineType,
       isError: true,
@@ -231,7 +236,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         status: SyllabotStatus.error,
         messages: [...state.messages, errorMessage],
         streamingText: '',
-        errorMessage: event.message,
+        errorMessage: displayError,
       ),
     );
   }

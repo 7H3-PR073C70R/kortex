@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -42,7 +43,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     required ExecutionEngineType preferredEngine,
     List<ChatMessageEntity> contextHistory = const [],
   }) {
-    // All Syllabot responses are routed to Luna AI on the server
+    // All Syllabot responses are routed to Cloud AI on the server
     final controller = StreamController<String>();
 
     _remote
@@ -57,10 +58,21 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           controller.add,
           onError: (Object err) {
             if (!controller.isClosed) {
-              controller.addError(
-                'Unable to reach Luna AI. '
-                'Please check your network connection and try again.',
-              );
+              String errorMsg;
+              if (err is DioException) {
+                final data = err.response?.data;
+                if (data is Map) {
+                  errorMsg = data['message']?.toString() ??
+                      data['error']?.toString() ??
+                      err.message ??
+                      'Network connection error';
+                } else {
+                  errorMsg = err.message ?? err.toString();
+                }
+              } else {
+                errorMsg = err.toString().replaceFirst('Exception: ', '');
+              }
+              controller.addError(errorMsg);
             }
           },
           onDone: () => unawaited(controller.close()),
@@ -205,11 +217,11 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
 
       final aiTranscript = aiResponses.join('\n\n---\n\n');
 
-      // 2. AI Synthesis: Route cumulative AI explanations through StudyEngineRouter (Cloud or Local GGUF)
+      // 2. Pure Backend AI Synthesis: Route cumulative AI explanations strictly through Backend Cloud AI (never on-device Flutter LLaMA)
       if (aiTranscript.isNotEmpty) {
         try {
           final router = _studyEngineRouter ?? StudyEngineRouter();
-          final studyPack = await router.generateStudyPack(
+          final studyPack = await router.generateCloudStudyPack(
             topic: deckTitle,
             count: 12,
             sourceText: 'Cumulative AI Educational Explanations across Entire Conversation:\n\n'

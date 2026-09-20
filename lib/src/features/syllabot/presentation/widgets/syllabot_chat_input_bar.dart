@@ -626,41 +626,57 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                   ),
                   const SizedBox(width: 8),
 
-                  // 2. AI Engine Pill (Luna AI)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(90),
+                  // 2. Interactive AI Engine Pill (Cloud AI / On-Device AI)
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      final nextEngine =
+                          widget.engineType == ExecutionEngineType.cloudRemote
+                              ? ExecutionEngineType.localOnDevice
+                              : ExecutionEngineType.cloudRemote;
+                      widget.onEngineChanged(nextEngine);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: colors.success,
-                          ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(90),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.engineCloudSupabase,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 11.5,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  widget.engineType ==
+                                          ExecutionEngineType.cloudRemote
+                                      ? colors.success
+                                      : colors.primary,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.engineType == ExecutionEngineType.cloudRemote
+                                ? l10n.engineCloudSupabase
+                                : l10n.engineLocalOnDevice,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 11.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

@@ -55,10 +55,13 @@ export class LunaClient {
       this.baseUrl = "https://api.luna.ai/v1";
     }
 
-    this.model =
-      Deno.env.get("LUNA_MODEL") ||
-      Deno.env.get("LUNA_MODEL_NAME") ||
-      (this.baseUrl.includes("openai.com") ? "gpt-5.6-luna" : "luna");
+    const defaultModel = this.baseUrl.includes("openai.com") ? "gpt-4o-mini" : "luna";
+    const configuredModel = Deno.env.get("LUNA_MODEL") || Deno.env.get("LUNA_MODEL_NAME");
+    if (configuredModel && configuredModel !== "gpt-5.6-luna") {
+      this.model = configuredModel;
+    } else {
+      this.model = defaultModel;
+    }
   }
 
   /**
@@ -73,11 +76,14 @@ export class LunaClient {
   }
 
   /**
-   * Resolves the full URL for chat completions or responses endpoint.
+   * Resolves the full URL for chat completions endpoint.
    */
   private getEndpointUrl(): string {
-    const base = this.baseUrl.replace(/\/+$/, "");
-    if (base.endsWith("/chat/completions") || base.endsWith("/responses")) {
+    let base = this.baseUrl.replace(/\/+$/, "");
+    if (base.endsWith("/responses")) {
+      base = base.replace(/\/responses$/, "/chat/completions");
+    }
+    if (base.endsWith("/chat/completions")) {
       return base;
     }
     return `${base}/chat/completions`;

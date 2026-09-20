@@ -219,32 +219,22 @@ serve(async (req: Request) => {
           }
         }
 
-        // 3. Fallback and Edge Error Handling
+        // 3. Error Handling - No fallback synthesis. Directly emit error to client
         if (!providerSuccess) {
-          if (luna.isConfigured()) {
-            console.error(
-              "[syllabot-stream] Luna upstream stream failed:",
-              providerErrors
-            );
-            sendEvent("error", {
-              error: "LUNA_STREAM_ERROR",
-              message: "Luna upstream unreachable. Engaging neural fallback.",
-              details: providerErrors,
-            });
-          }
-
-          // Resilient Socratic STEM fallback token synthesis
-          const fallbackTokens = getFallbackTokens(
-            rawPrompt,
-            routing.reasoningDetected,
-            body.contextHistory
+          const detailMsg =
+            providerErrors.length > 0
+              ? providerErrors.join("; ")
+              : "Unable to complete AI response from Luna provider.";
+          console.error(
+            `[syllabot-stream] Provider stream failed: ${detailMsg}`
           );
-          for (const token of fallbackTokens) {
-            fullResponse += token;
-            recordedTokens.push(token);
-            sendEvent("token", { text: token });
-            await new Promise((r) => setTimeout(r, 18));
-          }
+          sendEvent("error", {
+            error: "PROVIDER_STREAM_ERROR",
+            message: detailMsg,
+            details: providerErrors,
+          });
+          controller.close();
+          return;
         }
 
         // Asynchronously persist completion to semantic cache ONLY if real provider succeeded

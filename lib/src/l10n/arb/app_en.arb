@@ -2005,13 +2005,13 @@
     "@socraticDeepResearch": {
         "description": "Socratic mode label for theoretical research breakdown"
     },
-    "engineCloudSupabase": "Luna AI",
+    "engineCloudSupabase": "Cloud AI",
     "@engineCloudSupabase": {
-        "description": "Engine status label for remote Luna LLM"
+        "description": "Engine status label for cloud AI"
     },
-    "engineLocalOnDevice": "Offline On-Device LLM",
+    "engineLocalOnDevice": "On-Device AI",
     "@engineLocalOnDevice": {
-        "description": "Engine status label for local on-device LLM"
+        "description": "Engine status label for local on-device AI"
     },
     "convertToDeckSuccess": "Converted to Flashcard Deck successfully!",
     "@convertToDeckSuccess": {
@@ -2025,7 +2025,7 @@
     "@voiceInputListening": {
         "description": "Status text while voice input is listening"
     },
-    "offlineFallbackNotice": "Offline mode: Running on-device neural model.",
+    "offlineFallbackNotice": "Offline mode: Running on-device AI.",
     "@offlineFallbackNotice": {
         "description": "Notice when falling back to on-device LLM"
     },

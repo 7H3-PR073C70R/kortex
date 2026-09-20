@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/offline_ai/offline_ai.dart';
@@ -77,18 +78,21 @@ class StudyEngineRouter {
     ExperimentalOfflineGuard? offlineGuard,
     Dio? dio,
     SubscriptionGuard? subscriptionGuard,
+    UserStorageService? userStorageService,
   }) : _connectivity = connectivity ?? Connectivity(),
        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
        _offlineGuard = offlineGuard ??
            ExperimentalOfflineGuard(connectivity: connectivity),
        _dio = dio ?? Dio(),
-       _subscriptionGuard = subscriptionGuard;
+       _subscriptionGuard = subscriptionGuard,
+       _userStorageService = userStorageService;
 
   final Connectivity _connectivity;
   final LocalInferenceIsolateManager _isolateManager;
   final ExperimentalOfflineGuard _offlineGuard;
   final Dio _dio;
   final SubscriptionGuard? _subscriptionGuard;
+  final UserStorageService? _userStorageService;
 
   /// The active isolate manager instance.
   LocalInferenceIsolateManager get isolateManager => _isolateManager;
@@ -113,18 +117,10 @@ class StudyEngineRouter {
           c == ConnectivityResult.ethernet,
     );
 
-    final bool userHasPro;
-    if (isPro != null) {
-      userHasPro = isPro;
-    } else if (_subscriptionGuard != null) {
-      userHasPro = _subscriptionGuard.canAccessCloudAi();
-    } else if (locator.isRegistered<SubscriptionGuard>()) {
-      userHasPro = locator<SubscriptionGuard>().canAccessCloudAi();
-    } else {
-      userHasPro = true;
-    }
+    // Keep subscription guard interface referenced for future tiered routing
+    final _ = _subscriptionGuard;
 
-    if (isOnline && userHasPro) {
+    if (isOnline) {
       return StudyEngineExecutionMode.cloudRemote;
     }
 
@@ -264,11 +260,56 @@ class StudyEngineRouter {
     }
   }
 
+  /// Generates a study pack strictly using Backend Cloud AI (edge function),
+  /// never invoking or falling back to on-device Flutter LLaMA.
+  Future<StudyPackResult> generateCloudStudyPack({
+    required String topic,
+    int count = 5,
+    String? sourceText,
+  }) async {
+    debugPrint('[StudyEngineRouter] Routing deck creation strictly to Backend Cloud AI...');
+    try {
+      final cards = await _fetchFromCloud(
+        topic: topic,
+        count: count,
+        sourceText: sourceText,
+      );
+      if (cards.isEmpty) {
+        return const StudyPackResult(
+          cards: [],
+          executionMode: StudyEngineExecutionMode.unavailable,
+          userMessage:
+              'AI engine could not generate cards for this topic. Please provide more source text or try a different topic.',
+        );
+      }
+      return StudyPackResult(
+        cards: cards,
+        executionMode: StudyEngineExecutionMode.cloudRemote,
+      );
+    } on Object catch (err) {
+      debugPrint('[StudyEngineRouter] Cloud API error: $err');
+      return StudyPackResult(
+        cards: [],
+        executionMode: StudyEngineExecutionMode.unavailable,
+        userMessage:
+            'Cloud AI generation failed ($err). Please check your internet connection and try again.',
+      );
+    }
+  }
+
   Future<List<GeneratedFlashcard>> _fetchFromCloud({
     required String topic,
     required int count,
     String? sourceText,
   }) async {
+    final userToken = _userStorageService?.getToken() ??
+        (locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>().getToken()
+            : null);
+    final authHeader = (userToken != null && userToken.isNotEmpty)
+        ? 'Bearer $userToken'
+        : 'Bearer ${AppEnv.apiKey}';
+
     final response = await _dio.post<Map<String, dynamic>>(
       '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
       data: {
@@ -279,7 +320,7 @@ class StudyEngineRouter {
       options: Options(
         headers: {
           'apikey': AppEnv.apiKey,
-          'Authorization': 'Bearer ${AppEnv.apiKey}',
+          'Authorization': authHeader,
         },
       ),
     );

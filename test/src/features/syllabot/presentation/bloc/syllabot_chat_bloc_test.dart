@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/conversation_session_entity.dart';
@@ -194,6 +195,50 @@ void main() {
                 s.generatedDeck?.title == 'Mechanics Deck',
           ),
         ]),
+      );
+    });
+
+    test('SubmitPromptEvent generates valid UUID for user message', () async {
+      bloc.add(
+        const SubmitPromptEvent(
+          prompt: 'What is momentum?',
+          sessionId: 'session_123',
+          socraticMode: SocraticMode.stepByStep,
+          engineType: ExecutionEngineType.cloudRemote,
+        ),
+      );
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<SyllabotChatState>((s) {
+            if (s.messages.isEmpty) return false;
+            final userMsg = s.messages.first;
+            return userMsg.text == 'What is momentum?' &&
+                UuidUtils.isValidUuid(userMsg.id);
+          }),
+        ),
+      );
+    });
+
+    test('StreamErrorEvent sets error text directly to backend error and generates valid UUID', () async {
+      const backendError = 'Luna stream error (429 Too Many Requests): You have no credits remaining.';
+      bloc.add(const StreamErrorEvent(backendError));
+
+      await expectLater(
+        bloc.stream,
+        emits(
+          predicate<SyllabotChatState>((s) {
+            if (s.status != SyllabotStatus.error || s.messages.isEmpty) {
+              return false;
+            }
+            final errorMsg = s.messages.last;
+            return errorMsg.isError &&
+                errorMsg.text == backendError &&
+                s.errorMessage == backendError &&
+                UuidUtils.isValidUuid(errorMsg.id);
+          }),
+        ),
       );
     });
   });

@@ -1404,10 +1404,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get socraticDeepResearch => 'Deep Research';
 
   @override
-  String get engineCloudSupabase => 'Luna AI';
+  String get engineCloudSupabase => 'Cloud AI';
 
   @override
-  String get engineLocalOnDevice => 'Offline On-Device LLM';
+  String get engineLocalOnDevice => 'On-Device AI';
 
   @override
   String get convertToDeckSuccess =>
@@ -1422,7 +1422,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineFallbackNotice =>
-      'Offline mode: Running on-device neural model.';
+      'Offline mode: Running on-device AI.';
 
   @override
   String get newChatSession => 'New Chat';
