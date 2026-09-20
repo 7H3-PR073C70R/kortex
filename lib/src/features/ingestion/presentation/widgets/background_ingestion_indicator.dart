@@ -24,19 +24,16 @@ class BackgroundIngestionIndicator extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final isDismissed = useState<bool>(false);
-    final lastProcessedDocId = useState<String>('');
+    final dismissedDocId = useState<String?>(null);
 
     return BlocBuilder<IngestionBloc, IngestionState>(
       builder: (context, state) {
         final currentDocId = state.currentDocument?.id ?? '';
-        if (currentDocId != lastProcessedDocId.value) {
-          isDismissed.value = false;
-          lastProcessedDocId.value = currentDocId;
-        }
+        final isDismissed =
+            currentDocId.isNotEmpty && dismissedDocId.value == currentDocId;
 
         final shouldShow =
-            !isDismissed.value && (state.isProcessing || state.isCompleted);
+            !isDismissed && (state.isProcessing || state.isCompleted);
 
         if (!shouldShow) {
           return const SizedBox.shrink();
@@ -216,7 +213,7 @@ class BackgroundIngestionIndicator extends HookWidget {
                                   minHeight: 28,
                                 ),
                                 onPressed: () {
-                                  isDismissed.value = true;
+                                  dismissedDocId.value = currentDocId;
                                 },
                               ),
                             ],

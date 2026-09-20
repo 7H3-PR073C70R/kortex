@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_image_ocr_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
@@ -11,18 +12,27 @@ class MockLocalPdfParserService extends Mock implements LocalPdfParserService {}
 class MockLocalPptxParserService extends Mock
     implements LocalPptxParserService {}
 
+class MockLocalImageOcrService extends Mock implements LocalImageOcrService {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late LocalIngestionService ingestionService;
   late MockLocalPdfParserService mockPdfParser;
   late MockLocalPptxParserService mockPptxParser;
+  late MockLocalImageOcrService mockImageOcr;
+  setUpAll(() {
+    registerFallbackValue(Uint8List(0));
+  });
 
   setUp(() {
     mockPdfParser = MockLocalPdfParserService();
     mockPptxParser = MockLocalPptxParserService();
+    mockImageOcr = MockLocalImageOcrService();
 
     ingestionService = LocalIngestionService(
       pdfParser: mockPdfParser,
       pptxParser: mockPptxParser,
+      imageOcr: mockImageOcr,
     );
   });
 
@@ -85,9 +95,15 @@ void main() {
     );
 
     test(
-      'returns empty string for image types — OCR handled server-side',
+      'routes image types to LocalImageOcrService',
       () async {
         final sampleBytes = Uint8List.fromList([9, 10, 11, 12]);
+        when(
+          () => mockImageOcr.extractTextFromBytes(
+            any(),
+            extension: any(named: 'extension'),
+          ),
+        ).thenAnswer((_) async => '');
 
         for (final ext in ['png', 'jpg', 'jpeg', 'webp']) {
           final result = await ingestionService.ingestBytes(
@@ -97,7 +113,6 @@ void main() {
           expect(
             result,
             isEmpty,
-            reason: '.$ext should return empty — server handles OCR',
           );
         }
       },
