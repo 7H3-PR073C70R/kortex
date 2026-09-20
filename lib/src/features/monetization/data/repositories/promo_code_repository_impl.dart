@@ -35,7 +35,7 @@ class PromoCodeRepositoryImpl implements PromoCodeRepository {
         message: model.message,
       );
 
-      if (model.success) {
+      if (model.success || model.errorCode == 'ALREADY_REDEEMED') {
         // Save Pro status to local storage so SubscriptionGuard.isPro is immediately true
         await _userStorageService.saveProStatus(isPro: true);
 
@@ -43,6 +43,7 @@ class PromoCodeRepositoryImpl implements PromoCodeRepository {
         try {
           if (locator.isRegistered<AuthBloc>()) {
             locator<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
+            locator<AuthBloc>().add(const AuthProfileFetchRequested());
           }
         } on Object catch (_) {}
       }

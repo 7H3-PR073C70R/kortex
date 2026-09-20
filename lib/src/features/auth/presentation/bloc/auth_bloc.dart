@@ -536,6 +536,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             locator<UserStorageService>().isProSubscriber();
         if (isCachedPro && mergedProfile.subscriptionTier.toLowerCase() != 'pro') {
           mergedProfile = mergedProfile.copyWith(subscriptionTier: 'pro');
+        } else if (mergedProfile.isPro && locator.isRegistered<UserStorageService>()) {
+          unawaited(locator<UserStorageService>().saveProStatus(isPro: true));
         }
 
         var isOnboarded = _computeIsOnboarded(mergedProfile);
@@ -747,6 +749,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSubscriptionUpdated event,
     Emitter<AuthState> emit,
   ) async {
+    // If incoming event is false, but user's active profile is already Pro (via promo/backend),
+    // do not downgrade.
+    if (!event.isPro && state.userProfile?.isPro == true) {
+      return;
+    }
     final updatedTier = event.isPro ? 'pro' : 'free';
     if (state.userProfile != null) {
       emit(

@@ -35,8 +35,10 @@ class UserProfileModel extends Equatable {
           (json['streak_freeze_count'] as num?)?.toInt() ?? 1,
       timezone: json['timezone'] as String? ?? 'UTC',
       xpPoints: (json['xp_points'] as num?)?.toInt() ?? 0,
-      subscriptionTier:
-          (json['subscription_tier'] as String?)?.toLowerCase() ?? 'free',
+      subscriptionTier: ((json['is_pro'] as bool? ?? false) ||
+              (json['subscription_tier'] as String?)?.toLowerCase() == 'pro')
+          ? 'pro'
+          : ((json['subscription_tier'] as String?)?.toLowerCase() ?? 'free'),
       isOnboarded: json['is_onboarded'] as bool? ?? false,
     );
   }

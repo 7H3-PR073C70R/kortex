@@ -1421,8 +1421,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceInputListening => 'Listening to your question...';
 
   @override
-  String get offlineFallbackNotice =>
-      'Offline mode: Running on-device AI.';
+  String get offlineFallbackNotice => 'Offline mode: Running on-device AI.';
 
   @override
   String get newChatSession => 'New Chat';

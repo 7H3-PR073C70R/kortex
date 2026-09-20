@@ -2504,16 +2504,16 @@ abstract class AppLocalizations {
   /// **'Deep Research'**
   String get socraticDeepResearch;
 
-  /// Engine status label for remote Luna LLM
+  /// Engine status label for cloud AI
   ///
   /// In en, this message translates to:
-  /// **'Luna AI'**
+  /// **'Cloud AI'**
   String get engineCloudSupabase;
 
-  /// Engine status label for local on-device LLM
+  /// Engine status label for local on-device AI
   ///
   /// In en, this message translates to:
-  /// **'Offline On-Device LLM'**
+  /// **'On-Device AI'**
   String get engineLocalOnDevice;
 
   /// Snackbar text on converting chat to flashcards
@@ -2537,7 +2537,7 @@ abstract class AppLocalizations {
   /// Notice when falling back to on-device LLM
   ///
   /// In en, this message translates to:
-  /// **'Offline mode: Running on-device neural model.'**
+  /// **'Offline mode: Running on-device AI.'**
   String get offlineFallbackNotice;
 
   /// Button label to start a new chat session

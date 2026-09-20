@@ -93,7 +93,7 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
           });
         },
         (redemption) {
-          if (redemption.success) {
+          if (redemption.success || redemption.errorCode == 'ALREADY_REDEEMED') {
             AppFeedback.celebration();
             setState(() {
               _isLoading = false;
