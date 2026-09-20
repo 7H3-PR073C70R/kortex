@@ -165,7 +165,7 @@ CRITICAL OUTPUT INSTRUCTIONS:
 - Do NOT wrap the output in markdown codeblocks (no \`\`\` or \`\`\`json).
 - Do NOT output an outer array or commas between lines.
 - Each line MUST be a complete, parsable JSON object with the following schema:
-{"front": "Concept or Question", "back": "Mathematical definition or answer with LaTeX $$...$$", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
+{"front": "Concept or Question", "back": "Mathematical definition, line-by-line checklist/steps, and LaTeX formulas", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
 
           try {
             console.log(`[generate-flashcards-stream] Streaming from Luna (${luna.modelName})...`);

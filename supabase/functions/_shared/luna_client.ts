@@ -203,8 +203,8 @@ Your task is to analyze the provided study document content and perform deep sem
 
 PEDAGOGICAL & FORMATTING RULES:
 1. FRONT: Clear, specific active-recall question, concept query, or rule prompt. Do not ask vague questions.
-2. BACK: Comprehensive, precise definition, explanation, step-by-step mechanism, or complete answer.
-3. LATEX_CONTENT: If the card involves mathematical formulas, equations, limits, fractions, or physics/chemistry formulas, provide valid LaTeX notation (e.g., "$$E = mc^2$$" or "\\(\\frac{a}{b}\\)"). If none, set to null.
+2. BACK: Comprehensive, precise definition, explanation, step-by-step mechanism, or complete answer. When presenting multi-step procedures, checklists, criteria, or lists of points (e.g. 1 to 8), format each point on its own new line with clear numbering (1., 2., etc.) or bullet points. NEVER squash multiple numbered points into a single run-on paragraph.
+3. LATEX_CONTENT: If the card involves mathematical formulas, equations, limits, fractions, or physics/chemistry formulas, provide valid raw LaTeX notation without enclosing $$ or \(\) delimiters (e.g., "\text{RR} = \frac{\text{Potential Reward}}{\text{Potential Risk}}" or "E = mc^2"). If none, set to null.
 4. EXPLANATION / HINTS: A concise mnemonic, key takeaway, or memory hint.
 5. TAGS: Array of 1-3 strings categorizing this card (e.g. ["${topic}", "${courseCode || "General"}"]).
 6. IMAGE_URL: When a card describes, explains, or references a visual diagram from the available figures, assign its EXACT URL string. Ensure every provided diagram is assigned to its relevant card. If a card does not use a diagram, set to null.

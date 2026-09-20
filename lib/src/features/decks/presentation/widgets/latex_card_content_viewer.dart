@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/bionic_text_formatter.dart';
+import 'package:kortex/src/core/utils/latex_ast_cache.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -266,6 +267,10 @@ class LatexCardContentViewer extends StatelessWidget {
     TypographyThemeExtension typography,
     bool isDark,
   ) {
+    final cleanFormula = LatexAstCache.instance.getOrCleanFormula(formula);
+    final fallbackReadable =
+        LatexAstCache.instance.formatLatexHumanReadableFallback(formula);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -291,16 +296,16 @@ class LatexCardContentViewer extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           child: Math.tex(
-            formula,
+            cleanFormula,
             textStyle: TextStyle(
               fontSize: 18,
               color: colors.textPrimary,
             ),
             onErrorFallback: (err) => Text(
-              formula,
-              style: typography.footnote.regular.copyWith(
-                color: colors.textSecondary,
-                fontFamily: 'monospace',
+              fallbackReadable.isNotEmpty ? fallbackReadable : cleanFormula,
+              style: typography.callout.medium.copyWith(
+                color: colors.textPrimary,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ),

@@ -45,10 +45,13 @@ class LatexRichViewer extends StatelessWidget {
     multiLine: true,
   );
 
-  /// Matches inline markdown tokens: bold-italic, bold, italic, code, strikethrough
   static final RegExp _inlineMarkdownRegex = RegExp(
     r'(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|(?<!\*)\*([^\*\n]+?)\*(?!\*)|(?<!_)_([^_\n]+?)_(?!_)|`([^`]+)`|~~(.+?)~~)',
     multiLine: true,
+  );
+
+  static final RegExp _listLineRegex = RegExp(
+    r'^\s*(?:(\*|-|•)\s+|(?:\(?\d+[\.\)]|\[\d+\])\s+|(?:\(?[A-Za-z][\.\)]|\([ivxIVX]+\)|[ivxIVX]+[\.\)])\s+)',
   );
 
   static const List<String> _fontFamilyFallbacks = [
@@ -85,10 +88,153 @@ class LatexRichViewer extends StatelessWidget {
       s = s.replaceAll('&gt;', '>');
       s = s.replaceAll('&nbsp;', ' ');
 
+      s = formatInlineLists(s);
       s = FormulaAwareTextFormatter.formatFormulaAware(s);
 
       return s.trim();
     });
+  }
+
+  /// Formats inline sequential lists (e.g. "Verify: (1) ...; (2) ...; and (8) ...")
+  /// into clean, line-by-line list items.
+  static String formatInlineLists(String text) {
+    if (text.trim().isEmpty) return text;
+
+    // Fast check: must contain enumeration indicators
+    if (!text.contains(RegExp(r'\(\d+\)|\b\d+[\.\)]|\[\d+\]|\([a-zA-Z]\)|\([ivxIVX]+\)'))) {
+      return text;
+    }
+
+    final paragraphs = text.split('\n');
+    final processed = <String>[];
+
+    for (final p in paragraphs) {
+      processed.add(_formatParagraphInlineList(p));
+    }
+
+    return processed.join('\n');
+  }
+
+  static String _formatParagraphInlineList(String paragraph) {
+    final trimmed = paragraph.trim();
+    if (trimmed.isEmpty) return paragraph;
+
+    // Pattern to capture delimiter/connector before the enumeration marker and the marker itself
+    final markerRegex = RegExp(
+      r'(?:([;:\.]\s*(?:and\s+|or\s+)?|,\s*(?:and\s+|or\s+)|\s+(?:and\s+|or\s+)|\A\s*))(\((\d+|[a-zA-Z]|[ivxIVX]+)\)|\[(\d+)\]|(\d+)[\.\)]|\b([a-zA-Z])\)|\(([a-zA-Z])\)|\(([ivxIVX]+)\))\s+',
+    );
+
+    final matches = markerRegex.allMatches(trimmed).toList();
+    if (matches.length < 2) {
+      return paragraph;
+    }
+
+    // 1. Check numeric sequence: 1, 2, 3...
+    final numericValues = <int>[];
+    var isNumeric = true;
+    for (final m in matches) {
+      final markerStr = m.group(2) ?? '';
+      final numStr = RegExp(r'\d+').firstMatch(markerStr)?.group(0);
+      if (numStr != null) {
+        numericValues.add(int.parse(numStr));
+      } else {
+        isNumeric = false;
+        break;
+      }
+    }
+
+    bool isValidSequence = false;
+    if (isNumeric && numericValues.length >= 2) {
+      if (numericValues.first == 1 || numericValues.first == 0) {
+        isValidSequence = true;
+        for (var i = 0; i < numericValues.length - 1; i++) {
+          if (numericValues[i + 1] != numericValues[i] + 1) {
+            isValidSequence = false;
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Check letter sequence: a, b, c...
+    if (!isValidSequence && !isNumeric) {
+      final letters = <String>[];
+      for (final m in matches) {
+        final markerStr = m.group(2) ?? '';
+        final l = RegExp(r'[a-zA-Z]').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        if (l != null && l.length == 1) {
+          letters.add(l);
+        }
+      }
+      if (letters.length >= 2 && letters.first == 'a') {
+        isValidSequence = true;
+        for (var i = 0; i < letters.length - 1; i++) {
+          if (letters[i + 1].codeUnitAt(0) != letters[i].codeUnitAt(0) + 1) {
+            isValidSequence = false;
+            break;
+          }
+        }
+      }
+    }
+
+    // 3. Check roman numeral sequence: i, ii, iii...
+    if (!isValidSequence && !isNumeric) {
+      const romans = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+      final extractedRomans = <String>[];
+      for (final m in matches) {
+        final markerStr = m.group(2) ?? '';
+        final r = RegExp(r'[ivxIVX]+').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        if (r != null) {
+          extractedRomans.add(r);
+        }
+      }
+      if (extractedRomans.length >= 2 && extractedRomans.first == 'i') {
+        isValidSequence = true;
+        for (var i = 0; i < extractedRomans.length; i++) {
+          if (i < romans.length && extractedRomans[i] != romans[i]) {
+            isValidSequence = false;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!isValidSequence) {
+      return paragraph;
+    }
+
+    final buffer = StringBuffer();
+    final firstMatch = matches.first;
+
+    var rawIntro = trimmed.substring(0, firstMatch.start).trim();
+    final connector = firstMatch.group(1) ?? '';
+    if (connector.startsWith(':') || connector.startsWith('.')) {
+      rawIntro = (rawIntro + connector[0]).trim();
+    }
+
+    if (rawIntro.isNotEmpty) {
+      buffer.writeln(rawIntro);
+      buffer.writeln(); // Separate intro header with blank line
+    }
+
+    for (var i = 0; i < matches.length; i++) {
+      final currentMatch = matches[i];
+      final marker = currentMatch.group(2)!;
+      final contentStart = currentMatch.end;
+      final contentEnd = (i < matches.length - 1)
+          ? matches[i + 1].start
+          : trimmed.length;
+
+      var itemContent = trimmed.substring(contentStart, contentEnd).trim();
+      // Remove trailing delimiters like "; and", "; or", ";" or "," if at the end of the item
+      itemContent = itemContent
+          .replaceAll(RegExp(r'[;,]\s*(?:and|or)$', caseSensitive: false), '')
+          .trim();
+
+      buffer.writeln('$marker $itemContent');
+    }
+
+    return buffer.toString().trim();
   }
 
   @override
@@ -218,7 +364,7 @@ class LatexRichViewer extends StatelessWidget {
 
     final isListParagraph = lines
         .where((l) => l.trim().isNotEmpty)
-        .any((l) => RegExp(r'^\s*(?:(\*|-|•)\s+|[A-Ea-e][\.\)]\s+)').hasMatch(l.trim()));
+        .any((l) => _listLineRegex.hasMatch(l.trim()));
 
     final effectiveTextAlign = textAlign == TextAlign.center
         ? (isListParagraph ? TextAlign.start : TextAlign.center)
@@ -249,10 +395,14 @@ class LatexRichViewer extends StatelessWidget {
         contentToRender = '•  ${bulletMatch.group(2) ?? ''}';
       }
 
-      // 3. Numbered list check: '1. ', '2. '
-      final numMatch = RegExp(r'^(\d+\.)\s+(.*)$').firstMatch(trimmedLine);
+      // 3. Numbered / bracketed / lettered list check
+      final numMatch = RegExp(
+        r'^(\(?\d+[\.\)]|\[\d+\]|\(?[A-Za-z][\.\)]|\(?[ivxIVX]+[\.\)])\s+(.*)$',
+      ).firstMatch(trimmedLine);
       if (numMatch != null) {
-        contentToRender = '${numMatch.group(1)} ${numMatch.group(2) ?? ''}';
+        final marker = numMatch.group(1)!;
+        final body = numMatch.group(2) ?? '';
+        contentToRender = '**$marker**  $body';
       }
 
       // Render line with mixed Markdown & LaTeX spans
@@ -262,14 +412,21 @@ class LatexRichViewer extends StatelessWidget {
         lineStyle,
       );
 
+      final isItemInList = isListParagraph && _listLineRegex.hasMatch(trimmedLine);
       lineWidgets.add(
         Directionality(
           textDirection: paragraphDirection,
-          child: Text.rich(
-            TextSpan(children: spans),
-            textAlign: effectiveTextAlign,
-            maxLines: maxLines,
-            overflow: overflow,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: isItemInList ? 8.0 : 0.0,
+              left: (isListParagraph && !isParagraphRtl) ? 4.0 : 0.0,
+            ),
+            child: Text.rich(
+              TextSpan(children: spans),
+              textAlign: effectiveTextAlign,
+              maxLines: maxLines,
+              overflow: overflow,
+            ),
           ),
         ),
       );
@@ -541,6 +698,8 @@ class LatexFormulaBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clean = LatexAstCache.instance.getOrCleanFormula(formula);
+    final fallbackReadable =
+        LatexAstCache.instance.formatLatexHumanReadableFallback(formula);
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -569,8 +728,8 @@ class LatexFormulaBlock extends StatelessWidget {
           clean,
           textStyle: style,
           onErrorFallback: (err) => Text(
-            formula,
-            style: style?.copyWith(fontFamily: 'monospace'),
+            fallbackReadable.isNotEmpty ? fallbackReadable : clean,
+            style: style?.copyWith(fontStyle: FontStyle.italic),
           ),
         ),
       ),

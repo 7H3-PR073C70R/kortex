@@ -110,6 +110,73 @@ Find the derivative of the expression:
       expect(find.text('2x'), findsOneWidget);
     });
 
+    testWidgets(r'LatexCardContentViewer cleans $$ delimiters from formula and renders successfully', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const LatexCardContentViewer(
+            text: 'Formula Test',
+            latexFormula: r'$$\text{RR} = \frac{\text{Potential Reward}}{\text{Potential Risk}}$$',
+            isBackFace: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Formula container is rendered and no raw $$ delimiter is leaked
+      expect(find.text('Formula Test'), findsOneWidget);
+      expect(find.textContaining(r'$$'), findsNothing);
+    });
+
+    testWidgets(r'LatexCardContentViewer gracefully renders truncated or unclosed LaTeX without raw $$', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          const LatexCardContentViewer(
+            text: 'Truncated Formula Test',
+            latexFormula: r'$$\text{RR} = \frac{\text{Potential Reward}}{\text{Pote',
+            isBackFace: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Truncated Formula Test'), findsOneWidget);
+      expect(find.textContaining(r'$$'), findsNothing);
+    });
+
+    testWidgets('LatexCardContentViewer breaks run-on checklist (1)-(8) into multi-line items', (
+      tester,
+    ) async {
+      const checklistText =
+          'Verify: (1) price is above or below the 50/200 EMA in the intended direction; '
+          '(2) clear supporting structure exists; '
+          '(3) the setup is continuation-based; '
+          '(4) the M15 high or low is ideally inside an imbalance or is a session extreme; '
+          '(5) price swept the level and closed with weakness; '
+          '(6) the rectangle is drawn from the trigger candle’s close to its high or low; '
+          '(7) the stop loss is beyond the relevant extreme; and '
+          '(8) take profit targets at least 3:1 reward-to-risk or the next strong M15 key level.';
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          const LatexCardContentViewer(
+            text: checklistText,
+            isBackFace: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Check that items are broken into distinct RichText elements
+      final richTexts = tester.widgetList<RichText>(find.byType(RichText)).toList();
+      expect(richTexts.length, greaterThanOrEqualTo(8));
+      expect(find.textContaining('(1)'), findsOneWidget);
+      expect(find.textContaining('(8)'), findsOneWidget);
+    });
+
     testWidgets('StudyProgressTopBar renders card progress and timer', (
       tester,
     ) async {
