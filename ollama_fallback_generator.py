@@ -439,19 +439,21 @@ _EXPLANATION_CACHE: Dict[str, str] = {}
 NON_ENGLISH_LANGUAGES = {
     "french": {
         "name": "French",
+        "system_prompt": (
+            "Tu es un professeur expert de la langue et de la littérature françaises pour les examens du secondaire (WAEC, JAMB, NECO).\n"
+            "Rédige toutes tes explications entièrement en français avec une rigueur grammaticale et pédagogique exemplaire.\n"
+            "N'inclus aucun mot en anglais, ne répète pas la liste des options et ne salue pas."
+        ),
         "prompt_template": (
-            "Tu es un professeur expert de la langue française pour les examens du secondaire (WAEC, JAMB, NECO).\n"
-            "Sujet: Français (French)\n"
+            "Matière: Français\n"
             "Question: {prompt}\n"
             "Options:\n{options_formatted}\n"
-            "Option correcte vérifiée: {correct_label}\n\n"
-            "Tâche: Rédige une explication pédagogique rigoureuse en français, suivie d'une traduction complète en anglais.\n"
-            "Consignes:\n"
-            "1. Fournis d'abord l'explication en français (2 à 3 phrases claires expliquant les règles grammaticales, le vocabulaire ou le contexte littéraire).\n"
-            "2. Fournis ensuite la traduction en anglais sous la forme exacte:\n"
-            "**Translation:** [English translation of the above explanation]\n"
-            "3. Conclus en confirmant que l'option {correct_label} est la bonne réponse.\n"
-            "4. Utilise un formatage Markdown propre. N'inclus aucun titre avec '#', aucune salutation ni bavardage superflu."
+            "Option correcte vérifiée: {correct_label} ({opt_text})\n\n"
+            "Tâche: Rédige une explication claire et concise en français (2 à 3 phrases) justifiant rigoureusement pourquoi l'option {correct_label} est la réponse exacte selon les règles de grammaire, de vocabulaire ou de contexte littéraire. Rédige uniquement en français."
+        ),
+        "translation_instruction": (
+            "Translate the following French curriculum explanation into natural, clear English for secondary school students. "
+            "Output ONLY the direct English translation without introductory remarks or repeating the options:\n\n{native_explanation}"
         ),
         "fallback_template": (
             "L'option {correct_label} {opt_suffix}est la réponse correcte selon le programme officiel de français.\n\n"
@@ -460,19 +462,21 @@ NON_ENGLISH_LANGUAGES = {
     },
     "arabic": {
         "name": "Arabic",
+        "system_prompt": (
+            "أنت أستاذ ومعلم خبير لمادة اللغة العربية، النحو، والصرف، والبلاغة لمناهج المرحلة الثانوية (WAEC, JAMB, NECO).\n"
+            "اكتب جميع شروحاتك باللغة العربية الفصحى بدقة تعليمية تامة.\n"
+            "لا تكتب باللغة الإنجليزية مطلقاً، ولا تكرر سرد الخيارات، ولا تكتب أي تحيات."
+        ),
         "prompt_template": (
-            "أنت معلم خبير في اللغة العربية لمناهج امتحانات المرحلة الثانوية (JAMB, WAEC, NECO).\n"
-            "المادة: اللغة العربية (Arabic)\n"
+            "المادة: اللغة العربية\n"
             "السؤال: {prompt}\n"
             "الخيارات:\n{options_formatted}\n"
-            "الخيار الصحيح المعتمد: {correct_label}\n\n"
-            "المهمة: اكتب شرحاً لغوياً دقيقاً باللغة العربية يوضح سبب صحة هذا الخيار، متبوعاً بترجمة كاملة باللغة الإنجليزية.\n"
-            "الشروط:\n"
-            "1. اكتب الشرح أولاً باللغة العربية (جملتان أو ثلاث تشرح القاعدة والسياق بدقة).\n"
-            "2. أضف ترجمة واضحة للشرح باللغة الإنجليزية بالتنسيق التالي:\n"
-            "**Translation:** [English translation of the above explanation]\n"
-            "3. أكد أن الخيار {correct_label} هو الإجابة الصحيحة.\n"
-            "4. استخدم تنسيق Markdown أنيق. لا تضع علامات '#' ولا أي عبارات ترحيبية أو مقدمات."
+            "الخيار الصحيح المعتمد: {correct_label} ({opt_text})\n\n"
+            "المهمة: اكتب شرحاً موجزاً ودقيقاً باللغة العربية الفصحى (جملتان أو ثلاث) يوضح القاعدة اللغوية أو النحوية أو السياقية التي تجعل الخيار {correct_label} هو الإجابة الصحيحة. اكتب باللغة العربية فقط."
+        ),
+        "translation_instruction": (
+            "Translate the following Arabic curriculum explanation into natural, clear English for secondary school students. "
+            "Output ONLY the direct English translation without introductory remarks or repeating the options:\n\n{native_explanation}"
         ),
         "fallback_template": (
             "الخيار {correct_label} {opt_suffix}هو الإجابة الصحيحة وفقاً للمنهج الرسمي لمادة اللغة العربية.\n\n"
@@ -481,19 +485,21 @@ NON_ENGLISH_LANGUAGES = {
     },
     "yoruba": {
         "name": "Yoruba",
+        "system_prompt": (
+            "O jẹ́ olùkọ́ àgbà fún èdè, àṣà, àti ìṣe Yorùbá fún àwọn ìdánwò WAEC, JAMB, àti NECO.\n"
+            "Kọ gbogbo àlàyé rẹ ní èdè Yorùbá mímọ́ pẹ̀lú àmì ohùn tó péye.\n"
+            "Má ṣe tún ìbéèrè tàbí àwọn àṣàyàn kọ, má sì ṣe kọ èdè Gẹ̀ẹ́sì rárá."
+        ),
         "prompt_template": (
-            "O jẹ́ olùkọ́ àgbà àti akọ́ṣẹ́mọṣẹ́ lédè Yorùbá fún àwọn ìdánwò WAEC, JAMB, àti NECO.\n"
-            "Kókó Ẹ̀kọ́: Èdè Yorùbá (Yoruba)\n"
+            "Kókó Ẹ̀kọ́: Èdè àti Àṣà Yorùbá\n"
             "Ìbéèrè: {prompt}\n"
             "Àwọn Àṣàyàn:\n{options_formatted}\n"
-            "Àṣàyàn Tí Ó Tọ́: {correct_label}\n\n"
-            "Iṣẹ́: Kọ àlàyé kíkún tí ó ṣe kedere ní èdè Yorùbá láti ṣàlàyé ìdí tí àṣàyàn yìí fi tọ́ pẹ̀lú ìtumọ̀ rẹ̀ ní èdè Gẹ̀ẹ́sì (English).\n"
-            "Àwọn Ìtọ́sọ́nà:\n"
-            "1. Kọ àlàyé náà ní èdè Yorùbá pẹ̀lú àmì ohùn tí ó péye (gbólóhùn 2 sí 3 tí ó ṣàlàyé gírámà, àṣà, tàbí ìtumọ̀ ọ̀rọ̀ náà).\n"
-            "2. Kọ ìtumọ̀ kíkún sí èdè Gẹ̀ẹ́sì ní ìsàlẹ̀ báyìí:\n"
-            "**Translation:** [English translation of the above explanation]\n"
-            "3. Tọ́ka sí àṣàyàn {correct_label} gẹ́gẹ́ bí ìdáhùn tí ó tọ́.\n"
-            "4. Lo Markdown tí ó mọ́ tónítóní. Má fi àmì '#' kankan kọ àkọlé, má sì fi kíkí tàbí ọ̀rọ̀ àbùkù kankan kún un."
+            "Àṣàyàn tó tọ́: {correct_label} ({opt_text})\n\n"
+            "Iṣẹ́: Ṣàlàyé ní tààràtà ní gbólóhùn 2 sí 3 ní èdè Yorùbá mímọ́ ìdí tí àṣàyàn {correct_label} fi jẹ́ ìdáhùn tó tọ́ gẹ́gẹ́ bí àṣà, ìtumọ̀ ọ̀rọ̀, tàbí gírámà Yorùbá. Kọ àlàyé nìkan."
+        ),
+        "translation_instruction": (
+            "Translate the following Yoruba curriculum explanation into natural, clear English for secondary school students. "
+            "Output ONLY the direct English translation without introductory remarks or repeating the options:\n\n{native_explanation}"
         ),
         "fallback_template": (
             "Àṣàyàn {correct_label} {opt_suffix}ni ìdáhùn tó tọ́ gẹ́gẹ́ bí ètò ẹ̀kọ́ èdè Yorùbá.\n\n"
@@ -502,19 +508,21 @@ NON_ENGLISH_LANGUAGES = {
     },
     "hausa": {
         "name": "Hausa",
+        "system_prompt": (
+            "Kai babban malamin koyar da Harshen Hausa, adabi, da al'adun Hausawa ne na jarrabawar WAEC, JAMB, da NECO.\n"
+            "Ka rubuta dukkan bayaninka da sahihin harshen Hausa zalla mai inganci.\n"
+            "Kada ka saka harshen Turanci ko kaɗan, kuma kada ka sake lissafa zaɓuɓɓuka."
+        ),
         "prompt_template": (
-            "Kai gogaggen malamin koyar da Harshen Hausa ne na jarrabawar WAEC, JAMB, da NECO.\n"
-            "Darasi: Harshen Hausa (Hausa)\n"
+            "Darasi: Harshen Hausa\n"
             "Tambaya: {prompt}\n"
             "Zaɓuɓɓuka:\n{options_formatted}\n"
-            "Daidai Zaɓi: {correct_label}\n\n"
-            "Aiki: Rubuta cikakken bayani mai gamsarwa da harshen Hausa da ke bayyana dalilin da ya sa wannan zaɓi ya zama daidai, sannan ka ba da fassarar bayanin da harshen Turanci (English).\n"
-            "Sharuɗɗa:\n"
-            "1. Fara rubuta bayanin a harshen Hausa na asali mai kyau (jumla 2 zuwa 3 da ke bayyana ƙa'idojin nahawu ko ma'ana).\n"
-            "2. Ƙara fassarar bayanin da harshen Turanci a ƙasa kamar haka:\n"
-            "**Translation:** [English translation of the above explanation]\n"
-            "3. Tabbatar da cewa zaɓi na {correct_label} shine amsar da ta dace.\n"
-            "4. Yi amfani da tsarin Markdown mai tsafta. Kada ka saka alamun '#', gaisuwa ko wata magana daban."
+            "Daidai Zaɓi: {correct_label} ({opt_text})\n\n"
+            "Aiki: Rubuta cikakken bayani a harshen Hausa (jumla 2 zuwa 3) da ke bayyana dalilin da ya sa zaɓi na {correct_label} ya zama daidai bisa ƙa'idojin nahawu, ma'ana, ko al'adar Hausa. Rubuta bayani kawai."
+        ),
+        "translation_instruction": (
+            "Translate the following Hausa curriculum explanation into natural, clear English for secondary school students. "
+            "Output ONLY the direct English translation without introductory remarks or repeating the options:\n\n{native_explanation}"
         ),
         "fallback_template": (
             "Zaɓi na {correct_label} {opt_suffix}shine amsar da ta dace bisa tsarin koyarwar Harshen Hausa.\n\n"
@@ -523,19 +531,21 @@ NON_ENGLISH_LANGUAGES = {
     },
     "igbo": {
         "name": "Igbo",
+        "system_prompt": (
+            "Ị bụ ọkachamara onye nkụzi Asụsụ, Agụmagụ, na Omenala Igbo maka ule WAEC, JAMB, na NECO.\n"
+            "Dee nkọwa gị niile n'Asụsụ Igbo ziri ezi nwere akara ụdaume kwesịrị ekwesị.\n"
+            "Edela asụsụ Bekee ọ bụla, edekwala nhọrọ ndị ahụ ọzọ."
+        ),
         "prompt_template": (
-            "Ị bụ ọkachamara onye nkụzi Asụsụ Igbo maka ule WAEC, JAMB, na NECO.\n"
-            "Isiokwu: Asụsụ Igbo (Igbo)\n"
+            "Isiokwu: Asụsụ na Omenala Igbo\n"
             "Ajụjụ: {prompt}\n"
             "Nhọrọ dị iche iche:\n{options_formatted}\n"
-            "Nhọrọ Ziri Ezi: {correct_label}\n\n"
-            "Ọrụ: Dee nkọwa zuru ezu n'Asụsụ Igbo na-akọwapụta ihe mere nhọrọ a ji bụrụ nke ziri ezi, ma tụgharịa nkọwa ahụ n'asụsụ Bekee (English).\n"
-            "Usoro:\n"
-            "1. Buru ụzọ dee nkọwa ahụ n'Asụsụ Igbo ziri ezi (ahịrịokwu 2 ma ọ bụ 3 na-akọwa usoro ụtọasụsụ ma ọ bụ nghọta).\n"
-            "2. Tinye ntụgharị n'asụsụ Bekee n'okpuru ya dịka nke a:\n"
-            "**Translation:** [English translation of the above explanation]\n"
-            "3. Kọwaa na nhọrọ {correct_label} bụ azịza ziri ezi.\n"
-            "4. Jiri usoro Markdown dị mma. Etinyela '#' maka isiokwu, etinyela ekele ma ọ bụ mkparịta ụka na-abaghị uru."
+            "Nhọrọ Ziri Ezi: {correct_label} ({opt_text})\n\n"
+            "Ọrụ: Dee nkọwa doro anya n'Asụsụ Igbo (ahịrịokwu 2 ma ọ bụ 3) na-akọwa ihe kpatara nhọrọ {correct_label} ji bụrụ azịza ziri ezi dabere n'ụtọasụsụ, nkọwa okwu, ma ọ bụ omenala Igbo. Dee naanị nkọwa."
+        ),
+        "translation_instruction": (
+            "Translate the following Igbo curriculum explanation into natural, clear English for secondary school students. "
+            "Output ONLY the direct English translation without introductory remarks or repeating the options:\n\n{native_explanation}"
         ),
         "fallback_template": (
             "Nhọrọ {correct_label} {opt_suffix}bụ azịza ziri ezi dabere na usoro ọmụmụ Asụsụ Igbo.\n\n"
@@ -546,7 +556,7 @@ NON_ENGLISH_LANGUAGES = {
 
 
 def clean_llm_explanation(text: str) -> str:
-    """Sanitizes raw LLM output, stripping model artifacts, greeting chatter, and raw '#' headings."""
+    """Sanitizes raw LLM output, stripping model artifacts, greeting chatter, and prompt echoes."""
     if not text:
         return ""
     # Strip <think>...</think> reasoning tags
@@ -556,11 +566,32 @@ def clean_llm_explanation(text: str) -> str:
     text = re.sub(r'<\|[a-zA-Z0-9_\-]+\|>', '', text)
     # Strip conversational greetings
     text = re.sub(r'^(Sure!?|Certainly!?|Here is (the|an) explanation:?|Here is the step-by-step solution:?)\s*', '', text, flags=re.IGNORECASE)
-    # Replace markdown headings like '### Explanation' or '# Solution' with clean bold text so raw '#' doesn't clutter
+    # Strip prompt echoing if the model repeated question headers
+    text = re.sub(r'^(?:Ìbéèrè|Question|Kókó Ẹ̀kọ́|Àwọn [Àà]ṣàyàn|Options|Matière|Sujet|Darasi|Tambaya|Isiokwu|Ajụjụ|المادة|السؤال)[\s\S]*?(?:Ṣàlàyé:|Explanation:|Àlàyé:|Bayanin:|Nkọwa:|الشرح:)\s*', '', text, flags=re.IGNORECASE)
+    # Replace markdown headings like '### Explanation' or '# Solution' with clean bold text
     text = re.sub(r'^#{1,6}\s*(.+)$', r'**\1**', text, flags=re.MULTILINE)
     # Clean up double bolding or excess empty lines
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
+
+
+def clean_translation(text: str) -> str:
+    """Sanitizes English translation output, removing translation preamble chatter."""
+    if not text:
+        return ""
+    text = clean_llm_explanation(text)
+    # Strip common translation preamble phrases
+    text = re.sub(
+        r'^(?:The\s+[A-Za-z]+\s+explanation\s+translates\s+to:?|Here\s+is\s+the\s+(?:English\s+)?translation:?|This\s+translates\s+to:?|\*\*Translation:\*\*|\*\*English\s+Translation:\*\*)\s*',
+        '',
+        text,
+        flags=re.IGNORECASE
+    )
+    # Strip surrounding quotation marks if model wrapped the entire output in quotes
+    text = re.sub(r'^"([\s\S]+)"$', r'\1', text.strip())
+    # Remove trailing translation notes if any (e.g. "\n\nNote: ...")
+    text = re.split(r'\n\n(?:This translation|Note:|The translation)', text, flags=re.IGNORECASE)[0].strip()
+    return text
 
 
 def generate_ollama_explanation(
@@ -575,7 +606,13 @@ def generate_ollama_explanation(
     endpoint: str = "http://localhost:11434",
     timeout: int = 50
 ) -> Optional[str]:
-    """Queries local Ollama for a step-by-step curriculum solution with vision and LaTeX support."""
+    """
+    Queries local Ollama for curriculum solutions.
+    For non-English language subjects (Yoruba, Hausa, Igbo, French, Arabic), executes a decoupled
+    two-stage architecture:
+      Stage 1: Pure native reasoning locked into the language's tutor persona.
+      Stage 2: High-fidelity English translation of the native explanation.
+    """
     prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()[:8]
     img_hash = hashlib.md5(image_url.encode("utf-8")).hexdigest()[:8] if image_url else "noimg"
     cache_key = f"{subject_slug}_{prompt_hash}_{img_hash}_{correct_label}"
@@ -594,81 +631,45 @@ def generate_ollama_explanation(
     can_use_vision = has_image and bool(vision_model)
     target_model = vision_model if can_use_vision else model
 
-    if lang_info:
-        # Switch model context directly into the target non-English language
-        prompt_body = lang_info["prompt_template"].format(
-            prompt=prompt,
-            options_formatted=options_formatted,
-            correct_label=correct_label
-        )
-        if has_image and can_use_vision:
-            prompt_body += "\n\n**Remarque visuelle:** Une image/schéma est attachée à cette question. Examine attentivement l'image pour appuyer votre explication."
-    else:
-        if has_image and can_use_vision:
-            prompt_body = (
-                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
-                f"Subject: {subject_name}\n"
-                f"Question: {prompt}\n"
-                f"Options:\n{options_formatted}\n"
-                f"Verified Correct Option: {correct_label}\n"
-                "Diagram / Image: An image is provided showing the diagram, circuit, table, chart, setup, or figure for this question.\n\n"
-                "Task: Write a concise, step-by-step solution explaining why this option is correct based on the diagram.\n"
-                "Guidelines:\n"
-                "1. Carefully inspect the attached image/diagram. Read all values, labels, readings, axes, angles, or symbols from the diagram to derive the answer.\n"
-                "2. Write 2 to 4 clear, rigorous sentences or calculation steps showing the exact working based on the diagram.\n"
-                "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
-                "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
-                "5. Conclude by confirming the correct option letter.\n"
-                "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
-            )
-        elif has_image and not can_use_vision:
-            prompt_body = (
-                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
-                f"Subject: {subject_name}\n"
-                f"Question: {prompt}\n"
-                f"Options:\n{options_formatted}\n"
-                f"Verified Correct Option: {correct_label}\n"
-                f"[Diagram / Figure Reference: {image_url}]\n\n"
-                "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
-                "Guidelines:\n"
-                "1. Note that this question refers to an accompanying diagram or table. Explain the relevant scientific or mathematical principles, rules, and formulas that justify why Option {correct_label} is correct.\n"
-                "2. Write 2 to 4 clear, rigorous sentences explaining the solution.\n"
-                "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
-                "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
-                "5. Conclude by confirming the correct option letter.\n"
-                "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
-            )
-        else:
-            # Standard English curriculum tutor prompt
-            prompt_body = (
-                "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
-                f"Subject: {subject_name}\n"
-                f"Question: {prompt}\n"
-                f"Options:\n{options_formatted}\n"
-                f"Verified Correct Option: {correct_label}\n\n"
-                "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
-                "Guidelines:\n"
-                "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
-                "2. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
-                "3. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
-                "4. Conclude by confirming the correct option letter.\n"
-                "5. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
-            )
-
-    payload: Dict[str, Any] = {
-        "model": target_model,
-        "prompt": prompt_body,
-        "stream": False,
-        "options": {
-            "temperature": 0.2,
-            "num_predict": 380
+    def _call_ollama_chat(messages: List[Dict[str, str]], target_m: str, num_predict: int = 350) -> Optional[str]:
+        pl = {
+            "model": target_m,
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": num_predict
+            }
         }
-    }
+        req = urllib.request.Request(
+            f"{endpoint.rstrip('/')}/api/chat",
+            data=json.dumps(pl).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode())
+            return (data.get("message", {}).get("content") or "").strip()
 
-    if can_use_vision and img_base64:
-        payload["images"] = [img_base64]
-
-    def _call_ollama(pl: Dict[str, Any]) -> Optional[str]:
+    def _call_ollama_generate(
+        prompt_text: str,
+        target_m: str,
+        sys_prompt: Optional[str] = None,
+        num_predict: int = 350,
+        img_b64: Optional[str] = None
+    ) -> Optional[str]:
+        pl = {
+            "model": target_m,
+            "prompt": prompt_text,
+            "stream": False,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": num_predict
+            }
+        }
+        if sys_prompt:
+            pl["system"] = sys_prompt
+        if img_b64:
+            pl["images"] = [img_b64]
         req = urllib.request.Request(
             f"{endpoint.rstrip('/')}/api/generate",
             data=json.dumps(pl).encode("utf-8"),
@@ -676,11 +677,144 @@ def generate_ollama_explanation(
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
-            raw_res = (data.get("response") or "").strip()
-            return clean_llm_explanation(raw_res)
+            return (data.get("response") or "").strip()
+
+    # =========================================================================
+    # TWO-STAGE DECOUPLED PIPELINE FOR NON-ENGLISH LANGUAGES
+    # =========================================================================
+    if lang_info:
+        opt_text = ""
+        for opt in options:
+            if opt.startswith(f"{correct_label}."):
+                opt_text = opt[len(correct_label) + 2:].strip()
+                break
+
+        s1_sys = lang_info["system_prompt"]
+        s1_prompt = lang_info["prompt_template"].format(
+            prompt=prompt,
+            options_formatted=options_formatted,
+            correct_label=correct_label,
+            opt_text=opt_text
+        )
+
+        # Stage 1: Pure Native Language Reasoning
+        native_raw = None
+        try:
+            native_raw = _call_ollama_chat(
+                messages=[
+                    {"role": "system", "content": s1_sys},
+                    {"role": "user", "content": s1_prompt}
+                ],
+                target_m=target_model,
+                num_predict=300
+            )
+        except Exception:
+            try:
+                native_raw = _call_ollama_generate(
+                    prompt_text=s1_prompt,
+                    target_m=target_model,
+                    sys_prompt=s1_sys,
+                    num_predict=300
+                )
+            except Exception as e:
+                print(f"    [!] Error in Stage 1 ({lang_info['name']}): {e}", file=sys.stderr)
+
+        native_clean = clean_llm_explanation(native_raw)
+        if not native_clean or len(native_clean) < 15:
+            return None
+
+        # Stage 2: High-Fidelity English Translation
+        trans_instruction = lang_info["translation_instruction"].format(native_explanation=native_clean)
+        trans_raw = None
+        try:
+            trans_raw = _call_ollama_chat(
+                messages=[
+                    {"role": "system", "content": "You are an expert curriculum translator for WAEC, JAMB, and NECO examinations. Translate the provided explanation into clear, accurate English. Output ONLY the direct English translation without preamble or repeating the options."},
+                    {"role": "user", "content": trans_instruction}
+                ],
+                target_m=model,
+                num_predict=300
+            )
+        except Exception:
+            try:
+                trans_raw = _call_ollama_generate(
+                    prompt_text=trans_instruction,
+                    target_m=model,
+                    num_predict=300
+                )
+            except Exception:
+                pass
+
+        clean_trans = clean_translation(trans_raw)
+        if clean_trans and len(clean_trans) > 10:
+            combined = f"{native_clean}\n\n**Translation:**\n{clean_trans}"
+        else:
+            combined = native_clean
+
+        _EXPLANATION_CACHE[cache_key] = combined
+        return combined
+
+    # =========================================================================
+    # STANDARD PIPELINE FOR ENGLISH & STEM / HUMANITIES SUBJECTS
+    # =========================================================================
+    if has_image and can_use_vision:
+        prompt_body = (
+            "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+            f"Subject: {subject_name}\n"
+            f"Question: {prompt}\n"
+            f"Options:\n{options_formatted}\n"
+            f"Verified Correct Option: {correct_label}\n"
+            "Diagram / Image: An image is provided showing the diagram, circuit, table, chart, setup, or figure for this question.\n\n"
+            "Task: Write a concise, step-by-step solution explaining why this option is correct based on the diagram.\n"
+            "Guidelines:\n"
+            "1. Carefully inspect the attached image/diagram. Read all values, labels, readings, axes, angles, or symbols from the diagram to derive the answer.\n"
+            "2. Write 2 to 4 clear, rigorous sentences or calculation steps showing the exact working based on the diagram.\n"
+            "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+            "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+            "5. Conclude by confirming the correct option letter.\n"
+            "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+        )
+    elif has_image and not can_use_vision:
+        prompt_body = (
+            "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+            f"Subject: {subject_name}\n"
+            f"Question: {prompt}\n"
+            f"Options:\n{options_formatted}\n"
+            f"Verified Correct Option: {correct_label}\n"
+            f"[Diagram / Figure Reference: {image_url}]\n\n"
+            "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
+            "Guidelines:\n"
+            "1. Note that this question refers to an accompanying diagram or table. Explain the relevant scientific or mathematical principles, rules, and formulas that justify why Option {correct_label} is correct.\n"
+            "2. Write 2 to 4 clear, rigorous sentences explaining the solution.\n"
+            "3. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+            "4. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+            "5. Conclude by confirming the correct option letter.\n"
+            "6. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+        )
+    else:
+        prompt_body = (
+            "You are an expert West African secondary school curriculum tutor for WAEC, JAMB, and NECO examinations.\n"
+            f"Subject: {subject_name}\n"
+            f"Question: {prompt}\n"
+            f"Options:\n{options_formatted}\n"
+            f"Verified Correct Option: {correct_label}\n\n"
+            "Task: Write a concise, step-by-step solution explaining why this option is correct.\n"
+            "Guidelines:\n"
+            "1. Write 2 to 4 clear, rigorous sentences or steps showing the working.\n"
+            "2. For mathematics, physics, and chemistry, write all formulas and equations in standard LaTeX format using \\( ... \\) for inline equations or \\[ ... \\] for block equations.\n"
+            "3. Format cleanly using Markdown with **bold** for key terms. Do not use '#' for headings.\n"
+            "4. Conclude by confirming the correct option letter.\n"
+            "5. Output ONLY the solution text. No greetings, chit-chat, or conversational filler."
+        )
 
     try:
-        res = _call_ollama(payload)
+        raw_res = _call_ollama_generate(
+            prompt_text=prompt_body,
+            target_m=target_model,
+            num_predict=380,
+            img_b64=img_base64 if can_use_vision else None
+        )
+        res = clean_llm_explanation(raw_res)
         if res and len(res) > 20:
             _EXPLANATION_CACHE[cache_key] = res
             return res
@@ -690,13 +824,15 @@ def generate_ollama_explanation(
             err_msg = he.read().decode("utf-8")
         except Exception:
             pass
-        # Gracefully handle models that do not support images by retrying without image payload
-        if "does not support images" in err_msg.lower() and "images" in payload:
+        if "does not support images" in err_msg.lower() and img_base64:
             print(f"    [!] Model '{target_model}' does not support images. Retrying with text-only fallback.", file=sys.stderr)
-            del payload["images"]
-            payload["model"] = model
             try:
-                res = _call_ollama(payload)
+                raw_res = _call_ollama_generate(
+                    prompt_text=prompt_body,
+                    target_m=model,
+                    num_predict=380
+                )
+                res = clean_llm_explanation(raw_res)
                 if res and len(res) > 20:
                     _EXPLANATION_CACHE[cache_key] = res
                     return res
