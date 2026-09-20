@@ -2504,10 +2504,10 @@ abstract class AppLocalizations {
   /// **'Deep Research'**
   String get socraticDeepResearch;
 
-  /// Engine status label for remote Supabase LLM
+  /// Engine status label for remote Luna LLM
   ///
   /// In en, this message translates to:
-  /// **'Cloud Neural Engine'**
+  /// **'Luna AI'**
   String get engineCloudSupabase;
 
   /// Engine status label for local on-device LLM
@@ -2660,10 +2660,10 @@ abstract class AppLocalizations {
   /// **'Uploading document...'**
   String get uploadingStatus;
 
-  /// Progress message during OCR processing
+  /// Progress message during document processing
   ///
   /// In en, this message translates to:
-  /// **'Extracting formulas & text...'**
+  /// **'Extracting study notes & concepts...'**
   String get processingOcrStatus;
 
   /// Progress message during flashcard generation
@@ -2672,13 +2672,13 @@ abstract class AppLocalizations {
   /// **'Generating active recall cards...'**
   String get generatingCardsStatus;
 
-  /// Title for the OCR preview and editor page
+  /// Title for the study cards preview and editor page
   ///
   /// In en, this message translates to:
-  /// **'Document OCR Live Editor'**
+  /// **'Study Cards Live Editor'**
   String get ocrPreviewTitle;
 
-  /// Button to convert OCR snippets into cards
+  /// Button to convert extracted snippets into cards
   ///
   /// In en, this message translates to:
   /// **'Convert to Flashcards'**
@@ -2696,16 +2696,16 @@ abstract class AppLocalizations {
   /// **'Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)'**
   String get supportedFormatsNotice;
 
-  /// Count banner in OCR preview
+  /// Count banner in study cards preview
   ///
   /// In en, this message translates to:
-  /// **'{count} formulas & concepts extracted'**
+  /// **'{count} study concepts & cards extracted'**
   String extractedSnippetsCount(int count);
 
-  /// Action button in OCR preview
+  /// Action button in study cards preview
   ///
   /// In en, this message translates to:
-  /// **'Generate FSRS-6 Cards'**
+  /// **'Save & Generate Deck'**
   String get generateCardsAction;
 
   /// Title for generated flashcards review page
@@ -2858,22 +2858,22 @@ abstract class AppLocalizations {
   /// **'Enter answer or detailed explanation...'**
   String get cardAnswerHint;
 
-  /// Label for LaTeX equation block editor
+  /// Label for formula or rule block editor
   ///
   /// In en, this message translates to:
-  /// **'LaTeX Equation / Formula (Optional)'**
+  /// **'Key Formula, Rule, or Code (Optional)'**
   String get cardEquationLabel;
 
-  /// Hint text for LaTeX formula input
+  /// Hint text for formula or key rule input
   ///
   /// In en, this message translates to:
-  /// **'e.g. \\\\int f(x) dx or \\\\text(Risk-to-Reward) >= 3:1'**
+  /// **'e.g. 3:1 RR Minimum, or \\\\int f(x) dx, or rule summary'**
   String get cardEquationHint;
 
-  /// Header for live LaTeX math rendering preview
+  /// Header for live math and rule rendering preview
   ///
   /// In en, this message translates to:
-  /// **'Live Formula Preview'**
+  /// **'Formula / Rule Preview'**
   String get liveFormulaPreviewLabel;
 
   /// Header for extracted diagram visual asset box
@@ -2894,10 +2894,10 @@ abstract class AppLocalizations {
   /// **'Uploading {filename}...'**
   String uploadingDocStatus(String filename);
 
-  /// Status text for OCR parsing in progress
+  /// Status text for document parsing in progress
   ///
   /// In en, this message translates to:
-  /// **'Parsing OCR formulas in {filename}...'**
+  /// **'Extracting concepts from {filename}...'**
   String parsingOcrDocStatus(String filename);
 
   /// Status text for flashcards synthesis in progress

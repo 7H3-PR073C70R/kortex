@@ -192,6 +192,26 @@ serve(async (req) => {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
+    // When the PDF is scanned/image-only, build a single image-aware section so
+    // Luna receives proper visual context rather than hitting the structural fallback.
+    if (
+      parsedDoc.sections.length === 0 &&
+      parsedDoc.isScannedOrImage &&
+      parsedDoc.images.length > 0
+    ) {
+      const imageList = parsedDoc.images
+        .map((img, i) => `- Figure ${i + 1}: ${img.label}`)
+        .join("\n");
+      parsedDoc.sections = [
+        {
+          title: cleanDeckTitle,
+          text: `[Scanned/Image-Only Document — ${cleanDeckTitle}]\n\nThe following diagrams were extracted from the document:\n${imageList}\n\nSynthesize comprehensive, high-yield active-recall flashcards covering all visual, conceptual, mathematical, and factual content visible in the attached diagram(s). Reference each figure by label where appropriate.`,
+          index: 1,
+        },
+      ];
+      console.log(`[parse-stem-ocr] Scanned doc with ${parsedDoc.images.length} image(s): built image-aware section for Luna.`);
+    }
+
     // Stage 3: OCR processing verification (55%)
     await broadcastProgress(supabase, documentId, {
       status: "parsingOcr",
@@ -246,42 +266,84 @@ serve(async (req) => {
       }
     }
 
-    // Fallback if Luna returned 0 cards or was unreachable: extract multiple high-yield cards from document sections
+    // Structural fallback: Luna was unreachable or returned 0 cards.
+    // Generate one meaningful card per distinct paragraph block, ensuring
+    // the back always has real content (never garbage glyph sequences).
     if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
-      console.warn("[parse-stem-ocr] Luna returned 0 cards; generating structural cards from sections...");
+      console.warn("[parse-stem-ocr] Luna returned 0 cards; generating structured fallback cards from extracted sections...");
+
       for (const sec of parsedDoc.sections) {
-        const lines = sec.text.split("\n").map((l) => l.trim()).filter((l) => l.length > 15);
-        if (lines.length > 0) {
-          const front = sec.title.length > 3
-            ? (sec.title.endsWith("?") ? sec.title : `What are the core principles and rules of ${sec.title}?`)
-            : `What is the key takeaway of ${cleanDeckTitle}?`;
-          const back = lines.slice(0, 6).join("\n");
-          generatedCards.push({
-            id: crypto.randomUUID(),
-            front,
-            back,
-            back_latex: null,
-            explanation: `Core summary for ${sec.title}`,
-            image_url: parsedDoc.images[0]?.url ?? null,
-            tags: [sec.title, cleanDeckTitle, courseCode],
-          });
+        // Skip sections that appear to be raw scanned-PDF descriptors or are too short
+        const isDescriptorSection = sec.text.startsWith("[Scanned") || sec.text.startsWith("[Visual");
+
+        // Split into substantive paragraphs (≥ 40 chars each)
+        const paragraphs = sec.text
+          .split(/\n\n+/)
+          .map((p) => p.trim())
+          .filter((p) => p.length >= 40 && !p.startsWith("["));
+
+        if (paragraphs.length > 0 && !isDescriptorSection) {
+          for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
+            const p = paragraphs[pIdx];
+            // Use full lines as the back content
+            const lines = p.split("\n").map((l) => l.trim()).filter((l) => l.length > 5);
+            if (lines.length === 0) continue;
+
+            // Derive a clean front question from the first non-trivial line
+            const firstLine = lines[0];
+            const isSentence = firstLine.includes(".") || firstLine.length > 80;
+            const front = isSentence
+              ? `What are the key points covered in: "${firstLine.slice(0, 70).trim()}"?`
+              : firstLine.endsWith("?")
+              ? firstLine
+              : `Explain: ${firstLine}`;
+
+            const back = lines.slice(0, 10).join("\n");
+
+            generatedCards.push({
+              id: crypto.randomUUID(),
+              front,
+              back,
+              back_latex: null,
+              explanation: `Extracted from: ${sec.title}`,
+              image_url: parsedDoc.images[pIdx % parsedDoc.images.length]?.url ?? null,
+              tags: [sec.title, cleanDeckTitle, courseCode].filter(Boolean),
+            });
+          }
+        } else if (isDescriptorSection && parsedDoc.images.length > 0) {
+          // For scanned docs with images, create one card per image
+          for (let imgIdx = 0; imgIdx < parsedDoc.images.length; imgIdx++) {
+            const img = parsedDoc.images[imgIdx];
+            generatedCards.push({
+              id: crypto.randomUUID(),
+              front: `What concepts, data, or information are shown in Figure ${imgIdx + 1} of ${cleanDeckTitle}?`,
+              back: `Refer to the attached diagram: ${img.label}. Review the visual content and note all key concepts, labels, axes, and relationships shown.`,
+              back_latex: null,
+              explanation: `Visual content from ${cleanDeckTitle}`,
+              image_url: img.url,
+              tags: [cleanDeckTitle, courseCode, "diagram"].filter(Boolean),
+            });
+          }
         }
       }
     }
 
-    // Ultimate fallback if text was entirely blank
+    // Ultimate fallback: document had no extractable content at all.
+    // Produce ONE well-formed card that instructs the user rather than showing garbage.
     if (generatedCards.length === 0) {
-      const fallbackPrompt = `What are the core concepts covered in ${cleanDeckTitle}?`;
-      const fallbackBody = parsedDoc.fullText.slice(0, 500) || "Study content extracted from document.";
+      const hasImages = parsedDoc.images.length > 0;
       generatedCards.push({
         id: crypto.randomUUID(),
-        front: fallbackPrompt,
-        back: fallbackBody,
+        front: `What are the core concepts covered in ${cleanDeckTitle}?`,
+        back: hasImages
+          ? `This document is image-based. Review the ${parsedDoc.images.length} attached diagram(s) for the study content. Re-upload as a text-searchable PDF for richer flashcard generation.`
+          : `No extractable text was found in this document. For best results, upload a text-searchable PDF. Deck title: ${cleanDeckTitle}.`,
         back_latex: null,
-        explanation: "Key concept summary",
+        explanation: hasImages ? "Visual-only document — see attached diagram(s)" : "Document had no extractable content",
         image_url: parsedDoc.images[0]?.url ?? null,
-        tags: [cleanDeckTitle, courseCode],
+        tags: [cleanDeckTitle, courseCode].filter(Boolean),
       });
+      console.warn(`[parse-stem-ocr] Ultimate fallback activated for '${cleanDeckTitle}' — document had no usable content.`);
     }
 
     // Stage 5: Database Persistence (90%)

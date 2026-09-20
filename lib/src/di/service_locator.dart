@@ -124,7 +124,6 @@ void _initServices() {
         pdfParser: locator<LocalPdfParserService>(),
         pptxParser: locator<LocalPptxParserService>(),
         imageOcr: locator<LocalImageOcrService>(),
-        documentParser: locator<DocumentParserService>(),
       ),
     )
     ..registerFactory<OnboardingStreamController>(

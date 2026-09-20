@@ -423,7 +423,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             final rawText = first['raw_text']?.toString() ?? '';
             final topic = first['topic']?.toString() ?? '';
             return rawText.contains('Study content extracted') ||
-                topic.contains('What are the core concepts covered in');
+                topic.contains('What are the core concepts covered in') ||
+                topic.contains('What are the core principles and rules of') ||
+                topic.contains('What is the key takeaway of');
           }();
 
       if (rawList.isNotEmpty && !isDummyFallback) {
@@ -450,7 +452,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       final snippets = await fetchExtractedSnippets(documentId);
       final isDbDummy = snippets.length == 1 &&
           (snippets.first.rawText.contains('Study content extracted') ||
-           snippets.first.topic.contains('What are the core concepts covered in'));
+           snippets.first.topic.contains('What are the core concepts covered in') ||
+           snippets.first.topic.contains('What are the core principles and rules of') ||
+           snippets.first.topic.contains('What is the key takeaway of'));
       if (snippets.isNotEmpty && !isDbDummy) return snippets;
     } on Object catch (e, stack) {
       final crashlytics = _crashlyticsService;

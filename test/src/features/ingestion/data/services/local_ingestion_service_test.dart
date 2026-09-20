@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
-import 'package:kortex/src/features/ingestion/data/services/local_image_ocr_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
@@ -13,28 +11,18 @@ class MockLocalPdfParserService extends Mock implements LocalPdfParserService {}
 class MockLocalPptxParserService extends Mock
     implements LocalPptxParserService {}
 
-class MockLocalImageOcrService extends Mock implements LocalImageOcrService {}
-
-class MockDocumentParserService extends Mock implements DocumentParserService {}
-
 void main() {
   late LocalIngestionService ingestionService;
   late MockLocalPdfParserService mockPdfParser;
   late MockLocalPptxParserService mockPptxParser;
-  late MockLocalImageOcrService mockImageOcr;
-  late MockDocumentParserService mockDocumentParser;
 
   setUp(() {
     mockPdfParser = MockLocalPdfParserService();
     mockPptxParser = MockLocalPptxParserService();
-    mockImageOcr = MockLocalImageOcrService();
-    mockDocumentParser = MockDocumentParserService();
 
     ingestionService = LocalIngestionService(
       pdfParser: mockPdfParser,
       pptxParser: mockPptxParser,
-      imageOcr: mockImageOcr,
-      documentParser: mockDocumentParser,
     );
   });
 
@@ -96,22 +84,24 @@ void main() {
       },
     );
 
-    test('routes PNG / JPG image bytes to LocalImageOcrService', () async {
-      final sampleBytes = Uint8List.fromList([9, 10, 11, 12]);
-      when(() => mockImageOcr.extractTextFromBytes(sampleBytes)).thenAnswer(
-        (_) async =>
-            'Theorem 1: Newton Third Law of Motion\nAction equals reaction.',
-      );
+    test(
+      'returns empty string for image types — OCR handled server-side',
+      () async {
+        final sampleBytes = Uint8List.fromList([9, 10, 11, 12]);
 
-      final result = await ingestionService.ingestBytes(
-        bytes: sampleBytes,
-        extension: 'png',
-      );
-
-      expect(result, contains('Theorem 1: Newton Third Law of Motion'));
-      expect(result, contains('Action equals reaction.'));
-      verify(() => mockImageOcr.extractTextFromBytes(sampleBytes)).called(1);
-    });
+        for (final ext in ['png', 'jpg', 'jpeg', 'webp']) {
+          final result = await ingestionService.ingestBytes(
+            bytes: sampleBytes,
+            extension: ext,
+          );
+          expect(
+            result,
+            isEmpty,
+            reason: '.$ext should return empty — server handles OCR',
+          );
+        }
+      },
+    );
 
     test('routes plain text and markdown bytes directly', () async {
       const textContent = '# Chapter 1\n\nDirect plain text reading.';
@@ -127,17 +117,16 @@ void main() {
     });
 
     test(
-      'throws UnsupportedFileTypeException on unknown file format',
+      'returns empty string for unknown/unsupported file formats',
       () async {
         final sampleBytes = Uint8List.fromList([1, 2, 3]);
 
-        expect(
-          () => ingestionService.ingestBytes(
-            bytes: sampleBytes,
-            extension: 'exe',
-          ),
-          throwsA(isA<UnsupportedFileTypeException>()),
+        final result = await ingestionService.ingestBytes(
+          bytes: sampleBytes,
+          extension: 'exe',
         );
+
+        expect(result, isEmpty);
       },
     );
 

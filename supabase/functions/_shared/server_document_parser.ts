@@ -2,9 +2,9 @@
  * Server Compute Document Parser
  * ==============================
  * Industrial server-side document and media extraction engine for:
- * 1. PDF Documents (.pdf) - Text, layout, and embedded diagram images
+ * 1. PDF Documents (.pdf) - Text via unpdf (full CIDFont/ToUnicode support), embedded PNG/JPEG images
  * 2. Presentations (.pptx) - Slide hierarchy, titles, notes, and media
- * 3. Scanned / Photo Images (.png, .jpg, .jpeg) - Visual OCR & preservation
+ * 3. Scanned / Photo Images (.png, .jpg, .jpeg, .webp) - Visual OCR & preservation
  * 4. Plain Text & Markdown (.txt, .md)
  *
  * Automatically uploads visual diagrams into Supabase Storage `card-assets`
@@ -13,6 +13,7 @@
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { unzlib } from "https://esm.sh/fflate@0.8.2";
+import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.0";
 
 export interface ExtractedMediaAttachment {
   filename: string;
@@ -123,87 +124,198 @@ export class ServerDocumentParser {
 
   /**
    * PDF Extractor on server compute.
-   * Extracts text streams, flate-compressed streams, and embedded diagram images.
+   *
+   * Strategy:
+   * 1. Use `unpdf` (pdf.js wrapper) for complete, Unicode-correct text extraction,
+   *    including CIDFont Type2 glyphs and ToUnicode CMaps.
+   * 2. Independently scan the raw byte stream for embedded PNG and JPEG images
+   *    (including Flate-compressed PNGs) — no image count cap.
+   * 3. If unpdf text extraction yields < 100 chars (scanned/image-only PDF),
+   *    mark as scanned and produce a descriptive fallback text.
    */
   private async extractFromPdf(
     bytes: Uint8Array,
     filename: string
   ): Promise<{ text: string; images: ExtractedMediaAttachment[]; isScanned: boolean }> {
-    const textParts: string[] = [];
+    let fullText = "";
     const images: ExtractedMediaAttachment[] = [];
 
-    // Scan for uncompressed and flate-compressed PDF streams
-    const streamRegex = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g;
-    const decoder = new TextDecoder("latin1");
-    const rawPdfString = decoder.decode(bytes);
+    // ─── 1. Text Extraction via unpdf (CIDFont / ToUnicode aware) ────────────
+    try {
+      const pdf = await getDocumentProxy(bytes);
+      const { text } = await extractText(pdf, { mergePages: false });
 
-    let streamIndex = 0;
-    let match: RegExpExecArray | null;
+      // `text` is a string[] when mergePages=false (one entry per page)
+      const pageTexts: string[] = Array.isArray(text) ? text : [text];
+      const pageParts: string[] = [];
 
-    while ((match = streamRegex.exec(rawPdfString)) !== null) {
-      streamIndex++;
-      const rawStream = match[1];
-
-      // 1. Text extraction from stream
-      // Check if stream contains standard PDF text operators: (Text) Tj, [(T) 10 (ext)] TJ
-      const textMatches = Array.from(rawStream.matchAll(/\(([^)]+)\)\s*Tj/g));
-      if (textMatches.length > 0) {
-        const line = textMatches.map((m) => m[1]).join(" ");
-        if (line.trim().length > 0) {
-          textParts.push(line);
+      for (let pageIdx = 0; pageIdx < pageTexts.length; pageIdx++) {
+        const pageText = (pageTexts[pageIdx] || "").trim();
+        if (pageText.length > 0) {
+          pageParts.push(`--- Page ${pageIdx + 1} ---\n${pageText}`);
         }
       }
 
-      // Check array TJ operators
-      const tjMatches = Array.from(rawStream.matchAll(/\[(.*?)\]\s*TJ/g));
-      for (const tj of tjMatches) {
-        const subStrings = Array.from(tj[1].matchAll(/\(([^)]+)\)/g)).map((m) => m[1]);
-        if (subStrings.length > 0) {
-          textParts.push(subStrings.join(""));
-        }
+      fullText = pageParts.join("\n\n").trim();
+      console.log(`[ServerDocumentParser] unpdf extracted ${fullText.length} chars from ${filename}`);
+    } catch (unpdfErr) {
+      console.warn(`[ServerDocumentParser] unpdf extraction failed for ${filename}:`, unpdfErr);
+      // Fall through — image extraction and scanned detection still proceed
+    }
+
+    // ─── 2. Image Extraction — byte-level scan (all images, no cap) ──────────
+    await this.extractImagesFromBytes(bytes, filename, images);
+
+    // ─── 3. Scanned / Image-only PDF detection ───────────────────────────────
+    const isScanned = fullText.length < 100 && bytes.byteLength > 20_000;
+
+    if (isScanned) {
+      const pageCount = this.estimatePdfPageCount(bytes);
+      const imgNote = images.length > 0
+        ? `Contains ${images.length} embedded diagram(s)/figure(s).`
+        : "No extractable embedded images detected.";
+
+      fullText = `[Scanned PDF Document — ${filename}]
+Estimated pages: ${pageCount}. File size: ${Math.round(bytes.byteLength / 1024)} KB.
+${imgNote}
+This document appears to be a scanned image-based PDF. Synthesize active-recall flashcards covering all visual, conceptual, and mathematical content visible in the attached diagram(s).`;
+
+      console.log(`[ServerDocumentParser] ${filename} detected as scanned PDF (${pageCount} pages, ${images.length} images).`);
+    }
+
+    return { text: fullText, images, isScanned };
+  }
+
+  /**
+   * Scans the raw PDF byte buffer for embedded PNG and JPEG images.
+   * Handles:
+   * - Inline JPEG (FF D8 FF ... FF D9)
+   * - Flate-compressed streams containing PNG data (89 50 4E 47...)
+   * - No image count cap — all images are extracted
+   */
+  private async extractImagesFromBytes(
+    bytes: Uint8Array,
+    filename: string,
+    images: ExtractedMediaAttachment[]
+  ): Promise<void> {
+    // ── 2a. Scan for inline JPEG images ──────────────────────────────────────
+    const JPEG_SOI = [0xff, 0xd8, 0xff];
+    const JPEG_EOI = [0xff, 0xd9];
+    let searchFrom = 0;
+
+    while (true) {
+      const jpegStart = this.indexOfBytes(bytes, JPEG_SOI, searchFrom);
+      if (jpegStart === -1) break;
+
+      const jpegEnd = this.indexOfBytes(bytes, JPEG_EOI, jpegStart + 3);
+      if (jpegEnd === -1) break;
+
+      const imgSize = jpegEnd + 2 - jpegStart;
+      if (imgSize > 1500) {
+        // Skip tiny < 1.5 KB blobs (thumbnails / preview icons)
+        const imgBytes = bytes.slice(jpegStart, jpegEnd + 2);
+        images.push({
+          filename: `pdf_jpeg_${images.length + 1}.jpg`,
+          bytes: imgBytes,
+          mimeType: "image/jpeg",
+          label: `Document Figure ${images.length + 1} (${filename})`,
+        });
+        console.log(`[ServerDocumentParser] Extracted JPEG ${images.length} (${imgSize} bytes) from ${filename}`);
       }
 
-      // 2. Extract embedded images (JPEG / DCTDecode)
-      // Look for JPEG markers in stream bytes: 0xFF 0xD8 ... 0xFF 0xD9
-      if (images.length < 10) {
-        const streamStart = match.index + 7;
-        const streamEnd = streamStart + rawStream.length;
-        const streamBytes = bytes.subarray(streamStart, streamEnd);
+      // Advance past this JPEG to avoid re-scanning
+      searchFrom = jpegEnd + 2;
+    }
 
-        const jpegStart = this.indexOfBytes(streamBytes, [0xff, 0xd8, 0xff]);
-        if (jpegStart !== -1) {
-          const jpegEnd = this.indexOfBytes(streamBytes, [0xff, 0xd9], jpegStart + 2);
-          if (jpegEnd !== -1 && jpegEnd > jpegStart + 1000) {
-            const imgBytes = streamBytes.subarray(jpegStart, jpegEnd + 2);
+    // ── 2b. Scan FlateDecode streams for PNG images ───────────────────────────
+    // Strategy: find `stream\r\n` / `stream\n` markers in the raw bytes,
+    // decompress each with fflate, and check for PNG signature in result.
+    const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    const STREAM_MARKER = new TextEncoder().encode("stream\n");
+    const STREAM_MARKER_CRLF = new TextEncoder().encode("stream\r\n");
+    const ENDSTREAM_MARKER = new TextEncoder().encode("endstream");
+
+    let streamSearchFrom = 0;
+    while (true) {
+      // Find next `stream` keyword (try both LF and CRLF variants)
+      let streamStart = this.indexOfBytes(bytes, Array.from(STREAM_MARKER), streamSearchFrom);
+      const streamStartCrlf = this.indexOfBytes(bytes, Array.from(STREAM_MARKER_CRLF), streamSearchFrom);
+
+      let markerLen = 7; // "stream\n"
+      if (streamStartCrlf !== -1 && (streamStart === -1 || streamStartCrlf < streamStart)) {
+        streamStart = streamStartCrlf;
+        markerLen = 8; // "stream\r\n"
+      }
+
+      if (streamStart === -1) break;
+
+      const dataStart = streamStart + markerLen;
+      const endStreamPos = this.indexOfBytes(bytes, Array.from(ENDSTREAM_MARKER), dataStart);
+      if (endStreamPos === -1) break;
+
+      const streamBytes = bytes.slice(dataStart, endStreamPos);
+      streamSearchFrom = endStreamPos + ENDSTREAM_MARKER.length;
+
+      // Only attempt decompression on streams large enough to be images (>2 KB)
+      if (streamBytes.length < 2048) continue;
+
+      try {
+        const decompressed = await new Promise<Uint8Array>((resolve, reject) => {
+          unzlib(streamBytes, (err, data) => {
+            if (err || !data) reject(err ?? new Error("empty"));
+            else resolve(data);
+          });
+        });
+
+        if (decompressed.length < 1024) continue;
+
+        // Check for PNG signature in decompressed data
+        const isPng = PNG_SIG.every((b, i) => decompressed[i] === b);
+        if (isPng) {
+          images.push({
+            filename: `pdf_png_${images.length + 1}.png`,
+            bytes: decompressed,
+            mimeType: "image/png",
+            label: `Document Diagram ${images.length + 1} (${filename})`,
+          });
+          console.log(
+            `[ServerDocumentParser] Extracted PNG ${images.length} (${decompressed.length} bytes) from Flate stream in ${filename}`
+          );
+          continue;
+        }
+
+        // Check for JPEG inside decompressed stream (rare but possible)
+        const innerJpegStart = this.indexOfBytes(decompressed, JPEG_SOI, 0);
+        if (innerJpegStart !== -1) {
+          const innerJpegEnd = this.indexOfBytes(decompressed, JPEG_EOI, innerJpegStart + 3);
+          if (innerJpegEnd !== -1 && innerJpegEnd - innerJpegStart > 1500) {
             images.push({
-              filename: `pdf_img_${images.length + 1}.jpg`,
-              bytes: imgBytes,
+              filename: `pdf_flate_jpeg_${images.length + 1}.jpg`,
+              bytes: decompressed.slice(innerJpegStart, innerJpegEnd + 2),
               mimeType: "image/jpeg",
-              label: `Document Diagram / Plot ${images.length + 1} (${filename})`,
+              label: `Document Figure ${images.length + 1} (${filename})`,
             });
           }
         }
+      } catch (_) {
+        // Stream is not Flate-encoded — skip silently
       }
     }
 
-    // Check if plain ASCII text is available
-    if (textParts.length === 0) {
-      // Fallback: Scan text blocks between BT ... ET (Begin Text ... End Text)
-      const btRegex = /BT[\r\n]+([\s\S]*?)[\r\n]+ET/g;
-      let btMatch: RegExpExecArray | null;
-      while ((btMatch = btRegex.exec(rawPdfString)) !== null) {
-        const block = btMatch[1];
-        const innerMatches = Array.from(block.matchAll(/\(([^)]+)\)/g));
-        if (innerMatches.length > 0) {
-          textParts.push(innerMatches.map((m) => m[1]).join(" "));
-        }
-      }
+    if (images.length > 0) {
+      console.log(`[ServerDocumentParser] Total images extracted from ${filename}: ${images.length}`);
     }
+  }
 
-    const fullText = textParts.join("\n\n").trim();
-    const isScanned = fullText.length < 100 && bytes.byteLength > 20000;
-
-    return { text: fullText, images, isScanned };
+  /**
+   * Estimates PDF page count by counting Page object markers in the raw bytes.
+   * Used for scanned-PDF fallback messaging.
+   */
+  private estimatePdfPageCount(bytes: Uint8Array): number {
+    const decoder = new TextDecoder("latin1");
+    const raw = decoder.decode(bytes.slice(0, Math.min(bytes.byteLength, 200_000)));
+    const typePageMatches = raw.match(/\/Type\s*\/Page\b/g);
+    return typePageMatches ? Math.max(1, typePageMatches.length) : 1;
   }
 
   /**
@@ -243,19 +355,8 @@ export class ServerDocumentParser {
         textBuffer.push(`### Slide ${slideCount}\n${currentSlideLines.join("\n")}`);
       }
 
-      // Check for JPEG images embedded in the package
-      const jpegStart = this.indexOfBytes(bytes, [0xff, 0xd8, 0xff]);
-      if (jpegStart !== -1) {
-        const jpegEnd = this.indexOfBytes(bytes, [0xff, 0xd9], jpegStart + 2);
-        if (jpegEnd !== -1 && jpegEnd > jpegStart + 1000) {
-          images.push({
-            filename: `pptx_slide_img.jpg`,
-            bytes: bytes.subarray(jpegStart, jpegEnd + 2),
-            mimeType: "image/jpeg",
-            label: `Presentation Diagram (${filename})`,
-          });
-        }
-      }
+      // Extract all JPEG images embedded in the PPTX package
+      await this.extractImagesFromBytes(bytes, filename, images);
     } catch (pptxErr) {
       console.warn("[ServerDocumentParser] PPTX parsing notice:", pptxErr);
     }
@@ -267,16 +368,16 @@ export class ServerDocumentParser {
   }
 
   /**
-   * Extracts text from visual image uploads (OCR).
+   * Produces a descriptive placeholder for image uploads (OCR).
+   * The image bytes are preserved in ExtractedMediaAttachment for Luna's visual context.
    */
   private async extractFromImageOcr(
     bytes: Uint8Array,
     ext: string
   ): Promise<string> {
-    // Return structured representation for image-based document
-    return `[Visual Image Document - ${ext.toUpperCase()}]
+    return `[Visual Image Document — ${ext.toUpperCase()}]
 Image size: ${Math.round(bytes.byteLength / 1024)} KB.
-Contains study material, diagram, or formula sheet. Synthesize active-recall flashcards covering all visual, conceptual, and mathematical information represented.`;
+Contains study material, diagram, or formula sheet. Synthesize active-recall flashcards covering all visual, conceptual, and mathematical information represented in the attached image.`;
   }
 
   /**
@@ -300,23 +401,28 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
   ): Array<{ title: string; text: string; index: number }> {
     if (!fullText) return [];
 
-    const MAX_SECTION_LENGTH = 25000;
-    const chapterRegex =
-      /(?:^|\n)(?:(?:CHAPTER|Chapter|MODULE|Module|UNIT|Unit|SECTION|Section|LECTURE|Lecture)\s+(?:\d+|[IVXLCDM]+|[A-Z])\b[^\n]*|#{1,3}\s+[^\n]+)/gi;
+    const MAX_SECTION_LENGTH = 3000;
+    const MIN_SECTION_LENGTH = 150;
 
-    const matches = Array.from(fullText.matchAll(chapterRegex));
+    // Check for explicit structural headings, page markers, or markdown headers
+    const sectionDelimiterRegex =
+      /(?:^|\n)(?:(?:CHAPTER|Chapter|MODULE|Module|UNIT|Unit|SECTION|Section|LECTURE|Lecture|PAGE|Page|SLIDE|Slide)\s+(?:\d+|[IVXLCDM]+|[A-Z])\b[^\n]*|#{1,3}\s+[^\n]+|---+\s*(?:Page|Slide)?\s*\d*\s*---+)/gi;
+
+    const matches = Array.from(fullText.matchAll(sectionDelimiterRegex));
     const sections: Array<{ title: string; text: string; index: number }> = [];
 
     if (matches.length >= 2) {
       for (let i = 0; i < matches.length; i++) {
         const start = matches[i].index ?? 0;
         const end = i + 1 < matches.length ? matches[i + 1].index ?? fullText.length : fullText.length;
-        const rawTitle = matches[i][0].trim().replace(/^#+\s*/, "");
+        const rawTitle = matches[i][0].trim().replace(/^#+\s*/, "").replace(/^--+\s*/, "").replace(/\s*--+$/, "");
         const body = fullText.substring(start, end).trim();
+
+        if (body.length < MIN_SECTION_LENGTH) continue;
 
         if (body.length <= MAX_SECTION_LENGTH) {
           sections.push({
-            title: rawTitle,
+            title: rawTitle || `Section ${sections.length + 1}`,
             text: body,
             index: sections.length + 1,
           });
@@ -326,7 +432,7 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
           let currentSub = "";
           let subIdx = 1;
           for (const para of subParagraphs) {
-            if (currentSub.length + para.length > MAX_SECTION_LENGTH && currentSub.length > 500) {
+            if (currentSub.length + para.length > MAX_SECTION_LENGTH && currentSub.length > 300) {
               sections.push({
                 title: `${rawTitle} (Part ${subIdx++})`,
                 text: currentSub.trim(),
@@ -337,7 +443,7 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
               currentSub = currentSub ? `${currentSub}\n\n${para}` : para;
             }
           }
-          if (currentSub.trim()) {
+          if (currentSub.trim().length >= MIN_SECTION_LENGTH) {
             sections.push({
               title: `${rawTitle} (Part ${subIdx})`,
               text: currentSub.trim(),
@@ -347,29 +453,33 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
         }
       }
     } else {
-      // Split on paragraph boundaries
-      const paragraphs = fullText.split(/\n\n+/);
+      // Split on double newlines / paragraph boundaries
+      const paragraphs = fullText.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
       let current = "";
       let secIdx = 1;
 
       for (const p of paragraphs) {
-        if (current.length + p.length > MAX_SECTION_LENGTH && current.length > 500) {
+        if (current.length + p.length > MAX_SECTION_LENGTH && current.length > 400) {
+          // Find first meaningful line for title
+          const firstLine = current.split("\n")[0]?.trim().slice(0, 50) || `Section ${secIdx}`;
           sections.push({
-            title: `Section ${secIdx++}`,
+            title: firstLine.length > 5 ? firstLine : `Section ${secIdx}`,
             text: current.trim(),
-            index: sections.length + 1,
+            index: secIdx,
           });
+          secIdx++;
           current = p;
         } else {
           current = current ? `${current}\n\n${p}` : p;
         }
       }
 
-      if (current.trim()) {
+      if (current.trim().length >= 40) {
+        const firstLine = current.split("\n")[0]?.trim().slice(0, 50) || `Section ${secIdx}`;
         sections.push({
-          title: `Section ${secIdx}`,
+          title: firstLine.length > 5 ? firstLine : `Section ${secIdx}`,
           text: current.trim(),
-          index: sections.length + 1,
+          index: secIdx,
         });
       }
     }

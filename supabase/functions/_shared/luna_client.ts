@@ -36,21 +36,29 @@ export class LunaClient {
   private readonly model: string;
 
   constructor() {
-    this.baseUrl = (
-      Deno.env.get("LUNA_BASE_URL") ||
-      Deno.env.get("LUNA_API_URL") ||
-      "https://api.luna.ai/v1"
-    ).replace(/\/+$/, "");
-
     this.apiKey =
       Deno.env.get("LUNA_API_KEY") ||
       Deno.env.get("LUNA_SECRET_KEY") ||
+      Deno.env.get("OPENAI_API_KEY") ||
       "";
+
+    const envBaseUrl =
+      Deno.env.get("LUNA_BASE_URL") ||
+      Deno.env.get("LUNA_API_URL") ||
+      Deno.env.get("OPENAI_BASE_URL");
+
+    if (envBaseUrl) {
+      this.baseUrl = envBaseUrl.replace(/\/+$/, "");
+    } else if (this.apiKey.startsWith("sk-")) {
+      this.baseUrl = "https://api.openai.com/v1";
+    } else {
+      this.baseUrl = "https://api.luna.ai/v1";
+    }
 
     this.model =
       Deno.env.get("LUNA_MODEL") ||
       Deno.env.get("LUNA_MODEL_NAME") ||
-      "luna";
+      (this.baseUrl.includes("openai.com") ? "gpt-5.6-luna" : "luna");
   }
 
   /**
@@ -90,12 +98,17 @@ export class LunaClient {
       headers["x-api-key"] = this.apiKey;
     }
 
+    const isGpt5OrOpenAi = this.model.includes("gpt-5") || this.baseUrl.includes("openai.com");
+
     const payload: Record<string, unknown> = {
       model: this.model,
       messages: options.messages,
-      temperature: options.temperature ?? 0.2,
       stream: false,
     };
+
+    if (!isGpt5OrOpenAi && options.temperature !== undefined) {
+      payload["temperature"] = options.temperature;
+    }
 
     if (options.maxTokens) {
       payload["max_tokens"] = options.maxTokens;
@@ -149,12 +162,17 @@ export class LunaClient {
       headers["x-api-key"] = this.apiKey;
     }
 
+    const isGpt5OrOpenAi = this.model.includes("gpt-5") || this.baseUrl.includes("openai.com");
+
     const payload: Record<string, unknown> = {
       model: this.model,
       messages: options.messages,
-      temperature: options.temperature ?? 0.3,
       stream: true,
     };
+
+    if (!isGpt5OrOpenAi && options.temperature !== undefined) {
+      payload["temperature"] = options.temperature;
+    }
 
     if (options.maxTokens) {
       payload["max_tokens"] = options.maxTokens;

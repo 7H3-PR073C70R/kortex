@@ -1,9 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
-import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_image_ocr_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
@@ -33,41 +30,23 @@ class DocumentExtractionException implements Exception {
   String toString() => 'DocumentExtractionException: $message';
 }
 
-class _FlashcardSynthesisParams {
-  const _FlashcardSynthesisParams({
-    required this.normalizedText,
-    required this.title,
-    required this.documentId,
-    required this.courseCode,
-    required this.filename,
-  });
-
-  final String normalizedText;
-  final String title;
-  final String? documentId;
-  final String courseCode;
-  final String filename;
-}
-
-/// Central offline document ingestion and OCR routing service for Kortexify.
+/// Central client-side text extraction service for Kortexify.
 ///
-/// Handles PDF, PPTX, PNG, JPG, and text files entirely offline in background
-/// isolates, normalizing outputs into a unified text stream for local LLM synthesis.
+/// Handles PDF, PPTX, plain text, and images (via on-device ML Kit OCR)
+/// in background operations, normalizing outputs into a unified text stream.
+/// Heavy synthesis work (flashcard generation) is handled entirely server-side.
 class LocalIngestionService {
   LocalIngestionService({
     LocalPdfParserService? pdfParser,
     LocalPptxParserService? pptxParser,
     LocalImageOcrService? imageOcr,
-    DocumentParserService? documentParser,
   }) : _pdfParser = pdfParser ?? const LocalPdfParserService(),
        _pptxParser = pptxParser ?? const LocalPptxParserService(),
-       _imageOcr = imageOcr ?? LocalImageOcrService(),
-       _documentParser = documentParser ?? const DocumentParserService();
+       _imageOcr = imageOcr ?? LocalImageOcrService();
 
   final LocalPdfParserService _pdfParser;
   final LocalPptxParserService _pptxParser;
   final LocalImageOcrService _imageOcr;
-  final DocumentParserService _documentParser;
 
   /// Maximum file size limit for local ingestion: 50MB
   static const int maxFileSizeInBytes = 50 * 1024 * 1024;
@@ -96,6 +75,8 @@ class LocalIngestionService {
   }
 
   /// Ingests binary bytes, enforces 50MB limit, routes by extension, and normalizes text.
+  ///
+  /// Image types (png, jpg, jpeg, webp) are processed via on-device Google ML Kit OCR.
   Future<String> ingestBytes({
     required Uint8List bytes,
     required String extension,
@@ -122,8 +103,10 @@ class LocalIngestionService {
         case 'jpg':
         case 'jpeg':
         case 'webp':
+          // On-device ML Kit OCR — runs natively on iOS/Android.
           if (filePath != null && File(filePath).existsSync()) {
-            rawExtractedText = await _imageOcr.extractTextFromPath(filePath);
+            rawExtractedText =
+                await _imageOcr.extractTextFromPath(filePath);
           } else {
             rawExtractedText = await _imageOcr.extractTextFromBytes(
               bytes,
@@ -137,95 +120,15 @@ class LocalIngestionService {
           rawExtractedText = utf8.decode(bytes, allowMalformed: true);
 
         default:
-          throw UnsupportedFileTypeException(ext);
+          return '';
       }
     } catch (e) {
-      if (e is UnsupportedFileTypeException || e is FileSizeExceededException) {
-        rethrow;
-      }
+      if (e is FileSizeExceededException) rethrow;
       throw DocumentExtractionException('Extraction failed for .$ext: $e');
     }
 
     // Normalize and sanitize text buffer in background isolate
     return compute(normalizeTextBuffer, rawExtractedText);
-  }
-
-  /// Synthesizes structured flashcards in a background isolate to prevent UI thread blocking.
-  Future<DeckEntity> synthesizeFlashcardsLocallyAsync({
-    required String normalizedText,
-    required String title,
-    String? documentId,
-    String courseCode = 'GEN101',
-    String filename = 'document.txt',
-  }) async {
-    return compute(
-      _isolateSynthesizeFlashcards,
-      _FlashcardSynthesisParams(
-        normalizedText: normalizedText,
-        title: title,
-        documentId: documentId,
-        courseCode: courseCode,
-        filename: filename,
-      ),
-    );
-  }
-
-  static DeckEntity _isolateSynthesizeFlashcards(
-    _FlashcardSynthesisParams params,
-  ) {
-    return LocalIngestionService().synthesizeFlashcardsLocally(
-      normalizedText: params.normalizedText,
-      title: params.title,
-      documentId: params.documentId,
-      courseCode: params.courseCode,
-      filename: params.filename,
-    );
-  }
-
-  /// Synthesizes structured flashcards directly from ingested document text offline.
-  DeckEntity synthesizeFlashcardsLocally({
-    required String normalizedText,
-    required String title,
-    String? documentId,
-    String courseCode = 'GEN101',
-    String filename = 'document.txt',
-  }) {
-    final docId =
-        documentId ?? 'doc_local_${DateTime.now().millisecondsSinceEpoch}';
-    final snippets = _documentParser.synthesizeSnippetsFromDocument(
-      documentId: docId,
-      fullText: normalizedText,
-      filename: filename,
-    );
-
-    final cards = <FlashcardEntity>[];
-    for (var i = 0; i < snippets.length; i++) {
-      final s = snippets[i];
-      cards.add(
-        FlashcardEntity(
-          id: 'card_${docId}_$i',
-          deckId: docId,
-          front: s.topic.isNotEmpty ? s.topic : 'Key Concept ${i + 1}',
-          back: s.rawText,
-          backLatex: s.latexContent,
-          imageUrl: s.imageUrl,
-          sourceTopic: s.topic,
-          nextDueDate: DateTime.now().add(const Duration(days: 1)),
-        ),
-      );
-    }
-
-    return DeckEntity(
-      id: docId,
-      title: title,
-      subject: courseCode,
-      totalCards: cards.length,
-      dueCards: cards.length,
-      masteryRate: 0,
-      category: 'Document Ingestion',
-      description: 'Auto-synthesized locally from document $docId',
-      cards: cards,
-    );
   }
 
   /// Cleans, normalizes, and strips layout noise, excessive whitespace, and non-printable characters.
