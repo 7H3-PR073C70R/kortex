@@ -12,8 +12,28 @@
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { unzlib } from "https://esm.sh/fflate@0.8.2";
+import { unzlib, zlibSync } from "https://esm.sh/fflate@0.8.2";
 import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.0";
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+    table[i] = c;
+  }
+  return table;
+})();
+
+function crc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[i]) & 0xff];
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
 
 export interface ExtractedMediaAttachment {
   filename: string;
@@ -193,117 +213,223 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
    * - Flate-compressed streams containing PNG data (89 50 4E 47...)
    * - No image count cap — all images are extracted
    */
+  /**
+   * Encodes a raw RGB, RGBA, or Grayscale raster scanline buffer into standards-compliant PNG bytes.
+   */
+  private encodePixelsToPng(
+    rawPixels: Uint8Array,
+    width: number,
+    height: number,
+    channels: number = 3
+  ): Uint8Array {
+    const rowBytes = width * channels;
+    // Each scanline in PNG requires a 1-byte filter prefix (0 = None)
+    const scanlines = new Uint8Array(height * (rowBytes + 1));
+    let dest = 0;
+    for (let y = 0; y < height; y++) {
+      scanlines[dest++] = 0; // Filter byte: None
+      const src = y * rowBytes;
+      scanlines.set(rawPixels.subarray(src, src + rowBytes), dest);
+      dest += rowBytes;
+    }
+
+    const idatCompressed = zlibSync(scanlines);
+    const colorType = channels === 3 ? 2 : channels === 4 ? 6 : 0; // 2=RGB, 6=RGBA, 0=Grayscale
+
+    const totalLength = 8 + 25 + (12 + idatCompressed.length) + 12;
+    const png = new Uint8Array(totalLength);
+    const view = new DataView(png.buffer);
+    let offset = 0;
+
+    // 1. Signature
+    png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], offset);
+    offset += 8;
+
+    // 2. IHDR Chunk
+    const ihdrPayload = new Uint8Array(17);
+    ihdrPayload.set(new TextEncoder().encode("IHDR"), 0);
+    const ihdrView = new DataView(ihdrPayload.buffer, 4, 13);
+    ihdrView.setUint32(0, width, false);
+    ihdrView.setUint32(4, height, false);
+    ihdrView.setUint8(8, 8); // 8-bit depth
+    ihdrView.setUint8(9, colorType);
+    ihdrView.setUint8(10, 0); // Deflate
+    ihdrView.setUint8(11, 0); // Standard filter
+    ihdrView.setUint8(12, 0); // Non-interlaced
+
+    view.setUint32(offset, 13, false);
+    offset += 4;
+    png.set(ihdrPayload, offset);
+    offset += 17;
+    view.setUint32(offset, crc32(ihdrPayload), false);
+    offset += 4;
+
+    // 3. IDAT Chunk
+    const idatChunk = new Uint8Array(4 + idatCompressed.length);
+    idatChunk.set(new TextEncoder().encode("IDAT"), 0);
+    idatChunk.set(idatCompressed, 4);
+    view.setUint32(offset, idatCompressed.length, false);
+    offset += 4;
+    png.set(idatChunk, offset);
+    offset += idatChunk.length;
+    view.setUint32(offset, crc32(idatChunk), false);
+    offset += 4;
+
+    // 4. IEND Chunk
+    const iendChunk = new TextEncoder().encode("IEND");
+    view.setUint32(offset, 0, false);
+    offset += 4;
+    png.set(iendChunk, offset);
+    offset += 4;
+    view.setUint32(offset, crc32(iendChunk), false);
+
+    return png;
+  }
+
+  /**
+   * Scans the PDF byte buffer for embedded images:
+   * 1. PDF `/Subtype /Image` XObjects: decompressing FlateDecode RGB raster
+   *    buffers into PNG, and capturing DCTDecode streams as JPEG.
+   * 2. Raw standalone JPEG streams (SOI ... EOI).
+   */
   private async extractImagesFromBytes(
     bytes: Uint8Array,
     filename: string,
     images: ExtractedMediaAttachment[]
   ): Promise<void> {
-    // ── 2a. Scan for inline JPEG images ──────────────────────────────────────
-    const JPEG_SOI = [0xff, 0xd8, 0xff];
-    const JPEG_EOI = [0xff, 0xd9];
-    let searchFrom = 0;
+    // ── 1. PDF Image XObject Parsing (FlateDecode & DCTDecode) ──────────────
+    const latinDecoder = new TextDecoder("latin1");
+    const pdfText = latinDecoder.decode(bytes);
 
-    while (true) {
-      const jpegStart = this.indexOfBytes(bytes, JPEG_SOI, searchFrom);
-      if (jpegStart === -1) break;
+    const imageRegex = /<<([^>]*\/Subtype\s*\/Image[^>]*)>>\s*stream[\r\n]+/g;
+    let match: RegExpExecArray | null;
 
-      const jpegEnd = this.indexOfBytes(bytes, JPEG_EOI, jpegStart + 3);
-      if (jpegEnd === -1) break;
+    while ((match = imageRegex.exec(pdfText)) !== null) {
+      const dictStr = match[1];
+      const streamStart = match.index + match[0].length;
 
-      const imgSize = jpegEnd + 2 - jpegStart;
-      if (imgSize > 1500) {
-        // Skip tiny < 1.5 KB blobs (thumbnails / preview icons)
-        const imgBytes = bytes.slice(jpegStart, jpegEnd + 2);
-        images.push({
-          filename: `pdf_jpeg_${images.length + 1}.jpg`,
-          bytes: imgBytes,
-          mimeType: "image/jpeg",
-          label: `Document Figure ${images.length + 1} (${filename})`,
-        });
-        console.log(`[ServerDocumentParser] Extracted JPEG ${images.length} (${imgSize} bytes) from ${filename}`);
+      const wMatch = /\/Width\s+(\d+)/.exec(dictStr);
+      const hMatch = /\/Height\s+(\d+)/.exec(dictStr);
+      const lMatch = /\/Length\s+(\d+)/.exec(dictStr);
+
+      const width = wMatch ? parseInt(wMatch[1], 10) : 0;
+      const height = hMatch ? parseInt(hMatch[1], 10) : 0;
+      const declaredLength = lMatch ? parseInt(lMatch[1], 10) : 0;
+
+      // Filter out non-content micro-icons or masks (< 50px)
+      if (width < 50 || height < 50) continue;
+
+      const isFlate = dictStr.includes("/FlateDecode");
+      const isDct = dictStr.includes("/DCTDecode");
+
+      let streamBytes: Uint8Array;
+      if (declaredLength > 0 && streamStart + declaredLength <= bytes.length) {
+        streamBytes = bytes.subarray(streamStart, streamStart + declaredLength);
+      } else {
+        const endPos = this.indexOfBytes(bytes, Array.from(new TextEncoder().encode("endstream")), streamStart);
+        if (endPos === -1) continue;
+        streamBytes = bytes.subarray(streamStart, endPos);
       }
 
-      // Advance past this JPEG to avoid re-scanning
-      searchFrom = jpegEnd + 2;
+      if (isFlate) {
+        try {
+          const decompressed = await new Promise<Uint8Array>((resolve, reject) => {
+            unzlib(streamBytes, (err, data) => {
+              if (err || !data) reject(err ?? new Error("Decompression failed"));
+              else resolve(data);
+            });
+          });
+
+          const expectedRgb = width * height * 3;
+          const expectedGray = width * height;
+          const expectedRgba = width * height * 4;
+
+          let channels = 3;
+          let rawData = decompressed;
+
+          if (decompressed.length === expectedRgb) {
+            channels = 3;
+          } else if (decompressed.length === expectedGray) {
+            channels = 1;
+          } else if (decompressed.length === expectedRgba) {
+            channels = 4;
+          } else if (decompressed.length === height * (width * 3 + 1)) {
+            // Predictor byte present per row: strip leading predictor byte
+            channels = 3;
+            const stripped = new Uint8Array(width * height * 3);
+            const rowLen = width * 3;
+            for (let y = 0; y < height; y++) {
+              stripped.set(decompressed.subarray(y * (rowLen + 1) + 1, (y + 1) * (rowLen + 1)), y * rowLen);
+            }
+            rawData = stripped;
+          } else {
+            // Check if stream was an embedded PNG container directly
+            const isDirectPng = [0x89, 0x50, 0x4e, 0x47].every((b, i) => decompressed[i] === b);
+            if (isDirectPng) {
+              images.push({
+                filename: `pdf_diagram_${images.length + 1}.png`,
+                bytes: decompressed,
+                mimeType: "image/png",
+                label: `Diagram ${images.length + 1} (${width}x${height})`,
+              });
+              continue;
+            }
+            continue;
+          }
+
+          const pngBytes = this.encodePixelsToPng(rawData, width, height, channels);
+          images.push({
+            filename: `pdf_diagram_${images.length + 1}.png`,
+            bytes: pngBytes,
+            mimeType: "image/png",
+            label: `Diagram / Chart ${images.length + 1} (${width}x${height})`,
+          });
+          console.log(`[ServerDocumentParser] Extracted FlateDecode image ${images.length}: ${width}x${height} -> PNG (${pngBytes.length} bytes)`);
+        } catch (flateErr) {
+          console.warn(`[ServerDocumentParser] FlateDecode image extraction warning:`, flateErr);
+        }
+      } else if (isDct) {
+        images.push({
+          filename: `pdf_figure_${images.length + 1}.jpg`,
+          bytes: streamBytes,
+          mimeType: "image/jpeg",
+          label: `Figure ${images.length + 1} (${width}x${height})`,
+        });
+        console.log(`[ServerDocumentParser] Extracted DCTDecode JPEG ${images.length}: ${width}x${height} (${streamBytes.length} bytes)`);
+      }
     }
 
-    // ── 2b. Scan FlateDecode streams for PNG images ───────────────────────────
-    // Strategy: find `stream\r\n` / `stream\n` markers in the raw bytes,
-    // decompress each with fflate, and check for PNG signature in result.
-    const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    const STREAM_MARKER = new TextEncoder().encode("stream\n");
-    const STREAM_MARKER_CRLF = new TextEncoder().encode("stream\r\n");
-    const ENDSTREAM_MARKER = new TextEncoder().encode("endstream");
+    // ── 2. Scan for any standalone inline JPEGs (SOI ... EOI) ───────────────
+    if (images.length === 0) {
+      const JPEG_SOI = [0xff, 0xd8, 0xff];
+      const JPEG_EOI = [0xff, 0xd9];
+      let searchFrom = 0;
 
-    let streamSearchFrom = 0;
-    while (true) {
-      // Find next `stream` keyword (try both LF and CRLF variants)
-      let streamStart = this.indexOfBytes(bytes, Array.from(STREAM_MARKER), streamSearchFrom);
-      const streamStartCrlf = this.indexOfBytes(bytes, Array.from(STREAM_MARKER_CRLF), streamSearchFrom);
+      while (true) {
+        const jpegStart = this.indexOfBytes(bytes, JPEG_SOI, searchFrom);
+        if (jpegStart === -1) break;
 
-      let markerLen = 7; // "stream\n"
-      if (streamStartCrlf !== -1 && (streamStart === -1 || streamStartCrlf < streamStart)) {
-        streamStart = streamStartCrlf;
-        markerLen = 8; // "stream\r\n"
-      }
+        const jpegEnd = this.indexOfBytes(bytes, JPEG_EOI, jpegStart + 3);
+        if (jpegEnd === -1) break;
 
-      if (streamStart === -1) break;
-
-      const dataStart = streamStart + markerLen;
-      const endStreamPos = this.indexOfBytes(bytes, Array.from(ENDSTREAM_MARKER), dataStart);
-      if (endStreamPos === -1) break;
-
-      const streamBytes = bytes.slice(dataStart, endStreamPos);
-      streamSearchFrom = endStreamPos + ENDSTREAM_MARKER.length;
-
-      // Only attempt decompression on streams large enough to be images (>2 KB)
-      if (streamBytes.length < 2048) continue;
-
-      try {
-        const decompressed = await new Promise<Uint8Array>((resolve, reject) => {
-          unzlib(streamBytes, (err, data) => {
-            if (err || !data) reject(err ?? new Error("empty"));
-            else resolve(data);
-          });
-        });
-
-        if (decompressed.length < 1024) continue;
-
-        // Check for PNG signature in decompressed data
-        const isPng = PNG_SIG.every((b, i) => decompressed[i] === b);
-        if (isPng) {
+        const imgSize = jpegEnd + 2 - jpegStart;
+        if (imgSize > 2048) {
+          const imgBytes = bytes.slice(jpegStart, jpegEnd + 2);
           images.push({
-            filename: `pdf_png_${images.length + 1}.png`,
-            bytes: decompressed,
-            mimeType: "image/png",
-            label: `Document Diagram ${images.length + 1} (${filename})`,
+            filename: `pdf_jpeg_${images.length + 1}.jpg`,
+            bytes: imgBytes,
+            mimeType: "image/jpeg",
+            label: `Document Figure ${images.length + 1} (${filename})`,
           });
-          console.log(
-            `[ServerDocumentParser] Extracted PNG ${images.length} (${decompressed.length} bytes) from Flate stream in ${filename}`
-          );
-          continue;
+          console.log(`[ServerDocumentParser] Extracted standalone JPEG ${images.length} (${imgSize} bytes)`);
         }
 
-        // Check for JPEG inside decompressed stream (rare but possible)
-        const innerJpegStart = this.indexOfBytes(decompressed, JPEG_SOI, 0);
-        if (innerJpegStart !== -1) {
-          const innerJpegEnd = this.indexOfBytes(decompressed, JPEG_EOI, innerJpegStart + 3);
-          if (innerJpegEnd !== -1 && innerJpegEnd - innerJpegStart > 1500) {
-            images.push({
-              filename: `pdf_flate_jpeg_${images.length + 1}.jpg`,
-              bytes: decompressed.slice(innerJpegStart, innerJpegEnd + 2),
-              mimeType: "image/jpeg",
-              label: `Document Figure ${images.length + 1} (${filename})`,
-            });
-          }
-        }
-      } catch (_) {
-        // Stream is not Flate-encoded — skip silently
+        searchFrom = jpegEnd + 2;
       }
     }
 
     if (images.length > 0) {
-      console.log(`[ServerDocumentParser] Total images extracted from ${filename}: ${images.length}`);
+      console.log(`[ServerDocumentParser] Total visual diagrams extracted from ${filename}: ${images.length}`);
     }
   }
 

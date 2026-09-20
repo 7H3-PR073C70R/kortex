@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
@@ -399,21 +400,27 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
 
     // 1. Remote Server Compute & Luna AI Synthesis
     try {
-      final payload = <String, dynamic>{
-        'documentId': documentId,
-        'storagePath': storagePath,
-        'fileType': fileType,
-        'filename': filename,
-        if (extractedText != null && extractedText.trim().isNotEmpty)
-          'extractedText': extractedText,
-      };
+      final connectivity = await Connectivity().checkConnectivity();
+      final isOnline = !connectivity.contains(ConnectivityResult.none);
 
-      final res = await _client.triggerParseStemOcr(payload);
+      if (isOnline) {
+        final payload = <String, dynamic>{
+          'documentId': documentId,
+          'storagePath': storagePath,
+          'fileType': fileType,
+          'filename': filename,
+          if (extractedText != null && extractedText.trim().isNotEmpty)
+            'extractedText': extractedText,
+        };
 
-      final result = res.data is Map<String, dynamic>
-          ? (res.data as Map<String, dynamic>)
-          : <String, dynamic>{};
-      final rawList = result['snippets'] as List<dynamic>? ?? [];
+        final res = await _client
+            .triggerParseStemOcr(payload)
+            .timeout(const Duration(seconds: 60));
+
+        final result = res.data is Map<String, dynamic>
+            ? (res.data as Map<String, dynamic>)
+            : <String, dynamic>{};
+        final rawList = result['snippets'] as List<dynamic>? ?? [];
 
       // Detect if server returned the 1-card dummy fallback rather than real content
       final isDummyFallback = rawList.length == 1 &&
@@ -428,10 +435,11 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
                 topic.contains('What is the key takeaway of');
           }();
 
-      if (rawList.isNotEmpty && !isDummyFallback) {
-        return rawList
-            .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+        if (rawList.isNotEmpty && !isDummyFallback) {
+          return rawList
+              .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
       }
     } on Object catch (e, stack) {
       final crashlytics = _crashlyticsService;

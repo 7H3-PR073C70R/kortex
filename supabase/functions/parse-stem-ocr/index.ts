@@ -239,15 +239,20 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    // Synthesize cards with Luna across sections
-    for (const section of parsedDoc.sections) {
+    // Synthesize cards with Luna:
+    // When text fits within optimal reasoning context (<= 45,000 chars), synthesize a cohesive
+    // high-yield deck in a single unified pass with all diagrams in context.
+    if (parsedDoc.fullText.trim().length > 0 && parsedDoc.fullText.length <= 45000) {
       try {
-        console.log(`[parse-stem-ocr] Passing section "${section.title}" (${section.text.length} chars) to Luna...`);
+        console.log(
+          `[parse-stem-ocr] Synthesizing unified deck for "${cleanDeckTitle}" (${parsedDoc.fullText.length} chars, ${parsedDoc.images.length} images) with Luna...`
+        );
         const cards = await luna.generateFlashcardsFromSemanticMapping({
-          content: section.text,
-          topic: section.title,
+          content: parsedDoc.fullText,
+          topic: cleanDeckTitle,
           courseCode,
           availableImages: parsedDoc.images,
+          cardCountHint: Math.min(30, Math.max(12, Math.round(parsedDoc.fullText.length / 350))),
         });
 
         for (const c of cards) {
@@ -258,11 +263,47 @@ serve(async (req) => {
             back_latex: c.latex_content,
             explanation: c.explanation || c.hints,
             image_url: c.image_url,
-            tags: c.tags || [section.title, courseCode],
+            tags: c.tags || [cleanDeckTitle, courseCode],
           });
         }
+        console.log(`[parse-stem-ocr] Unified Luna synthesis produced ${generatedCards.length} high-yield cards.`);
       } catch (lunaErr) {
-        console.error(`[parse-stem-ocr] Luna generation error on "${section.title}":`, lunaErr);
+        console.error(`[parse-stem-ocr] Unified Luna generation error:`, lunaErr);
+      }
+    }
+
+    // If unified pass was skipped (long doc) or yielded no cards, synthesize across sections in parallel
+    if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
+      console.log(`[parse-stem-ocr] Synthesizing across ${parsedDoc.sections.length} sections in parallel...`);
+      const sectionPromises = parsedDoc.sections.slice(0, 8).map(async (section) => {
+        try {
+          return await luna.generateFlashcardsFromSemanticMapping({
+            content: section.text,
+            topic: section.title,
+            courseCode,
+            availableImages: parsedDoc.images,
+          });
+        } catch (secErr) {
+          console.error(`[parse-stem-ocr] Section "${section.title}" Luna error:`, secErr);
+          return [];
+        }
+      });
+
+      const sectionResults = await Promise.all(sectionPromises);
+      for (let sIdx = 0; sIdx < sectionResults.length; sIdx++) {
+        const secCards = sectionResults[sIdx];
+        const sec = parsedDoc.sections[sIdx];
+        for (const c of secCards) {
+          generatedCards.push({
+            id: crypto.randomUUID(),
+            front: c.front,
+            back: c.back,
+            back_latex: c.latex_content,
+            explanation: c.explanation || c.hints,
+            image_url: c.image_url,
+            tags: c.tags || [sec?.title || cleanDeckTitle, courseCode],
+          });
+        }
       }
     }
 

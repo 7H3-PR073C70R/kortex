@@ -43,6 +43,16 @@ class OcrPreviewPage extends HookWidget {
       List.from(snippets),
     );
 
+    final availableImageUrls = useMemoized(() {
+      final urls = <String>{};
+      for (final s in currentSnippets.value) {
+        if (s.imageUrl != null && s.imageUrl!.trim().isNotEmpty) {
+          urls.add(s.imageUrl!.trim());
+        }
+      }
+      return urls.toList();
+    }, [currentSnippets.value]);
+
     void handleGenerateCards() {
       final previewCards = currentSnippets.value.map((s) {
         return GeneratedCardPreviewItem(
@@ -158,6 +168,7 @@ class OcrPreviewPage extends HookWidget {
                   final snippet = currentSnippets.value[index];
                   return OcrLatexLiveEditor(
                     snippet: snippet,
+                    availableImageUrls: availableImageUrls,
                     onChanged: (updated) {
                       final updatedList = List<OcrExtractionEntity>.from(
                         currentSnippets.value,

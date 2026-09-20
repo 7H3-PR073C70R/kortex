@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
@@ -14,8 +13,17 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 /// Unobtrusive floating background ingestion indicator allowing users to
 /// navigate and use the entire app freely while document OCR & flashcard
 /// synthesis runs in the background.
-class BackgroundIngestionIndicator extends HookWidget {
+class BackgroundIngestionIndicator extends StatefulWidget {
   const BackgroundIngestionIndicator({super.key});
+
+  @override
+  State<BackgroundIngestionIndicator> createState() =>
+      _BackgroundIngestionIndicatorState();
+}
+
+class _BackgroundIngestionIndicatorState
+    extends State<BackgroundIngestionIndicator> {
+  String? _dismissedDocId;
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +32,11 @@ class BackgroundIngestionIndicator extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final dismissedDocId = useState<String?>(null);
-
     return BlocBuilder<IngestionBloc, IngestionState>(
       builder: (context, state) {
         final currentDocId = state.currentDocument?.id ?? '';
         final isDismissed =
-            currentDocId.isNotEmpty && dismissedDocId.value == currentDocId;
+            currentDocId.isNotEmpty && _dismissedDocId == currentDocId;
 
         final shouldShow =
             !isDismissed && (state.isProcessing || state.isCompleted);
@@ -213,7 +219,9 @@ class BackgroundIngestionIndicator extends HookWidget {
                                   minHeight: 28,
                                 ),
                                 onPressed: () {
-                                  dismissedDocId.value = currentDocId;
+                                  setState(() {
+                                    _dismissedDocId = currentDocId;
+                                  });
                                 },
                               ),
                             ],

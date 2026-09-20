@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
-import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -23,13 +23,13 @@ class GeneratedCardPreviewTile extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final isFlipped = useState<bool>(false);
     final frontController = useTextEditingController(text: card.front);
     final backController = useTextEditingController(text: card.back);
     final isEditing = useState<bool>(false);
+    final hasImage = card.imageUrl != null && card.imageUrl!.trim().isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -37,7 +37,10 @@ class GeneratedCardPreviewTile extends HookWidget {
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: colors.primary.withAlpha(isDark ? 60 : 30),
+          color: hasImage
+              ? colors.primary.withAlpha(isDark ? 90 : 50)
+              : colors.primary.withAlpha(isDark ? 60 : 30),
+          width: hasImage ? 1.4 : 1.0,
         ),
       ),
       child: Column(
@@ -49,22 +52,62 @@ class GeneratedCardPreviewTile extends HookWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(30),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'CARD #${index + 1}',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 10,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(30),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'CARD #${index + 1}',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (hasImage) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.success.withAlpha(isDark ? 40 : 25),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: colors.success.withAlpha(isDark ? 90 : 50),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image_rounded,
+                              size: 10,
+                              color: colors.success,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'DIAGRAM',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.success,
+                                fontSize: 9,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Row(
                   children: [
@@ -211,44 +254,21 @@ class GeneratedCardPreviewTile extends HookWidget {
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
                                   constraints: const BoxConstraints(
-                                    maxHeight: 120,
+                                    maxHeight: 180,
                                   ),
                                   width: double.infinity,
                                   decoration: BoxDecoration(
-                                    color: colors.surfaceSecondary,
+                                    color: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.backgroundSecondary
+                                            .withAlpha(120),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: colors.primary.withAlpha(50),
+                                      color: colors.primary.withAlpha(60),
                                     ),
                                   ),
-                                  child: Image.network(
-                                    card.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              padding: const EdgeInsets.all(8),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.insert_photo_outlined,
-                                                    size: 16,
-                                                    color: colors.primary,
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    l10n.attachedDiagramLabel,
-                                                    style: typography
-                                                        .caption
-                                                        .medium
-                                                        .copyWith(
-                                                          color: colors
-                                                              .textSecondary,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                  child: AppMultimodalImage(
+                                    imageUrl: card.imageUrl!,
                                   ),
                                 ),
                               ),

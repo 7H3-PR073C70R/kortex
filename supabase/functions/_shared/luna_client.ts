@@ -38,37 +38,18 @@ export class LunaClient {
   constructor() {
     this.apiKey =
       Deno.env.get("LUNA_API_KEY") ||
-      Deno.env.get("LUNA_SECRET_KEY") ||
       Deno.env.get("OPENAI_API_KEY") ||
       "";
-
-    const envBaseUrl =
-      Deno.env.get("LUNA_BASE_URL") ||
-      Deno.env.get("LUNA_API_URL") ||
-      Deno.env.get("OPENAI_BASE_URL");
-
-    if (envBaseUrl) {
-      this.baseUrl = envBaseUrl.replace(/\/+$/, "");
-    } else if (this.apiKey.startsWith("sk-")) {
-      this.baseUrl = "https://api.openai.com/v1";
-    } else {
-      this.baseUrl = "https://api.luna.ai/v1";
-    }
-
-    const defaultModel = this.baseUrl.includes("openai.com") ? "gpt-4o-mini" : "luna";
-    const configuredModel = Deno.env.get("LUNA_MODEL") || Deno.env.get("LUNA_MODEL_NAME");
-    if (configuredModel && configuredModel !== "gpt-5.6-luna") {
-      this.model = configuredModel;
-    } else {
-      this.model = defaultModel;
-    }
+    this.baseUrl =
+      Deno.env.get("LUNA_BASE_URL") || "https://api.openai.com/v1/responses";
+    this.model = Deno.env.get("LUNA_MODEL") || "gpt-5.6-luna";
   }
 
   /**
    * Returns whether Luna credentials/endpoints are configured.
    */
   isConfigured(): boolean {
-    return Boolean(this.apiKey || this.baseUrl);
+    return Boolean(this.apiKey && this.baseUrl);
   }
 
   get modelName(): string {
@@ -76,52 +57,35 @@ export class LunaClient {
   }
 
   /**
-   * Resolves the full URL for chat completions endpoint.
+   * Resolves the full URL for responses endpoint.
    */
   private getEndpointUrl(): string {
-    let base = this.baseUrl.replace(/\/+$/, "");
-    if (base.endsWith("/responses")) {
-      base = base.replace(/\/responses$/, "/chat/completions");
-    }
-    if (base.endsWith("/chat/completions")) {
-      return base;
-    }
-    return `${base}/chat/completions`;
+    return this.baseUrl.replace(/\/+$/, "");
   }
 
   /**
-   * Executes a non-streaming chat completion with Luna.
+   * Executes a completion request with Luna (gpt-5.6-luna on /v1/responses).
    */
   async complete(options: LunaRequestOptions): Promise<string> {
     const url = this.getEndpointUrl();
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${this.apiKey}`,
     };
-
-    if (this.apiKey) {
-      headers["Authorization"] = `Bearer ${this.apiKey}`;
-      headers["x-api-key"] = this.apiKey;
-    }
-
-    const isGpt5OrOpenAi = this.model.includes("gpt-5") || this.baseUrl.includes("openai.com");
 
     const payload: Record<string, unknown> = {
       model: this.model,
-      messages: options.messages,
-      stream: false,
+      input: options.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      store: true,
     };
 
-    if (!isGpt5OrOpenAi && options.temperature !== undefined) {
+    // Note: gpt-5.6-luna reasoning models reject the 'temperature' parameter.
+    if (options.temperature !== undefined && !this.model.includes("gpt-5")) {
       payload["temperature"] = options.temperature;
-    }
-
-    if (options.maxTokens) {
-      payload["max_tokens"] = options.maxTokens;
-    }
-
-    if (options.responseFormat) {
-      payload["response_format"] = options.responseFormat;
     }
 
     console.log(`[LunaClient] Requesting completion from ${url} (model: ${this.model})...`);
@@ -140,11 +104,25 @@ export class LunaClient {
     }
 
     const json = await response.json();
-    const content =
-      json.choices?.[0]?.message?.content ??
-      json.choices?.[0]?.text ??
-      json.content ??
-      "";
+
+    let content = "";
+    if (Array.isArray(json.output)) {
+      const messageItem = json.output.find((item: any) => item.type === "message");
+      if (messageItem && Array.isArray(messageItem.content)) {
+        const textPart = messageItem.content.find(
+          (c: any) => c.type === "output_text" || typeof c.text === "string"
+        );
+        content = textPart?.text ?? "";
+      }
+    }
+
+    if (!content) {
+      content =
+        json.choices?.[0]?.message?.content ??
+        json.choices?.[0]?.text ??
+        json.content ??
+        "";
+    }
 
     if (!content) {
       throw new Error("Luna returned an empty response");
@@ -168,20 +146,18 @@ export class LunaClient {
       headers["x-api-key"] = this.apiKey;
     }
 
-    const isGpt5OrOpenAi = this.model.includes("gpt-5") || this.baseUrl.includes("openai.com");
-
     const payload: Record<string, unknown> = {
       model: this.model,
-      messages: options.messages,
+      input: options.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
       stream: true,
+      store: true,
     };
 
-    if (!isGpt5OrOpenAi && options.temperature !== undefined) {
+    if (options.temperature !== undefined && !this.model.includes("gpt-5")) {
       payload["temperature"] = options.temperature;
-    }
-
-    if (options.maxTokens) {
-      payload["max_tokens"] = options.maxTokens;
     }
 
     console.log(`[LunaClient] Initiating stream from ${url} (model: ${this.model})...`);
@@ -216,8 +192,10 @@ export class LunaClient {
 
     const imageContext = availableImages.length > 0
       ? `AVAILABLE VISUAL DIAGRAMS / FIGURES IN THIS DOCUMENT:
-${availableImages.map((img, i) => `- Image [${i + 1}]: URL: "${img.url}" | Context/Label: "${img.label}"`).join("\n")}
-If a concept directly explains or depends on one of these figures/diagrams, assign its exact URL to the "image_url" field. Otherwise set "image_url" to null.`
+${availableImages.map((img, i) => `- Diagram [${i + 1}]: URL: "${img.url}" | Context/Label: "${img.label}"`).join("\n")}
+
+CRITICAL MULTIMODAL INSTRUCTION:
+This document contains ${availableImages.length} visual diagrams/figures. For EVERY diagram in this list, you MUST create at least one dedicated active-recall card whose concept, question, or explanation directly analyzes that visual figure, and assign its exact URL to the "image_url" field! Ensure all ${availableImages.length} diagrams are utilized across the flashcard set.`
       : "No embedded diagrams available. Set 'image_url' to null for all cards.";
 
     const systemPrompt = `You are Luna, an advanced pedagogical AI tutor specializing in synthesizing rigorous, high-yield flashcards for students.
@@ -229,7 +207,7 @@ PEDAGOGICAL & FORMATTING RULES:
 3. LATEX_CONTENT: If the card involves mathematical formulas, equations, limits, fractions, or physics/chemistry formulas, provide valid LaTeX notation (e.g., "$$E = mc^2$$" or "\\(\\frac{a}{b}\\)"). If none, set to null.
 4. EXPLANATION / HINTS: A concise mnemonic, key takeaway, or memory hint.
 5. TAGS: Array of 1-3 strings categorizing this card (e.g. ["${topic}", "${courseCode || "General"}"]).
-6. IMAGE_URL: When a card describes or requires a visual diagram from the document, set this to the matching URL from the provided list. Otherwise null.
+6. IMAGE_URL: When a card describes, explains, or references a visual diagram from the available figures, assign its EXACT URL string. Ensure every provided diagram is assigned to its relevant card. If a card does not use a diagram, set to null.
 7. COMPREHENSIVE COVERAGE: ${cardCountHint ? `Target roughly ${cardCountHint} high-yield cards.` : "Cover every key concept, formula, rule, and definition without omitting important sections."}
 
 ${imageContext}

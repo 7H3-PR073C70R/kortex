@@ -290,78 +290,239 @@ class DocumentParserService {
     return alphaCount / s.length > 0.4;
   }
 
-  /// Extracts embedded image streams (JPEG / PNG / illustrations) from PDF bytes.
+  static final Uint32List _crcTable = () {
+    final table = Uint32List(256);
+    for (var i = 0; i < 256; i++) {
+      var c = i;
+      for (var k = 0; k < 8; k++) {
+        c = (c & 1) != 0 ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      table[i] = c;
+    }
+    return table;
+  }();
+
+  static int _crc32(List<int> bytes) {
+    var crc = 0xffffffff;
+    for (var i = 0; i < bytes.length; i++) {
+      crc = (crc >>> 8) ^ _crcTable[(crc ^ bytes[i]) & 0xff];
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+
+  static Uint8List _encodePixelsToPng(
+    Uint8List rawPixels,
+    int width,
+    int height, {
+    int channels = 3,
+  }) {
+    final rowBytes = width * channels;
+    final scanlines = Uint8List(height * (rowBytes + 1));
+    var dest = 0;
+    for (var y = 0; y < height; y++) {
+      scanlines[dest++] = 0; // Filter: None
+      final src = y * rowBytes;
+      scanlines.setRange(dest, dest + rowBytes, rawPixels.sublist(src, src + rowBytes));
+      dest += rowBytes;
+    }
+
+    final idatCompressed = Uint8List.fromList(zlib.encode(scanlines));
+    final colorType = channels == 3 ? 2 : (channels == 4 ? 6 : 0);
+
+    final totalLength = 8 + 25 + (12 + idatCompressed.length) + 12;
+    final png = Uint8List(totalLength);
+    final view = ByteData.sublistView(png);
+    var offset = 0;
+
+    // 1. Signature
+    png.setRange(0, 8, const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+    offset += 8;
+
+    // 2. IHDR
+    final ihdrPayload = Uint8List(17)..setRange(0, 4, utf8.encode('IHDR'));
+    ByteData.sublistView(ihdrPayload, 4, 17)
+      ..setUint32(0, width)
+      ..setUint32(4, height)
+      ..setUint8(8, 8)
+      ..setUint8(9, colorType)
+      ..setUint8(10, 0)
+      ..setUint8(11, 0)
+      ..setUint8(12, 0);
+
+    view.setUint32(offset, 13);
+    offset += 4;
+    png.setRange(offset, offset + 17, ihdrPayload);
+    offset += 17;
+    view.setUint32(offset, _crc32(ihdrPayload));
+    offset += 4;
+
+    // 3. IDAT
+    final idatHeader = Uint8List(4 + idatCompressed.length)
+      ..setRange(0, 4, utf8.encode('IDAT'))
+      ..setRange(4, 4 + idatCompressed.length, idatCompressed);
+    view.setUint32(offset, idatCompressed.length);
+    offset += 4;
+    png.setRange(offset, offset + idatHeader.length, idatHeader);
+    offset += idatHeader.length;
+    view.setUint32(offset, _crc32(idatHeader));
+    offset += 4;
+
+    // 4. IEND
+    final iendHeader = Uint8List.fromList(utf8.encode('IEND'));
+    view.setUint32(offset, 0);
+    offset += 4;
+    png.setRange(offset, offset + 4, iendHeader);
+    offset += 4;
+    view.setUint32(offset, _crc32(iendHeader));
+
+    return png;
+  }
+
+  /// Extracts embedded image streams (PDF Image XObjects, Flate raster, JPEG) from PDF bytes.
   List<ExtractedImageAttachment> extractImagesFromPdfBytes(Uint8List bytes) {
     final images = <ExtractedImageAttachment>[];
 
-    // 1. Scan for raw embedded JPEG streams: SOI 0xFF, 0xD8 ... EOI 0xFF, 0xD9
-    var i = 0;
-    var imgIdx = 1;
-    while (i < bytes.length - 4) {
-      if (bytes[i] == 0xFF && bytes[i + 1] == 0xD8 && bytes[i + 2] == 0xFF) {
-        final start = i;
-        var end = start + 3;
-        while (end < bytes.length - 1) {
-          if (bytes[end] == 0xFF && bytes[end + 1] == 0xD9) {
-            end += 2;
-            break;
-          }
-          end++;
-        }
+    // 1. PDF Image XObject Parsing (FlateDecode & DCTDecode)
+    final pdfText = latin1.decode(bytes, allowInvalid: true);
+    final imageRegex = RegExp(
+      r'<<([^>]*\/Subtype\s*\/Image[^>]*)>>\s*stream[\r\n]+',
+      multiLine: true,
+    );
 
-        if (end > start + 64 && end <= bytes.length) {
-          final imgBytes = bytes.sublist(start, end);
+    for (final match in imageRegex.allMatches(pdfText)) {
+      final dictStr = match.group(1) ?? '';
+      final streamStart = match.end;
+
+      final wMatch = RegExp(r'/Width\s+(\d+)').firstMatch(dictStr);
+      final hMatch = RegExp(r'/Height\s+(\d+)').firstMatch(dictStr);
+      final lMatch = RegExp(r'/Length\s+(\d+)').firstMatch(dictStr);
+
+      final width = wMatch != null ? int.tryParse(wMatch.group(1)!) ?? 0 : 0;
+      final height = hMatch != null ? int.tryParse(hMatch.group(1)!) ?? 0 : 0;
+      final declaredLength =
+          lMatch != null ? int.tryParse(lMatch.group(1)!) ?? 0 : 0;
+
+      if (width < 50 || height < 50) continue;
+
+      final isFlate = dictStr.contains('/FlateDecode');
+      final isDct = dictStr.contains('/DCTDecode');
+
+      Uint8List streamBytes;
+      if (declaredLength > 0 && streamStart + declaredLength <= bytes.length) {
+        streamBytes = bytes.sublist(streamStart, streamStart + declaredLength);
+      } else {
+        final endstreamIdx = pdfText.indexOf('endstream', streamStart);
+        if (endstreamIdx == -1) continue;
+        streamBytes = bytes.sublist(streamStart, endstreamIdx);
+      }
+
+      if (isFlate) {
+        try {
+          final decompressed = Uint8List.fromList(zlib.decode(streamBytes));
+          final expectedRgb = width * height * 3;
+          final expectedGray = width * height;
+          final expectedRgba = width * height * 4;
+
+          var channels = 3;
+          var rawData = decompressed;
+
+          if (decompressed.length == expectedRgb) {
+            channels = 3;
+          } else if (decompressed.length == expectedGray) {
+            channels = 1;
+          } else if (decompressed.length == expectedRgba) {
+            channels = 4;
+          } else if (decompressed.length == height * (width * 3 + 1)) {
+            // Strip predictor filter byte per scanline
+            channels = 3;
+            final stripped = Uint8List(width * height * 3);
+            final rowLen = width * 3;
+            for (var y = 0; y < height; y++) {
+              stripped.setRange(
+                y * rowLen,
+                (y + 1) * rowLen,
+                decompressed.sublist(
+                  y * (rowLen + 1) + 1,
+                  (y + 1) * (rowLen + 1),
+                ),
+              );
+            }
+            rawData = stripped;
+          } else {
+            // Check direct PNG container
+            if (decompressed.length > 8 &&
+                decompressed[0] == 0x89 &&
+                decompressed[1] == 0x50 &&
+                decompressed[2] == 0x4E &&
+                decompressed[3] == 0x47) {
+              images.add(
+                ExtractedImageAttachment(
+                  bytes: decompressed,
+                  extension: 'png',
+                  label: 'Diagram ${images.length + 1} (${width}x$height)',
+                ),
+              );
+            }
+            continue;
+          }
+
+          final pngBytes = _encodePixelsToPng(
+            rawData,
+            width,
+            height,
+            channels: channels,
+          );
           images.add(
             ExtractedImageAttachment(
-              bytes: imgBytes,
-              extension: 'jpg',
-              label: 'Diagram / Illustration $imgIdx',
+              bytes: pngBytes,
+              extension: 'png',
+              label: 'Diagram / Chart ${images.length + 1} (${width}x$height)',
             ),
           );
-          imgIdx++;
-          i = end;
-          continue;
-        }
+        } on Object catch (_) {}
+      } else if (isDct) {
+        images.add(
+          ExtractedImageAttachment(
+            bytes: streamBytes,
+            extension: 'jpg',
+            label: 'Figure ${images.length + 1} (${width}x$height)',
+          ),
+        );
       }
-      i++;
     }
 
-    // 2. Scan for embedded PNG streams:
-    // 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
-    var p = 0;
-    while (p < bytes.length - 8) {
-      if (bytes[p] == 0x89 &&
-          bytes[p + 1] == 0x50 &&
-          bytes[p + 2] == 0x4E &&
-          bytes[p + 3] == 0x47) {
-        final start = p;
-        var end = start + 8;
-        while (end < bytes.length - 8) {
-          if (bytes[end] == 73 &&
-              bytes[end + 1] == 69 &&
-              bytes[end + 2] == 78 &&
-              bytes[end + 3] == 68) {
-            end += 8;
-            break;
+    // 2. Fallback scan for standalone JPEG streams (SOI ... EOI)
+    if (images.isEmpty) {
+      var i = 0;
+      var imgIdx = 1;
+      while (i < bytes.length - 4) {
+        if (bytes[i] == 0xFF && bytes[i + 1] == 0xD8 && bytes[i + 2] == 0xFF) {
+          final start = i;
+          var end = start + 3;
+          while (end < bytes.length - 1) {
+            if (bytes[end] == 0xFF && bytes[end + 1] == 0xD9) {
+              end += 2;
+              break;
+            }
+            end++;
           }
-          end++;
-        }
 
-        if (end > start + 32 && end <= bytes.length) {
-          final imgBytes = bytes.sublist(start, end);
-          images.add(
-            ExtractedImageAttachment(
-              bytes: imgBytes,
-              extension: 'png',
-              label: 'Diagram / Chart $imgIdx',
-            ),
-          );
-          imgIdx++;
-          p = end;
-          continue;
+          if (end > start + 64 && end <= bytes.length) {
+            final imgBytes = bytes.sublist(start, end);
+            images.add(
+              ExtractedImageAttachment(
+                bytes: imgBytes,
+                extension: 'jpg',
+                label: 'Diagram / Illustration $imgIdx',
+              ),
+            );
+            imgIdx++;
+            i = end;
+            continue;
+          }
         }
+        i++;
       }
-      p++;
     }
 
     return images;

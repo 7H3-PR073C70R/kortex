@@ -26,6 +26,7 @@ class OcrExtractionEntity extends Equatable {
     String? rawText,
     String? latexContent,
     String? imageUrl,
+    bool clearImageUrl = false,
     String? topic,
     double? confidenceScore,
   }) {
@@ -34,7 +35,7 @@ class OcrExtractionEntity extends Equatable {
       documentId: documentId ?? this.documentId,
       rawText: rawText ?? this.rawText,
       latexContent: latexContent ?? this.latexContent,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       topic: topic ?? this.topic,
       confidenceScore: confidenceScore ?? this.confidenceScore,
     );
