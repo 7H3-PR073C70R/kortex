@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/domain/services/whiteboard_compression.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -63,22 +64,28 @@ class WhiteboardCanvasWidget extends StatefulWidget {
 class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
   final List<WhiteboardPoint> _livePoints = [];
   WhiteboardTool _activeTool = WhiteboardTool.pen;
-  int _selectedColorHex = 0xFF6366F1; // Default Indigo
+  int? _selectedColorHex;
   double _strokeWidth = 3.5;
   WhiteboardGridStyle _gridStyle = WhiteboardGridStyle.dots;
   bool _showGrid = true;
   bool _showToolsExpanded = true;
 
-  static const List<int> _colorPalette = [
-    0xFFFFFFFF, // White
-    0xFF6366F1, // Indigo
-    0xFF10B981, // Emerald
-    0xFFF59E0B, // Amber
-    0xFFEC4899, // Pink
-    0xFF06B6D4, // Cyan
-    0xFF8B5CF6, // Purple
-    0xFFEF4444, // Red
+  List<int> _buildColorPalette(AppThemeColorsExtension colors) => [
+    colors.white.toARGB32(),
+    colors.primary.toARGB32(),
+    colors.alpineMoss.toARGB32(),
+    colors.warmOchre.toARGB32(),
+    colors.deepBronze.toARGB32(),
+    colors.quartzCyan.toARGB32(),
+    colors.slateTerracotta.toARGB32(),
+    colors.error.toARGB32(),
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _selectedColorHex ??= context.colors.primary.toARGB32();
+  }
 
   static const List<double> _strokeWidthPresets = [2.0, 4.0, 8.0];
 
@@ -199,15 +206,18 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
       );
     }
 
-    var effectiveColor = _selectedColorHex;
+    final colors = context.colors;
+    var effectiveColor = _selectedColorHex ?? colors.primary.toARGB32();
     var effectiveWidth = _strokeWidth;
 
     if (isEraser) {
-      effectiveColor = widget.isDark ? 0xFF12131A : 0xFFFFFFFF;
+      effectiveColor = widget.isDark
+          ? colors.surfacePrimary.toARGB32()
+          : colors.white.toARGB32();
       effectiveWidth = 20.0;
     } else if (isHighlighter) {
       // Apply 40% alpha (0x66) for highlighter feel
-      effectiveColor = (_selectedColorHex & 0x00FFFFFF) | 0x66000000;
+      effectiveColor = (effectiveColor & 0x00FFFFFF) | 0x66000000;
       effectiveWidth = 14.0;
     }
 
@@ -272,7 +282,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -304,7 +314,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
             // Whiteboard Surface
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF13141E) : Colors.white,
+                color: isDark ? colors.surfacePrimary : colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: colors.primary.withAlpha(isDark ? 60 : 30),
@@ -334,7 +344,8 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                         painter: _WhiteboardCanvasPainter(
                           strokes: widget.strokes,
                           livePoints: _livePoints,
-                          liveColorHex: _selectedColorHex,
+                          liveColorHex:
+                              _selectedColorHex ?? colors.primary.toARGB32(),
                           liveStrokeWidth:
                               _activeTool == WhiteboardTool.highlighter
                               ? 14.0
@@ -345,6 +356,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                           isDark: isDark,
                           showGrid: _showGrid,
                           gridStyle: _gridStyle,
+                          colors: colors,
                         ),
                       ),
                     );
@@ -367,7 +379,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: (isDark ? Colors.black : Colors.white).withAlpha(
+                        color: (isDark ? colors.black : colors.white).withAlpha(
                           180,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -381,9 +393,9 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                           Container(
                             width: 7,
                             height: 7,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.green,
+                              color: colors.success,
                             ),
                           ),
                           const SizedBox(width: 5),
@@ -425,7 +437,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: (isDark ? Colors.black : Colors.white)
+                          color: (isDark ? colors.black : colors.white)
                               .withAlpha(180),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -479,7 +491,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                         padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: (isDark ? Colors.black : Colors.white)
+                          color: (isDark ? colors.black : colors.white)
                               .withAlpha(180),
                           border: Border.all(
                             color: colors.primary.withAlpha(isDark ? 40 : 20),
@@ -594,7 +606,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                                       shape: BoxShape.circle,
                                       color: isSel
                                           ? colors.primary.withAlpha(40)
-                                          : Colors.transparent,
+                                          : colors.transparent,
                                       border: isSel
                                           ? Border.all(
                                               color: colors.primary,
@@ -626,10 +638,12 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            ..._colorPalette.map((colorHex) {
+                            ..._buildColorPalette(colors).map((colorHex) {
                               final isSelected =
                                   _activeTool != WhiteboardTool.eraser &&
-                                  _selectedColorHex == colorHex;
+                                  (_selectedColorHex ??
+                                          colors.primary.toARGB32()) ==
+                                      colorHex;
                               return Padding(
                                 padding: const EdgeInsets.only(right: 5),
                                 child: GestureDetector(
@@ -653,7 +667,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                                       border: Border.all(
                                         color: isSelected
                                             ? colors.primary
-                                            : Colors.grey.withAlpha(80),
+                                            : colors.gray.withAlpha(80),
                                         width: isSelected ? 2.2 : 1.0,
                                       ),
                                     ),
@@ -780,7 +794,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
               borderRadius: BorderRadius.circular(8),
               color: isSelected
                   ? colors.primary.withAlpha(widget.isDark ? 60 : 35)
-                  : Colors.transparent,
+                  : colors.transparent,
               border: isSelected
                   ? Border.all(color: colors.primary.withAlpha(120))
                   : null,
@@ -807,6 +821,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
     required this.isDark,
     required this.showGrid,
     required this.gridStyle,
+    required this.colors,
   });
 
   final List<WhiteboardStroke> strokes;
@@ -817,6 +832,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
   final bool isDark;
   final bool showGrid;
   final WhiteboardGridStyle gridStyle;
+  final AppThemeColorsExtension colors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -839,7 +855,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
 
   void _drawGrid(Canvas canvas, Size size) {
     final gridPaint = Paint()
-      ..color = (isDark ? Colors.white : Colors.black).withAlpha(
+      ..color = (isDark ? colors.white : colors.black).withAlpha(
         isDark ? 15 : 12,
       )
       ..strokeWidth = 1.0;
@@ -896,7 +912,9 @@ class _WhiteboardCanvasPainter extends CustomPainter {
   void _drawLiveStroke(Canvas canvas, Size size) {
     var effectiveColor = liveColorHex;
     if (activeTool == WhiteboardTool.eraser) {
-      effectiveColor = isDark ? 0xFF13141E : 0xFFFFFFFF;
+      effectiveColor = isDark
+          ? colors.surfacePrimary.toARGB32()
+          : colors.white.toARGB32();
     } else if (activeTool == WhiteboardTool.highlighter) {
       effectiveColor = (liveColorHex & 0x00FFFFFF) | 0x66000000;
     }

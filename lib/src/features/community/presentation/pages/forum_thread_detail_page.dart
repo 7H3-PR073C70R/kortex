@@ -462,7 +462,7 @@ class ForumThreadDetailPage extends HookWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -817,7 +817,7 @@ class ForumThreadDetailPage extends HookWidget {
                 .withAlpha(230),
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: Colors.black.withAlpha(20),
+        shadowColor: colors.black.withAlpha(20),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_rounded,
@@ -942,7 +942,7 @@ class ForumThreadDetailPage extends HookWidget {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(
+                                  color: colors.black.withAlpha(
                                     isDark ? 30 : 10,
                                   ),
                                   blurRadius: 10,
@@ -966,25 +966,27 @@ class ForumThreadDetailPage extends HookWidget {
                                             ? colors.surfacePrimary.withAlpha(
                                                 180,
                                               )
-                                            : const Color(0xFFEEF2FF),
-                                        borderRadius: BorderRadius.circular(10),
+                                            : colors.primary.withAlpha(
+                                                isDark ? 50 : 25,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          10,
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.widgets_outlined,
                                             size: 12,
-                                            color: Color(0xFF4F46E5),
+                                            color: colors.primary,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             'c/${currentPost.value.track}',
                                             style: typography.caption.bold
                                                 .copyWith(
-                                                  color: const Color(
-                                                    0xFF4F46E5,
-                                                  ),
+                                                  color: colors.primary,
                                                   fontSize: 11,
                                                 ),
                                           ),
@@ -1061,7 +1063,7 @@ class ForumThreadDetailPage extends HookWidget {
                                             height: 14,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: const Color(0xFF10B981),
+                                              color: colors.success,
                                               border: Border.all(
                                                 color: isDark
                                                     ? colors.surfaceSecondary
@@ -1069,10 +1071,10 @@ class ForumThreadDetailPage extends HookWidget {
                                                 width: 1.5,
                                               ),
                                             ),
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.check,
                                               size: 8,
-                                              color: Colors.white,
+                                              color: colors.white,
                                             ),
                                           ),
                                         ),
@@ -1108,16 +1110,14 @@ class ForumThreadDetailPage extends HookWidget {
                                                       vertical: 1,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(
-                                                    0xFF6366F1,
-                                                  ),
+                                                  color: colors.primary,
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   'OP',
                                                   style: TextStyle(
-                                                    color: Colors.white,
+                                                    color: colors.white,
                                                     fontSize: 9.5,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -1256,7 +1256,9 @@ class ForumThreadDetailPage extends HookWidget {
                                               ? colors.surfacePrimary.withAlpha(
                                                   160,
                                                 )
-                                              : const Color(0xFFEEF2FF),
+                                              : colors.primary.withAlpha(
+                                                  isDark ? 40 : 20,
+                                                ),
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
@@ -1265,7 +1267,7 @@ class ForumThreadDetailPage extends HookWidget {
                                           displayTag,
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: const Color(0xFF4F46E5),
+                                                color: colors.primary,
                                                 fontSize: 11,
                                               ),
                                         ),
@@ -1338,7 +1340,7 @@ class ForumThreadDetailPage extends HookWidget {
                                               ? colors.primary.withAlpha(
                                                   isDark ? 35 : 20,
                                                 )
-                                              : Colors.transparent,
+                                              : colors.transparent,
                                         ),
                                         alignment: Alignment.center,
                                         child: Icon(
@@ -1403,7 +1405,7 @@ class ForumThreadDetailPage extends HookWidget {
                             decoration: BoxDecoration(
                               color: isDark
                                   ? colors.surfaceSecondary
-                                  : const Color(0xFFE2E8F0),
+                                  : colors.surfaceTertiary,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -1696,10 +1698,10 @@ class ForumThreadDetailPage extends HookWidget {
                                               ),
                                             )
                                           else
-                                            const Icon(
+                                            Icon(
                                               Icons.auto_awesome_rounded,
                                               size: 16,
-                                              color: Colors.white,
+                                              color: colors.white,
                                             ),
                                           const SizedBox(width: 8),
                                           Text(
@@ -1708,7 +1710,7 @@ class ForumThreadDetailPage extends HookWidget {
                                                 : 'Ask Syllabot for Socratic Hint 🤖',
                                             style: typography.caption.bold
                                                 .copyWith(
-                                                  color: Colors.white,
+                                                  color: colors.white,
                                                   letterSpacing: 0.2,
                                                 ),
                                           ),
@@ -1834,16 +1836,16 @@ class ForumThreadDetailPage extends HookWidget {
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? colors.surfaceSecondary
-                                    : Colors.white,
+                                    : colors.surfacePrimary,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isDark
                                       ? colors.surfaceBorder.withAlpha(40)
-                                      : const Color(0xFFE2E8F0),
+                                      : colors.surfaceBorder,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withAlpha(
+                                    color: colors.black.withAlpha(
                                       isDark ? 20 : 6,
                                     ),
                                     blurRadius: 8,
@@ -1903,8 +1905,8 @@ class ForumThreadDetailPage extends HookWidget {
 
             // Sticky Bottom Quick Reply Bar (Transparent container, compact styling tools, mic button)
             Container(
-              decoration: const BoxDecoration(
-                color: Colors.transparent,
+              decoration: BoxDecoration(
+                color: colors.transparent,
               ),
               child: SafeArea(
                 top: false,
@@ -2207,12 +2209,12 @@ class ForumThreadDetailPage extends HookWidget {
                                         padding: const EdgeInsets.all(2),
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: Colors.black.withAlpha(160),
+                                          color: colors.black.withAlpha(160),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.close_rounded,
                                           size: 10,
-                                          color: Colors.white,
+                                          color: colors.white,
                                         ),
                                       ),
                                     ),
@@ -2752,13 +2754,13 @@ class _ForumPostVotePill extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isUpvoted ? colors.recallEasy : Colors.transparent,
+                color: isUpvoted ? colors.recallEasy : colors.transparent,
               ),
               alignment: Alignment.center,
               child: Icon(
                 Icons.keyboard_arrow_up_rounded,
                 size: 20,
-                color: isUpvoted ? Colors.white : colors.textPrimary,
+                color: isUpvoted ? colors.white : colors.textPrimary,
               ),
             ),
           ),
@@ -2782,13 +2784,13 @@ class _ForumPostVotePill extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDownvoted ? colors.error : Colors.transparent,
+                color: isDownvoted ? colors.error : colors.transparent,
               ),
               alignment: Alignment.center,
               child: Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 20,
-                color: isDownvoted ? Colors.white : colors.textPrimary,
+                color: isDownvoted ? colors.white : colors.textPrimary,
               ),
             ),
           ),
@@ -2823,7 +2825,7 @@ class _QuickToolChip extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final tint = isHighlighted
-        ? (isDark ? colors.primary : const Color(0xFF4F46E5))
+        ? colors.primary
         : colors.textSecondary;
 
     return ShrinkableButton(
@@ -2832,18 +2834,14 @@ class _QuickToolChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isHighlighted
-              ? (isDark
-                    ? colors.primary.withAlpha(40)
-                    : const Color(0xFFEEF2FF))
+              ? colors.primary.withAlpha(isDark ? 40 : 25)
               : (isDark
                     ? colors.surfacePrimary.withAlpha(180)
                     : colors.surfaceSecondary.withAlpha(120)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isHighlighted
-                ? (isDark
-                      ? colors.primary.withAlpha(80)
-                      : const Color(0xFFC7D2FE))
+                ? colors.primary.withAlpha(80)
                 : colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
           ),
         ),
@@ -2855,20 +2853,12 @@ class _QuickToolChip extends StatelessWidget {
                 prefix!,
                 style: isCodeStyle
                     ? typography.caption.bold.copyWith(
-                        color: isHighlighted
-                            ? (isDark
-                                  ? colors.primary
-                                  : const Color(0xFF4F46E5))
-                            : colors.primary,
+                        color: colors.primary,
                         fontFamily: 'monospace',
                         fontSize: 11,
                       )
                     : typography.caption.bold.copyWith(
-                        color: isHighlighted
-                            ? (isDark
-                                  ? colors.primary
-                                  : const Color(0xFF4F46E5))
-                            : colors.primary,
+                        color: colors.primary,
                         fontSize: 11,
                       ),
               ),
@@ -2885,7 +2875,7 @@ class _QuickToolChip extends StatelessWidget {
               label,
               style: typography.caption.bold.copyWith(
                 color: isHighlighted
-                    ? (isDark ? colors.primary : const Color(0xFF4F46E5))
+                    ? colors.primary
                     : colors.textPrimary,
                 fontSize: 11.5,
               ),
@@ -2971,7 +2961,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 25 : 8),
+                color: colors.black.withAlpha(isDark ? 25 : 8),
                 blurRadius: 8,
                 offset: const Offset(0, 1),
               ),
@@ -3072,13 +3062,13 @@ class _DiscussionThreadGroupCard extends HookWidget {
                                   vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6366F1),
+                                  color: colors.primary,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'OP',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -3093,8 +3083,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                                 decoration: BoxDecoration(
                                   color: isDark
                                       ? colors.surfacePrimary.withAlpha(180)
-                                      : const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(4),
+                                      : colors.surfaceSecondary,
                                 ),
                                 child: Text(
                                   'Scholar',
@@ -3366,7 +3355,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                       decoration: BoxDecoration(
                         color: isDark
                             ? colors.surfaceBorder.withAlpha(70)
-                            : const Color(0xFFC7D2FE),
+                            : colors.primary.withAlpha(isDark ? 70 : 40),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -3383,20 +3372,20 @@ class _DiscussionThreadGroupCard extends HookWidget {
                         decoration: BoxDecoration(
                           color: isDark
                               ? colors.surfaceSecondary
-                              : const Color(0xFFF8FAFC),
+                              : colors.surfacePrimary,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isDark
                                 ? colors.surfaceBorder.withAlpha(40)
-                                : const Color(0xFFE2E8F0),
+                                : colors.surfaceBorder,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.subdirectory_arrow_right_rounded,
                               size: 15,
-                              color: Color(0xFF6366F1),
+                              color: colors.primary,
                             ),
                             const SizedBox(width: 6),
                             if (isLoadingChildren) ...[
@@ -3467,7 +3456,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                       decoration: BoxDecoration(
                         color: isDark
                             ? colors.surfaceBorder.withAlpha(70)
-                            : const Color(0xFFC7D2FE),
+                            : colors.primary.withAlpha(isDark ? 70 : 40),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -3504,7 +3493,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                                 decoration: BoxDecoration(
                                   color: isDark
                                       ? colors.surfaceSecondary
-                                      : const Color(0xFFEEF2FF),
+                                      : colors.surfacePrimary,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: colors.primary.withAlpha(
@@ -3758,10 +3747,10 @@ class _Level2ChildReplyCard extends HookWidget {
                             color: colors.primary,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'OP',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.white,
                               fontSize: 8.5,
                               fontWeight: FontWeight.bold,
                             ),

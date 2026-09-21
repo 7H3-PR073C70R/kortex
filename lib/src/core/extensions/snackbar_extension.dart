@@ -483,16 +483,16 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.download_rounded,
                           size: 15,
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                         const SizedBox(width: 5),
                         Text(
                           'Download Model (248 MB)',
                           style: typography.caption.bold.copyWith(
-                            color: Colors.white,
+                            color: colors.white,
                             fontSize: 11.5,
                           ),
                         ),

@@ -75,6 +75,7 @@ class _UnhappySyllabot extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final isDark = context.isDarkMode;
 
     // 1. Distress subtle head shake / sigh controller
@@ -134,16 +135,16 @@ class _UnhappySyllabot extends HookWidget {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF0B0F19),
+              color: isDark ? colors.surfacePrimary : colors.surfaceSecondary,
               border: Border.all(
-                color: const Color(0xFFEF4444),
+                color: colors.error,
                 width: 1.6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(
-                    0xFFEF4444,
-                  ).withAlpha((100 + (beaconGlow * 80)).toInt()),
+                  color: colors.error.withAlpha(
+                    (100 + (beaconGlow * 80)).toInt(),
+                  ),
                   blurRadius: 12 + (beaconGlow * 4),
                   spreadRadius: 1,
                   offset: const Offset(0, 2),
@@ -161,13 +162,13 @@ class _UnhappySyllabot extends HookWidget {
                     width: size * 0.20,
                     height: size * 0.14,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
+                      color: colors.error,
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(
-                            0xFFEF4444,
-                          ).withAlpha((140 + (beaconGlow * 115)).toInt()),
+                          color: colors.error.withAlpha(
+                            (140 + (beaconGlow * 115)).toInt(),
+                          ),
                           blurRadius: 6,
                           spreadRadius: 1,
                         ),
@@ -185,8 +186,8 @@ class _UnhappySyllabot extends HookWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          const Color(0xFF1E1B4B).withAlpha(240),
-                          const Color(0xFF020617),
+                          colors.surfaceTertiary.withAlpha(240),
+                          colors.black,
                         ],
                       ),
                     ),
@@ -194,7 +195,9 @@ class _UnhappySyllabot extends HookWidget {
                       painter: _UnhappyFacePainter(
                         blinkProgress: blinkAmount,
                         tearProgress: tearProgress,
-                        isDark: isDark,
+                        eyeColor: colors.error,
+                        mouthColor: colors.error.withAlpha(180),
+                        tearColor: colors.quartzCyan,
                       ),
                     ),
                   ),
@@ -212,12 +215,16 @@ class _UnhappyFacePainter extends CustomPainter {
   const _UnhappyFacePainter({
     required this.blinkProgress,
     required this.tearProgress,
-    required this.isDark,
+    required this.eyeColor,
+    required this.mouthColor,
+    required this.tearColor,
   });
 
   final double blinkProgress;
   final double tearProgress;
-  final bool isDark;
+  final Color eyeColor;
+  final Color mouthColor;
+  final Color tearColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -225,13 +232,13 @@ class _UnhappyFacePainter extends CustomPainter {
     final h = size.height;
 
     final paintEye = Paint()
-      ..color = const Color(0xFFF87171)
+      ..color = eyeColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.09
       ..strokeCap = StrokeCap.round;
 
     final paintMouth = Paint()
-      ..color = const Color(0xFFFCA5A5)
+      ..color = mouthColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.075
       ..strokeCap = StrokeCap.round;
@@ -279,7 +286,7 @@ class _UnhappyFacePainter extends CustomPainter {
         255,
       );
       final paintTear = Paint()
-        ..color = const Color(0xFF38BDF8).withAlpha(tearAlpha)
+        ..color = tearColor.withAlpha(tearAlpha)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(w * 0.77, tearY), w * 0.055, paintTear);
@@ -290,6 +297,8 @@ class _UnhappyFacePainter extends CustomPainter {
   bool shouldRepaint(covariant _UnhappyFacePainter oldDelegate) {
     return oldDelegate.blinkProgress != blinkProgress ||
         oldDelegate.tearProgress != tearProgress ||
-        oldDelegate.isDark != isDark;
+        oldDelegate.eyeColor != eyeColor ||
+        oldDelegate.mouthColor != mouthColor ||
+        oldDelegate.tearColor != tearColor;
   }
 }

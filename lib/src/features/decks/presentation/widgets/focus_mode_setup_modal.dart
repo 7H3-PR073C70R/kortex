@@ -25,7 +25,7 @@ class FocusModeSetupModal extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (_) => FocusModeSetupModal(
         decks: decks,
         initialDeck: initialDeck,
@@ -111,7 +111,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: colors.black.withValues(alpha: 0.25),
             blurRadius: 30,
             offset: const Offset(0, -6),
           ),
@@ -146,16 +146,16 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                  gradient: LinearGradient(
+                    colors: [colors.deepBronze, colors.primary],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.bolt_rounded,
-                  color: Colors.white,
+                  color: colors.white,
                   size: 22,
                 ),
               ),
@@ -303,7 +303,9 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.primary
-                              : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                              : (isDark
+                                  ? colors.white.withValues(alpha: 0.1)
+                                  : colors.black.withValues(alpha: 0.05)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
@@ -315,7 +317,8 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                         child: Text(
                           '$count Cards',
                           style: typography.caption.bold.copyWith(
-                            color: isSelected ? Colors.white : colors.textPrimary,
+                            color:
+                                isSelected ? colors.white : colors.textPrimary,
                           ),
                         ),
                       ),
@@ -341,7 +344,9 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.primary
-                              : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                              : (isDark
+                                  ? colors.white.withValues(alpha: 0.1)
+                                  : colors.black.withValues(alpha: 0.05)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
@@ -353,7 +358,8 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                         child: Text(
                           '$mins Mins',
                           style: typography.caption.bold.copyWith(
-                            color: isSelected ? Colors.white : colors.textPrimary,
+                            color:
+                                isSelected ? colors.white : colors.textPrimary,
                           ),
                         ),
                       ),
@@ -408,13 +414,13 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                gradient: LinearGradient(
+                  colors: [colors.deepBronze, colors.primary],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                    color: colors.primary.withValues(alpha: 0.35),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -424,12 +430,12 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.flash_on_rounded, color: Colors.white, size: 20),
+                  Icon(Icons.flash_on_rounded, color: colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Start Hyperdrive Sprint',
                     style: typography.body.medium.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -474,7 +480,7 @@ class _OptionChip extends StatelessWidget {
               : colors.surfaceSecondary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? colors.primary : Colors.transparent,
+            color: isSelected ? colors.primary : colors.transparent,
             width: 1.5,
           ),
         ),

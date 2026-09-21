@@ -77,7 +77,7 @@ class ForumReplyAttachmentCard extends StatelessWidget {
         barrierColor: colors.black.withAlpha(230),
         builder: (ctx) {
           return Dialog(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             insetPadding: const EdgeInsets.all(16),
             child: Stack(
               alignment: Alignment.center,
@@ -130,12 +130,12 @@ class ForumReplyAttachmentCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark
               ? colors.surfacePrimary.withAlpha(180)
-              : const Color(0xFFF8FAFC),
+              : colors.surfaceSecondary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDark
                 ? colors.surfaceBorder.withAlpha(50)
-                : const Color(0xFFE2E8F0),
+                : colors.surfaceBorder,
           ),
         ),
         child: Row(
@@ -193,7 +193,7 @@ class ForumReplyAttachmentCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isDark
                     ? colors.surfaceSecondary.withAlpha(120)
-                    : const Color(0xFFEEF2FF),
+                    : colors.primary.withAlpha(20),
               ),
               child: Icon(
                 Icons.search_rounded,
@@ -232,7 +232,7 @@ class ForumPostMediaPreview extends StatelessWidget {
         barrierColor: colors.black.withAlpha(230),
         builder: (ctx) {
           return Dialog(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             insetPadding: const EdgeInsets.all(16),
             child: Stack(
               alignment: Alignment.center,
@@ -296,7 +296,7 @@ class ForumPostMediaPreview extends StatelessWidget {
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorder.withAlpha(50)
-                  : const Color(0xFFE2E8F0),
+                  : colors.surfaceBorder,
             ),
           ),
           clipBehavior: Clip.antiAlias,
@@ -356,13 +356,13 @@ class ForumPostMediaPreview extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withAlpha(180),
+                                  color: colors.black.withAlpha(180),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   '1 / ${mediaUrls.length}',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 10,
                                   ),
                                 ),
@@ -371,21 +371,21 @@ class ForumPostMediaPreview extends StatelessWidget {
                             // Centered overlay if more than 2 images
                             if (remainingCount > 0)
                               Container(
-                                color: Colors.black.withAlpha(120),
+                                color: colors.black.withAlpha(120),
                                 alignment: Alignment.center,
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.photo_library_outlined,
-                                      color: Colors.white,
+                                      color: colors.white,
                                       size: 20,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '+$remainingCount more',
                                       style: typography.caption.bold.copyWith(
-                                        color: Colors.white,
+                                        color: colors.white,
                                         fontSize: 11,
                                       ),
                                     ),

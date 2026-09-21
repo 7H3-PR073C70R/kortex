@@ -94,8 +94,8 @@ class LatexAstCache {
     }
 
     // 3. Balance unclosed curly braces (e.g. truncated "\text{Pote")
-    int openBraces = 0;
-    for (int i = 0; i < clean.length; i++) {
+    var openBraces = 0;
+    for (var i = 0; i < clean.length; i++) {
       if (clean[i] == '{' && (i == 0 || clean[i - 1] != r'\')) {
         openBraces++;
       } else if (clean[i] == '}' && (i == 0 || clean[i - 1] != r'\')) {

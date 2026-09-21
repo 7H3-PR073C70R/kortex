@@ -39,26 +39,24 @@ class MillionaireArcadeBanner extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    const Color(0xFF1E1B4B),
-                    const Color(0xFF312E81),
-                    const Color(0xFF1E293B),
+                    colors.surfaceSecondary,
+                    colors.surfaceTertiary,
+                    colors.surfacePrimary,
                   ]
                 : [
-                    const Color(0xFFEEF2FF),
-                    const Color(0xFFE0E7FF),
-                    const Color(0xFFFEF3C7),
+                    colors.surfacePrimary,
+                    colors.backgroundSecondary,
+                    colors.surfaceTertiary,
                   ],
           ),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isDark
-                ? const Color(0xFF6366F1).withValues(alpha: 0.45)
-                : const Color(0xFF6366F1).withValues(alpha: 0.25),
+            color: colors.primary.withValues(alpha: isDark ? 0.45 : 0.25),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.3 : 0.1),
+              color: colors.primary.withValues(alpha: isDark ? 0.3 : 0.1),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -73,13 +71,13 @@ class MillionaireArcadeBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                    gradient: LinearGradient(
+                      colors: [colors.warning, colors.slateTerracotta],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                        color: colors.warning.withValues(alpha: 0.4),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -88,16 +86,16 @@ class MillionaireArcadeBanner extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.military_tech_rounded,
-                        color: Colors.white,
+                        color: colors.white,
                         size: 14,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'DAILY ARCADE',
                         style: typography.caption.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 10.5,
                           letterSpacing: 0.8,
                         ),
@@ -109,13 +107,13 @@ class MillionaireArcadeBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                    color: (isDark ? colors.white : colors.black).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     '1 Tap • 5 Min • 12 Rungs',
                     style: typography.caption.medium.copyWith(
-                      color: isDark ? const Color(0xFFC7D2FE) : const Color(0xFF4338CA),
+                      color: isDark ? colors.latexHighlight : colors.primary,
                       fontSize: 10.5,
                     ),
                   ),
@@ -124,12 +122,12 @@ class MillionaireArcadeBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    color: colors.success.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.shield_rounded,
-                    color: Color(0xFF10B981),
+                    color: colors.success,
                     size: 15,
                   ),
                 ),
@@ -197,13 +195,13 @@ class MillionaireArcadeBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    gradient: LinearGradient(
+                      colors: [colors.primary, colors.syllabotAccent],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                        color: colors.primary.withValues(alpha: 0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -215,13 +213,13 @@ class MillionaireArcadeBanner extends StatelessWidget {
                       Text(
                         'Play Arcade',
                         style: typography.footnote.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.arrow_forward_rounded,
-                        color: Colors.white,
+                        color: colors.white,
                         size: 15,
                       ),
                     ],
@@ -249,17 +247,18 @@ class _MiniIconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Tooltip(
       message: tooltip,
       child: Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+          color: (isDark ? colors.white : colors.black).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5),
+          color: isDark ? colors.latexHighlight : colors.primary,
           size: 14,
         ),
       ),

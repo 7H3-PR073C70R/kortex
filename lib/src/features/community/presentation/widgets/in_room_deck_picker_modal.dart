@@ -27,7 +27,7 @@ class InRoomDeckPickerModal extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (_) => BlocProvider.value(
         value: liveRoomCubit,
         child: const InRoomDeckPickerModal(),
@@ -307,7 +307,7 @@ class _InRoomDeckPickerModalState extends State<InRoomDeckPickerModal> {
                                 child: Text(
                                   'Fetch Decks',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 12,
                                   ),
                                 ),

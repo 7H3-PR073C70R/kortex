@@ -37,6 +37,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
             painter: _BoundingBoxPainter(
               blocks: detectedBlocks,
               accentColor: theme.colorScheme.primary,
+              guideColor: colors.white.withValues(alpha: 0.4),
             ),
           ),
 
@@ -219,10 +220,12 @@ class _BoundingBoxPainter extends CustomPainter {
   _BoundingBoxPainter({
     required this.blocks,
     required this.accentColor,
+    required this.guideColor,
   });
 
   final List<RecognizedTextBlock> blocks;
   final Color accentColor;
+  final Color guideColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -237,7 +240,7 @@ class _BoundingBoxPainter extends CustomPainter {
     );
 
     final cropGuidePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.4)
+      ..color = guideColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 

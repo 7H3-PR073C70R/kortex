@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -66,7 +67,7 @@ class AppGuidedTourOverlay extends StatefulWidget {
 
     await showGeneralDialog<void>(
       context: context,
-      barrierColor: Colors.transparent,
+      barrierColor: context.colors.transparent,
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return FadeTransition(
@@ -107,31 +108,16 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
-  late final List<_TourStep> _steps;
+  List<_TourStep> _steps = const [];
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _steps = _buildSteps(context.colors);
+  }
 
-    _morphController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 380),
-    );
-    _morphAnimation = CurvedAnimation(
-      parent: _morphController,
-      curve: Curves.easeOutCubic,
-    );
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    unawaited(_pulseController.repeat(reverse: true));
-    _pulseAnimation = Tween<double>(begin: 0.6, end: 1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
-    );
-
-    _steps = [
+  List<_TourStep> _buildSteps(AppThemeColorsExtension colors) {
+    return [
       // 1. Dashboard & Academic Header
       _TourStep(
         badge: 'STEP 1 OF 5 • DASHBOARD',
@@ -141,7 +127,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             'Monitor your daily study consistency, level up your Neural Scholar tier, and see exact days remaining until your target exams (WAEC, JAMB, or Finals).',
         proTip: 'Tap "Add Exam Countdown" to calibrate an automated cram pace.',
         icon: Icons.speed_rounded,
-        accentColor: const Color(0xFF388AF6),
+        accentColor: colors.primary,
         resolveTarget: (context, screenSize, insets) {
           final top = insets.top + 16;
           final width = math.min<double>(screenSize.width - 32, 560);
@@ -164,7 +150,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             'Never cram at the last minute. Cards due for review appear right here every morning, scheduled by the FSRS algorithm right before you are predicted to forget.',
         proTip: 'Completing 10–15 cards a day cements durable long-term recall.',
         icon: Icons.alarm_on_rounded,
-        accentColor: const Color(0xFF10B981),
+        accentColor: colors.success,
         resolveTarget: (context, screenSize, insets) {
           final top = insets.top + 165;
           final width = math.min<double>(screenSize.width - 32, 560);
@@ -187,7 +173,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             'Browse curated past questions and subject curricula, or use the built-in OCR camera scanner to instantly turn textbook pages and lecture slides into active-recall cards.',
         proTip: 'Tap "+" inside Study Decks to convert physical notes into decks.',
         icon: Icons.style_rounded,
-        accentColor: const Color(0xFFF59E0B),
+        accentColor: colors.warning,
         resolveTarget: (context, screenSize, insets) {
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
@@ -211,7 +197,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             'Stuck on a tricky math equation, physics proof, or past question? Tap this floating copilot anytime on any screen for step-by-step guidance and concept breakdowns.',
         proTip: 'Syllabot floats above all screens so help is always one tap away.',
         icon: Icons.psychology_rounded,
-        accentColor: const Color(0xFF8B5CF6),
+        accentColor: colors.secondary,
         resolveTarget: (context, screenSize, insets) {
           final defaultBottom = math.max(84, insets.bottom + 72);
           return Rect.fromLTWH(
@@ -232,7 +218,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             'Connect with fellow candidates and scholars. Join synchronized Pomodoro live study rooms, discuss challenging questions in subject forums, and climb academic rankings.',
         proTip: 'Studying in live virtual rooms boosts focus and accountability.',
         icon: Icons.groups_rounded,
-        accentColor: const Color(0xFF06B6D4),
+        accentColor: colors.latexHighlight,
         resolveTarget: (context, screenSize, insets) {
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
@@ -247,6 +233,29 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
     ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _morphController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _morphAnimation = CurvedAnimation(
+      parent: _morphController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    unawaited(_pulseController.repeat(reverse: true));
+    _pulseAnimation = Tween<double>(begin: 0.6, end: 1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    );
 
     // Initialize targets after first layout frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -348,7 +357,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         if (!didPop) _finishTour();
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -362,9 +371,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                     targetRect: animatedRect,
                     pulseValue: _pulseAnimation.value,
                     accentColor: step.accentColor,
-                    scrimColor: isDark
-                        ? const Color(0xE8080C14)
-                        : const Color(0xDB111827),
+                    scrimColor: colors.black.withAlpha(isDark ? 232 : 219),
                   ),
                 );
               },
@@ -666,7 +673,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                               : 'Next Step',
                                           style:
                                               typography.caption.bold.copyWith(
-                                            color: Colors.white,
+                                            color: colors.white,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
@@ -676,7 +683,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                               ? Icons
                                                   .check_circle_outline_rounded
                                               : Icons.arrow_forward_rounded,
-                                          color: Colors.white,
+                                          color: colors.white,
                                           size: 15,
                                         ),
                                       ],

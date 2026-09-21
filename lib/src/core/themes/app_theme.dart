@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kortex/src/core/themes/color/app_material_colors.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/typography/typography.dart';
@@ -123,25 +122,25 @@ class AppTheme {
       colorScheme: isDark
           ? ColorScheme.dark(
               primary: colors.primary,
-              onPrimary: AppMaterialColors.white,
+              onPrimary: colors.white,
               secondary: colors.syllabotAccent,
-              onSecondary: AppMaterialColors.white,
+              onSecondary: colors.white,
               surface: colors.surfacePrimary,
               onSurface: colors.textPrimary,
               error: colors.error,
-              onError: AppMaterialColors.white,
+              onError: colors.white,
               outline: colors.surfaceBorder,
               outlineVariant: colors.surfaceBorderHighlight,
             )
           : ColorScheme.light(
               primary: colors.primary,
-              onPrimary: AppMaterialColors.white,
+              onPrimary: colors.white,
               secondary: colors.syllabotAccent,
-              onSecondary: AppMaterialColors.white,
+              onSecondary: colors.white,
               surface: colors.surfacePrimary,
               onSurface: colors.textPrimary,
               error: colors.error,
-              onError: AppMaterialColors.white,
+              onError: colors.white,
               outline: colors.surfaceBorder,
               outlineVariant: colors.surfaceBorderHighlight,
             ),
@@ -151,7 +150,7 @@ class AppTheme {
         foregroundColor: colors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: colors.transparent,
         systemOverlayStyle: overlayStyle,
         centerTitle: false,
         titleTextStyle: typography.headline.bold.copyWith(
@@ -211,7 +210,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
-          foregroundColor: AppMaterialColors.white,
+          foregroundColor: colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           textStyle: typography.subhead.semiBold,
@@ -258,14 +257,14 @@ class AppTheme {
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colors.surfacePrimary,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: colors.surfacePrimary,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: colors.surfaceBorder),
@@ -273,7 +272,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colors.primary,
-        foregroundColor: AppMaterialColors.white,
+        foregroundColor: colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

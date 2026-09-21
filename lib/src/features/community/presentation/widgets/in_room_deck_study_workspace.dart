@@ -752,18 +752,18 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _isLoadingHint
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.white),
                       ),
                     )
                   : Text(
                       'Get Hint',
                       style: typography.caption.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                         fontSize: 11,
                       ),
                     ),
@@ -1023,16 +1023,16 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.refresh_rounded,
                                         size: 16,
-                                        color: Colors.white,
+                                        color: colors.white,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Fetch Decks',
                                         style: typography.caption.bold.copyWith(
-                                          color: Colors.white,
+                                          color: colors.white,
                                           fontSize: 12.5,
                                         ),
                                       ),
@@ -1279,16 +1279,16 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.sync_rounded,
                           size: 16,
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           'Switch Deck',
                           style: typography.body.bold.copyWith(
-                            color: Colors.white,
+                            color: colors.white,
                             fontSize: 13,
                           ),
                         ),

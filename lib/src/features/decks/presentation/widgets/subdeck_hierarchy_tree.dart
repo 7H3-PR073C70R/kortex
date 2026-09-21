@@ -225,7 +225,7 @@ class SubdeckHierarchyTree extends HookWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? colors.primary.withValues(alpha: 0.12)
-                    : Colors.transparent,
+                    : colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: isSelected
                     ? Border.all(color: colors.primary.withValues(alpha: 0.4))

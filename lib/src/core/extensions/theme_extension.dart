@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 
+
 extension ThemeExtension on BuildContext {
   /// Active [ThemeData].
   ThemeData get theme => Theme.of(this);

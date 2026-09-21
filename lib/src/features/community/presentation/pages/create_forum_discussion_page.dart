@@ -733,11 +733,11 @@ class CreateForumDiscussionPage extends HookWidget {
     ];
 
     return Scaffold(
-      backgroundColor: isDark ? colors.surfacePrimary : const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? colors.surfacePrimary : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: isDark
             ? colors.surfacePrimary
-            : const Color(0xFFF9FAFB),
+            : colors.surfacePrimary,
         elevation: 0,
         leadingWidth: 96,
         leading: Align(
@@ -933,15 +933,13 @@ class CreateForumDiscussionPage extends HookWidget {
                             backgroundColor: isAnonymous.value
                                 ? (isDark
                                       ? colors.surfaceSecondary
-                                      : const Color(0xFFE2E8F0))
+                                      : colors.surfaceTertiary)
                                 : colors.primary.withAlpha(isDark ? 40 : 25),
                             child: isAnonymous.value
                                 ? Icon(
                                     Icons.masks_rounded,
                                     size: 18,
-                                    color: isDark
-                                        ? colors.textSecondary
-                                        : const Color(0xFF475569),
+                                    color: colors.textSecondary,
                                   )
                                 : Text(
                                     userDisplayName.isNotEmpty
@@ -1054,8 +1052,8 @@ class CreateForumDiscussionPage extends HookWidget {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isAnonymous.value
-                                  ? const Color(0xFF6366F1).withAlpha(80)
-                                  : Colors.transparent,
+                                  ? colors.primary.withAlpha(80)
+                                  : colors.transparent,
                             ),
                           ),
                           child: Row(
@@ -1067,7 +1065,7 @@ class CreateForumDiscussionPage extends HookWidget {
                                     : Icons.visibility_outlined,
                                 size: 13,
                                 color: isAnonymous.value
-                                    ? const Color(0xFF6366F1)
+                                    ? colors.primary
                                     : colors.textSecondary,
                               ),
                               const SizedBox(width: 4),
@@ -1075,7 +1073,7 @@ class CreateForumDiscussionPage extends HookWidget {
                                 isAnonymous.value ? 'Anonymous' : 'Public',
                                 style: typography.caption.bold.copyWith(
                                   color: isAnonymous.value
-                                      ? const Color(0xFF6366F1)
+                                      ? colors.primary
                                       : colors.textSecondary,
                                   fontSize: 11.5,
                                 ),
@@ -1093,14 +1091,10 @@ class CreateForumDiscussionPage extends HookWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(
-                          0xFF6366F1,
-                        ).withAlpha(isDark ? 30 : 15),
+                        color: colors.primary.withAlpha(isDark ? 30 : 15),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(
-                            0xFF6366F1,
-                          ).withAlpha(isDark ? 60 : 35),
+                          color: colors.primary.withAlpha(isDark ? 60 : 35),
                         ),
                       ),
                       child: Row(
@@ -1109,12 +1103,12 @@ class CreateForumDiscussionPage extends HookWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1),
+                              color: colors.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.smart_toy_rounded,
-                              color: Colors.white,
+                              color: colors.white,
                               size: 18,
                             ),
                           ),
@@ -1171,7 +1165,7 @@ class CreateForumDiscussionPage extends HookWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : Colors.white,
+                      color: isDark ? colors.surfaceSecondary : colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 35 : 20),
@@ -1247,7 +1241,7 @@ class CreateForumDiscussionPage extends HookWidget {
                   // Problem Statement Container with Rich Text Toolbar
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : Colors.white,
+                      color: isDark ? colors.surfaceSecondary : colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 35 : 20),
@@ -1495,8 +1489,8 @@ class CreateForumDiscussionPage extends HookWidget {
                                     : Icons.mic_rounded,
                                 size: 16,
                                 color: isRecordingVoice.value
-                                    ? Colors.white
-                                    : const Color(0xFF6366F1),
+                                    ? colors.white
+                                    : colors.primary,
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -1505,8 +1499,8 @@ class CreateForumDiscussionPage extends HookWidget {
                                     : 'Voice Note & STT',
                                 style: typography.caption.bold.copyWith(
                                   color: isRecordingVoice.value
-                                      ? Colors.white
-                                      : const Color(0xFF6366F1),
+                                      ? colors.white
+                                      : colors.primary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -1578,12 +1572,12 @@ class CreateForumDiscussionPage extends HookWidget {
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.black.withAlpha(160),
+                                      color: colors.black.withAlpha(160),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.close_rounded,
                                       size: 12,
-                                      color: Colors.white,
+                                      color: colors.white,
                                     ),
                                   ),
                                 ),
@@ -1771,15 +1765,15 @@ class CreateForumDiscussionPage extends HookWidget {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : Colors.white,
+                      color: isDark ? colors.surfaceSecondary : colors.white,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.masks_rounded,
                           size: 20,
-                          color: Color(0xFF6366F1),
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1806,7 +1800,7 @@ class CreateForumDiscussionPage extends HookWidget {
                         ),
                         Checkbox(
                           value: isAnonymous.value,
-                          activeColor: const Color(0xFF6366F1),
+                          activeColor: colors.primary,
                           onChanged: (val) => isAnonymous.value = val ?? false,
                         ),
                       ],
@@ -1821,15 +1815,15 @@ class CreateForumDiscussionPage extends HookWidget {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : Colors.white,
+                      color: isDark ? colors.surfaceSecondary : colors.white,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.lightbulb_outline_rounded,
                           size: 20,
-                          color: Color(0xFF6366F1),
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1856,7 +1850,7 @@ class CreateForumDiscussionPage extends HookWidget {
                         ),
                         Checkbox(
                           value: allowAiHints.value,
-                          activeColor: const Color(0xFF6366F1),
+                          activeColor: colors.primary,
                           onChanged: (val) => allowAiHints.value = val ?? true,
                         ),
                       ],
@@ -1871,7 +1865,7 @@ class CreateForumDiscussionPage extends HookWidget {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : Colors.white,
+                      color: isDark ? colors.surfaceSecondary : colors.white,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -1906,7 +1900,7 @@ class CreateForumDiscussionPage extends HookWidget {
                         ),
                         Checkbox(
                           value: notifyVerifiedSolution.value,
-                          activeColor: const Color(0xFF6366F1),
+                          activeColor: colors.primary,
                           onChanged: (val) =>
                               notifyVerifiedSolution.value = val ?? true,
                         ),
@@ -1985,7 +1979,7 @@ class CreateForumDiscussionPage extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final color = isAccent ? const Color(0xFF6366F1) : colors.primary;
+    final color = isAccent ? colors.primary : colors.textSecondary;
 
     return Tooltip(
       message: tooltip,
@@ -1997,7 +1991,7 @@ class CreateForumDiscussionPage extends HookWidget {
           decoration: BoxDecoration(
             color: isAccent
                 ? color.withAlpha(isDark ? 35 : 20)
-                : Colors.transparent,
+                : colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: label != null

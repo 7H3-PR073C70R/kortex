@@ -303,16 +303,16 @@ class _StudySessionView extends HookWidget {
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.auto_awesome_rounded,
-                                            color: Colors.white,
+                                            color: colors.white,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             'Generate with AI',
                                             style: typography.subhead.bold.copyWith(
-                                              color: Colors.white,
+                                              color: colors.white,
                                             ),
                                           ),
                                         ],
@@ -770,7 +770,7 @@ class _StudySessionView extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.transparent,
         isScrollControlled: true,
         builder: (sheetContext) {
         return Container(

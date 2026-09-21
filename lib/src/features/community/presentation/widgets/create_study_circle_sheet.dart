@@ -32,7 +32,7 @@ class CreateStudyCircleSheet extends HookWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (_) => CreateStudyCircleSheet(
         onSubmit: onSubmit,
         initialTrack: initialTrack,

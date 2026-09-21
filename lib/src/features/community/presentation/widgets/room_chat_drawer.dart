@@ -27,7 +27,7 @@ class RoomChatDrawer extends StatefulWidget {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: context.colors.transparent,
         builder: (_) => BlocProvider.value(
           value: context.read<LiveRoomCubit>(),
           child: RoomChatDrawer(currentUserId: currentUserId),
@@ -130,7 +130,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 80 : 30),
+            color: colors.black.withAlpha(isDark ? 80 : 30),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -340,10 +340,10 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.send_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 18,
                     ),
                   ),
@@ -423,9 +423,9 @@ class _ChatMessageBubble extends StatelessWidget {
         ? colors.primary
         : (isDark ? colors.surfaceTertiary : colors.surfaceSecondary);
 
-    final textColor = isMe ? Colors.white : colors.textPrimary;
+    final textColor = isMe ? colors.white : colors.textPrimary;
     final subtextColor = isMe
-        ? Colors.white.withAlpha(190)
+        ? colors.white.withAlpha(190)
         : colors.textSecondary;
 
     return Align(
@@ -449,7 +449,7 @@ class _ChatMessageBubble extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 40 : 10),
+              color: colors.black.withAlpha(isDark ? 40 : 10),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -495,7 +495,7 @@ class _ChatMessageBubble extends StatelessWidget {
                   Icon(
                     Icons.done_all_rounded,
                     size: 13,
-                    color: Colors.white.withAlpha(200),
+                    color: colors.white.withAlpha(200),
                   ),
                 ],
               ],

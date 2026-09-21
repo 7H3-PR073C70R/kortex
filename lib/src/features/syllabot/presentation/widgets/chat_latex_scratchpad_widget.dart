@@ -226,7 +226,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
           // Insert CTA Button
           AppButton(
             text: 'Insert Formula into Chat',
-            prefixIcon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+            prefixIcon: Icon(Icons.add_rounded, size: 18, color: colors.white),
             onPressed: () {
               AppFeedback.correct();
               onInsertLatex(recognizedLatex.value);

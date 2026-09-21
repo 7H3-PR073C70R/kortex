@@ -124,20 +124,20 @@ class _TeddyBearPainter extends CustomPainter {
     final center = Offset(w / 2, h / 2);
 
     final bearColor = isHappy
-        ? (isDark ? const Color(0xFF7D5A88) : const Color(0xFFD6A9C5))
-        : (isDark ? const Color(0xFF6B5876) : const Color(0xFFC7A7B8));
+        ? (isDark ? themeColors.deepBronze : themeColors.secondary)
+        : (isDark ? themeColors.surfaceTertiary : themeColors.surfaceSecondary);
     final bearHighlight = isHappy
-        ? (isDark ? const Color(0xFF9E74AB) : const Color(0xFFF3C7E3))
-        : (isDark ? const Color(0xFF867094) : const Color(0xFFE2C9D7));
+        ? (isDark ? themeColors.secondary : themeColors.warmOchre)
+        : (isDark ? themeColors.surfaceElevated : themeColors.surfaceBorder);
     final innerEarColor = isDark
-        ? const Color(0xFF9E7B9B)
-        : const Color(0xFFF3D6E4);
+        ? themeColors.slateTerracotta.withAlpha(120)
+        : themeColors.slateTerracotta.withAlpha(60);
     final muzzleColor = isDark
-        ? const Color(0xFF8F7A9E)
-        : const Color(0xFFF5E4EE);
+        ? themeColors.surfaceSecondary
+        : themeColors.surfacePrimary;
     final darkDetailColor = isDark
-        ? const Color(0xFF231C28)
-        : const Color(0xFF3F2F3B);
+        ? themeColors.textPrimary
+        : themeColors.black;
 
     final bearPaint = Paint()
       ..shader = RadialGradient(
@@ -217,7 +217,7 @@ class _TeddyBearPainter extends CustomPainter {
 
       // Open smile fill for extra happiness
       final smileFillPaint = Paint()
-        ..color = const Color(0xFFFF5277).withAlpha(isDark ? 180 : 220)
+        ..color = themeColors.error.withAlpha(isDark ? 180 : 220)
         ..style = PaintingStyle.fill;
       final smileFillPath = Path()
         ..moveTo(mouthCenter.dx - (w * 0.045), mouthCenter.dy)
@@ -304,7 +304,7 @@ class _TeddyBearPainter extends CustomPainter {
     }
 
     // G. Soft Rosy Blush Cheeks
-    final blushColor = isHappy ? const Color(0xFFFF4D6D) : const Color(0xFFFF6B81);
+    final blushColor = isHappy ? themeColors.slateTerracotta : themeColors.recallAgain;
     final blushPaint = Paint()
       ..color = blushColor.withAlpha(isDark ? (isHappy ? 80 : 60) : (isHappy ? 95 : 75));
     canvas
@@ -320,7 +320,7 @@ class _TeddyBearPainter extends CustomPainter {
       // Single Sad Tear
       final tearY = h * 0.45 + (breath * h * 0.03);
       final tearPaint = Paint()
-        ..color = const Color(0xFF60A5FA).withAlpha((180 + breath * 75).toInt());
+        ..color = themeColors.quartzCyan.withAlpha((180 + breath * 75).toInt());
       canvas.drawCircle(Offset(w * 0.33, tearY), w * 0.018, tearPaint);
     }
   }

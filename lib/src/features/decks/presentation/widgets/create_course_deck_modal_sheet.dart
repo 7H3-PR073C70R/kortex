@@ -35,7 +35,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => CreateCourseDeckModalSheet(
         courseId: courseId,
         courseCode: courseCode,

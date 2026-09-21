@@ -255,25 +255,23 @@ class _DecksView extends HookWidget {
                         gradient: LinearGradient(
                           colors: isDark
                               ? [
-                                  const Color(0xFF1E1B4B),
-                                  const Color(0xFF31104B),
+                                  colors.surfaceSecondary,
+                                  colors.surfaceTertiary,
                                 ]
                               : [
-                                  const Color(0xFFEEF2FF),
-                                  const Color(0xFFFAF5FF),
+                                  colors.surfacePrimary,
+                                  colors.surfaceSecondary,
                                 ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(
-                            0xFF818CF8,
-                          ).withValues(alpha: 0.35),
+                          color: colors.primary.withValues(alpha: 0.35),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(
-                              0xFF6366F1,
-                            ).withValues(alpha: isDark ? 0.2 : 0.08),
+                            color: colors.primary.withValues(
+                              alpha: isDark ? 0.2 : 0.08,
+                            ),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
@@ -287,14 +285,12 @@ class _DecksView extends HookWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF6366F1,
-                                  ).withValues(alpha: 0.2),
+                                  color: colors.primary.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.bolt_rounded,
-                                  color: Color(0xFF6366F1),
+                                  color: colors.primary,
                                   size: 20,
                                 ),
                               ),
@@ -347,7 +343,7 @@ class _DecksView extends HookWidget {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF6366F1),
+                                      color: colors.primary,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     alignment: Alignment.center,
@@ -355,9 +351,9 @@ class _DecksView extends HookWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.flash_on_rounded,
-                                          color: Colors.white,
+                                          color: colors.white,
                                           size: 16,
                                         ),
                                         const SizedBox(width: 4),
@@ -365,7 +361,7 @@ class _DecksView extends HookWidget {
                                           'Quick 10',
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: Colors.white,
+                                                color: colors.white,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                         ),
@@ -397,8 +393,8 @@ class _DecksView extends HookWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isDark
-                                          ? Colors.white12
-                                          : Colors.black.withValues(
+                                          ? colors.white.withValues(alpha: 0.1)
+                                          : colors.black.withValues(
                                               alpha: 0.06,
                                             ),
                                       borderRadius: BorderRadius.circular(12),
@@ -459,16 +455,14 @@ class _DecksView extends HookWidget {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(
-                                              0xFFF59E0B,
-                                            ).withValues(alpha: 0.2)
-                                          : const Color(0xFFFEF3C7),
+                                      color: colors.warning.withValues(
+                                        alpha: isDark ? 0.2 : 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(
-                                          0xFFF59E0B,
-                                        ).withValues(alpha: 0.6),
+                                        color: colors.warning.withValues(
+                                          alpha: 0.6,
+                                        ),
                                       ),
                                     ),
                                     alignment: Alignment.center,
@@ -476,9 +470,9 @@ class _DecksView extends HookWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.timer_outlined,
-                                          color: Color(0xFFD97706),
+                                          color: colors.warning,
                                           size: 16,
                                         ),
                                         const SizedBox(width: 4),
@@ -486,7 +480,7 @@ class _DecksView extends HookWidget {
                                           'Speed Run (3m)',
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: const Color(0xFFD97706),
+                                                color: colors.warning,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                         ),
@@ -516,10 +510,10 @@ class _DecksView extends HookWidget {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
+                                      gradient: LinearGradient(
                                         colors: [
-                                          Color(0xFF8B5CF6),
-                                          Color(0xFF6366F1),
+                                          colors.deepBronze,
+                                          colors.primary,
                                         ],
                                       ),
                                       borderRadius: BorderRadius.circular(12),
@@ -529,9 +523,9 @@ class _DecksView extends HookWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.bolt_rounded,
-                                          color: Colors.white,
+                                          color: colors.white,
                                           size: 16,
                                         ),
                                         const SizedBox(width: 4),
@@ -539,7 +533,7 @@ class _DecksView extends HookWidget {
                                           'Hyperdrive',
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: Colors.white,
+                                                color: colors.white,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                         ),

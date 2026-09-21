@@ -185,7 +185,7 @@ class TrackForumPostCard extends HookWidget {
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: colors.error,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () => Navigator.of(dialogCtx).pop(true),
@@ -324,7 +324,7 @@ class TrackForumPostCard extends HookWidget {
           ],
         ),
         child: Material(
-          color: Colors.transparent,
+          color: colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(16),

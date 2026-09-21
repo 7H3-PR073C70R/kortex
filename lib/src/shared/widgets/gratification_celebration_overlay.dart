@@ -138,13 +138,13 @@ class _GratificationCelebrationOverlayState
             emissionFrequency: 0.05,
             numberOfParticles: 35,
             gravity: 0.15,
-            colors: const [
-              Color(0xFF6366F1),
-              Color(0xFF10B981),
-              Color(0xFFF59E0B),
-              Color(0xFFEC4899),
-              Color(0xFF8B5CF6),
-              Color(0xFF3B82F6),
+            colors: [
+              colors.primary,
+              colors.success,
+              colors.warning,
+              colors.secondary,
+              colors.deepBronze,
+              colors.quartzCyan,
             ],
           ),
         ),
@@ -156,7 +156,7 @@ class _GratificationCelebrationOverlayState
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: Dialog(
-                backgroundColor: Colors.transparent,
+                backgroundColor: colors.transparent,
                 insetPadding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -250,9 +250,9 @@ class _GratificationCelebrationOverlayState
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.bolt_rounded,
-                                color: Colors.amber,
+                                color: colors.warning,
                                 size: 18,
                               ),
                               const SizedBox(width: 4),
@@ -350,7 +350,7 @@ class _GratificationCelebrationOverlayState
                               child: Text(
                                 widget.buttonText,
                                 style: typography.body.bold.copyWith(
-                                  color: Colors.white,
+                                  color: colors.white,
                                   fontSize: 14.5,
                                 ),
                               ),

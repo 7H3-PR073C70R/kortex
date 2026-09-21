@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
 
 /// Callback signature for spawning a reaction particle.
 typedef FloatingReactionCallback =
@@ -173,6 +174,7 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
                   ? null
                   : _ReactionCanvasPainter(
                       particles: _particles,
+                      shadowColor: context.colors.black,
                       repaint: Listenable.merge(
                         _particles.map((p) => p.controller).toList(),
                       ),
@@ -190,10 +192,12 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
 class _ReactionCanvasPainter extends CustomPainter {
   _ReactionCanvasPainter({
     required this.particles,
+    required this.shadowColor,
     required super.repaint,
   });
 
   final List<_ReactionParticle> particles;
+  final Color shadowColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -218,15 +222,14 @@ class _ReactionCanvasPainter extends CustomPainter {
       // Scale: pop in smoothly (0.0 -> 0.2: 0 to 1.2), then settle to 1.0
       var currentScale = p.scale;
       if (progress < 0.2) {
-        final popProgress = progress / 0.2;
-        currentScale = p.scale * (Curves.easeOutBack.transform(popProgress));
+        currentScale *= progress / 0.2 * 1.2;
+      } else if (progress < 0.35) {
+        currentScale *= 1.2 - ((progress - 0.2) / 0.15 * 0.2);
       }
 
-      // Opacity: stay solid until 0.65, then smoothly fade out
-      var opacity = 1.0;
-      if (progress > 0.65) {
-        opacity = ((1.0 - progress) / 0.35).clamp(0.0, 1.0);
-      }
+      // Opacity: fade out smoothly in the last 30% of lifetime
+      final opacity =
+          progress > 0.70 ? ((1.0 - progress) / 0.30).clamp(0.0, 1.0) : 1.0;
 
       // Subtle rotation along sway
       final rotation =
@@ -239,7 +242,7 @@ class _ReactionCanvasPainter extends CustomPainter {
             fontSize: 32.0 * currentScale,
             shadows: [
               Shadow(
-                color: Colors.black.withValues(alpha: 0.25 * opacity),
+                color: shadowColor.withValues(alpha: 0.25 * opacity),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),

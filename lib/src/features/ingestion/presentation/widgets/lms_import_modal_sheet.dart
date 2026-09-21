@@ -132,7 +132,7 @@ class LmsImportModalSheet extends HookWidget {
                   content: Text(
                     state.errorMessage!,
                     style: typography.caption.medium.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                     ),
                   ),
                   backgroundColor: colors.error,

@@ -169,7 +169,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
               ),
               child: Icon(
                 _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
+                color: colors.white,
                 size: widget.compact ? 20 : 24,
               ),
             ),

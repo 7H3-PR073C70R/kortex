@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
@@ -111,7 +112,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: colors.error,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -274,18 +275,18 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   exam.subjectTrack.toUpperCase(),
-                  style: typography.caption.bold.copyWith(color: Colors.white),
+                  style: typography.caption.bold.copyWith(color: colors.white),
                 ),
               ),
               Text(
                 'ACTIVE TIMETABLE',
                 style: typography.caption.bold.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: colors.white.withValues(alpha: 0.8),
                   letterSpacing: 1.1,
                 ),
               ),
@@ -294,7 +295,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           const SizedBox(height: 12),
           Text(
             exam.examName,
-            style: typography.title2.bold.copyWith(color: Colors.white),
+            style: typography.title2.bold.copyWith(color: colors.white),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -302,7 +303,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           Text(
             DateFormat('EEEE, MMMM d, y • hh:mm a').format(exam.targetDate),
             style: typography.caption.regular.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 20),
@@ -311,17 +312,21 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildTimeDigit(days.toString(), 'DAYS'),
+              _buildTimeDigit(days.toString(), 'DAYS', colors),
               Text(
                 ':',
-                style: typography.title1.bold.copyWith(color: Colors.white70),
+                style: typography.title1.bold.copyWith(
+                  color: colors.white.withValues(alpha: 0.7),
+                ),
               ),
-              _buildTimeDigit(hours.toString().padLeft(2, '0'), 'HOURS'),
+              _buildTimeDigit(hours.toString().padLeft(2, '0'), 'HOURS', colors),
               Text(
                 ':',
-                style: typography.title1.bold.copyWith(color: Colors.white70),
+                style: typography.title1.bold.copyWith(
+                  color: colors.white.withValues(alpha: 0.7),
+                ),
               ),
-              _buildTimeDigit(minutes.toString().padLeft(2, '0'), 'MINUTES'),
+              _buildTimeDigit(minutes.toString().padLeft(2, '0'), 'MINUTES', colors),
             ],
           ),
         ],
@@ -329,31 +334,35 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     );
   }
 
-  Widget _buildTimeDigit(String value, String label) {
+  Widget _buildTimeDigit(
+    String value,
+    String label,
+    AppThemeColorsExtension colors,
+  ) {
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: colors.white,
             ),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: Colors.white70,
+            color: colors.white.withValues(alpha: 0.7),
             letterSpacing: 0.8,
           ),
         ),
@@ -411,7 +420,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   child: Icon(
                     Icons.check,
                     size: 14,
-                    color: isSelected ? Colors.white : Colors.transparent,
+                    color: isSelected ? colors.white : colors.transparent,
                   ),
                 ),
               ),
@@ -471,7 +480,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                 onPressed: () => AddExamModalSheet.show(context, initialExam: exam),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.redAccent),
+                icon: Icon(Icons.delete_outline_rounded, size: 20, color: colors.error),
                 tooltip: 'Delete Exam',
                 onPressed: () => _confirmDelete(context, exam),
               ),

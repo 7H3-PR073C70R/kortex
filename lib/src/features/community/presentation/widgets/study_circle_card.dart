@@ -349,10 +349,10 @@ class StudyCircleCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.bolt_rounded,
                           size: 14,
-                          color: Colors.amber,
+                          color: colors.warning,
                         ),
                         const SizedBox(width: 4),
                         Text(

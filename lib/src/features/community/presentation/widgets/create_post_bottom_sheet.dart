@@ -214,7 +214,7 @@ class CreatePostBottomSheet extends HookWidget {
                         decoration: BoxDecoration(
                           color: !isQuestion.value
                               ? colors.primary
-                              : Colors.transparent,
+                              : colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -239,7 +239,7 @@ class CreatePostBottomSheet extends HookWidget {
                         decoration: BoxDecoration(
                           color: isQuestion.value
                               ? colors.warning
-                              : Colors.transparent,
+                              : colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(

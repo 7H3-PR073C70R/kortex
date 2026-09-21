@@ -256,7 +256,7 @@ class AudioLectureIngestionSheet extends HookWidget {
           else
             AppButton(
               text: 'Generate Flashcards from Lecture',
-              prefixIcon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Colors.white),
+              prefixIcon: Icon(Icons.auto_awesome_rounded, size: 18, color: colors.white),
               onPressed: () {
                 AppFeedback.correct();
                 onGenerateCards?.call(transcriptionResult.value);

@@ -247,12 +247,12 @@ class _CommunityHubView extends HookWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.add_rounded, size: 17, color: Colors.white),
+                      Icon(Icons.add_rounded, size: 17, color: colors.white),
                       const SizedBox(width: 4),
                       Text(
                         'Post',
                         style: typography.caption.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                           fontSize: 13,
                           letterSpacing: 0.2,
                         ),

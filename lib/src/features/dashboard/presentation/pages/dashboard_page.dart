@@ -956,9 +956,9 @@ class _NextBestActionCard extends StatelessWidget {
                   colors: [colors.primary, colors.syllabotAccent],
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.bolt_rounded,
-                color: Colors.white,
+                color: colors.white,
                 size: 22,
               ),
             ),
@@ -1019,7 +1019,7 @@ class _NextBestActionCard extends StatelessWidget {
               child: Text(
                 'Start',
                 style: typography.caption.bold.copyWith(
-                  color: Colors.white,
+                  color: colors.white,
                   fontSize: 12,
                 ),
               ),
@@ -1328,7 +1328,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
               child: Text(
                 'Triage 10',
                 style: typography.caption.bold.copyWith(
-                  color: Colors.white,
+                  color: colors.white,
                   fontSize: 11,
                 ),
               ),

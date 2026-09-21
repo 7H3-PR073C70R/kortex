@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package -- Preserved for legacy preset mapping.
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/themes/color/app_material_colors.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
@@ -41,15 +43,21 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     required this.white,
     required this.black,
     this.transparent = const Color(0x00000000),
+    this.mutedSage = AppMaterialColors.mutedSage,
+    this.warmOchre = AppMaterialColors.warmOchre,
+    this.deepBronze = AppMaterialColors.deepBronze,
+    this.slateTerracotta = AppMaterialColors.slateTerracotta,
+    this.alpineMoss = AppMaterialColors.alpineMoss,
+    this.quartzCyan = AppMaterialColors.quartzCyan,
   });
 
   /// Light theme color configuration
   factory AppThemeColorsExtension.light({Color? primaryAccent}) {
-    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
+    final accent = primaryAccent ?? AppMaterialColors.primaryBase;
     return AppThemeColorsExtension(
       primary: accent,
-      syllabotAccent: AppMaterialColors.syllabotBase,
-      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(50),
+      syllabotAccent: AppMaterialColors.secondaryBase,
+      syllabotGlow: AppMaterialColors.secondaryBase.withAlpha(50),
       latexHighlight: AppMaterialColors.latexBase,
       latexBackground: AppMaterialColors.latexBase.withAlpha(25),
       recallEasy: AppMaterialColors.recallEasy,
@@ -87,11 +95,11 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
 
   /// Slate dark theme color configuration
   factory AppThemeColorsExtension.dark({Color? primaryAccent}) {
-    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
+    final accent = primaryAccent ?? AppMaterialColors.primaryBase;
     return AppThemeColorsExtension(
       primary: accent,
-      syllabotAccent: AppMaterialColors.syllabotBase,
-      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(50),
+      syllabotAccent: AppMaterialColors.secondaryBase,
+      syllabotGlow: AppMaterialColors.secondaryBase.withAlpha(50),
       latexHighlight: AppMaterialColors.latexBase,
       latexBackground: AppMaterialColors.latexBase.withAlpha(35),
       recallEasy: AppMaterialColors.recallEasy,
@@ -129,11 +137,11 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
 
   /// Midnight OLED pure #000000 black theme color configuration
   factory AppThemeColorsExtension.oled({Color? primaryAccent}) {
-    final accent = primaryAccent ?? AppMaterialColors.academicBlue;
+    final accent = primaryAccent ?? AppMaterialColors.primaryBase;
     return AppThemeColorsExtension(
       primary: accent,
-      syllabotAccent: AppMaterialColors.syllabotBase,
-      syllabotGlow: AppMaterialColors.syllabotBase.withAlpha(60),
+      syllabotAccent: AppMaterialColors.secondaryBase,
+      syllabotGlow: AppMaterialColors.secondaryBase.withAlpha(60),
       latexHighlight: AppMaterialColors.latexBase,
       latexBackground: AppMaterialColors.latexBase.withAlpha(40),
       recallEasy: AppMaterialColors.recallEasy,
@@ -182,14 +190,18 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
         return AppThemeColorsExtension.dark(primaryAccent: accent);
       case ThemePreset.midnightOled:
         return AppThemeColorsExtension.oled(primaryAccent: accent);
+      case ThemePreset.alpineMoss:
       case ThemePreset.emeraldStem:
-        return AppThemeColorsExtension.dark(
-          primaryAccent: customAccent ?? AppMaterialColors.emeraldStem,
-        );
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
+      case ThemePreset.warmOchre:
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
+      case ThemePreset.deepBronze:
       case ThemePreset.royalAmethyst:
-        return AppThemeColorsExtension.dark(
-          primaryAccent: customAccent ?? AppMaterialColors.royalAmethyst,
-        );
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
+      case ThemePreset.slateTerracotta:
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
+      case ThemePreset.quartzCyan:
+        return AppThemeColorsExtension.dark(primaryAccent: accent);
     }
   }
 
@@ -199,6 +211,14 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
   final Color syllabotGlow;
   final Color latexHighlight;
   final Color latexBackground;
+
+  // Boutique Preset Mineral Accent Tokens
+  final Color mutedSage;
+  final Color warmOchre;
+  final Color deepBronze;
+  final Color slateTerracotta;
+  final Color alpineMoss;
+  final Color quartzCyan;
 
   // Active Recall Tokens
   final Color recallEasy;
@@ -285,6 +305,12 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
     Color? white,
     Color? black,
     Color? transparent,
+    Color? mutedSage,
+    Color? warmOchre,
+    Color? deepBronze,
+    Color? slateTerracotta,
+    Color? alpineMoss,
+    Color? quartzCyan,
   }) {
     return AppThemeColorsExtension(
       primary: primary ?? this.primary,
@@ -324,6 +350,12 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       white: white ?? this.white,
       black: black ?? this.black,
       transparent: transparent ?? this.transparent,
+      mutedSage: mutedSage ?? this.mutedSage,
+      warmOchre: warmOchre ?? this.warmOchre,
+      deepBronze: deepBronze ?? this.deepBronze,
+      slateTerracotta: slateTerracotta ?? this.slateTerracotta,
+      alpineMoss: alpineMoss ?? this.alpineMoss,
+      quartzCyan: quartzCyan ?? this.quartzCyan,
     );
   }
 
@@ -401,6 +433,14 @@ class AppThemeColorsExtension extends ThemeExtension<AppThemeColorsExtension> {
       white: Color.lerp(white, other.white, t) ?? white,
       black: Color.lerp(black, other.black, t) ?? black,
       transparent: Color.lerp(transparent, other.transparent, t) ?? transparent,
+      mutedSage: Color.lerp(mutedSage, other.mutedSage, t) ?? mutedSage,
+      warmOchre: Color.lerp(warmOchre, other.warmOchre, t) ?? warmOchre,
+      deepBronze: Color.lerp(deepBronze, other.deepBronze, t) ?? deepBronze,
+      slateTerracotta:
+          Color.lerp(slateTerracotta, other.slateTerracotta, t) ??
+          slateTerracotta,
+      alpineMoss: Color.lerp(alpineMoss, other.alpineMoss, t) ?? alpineMoss,
+      quartzCyan: Color.lerp(quartzCyan, other.quartzCyan, t) ?? quartzCyan,
     );
   }
 

@@ -73,7 +73,7 @@ class ReportContentModalSheet extends HookWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => ReportContentModalSheet(
         contentType: contentType,
         contentId: contentId,

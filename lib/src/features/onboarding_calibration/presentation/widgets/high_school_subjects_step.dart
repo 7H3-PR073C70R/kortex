@@ -302,7 +302,7 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                 border: Border.all(
                   color: selectedSubjects.isNotEmpty
                       ? colors.primary.withAlpha(80)
-                      : Colors.transparent,
+                      : colors.transparent,
                 ),
               ),
               child: Row(
@@ -657,7 +657,7 @@ class _SubjectCard extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: isSelected ? colors.primary : Colors.transparent,
+                  color: isSelected ? colors.primary : colors.transparent,
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(
                     color: isSelected
@@ -678,10 +678,10 @@ class _SubjectCard extends StatelessWidget {
                       : null,
                 ),
                 child: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
                         size: 14,
-                        color: Colors.white,
+                        color: colors.white,
                       )
                     : null,
               ),

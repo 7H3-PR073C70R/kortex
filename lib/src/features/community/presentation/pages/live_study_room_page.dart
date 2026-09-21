@@ -176,12 +176,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.green.withAlpha(60)),
+                  side: BorderSide(color: colors.success.withAlpha(60)),
                 ),
-                tileColor: Colors.green.withAlpha(context.isDarkMode ? 30 : 15),
-                leading: const Icon(
+                tileColor: colors.success.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: Icon(
                   Icons.check_circle_rounded,
-                  color: Colors.green,
+                  color: colors.success,
                 ),
                 title: Text(
                   'Completed (100%)',
@@ -207,12 +207,12 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.amber.withAlpha(60)),
+                  side: BorderSide(color: colors.warning.withAlpha(60)),
                 ),
-                tileColor: Colors.amber.withAlpha(context.isDarkMode ? 30 : 15),
-                leading: const Icon(
+                tileColor: colors.warning.withAlpha(context.isDarkMode ? 30 : 15),
+                leading: Icon(
                   Icons.timelapse_rounded,
-                  color: Colors.amber,
+                  color: colors.warning,
                 ),
                 title: Text(
                   'Partially Finished',
@@ -491,9 +491,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 tileColor: colors.primary.withAlpha(
                   context.isDarkMode ? 30 : 15,
                 ),
-                leading: const Icon(
+                leading: Icon(
                   Icons.flash_on_rounded,
-                  color: Colors.amber,
+                  color: colors.warning,
                 ),
                 title: Text(
                   '10-Card Sprint (3 min)',
@@ -526,7 +526,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 tileColor: colors.syllabotAccent.withAlpha(
                   context.isDarkMode ? 30 : 15,
                 ),
-                leading: const Icon(Icons.quiz_rounded, color: Colors.cyan),
+                leading: Icon(Icons.quiz_rounded, color: colors.latexHighlight),
                 title: Text(
                   'Past Questions Battle (5 min)',
                   style: typography.caption.bold.copyWith(
@@ -694,7 +694,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 ),
                 child: Text(
                   isPermanentlyDenied ? 'Open Settings' : 'Grant Permission',
-                  style: typography.caption.bold.copyWith(color: Colors.white),
+                  style: typography.caption.bold.copyWith(color: colors.white),
                 ),
               ),
             ),
@@ -854,8 +854,8 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                             child: Center(
                               child: Text(
                                 '${state.unreadChatCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colors.white,
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1064,9 +1064,9 @@ class _CoOpSprintBanner extends StatelessWidget {
               shape: BoxShape.circle,
               color: colors.warning.withAlpha(isDark ? 60 : 40),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.bolt_rounded,
-              color: Colors.amber,
+              color: colors.warning,
               size: 20,
             ),
           ),
@@ -1134,16 +1134,16 @@ class _CoOpSprintBanner extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_rounded,
-                    color: Colors.white,
+                    color: colors.white,
                     size: 14,
                   ),
                   const SizedBox(width: 3),
                   Text(
                     '+1 Card',
                     style: typography.caption.bold.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                       fontSize: 11,
                     ),
                   ),
@@ -1762,10 +1762,10 @@ class _FocusParticipantTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: cColors.recallEasy,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.mic_rounded,
                   size: 9,
-                  color: Colors.white,
+                  color: cColors.white,
                 ),
               ),
             if (participant.isAway)
@@ -1775,10 +1775,10 @@ class _FocusParticipantTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: cColors.warning,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.pause_rounded,
                   size: 9,
-                  color: Colors.white,
+                  color: cColors.white,
                 ),
               ),
           ],
@@ -2362,7 +2362,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: isActive ? Colors.white : colors.textSecondary,
+                color: isActive ? colors.white : colors.textSecondary,
               ),
               const SizedBox(width: 5),
               Text(
@@ -2372,7 +2372,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
                             ? typography.caption.bold
                             : typography.caption.medium)
                         .copyWith(
-                          color: isActive ? Colors.white : colors.textSecondary,
+                          color: isActive ? colors.white : colors.textSecondary,
                           fontSize: 11,
                         ),
               ),
@@ -2385,7 +2385,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withAlpha(50)
+                        ? colors.white.withAlpha(50)
                         : colors.recallEasy.withAlpha(isDark ? 50 : 30),
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -2393,7 +2393,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
                     badge,
                     style: typography.caption.bold.copyWith(
                       fontSize: 9,
-                      color: isActive ? Colors.white : colors.recallEasy,
+                      color: isActive ? colors.white : colors.recallEasy,
                     ),
                   ),
                 ),
@@ -2751,7 +2751,7 @@ class _RoomControlDrawer extends StatelessWidget {
                                     ? 'Switch Deck'
                                     : 'Select Deck',
                                 style: typography.caption.bold.copyWith(
-                                  color: Colors.white,
+                                  color: colors.white,
                                   fontSize: 12,
                                 ),
                               ),
@@ -2871,7 +2871,7 @@ class _RoomControlDrawer extends StatelessWidget {
                                       ? 'Playing'
                                       : 'Paused',
                                   style: typography.caption.bold.copyWith(
-                                    color: Colors.white,
+                                    color: colors.white,
                                     fontSize: 10.5,
                                   ),
                                 ),
@@ -2903,7 +2903,7 @@ class _RoomControlDrawer extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isSel
-                                        ? Colors.transparent
+                                        ? colors.transparent
                                         : colors.surfaceBorder,
                                   ),
                                 ),
@@ -2920,7 +2920,7 @@ class _RoomControlDrawer extends StatelessWidget {
                                       style: typography.caption.medium.copyWith(
                                         fontSize: 10.5,
                                         color: isSel
-                                            ? Colors.white
+                                            ? colors.white
                                             : colors.textSecondary,
                                       ),
                                     ),
@@ -3092,9 +3092,9 @@ class _RoomControlDrawer extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.flash_on_rounded,
-                            color: Colors.amber,
+                            color: colors.warning,
                             size: 20,
                           ),
                           const SizedBox(width: 10),

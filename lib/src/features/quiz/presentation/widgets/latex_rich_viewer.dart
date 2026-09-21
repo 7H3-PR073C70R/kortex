@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/utils/latex_ast_cache.dart';
 import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 
@@ -143,7 +144,7 @@ class LatexRichViewer extends StatelessWidget {
       }
     }
 
-    bool isValidSequence = false;
+    var isValidSequence = false;
     if (isNumeric && numericValues.length >= 2) {
       if (numericValues.first == 1 || numericValues.first == 0) {
         isValidSequence = true;
@@ -161,7 +162,7 @@ class LatexRichViewer extends StatelessWidget {
       final letters = <String>[];
       for (final m in matches) {
         final markerStr = m.group(2) ?? '';
-        final l = RegExp(r'[a-zA-Z]').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        final l = RegExp('[a-zA-Z]').firstMatch(markerStr)?.group(0)?.toLowerCase();
         if (l != null && l.length == 1) {
           letters.add(l);
         }
@@ -183,7 +184,7 @@ class LatexRichViewer extends StatelessWidget {
       final extractedRomans = <String>[];
       for (final m in matches) {
         final markerStr = m.group(2) ?? '';
-        final r = RegExp(r'[ivxIVX]+').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        final r = RegExp('[ivxIVX]+').firstMatch(markerStr)?.group(0)?.toLowerCase();
         if (r != null) {
           extractedRomans.add(r);
         }
@@ -213,8 +214,9 @@ class LatexRichViewer extends StatelessWidget {
     }
 
     if (rawIntro.isNotEmpty) {
-      buffer.writeln(rawIntro);
-      buffer.writeln(); // Separate intro header with blank line
+      buffer
+        ..writeln(rawIntro)
+        ..writeln(); // Separate intro header with blank line
     }
 
     for (var i = 0; i < matches.length; i++) {
@@ -468,7 +470,7 @@ class LatexRichViewer extends StatelessWidget {
     for (final mathMatch in _latexRegex.allMatches(content)) {
       if (mathMatch.start > lastIndex) {
         final textChunk = content.substring(lastIndex, mathMatch.start);
-        spans.addAll(_parseInlineMarkdownOnly(textChunk, baseStyle));
+        spans.addAll(_parseInlineMarkdownOnly(context, textChunk, baseStyle));
       }
 
       final rawMath = mathMatch.group(0) ?? '';
@@ -531,14 +533,18 @@ class LatexRichViewer extends StatelessWidget {
 
     if (lastIndex < content.length) {
       final remaining = content.substring(lastIndex);
-      spans.addAll(_parseInlineMarkdownOnly(remaining, baseStyle));
+      spans.addAll(_parseInlineMarkdownOnly(context, remaining, baseStyle));
     }
 
     return spans;
   }
 
   /// Parses inline markdown tokens (bold, italic, code, etc.) into styled [TextSpan]s
-  List<InlineSpan> _parseInlineMarkdownOnly(String text, TextStyle baseStyle) {
+  List<InlineSpan> _parseInlineMarkdownOnly(
+    BuildContext context,
+    String text,
+    TextStyle baseStyle,
+  ) {
     final spans = <InlineSpan>[];
     var lastIndex = 0;
 
@@ -628,7 +634,7 @@ class LatexRichViewer extends StatelessWidget {
               fontFamily: 'monospace',
               fontSize: (baseStyle.fontSize ?? 14) * 0.92,
               backgroundColor: baseStyle.color?.withAlpha(25) ??
-                  const Color(0x1F808080),
+                  context.colors.textPrimary.withAlpha(25),
             ),
           ),
         );

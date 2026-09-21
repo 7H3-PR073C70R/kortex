@@ -1,168 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/color_extension.dart';
 
-/// Design tokens and Material color definitions for Kortex (Engine: Syllabot).
-///
-/// Provides rich palette definitions for Light, Dark, Midnight OLED,
-/// and customizable STEM preset themes.
+/// Editorial & Organic Design Tokens for Kortex.
+/// Eliminates all generic AI-generated aesthetics in favor of a boutique,
+/// tactile, low-fatigue study environment.
 class AppMaterialColors {
   const AppMaterialColors._();
 
   // ---------------------------------------------------------------------------
-  // Preset Accent Palettes
+  // Boutique Preset Accent Palettes (Mineral & Earth Tones)
   // ---------------------------------------------------------------------------
-  /// Academic Blue / Deep Electric Indigo (Default)
-  static const Color academicBlue = Color(0xFF4361EE);
+  /// Muted Sage / Organic Focus (Default Brand)
+  static const Color mutedSage = Color(0xFF788C7E);
 
-  /// Emerald STEM / Vibrant Mint
-  static const Color emeraldStem = Color(0xFF10B981);
+  /// Warm Ochre / Academic Sandstone
+  static const Color warmOchre = Color(0xFFD4A373);
 
-  /// Royal Amethyst / Syllabot AI Violet
-  static const Color royalAmethyst = Color(0xFF8B5CF6);
+  /// Deep Bronze / Editorial Amber
+  static const Color deepBronze = Color(0xFFC69251);
 
-  /// Rose Crimson / Focus Coral
-  static const Color roseCrimson = Color(0xFFF43F5E);
+  /// Slate Terracotta / Contrast Warmth
+  static const Color slateTerracotta = Color(0xFFD97757);
 
-  /// Amber Gold / Warm Academic Gold
-  static const Color amberGold = Color(0xFFF59E0B);
+  /// Alpine Moss / Deep STEM Green
+  static const Color alpineMoss = Color(0xFF4A6B5D);
 
-  /// Cyan Ice / STEM LaTeX Cyan
-  static const Color cyanIce = Color(0xFF06B6D4);
+  /// Quartz Cyan / Muted LaTeX Ink
+  static const Color quartzCyan = Color(0xFF5B8C93);
 
   // ---------------------------------------------------------------------------
   // Brand & Engine Primary Accents
   // ---------------------------------------------------------------------------
-  static const Color primaryBase = academicBlue;
+  static const Color primaryBase = mutedSage;
   static MaterialColor primary = primaryBase.toMaterialColor(
-    shade50: const Color(0xFFEEF2FF),
-    shade100: const Color(0xFFE0E7FF),
-    shade200: const Color(0xFFC7D2FE),
-    shade300: const Color(0xFFA5B4FC),
-    shade400: const Color(0xFF818CF8),
+    shade50: const Color(0xFFF2F5F3),
+    shade100: const Color(0xFFE3E8E5),
+    shade200: const Color(0xFFC7D2CC),
+    shade300: const Color(0xFFA5B8AE),
+    shade400: const Color(0xFF8BA396),
     shade500: primaryBase,
-    shade600: const Color(0xFF3730A3),
-    shade700: const Color(0xFF312E81),
+    shade600: const Color(0xFF5F7065),
+    shade700: const Color(0xFF4A574E),
   );
 
-  /// Syllabot AI Accent (Electric Violet)
-  static const Color syllabotBase = royalAmethyst;
-  static MaterialColor syllabot = syllabotBase.toMaterialColor(
-    shade50: const Color(0xFFF5F3FF),
-    shade100: const Color(0xFFEDE9FE),
-    shade200: const Color(0xFFDDD6FE),
-    shade300: const Color(0xFFC4B5FD),
-    shade400: const Color(0xFFA78BFA),
-    shade500: syllabotBase,
-    shade600: const Color(0xFF7C3AED),
-    shade700: const Color(0xFF6D28D9),
+  /// Secondary Architectural Accent (Warm Ochre)
+  static const Color secondaryBase = warmOchre;
+  static MaterialColor secondary = secondaryBase.toMaterialColor(
+    shade50: const Color(0xFFFAF6F0),
+    shade100: const Color(0xFFF4EBE1),
+    shade200: const Color(0xFFEAD8C2),
+    shade300: const Color(0xFFDFC4A0),
+    shade400: const Color(0xFFD4B389),
+    shade500: secondaryBase,
+    shade600: const Color(0xFFB88654),
+    shade700: const Color(0xFF94693F),
   );
 
-  /// STEM / LaTeX Highlight (Cyan Ice)
-  static const Color latexBase = cyanIce;
+  /// STEM / LaTeX Highlight (Quartz Cyan)
+  static const Color latexBase = quartzCyan;
   static MaterialColor latex = latexBase.toMaterialColor(
-    shade50: const Color(0xFFECFEFF),
-    shade100: const Color(0xFFCFFAFE),
-    shade400: const Color(0xFF22D3EE),
+    shade50: const Color(0xFFF0F5F6),
+    shade100: const Color(0xFFD9E7E9),
+    shade400: const Color(0xFF75A3A9),
     shade500: latexBase,
-    shade700: const Color(0xFF0E7490),
+    shade700: const Color(0xFF3F6166),
   );
 
   // ---------------------------------------------------------------------------
-  // Active Recall & Spaced Repetition Tokens (Color-blind safe)
+  // Active Recall & Spaced Repetition Tokens (Subdued & Human)
   // ---------------------------------------------------------------------------
-  /// Mastered / Easy recall
-  static const Color recallEasy = Color(0xFF10B981);
+  /// Mastered / Easy recall (Calm Alpine Green)
+  static const Color recallEasy = Color(0xFF52796F);
 
-  /// Good / Standard recall
-  static const Color recallGood = Color(0xFF06B6D4);
+  /// Good / Standard recall (Muted Teal)
+  static const Color recallGood = Color(0xFF5B8C93);
 
-  /// Hard / Needs review
-  static const Color recallHard = Color(0xFFF59E0B);
+  /// Hard / Needs review (Warm Ochre)
+  static const Color recallHard = Color(0xFFD4A373);
 
-  /// Again / Failed recall
-  static const Color recallAgain = Color(0xFFF43F5E);
+  /// Again / Failed recall (Subdued Terracotta, not harsh neon red)
+  static const Color recallAgain = Color(0xFFC86D51);
 
   static const Color masteredBase = recallEasy;
   static MaterialColor mastered = masteredBase.toMaterialColor(
-    shade50: const Color(0xFFECFDF5),
-    shade100: const Color(0xFFD1FAE5),
-    shade400: const Color(0xFF34D399),
+    shade50: const Color(0xFFF1F5F3),
+    shade100: const Color(0xFFE2EBE7),
+    shade400: const Color(0xFF6B9A8E),
     shade500: masteredBase,
-    shade700: const Color(0xFF047857),
+    shade700: const Color(0xFF3B564F),
   );
 
   static const Color reviewBase = recallHard;
   static MaterialColor review = reviewBase.toMaterialColor(
-    shade50: const Color(0xFFFFFBEB),
-    shade100: const Color(0xFFFEF3C7),
-    shade400: const Color(0xFFFBBF24),
+    shade50: const Color(0xFFFAF6F0),
+    shade100: const Color(0xFFF4EBE1),
+    shade400: const Color(0xFFE2B886),
     shade500: reviewBase,
-    shade700: const Color(0xFFB45309),
+    shade700: const Color(0xFFA87B49),
   );
 
   static const Color learningBase = recallAgain;
   static MaterialColor learning = learningBase.toMaterialColor(
-    shade50: const Color(0xFFFFF1F2),
-    shade100: const Color(0xFFFFE4E6),
-    shade400: const Color(0xFFFB7185),
+    shade50: const Color(0xFFFAF2F0),
+    shade100: const Color(0xFFF4E2DE),
+    shade400: const Color(0xFFD98E7B),
     shade500: learningBase,
-    shade700: const Color(0xFFBE123C),
+    shade700: const Color(0xFF9E4E37),
   );
 
   // ---------------------------------------------------------------------------
-  // Clean Light Surfaces & Palette
+  // Editorial Light Surfaces & Palette
   // ---------------------------------------------------------------------------
-  static const Color lightCanvas = Color(0xFFF8FAFC);
+  static const Color lightCanvas = Color(0xFFF6F6F8);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightSurfaceElevated1 = Color(0xFFFFFFFF);
-  static const Color lightSurfaceElevated2 = Color(0xFFF1F5F9);
-  static const Color lightSurfaceElevated3 = Color(0xFFE2E8F0);
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  static const Color lightBorderHighlight = Color(0xFFCBD5E1);
+  static const Color lightSurfaceElevated2 = Color(0xFFECECEF);
+  static const Color lightSurfaceElevated3 = Color(0xFFDDDDD2);
+  static const Color lightBorder = Color(0xFFE2E2E6);
+  static const Color lightBorderHighlight = Color(0xFFC8C8CD);
 
-  static const Color textLightPrimary = Color(0xFF0F172A);
-  static const Color textLightSecondary = Color(0xFF475569);
-  static const Color textLightMuted = Color(0xFF94A3B8);
-
-  // ---------------------------------------------------------------------------
-  // Standard Slate Dark Surfaces & Palette (Low Eye-Strain)
-  // ---------------------------------------------------------------------------
-  static const Color darkCanvas = Color(0xFF090D16);
-  static const Color darkCard = Color(0xFF111827);
-  static const Color darkSurfaceElevated1 = Color(0xFF111827);
-  static const Color darkSurfaceElevated2 = Color(0xFF1F2937);
-  static const Color darkSurfaceElevated3 = Color(0xFF374151);
-  static const Color darkBorder = Color(0xFF263248);
-  static const Color darkBorderHighlight = Color(0xFF3B4861);
-
-  static const Color textDarkPrimary = Color(0xFFF8FAFC);
-  static const Color textDarkSecondary = Color(0xFF94A3B8);
-  static const Color textDarkMuted = Color(0xFF64748B);
+  static const Color textLightPrimary = Color(0xFF18181B);
+  static const Color textLightSecondary = Color(0xFF52525B);
+  static const Color textLightMuted = Color(0xFFA1A1AA);
 
   // ---------------------------------------------------------------------------
-  // Midnight OLED Surfaces & Palette (Pure #000000 True Black)
+  // Deep Neutral Charcoal Dark Surfaces (Zero Blue-Cast)
+  // ---------------------------------------------------------------------------
+  static const Color darkCanvas = Color(0xFF0D0D0F); // Pure neutral carbon dark
+  static const Color darkCard = Color(0xFF141417);     // Warm, tactile dark surface
+  static const Color darkSurfaceElevated1 = Color(0xFF141417);
+  static const Color darkSurfaceElevated2 = Color(0xFF1D1D22);
+  static const Color darkSurfaceElevated3 = Color(0xFF2B2B33);
+  static const Color darkBorder = Color(0x1AFFFFFF);          // 10% crisp white hairline
+  static const Color darkBorderHighlight = Color(0x33FFFFFF);  // 20% focus hairline
+
+  static const Color textDarkPrimary = Color(0xFFFAFAFA);
+  static const Color textDarkSecondary = Color(0xFFA1A1AA);
+  static const Color textDarkMuted = Color(0xFF71717A);
+
+  // ---------------------------------------------------------------------------
+  // Midnight OLED Surfaces (True #000000 with Minimal Contrast Steps)
   // ---------------------------------------------------------------------------
   static const Color oledCanvas = Color(0xFF000000);
-  static const Color oledCard = Color(0xFF0A0A0A);
-  static const Color oledSurfaceElevated1 = Color(0xFF0A0A0A);
-  static const Color oledSurfaceElevated2 = Color(0xFF141414);
-  static const Color oledSurfaceElevated3 = Color(0xFF1F1F1F);
-  static const Color oledBorder = Color(0xFF27272A);
-  static const Color oledBorderHighlight = Color(0xFF3F3F46);
+  static const Color oledCard = Color(0xFF09090B);
+  static const Color oledSurfaceElevated1 = Color(0xFF09090B);
+  static const Color oledSurfaceElevated2 = Color(0xFF121216);
+  static const Color oledSurfaceElevated3 = Color(0xFF1C1C21);
+  static const Color oledBorder = Color(0x22FFFFFF);
+  static const Color oledBorderHighlight = Color(0x44FFFFFF);
 
   static const Color textOledPrimary = Color(0xFFFFFFFF);
-  static const Color textOledSecondary = Color(0xFFA1A1AA);
-  static const Color textOledMuted = Color(0xFF71717A);
+  static const Color textOledSecondary = Color(0xFFF4F4F5);
+  static const Color textOledMuted = Color(0xFFA1A1AA);
 
   // ---------------------------------------------------------------------------
-  // Legacy / Common Material Helpers
+  // Legacy / Common Material Helpers & Aliases
   // ---------------------------------------------------------------------------
-  static MaterialColor gray = const Color(0xFF64748B).toMaterialColor();
+  static const Color academicBlue = primaryBase;
+  static const Color emeraldStem = alpineMoss;
+  static const Color royalAmethyst = deepBronze;
+  static const Color syllabotBase = secondaryBase;
+  static MaterialColor syllabot = secondary;
+
+  static MaterialColor gray = const Color(0xFF71717A).toMaterialColor();
   static MaterialColor success = mastered;
   static MaterialColor error = learning;
   static MaterialColor warning = review;
   static MaterialColor info = latex;
   static MaterialColor white = const Color(0xFFFFFFFF).toMaterialColor();
   static MaterialColor black = const Color(0xFF000000).toMaterialColor();
-  static MaterialColor disable = const Color(0xFF94A3B8).toMaterialColor();
+  static MaterialColor disable = const Color(0xFF71717A).toMaterialColor();
 }

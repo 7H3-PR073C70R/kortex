@@ -58,7 +58,7 @@ class AppMultimodalImage extends StatelessWidget {
         barrierColor: colors.black.withAlpha(230),
         builder: (ctx) {
           return Dialog(
-            backgroundColor: Colors.transparent,
+            backgroundColor: colors.transparent,
             insetPadding: const EdgeInsets.all(16),
             child: Stack(
               alignment: Alignment.center,

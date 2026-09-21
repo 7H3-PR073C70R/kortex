@@ -155,14 +155,14 @@ class ImageOcclusionCardViewer extends HookWidget {
                                   border: Border.all(
                                     color: isRevealed
                                         ? colors.primary
-                                        : Colors.white.withValues(alpha: 0.8),
+                                        : colors.white.withValues(alpha: 0.8),
                                     width: isActive ? 2.5 : 1.5,
                                   ),
                                   boxShadow: isRevealed
                                       ? null
                                       : [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.25),
+                                            color: colors.black.withValues(alpha: 0.25),
                                             blurRadius: 4,
                                             offset: const Offset(0, 2),
                                           ),
@@ -184,7 +184,7 @@ class ImageOcclusionCardViewer extends HookWidget {
                                       : Icon(
                                           Icons.help_outline_rounded,
                                           size: 14,
-                                          color: Colors.white.withValues(alpha: 0.9),
+                                          color: colors.white.withValues(alpha: 0.9),
                                         ),
                                 ),
                               ),

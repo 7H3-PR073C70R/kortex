@@ -321,13 +321,18 @@ class DeckListTileCard extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.warning,
+                                    colors.slateTerracotta,
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                    color: colors.warning.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   ),
@@ -336,16 +341,16 @@ class DeckListTileCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.military_tech_rounded,
                                     size: 13,
-                                    color: Colors.white,
+                                    color: colors.white,
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
                                     'Millionaire',
                                     style: typography.caption.bold.copyWith(
-                                      color: Colors.white,
+                                      color: colors.white,
                                       fontSize: 11,
                                     ),
                                   ),

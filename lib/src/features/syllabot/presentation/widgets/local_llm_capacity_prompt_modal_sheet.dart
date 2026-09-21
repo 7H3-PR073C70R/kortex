@@ -25,7 +25,7 @@ class LocalLlmCapacityPromptModalSheet extends StatefulWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (_) => LocalLlmCapacityPromptModalSheet(
         onDownloadComplete: onDownloadComplete,
       ),

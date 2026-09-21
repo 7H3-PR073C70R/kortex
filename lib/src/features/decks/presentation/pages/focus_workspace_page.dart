@@ -107,7 +107,7 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
               },
               child: Text(
                 'Exit Without Saving',
-                style: typography.body.medium.copyWith(color: Colors.redAccent),
+                style: typography.body.medium.copyWith(color: context.colors.error),
               ),
             ),
           ],
@@ -186,10 +186,10 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          color: context.colors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                            color: context.colors.warning.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -199,7 +199,7 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                             Text(
                               '${state.streak} in a row! Momentum building',
                               style: context.typography.caption.bold.copyWith(
-                                color: const Color(0xFFD97706),
+                                color: context.colors.warning,
                               ),
                             ),
                           ],
@@ -338,8 +338,8 @@ class _FocusZenHeader extends StatelessWidget {
                       right: 6,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF8B5CF6),
+                        decoration: BoxDecoration(
+                          color: colors.primary,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
@@ -348,8 +348,8 @@ class _FocusZenHeader extends StatelessWidget {
                         ),
                         child: Text(
                           '${state.parkedThoughts.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -396,23 +396,23 @@ class _FocusCompletionView extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                gradient: LinearGradient(
+                  colors: [colors.deepBronze, colors.primary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                    color: colors.primary.withValues(alpha: 0.35),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.emoji_events_rounded,
-                color: Colors.white,
+                color: colors.white,
                 size: 56,
               ),
             ),
@@ -458,13 +458,13 @@ class _FocusCompletionView extends StatelessWidget {
                   label: 'Mastered',
                   value: '$mastered',
                   icon: Icons.check_circle_rounded,
-                  color: const Color(0xFF10B981),
+                  color: colors.success,
                 ),
                 _StatColumn(
                   label: 'Time Spent',
                   value: state.timeElapsedFormatted,
                   icon: Icons.timer_outlined,
-                  color: const Color(0xFFF59E0B),
+                  color: colors.warning,
                 ),
               ],
             ),
@@ -532,13 +532,13 @@ class _FocusCompletionView extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                gradient: LinearGradient(
+                  colors: [colors.deepBronze, colors.primary],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                    color: colors.primary.withValues(alpha: 0.35),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -548,12 +548,12 @@ class _FocusCompletionView extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
+                  Icon(Icons.refresh_rounded, color: colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Repeat Another Sprint',
                     style: typography.body.medium.copyWith(
-                      color: Colors.white,
+                      color: colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

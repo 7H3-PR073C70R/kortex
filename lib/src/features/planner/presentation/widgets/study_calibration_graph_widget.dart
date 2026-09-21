@@ -30,10 +30,10 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
       statusColor = colors.textSecondary;
     } else if (daysRemaining <= 3) {
       statusLabel = 'Sprint Pace';
-      statusColor = Colors.redAccent;
+      statusColor = colors.error;
     } else if (progress >= 0.7) {
       statusLabel = 'On Track';
-      statusColor = Colors.greenAccent;
+      statusColor = colors.success;
     } else {
       statusLabel = 'Calibrated';
       statusColor = colors.primary;
@@ -143,6 +143,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                 progress: progress,
                 primaryColor: colors.primary,
                 gridColor: colors.textSecondary.withValues(alpha: 0.15),
+                indicatorDotColor: colors.white,
                 isDark: isDark,
               ),
               child: const SizedBox.expand(),
@@ -193,7 +194,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                   title: 'Daily Goal',
                   value: '${exam.dailyTarget}',
                   unit: 'cards/day',
-                  icon: Icons.bolt_rounded,
+                  icon: Icons.flag_rounded,
                   color: colors.primary,
                 ),
               ),
@@ -205,7 +206,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                   value: '${exam.masteredCardsCount}',
                   unit: '/ ${exam.totalCardsCount}',
                   icon: Icons.check_circle_rounded,
-                  color: Colors.greenAccent,
+                  color: colors.success,
                 ),
               ),
               const SizedBox(width: 10),
@@ -216,7 +217,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                   value: '${exam.remainingCards}',
                   unit: 'cards left',
                   icon: Icons.hourglass_bottom_rounded,
-                  color: Colors.orangeAccent,
+                  color: colors.warning,
                 ),
               ),
             ],
@@ -248,9 +249,9 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.play_circle_fill_rounded,
-                      color: Colors.white,
+                      color: colors.white,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -258,7 +259,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                       child: Text(
                         "Review Today's ${exam.dailyTarget} Flashcards",
                         style: typography.callout.bold.copyWith(
-                          color: Colors.white,
+                          color: colors.white,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -341,12 +342,14 @@ class _TrajectoryPainter extends CustomPainter {
     required this.progress,
     required this.primaryColor,
     required this.gridColor,
+    required this.indicatorDotColor,
     required this.isDark,
   });
 
   final double progress;
   final Color primaryColor;
   final Color gridColor;
+  final Color indicatorDotColor;
   final bool isDark;
 
   @override
@@ -436,15 +439,16 @@ class _TrajectoryPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(currentX, targetY), 5, dotPaint);
 
-    final innerWhitePaint = Paint()
-      ..color = Colors.white
+    final innerDotPaint = Paint()
+      ..color = indicatorDotColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(currentX, targetY), 2.5, innerWhitePaint);
+    canvas.drawCircle(Offset(currentX, targetY), 2.5, innerDotPaint);
   }
 
   @override
   bool shouldRepaint(covariant _TrajectoryPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.primaryColor != primaryColor;
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.indicatorDotColor != indicatorDotColor;
   }
 }

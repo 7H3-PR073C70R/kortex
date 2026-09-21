@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package -- Retained for legacy theme preset compatibility.
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/themes/color/app_material_colors.dart';
 
@@ -12,11 +14,28 @@ enum ThemePreset {
   /// Pure #000000 true black dark mode for OLED screens.
   midnightOled,
 
-  /// STEM-inspired Emerald / Mint active focus theme.
+  /// Deep STEM Alpine Moss green focus preset.
+  alpineMoss,
+
+  /// Academic Sandstone / Warm Ochre preset.
+  warmOchre,
+
+  /// Editorial Amber / Deep Bronze preset.
+  deepBronze,
+
+  /// Slate Terracotta / Contrast Warmth preset.
+  slateTerracotta,
+
+  /// Quartz Cyan / Muted LaTeX Ink preset.
+  quartzCyan,
+
+  /// STEM-inspired Emerald / Mint active focus theme (Legacy alias).
+  @Deprecated('Use alpineMoss instead')
   emeraldStem,
 
-  /// Royal Amethyst / Syllabot AI electric violet theme.
-  royalAmethyst
+  /// Royal Amethyst theme (Legacy alias).
+  @Deprecated('Use deepBronze instead')
+  royalAmethyst,
   ;
 
   /// User-friendly label for settings UI.
@@ -28,6 +47,16 @@ enum ThemePreset {
         return 'Slate Dark';
       case ThemePreset.midnightOled:
         return 'Midnight OLED';
+      case ThemePreset.alpineMoss:
+        return 'Alpine Moss';
+      case ThemePreset.warmOchre:
+        return 'Warm Ochre';
+      case ThemePreset.deepBronze:
+        return 'Deep Bronze';
+      case ThemePreset.slateTerracotta:
+        return 'Slate Terracotta';
+      case ThemePreset.quartzCyan:
+        return 'Quartz Cyan';
       case ThemePreset.emeraldStem:
         return 'Emerald Focus';
       case ThemePreset.royalAmethyst:
@@ -42,6 +71,11 @@ enum ThemePreset {
         return false;
       case ThemePreset.slateDark:
       case ThemePreset.midnightOled:
+      case ThemePreset.alpineMoss:
+      case ThemePreset.warmOchre:
+      case ThemePreset.deepBronze:
+      case ThemePreset.slateTerracotta:
+      case ThemePreset.quartzCyan:
       case ThemePreset.emeraldStem:
       case ThemePreset.royalAmethyst:
         return true;
@@ -57,11 +91,19 @@ enum ThemePreset {
       case ThemePreset.cleanLight:
       case ThemePreset.slateDark:
       case ThemePreset.midnightOled:
-        return AppMaterialColors.academicBlue;
+        return AppMaterialColors.primaryBase;
+      case ThemePreset.alpineMoss:
       case ThemePreset.emeraldStem:
-        return AppMaterialColors.emeraldStem;
+        return AppMaterialColors.alpineMoss;
+      case ThemePreset.warmOchre:
+        return AppMaterialColors.warmOchre;
+      case ThemePreset.deepBronze:
       case ThemePreset.royalAmethyst:
-        return AppMaterialColors.royalAmethyst;
+        return AppMaterialColors.deepBronze;
+      case ThemePreset.slateTerracotta:
+        return AppMaterialColors.slateTerracotta;
+      case ThemePreset.quartzCyan:
+        return AppMaterialColors.quartzCyan;
     }
   }
 }

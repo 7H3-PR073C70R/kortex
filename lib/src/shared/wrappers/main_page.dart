@@ -484,7 +484,7 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final glassSettings = LiquidGlassSettings(
       thickness: 24,
       blur: 24,
-      glassColor: isDark ? const Color(0x351E2430) : const Color(0x75FFFFFF),
+      glassColor: isDark ? colors.surfaceSecondary.withAlpha(53) : colors.white.withAlpha(117),
       lightIntensity: isDark ? 0.4 : 0.85,
       refractiveIndex: 1.25,
     );
@@ -492,7 +492,7 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final indicatorGlassSettings = LiquidGlassSettings(
       thickness: 14,
       blur: 10,
-      glassColor: isDark ? const Color(0x40FFFFFF) : const Color(0xF0FFFFFF),
+      glassColor: isDark ? colors.white.withAlpha(64) : colors.white.withAlpha(240),
       lightIntensity: isDark ? 0.6 : 0.95,
       refractiveIndex: 1.15,
     );
@@ -507,8 +507,8 @@ class _IOSLiquidGlassDock extends StatelessWidget {
       settings: glassSettings,
       indicatorSettings: indicatorGlassSettings,
       indicatorColor: isDark
-          ? const Color(0x30FFFFFF)
-          : const Color(0xEBFFFFFF),
+          ? colors.white.withAlpha(48)
+          : colors.white.withAlpha(235),
       selectedIconColor: colors.primary,
       unselectedIconColor: colors.textSecondary,
       selectedLabelColor: colors.primary,

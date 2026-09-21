@@ -567,7 +567,7 @@ class _DocumentIngestionView extends HookWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: colors.error,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

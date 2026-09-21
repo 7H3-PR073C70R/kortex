@@ -42,8 +42,8 @@ class FocusSessionSummarySheet extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => FocusSessionSummarySheet(
+      backgroundColor: context.colors.transparent,
+      builder: (_) => FocusSessionSummarySheet(
         roomTitle: roomTitle,
         subject: subject,
         completedPomodoros: completedPomodoros,
@@ -122,8 +122,8 @@ class FocusSessionSummarySheet extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.amber.withAlpha(35),
-                  border: Border.all(color: Colors.amber.withAlpha(80)),
+                  color: colors.warning.withAlpha(35),
+                  border: Border.all(color: colors.warning.withAlpha(80)),
                 ),
                 child: const Text('🏆', style: TextStyle(fontSize: 24)),
               ),
@@ -133,7 +133,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Session Wrapped!',
+                      'Session Concluded!',
                       style: typography.title2.bold.copyWith(
                         color: colors.textPrimary,
                       ),
@@ -177,24 +177,15 @@ class FocusSessionSummarySheet extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // Stat Cards Grid
+          // Core Metrics Matrix
           Row(
             children: [
               Expanded(
                 child: _StatCard(
-                  icon: Icons.timer_outlined,
-                  iconColor: colors.primary,
-                  label: 'Focus Time',
-                  value: '$totalFocusMinutes min',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _StatCard(
                   icon: Icons.local_fire_department_rounded,
-                  iconColor: Colors.deepOrangeAccent,
+                  iconColor: colors.slateTerracotta,
                   label: 'Pomodoros',
                   value: '$completedPomodoros blocks',
                 ),
@@ -204,7 +195,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                 Expanded(
                   child: _StatCard(
                     icon: Icons.style_rounded,
-                    iconColor: Colors.tealAccent,
+                    iconColor: colors.latexHighlight,
                     label: 'Cards Solved',
                     value: '$cardsReviewed',
                   ),
@@ -220,12 +211,12 @@ class FocusSessionSummarySheet extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isGoalAchieved
-                    ? Colors.green.withAlpha(isDark ? 30 : 15)
+                    ? colors.success.withAlpha(isDark ? 30 : 15)
                     : colors.primary.withAlpha(isDark ? 25 : 12),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isGoalAchieved
-                      ? Colors.green.withAlpha(70)
+                      ? colors.success.withAlpha(70)
                       : colors.primary.withAlpha(50),
                 ),
               ),
@@ -235,7 +226,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                     isGoalAchieved
                         ? Icons.check_circle_rounded
                         : Icons.track_changes_rounded,
-                    color: isGoalAchieved ? Colors.green : colors.primary,
+                    color: isGoalAchieved ? colors.success : colors.primary,
                     size: 22,
                   ),
                   const SizedBox(width: 10),
@@ -249,7 +240,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                               : 'Micro-Goal Tracked',
                           style: typography.caption.bold.copyWith(
                             color: isGoalAchieved
-                                ? Colors.green
+                                ? colors.success
                                 : colors.textPrimary,
                           ),
                         ),
@@ -344,7 +335,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                     child: Text(
                       'Done & Exit Cockpit',
                       style: typography.body.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.white,
                       ),
                     ),
                   ),

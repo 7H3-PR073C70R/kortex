@@ -14,7 +14,7 @@ class ThoughtParkingLotSheet extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.colors.transparent,
       builder: (ctx) => BlocProvider.value(
         value: cubit,
         child: const ThoughtParkingLotSheet(),
@@ -69,7 +69,7 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -178,7 +178,7 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
                 onPressed: () => _submitThought(cubit),
                 style: IconButton.styleFrom(
                   backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
