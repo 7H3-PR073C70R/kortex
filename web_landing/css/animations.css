@@ -1,153 +1,17 @@
 /* ==========================================================================
-   KORTEXIFY ANIMATIONS & DYNAMIC MICRO-INTERACTIONS
-   Obsidian, Electric Cyan (#00C2FF), and Neural Purple (#7000FF)
+   KORTEX ANIMATIONS & TACTILE MICRO-INTERACTIONS
+   Strictly Zero AI Clichés (No cosmic blobs, no glowing rainbow text).
+   Built on Emil Kowalski's Animation Principles & Apple WWDC Fluid Standards.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Ambient Aura Mesh & Cosmic Glow Container
-   -------------------------------------------------------------------------- */
-.aura-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes nebulaDrift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translate3d(35px, -25px, 0) scale(1.15);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.45;
-  }
-}
-
-.aura-blob {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: nebulaDrift 20s ease-in-out infinite alternate;
-  will-change: transform, opacity;
-}
-
-.aura-blob-primary {
-  width: min(550px, 85vw);
-  height: min(550px, 85vw);
-  background: radial-gradient(circle, rgba(0, 194, 255, 0.25) 0%, rgba(0, 194, 255, 0) 70%);
-  top: -120px;
-  left: -80px;
-  animation-duration: 22s;
-}
-
-.aura-blob-syllabot {
-  width: min(600px, 90vw);
-  height: min(600px, 90vw);
-  background: radial-gradient(circle, rgba(112, 0, 255, 0.28) 0%, rgba(112, 0, 255, 0) 70%);
-  top: 20%;
-  right: -100px;
-  animation-duration: 26s;
-  animation-delay: -5s;
-}
-
-.aura-blob-cyan {
-  width: min(450px, 75vw);
-  height: min(450px, 75vw);
-  background: radial-gradient(circle, rgba(0, 194, 255, 0.2) 0%, rgba(112, 0, 255, 0) 70%);
-  bottom: 8%;
-  left: 15%;
-  animation-duration: 20s;
-  animation-delay: -8s;
-}
-
-@media (max-width: 768px) {
-  .aura-blob {
-    animation-duration: 32s;
-    opacity: 0.35;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   2. Shimmer & Glowing Gradient Text Highlights
-   -------------------------------------------------------------------------- */
-@keyframes textShimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.gradient-text-accent {
-  background: linear-gradient(
-    135deg,
-    #00C2FF 0%,
-    #38D4FF 30%,
-    #7000FF 70%,
-    #9D4EDD 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: textShimmer 8s ease infinite;
-  display: inline-block;
-}
-
-.gradient-text-cyan {
-  background: linear-gradient(135deg, #FFFFFF 0%, #00C2FF 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* --------------------------------------------------------------------------
-   3. Live Pulse & Status Indicators
-   -------------------------------------------------------------------------- */
-@keyframes pulseDot {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 194, 255, 0.7);
-  }
-  70% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 8px rgba(0, 194, 255, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 194, 255, 0);
-  }
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--color-cyan-electric);
-  display: inline-block;
-  animation: pulseDot 2s infinite cubic-bezier(0.45, 0, 0.55, 1);
-}
-
-/* --------------------------------------------------------------------------
-   4. Scroll-Triggered Entry Animations
+   1. Scroll-Triggered Staggered Entrances (Ease-out Quint, < 350ms)
    -------------------------------------------------------------------------- */
 .reveal-on-scroll {
   opacity: 0;
-  transform: translate3d(0, 18px, 0);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 14px, 0);
+  transition: opacity 320ms var(--ease-out-quint),
+              transform 320ms var(--ease-out-quint);
   will-change: opacity, transform;
 }
 
@@ -156,42 +20,180 @@
   transform: translate3d(0, 0, 0);
 }
 
-.delay-1 { transition-delay: 0.08s; }
-.delay-2 { transition-delay: 0.16s; }
-.delay-3 { transition-delay: 0.24s; }
-.delay-4 { transition-delay: 0.32s; }
+.reveal-on-scroll.delay-1 {
+  transition-delay: 60ms;
+}
+
+.reveal-on-scroll.delay-2 {
+  transition-delay: 120ms;
+}
+
+.reveal-on-scroll.delay-3 {
+  transition-delay: 180ms;
+}
+
+.reveal-on-scroll.delay-4 {
+  transition-delay: 240ms;
+}
 
 /* --------------------------------------------------------------------------
-   5. Button & Spinner
+   2. Responsive Press States (Scale 0.97 on active, instant response)
    -------------------------------------------------------------------------- */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.btn-primary-cta,
+.btn-secondary-cta,
+.rating-pill-btn,
+.tab-btn,
+.theme-toggle-btn,
+.preset-chip,
+.faq-question,
+.waitlist-button {
+  transition: transform 120ms var(--ease-out-quint),
+              background-color 160ms var(--ease-out-quint),
+              border-color 160ms var(--ease-out-quint),
+              color 160ms var(--ease-out-quint),
+              box-shadow 160ms var(--ease-out-quint);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-  vertical-align: middle;
+.btn-primary-cta:active,
+.btn-secondary-cta:active,
+.rating-pill-btn:active,
+.waitlist-button:active {
+  transform: scale(0.97);
+}
+
+.tab-btn:active,
+.theme-toggle-btn:active,
+.preset-chip:active {
+  transform: scale(0.96);
 }
 
 /* --------------------------------------------------------------------------
-   6. Accessibility: Reduced Motion Support
+   3. Subtle Status Dot (Calm Pulse, Low Optical Noise)
+   -------------------------------------------------------------------------- */
+@keyframes calmPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: calmPulse 2.8s infinite var(--ease-in-out-quart);
+}
+
+/* --------------------------------------------------------------------------
+   4. Tactile 3D Card Flip (Zero Glow, Crisp Physical Motion)
+   -------------------------------------------------------------------------- */
+.card-scene {
+  perspective: 1100px;
+}
+
+.flashcard-3d {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 380ms var(--ease-out-quint);
+  cursor: pointer;
+}
+
+.flashcard-3d.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: relative;
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-face-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transform: rotateY(180deg);
+}
+
+/* --------------------------------------------------------------------------
+   5. Workstation Tab Panel Transitions (Never Animate from Scale 0)
+   -------------------------------------------------------------------------- */
+.tab-panel {
+  display: none;
+  opacity: 0;
+  transform: scale(0.985);
+  transition: opacity 180ms var(--ease-out-quint),
+              transform 180ms var(--ease-out-quint);
+}
+
+.tab-panel.active {
+  display: block;
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   6. FAQ Accordion Expansion
+   -------------------------------------------------------------------------- */
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 260ms var(--ease-drawer),
+              opacity 220ms var(--ease-out-quint),
+              padding 260ms var(--ease-drawer);
+}
+
+.faq-item.active .faq-answer {
+  max-height: 280px;
+  opacity: 1;
+}
+
+.faq-icon {
+  transition: transform 220ms var(--ease-out-quint);
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(45deg);
+}
+
+/* --------------------------------------------------------------------------
+   7. Accessibility: Reduced Motion
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 
   .reveal-on-scroll {
     opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .flashcard-3d.flipped {
+    transform: none !important;
+  }
+
+  .tab-panel {
     transform: none !important;
   }
 }

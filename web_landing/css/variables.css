@@ -1,137 +1,207 @@
 /* ==========================================================================
-   KORTEXIFY DESIGN SYSTEM: CSS TOKENS & VARIABLES
-   Obsidian Dark & Clean Light Modes, Electric Cyan (#00C2FF), Neural Purple (#7000FF)
+   KORTEX EDITORIAL DESIGN SYSTEM: CSS DESIGN TOKENS
+   Boutique Organic Earth & Mineral Palettes, Deep Neutral Slate (#0D0D0F)
+   and Warm Paper Light (#F6F6F8).
+   Strictly Zero AI Glow Cliché. High Tactility, Concentric Radii.
    ========================================================================== */
 
 :root {
   /* ------------------------------------------------------------------------
-     1. Brand Accent Palette
+     1. Curated Mineral & Earth Preset Accents (from AppMaterialColors)
      ------------------------------------------------------------------------ */
-  --color-cyan-electric: #00C2FF;
-  --color-cyan-light: #38D4FF;
-  --color-cyan-dark: #0099CC;
-  --color-cyan-glow: rgba(0, 194, 255, 0.35);
-  --color-cyan-subtle: rgba(0, 194, 255, 0.12);
+  --accent-muted-sage: #788C7E;      /* Organic Focus (Default Brand Primary) */
+  --accent-warm-ochre: #D4A373;      /* Academic Sandstone */
+  --accent-deep-bronze: #C69251;     /* Editorial Amber */
+  --accent-slate-terracotta: #D97757;/* Contrast Warmth */
+  --accent-alpine-moss: #4A6B5D;     /* Deep STEM Green */
+  --accent-quartz-cyan: #5B8C93;     /* Muted LaTeX Ink */
 
-  --color-neural-purple: #7000FF;
-  --color-neural-purple-light: #9D4EDD;
-  --color-neural-purple-dark: #5200CC;
-  --color-neural-glow: rgba(112, 0, 255, 0.35);
-  --color-neural-subtle: rgba(112, 0, 255, 0.12);
+  /* Active Brand Accent (Defaults to Muted Sage, dynamically switchable) */
+  --color-primary: var(--accent-muted-sage);
+  --color-primary-hover: #677A6D;
+  --color-primary-subtle: rgba(120, 140, 126, 0.12);
+  --color-primary-tint: rgba(120, 140, 126, 0.06);
 
-  --color-academic-blue: #3B82F6;
-  --color-academic-blue-light: #60A5FA;
-  --color-academic-blue-glow: rgba(59, 130, 246, 0.35);
+  /* Secondary Architectural Accent */
+  --color-secondary: var(--accent-warm-ochre);
+  --color-secondary-subtle: rgba(212, 163, 115, 0.12);
 
-  --color-emerald-stem: #10B981;
-  --color-emerald-light: #34D399;
-  --color-emerald-glow: rgba(16, 185, 129, 0.35);
+  /* STEM / LaTeX Ink Accent */
+  --color-latex: var(--accent-quartz-cyan);
+  --color-latex-subtle: rgba(91, 140, 147, 0.12);
 
-  --color-amber-gold: #F59E0B;
-  --color-amber-light: #FCD34D;
-  --color-rose-coral: #F43F5E;
+  /* Active Recall & Spaced Repetition Tokens (Subdued & Human, not harsh neon) */
+  --color-recall-easy: #52796F;      /* Mastered (Calm Alpine Green) */
+  --color-recall-good: #5B8C93;      /* Good (Muted Teal) */
+  --color-recall-hard: #D4A373;      /* Hard (Warm Ochre) */
+  --color-recall-again: #C86D51;     /* Again (Subdued Terracotta) */
 
   /* ------------------------------------------------------------------------
-     2. Dark Mode Canvas & Glass Surfaces (Default)
+     2. Slate Dark Surfaces (Default: Pure Neutral Carbon Dark, Zero Blue-Cast)
      ------------------------------------------------------------------------ */
-  --bg-canvas: #0A0C14;
-  --bg-canvas-deep: #06070B;
-  --bg-canvas-subtle: #0E121E;
-  
-  --bg-card: #121626;
-  --bg-card-glass: rgba(18, 22, 38, 0.78);
-  --bg-card-glass-hover: rgba(24, 30, 52, 0.9);
-  
-  --bg-surface-elevated1: #161C30;
-  --bg-surface-elevated2: #1C243D;
-  --bg-surface-elevated3: #263050;
+  --bg-canvas: #0D0D0F;              /* Carbon Dark Ground */
+  --bg-canvas-subtle: #121215;
+  --bg-card: #141417;                /* Tactile Stone Card */
+  --bg-card-hover: #18181C;
+  --bg-card-glass: rgba(20, 20, 23, 0.85);
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(0, 194, 255, 0.25);
-  --border-highlight-hover: rgba(0, 194, 255, 0.5);
-  --border-neural: rgba(112, 0, 255, 0.3);
-  --border-glass: rgba(255, 255, 255, 0.12);
+  --bg-surface-elevated1: #18181D;
+  --bg-surface-elevated2: #212127;
+  --bg-surface-elevated3: #2B2B33;
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverse: #0A0C14;
+  --border-subtle: rgba(255, 255, 255, 0.08);   /* 8% hairline */
+  --border-highlight: rgba(255, 255, 255, 0.16);/* 16% focused hairline */
+  --border-primary: rgba(120, 140, 126, 0.35);  /* Subtle accent rim */
+  --border-glass: rgba(255, 255, 255, 0.10);
 
-  --nav-bg: rgba(10, 12, 20, 0.85);
+  --text-primary: #FAFAFA;          /* Crisp Off-White */
+  --text-secondary: #A1A1AA;        /* Slate Neutral */
+  --text-muted: #71717A;            /* Quiet Caption */
+  --text-inverse: #0D0D0F;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.7);
-  --shadow-glow-cyan: 0 0 35px rgba(0, 194, 255, 0.25);
-  --shadow-glow-purple: 0 0 35px rgba(112, 0, 255, 0.25);
-  --shadow-glow-card: 0 0 30px rgba(0, 194, 255, 0.15);
+  --nav-bg: rgba(13, 13, 15, 0.88);
+  --nav-border: rgba(255, 255, 255, 0.07);
+
+  /* Layered Physical Shadows (No Colored Glow Halos) */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-subtle);
+
+  /* 1px Edge Outline for consistent depth */
+  --outline-card: 1px solid rgba(255, 255, 255, 0.08);
 
   /* ------------------------------------------------------------------------
-     3. Typography & Sizing
+     3. Typography & Ramping
      ------------------------------------------------------------------------ */
   --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-dyslexic: 'OpenDyslexic', 'Comic Sans MS', sans-serif;
+  --font-dyslexic: 'OpenDyslexic', -apple-system, sans-serif;
 
-  --text-display: clamp(2.1rem, 5.5vw + 0.5rem, 4.25rem);
-  --text-h1: clamp(1.75rem, 3.8vw + 0.5rem, 3.1rem);
-  --text-h2: clamp(1.4rem, 2.6vw + 0.35rem, 2.25rem);
-  --text-h3: clamp(1.15rem, 1.8vw + 0.25rem, 1.5rem);
-  --text-body-lg: clamp(1rem, 1.1vw + 0.3rem, 1.2rem);
+  --text-display: clamp(2.2rem, 5vw + 0.5rem, 3.85rem);
+  --text-h1: clamp(1.75rem, 3.4vw + 0.4rem, 2.75rem);
+  --text-h2: clamp(1.35rem, 2.2vw + 0.3rem, 2.05rem);
+  --text-h3: clamp(1.1rem, 1.4vw + 0.2rem, 1.4rem);
+  --text-body-lg: clamp(1rem, 0.95vw + 0.35rem, 1.15rem);
   --text-body: 0.95rem;
   --text-body-sm: 0.85rem;
   --text-caption: 0.75rem;
 
+  /* Optical Typography Settings */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: -0.006em;
+  --line-height-heading: 1.15;
+  --line-height-body: 1.6;
+
+  /* ------------------------------------------------------------------------
+     4. Concentric Border Radius Scale (R_outer = R_inner + padding)
+     ------------------------------------------------------------------------ */
+  --radius-xs: 4px;
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
   --radius-full: 9999px;
 
-  --container-max-width: 1200px;
-  --section-spacing: clamp(3.5rem, 7vw, 6.5rem);
+  --container-max-width: 1160px;
+  --section-spacing: clamp(3.5rem, 6.5vw, 6rem);
 
-  /* Transitions */
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  /* ------------------------------------------------------------------------
+     5. Purposeful Animation Timings & Easings (Emil Kowalski / Apple WWDC)
+     ------------------------------------------------------------------------ */
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --duration-instant: 110ms;
+  --duration-fast: 160ms;
+  --duration-base: 220ms;
+  --duration-drawer: 280ms;
+
+  --transition-press: transform var(--duration-instant) var(--ease-out-quint);
+  --transition-fast: var(--duration-fast) var(--ease-out-quint);
+  --transition-base: var(--duration-base) var(--ease-out-quint);
 }
 
 /* --------------------------------------------------------------------------
-   4. High-Contrast Light Mode Theme Tokens
+   6. Clean Light Mode Theme Tokens (Warm Paper Canvas, Deep Ink Typography)
    -------------------------------------------------------------------------- */
 [data-theme="light"] {
-  --bg-canvas: #F8FAFC;
-  --bg-canvas-deep: #F1F5F9;
-  --bg-canvas-subtle: #FFFFFF;
-
-  --bg-card: #FFFFFF;
+  --bg-canvas: #F6F6F8;              /* Tactile Warm Paper Canvas */
+  --bg-canvas-subtle: #EDEDF1;
+  --bg-card: #FFFFFF;                /* Pure Book Paper Surface */
+  --bg-card-hover: #FAFAFB;
   --bg-card-glass: rgba(255, 255, 255, 0.88);
-  --bg-card-glass-hover: rgba(255, 255, 255, 0.98);
 
   --bg-surface-elevated1: #FFFFFF;
-  --bg-surface-elevated2: #F1F5F9;
-  --bg-surface-elevated3: #E2E8F0;
+  --bg-surface-elevated2: #ECECEF;
+  --bg-surface-elevated3: #DDDDD2;
 
-  --border-subtle: rgba(15, 23, 42, 0.09);
-  --border-highlight: rgba(0, 153, 204, 0.35);
-  --border-highlight-hover: rgba(0, 153, 204, 0.65);
-  --border-neural: rgba(112, 0, 255, 0.35);
-  --border-glass: rgba(15, 23, 42, 0.12);
+  --border-subtle: #E2E2E6;          /* Clean Architectural Hairline */
+  --border-highlight: #C8C8CD;
+  --border-primary: rgba(120, 140, 126, 0.4);
+  --border-glass: rgba(0, 0, 0, 0.08);
 
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #64748B;
+  --text-primary: #18181B;          /* Deep Ink Black */
+  --text-secondary: #52525B;        /* Muted Slate Body */
+  --text-muted: #8E8E98;            /* Quiet Caption */
   --text-inverse: #FFFFFF;
 
-  --nav-bg: rgba(248, 250, 252, 0.9);
+  --nav-bg: rgba(246, 246, 248, 0.9);
+  --nav-border: rgba(0, 0, 0, 0.06);
 
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
-  --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.14);
-  --shadow-glow-cyan: 0 0 30px rgba(0, 194, 255, 0.18);
-  --shadow-glow-purple: 0 0 30px rgba(112, 0, 255, 0.18);
-  --shadow-glow-card: 0 4px 20px rgba(0, 194, 255, 0.1);
+  /* Natural Ambient Layered Shadows (No Glows) */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.09);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-subtle);
+
+  --outline-card: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   7. Theme Preset Accent Variations (Switchable on the fly)
+   -------------------------------------------------------------------------- */
+[data-accent="warm-ochre"] {
+  --color-primary: var(--accent-warm-ochre);
+  --color-primary-hover: #C69562;
+  --color-primary-subtle: rgba(212, 163, 115, 0.14);
+  --color-primary-tint: rgba(212, 163, 115, 0.06);
+  --border-primary: rgba(212, 163, 115, 0.4);
+}
+
+[data-accent="alpine-moss"] {
+  --color-primary: var(--accent-alpine-moss);
+  --color-primary-hover: #3C5A4D;
+  --color-primary-subtle: rgba(74, 107, 93, 0.14);
+  --color-primary-tint: rgba(74, 107, 93, 0.06);
+  --border-primary: rgba(74, 107, 93, 0.4);
+}
+
+[data-accent="deep-bronze"] {
+  --color-primary: var(--accent-deep-bronze);
+  --color-primary-hover: #B58242;
+  --color-primary-subtle: rgba(198, 146, 81, 0.14);
+  --color-primary-tint: rgba(198, 146, 81, 0.06);
+  --border-primary: rgba(198, 146, 81, 0.4);
+}
+
+[data-accent="slate-terracotta"] {
+  --color-primary: var(--accent-slate-terracotta);
+  --color-primary-hover: #C56645;
+  --color-primary-subtle: rgba(217, 119, 87, 0.14);
+  --color-primary-tint: rgba(217, 119, 87, 0.06);
+  --border-primary: rgba(217, 119, 87, 0.4);
+}
+
+[data-accent="quartz-cyan"] {
+  --color-primary: var(--accent-quartz-cyan);
+  --color-primary-hover: #4A7A81;
+  --color-primary-subtle: rgba(91, 140, 147, 0.14);
+  --color-primary-tint: rgba(91, 140, 147, 0.06);
+  --border-primary: rgba(91, 140, 147, 0.4);
 }

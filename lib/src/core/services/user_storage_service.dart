@@ -47,9 +47,7 @@ class UserStorageServiceImpl implements UserStorageService {
   UserStorageServiceImpl(
     this._localStorageService, {
     FlutterSecureStorage? secureStorage,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
-    _initCache();
-  }
+  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   final LocalStorageService _localStorageService;
   final FlutterSecureStorage _secureStorage;
@@ -88,10 +86,6 @@ class UserStorageServiceImpl implements UserStorageService {
     _cachedAvatarUrl = _localStorageService.getPreference(
       key: PrefKeys.userAvatarUrl,
     );
-  }
-
-  void _initCache() {
-    unawaited(initStorage());
   }
 
   static String? _sanitizeToken(String? raw) {

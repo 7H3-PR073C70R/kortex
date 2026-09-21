@@ -1,27 +1,29 @@
 /**
- * KORTEXIFY INTERACTIVE WORKSPACE ENGINE
- * High-Converting Architecture, KaTeX LaTeX Rendering, 3D Flashcard Engine, Theme Toggle & Waitlist
+ * KORTEX INTERACTIVE WORKSPACE ENGINE
+ * High-Tactility, Zero-Glow Architecture
+ * KaTeX LaTeX Rendering, 3D Flashcard Engine, Boutique Palette Switcher & Theme Toggle
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const htmlRoot = document.documentElement;
+
   // --------------------------------------------------------------------------
   // 1. Dark / Light Theme Toggle Engine
   // --------------------------------------------------------------------------
   const themeToggleBtn = document.getElementById('themeToggleBtn');
-  const htmlRoot = document.documentElement;
 
   // Retrieve saved preference or system preference
-  const savedTheme = localStorage.getItem('kortexify_theme') ||
+  const savedTheme = localStorage.getItem('kortex_theme') ||
     (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 
   function applyTheme(theme) {
     htmlRoot.setAttribute('data-theme', theme);
-    localStorage.setItem('kortexify_theme', theme);
+    localStorage.setItem('kortex_theme', theme);
     if (themeToggleBtn) {
       themeToggleBtn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
       themeToggleBtn.innerHTML = theme === 'dark'
-        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
-        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
     }
   }
 
@@ -36,7 +38,51 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --------------------------------------------------------------------------
-  // 2. Multi-Modal Workstation Tab Switcher
+  // 2. Boutique Theme Preset Accent Switcher
+  // --------------------------------------------------------------------------
+  const accentDots = document.querySelectorAll('.accent-dot');
+  const savedAccent = localStorage.getItem('kortex_accent') || 'sage';
+
+  const accentMap = {
+    sage: 'default',
+    ochre: 'warm-ochre',
+    moss: 'alpine-moss',
+    bronze: 'deep-bronze',
+    terracotta: 'slate-terracotta',
+    quartz: 'quartz-cyan'
+  };
+
+  function applyAccent(accentKey) {
+    const mappedAttr = accentMap[accentKey] || 'default';
+    if (mappedAttr === 'default') {
+      htmlRoot.removeAttribute('data-accent');
+    } else {
+      htmlRoot.setAttribute('data-accent', mappedAttr);
+    }
+    localStorage.setItem('kortex_accent', accentKey);
+
+    accentDots.forEach((dot) => {
+      if (dot.getAttribute('data-set-accent') === accentKey) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+
+  applyAccent(savedAccent);
+
+  accentDots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const selected = dot.getAttribute('data-set-accent');
+      if (selected) {
+        applyAccent(selected);
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 3. Multi-Modal Workstation Tab Switcher
   // --------------------------------------------------------------------------
   const tabButtons = document.querySelectorAll('.workstation-tabs .tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
@@ -45,10 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       const targetTab = btn.getAttribute('data-tab');
 
-      tabButtons.forEach((b) => b.classList.remove('active'));
+      tabButtons.forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       tabPanels.forEach((p) => p.classList.remove('active'));
 
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       const activePanel = document.getElementById(`panel-${targetTab}`);
       if (activePanel) {
         activePanel.classList.add('active');
@@ -57,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --------------------------------------------------------------------------
-  // 3. Interactive 3D Flashcard & KaTeX Render Engine
+  // 4. Interactive 3D Flashcard & KaTeX Render Engine
   // --------------------------------------------------------------------------
   const flashcardElement = document.getElementById('interactiveFlashcard');
   const flipTriggerBtn = document.getElementById('flipCardTrigger');
@@ -128,8 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.katex) {
     renderCurrentCard();
   } else {
-    // Retry if KaTeX is loading asynchronously
-    setTimeout(renderCurrentCard, 400);
+    setTimeout(renderCurrentCard, 350);
   }
 
   function toggleFlip() {
@@ -190,12 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (flashcardElement) {
         flashcardElement.classList.remove('flipped');
       }
-      setTimeout(renderCurrentCard, 200);
+      setTimeout(renderCurrentCard, 180);
     });
   });
 
   // --------------------------------------------------------------------------
-  // 4. Dynamic Live User Counter
+  // 5. Dynamic Active User Counter
   // --------------------------------------------------------------------------
   const baseCount = 25420;
   const countElements = document.querySelectorAll('.social-proof-count');
@@ -207,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let currentCount = parseInt(
-    localStorage.getItem('kortexify_live_counter') || baseCount,
+    localStorage.getItem('kortex_live_counter') || baseCount,
     10
   );
   updateCounts(currentCount);
@@ -215,13 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(() => {
     if (Math.random() > 0.65) {
       currentCount += Math.floor(Math.random() * 3) + 1;
-      localStorage.setItem('kortexify_live_counter', currentCount);
+      localStorage.setItem('kortex_live_counter', currentCount);
       updateCounts(currentCount);
     }
-  }, 14000);
+  }, 16000);
 
   // --------------------------------------------------------------------------
-  // 5. FAQ Accordion Interaction
+  // 6. FAQ Accordion Interaction
   // --------------------------------------------------------------------------
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach((item) => {
@@ -229,81 +278,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (questionBtn) {
       questionBtn.addEventListener('click', () => {
         const isActive = item.classList.contains('active');
-        faqItems.forEach((f) => f.classList.remove('active'));
+        faqItems.forEach((f) => {
+          f.classList.remove('active');
+          const btn = f.querySelector('.faq-question');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+        });
         if (!isActive) {
           item.classList.add('active');
+          questionBtn.setAttribute('aria-expanded', 'true');
         }
       });
     }
-  });
-
-  // --------------------------------------------------------------------------
-  // 6. Waitlist & Instant Access Form Handling
-  // --------------------------------------------------------------------------
-  const waitlistForms = document.querySelectorAll('.waitlist-form');
-
-  function isValidEmail(email) {
-    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return regex.test(String(email).toLowerCase());
-  }
-
-  function showFeedback(el, msg, type) {
-    if (!el) return;
-    el.textContent = msg;
-    el.className = `waitlist-feedback ${type}`;
-    el.style.display = 'block';
-  }
-
-  waitlistForms.forEach((form) => {
-    const input = form.querySelector('.waitlist-input');
-    const button = form.querySelector('.waitlist-button');
-    const container = form.closest('.waitlist-card') || form.parentElement;
-    const feedback = container ? container.querySelector('.waitlist-feedback') : null;
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = input.value.trim();
-
-      if (!email) {
-        showFeedback(feedback, 'Please enter your student or personal email.', 'error');
-        input.focus();
-        return;
-      }
-
-      if (!isValidEmail(email)) {
-        showFeedback(feedback, 'Please enter a valid email address.', 'error');
-        input.focus();
-        return;
-      }
-
-      button.disabled = true;
-      const originalText = button.innerHTML;
-      button.innerHTML = 'Connecting...';
-
-      try {
-        const leads = JSON.parse(localStorage.getItem('kortexify_leads') || '[]');
-        if (!leads.includes(email)) {
-          leads.push(email);
-          localStorage.setItem('kortexify_leads', JSON.stringify(leads));
-          currentCount += 1;
-          updateCounts(currentCount);
-        }
-
-        setTimeout(() => {
-          button.disabled = false;
-          button.innerHTML = originalText;
-          showFeedback(
-            feedback,
-            'Success! Your early access invite is reserved. Check your inbox shortly.',
-            'success'
-          );
-          input.value = '';
-        }, 600);
-      } catch (err) {
-        button.disabled = false;
-        button.innerHTML = originalText;
-        showFeedback(feedback, 'Something went wrong. Please try again.', 'error');
-      }
-    });
   });
 });
